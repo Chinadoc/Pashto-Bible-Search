@@ -11,10 +11,12 @@ def normalize_pashto_char(text):
         text = text.replace(old, new)
     return text
 
-# --- Configuration & Data Loading ---
-DATA_DIR = 'all_txt_copies'
+# --- Configuration & Data Loading (Robust Paths) ---
+# Get the absolute path of the directory where this script is located
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
 INDEX_FILE = os.path.join(DATA_DIR, 'grammatical_index_v15.json')
-AUDIO_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+AUDIO_BASE_DIR = APP_ROOT
 
 st.set_page_config(layout="wide")
 
@@ -44,6 +46,11 @@ def load_bible_text():
         'mark': 'Mark', 'matthew': 'Matthew', 'philemon': 'Philemon', 'philippians': 'Philippians',
         'revelation': 'Revelation', 'romans': 'Romans', 'titus': 'Titus',
     }
+    # Check if DATA_DIR exists
+    if not os.path.isdir(DATA_DIR):
+        st.error(f"FATAL: Data directory not found at '{DATA_DIR}'")
+        return {}
+
     for filename in os.listdir(DATA_DIR):
         if filename.endswith('_pashto.txt'):
             base = filename.replace('_pashto.txt', '')
