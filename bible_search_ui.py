@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import re
 import os
+import requests
 from collections import defaultdict
 
 # --- Unicode Normalization ---
@@ -6649,6 +6650,17 @@ AUDIO_FILE_MAP = {
 st.set_page_config(layout="wide")
 
 @st.cache_data
+def get_audio_bytes(url):
+    """Downloads the audio file and returns its content as bytes."""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Will raise an HTTPError for bad responses
+        return response.content
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching audio: {e}")
+        return None
+
+@st.cache_data
 def load_data():
     try:
         with open(INDEX_FILE, 'r', encoding='utf-8') as f:
@@ -6746,8 +6758,10 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        st.audio(audio_url, format='audio/mp3')
-        st.markdown(f"[Download Audio]({audio_url})")
+        audio_bytes = get_audio_bytes(audio_url)
+        if audio_bytes:
+            st.audio(audio_bytes, format='audio/mp3')
+            st.markdown(f"[Download Audio]({audio_url})")
     else:
         st.caption("No audio file found for this verse.")
     st.markdown("---")
