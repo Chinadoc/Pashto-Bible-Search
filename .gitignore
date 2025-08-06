@@ -1,0 +1,13 @@
+# Ignore virtual env
+venv/
+
+# Ignore any large audio directories
+pashto*/
+*.mp3
+
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+
+# MacOS
+.DS_Store
