@@ -12,11 +12,18 @@ def normalize_pashto_char(text):
     return text
 
 # --- Configuration & Data Loading (Robust Paths) ---
-# Get the absolute path of the directory where this script is located
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
 INDEX_FILE = os.path.join(DATA_DIR, 'grammatical_index_v15.json')
-AUDIO_BASE_DIR = APP_ROOT
+GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
+
+# --- (ACTION REQUIRED) Audio File Mapping ---
+# You need to fill this dictionary with your Google Drive file IDs.
+# Format: "bookchapter_verse_number.mp3": "google_drive_file_id"
+# Example: "matthew1_verse_1.mp3": "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
+AUDIO_FILE_MAP = {
+    # e.g., "john3_verse_16.mp3": "YOUR_FILE_ID_HERE",
+}
 
 st.set_page_config(layout="wide")
 
@@ -26,7 +33,7 @@ def load_data():
         with open(INDEX_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        st.error(f"FATAL: The index file '{INDEX_FILE}' was not found. Please run the final indexing script.")
+        st.error(f"FATAL: The index file '{INDEX_FILE}' was not found.")
         return None
 
 @st.cache_data
@@ -46,11 +53,9 @@ def load_bible_text():
         'mark': 'Mark', 'matthew': 'Matthew', 'philemon': 'Philemon', 'philippians': 'Philippians',
         'revelation': 'Revelation', 'romans': 'Romans', 'titus': 'Titus',
     }
-    # Check if DATA_DIR exists
     if not os.path.isdir(DATA_DIR):
         st.error(f"FATAL: Data directory not found at '{DATA_DIR}'")
         return {}
-
     for filename in os.listdir(DATA_DIR):
         if filename.endswith('_pashto.txt'):
             base = filename.replace('_pashto.txt', '')
@@ -95,15 +100,18 @@ def highlight_verse(verse_text, search_term):
     display_term = format_for_display(search_term)
     return re.sub(f'({re.escape(display_term)})', r'<mark><b>\1</b></mark>', normalize_pashto_char(verse_text), flags=re.IGNORECASE)
 
-def find_audio_file(verse_ref):
+def find_audio_url(verse_ref):
+    if not AUDIO_FILE_MAP: return None
     try:
         match = re.match(r'([a-zA-Z\s]+)\s(\d+):(\d+)', verse_ref)
         if not match: return None
         book, chapter, verse = match.groups()
-        audio_folder = f"pashto{book.lower().replace(' ', '')}{chapter}"
+        # Construct the standard filename key for the map
         audio_filename = f"{book.lower().replace(' ', '')}{chapter}_verse_{verse}.mp3"
-        full_path = os.path.join(AUDIO_BASE_DIR, audio_folder, audio_filename)
-        return full_path if os.path.exists(full_path) else None
+        file_id = AUDIO_FILE_MAP.get(audio_filename)
+        if file_id:
+            return GOOGLE_DRIVE_URL_PREFIX + file_id
+        return None
     except Exception:
         return None
 
@@ -115,37 +123,26 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
 
     st.markdown(f"**{verse_ref}**: {highlight_verse(full_verse, search_term)}", unsafe_allow_html=True)
     
-    audio_path = find_audio_file(verse_ref)
-    if audio_path:
-        try:
-            with open(audio_path, 'rb') as audio_file: audio_bytes = audio_file.read()
-            col1, col2 = st.columns([0.8, 0.2])
-            with col1: st.audio(audio_bytes, format='audio/mp3')
-            with col2: st.download_button(label="Download", data=audio_bytes, file_name=os.path.basename(audio_path), mime='audio/mp3', key=f"dl_{verse_ref.replace(':', '_')}_{search_term}")
-        except Exception as e:
-            st.error(f"Could not load audio for {verse_ref}: {e}")
+    audio_url = find_audio_url(verse_ref)
+    if audio_url:
+        st.audio(audio_url, format='audio/mp3')
+        st.markdown(f"[Download Audio]({audio_url})")
     else:
         st.caption("No audio file found for this verse.")
     st.markdown("---")
 
 # --- Smart Search Functions ---
 def is_verse_reference(query):
-    # Simple regex to check for patterns like "Book Chapter:Verse"
     return re.match(r'^[a-zA-Z\s]+\s\d+:\d+$', query.strip())
 
 def handle_verse_search(query, bible_text):
     st.header(f"Verse Lookup: {query}")
-    # Normalize the query to match bible_text keys format if necessary
-    # (Assuming the format is already good)
     display_verse_with_audio(query, "", bible_text)
 
 def handle_phrase_search(query, bible_text):
     st.header(f"Exact Phrase Search Results for: \"{query}\"")
     normalized_query = normalize_pashto_char(query)
-    found_verses = []
-    for verse_ref, text in bible_text.items():
-        if normalized_query in text:
-            found_verses.append(verse_ref)
+    found_verses = [ref for ref, text in bible_text.items() if normalized_query in text]
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
