@@ -115,7 +115,19 @@ def find_all_possible_roots(word, all_words_set):
             desc = f"Inflection of '{root}'"
             interpretations.append((root, {'type': 'Noun/Adj', 'pattern_info': details['pattern_info'], 'form_description': desc}))
             
-    # 3. Fallback for un-lexiconed words
+    # 3. Regular Noun/Adj Analysis (NEW)
+    # Simple rule: if a word ends in a common plural, and its singular form exists, link them.
+    # This is a basic approach and can be expanded.
+    plural_endings = ["ان", "انو"]
+    for ending in plural_endings:
+        if word.endswith(ending):
+            possible_root = word[:-len(ending)]
+            if possible_root in all_words_set:
+                 desc = f"Inflection of '{possible_root}'"
+                 interpretations.append((possible_root, {'type': 'Noun/Adj', 'pattern_info': 'Regular Noun/Adj', 'form_description': desc}))
+
+
+    # 4. Fallback for un-lexiconed words
     if not interpretations and word in all_words_set:
         interpretations.append((word, {'type': 'Unknown', 'pattern_info': 'N/A', 'form_description': 'Base Form'}))
 
@@ -146,8 +158,8 @@ for word, data in word_data.items():
             lexicon_entry = VERB_LEXICON.get(root) or IRREGULAR_NOUN_ADJ_LEXICON.get(root)
             identity = {
                 'type': details['type'],
-                'pattern_info': lexicon_entry.get('pattern_info', 'N/A') if lexicon_entry else 'N/A',
-                'translit': lexicon_entry.get('translit', '') if lexicon_entry else '',
+                'pattern_info': lexicon_entry.get('pattern_info', 'N/A') if lexicon_entry else 'Regular Noun/Adj',
+                'translit': lexicon_entry.get('translit', '') if lexicon_entry else transliterate(root),
                 'forms': defaultdict(list)
             }
             final_index[root]['identities'].append(identity)
