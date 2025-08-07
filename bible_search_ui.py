@@ -42,6 +42,19 @@ except FileNotFoundError:
 except Exception as e:
     st.warning(f"Unable to load audio file map: {e}")
 
+# Load word frequency list (romanization and pos hints from LingDocs dictionary)
+@st.cache_data
+def load_word_freq_map():
+    try:
+        with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+            items = json.load(f)
+        # Map by Pashto form for O(1) lookups
+        return {item['pashto']: item for item in items}
+    except Exception:
+        return {}
+
+WORD_FREQ_MAP = load_word_freq_map()
+
 @st.cache_data
 def get_audio_bytes(url):
     """Downloads the audio file and returns its content as bytes."""
@@ -218,7 +231,16 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
     for root_word, items in by_root.items():
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
-        st.header(f"Grammatical Results for Root: `{format_for_display(root_word)}` ({root_translit})")
+
+        # Pull POS/romanization hints from frequency map if present
+        freq_item = WORD_FREQ_MAP.get(format_for_display(root_word)) or WORD_FREQ_MAP.get(root_word)
+        pos_hint = freq_item.get('pos') if freq_item else None
+        rom_hint = freq_item.get('romanization') if freq_item else None
+        subtitle_bits = []
+        if rom_hint and rom_hint != 'not_found':
+            subtitle_bits.append(rom_hint)
+        subtitle = f" ({', '.join(subtitle_bits)})" if subtitle_bits else ""
+        st.header(f"Grammatical Results for Root: `{format_for_display(root_word)}` {subtitle}")
 
         by_type = defaultdict(list)
         for item in items:
