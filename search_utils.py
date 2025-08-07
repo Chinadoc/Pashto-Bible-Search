@@ -86,3 +86,42 @@ def get_form_occurrences(root_word: str, form_ps: str, grammatical_index: Dict[s
                     }
     return {'count': 0, 'verses': []}
 
+
+def get_form_occurrences_any(
+    form_ps: str,
+    form_to_root_map: Dict[str, List[str]],
+    grammatical_index: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Lookup occurrences for a form across all roots that contain it.
+
+    Aggregates counts and verses over all candidate roots from form_to_root_map.
+    This is resilient against index inconsistencies where a form may be stored
+    under a different root than expected.
+    """
+    norm = normalize_pashto_char(form_ps)
+    # form_to_root_map was built using normalize_pashto_char(item['form'])
+    candidate_roots = set(form_to_root_map.get(norm, []))
+    total_count = 0
+    verses: List[str] = []
+
+    def matches(a: str, b: str) -> bool:
+        a1 = normalize_pashto_char(a)
+        b1 = normalize_pashto_char(b)
+        if a1 == b1:
+            return True
+        # also try replacing spaces/underscores equivalently
+        a2 = a1.replace(' ', '_')
+        b2 = b1.replace(' ', '_')
+        return a2 == b2
+
+    for root in candidate_roots:
+        root_data = grammatical_index.get(root, {})
+        for identity in root_data.get('identities', []):
+            for items_list in identity.get('forms', {}).values():
+                for item in items_list:
+                    if matches(item.get('form', ''), form_ps):
+                        total_count += int(item.get('count', 0))
+                        verses.extend(item.get('verses', []))
+
+    return {'count': total_count, 'verses': verses}
+
