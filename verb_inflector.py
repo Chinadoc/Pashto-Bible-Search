@@ -82,6 +82,16 @@ def conjugate_verb(root: str) -> Dict[str, Any]:
     # Simple past uses perfective root + past endings
     simple_past = build_past(v['roots']['perfective'], v['romanization']['perfective_root'])
 
+    # Map Pashto forms to romanization for quick override in UI
+    forms_map = {
+        imperfective_root: v['romanization']['imperfective_root'],
+        perfective_root: v['romanization']['perfective_root'],
+        past_participle: v['romanization']['past_participle'],
+    }
+    for d in (present, subjunctive, cont_past, simple_past):
+        for _, (ps, rom) in d.items():
+            forms_map[ps] = rom
+
     return {
         'meta': {
             'root': root,
@@ -97,6 +107,7 @@ def conjugate_verb(root: str) -> Dict[str, Any]:
         'subjunctive': subjunctive,
         'continuous_past': cont_past,
         'simple_past': simple_past,
+        'forms_map': forms_map,
     }
 
 

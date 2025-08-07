@@ -262,7 +262,12 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
 
             for item in sorted(forms, key=lambda x: x['count'], reverse=True):
                 form_display = format_for_display(item['form'])
-                translit = item.get('translit', '')
+                # Prefer lexicon romanization if available for this exact Pashto form
+                translit = ''
+                if conj and 'forms_map' in conj:
+                    translit = conj['forms_map'].get(item['form'], '')
+                if not translit:
+                    translit = item.get('translit', '')
                 expander_title = (
                     f"**{item['description']}**: `{form_display}` ({translit}) - "
                     f"(Frequency: {item['count']})"
@@ -292,6 +297,17 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
                     ps, rom = conj['subjunctive'][k]
                     st.text(f"{ps}  ({rom})")
+
+        # If user entered the infinitive itself, show extended past tables
+        if query == root_word and conj:
+            st.subheader("Past (continuous)")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                ps, rom = conj['continuous_past'][k]
+                st.text(f"{ps}  ({rom})")
+            st.subheader("Past (simple)")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                ps, rom = conj['simple_past'][k]
+                st.text(f"{ps}  ({rom})")
 
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")
