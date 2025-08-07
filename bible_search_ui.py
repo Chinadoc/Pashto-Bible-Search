@@ -85,6 +85,26 @@ def load_word_frequency_data():
         st.error(f"Error: Could not decode JSON from {WORD_FREQ_FILE}")
         return []
 
+# Optional LingDocs full dictionary (for richer POS/romanization lookups)
+@st.cache_data
+def load_lingdocs_dictionary_map():
+    path = os.path.join(APP_ROOT, 'full_dictionary.json')
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        entries = data.get('entries', []) if isinstance(data, dict) else data
+        p_to_entries = {}
+        for ent in entries:
+            p = ent.get('p')
+            if not p:
+                continue
+            p_to_entries.setdefault(p, []).append(ent)
+        return p_to_entries
+    except Exception:
+        return {}
+
 @st.cache_data
 def load_data():
     try:
@@ -247,8 +267,24 @@ def handle_phrase_search(query, bible_text):
         display_verse_with_audio(verse_ref, query, bible_text)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_text):
-    # If the query is a conjugated form recognized by the lexicon, promote to its root
-    lex_root = find_lexicon_root_for_form(query)
+    # Preserve the exact form the user searched for and show its occurrences first
+    normalized_form = normalize_pashto_char(query)
+    lex_root = find_lexicon_root_for_form(normalized_form)
+    conj_for_form = conjugate_verb(lex_root) if lex_root else None
+    form_rom = ''
+    if conj_for_form and isinstance(conj_for_form, dict) and 'forms_map' in conj_for_form:
+        form_rom = conj_for_form['forms_map'].get(normalized_form, '')
+
+    # Top section: occurrences for the searched form
+    if 'form_occurrence_index' in globals():
+        occ = form_occurrence_index.get(normalize_pashto_char(normalized_form), {'count': 0, 'verses': []})
+        if occ['count']:
+            st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {occ['count']} hits")
+            for verse_ref in sorted(set(occ['verses'])):
+                display_verse_with_audio(verse_ref, normalized_form, bible_text)
+            st.markdown("---")
+
+    # Then show grammatical results for the root (if form maps to a root), otherwise for the form itself
     effective_query = lex_root if lex_root else query
     results = search_grammatical_forms(effective_query, form_to_root_map, grammatical_index)
     if not results:
@@ -376,6 +412,52 @@ if grammatical_index is None: st.stop()
 
 form_to_root_map = create_form_to_root_map(grammatical_index)
 form_occurrence_index = build_form_occurrence_index(grammatical_index)
+
+# --- Sidebar: Word Frequency Browser ---
+with st.sidebar:
+    st.header("Word Frequency")
+    freq_items = load_word_frequency_data()
+    pos_options = sorted({item.get('pos', 'unknown') for item in freq_items})
+    pos_filter = st.multiselect("Filter by POS", options=pos_options, default=[])
+    text_filter = st.text_input("Filter (Pashto or romanization)", "", key="sidebar_filter")
+    top_n = st.slider("How many to show", min_value=10, max_value=200, value=50, step=10)
+
+    def item_matches(item):
+        if pos_filter and item.get('pos', 'unknown') not in pos_filter:
+            return False
+        tf = text_filter.strip()
+        if not tf:
+            return True
+        tf_norm = tf.lower()
+        return (
+            tf_norm in item.get('pashto', '')
+            or tf_norm in str(item.get('romanization', '')).lower()
+        )
+
+    filtered = [it for it in freq_items if item_matches(it)]
+    filtered.sort(key=lambda x: x.get('frequency', 0), reverse=True)
+    show = filtered[:top_n]
+
+    if show:
+        df_rows = [
+            {
+                'Pashto': r.get('pashto', ''),
+                'Romanization': r.get('romanization', ''),
+                'POS': r.get('pos', ''),
+                'Freq': r.get('frequency', 0),
+            }
+            for r in show
+        ]
+        st.dataframe(pd.DataFrame(df_rows), use_container_width=True, hide_index=True)
+
+    pick = st.selectbox(
+        "Insert a word to search",
+        options=[r.get('pashto', '') for r in show] if show else [],
+        index=0 if show else None,
+    )
+    if pick and st.button("Search this word"):
+        st.session_state['main_search'] = pick
+        st.rerun()
 
 search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
 
