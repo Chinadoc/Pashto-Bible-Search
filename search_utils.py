@@ -125,3 +125,28 @@ def get_form_occurrences_any(
 
     return {'count': total_count, 'verses': verses}
 
+
+def build_form_occurrence_index(grammatical_index: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Precompute a map of normalized form -> {'count': int, 'verses': List[str]} aggregated across roots.
+
+    This makes per-form lookup O(1) and dramatically speeds up UI rendering.
+    """
+    aggregate: Dict[str, Dict[str, Any]] = {}
+
+    def add(form: str, count: int, verses: List[str]):
+        # Normalize to Pashto form (spaces, not underscores) for key
+        form_ps = form.replace('_', ' ')
+        key = normalize_pashto_char(form_ps)
+        if key not in aggregate:
+            aggregate[key] = {'count': 0, 'verses': []}
+        aggregate[key]['count'] += int(count)
+        aggregate[key]['verses'].extend(verses)
+
+    for root_data in grammatical_index.values():
+        for identity in root_data.get('identities', []):
+            for items_list in identity.get('forms', {}).values():
+                for item in items_list:
+                    add(item.get('form', ''), item.get('count', 0), item.get('verses', []))
+
+    return aggregate
+

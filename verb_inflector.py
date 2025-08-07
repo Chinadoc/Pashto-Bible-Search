@@ -111,3 +111,30 @@ def conjugate_verb(root: str) -> Dict[str, Any]:
     }
 
 
+def build_forms_root_index() -> Dict[str, str]:
+    """Build a mapping from Pashto conjugated form -> canonical verb root using the lexicon.
+
+    This is used to recognize when a searched form like "وینم" belongs to the verb "لیدل".
+    """
+    index: Dict[str, str] = {}
+    for root in VERBS.keys():
+        conj = conjugate_verb(root)
+        if not conj:
+            continue
+        for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past']:
+            for ps, _ in conj[dname].values():
+                index[ps] = root
+        # also include roots and participle
+        meta = conj['meta']
+        index[meta['imperfective_root']] = root
+        index[meta['perfective_root']] = root
+        index[meta['past_participle']] = root
+    return index
+
+
+def find_lexicon_root_for_form(form_ps: str) -> str:
+    """Return canonical root for a Pashto form if present in lexicon; else empty string."""
+    forms_index = build_forms_root_index()
+    return forms_index.get(form_ps, '')
+
+
