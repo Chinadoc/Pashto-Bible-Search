@@ -790,15 +790,28 @@ with tabs[1]:
                     q in str(it.get('romanization', '')).lower()
                 )
 
-            rows = [it for it in freq_items if match(it)]
-            rows.sort(key=lambda x: x.get('frequency', 0), reverse=True)
-            rows = rows[:show_n]
+            # Normalize punctuation and enrich romanization from dictionary
+            cleaned_map = {}
+            for r in (it for it in freq_items if match(it)):
+                pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
+                freq = int(r.get('frequency', 0))
+                pos = r.get('pos', '')
+                rom = r.get('romanization', '') or dict_romanization_for(pashto)
+                if pashto not in cleaned_map:
+                    cleaned_map[pashto] = {'pashto': pashto, 'romanization': rom, 'pos': pos, 'frequency': 0}
+                cleaned_map[pashto]['frequency'] += freq
+                if not cleaned_map[pashto]['romanization'] and rom:
+                    cleaned_map[pashto]['romanization'] = rom
+                if cleaned_map[pashto]['pos'] == 'unknown' and pos:
+                    cleaned_map[pashto]['pos'] = pos
+
+            rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
             df = pd.DataFrame([
                 {
-                    'Pashto': r.get('pashto', ''),
-                    'Romanization': r.get('romanization', ''),
-                    'POS': r.get('pos', ''),
-                    'Frequency': r.get('frequency', 0),
+                    'Pashto': r['pashto'],
+                    'Romanization': r['romanization'],
+                    'POS': r['pos'],
+                    'Frequency': r['frequency'],
                 }
                 for r in rows
             ])
