@@ -204,6 +204,28 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.caption("No audio file found for this verse.")
     st.markdown("---")
 
+
+# --- Small UI helpers ---
+def render_forms_summary(title, forms_dict, occurrence_index):
+    """Render a compact table of forms with counts before detailed lists.
+
+    forms_dict: mapping like conj['present'] where values are tuples (pashto, romanization)
+    """
+    try:
+        rows = []
+        order = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl']
+        for k in order:
+            if k not in forms_dict:
+                continue
+            ps, rom = forms_dict[k]
+            occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0})
+            rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'Count': occ['count']})
+        if rows:
+            st.markdown(f"**{title} — overview**")
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    except Exception:
+        pass
+
 # --- Smart Search Functions ---
 def is_verse_reference(query):
     return re.match(r'^[a-zA-Z\s]+\s\d+:\d+$', query.strip())
@@ -296,6 +318,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
                 f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
             )
+            # Compact overview first
+            render_forms_summary("present", conj['present'], form_occurrence_index)
+            render_forms_summary("subjunctive", conj['subjunctive'], form_occurrence_index)
+
             cols = st.columns(2)
             with cols[0]:
                 st.write("present")
