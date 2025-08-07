@@ -68,3 +68,21 @@ def search_grammatical_forms(
                         )
     return results
 
+
+def get_form_occurrences(root_word: str, form_ps: str, grammatical_index: Dict[str, Any]) -> Dict[str, Any]:
+    """Lookup occurrences (verses, count) for a specific Pashto form under a given root.
+
+    Returns {'count': int, 'verses': List[str]} or {'count': 0, 'verses': []}.
+    """
+    root_data = grammatical_index.get(root_word, {})
+    target = normalize_pashto_char(form_ps).replace(" ", "_")
+    for identity in root_data.get('identities', []):
+        for items_list in identity.get('forms', {}).values():
+            for item in items_list:
+                if normalize_pashto_char(item.get('form', '')) == target:
+                    return {
+                        'count': int(item.get('count', 0)),
+                        'verses': list(item.get('verses', [])),
+                    }
+    return {'count': 0, 'verses': []}
+
