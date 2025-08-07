@@ -5,6 +5,9 @@ import os
 import requests
 from collections import defaultdict
 
+# External grammar/search utilities built from lingdocs/pashto-inflector logic
+from grammar_search import search_word_forms, characterize_word
+
 # --- Unicode Normalization ---
 def normalize_pashto_char(text):
     replacements = {'ي': 'ی', 'ى': 'ی', 'ئ': 'ی'}
@@ -166,22 +169,28 @@ def handle_phrase_search(query, bible_text):
         display_verse_with_audio(verse_ref, query, bible_text)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_text):
-    search_key = query.replace(" ", "_")
-    root_words = form_to_root_map.get(search_key)
+    root_words = search_word_forms(query, form_to_root_map)
 
     if not root_words:
         st.error(f"The word '{query}' was not found in any form.")
         return
 
+    # Provide grammar characterizations for the search term itself
+    grammar_info = characterize_word(query, form_to_root_map.keys())
+    if grammar_info:
+        st.subheader("Grammar Analysis")
+        for root, details in grammar_info:
+            st.caption(f"{format_for_display(root)} – {details['type']} – {details['form_description']}")
+
     for root_word in root_words:
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
         st.header(f"Grammatical Results for Root: `{format_for_display(root_word)}` ({root_translit})")
-        
+
         for identity in root_data.get('identities', []):
             word_type = identity.get('type', 'N/A')
             pattern = identity.get('pattern_info', 'N/A')
-            
+
             st.subheader(f"As a {word_type}")
             st.info(f"Grammar Pattern: **{pattern}**")
 
@@ -191,7 +200,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                     all_forms_with_desc.append({'description': desc, **item})
 
             sorted_forms = sorted(all_forms_with_desc, key=lambda x: x['count'], reverse=True)
-            
+
             for item in sorted_forms:
                 form_display = format_for_display(item['form'])
                 translit = item.get('translit', '')
