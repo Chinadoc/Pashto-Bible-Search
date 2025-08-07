@@ -5,7 +5,7 @@ import os
 import requests
 import pandas as pd
 from collections import defaultdict
-from search_utils import search_grammatical_forms
+from search_utils import search_grammatical_forms, get_form_occurrences
 from verb_inflector import conjugate_verb
 
 
@@ -293,23 +293,43 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 st.write("present")
                 for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
                     ps, rom = conj['present'][k]
-                    st.text(f"{ps}  ({rom})")
+                    occ = get_form_occurrences(root_word, ps, grammatical_index)
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                    if occ['verses']:
+                        with st.expander("Show verses"):
+                            for vref in sorted(set(occ['verses'])):
+                                display_verse_with_audio(vref, ps, bible_text)
             with cols[1]:
                 st.write("subjunctive")
                 for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
                     ps, rom = conj['subjunctive'][k]
-                    st.text(f"{ps}  ({rom})")
+                    occ = get_form_occurrences(root_word, ps, grammatical_index)
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                    if occ['verses']:
+                        with st.expander("Show verses"):
+                            for vref in sorted(set(occ['verses'])):
+                                display_verse_with_audio(vref, ps, bible_text)
 
         # If user entered the infinitive itself, show extended past tables
         if query == root_word and conj:
             st.subheader("Past (continuous)")
             for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
                 ps, rom = conj['continuous_past'][k]
-                st.text(f"{ps}  ({rom})")
+                occ = get_form_occurrences(root_word, ps, grammatical_index)
+                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                if occ['verses']:
+                    with st.expander(f"{ps} verses"):
+                        for vref in sorted(set(occ['verses'])):
+                            display_verse_with_audio(vref, ps, bible_text)
             st.subheader("Past (simple)")
             for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
                 ps, rom = conj['simple_past'][k]
-                st.text(f"{ps}  ({rom})")
+                occ = get_form_occurrences(root_word, ps, grammatical_index)
+                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                if occ['verses']:
+                    with st.expander(f"{ps} verses"):
+                        for vref in sorted(set(occ['verses'])):
+                            display_verse_with_audio(vref, ps, bible_text)
 
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")
