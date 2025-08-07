@@ -44,10 +44,20 @@ def search_grammatical_forms(
             for desc, items in identity.get('forms', {}).items():
                 for item in items:
                     if normalize_pashto_char(item['form']) == search_key:
+                        raw_type = identity.get('type') or ''
+                        pattern_info = identity.get('pattern_info', '') or ''
+                        inferred_type = raw_type
+                        if not inferred_type or inferred_type == 'N/A':
+                            if 'Verb' in pattern_info:
+                                inferred_type = 'Verb'
+                            elif ('Noun' in pattern_info) or ('Adj' in pattern_info):
+                                inferred_type = 'Noun/Adj'
+                            else:
+                                inferred_type = 'Unknown'
                         results.append(
                             {
                                 'root': root,
-                                'type': identity.get('type', 'N/A'),
+                                'type': inferred_type,
                                 'pattern': identity.get('pattern_info', 'N/A'),
                                 'description': desc,
                                 'form': item.get('form', ''),
