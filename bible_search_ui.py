@@ -26,7 +26,14 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
 INDEX_FILE = os.path.join(DATA_DIR, 'grammatical_index_v15.json')
 WORD_FREQ_FILE = os.path.join(APP_ROOT, 'word_frequency_list.json')
+FULL_DICT_FILE = os.path.join(APP_ROOT, 'full_dictionary.json')
+FORM_TO_LEMMA_FILE = os.path.join(APP_ROOT, 'form_to_lemma.json')
+INFLECTIONS_CACHE_FILE = os.path.join(APP_ROOT, 'inflections_cache.json')
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
+WORD_FREQ_DRIVE_ID = "1PYrdE16bJlyGiNO5hi1qxed7nTF0-WCo"
+FULL_DICT_DRIVE_ID = "1Zay2s8siAV6d7pQec9uEbh-3YpzBtNol"
+SHOW_SIDEBAR = False
+INFLECT_SERVICE_URL = os.environ.get('INFLECT_SERVICE_URL', '')  # e.g., http://localhost:5050
 
 # --- (ACTION REQUIRED) Audio File Mapping ---
 # You need to fill this dictionary with your Google Drive file IDs.
@@ -48,6 +55,97 @@ except FileNotFoundError:
 except Exception as e:
     st.warning(f"Unable to load audio file map: {e}")
 
+# --- Helpers to fetch JSON assets from Google Drive when missing locally ---
+def ensure_file_from_drive(file_id: str, target_path: str) -> None:
+    try:
+        if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
+            return
+        if not file_id:
+            return
+        url = f"{GOOGLE_DRIVE_URL_PREFIX}{file_id}"
+        resp = requests.get(url, timeout=60)
+        resp.raise_for_status()
+        # If Drive returns HTML due to permission, do not overwrite
+        content_type = resp.headers.get('Content-Type', '')
+        if 'html' in content_type.lower() and 'json' not in content_type.lower():
+            return
+        with open(target_path, 'wb') as f:
+            f.write(resp.content)
+    except Exception:
+        # Silent fallback; UI will show helpful messages elsewhere
+        pass
+
+
+def ensure_full_dictionary_from_web(target_path: str) -> None:
+    """Fallback: fetch LingDocs JSON directly if Drive fetch failed."""
+    if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
+        return
+    try:
+        url = "https://storage.lingdocs.com/dictionary/dictionary.json"
+        resp = requests.get(url, timeout=60)
+        resp.raise_for_status()
+        with open(target_path, 'wb') as f:
+            f.write(resp.content)
+    except Exception:
+        pass
+
+
+def ensure_word_frequency_from_index(index_path: str, out_path: str) -> None:
+    """Fallback: build frequency file from index if Drive file is absent."""
+    if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+        return
+    try:
+        with open(index_path, 'r', encoding='utf-8') as f:
+            idx = json.load(f)
+        # light aggregator
+        agg = {}
+        for data in idx.values():
+            for identity in data.get('identities', []):
+                pos = identity.get('type', 'unknown')
+                for items_list in identity.get('forms', {}).values():
+                    for item in items_list:
+                        form_ps = (item.get('form', '') or '').replace('_', ' ')
+                        cur = agg.get(form_ps)
+                        if not cur:
+                            cur = {
+                                'pashto': form_ps,
+                                'frequency': 0,
+                                'romanization': '',
+                                'pos': pos,
+                            }
+                            agg[form_ps] = cur
+                        cur['frequency'] += int(item.get('count', 0))
+                        if cur['pos'] == 'unknown' and pos:
+                            cur['pos'] = pos
+        out = sorted(agg.values(), key=lambda x: x['frequency'], reverse=True)
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+# --- Optional: load precomputed inflection cache (Part 1) ---
+@st.cache_data
+def load_form_to_lemma_map():
+    try:
+        if not os.path.exists(FORM_TO_LEMMA_FILE):
+            return {}
+        with open(FORM_TO_LEMMA_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+@st.cache_data
+def load_inflections_cache_map():
+    try:
+        if not os.path.exists(INFLECTIONS_CACHE_FILE):
+            return {}
+        with open(INFLECTIONS_CACHE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
 # Load word frequency list (romanization and pos hints from LingDocs dictionary)
 @st.cache_data
 def load_word_freq_map():
@@ -59,6 +157,8 @@ def load_word_freq_map():
     except Exception:
         return {}
 
+ensure_file_from_drive(WORD_FREQ_DRIVE_ID, WORD_FREQ_FILE)
+ensure_word_frequency_from_index(INDEX_FILE, WORD_FREQ_FILE)
 WORD_FREQ_MAP = load_word_freq_map()
 
 @st.cache_data
@@ -105,6 +205,8 @@ def load_lingdocs_dictionary_map():
     except Exception:
         return {}
 
+ensure_file_from_drive(FULL_DICT_DRIVE_ID, FULL_DICT_FILE)
+ensure_full_dictionary_from_web(FULL_DICT_FILE)
 DICT_MAP = load_lingdocs_dictionary_map()
 
 def dict_romanization_for(pashto_word: str) -> str:
@@ -141,6 +243,90 @@ def build_dictionary_dataframe():
                 'SourceTS': ent.get('ts', ''),
             })
     return rows
+
+
+@st.cache_data
+def build_bible_word_catalog():
+    """Aggregate all Bible words and their verse occurrences from the grammatical index.
+
+    Returns a list of dicts with: Pashto, Romanization, POS, Count, Verses
+    """
+    idx = load_data()
+    if not idx:
+        return []
+    aggregate = {}
+    for root, data in idx.items():
+        for identity in data.get('identities', []):
+            pos = identity.get('type', '')
+            for items_list in identity.get('forms', {}).values():
+                for item in items_list:
+                    form_ps = (item.get('form', '') or '').replace('_', ' ')
+                    key = normalize_pashto_char(form_ps)
+                    entry = aggregate.get(key)
+                    if not entry:
+                        entry = {
+                            'Pashto': form_ps,
+                            'Romanization': dict_romanization_for(form_ps) or item.get('translit', ''),
+                            'POS': pos,
+                            'Count': 0,
+                            'Verses': [],
+                        }
+                        aggregate[key] = entry
+                    entry['Count'] += int(item.get('count', 0))
+                    entry['Verses'].extend(item.get('verses', []))
+
+    # Deduplicate verses
+    for e in aggregate.values():
+        e['Verses'] = sorted(set(e['Verses']))
+
+    return sorted(aggregate.values(), key=lambda x: x['Count'], reverse=True)
+
+
+# --- Heuristic romanization from lemma when exact form missing in dictionary ---
+def guess_lemma_in_dict(form_ps: str) -> str:
+    base = form_ps.replace('_', ' ')
+    # Try feminine lemma ending ه
+    if base.endswith('و') or base.endswith('ې'):
+        cand = base[:-1] + 'ه'
+        if cand in DICT_MAP:
+            return cand
+    # Try removing plural/inflection suffixes commonly seen in fem/mask patterns
+    if base.endswith('و') and (base[:-1] in DICT_MAP):
+        return base[:-1]
+    return ''
+
+
+def adjust_romanization_from_suffix(lemma_rom: str, form_ps: str) -> str:
+    if not lemma_rom:
+        return ''
+    # Normalize lemma ending vowel marker if present
+    # Basic adjustments reflecting LingDocs patterns for fem. اله/ه endings
+    if form_ps.endswith('و'):
+        # vocative/plural feminine often maps á -> ó
+        if lemma_rom.endswith('á'):
+            return lemma_rom[:-1] + 'ó'
+        return lemma_rom + 'ó'
+    if form_ps.endswith('ې'):
+        # first feminine inflection á -> é
+        if lemma_rom.endswith('á'):
+            return lemma_rom[:-1] + 'é'
+        return lemma_rom + 'é'
+    return ''
+
+
+def romanize_from_dict_or_rules(form_ps: str) -> str:
+    # Prefer exact dictionary romanization
+    r = dict_romanization_for(form_ps)
+    if r:
+        return r
+    # Derive from lemma when possible
+    lemma = guess_lemma_in_dict(form_ps)
+    if lemma:
+        base_rom = dict_romanization_for(lemma)
+        adj = adjust_romanization_from_suffix(base_rom, form_ps)
+        if adj:
+            return adj
+    return ''
 
 @st.cache_data
 def load_data():
@@ -306,11 +492,16 @@ def handle_phrase_search(query, bible_text):
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_text):
     # Preserve the exact form the user searched for and show its occurrences first
     normalized_form = normalize_pashto_char(query)
-    lex_root = find_lexicon_root_for_form(normalized_form)
+    # Prefer precomputed cache or external service; fall back to local lexicon
+    form_to_lemma = load_form_to_lemma_map()
+    lex_root = form_to_lemma.get(normalized_form) or find_lexicon_root_for_form(normalized_form)
     conj_for_form = conjugate_verb(lex_root) if lex_root else None
     form_rom = ''
     if conj_for_form and isinstance(conj_for_form, dict) and 'forms_map' in conj_for_form:
         form_rom = conj_for_form['forms_map'].get(normalized_form, '')
+    if not form_rom:
+        # Try dictionary/cache-based romanization for any form
+        form_rom = romanize_from_dict_or_rules(normalized_form)
 
     # Top section: occurrences for the searched form
     if 'form_occurrence_index' in globals():
@@ -373,7 +564,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 if conj and isinstance(conj, dict) and 'forms_map' in conj:
                     translit = conj['forms_map'].get(item['form'], '')
                 if not translit:
-                    translit = dict_romanization_for(item.get('form', '')) or item.get('translit', '')
+                    form_ps = item.get('form', '')
+                    translit = romanize_from_dict_or_rules(form_ps) or item.get('translit', '')
                 expander_title = (
                     f"**{item['description']}**: `{form_display}` ({translit}) - "
                     f"(Frequency: {item['count']})"
@@ -455,55 +647,56 @@ with tabs[0]:
     form_occurrence_index = build_form_occurrence_index(grammatical_index)
 
 # --- Sidebar: Word Frequency Browser ---
-with st.sidebar:
-    st.header("Word Frequency")
-    if not os.path.exists(WORD_FREQ_FILE):
-        st.info("Word frequency file not found. The sidebar browser will appear once `word_frequency_list.json` is present.")
-        freq_items = []
-    else:
-        freq_items = load_word_frequency_data()
-    pos_options = sorted({item.get('pos', 'unknown') for item in freq_items}) if freq_items else []
-    pos_filter = st.multiselect("Filter by POS", options=pos_options, default=[])
-    text_filter = st.text_input("Filter (Pashto or romanization)", "", key="sidebar_filter")
-    top_n = st.slider("How many to show", min_value=10, max_value=200, value=50, step=10)
+if SHOW_SIDEBAR:
+    with st.sidebar:
+        st.header("Word Frequency")
+        if not os.path.exists(WORD_FREQ_FILE):
+            st.info("Word frequency file not found. The browser will appear once `word_frequency_list.json` is present.")
+            freq_items = []
+        else:
+            freq_items = load_word_frequency_data()
+        pos_options = sorted({item.get('pos', 'unknown') for item in freq_items}) if freq_items else []
+        pos_filter = st.multiselect("Filter by POS", options=pos_options, default=[])
+        text_filter = st.text_input("Filter (Pashto or romanization)", "", key="sidebar_filter")
+        top_n = st.slider("How many to show", min_value=10, max_value=200, value=50, step=10)
 
-    def item_matches(item):
-        if pos_filter and item.get('pos', 'unknown') not in pos_filter:
-            return False
-        tf = text_filter.strip()
-        if not tf:
-            return True
-        tf_norm = tf.lower()
-        return (
-            tf_norm in item.get('pashto', '')
-            or tf_norm in str(item.get('romanization', '')).lower()
-        )
+        def item_matches(item):
+            if pos_filter and item.get('pos', 'unknown') not in pos_filter:
+                return False
+            tf = text_filter.strip()
+            if not tf:
+                return True
+            tf_norm = tf.lower()
+            return (
+                tf_norm in item.get('pashto', '')
+                or tf_norm in str(item.get('romanization', '')).lower()
+            )
 
-    filtered = [it for it in freq_items if item_matches(it)] if freq_items else []
-    filtered.sort(key=lambda x: x.get('frequency', 0), reverse=True)
-    show = filtered[:top_n]
+        filtered = [it for it in freq_items if item_matches(it)] if freq_items else []
+        filtered.sort(key=lambda x: x.get('frequency', 0), reverse=True)
+        show = filtered[:top_n]
 
-    if show:
-        df_rows = [
-            {
-                'Pashto': r.get('pashto', ''),
-                'Romanization': r.get('romanization', ''),
-                'POS': r.get('pos', ''),
-                'Freq': r.get('frequency', 0),
-            }
-            for r in show
-        ]
-        st.dataframe(pd.DataFrame(df_rows), use_container_width=True, hide_index=True)
+        if show:
+            df_rows = [
+                {
+                    'Pashto': r.get('pashto', ''),
+                    'Romanization': r.get('romanization', ''),
+                    'POS': r.get('pos', ''),
+                    'Freq': r.get('frequency', 0),
+                }
+                for r in show
+            ]
+            st.dataframe(pd.DataFrame(df_rows), use_container_width=True, hide_index=True)
 
-    if show:
-        pick = st.selectbox(
-            "Insert a word to search",
-            options=[r.get('pashto', '') for r in show],
-            index=0,
-        )
-        if pick and st.button("Search this word"):
-            st.session_state['main_search'] = pick
-            st.rerun()
+        if show:
+            pick = st.selectbox(
+                "Insert a word to search",
+                options=[r.get('pashto', '') for r in show],
+                index=0,
+            )
+            if pick and st.button("Search this word"):
+                st.session_state['main_search'] = pick
+                st.rerun()
 
 with tabs[0]:
     search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
