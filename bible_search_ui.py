@@ -255,6 +255,9 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
         for item in items:
             by_type[item['type']].append(item)
 
+        # Prepare conjugations once per root so it's available below
+        conj = lex_conj
+
         for word_type, forms in by_type.items():
             pattern = forms[0].get('pattern', 'N/A')
             st.subheader(f"As a {word_type}")
@@ -264,7 +267,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 form_display = format_for_display(item['form'])
                 # Prefer lexicon romanization if available for this exact Pashto form
                 translit = ''
-                if conj and 'forms_map' in conj:
+                if conj and isinstance(conj, dict) and 'forms_map' in conj:
                     translit = conj['forms_map'].get(item['form'], '')
                 if not translit:
                     translit = item.get('translit', '')
@@ -277,7 +280,6 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                         display_verse_with_audio(verse_ref, item['form'], bible_text)
 
         # If this root is in the verb lexicon, display a conjugation summary regardless of index type
-        conj = lex_conj
         if conj:
             st.subheader("Conjugation (summary)")
             meta = conj['meta']
