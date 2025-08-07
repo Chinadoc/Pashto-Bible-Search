@@ -9,8 +9,9 @@ from search_utils import (
     search_grammatical_forms,
     get_form_occurrences,
     get_form_occurrences_any,
+    build_form_occurrence_index,
 )
-from verb_inflector import conjugate_verb
+from verb_inflector import conjugate_verb, find_lexicon_root_for_form
 
 
 # --- Unicode Normalization ---
@@ -224,7 +225,10 @@ def handle_phrase_search(query, bible_text):
         display_verse_with_audio(verse_ref, query, bible_text)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_text):
-    results = search_grammatical_forms(query, form_to_root_map, grammatical_index)
+    # If the query is a conjugated form recognized by the lexicon, promote to its root
+    lex_root = find_lexicon_root_for_form(query)
+    effective_query = lex_root if lex_root else query
+    results = search_grammatical_forms(effective_query, form_to_root_map, grammatical_index)
     if not results:
         st.error(f"The word '{query}' was not found in any form.")
         return
@@ -297,10 +301,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 st.write("present")
                 for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
                     ps, rom = conj['present'][k]
-                    # Be resilient: try under the current root, otherwise aggregate across any roots
-                    occ = get_form_occurrences(root_word, ps, grammatical_index)
-                    if not occ['count']:
-                        occ = get_form_occurrences_any(ps, form_to_root_map, grammatical_index)
+                    # Use precomputed index for speed
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
                     st.text(f"{ps}  ({rom}) — {occ['count']} hits")
                     if occ['verses']:
                         with st.expander("Show verses"):
@@ -310,9 +312,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 st.write("subjunctive")
                 for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
                     ps, rom = conj['subjunctive'][k]
-                    occ = get_form_occurrences(root_word, ps, grammatical_index)
-                    if not occ['count']:
-                        occ = get_form_occurrences_any(ps, form_to_root_map, grammatical_index)
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
                     st.text(f"{ps}  ({rom}) — {occ['count']} hits")
                     if occ['verses']:
                         with st.expander("Show verses"):
@@ -324,9 +324,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
             st.subheader("Past (continuous)")
             for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
                 ps, rom = conj['continuous_past'][k]
-                occ = get_form_occurrences(root_word, ps, grammatical_index)
-                if not occ['count']:
-                    occ = get_form_occurrences_any(ps, form_to_root_map, grammatical_index)
+                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
                 st.text(f"{ps}  ({rom}) — {occ['count']} hits")
                 if occ['verses']:
                     with st.expander(f"{ps} verses"):
@@ -335,9 +333,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
             st.subheader("Past (simple)")
             for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
                 ps, rom = conj['simple_past'][k]
-                occ = get_form_occurrences(root_word, ps, grammatical_index)
-                if not occ['count']:
-                    occ = get_form_occurrences_any(ps, form_to_root_map, grammatical_index)
+                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
                 st.text(f"{ps}  ({rom}) — {occ['count']} hits")
                 if occ['verses']:
                     with st.expander(f"{ps} verses"):
@@ -353,6 +349,7 @@ bible_text = load_bible_text()
 if grammatical_index is None: st.stop()
 
 form_to_root_map = create_form_to_root_map(grammatical_index)
+form_occurrence_index = build_form_occurrence_index(grammatical_index)
 
 search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
 
