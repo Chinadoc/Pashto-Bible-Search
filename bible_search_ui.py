@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 from collections import defaultdict
 from search_utils import search_grammatical_forms
+from verb_inflector import conjugate_verb
 
 
 # --- Unicode Normalization ---
@@ -261,6 +262,29 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 with st.expander(expander_title):
                     for verse_ref in sorted(set(item['verses'])):
                         display_verse_with_audio(verse_ref, item['form'], bible_text)
+
+        # If this root is a verb, attempt to show a conjugation summary using our lexicon
+        if any(t == 'Verb' for t in by_type.keys()):
+            conj = conjugate_verb(root_word)
+            if conj:
+                st.subheader("Conjugation (summary)")
+                meta = conj['meta']
+                st.caption(
+                    f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
+                    f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
+                    f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
+                )
+                cols = st.columns(2)
+                with cols[0]:
+                    st.write("present")
+                    for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                        ps, rom = conj['present'][k]
+                        st.text(f"{ps}  ({rom})")
+                with cols[1]:
+                    st.write("subjunctive")
+                    for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                        ps, rom = conj['subjunctive'][k]
+                        st.text(f"{ps}  ({rom})")
 
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")

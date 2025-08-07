@@ -1,0 +1,21 @@
+{
+  "لیدل": {
+    "stems": {
+      "imperfective": "وین",
+      "perfective": "ووین"
+    },
+    "roots": {
+      "imperfective": "لیدل",
+      "perfective": "ولیدل"
+    },
+    "past_participle": "لیدلی",
+    "romanization": {
+      "imperfective_stem": "ween",
+      "perfective_stem": "óoween",
+      "imperfective_root": "leedúl",
+      "perfective_root": "óoleedul",
+      "past_participle": "leedúlay"
+    }
+  }
+}
+
