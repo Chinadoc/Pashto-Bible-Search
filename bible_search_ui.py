@@ -179,10 +179,8 @@ def load_word_frequency_data():
         with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        st.error(f"Error: Word frequency file not found at {WORD_FREQ_FILE}")
         return []
     except json.JSONDecodeError:
-        st.error(f"Error: Could not decode JSON from {WORD_FREQ_FILE}")
         return []
 
 # Optional LingDocs full dictionary (for richer POS/romanization lookups)
@@ -344,10 +342,8 @@ def load_word_frequency_data():
         with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        st.error(f"Error: Word frequency file not found at {WORD_FREQ_FILE}")
         return []
     except json.JSONDecodeError:
-        st.error(f"Error: Could not decode JSON from {WORD_FREQ_FILE}")
         return []
 
 @st.cache_data
@@ -806,7 +802,10 @@ with tabs[1]:
                 }
                 for r in rows
             ])
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            if not rows:
+                st.info("No entries match the current filters.")
+            else:
+                st.dataframe(df, use_container_width=True, hide_index=True)
 
             if rows:
                 pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows])
@@ -839,4 +838,7 @@ with tabs[1]:
 
             filt = [r for r in rows if ok(r)]
             filt = sorted(filt, key=lambda x: (x['POS'], x['Pashto']))[:show_n]
-            st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
+            if not filt:
+                st.info("No entries match the current filters.")
+            else:
+                st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
