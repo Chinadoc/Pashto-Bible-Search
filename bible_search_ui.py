@@ -778,6 +778,7 @@ with tabs[1]:
             pos_sel = st.multiselect("Filter by POS", options=pos_values, default=[])
             text_q = st.text_input("Filter (Pashto/Romanization)", "", key="freq_filter")
             show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50)
+            group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False)
 
             def match(it):
                 if pos_sel and it.get('pos', 'unknown') not in pos_sel:
@@ -805,26 +806,60 @@ with tabs[1]:
                 if cleaned_map[pashto]['pos'] == 'unknown' and pos:
                     cleaned_map[pashto]['pos'] = pos
 
-            rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
-            df = pd.DataFrame([
-                {
-                    'Pashto': r['pashto'],
-                    'Romanization': r['romanization'],
-                    'POS': r['pos'],
-                    'Frequency': r['frequency'],
-                }
-                for r in rows
-            ])
+            if group_by_lemma and load_form_to_lemma_map():
+                f2l = load_form_to_lemma_map()
+                lemma_agg = {}
+                for r in cleaned_map.values():
+                    form = r['pashto']
+                    key = f2l.get(form) or f2l.get(normalize_pashto_char(form)) or form
+                    la = lemma_agg.get(key)
+                    if not la:
+                        la = {
+                            'Lemma': key,
+                            'Romanization': dict_romanization_for(key) or r['romanization'],
+                            'POS': r['pos'],
+                            'Frequency': 0,
+                            'Forms': [],
+                        }
+                        lemma_agg[key] = la
+                    la['Frequency'] += r['frequency']
+                    la['Forms'].append({'Form': form, 'Romanization': r['romanization'], 'POS': r['pos'], 'Frequency': r['frequency']})
+                rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
+                df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
+            else:
+                rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
+                df = pd.DataFrame([
+                    {
+                        'Pashto': r['pashto'],
+                        'Romanization': r['romanization'],
+                        'POS': r['pos'],
+                        'Frequency': r['frequency'],
+                    }
+                    for r in rows
+                ])
             if not rows:
                 st.info("No entries match the current filters.")
             else:
                 st.dataframe(df, use_container_width=True, hide_index=True)
 
             if rows:
-                pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows])
-                if st.button("Search selected"):
-                    st.session_state['main_search'] = pick
-                    st.rerun()
+                if group_by_lemma and isinstance(rows[0], dict) and 'Lemma' in rows[0]:
+                    lemma_pick = st.selectbox("Inspect lemma", options=[r['Lemma'] for r in rows])
+                    if lemma_pick:
+                        # show forms table
+                        f2l = load_form_to_lemma_map()
+                        forms = next((r['Forms'] for r in rows if r['Lemma'] == lemma_pick), [])
+                        if forms:
+                            st.markdown("Forms for selected lemma")
+                            st.dataframe(pd.DataFrame(forms), use_container_width=True, hide_index=True)
+                        if st.button("Search lemma"):
+                            st.session_state['main_search'] = lemma_pick
+                            st.rerun()
+                else:
+                    pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows])
+                    if st.button("Search selected"):
+                        st.session_state['main_search'] = pick
+                        st.rerun()
 
     # Dictionary view: LingDocs full list (if available)
     with sub[1]:
