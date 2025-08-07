@@ -4,6 +4,10 @@ venv/
 # Ignore any large audio directories
 pashto*/
 *.mp3
+lingdocs_dictionary/
+audio_file_map.json
+full_dictionary.json
+word_frequency_list.json
 
 # Byte-compiled / caches
 __pycache__/

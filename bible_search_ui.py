@@ -3,7 +3,10 @@ import json
 import re
 import os
 import requests
+import pandas as pd
 from collections import defaultdict
+from search_utils import search_grammatical_forms
+
 
 # --- Unicode Normalization ---
 def normalize_pashto_char(text):
@@ -16,6 +19,7 @@ def normalize_pashto_char(text):
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
 INDEX_FILE = os.path.join(DATA_DIR, 'grammatical_index_v15.json')
+WORD_FREQ_FILE = os.path.join(APP_ROOT, 'word_frequency_list.json')
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
 
 # --- (ACTION REQUIRED) Audio File Mapping ---
@@ -27,6 +31,16 @@ with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
     AUDIO_FILE_MAP = json.load(af)
 
 st.set_page_config(layout="wide")
+
+# Prefer loading the audio file map from an external JSON to keep this script small
+try:
+    AUDIO_FILE_MAP_PATH = os.path.join(APP_ROOT, 'audio_file_map.json')
+    with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
+        AUDIO_FILE_MAP = json.load(af)
+except FileNotFoundError:
+    st.warning(f"Audio file map not found at {os.path.join(APP_ROOT, 'audio_file_map.json')}. Audio playback links may be unavailable.")
+except Exception as e:
+    st.warning(f"Unable to load audio file map: {e}")
 
 @st.cache_data
 def get_audio_bytes(url):
@@ -40,6 +54,19 @@ def get_audio_bytes(url):
         return None
 
 @st.cache_data
+def load_word_frequency_data():
+    """Loads the word frequency and romanization data."""
+    try:
+        with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"Error: Word frequency file not found at {WORD_FREQ_FILE}")
+        return []
+    except json.JSONDecodeError:
+        st.error(f"Error: Could not decode JSON from {WORD_FREQ_FILE}")
+        return []
+
+@st.cache_data
 def load_data():
     try:
         with open(INDEX_FILE, 'r', encoding='utf-8') as f:
@@ -47,6 +74,19 @@ def load_data():
     except FileNotFoundError:
         st.error(f"FATAL: The index file '{INDEX_FILE}' was not found.")
         return None
+
+@st.cache_data
+def load_word_frequency_data():
+    """Loads the word frequency and romanization data."""
+    try:
+        with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"Error: Word frequency file not found at {WORD_FREQ_FILE}")
+        return []
+    except json.JSONDecodeError:
+        st.error(f"Error: Could not decode JSON from {WORD_FREQ_FILE}")
+        return []
 
 @st.cache_data
 def load_bible_text():
@@ -166,36 +206,36 @@ def handle_phrase_search(query, bible_text):
         display_verse_with_audio(verse_ref, query, bible_text)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_text):
-    search_key = query.replace(" ", "_")
-    root_words = form_to_root_map.get(search_key)
-
-    if not root_words:
+    results = search_grammatical_forms(query, form_to_root_map, grammatical_index)
+    if not results:
         st.error(f"The word '{query}' was not found in any form.")
         return
 
-    for root_word in root_words:
+    by_root = defaultdict(list)
+    for r in results:
+        by_root[r['root']].append(r)
+
+    for root_word, items in by_root.items():
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
         st.header(f"Grammatical Results for Root: `{format_for_display(root_word)}` ({root_translit})")
-        
-        for identity in root_data.get('identities', []):
-            word_type = identity.get('type', 'N/A')
-            pattern = identity.get('pattern_info', 'N/A')
-            
+
+        by_type = defaultdict(list)
+        for item in items:
+            by_type[item['type']].append(item)
+
+        for word_type, forms in by_type.items():
+            pattern = forms[0].get('pattern', 'N/A')
             st.subheader(f"As a {word_type}")
             st.info(f"Grammar Pattern: **{pattern}**")
 
-            all_forms_with_desc = []
-            for desc, items in identity['forms'].items():
-                for item in items:
-                    all_forms_with_desc.append({'description': desc, **item})
-
-            sorted_forms = sorted(all_forms_with_desc, key=lambda x: x['count'], reverse=True)
-            
-            for item in sorted_forms:
+            for item in sorted(forms, key=lambda x: x['count'], reverse=True):
                 form_display = format_for_display(item['form'])
                 translit = item.get('translit', '')
-                expander_title = f"**{item['description']}**: `{form_display}` ({translit}) - (Frequency: {item['count']})"
+                expander_title = (
+                    f"**{item['description']}**: `{form_display}` ({translit}) - "
+                    f"(Frequency: {item['count']})"
+                )
                 with st.expander(expander_title):
                     for verse_ref in sorted(set(item['verses'])):
                         display_verse_with_audio(verse_ref, item['form'], bible_text)
