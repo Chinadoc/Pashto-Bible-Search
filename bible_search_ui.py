@@ -105,6 +105,43 @@ def load_lingdocs_dictionary_map():
     except Exception:
         return {}
 
+DICT_MAP = load_lingdocs_dictionary_map()
+
+def dict_romanization_for(pashto_word: str) -> str:
+    try:
+        key = pashto_word.replace('_', ' ')
+        entries = DICT_MAP.get(key)
+        if not entries:
+            return ''
+        f = entries[0].get('f', '')
+        if not f:
+            return ''
+        # Some entries contain multiple variants separated by comma
+        return f.split(',')[0].strip()
+    except Exception:
+        return ''
+
+
+@st.cache_data
+def build_dictionary_dataframe():
+    """Flatten DICT_MAP into a dataframe-friendly list of entries.
+
+    Columns: Pashto, Romanization, POS, English, SourceTS
+    """
+    rows = []
+    for p, entries in DICT_MAP.items():
+        for ent in entries:
+            rom = ent.get('f', '')
+            rom = rom.split(',')[0].strip() if rom else ''
+            rows.append({
+                'Pashto': p,
+                'Romanization': rom,
+                'POS': ent.get('c', ''),
+                'English': ent.get('e', ''),
+                'SourceTS': ent.get('ts', ''),
+            })
+    return rows
+
 @st.cache_data
 def load_data():
     try:
@@ -299,10 +336,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
 
-        # Pull POS/romanization hints from frequency map if present
+        # Pull POS/romanization hints, prefer LingDocs dict when available
         freq_item = WORD_FREQ_MAP.get(format_for_display(root_word)) or WORD_FREQ_MAP.get(root_word)
         pos_hint = (freq_item.get('pos') if freq_item else None) or None
-        rom_hint = (freq_item.get('romanization') if freq_item else None) or None
+        rom_hint = dict_romanization_for(root_word) or (freq_item.get('romanization') if freq_item else None) or None
         # If missing, fall back to verb lexicon when available
         lex_conj = conjugate_verb(root_word)
         if (not rom_hint or rom_hint == 'not_found') and lex_conj:
@@ -336,7 +373,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                 if conj and isinstance(conj, dict) and 'forms_map' in conj:
                     translit = conj['forms_map'].get(item['form'], '')
                 if not translit:
-                    translit = item.get('translit', '')
+                    translit = dict_romanization_for(item.get('form', '')) or item.get('translit', '')
                 expander_title = (
                     f"**{item['description']}**: `{form_display}` ({translit}) - "
                     f"(Frequency: {item['count']})"
@@ -405,13 +442,17 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")
 
-grammatical_index = load_data()
-bible_text = load_bible_text()
+# Tabs: Search | Lexicon (comprehensive lists)
+tabs = st.tabs(["Search", "Lexicon"])
 
-if grammatical_index is None: st.stop()
+with tabs[0]:
+    grammatical_index = load_data()
+    bible_text = load_bible_text()
 
-form_to_root_map = create_form_to_root_map(grammatical_index)
-form_occurrence_index = build_form_occurrence_index(grammatical_index)
+    if grammatical_index is None: st.stop()
+
+    form_to_root_map = create_form_to_root_map(grammatical_index)
+    form_occurrence_index = build_form_occurrence_index(grammatical_index)
 
 # --- Sidebar: Word Frequency Browser ---
 with st.sidebar:
@@ -464,17 +505,45 @@ with st.sidebar:
             st.session_state['main_search'] = pick
             st.rerun()
 
-search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
+with tabs[0]:
+    search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
 
-if search_query:
-    st.markdown("---")
-    normalized_query = normalize_pashto_char(search_query.strip())
+    if search_query:
+        st.markdown("---")
+        normalized_query = normalize_pashto_char(search_query.strip())
 
-    if is_verse_reference(normalized_query):
-        handle_verse_search(normalized_query, bible_text)
-    elif " " in normalized_query:
-        handle_phrase_search(normalized_query, bible_text)
+        if is_verse_reference(normalized_query):
+            handle_verse_search(normalized_query, bible_text)
+        elif " " in normalized_query:
+            handle_phrase_search(normalized_query, bible_text)
+        else:
+            handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, bible_text)
     else:
-        handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, bible_text)
-else:
-    st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
+        st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
+
+with tabs[1]:
+    st.subheader("Comprehensive Lists")
+    rows = build_dictionary_dataframe()
+    if not rows:
+        st.info("Dictionary not loaded. Run fetch_full_dictionary.py to populate full_dictionary.json.")
+    else:
+        pos_set = sorted({r['POS'] for r in rows})
+        pos_pick = st.selectbox("Filter by POS", options=["All"] + pos_set, index=0)
+        query = st.text_input("Filter (Pashto/Romanization/English)", "", key="lex_filter")
+        show_n = st.slider("How many to show", min_value=50, max_value=2000, value=500, step=50)
+
+        def ok(r):
+            if pos_pick != "All" and r['POS'] != pos_pick:
+                return False
+            q = query.strip().lower()
+            if not q:
+                return True
+            return (
+                q in r['Pashto'] or
+                q in str(r['Romanization']).lower() or
+                q in str(r['English']).lower()
+            )
+
+        filt = [r for r in rows if ok(r)]
+        filt = sorted(filt, key=lambda x: (x['POS'], x['Pashto']))[:show_n]
+        st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
