@@ -235,11 +235,19 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
 
         # Pull POS/romanization hints from frequency map if present
         freq_item = WORD_FREQ_MAP.get(format_for_display(root_word)) or WORD_FREQ_MAP.get(root_word)
-        pos_hint = freq_item.get('pos') if freq_item else None
-        rom_hint = freq_item.get('romanization') if freq_item else None
+        pos_hint = (freq_item.get('pos') if freq_item else None) or None
+        rom_hint = (freq_item.get('romanization') if freq_item else None) or None
+        # If missing, fall back to verb lexicon when available
+        lex_conj = conjugate_verb(root_word)
+        if (not rom_hint or rom_hint == 'not_found') and lex_conj:
+            rom_hint = lex_conj['meta']['romanization'].get('imperfective_root')
+        if (not pos_hint or pos_hint == 'unknown') and lex_conj:
+            pos_hint = 'verb (trans./intrans.)' if lex_conj else pos_hint
         subtitle_bits = []
         if rom_hint and rom_hint != 'not_found':
             subtitle_bits.append(rom_hint)
+        if pos_hint and pos_hint != 'unknown':
+            subtitle_bits.append(pos_hint)
         subtitle = f" ({', '.join(subtitle_bits)})" if subtitle_bits else ""
         st.header(f"Grammatical Results for Root: `{format_for_display(root_word)}` {subtitle}")
 
@@ -263,28 +271,27 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
                     for verse_ref in sorted(set(item['verses'])):
                         display_verse_with_audio(verse_ref, item['form'], bible_text)
 
-        # If this root is a verb, attempt to show a conjugation summary using our lexicon
-        if any(t == 'Verb' for t in by_type.keys()):
-            conj = conjugate_verb(root_word)
-            if conj:
-                st.subheader("Conjugation (summary)")
-                meta = conj['meta']
-                st.caption(
-                    f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
-                    f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
-                    f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
-                )
-                cols = st.columns(2)
-                with cols[0]:
-                    st.write("present")
-                    for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                        ps, rom = conj['present'][k]
-                        st.text(f"{ps}  ({rom})")
-                with cols[1]:
-                    st.write("subjunctive")
-                    for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                        ps, rom = conj['subjunctive'][k]
-                        st.text(f"{ps}  ({rom})")
+        # If this root is in the verb lexicon, display a conjugation summary regardless of index type
+        conj = lex_conj
+        if conj:
+            st.subheader("Conjugation (summary)")
+            meta = conj['meta']
+            st.caption(
+                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
+                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
+                f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
+            )
+            cols = st.columns(2)
+            with cols[0]:
+                st.write("present")
+                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                    ps, rom = conj['present'][k]
+                    st.text(f"{ps}  ({rom})")
+            with cols[1]:
+                st.write("subjunctive")
+                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                    ps, rom = conj['subjunctive'][k]
+                    st.text(f"{ps}  ({rom})")
 
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")
