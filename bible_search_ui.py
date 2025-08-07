@@ -416,8 +416,12 @@ form_occurrence_index = build_form_occurrence_index(grammatical_index)
 # --- Sidebar: Word Frequency Browser ---
 with st.sidebar:
     st.header("Word Frequency")
-    freq_items = load_word_frequency_data()
-    pos_options = sorted({item.get('pos', 'unknown') for item in freq_items})
+    if not os.path.exists(WORD_FREQ_FILE):
+        st.info("Word frequency file not found. The sidebar browser will appear once `word_frequency_list.json` is present.")
+        freq_items = []
+    else:
+        freq_items = load_word_frequency_data()
+    pos_options = sorted({item.get('pos', 'unknown') for item in freq_items}) if freq_items else []
     pos_filter = st.multiselect("Filter by POS", options=pos_options, default=[])
     text_filter = st.text_input("Filter (Pashto or romanization)", "", key="sidebar_filter")
     top_n = st.slider("How many to show", min_value=10, max_value=200, value=50, step=10)
@@ -434,7 +438,7 @@ with st.sidebar:
             or tf_norm in str(item.get('romanization', '')).lower()
         )
 
-    filtered = [it for it in freq_items if item_matches(it)]
+    filtered = [it for it in freq_items if item_matches(it)] if freq_items else []
     filtered.sort(key=lambda x: x.get('frequency', 0), reverse=True)
     show = filtered[:top_n]
 
@@ -450,14 +454,15 @@ with st.sidebar:
         ]
         st.dataframe(pd.DataFrame(df_rows), use_container_width=True, hide_index=True)
 
-    pick = st.selectbox(
-        "Insert a word to search",
-        options=[r.get('pashto', '') for r in show] if show else [],
-        index=0 if show else None,
-    )
-    if pick and st.button("Search this word"):
-        st.session_state['main_search'] = pick
-        st.rerun()
+    if show:
+        pick = st.selectbox(
+            "Insert a word to search",
+            options=[r.get('pashto', '') for r in show],
+            index=0,
+        )
+        if pick and st.button("Search this word"):
+            st.session_state['main_search'] = pick
+            st.rerun()
 
 search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
 
