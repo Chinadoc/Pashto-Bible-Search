@@ -515,6 +515,60 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, bible_
     # Then show grammatical results for the root (if form maps to a root), otherwise for the form itself
     effective_query = lex_root if lex_root else query
     results = search_grammatical_forms(effective_query, form_to_root_map, grammatical_index)
+
+    # If no results from index but we have a lexicon root, still render a conjugation summary
+    if not results and lex_root:
+        conj = conjugate_verb(lex_root)
+        if conj:
+            st.header(f"Grammatical Results for Root: `{format_for_display(lex_root)}`")
+            meta = conj['meta']
+            st.caption(
+                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
+                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
+                f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
+            )
+            render_forms_summary("present", conj['present'], form_occurrence_index)
+            render_forms_summary("subjunctive", conj['subjunctive'], form_occurrence_index)
+            cols = st.columns(2)
+            with cols[0]:
+                st.write("present")
+                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                    ps, rom = conj['present'][k]
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                    if occ['verses']:
+                        with st.expander("Show verses"):
+                            for vref in sorted(set(occ['verses'])):
+                                display_verse_with_audio(vref, ps, bible_text)
+            with cols[1]:
+                st.write("subjunctive")
+                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
+                    ps, rom = conj['subjunctive'][k]
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                    if occ['verses']:
+                        with st.expander("Show verses"):
+                            for vref in sorted(set(occ['verses'])):
+                                display_verse_with_audio(vref, ps, bible_text)
+            st.subheader("Past (continuous)")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                ps, rom = conj['continuous_past'][k]
+                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                if occ['verses']:
+                    with st.expander(f"{ps} verses"):
+                        for vref in sorted(set(occ['verses'])):
+                            display_verse_with_audio(vref, ps, bible_text)
+            st.subheader("Past (simple)")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                ps, rom = conj['simple_past'][k]
+                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+                if occ['verses']:
+                    with st.expander(f"{ps} verses"):
+                        for vref in sorted(set(occ['verses'])):
+                            display_verse_with_audio(vref, ps, bible_text)
+            return
     if not results:
         st.error(f"The word '{query}' was not found in any form.")
         return
@@ -716,27 +770,73 @@ with tabs[0]:
 
 with tabs[1]:
     st.subheader("Comprehensive Lists")
-    rows = build_dictionary_dataframe()
-    if not rows:
-        st.info("Dictionary not loaded. Run fetch_full_dictionary.py to populate full_dictionary.json.")
-    else:
-        pos_set = sorted({r['POS'] for r in rows})
-        pos_pick = st.selectbox("Filter by POS", options=["All"] + pos_set, index=0)
-        query = st.text_input("Filter (Pashto/Romanization/English)", "", key="lex_filter")
-        show_n = st.slider("How many to show", min_value=50, max_value=2000, value=500, step=50)
+    sub = st.tabs(["Frequency (Bible)", "Dictionary (LingDocs)"])
 
-        def ok(r):
-            if pos_pick != "All" and r['POS'] != pos_pick:
-                return False
-            q = query.strip().lower()
-            if not q:
-                return True
-            return (
-                q in r['Pashto'] or
-                q in str(r['Romanization']).lower() or
-                q in str(r['English']).lower()
-            )
+    # Frequency view: use word_frequency_list.json, includes POS categories
+    with sub[0]:
+        freq_items = load_word_frequency_data()
+        if not freq_items:
+            st.info("Word frequency list not available yet.")
+        else:
+            pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
+            pos_sel = st.multiselect("Filter by POS", options=pos_values, default=[])
+            text_q = st.text_input("Filter (Pashto/Romanization)", "", key="freq_filter")
+            show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50)
 
-        filt = [r for r in rows if ok(r)]
-        filt = sorted(filt, key=lambda x: (x['POS'], x['Pashto']))[:show_n]
-        st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
+            def match(it):
+                if pos_sel and it.get('pos', 'unknown') not in pos_sel:
+                    return False
+                q = text_q.strip().lower()
+                if not q:
+                    return True
+                return (
+                    q in it.get('pashto', '') or
+                    q in str(it.get('romanization', '')).lower()
+                )
+
+            rows = [it for it in freq_items if match(it)]
+            rows.sort(key=lambda x: x.get('frequency', 0), reverse=True)
+            rows = rows[:show_n]
+            df = pd.DataFrame([
+                {
+                    'Pashto': r.get('pashto', ''),
+                    'Romanization': r.get('romanization', ''),
+                    'POS': r.get('pos', ''),
+                    'Frequency': r.get('frequency', 0),
+                }
+                for r in rows
+            ])
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            if rows:
+                pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows])
+                if st.button("Search selected"):
+                    st.session_state['main_search'] = pick
+                    st.rerun()
+
+    # Dictionary view: LingDocs full list (if available)
+    with sub[1]:
+        rows = build_dictionary_dataframe()
+        if not rows:
+            st.info("Dictionary not loaded. Run fetch_full_dictionary.py or ensure Drive fetch is allowed.")
+        else:
+            pos_set = sorted({r['POS'] for r in rows})
+            pos_pick = st.selectbox("Filter by POS", options=["All"] + pos_set, index=0)
+            query = st.text_input("Filter (Pashto/Romanization/English)", "", key="lex_filter")
+            show_n = st.slider("How many to show", min_value=50, max_value=2000, value=500, step=50)
+
+            def ok(r):
+                if pos_pick != "All" and r['POS'] != pos_pick:
+                    return False
+                q = query.strip().lower()
+                if not q:
+                    return True
+                return (
+                    q in r['Pashto'] or
+                    q in str(r['Romanization']).lower() or
+                    q in str(r['English']).lower()
+                )
+
+            filt = [r for r in rows if ok(r)]
+            filt = sorted(filt, key=lambda x: (x['POS'], x['Pashto']))[:show_n]
+            st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
