@@ -238,6 +238,19 @@ def dict_romanization_for(pashto_word: str) -> str:
         return ''
 
 
+def dict_pos_for(pashto_word: str) -> str:
+    """Return part-of-speech from LingDocs dictionary when available."""
+    try:
+        key = pashto_word.replace('_', ' ')
+        entries = DICT_MAP.get(key)
+        if not entries:
+            return ''
+        pos = entries[0].get('c', '')
+        return pos or ''
+    except Exception:
+        return ''
+
+
 @st.cache_data
 def build_dictionary_dataframe():
     """Flatten DICT_MAP into a dataframe-friendly list of entries.
@@ -791,14 +804,25 @@ with tabs[0]:
 
 with tabs[1]:
     st.subheader("Comprehensive Lists")
-    sub = st.tabs(["Frequency (Bible)", "Dictionary (LingDocs)"])
+    sub = st.tabs(["Frequency (Bible)"])
 
     # Frequency view: use word_frequency_list.json, includes POS categories
     with sub[0]:
-        freq_items = load_word_frequency_data()
+        raw_freq_items = load_word_frequency_data()
         if not freq_items:
             st.info("Word frequency list not available yet.")
         else:
+            # Enrich frequency list with LingDocs POS and romanization
+            freq_items = []
+            for it in raw_freq_items:
+                p = it.get('pashto', '')
+                freq_items.append({
+                    'pashto': p,
+                    'frequency': it.get('frequency', 0),
+                    'romanization': it.get('romanization', '') or dict_romanization_for(p),
+                    'pos': dict_pos_for(p) or it.get('pos', 'unknown'),
+                })
+
             pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
             tab_names = ["All"] + pos_values
             pos_tabs = st.tabs(tab_names)
@@ -808,16 +832,16 @@ with tabs[1]:
                 show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"freq_n_{selected_pos}")
                 group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False, key=f"freq_group_{selected_pos}")
 
-            def match(it):
-                if pos_sel and it.get('pos', 'unknown') not in pos_sel:
-                    return False
-                q = text_q.strip().lower()
-                if not q:
-                    return True
-                return (
-                    q in it.get('pashto', '') or
-                    q in str(it.get('romanization', '')).lower()
-                )
+                def match(it):
+                    if selected_pos != 'All' and it.get('pos', 'unknown') != selected_pos:
+                        return False
+                    q = text_q.strip().lower()
+                    if not q:
+                        return True
+                    return (
+                        q in it.get('pashto', '') or
+                        q in str(it.get('romanization', '')).lower()
+                    )
 
                 # Normalize punctuation and enrich romanization from dictionary
                 cleaned_map = {}
@@ -837,21 +861,21 @@ with tabs[1]:
                 if group_by_lemma and load_form_to_lemma_map():
                     f2l = load_form_to_lemma_map()
                     lemma_agg = {}
-                for r in cleaned_map.values():
-                    form = r['pashto']
-                    key = f2l.get(form) or f2l.get(normalize_pashto_char(form)) or form
-                    la = lemma_agg.get(key)
-                    if not la:
-                        la = {
-                            'Lemma': key,
-                            'Romanization': dict_romanization_for(key) or r['romanization'],
-                            'POS': r['pos'],
-                            'Frequency': 0,
-                            'Forms': [],
-                        }
-                        lemma_agg[key] = la
-                    la['Frequency'] += r['frequency']
-                    la['Forms'].append({'Form': form, 'Romanization': r['romanization'], 'POS': r['pos'], 'Frequency': r['frequency']})
+                    for r in cleaned_map.values():
+                        form = r['pashto']
+                        key = f2l.get(form) or f2l.get(normalize_pashto_char(form)) or form
+                        la = lemma_agg.get(key)
+                        if not la:
+                            la = {
+                                'Lemma': key,
+                                'Romanization': dict_romanization_for(key) or r['romanization'],
+                                'POS': r['pos'],
+                                'Frequency': 0,
+                                'Forms': [],
+                            }
+                            lemma_agg[key] = la
+                        la['Frequency'] += r['frequency']
+                        la['Forms'].append({'Form': form, 'Romanization': r['romanization'], 'POS': r['pos'], 'Frequency': r['frequency']})
                     rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
                     df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
                 else:
@@ -892,31 +916,4 @@ with tabs[1]:
                     render_freq_tab(name)
 
     # Dictionary view: LingDocs full list (if available)
-    with sub[1]:
-        rows = build_dictionary_dataframe()
-        if not rows:
-            st.info("Dictionary not loaded. Run fetch_full_dictionary.py or ensure Drive fetch is allowed.")
-        else:
-            pos_set = sorted({r['POS'] for r in rows})
-            pos_pick = st.selectbox("Filter by POS", options=["All"] + pos_set, index=0)
-            query = st.text_input("Filter (Pashto/Romanization/English)", "", key="lex_filter")
-            show_n = st.slider("How many to show", min_value=50, max_value=2000, value=500, step=50)
-
-            def ok(r):
-                if pos_pick != "All" and r['POS'] != pos_pick:
-                    return False
-                q = query.strip().lower()
-                if not q:
-                    return True
-                return (
-                    q in r['Pashto'] or
-                    q in str(r['Romanization']).lower() or
-                    q in str(r['English']).lower()
-                )
-
-            filt = [r for r in rows if ok(r)]
-            filt = sorted(filt, key=lambda x: (x['POS'], x['Pashto']))[:show_n]
-            if not filt:
-                st.info("No entries match the current filters.")
-            else:
-                st.dataframe(pd.DataFrame(filt), use_container_width=True, hide_index=True)
+    # Removed the LingDocs dictionary tab per request
