@@ -34,6 +34,24 @@
       "perfective_root": "bótlul",
       "past_participle": "botlúlay"
     }
+  },
+  "کول": {
+    "stems": {
+      "imperfective": "کو",
+      "perfective": "وکړ"
+    },
+    "roots": {
+      "imperfective": "کول",
+      "perfective": "وکړ"
+    },
+    "past_participle": "کړی",
+    "romanization": {
+      "imperfective_stem": "ko",
+      "perfective_stem": "óokṛ",
+      "imperfective_root": "kawúl",
+      "perfective_root": "óokṛ",
+      "past_participle": "kṛúy"
+    }
   }
 }
 
