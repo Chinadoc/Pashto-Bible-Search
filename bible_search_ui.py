@@ -775,10 +775,13 @@ with tabs[1]:
             st.info("Word frequency list not available yet.")
         else:
             pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
-            pos_sel = st.multiselect("Filter by POS", options=pos_values, default=[])
-            text_q = st.text_input("Filter (Pashto/Romanization)", "", key="freq_filter")
-            show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50)
-            group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False)
+            tab_names = ["All"] + pos_values
+            pos_tabs = st.tabs(tab_names)
+
+            def render_freq_tab(selected_pos: str):
+                text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"freq_filter_{selected_pos}")
+                show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"freq_n_{selected_pos}")
+                group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False, key=f"freq_group_{selected_pos}")
 
             def match(it):
                 if pos_sel and it.get('pos', 'unknown') not in pos_sel:
@@ -791,24 +794,24 @@ with tabs[1]:
                     q in str(it.get('romanization', '')).lower()
                 )
 
-            # Normalize punctuation and enrich romanization from dictionary
-            cleaned_map = {}
-            for r in (it for it in freq_items if match(it)):
-                pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
-                freq = int(r.get('frequency', 0))
-                pos = r.get('pos', '')
-                rom = r.get('romanization', '') or dict_romanization_for(pashto)
-                if pashto not in cleaned_map:
-                    cleaned_map[pashto] = {'pashto': pashto, 'romanization': rom, 'pos': pos, 'frequency': 0}
-                cleaned_map[pashto]['frequency'] += freq
-                if not cleaned_map[pashto]['romanization'] and rom:
-                    cleaned_map[pashto]['romanization'] = rom
-                if cleaned_map[pashto]['pos'] == 'unknown' and pos:
-                    cleaned_map[pashto]['pos'] = pos
+                # Normalize punctuation and enrich romanization from dictionary
+                cleaned_map = {}
+                for r in (it for it in freq_items if match(it)):
+                    pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
+                    freq = int(r.get('frequency', 0))
+                    pos = r.get('pos', '')
+                    rom = r.get('romanization', '') or dict_romanization_for(pashto)
+                    if pashto not in cleaned_map:
+                        cleaned_map[pashto] = {'pashto': pashto, 'romanization': rom, 'pos': pos, 'frequency': 0}
+                    cleaned_map[pashto]['frequency'] += freq
+                    if not cleaned_map[pashto]['romanization'] and rom:
+                        cleaned_map[pashto]['romanization'] = rom
+                    if cleaned_map[pashto]['pos'] == 'unknown' and pos:
+                        cleaned_map[pashto]['pos'] = pos
 
-            if group_by_lemma and load_form_to_lemma_map():
-                f2l = load_form_to_lemma_map()
-                lemma_agg = {}
+                if group_by_lemma and load_form_to_lemma_map():
+                    f2l = load_form_to_lemma_map()
+                    lemma_agg = {}
                 for r in cleaned_map.values():
                     form = r['pashto']
                     key = f2l.get(form) or f2l.get(normalize_pashto_char(form)) or form
@@ -824,42 +827,44 @@ with tabs[1]:
                         lemma_agg[key] = la
                     la['Frequency'] += r['frequency']
                     la['Forms'].append({'Form': form, 'Romanization': r['romanization'], 'POS': r['pos'], 'Frequency': r['frequency']})
-                rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
-                df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
-            else:
-                rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
-                df = pd.DataFrame([
-                    {
-                        'Pashto': r['pashto'],
-                        'Romanization': r['romanization'],
-                        'POS': r['pos'],
-                        'Frequency': r['frequency'],
-                    }
-                    for r in rows
-                ])
-            if not rows:
-                st.info("No entries match the current filters.")
-            else:
-                st.dataframe(df, use_container_width=True, hide_index=True)
-
-            if rows:
-                if group_by_lemma and isinstance(rows[0], dict) and 'Lemma' in rows[0]:
-                    lemma_pick = st.selectbox("Inspect lemma", options=[r['Lemma'] for r in rows])
-                    if lemma_pick:
-                        # show forms table
-                        f2l = load_form_to_lemma_map()
-                        forms = next((r['Forms'] for r in rows if r['Lemma'] == lemma_pick), [])
-                        if forms:
-                            st.markdown("Forms for selected lemma")
-                            st.dataframe(pd.DataFrame(forms), use_container_width=True, hide_index=True)
-                        if st.button("Search lemma"):
-                            st.session_state['main_search'] = lemma_pick
-                            st.rerun()
+                    rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
+                    df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
                 else:
-                    pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows])
-                    if st.button("Search selected"):
-                        st.session_state['main_search'] = pick
-                        st.rerun()
+                    rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
+                    df = pd.DataFrame([
+                        {
+                            'Pashto': r['pashto'],
+                            'Romanization': r['romanization'],
+                            'POS': r['pos'],
+                            'Frequency': r['frequency'],
+                        }
+                        for r in rows
+                    ])
+                if not rows:
+                    st.info("No entries match the current filters.")
+                else:
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+
+                if rows:
+                    if group_by_lemma and isinstance(rows[0], dict) and 'Lemma' in rows[0]:
+                        lemma_pick = st.selectbox("Inspect lemma", options=[r['Lemma'] for r in rows], key=f"lemma_pick_{selected_pos}")
+                        if lemma_pick:
+                            forms = next((r['Forms'] for r in rows if r['Lemma'] == lemma_pick), [])
+                            if forms:
+                                st.markdown("Forms for selected lemma")
+                                st.dataframe(pd.DataFrame(forms), use_container_width=True, hide_index=True)
+                            if st.button("Search lemma", key=f"lemma_search_{selected_pos}"):
+                                st.session_state['main_search'] = lemma_pick
+                                st.rerun()
+                    else:
+                        pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows], key=f"pick_{selected_pos}")
+                        if st.button("Search selected", key=f"search_{selected_pos}"):
+                            st.session_state['main_search'] = pick
+                            st.rerun()
+
+            for i, name in enumerate(tab_names):
+                with pos_tabs[i]:
+                    render_freq_tab(name)
 
     # Dictionary view: LingDocs full list (if available)
     with sub[1]:
