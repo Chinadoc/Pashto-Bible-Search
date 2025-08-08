@@ -925,7 +925,6 @@ with tabs[1]:
                             'Romanization': r['romanization'],
                             'POS': r['pos'],
                             'Frequency': r['frequency'],
-                            'ts': r.get('ts', ''),
                             'English': r.get('english', ''),
                         }
                         for r in rows
