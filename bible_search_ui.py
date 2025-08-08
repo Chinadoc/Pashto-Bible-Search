@@ -821,7 +821,7 @@ with tabs[1]:
         # Prefer the prebuilt NT reference cache if available (faster and with ts)
         nt_ref = load_nt_reference_data()
         raw_freq_items = nt_ref if nt_ref else load_word_frequency_data()
-        if not freq_items:
+        if not raw_freq_items:
             st.info("Word frequency list not available yet.")
         else:
             # Enrich frequency list with LingDocs POS and romanization
