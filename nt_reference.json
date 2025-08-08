@@ -1,7 +1,7 @@
 [
   {
     "pashto": "د",
-    "count": 13246,
+    "count": 13315,
     "romanization": "du",
     "pos": "adpos.",
     "ts": 1527813110,
@@ -12,7 +12,7 @@
   },
   {
     "pashto": "چې",
-    "count": 8445,
+    "count": 8470,
     "romanization": "che",
     "pos": "conj.",
     "ts": 1527813151,
@@ -23,7 +23,7 @@
   },
   {
     "pashto": "په",
-    "count": 7733,
+    "count": 7774,
     "romanization": "pu",
     "pos": "adpos.",
     "ts": 1527815141,
@@ -34,7 +34,7 @@
   },
   {
     "pashto": "او",
-    "count": 7639,
+    "count": 7664,
     "romanization": "aw",
     "pos": "adv.",
     "ts": 1527812462,
@@ -45,7 +45,7 @@
   },
   {
     "pashto": "هغه",
-    "count": 5065,
+    "count": 5070,
     "romanization": "haghá",
     "pos": "pron.",
     "ts": 1527812656,
@@ -56,7 +56,7 @@
   },
   {
     "pashto": "ته",
-    "count": 4316,
+    "count": 4325,
     "romanization": "ta",
     "pos": "adpos.",
     "ts": 1527815320,
@@ -67,7 +67,7 @@
   },
   {
     "pashto": "یې",
-    "count": 3367,
+    "count": 3373,
     "romanization": "ye",
     "pos": "n.f.",
     "ts": 1527822707,
@@ -89,7 +89,7 @@
   },
   {
     "pashto": "نه",
-    "count": 2746,
+    "count": 2754,
     "romanization": "na",
     "pos": "adpos.",
     "ts": 1527815096,
@@ -100,7 +100,7 @@
   },
   {
     "pashto": "نو",
-    "count": 2561,
+    "count": 2567,
     "romanization": "no",
     "pos": "conj.",
     "ts": 1527815121,
@@ -111,7 +111,7 @@
   },
   {
     "pashto": "دی",
-    "count": 2311,
+    "count": 2319,
     "romanization": "day",
     "pos": "pron.",
     "ts": 1527812561,
@@ -122,7 +122,7 @@
   },
   {
     "pashto": "به",
-    "count": 2275,
+    "count": 2316,
     "romanization": "ba",
     "pos": "part.",
     "ts": 1527812467,
@@ -133,7 +133,7 @@
   },
   {
     "pashto": "هغوی",
-    "count": 2186,
+    "count": 2203,
     "romanization": "haghwée",
     "pos": "pron.",
     "ts": 1675275261264,
@@ -155,7 +155,7 @@
   },
   {
     "pashto": "سره",
-    "count": 1709,
+    "count": 1713,
     "romanization": "sara",
     "pos": "adpos.",
     "ts": 1527815250,
@@ -166,7 +166,7 @@
   },
   {
     "pashto": "خدای",
-    "count": 1677,
+    "count": 1685,
     "romanization": "khUdáay",
     "pos": "n.m.anim.",
     "ts": 1527812783,
@@ -177,7 +177,7 @@
   },
   {
     "pashto": "دې",
-    "count": 1656,
+    "count": 1663,
     "romanization": "de",
     "pos": "pron.",
     "ts": 1527812553,
@@ -188,7 +188,7 @@
   },
   {
     "pashto": "شی",
-    "count": 1546,
+    "count": 1556,
     "romanization": "shay",
     "pos": "n.m.",
     "ts": 1527815268,
@@ -199,7 +199,7 @@
   },
   {
     "pashto": "تاسو",
-    "count": 1514,
+    "count": 1520,
     "romanization": "táaso",
     "pos": "pron.",
     "ts": 1527815321,
@@ -221,7 +221,7 @@
   },
   {
     "pashto": "خو",
-    "count": 1308,
+    "count": 1313,
     "romanization": "kho",
     "pos": "unknown",
     "ts": 1527812782,
@@ -232,7 +232,7 @@
   },
   {
     "pashto": "دا",
-    "count": 1297,
+    "count": 1304,
     "romanization": "daa",
     "pos": "pron.",
     "ts": 1527812535,
@@ -254,7 +254,7 @@
   },
   {
     "pashto": "خپل",
-    "count": 1185,
+    "count": 1194,
     "romanization": "khpul",
     "pos": "adj./ n.m.",
     "ts": 1527814219,
@@ -265,7 +265,7 @@
   },
   {
     "pashto": "یو",
-    "count": 1183,
+    "count": 1188,
     "romanization": "yo",
     "pos": "num.",
     "ts": 1527813580,
@@ -276,7 +276,7 @@
   },
   {
     "pashto": "له",
-    "count": 1072,
+    "count": 1076,
     "romanization": "la",
     "pos": "adpos.",
     "ts": 1527813150,
@@ -287,7 +287,7 @@
   },
   {
     "pashto": "کړی",
-    "count": 944,
+    "count": 958,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -309,7 +309,7 @@
   },
   {
     "pashto": "ځکه",
-    "count": 932,
+    "count": 933,
     "romanization": "dzúka",
     "pos": "conj./ adv.",
     "ts": 1527812327,
@@ -331,7 +331,7 @@
   },
   {
     "pashto": "باندې",
-    "count": 924,
+    "count": 926,
     "romanization": "báande",
     "pos": "unknown",
     "ts": 1527812470,
@@ -342,7 +342,7 @@
   },
   {
     "pashto": "بیا",
-    "count": 912,
+    "count": 913,
     "romanization": "byaa",
     "pos": "adv.",
     "ts": 1527812520,
@@ -353,7 +353,7 @@
   },
   {
     "pashto": "کله",
-    "count": 891,
+    "count": 893,
     "romanization": "kála",
     "pos": "adv.",
     "ts": 1527812743,
@@ -364,7 +364,7 @@
   },
   {
     "pashto": "هم",
-    "count": 834,
+    "count": 843,
     "romanization": "hum",
     "pos": "adv.",
     "ts": 1527812683,
@@ -375,7 +375,7 @@
   },
   {
     "pashto": "کوی",
-    "count": 814,
+    "count": 815,
     "romanization": "káway",
     "pos": "n.m.",
     "ts": 1527823664,
@@ -386,7 +386,7 @@
   },
   {
     "pashto": "دپاره",
-    "count": 758,
+    "count": 762,
     "romanization": "dupáara",
     "pos": "adpos.",
     "ts": 1527812586,
@@ -397,7 +397,7 @@
   },
   {
     "pashto": "زما",
-    "count": 751,
+    "count": 754,
     "romanization": "zmaa",
     "pos": "pron.",
     "ts": 1527815448,
@@ -430,7 +430,7 @@
   },
   {
     "pashto": "شوی",
-    "count": 721,
+    "count": 724,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -441,7 +441,7 @@
   },
   {
     "pashto": "وی",
-    "count": 700,
+    "count": 705,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -463,7 +463,7 @@
   },
   {
     "pashto": "مونږ",
-    "count": 620,
+    "count": 621,
     "romanization": "moonG",
     "pos": "pron.",
     "ts": 1527812926,
@@ -485,7 +485,7 @@
   },
   {
     "pashto": "وو",
-    "count": 597,
+    "count": 603,
     "romanization": "woo",
     "pos": "unknown",
     "ts": 1527815414,
@@ -507,7 +507,7 @@
   },
   {
     "pashto": "څوک",
-    "count": 542,
+    "count": 548,
     "romanization": "tsok",
     "pos": "unknown",
     "ts": 1527815372,
@@ -551,7 +551,7 @@
   },
   {
     "pashto": "ورته",
-    "count": 520,
+    "count": 521,
     "romanization": "wárta",
     "pos": "adj.",
     "ts": 1527815404,
@@ -562,7 +562,7 @@
   },
   {
     "pashto": "ستاسو",
-    "count": 514,
+    "count": 517,
     "romanization": "stáaso",
     "pos": "pron.",
     "ts": 1527815304,
@@ -573,7 +573,7 @@
   },
   {
     "pashto": "ده",
-    "count": 497,
+    "count": 499,
     "romanization": "da",
     "pos": "unknown",
     "ts": 1527812534,
@@ -595,7 +595,7 @@
   },
   {
     "pashto": "ما",
-    "count": 467,
+    "count": 468,
     "romanization": "maa",
     "pos": "pron.",
     "ts": 1527812875,
@@ -672,7 +672,7 @@
   },
   {
     "pashto": "وکړی",
-    "count": 408,
+    "count": 410,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -683,7 +683,7 @@
   },
   {
     "pashto": "داسې",
-    "count": 397,
+    "count": 400,
     "romanization": "dáase",
     "pos": "adv./ det.",
     "ts": 1527812321,
@@ -705,7 +705,7 @@
   },
   {
     "pashto": "ځای",
-    "count": 389,
+    "count": 391,
     "romanization": "dzaay",
     "pos": "n.m.",
     "ts": 1527812594,
@@ -716,7 +716,7 @@
   },
   {
     "pashto": "ټولو",
-    "count": 385,
+    "count": 386,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -782,7 +782,7 @@
   },
   {
     "pashto": "کور",
-    "count": 369,
+    "count": 370,
     "romanization": "kor",
     "pos": "n.m.",
     "ts": 1527812828,
@@ -793,7 +793,7 @@
   },
   {
     "pashto": "ټول",
-    "count": 366,
+    "count": 368,
     "romanization": "Tol",
     "pos": "det./ adj./ adv.",
     "ts": 1527815358,
@@ -837,7 +837,7 @@
   },
   {
     "pashto": "تر",
-    "count": 358,
+    "count": 360,
     "romanization": "tur",
     "pos": "adj.",
     "ts": 1577400040486,
@@ -848,7 +848,7 @@
   },
   {
     "pashto": "څنګه",
-    "count": 356,
+    "count": 357,
     "romanization": "tsánga",
     "pos": "adv.",
     "ts": 1527813516,
@@ -880,6 +880,17 @@
     "i": 18412
   },
   {
+    "pashto": "۱",
+    "count": 342,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "پلار",
     "count": 342,
     "romanization": "plaar",
@@ -891,19 +902,8 @@
     "i": 3251
   },
   {
-    "pashto": "۱",
-    "count": 339,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "ډېر",
-    "count": 338,
+    "count": 339,
     "romanization": "Der",
     "pos": "adj./ quant.adv.",
     "ts": 1527812559,
@@ -947,7 +947,7 @@
   },
   {
     "pashto": "شان",
-    "count": 322,
+    "count": 324,
     "romanization": "shaan",
     "pos": "n.m.",
     "ts": 1527815258,
@@ -958,7 +958,7 @@
   },
   {
     "pashto": "ستا",
-    "count": 316,
+    "count": 321,
     "romanization": "staa",
     "pos": "pron.",
     "ts": 1527815303,
@@ -969,7 +969,7 @@
   },
   {
     "pashto": "وه",
-    "count": 316,
+    "count": 317,
     "romanization": "wa",
     "pos": "unknown",
     "ts": 1527815392,
@@ -980,7 +980,7 @@
   },
   {
     "pashto": "کار",
-    "count": 300,
+    "count": 304,
     "romanization": "kaar",
     "pos": "n.m.",
     "ts": 1527822084,
@@ -991,7 +991,7 @@
   },
   {
     "pashto": "کړې",
-    "count": 293,
+    "count": 295,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -1034,6 +1034,17 @@
     "i": 2127
   },
   {
+    "pashto": "ځان",
+    "count": 287,
+    "romanization": "dzaan",
+    "pos": "n.m.",
+    "ts": 1527812593,
+    "english": "self",
+    "r": 4,
+    "a": 2,
+    "i": 5802
+  },
+  {
     "pashto": "ځواب",
     "count": 286,
     "romanization": "dzawáab",
@@ -1045,15 +1056,15 @@
     "i": 5903
   },
   {
-    "pashto": "ځان",
-    "count": 286,
-    "romanization": "dzaan",
-    "pos": "n.m.",
-    "ts": 1527812593,
-    "english": "self",
+    "pashto": "لکه",
+    "count": 281,
+    "romanization": "láka",
+    "pos": "adv.",
+    "ts": 1527813650,
+    "english": "like, as, similar to; spot, stain",
     "r": 4,
-    "a": 2,
-    "i": 5802
+    "a": 3,
+    "i": 14506
   },
   {
     "pashto": "۱۲",
@@ -1065,17 +1076,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "لکه",
-    "count": 276,
-    "romanization": "láka",
-    "pos": "adv.",
-    "ts": 1527813650,
-    "english": "like, as, similar to; spot, stain",
-    "r": 4,
-    "a": 3,
-    "i": 14506
   },
   {
     "pashto": "۱۴",
@@ -1100,6 +1100,17 @@
     "i": 6363
   },
   {
+    "pashto": "۹",
+    "count": 274,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "بې",
     "count": 274,
     "romanization": "be",
@@ -1111,6 +1122,17 @@
     "i": 2371
   },
   {
+    "pashto": "خپله",
+    "count": 273,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "شریعت",
     "count": 273,
     "romanization": "shariy'át",
@@ -1120,28 +1142,6 @@
     "r": 4,
     "a": 2,
     "i": 10743
-  },
-  {
-    "pashto": "۹",
-    "count": 272,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "خپله",
-    "count": 271,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "کیږی",
@@ -1199,8 +1199,19 @@
     "i": null
   },
   {
+    "pashto": "ورځ",
+    "count": 260,
+    "romanization": "wradz",
+    "pos": "n.f.",
+    "ts": 1527815417,
+    "english": "day",
+    "r": 4,
+    "a": 3,
+    "i": 18147
+  },
+  {
     "pashto": "۶",
-    "count": 256,
+    "count": 258,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -1221,6 +1232,17 @@
     "i": 18308
   },
   {
+    "pashto": "هلته",
+    "count": 256,
+    "romanization": "hálta",
+    "pos": "loc.adv.",
+    "ts": 1527812449,
+    "english": "there",
+    "r": 4,
+    "a": 3,
+    "i": 17736
+  },
+  {
     "pashto": "ورکړ",
     "count": 255,
     "romanization": "",
@@ -1232,19 +1254,8 @@
     "i": null
   },
   {
-    "pashto": "هلته",
-    "count": 255,
-    "romanization": "hálta",
-    "pos": "loc.adv.",
-    "ts": 1527812449,
-    "english": "there",
-    "r": 4,
-    "a": 3,
-    "i": 17736
-  },
-  {
     "pashto": "۸",
-    "count": 252,
+    "count": 254,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -1254,15 +1265,15 @@
     "i": null
   },
   {
-    "pashto": "ورځ",
-    "count": 250,
-    "romanization": "wradz",
-    "pos": "n.f.",
-    "ts": 1527815417,
-    "english": "day",
+    "pashto": "بلکې",
+    "count": 249,
+    "romanization": "bálke",
+    "pos": "conj.",
+    "ts": 1527813649,
+    "english": "but, but rather, also, however, adversative conjunction",
     "r": 4,
-    "a": 3,
-    "i": 18147
+    "a": 2,
+    "i": 2158
   },
   {
     "pashto": "پوښتنه",
@@ -1287,17 +1298,6 @@
     "i": 17424
   },
   {
-    "pashto": "بلکې",
-    "count": 248,
-    "romanization": "bálke",
-    "pos": "conj.",
-    "ts": 1527813649,
-    "english": "but, but rather, also, however, adversative conjunction",
-    "r": 4,
-    "a": 2,
-    "i": 2158
-  },
-  {
     "pashto": "۱۰",
     "count": 246,
     "romanization": "",
@@ -1309,6 +1309,17 @@
     "i": null
   },
   {
+    "pashto": "اوس",
+    "count": 244,
+    "romanization": "oos",
+    "pos": "adv.",
+    "ts": 1527815135,
+    "english": "now",
+    "r": 4,
+    "a": 3,
+    "i": 1331
+  },
+  {
     "pashto": "۱۸",
     "count": 243,
     "romanization": "",
@@ -1318,17 +1329,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "اوس",
-    "count": 243,
-    "romanization": "oos",
-    "pos": "adv.",
-    "ts": 1527815135,
-    "english": "now",
-    "r": 4,
-    "a": 3,
-    "i": 1331
   },
   {
     "pashto": "۱۵",
@@ -1375,6 +1375,17 @@
     "i": null
   },
   {
+    "pashto": "۵",
+    "count": 240,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "مه",
     "count": 240,
     "romanization": "ma",
@@ -1397,19 +1408,8 @@
     "i": 11060
   },
   {
-    "pashto": "۵",
-    "count": 238,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "۲",
-    "count": 235,
+    "count": 237,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -1420,7 +1420,7 @@
   },
   {
     "pashto": "۴",
-    "count": 234,
+    "count": 236,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -1452,6 +1452,17 @@
     "i": 8918
   },
   {
+    "pashto": "۳",
+    "count": 233,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "لاس",
     "count": 232,
     "romanization": "laas",
@@ -1461,17 +1472,6 @@
     "r": 4,
     "a": 3,
     "i": 14253
-  },
-  {
-    "pashto": "۳",
-    "count": 231,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "۱۷",
@@ -1485,6 +1485,17 @@
     "i": null
   },
   {
+    "pashto": "پورې",
+    "count": 230,
+    "romanization": "póre",
+    "pos": "adpos./ adj.",
+    "ts": 1527812361,
+    "english": "up to, until, beyond, over, across, on the other side; attached; closed, shut",
+    "r": 4,
+    "a": 3,
+    "i": 3586
+  },
+  {
     "pashto": "کولای",
     "count": 229,
     "romanization": "",
@@ -1494,17 +1505,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "پورې",
-    "count": 229,
-    "romanization": "póre",
-    "pos": "adpos./ adj.",
-    "ts": 1527812361,
-    "english": "up to, until, beyond, over, across, on the other side; attached; closed, shut",
-    "r": 4,
-    "a": 3,
-    "i": 3586
   },
   {
     "pashto": "۱۶",
@@ -1551,6 +1551,17 @@
     "i": null
   },
   {
+    "pashto": "۷",
+    "count": 223,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "بېرته",
     "count": 223,
     "romanization": "bérta",
@@ -1560,17 +1571,6 @@
     "r": 4,
     "a": 2,
     "i": 2617
-  },
-  {
-    "pashto": "۷",
-    "count": 221,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "لوقا",
@@ -1596,7 +1596,7 @@
   },
   {
     "pashto": "نور",
-    "count": 218,
+    "count": 219,
     "romanization": "noor",
     "pos": "adj./ adv.",
     "ts": 1579462935759,
@@ -1604,6 +1604,17 @@
     "r": 4,
     "a": 3,
     "i": 17378
+  },
+  {
+    "pashto": "پاتې",
+    "count": 218,
+    "romanization": "páate",
+    "pos": "adj.",
+    "ts": 1703747700517,
+    "english": "remaining, backward",
+    "r": 4,
+    "a": 3,
+    "i": 2743
   },
   {
     "pashto": "۲۲",
@@ -1626,17 +1637,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "پاتې",
-    "count": 214,
-    "romanization": "páate",
-    "pos": "adj.",
-    "ts": 1703747700517,
-    "english": "remaining, backward",
-    "r": 4,
-    "a": 3,
-    "i": 2743
   },
   {
     "pashto": "یا",
@@ -1695,7 +1695,7 @@
   },
   {
     "pashto": "لری",
-    "count": 205,
+    "count": 206,
     "romanization": "láray",
     "pos": "n.m.",
     "ts": 1527813875,
@@ -1747,6 +1747,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "تا",
+    "count": 197,
+    "romanization": "taa",
+    "pos": "pron.",
+    "ts": 1527817395,
+    "english": "inflected form of 2nd. pers. sing. pronoun you",
+    "r": 4,
+    "a": 3,
+    "i": 3868
   },
   {
     "pashto": "کړه",
@@ -1848,17 +1859,6 @@
     "i": 7226
   },
   {
-    "pashto": "تا",
-    "count": 183,
-    "romanization": "taa",
-    "pos": "pron.",
-    "ts": 1527817395,
-    "english": "inflected form of 2nd. pers. sing. pronoun you",
-    "r": 4,
-    "a": 3,
-    "i": 3868
-  },
-  {
     "pashto": "نورو",
     "count": 181,
     "romanization": "",
@@ -1936,6 +1936,17 @@
     "i": null
   },
   {
+    "pashto": "هر",
+    "count": 172,
+    "romanization": "har",
+    "pos": "det.",
+    "ts": 1527812664,
+    "english": "every, each",
+    "r": 4,
+    "a": 3,
+    "i": 17635
+  },
+  {
     "pashto": "ژوند",
     "count": 172,
     "romanization": "jzwand",
@@ -1945,17 +1956,6 @@
     "r": 3,
     "a": 2,
     "i": 9498
-  },
-  {
-    "pashto": "هر",
-    "count": 170,
-    "romanization": "har",
-    "pos": "det.",
-    "ts": 1527812664,
-    "english": "every, each",
-    "r": 4,
-    "a": 3,
-    "i": 17635
   },
   {
     "pashto": "۲۵",
@@ -2212,7 +2212,7 @@
   },
   {
     "pashto": "راشی",
-    "count": 138,
+    "count": 140,
     "romanization": "ráashay",
     "pos": "n.m.",
     "ts": 1527823700,
@@ -2244,6 +2244,17 @@
     "i": null
   },
   {
+    "pashto": "پوره",
+    "count": 135,
+    "romanization": "poorá",
+    "pos": "adj./ adv.",
+    "ts": 1527814256,
+    "english": "full, complete, total, totally, entire",
+    "r": 4,
+    "a": 3,
+    "i": 3580
+  },
+  {
     "pashto": "مو",
     "count": 134,
     "romanization": "moo",
@@ -2255,6 +2266,17 @@
     "i": 16403
   },
   {
+    "pashto": "توګه",
+    "count": 134,
+    "romanization": "toga",
+    "pos": "n.f.",
+    "ts": 1527813587,
+    "english": "manner, way, fashion, method",
+    "r": 4,
+    "a": null,
+    "i": 4933
+  },
+  {
     "pashto": "مینه",
     "count": 134,
     "romanization": "méena",
@@ -2264,17 +2286,6 @@
     "r": 4,
     "a": 3,
     "i": 16650
-  },
-  {
-    "pashto": "پوره",
-    "count": 133,
-    "romanization": "poorá",
-    "pos": "adj./ adv.",
-    "ts": 1527814256,
-    "english": "full, complete, total, totally, entire",
-    "r": 4,
-    "a": 3,
-    "i": 3580
   },
   {
     "pashto": "لاسه",
@@ -2297,17 +2308,6 @@
     "r": 4,
     "a": null,
     "i": 17915
-  },
-  {
-    "pashto": "توګه",
-    "count": 131,
-    "romanization": "toga",
-    "pos": "n.f.",
-    "ts": 1527813587,
-    "english": "manner, way, fashion, method",
-    "r": 4,
-    "a": null,
-    "i": 4933
   },
   {
     "pashto": "مخې",
@@ -2497,6 +2497,17 @@
     "i": 8589
   },
   {
+    "pashto": "وې",
+    "count": 123,
+    "romanization": "we",
+    "pos": "unknown",
+    "ts": 1527815407,
+    "english": "(you) were, second pers. singular past or subjunctive equative, (they fem.) were, third pers. plural feminine past or subjunctive equative",
+    "r": 4,
+    "a": null,
+    "i": 18438
+  },
+  {
     "pashto": "ګناه",
     "count": 123,
     "romanization": "gUnáah",
@@ -2508,19 +2519,8 @@
     "i": 13973
   },
   {
-    "pashto": "لیکل",
-    "count": 119,
-    "romanization": "leekúl",
-    "pos": "v.trans./gramm.trans.",
-    "ts": 1527812856,
-    "english": "to write, draw",
-    "r": 3,
-    "a": 3,
-    "i": 14812
-  },
-  {
     "pashto": "کړم",
-    "count": 119,
+    "count": 121,
     "romanization": "kaRum",
     "pos": "adj.",
     "ts": 1527817650,
@@ -2530,15 +2530,15 @@
     "i": 13047
   },
   {
-    "pashto": "وې",
+    "pashto": "لیکل",
     "count": 119,
-    "romanization": "we",
-    "pos": "unknown",
-    "ts": 1527815407,
-    "english": "(you) were, second pers. singular past or subjunctive equative, (they fem.) were, third pers. plural feminine past or subjunctive equative",
-    "r": 4,
-    "a": null,
-    "i": 18438
+    "romanization": "leekúl",
+    "pos": "v.trans./gramm.trans.",
+    "ts": 1527812856,
+    "english": "to write, draw",
+    "r": 3,
+    "a": 3,
+    "i": 14812
   },
   {
     "pashto": "راغلی",
@@ -2585,6 +2585,17 @@
     "i": null
   },
   {
+    "pashto": "ترې",
+    "count": 117,
+    "romanization": "tre",
+    "pos": "pron.",
+    "ts": 1527811939,
+    "english": "therefrom (نه / څخه) something mentioned before",
+    "r": 4,
+    "a": 2,
+    "i": 4319
+  },
+  {
     "pashto": "ولې",
     "count": 117,
     "romanization": "wále",
@@ -2594,17 +2605,6 @@
     "r": 4,
     "a": 1,
     "i": 18397
-  },
-  {
-    "pashto": "ترې",
-    "count": 116,
-    "romanization": "tre",
-    "pos": "pron.",
-    "ts": 1527811939,
-    "english": "therefrom (نه / څخه) something mentioned before",
-    "r": 4,
-    "a": 2,
-    "i": 4319
   },
   {
     "pashto": "کارونه",
@@ -2706,6 +2706,28 @@
     "i": null
   },
   {
+    "pashto": "غواړی",
+    "count": 111,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "راځی",
+    "count": 111,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "مور",
     "count": 111,
     "romanization": "mor",
@@ -2740,28 +2762,6 @@
   },
   {
     "pashto": "۳۴",
-    "count": 110,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "غواړی",
-    "count": 110,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "راځی",
     "count": 110,
     "romanization": "",
     "pos": "unknown",
@@ -2816,7 +2816,7 @@
     "i": null
   },
   {
-    "pashto": "فرښتې",
+    "pashto": "کولو",
     "count": 105,
     "romanization": "",
     "pos": "unknown",
@@ -2827,8 +2827,8 @@
     "i": null
   },
   {
-    "pashto": "کولو",
-    "count": 104,
+    "pashto": "فرښتې",
+    "count": 105,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -3003,6 +3003,17 @@
     "i": 1813
   },
   {
+    "pashto": "سر",
+    "count": 98,
+    "romanization": "sar",
+    "pos": "n.m.",
+    "ts": 1527815254,
+    "english": "head, end, beginning",
+    "r": 4,
+    "a": 3,
+    "i": 9899
+  },
+  {
     "pashto": "پسې",
     "count": 98,
     "romanization": "pasé",
@@ -3023,17 +3034,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "سر",
-    "count": 97,
-    "romanization": "sar",
-    "pos": "n.m.",
-    "ts": 1527815254,
-    "english": "head, end, beginning",
-    "r": 4,
-    "a": 3,
-    "i": 9899
   },
   {
     "pashto": "۳۶",
@@ -3168,6 +3168,17 @@
     "i": 8055
   },
   {
+    "pashto": "ولاړ",
+    "count": 92,
+    "romanization": "waláaR",
+    "pos": "adj.",
+    "ts": 1527811544,
+    "english": "standing; stopped",
+    "r": 3,
+    "a": 3,
+    "i": 18367
+  },
+  {
     "pashto": "شیانو",
     "count": 92,
     "romanization": "",
@@ -3199,17 +3210,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "ولاړ",
-    "count": 90,
-    "romanization": "waláaR",
-    "pos": "adj.",
-    "ts": 1527811544,
-    "english": "standing; stopped",
-    "r": 3,
-    "a": 3,
-    "i": 18367
   },
   {
     "pashto": "قدرت",
@@ -3366,6 +3366,17 @@
     "i": 6565
   },
   {
+    "pashto": "قوم",
+    "count": 86,
+    "romanization": "qom",
+    "pos": "n.m.",
+    "ts": 1527811799,
+    "english": "tribe, nationality, people",
+    "r": 4,
+    "a": 3,
+    "i": 12621
+  },
+  {
     "pashto": "رسول",
     "count": 85,
     "romanization": "rasool",
@@ -3388,6 +3399,17 @@
     "i": 6639
   },
   {
+    "pashto": "ژوندی",
+    "count": 85,
+    "romanization": "jzwundáy",
+    "pos": "adj.",
+    "ts": 1527813923,
+    "english": "living",
+    "r": 4,
+    "a": 3,
+    "i": 9505
+  },
+  {
     "pashto": "خدمت",
     "count": 85,
     "romanization": "khidmát",
@@ -3397,17 +3419,6 @@
     "r": 4,
     "a": 3,
     "i": 7008
-  },
-  {
-    "pashto": "قوم",
-    "count": 85,
-    "romanization": "qom",
-    "pos": "n.m.",
-    "ts": 1527811799,
-    "english": "tribe, nationality, people",
-    "r": 4,
-    "a": 3,
-    "i": 12621
   },
   {
     "pashto": "لاړل",
@@ -3487,15 +3498,15 @@
     "i": 12263
   },
   {
-    "pashto": "ژوندی",
+    "pashto": "خلاصون",
     "count": 84,
-    "romanization": "jzwundáy",
-    "pos": "adj.",
-    "ts": 1527813923,
-    "english": "living",
+    "romanization": "khlaasóon",
+    "pos": "n.m.",
+    "ts": 1527812801,
+    "english": "salvation",
     "r": 4,
     "a": 3,
-    "i": 9505
+    "i": 7170
   },
   {
     "pashto": "جوړ",
@@ -3531,6 +3542,17 @@
     "i": null
   },
   {
+    "pashto": "یعقوب",
+    "count": 84,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "فکر",
     "count": 83,
     "romanization": "fíkur",
@@ -3540,17 +3562,6 @@
     "r": 4,
     "a": 3,
     "i": 12288
-  },
-  {
-    "pashto": "خلاصون",
-    "count": 83,
-    "romanization": "khlaasóon",
-    "pos": "n.m.",
-    "ts": 1527812801,
-    "english": "salvation",
-    "r": 4,
-    "a": 3,
-    "i": 7170
   },
   {
     "pashto": "غیریهودیانو",
@@ -3597,6 +3608,17 @@
     "i": 8966
   },
   {
+    "pashto": "ورور",
+    "count": 82,
+    "romanization": "wror",
+    "pos": "n.m.anim.fam.",
+    "ts": 1527815421,
+    "english": "brother",
+    "r": 4,
+    "a": 3,
+    "i": 18188
+  },
+  {
     "pashto": "رسولانو",
     "count": 81,
     "romanization": "",
@@ -3619,15 +3641,15 @@
     "i": null
   },
   {
-    "pashto": "یعقوب",
+    "pashto": "اور",
     "count": 81,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
+    "romanization": "or",
+    "pos": "n.m.",
+    "ts": 1527813827,
+    "english": "fire, flame",
+    "r": 4,
+    "a": 3,
+    "i": 1275
   },
   {
     "pashto": "پښو",
@@ -3663,6 +3685,17 @@
     "i": 10867
   },
   {
+    "pashto": "اسراییلو",
+    "count": 80,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "ناست",
     "count": 80,
     "romanization": "naast",
@@ -3696,26 +3729,15 @@
     "i": 10192
   },
   {
-    "pashto": "اور",
+    "pashto": "لاندې",
     "count": 80,
-    "romanization": "or",
-    "pos": "n.m.",
-    "ts": 1527813827,
-    "english": "fire, flame",
+    "romanization": "láande",
+    "pos": "adv.",
+    "ts": 1527811423,
+    "english": "below, beneath",
     "r": 4,
-    "a": 3,
-    "i": 1275
-  },
-  {
-    "pashto": "ورور",
-    "count": 80,
-    "romanization": "wror",
-    "pos": "n.m.anim.fam.",
-    "ts": 1527815421,
-    "english": "brother",
-    "r": 4,
-    "a": 3,
-    "i": 18188
+    "a": 1,
+    "i": 14332
   },
   {
     "pashto": "اختیار",
@@ -3795,28 +3817,6 @@
     "i": null
   },
   {
-    "pashto": "لاندې",
-    "count": 78,
-    "romanization": "láande",
-    "pos": "adv.",
-    "ts": 1527811423,
-    "english": "below, beneath",
-    "r": 4,
-    "a": 1,
-    "i": 14332
-  },
-  {
-    "pashto": "اسراییلو",
-    "count": 77,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "مړه",
     "count": 77,
     "romanization": "máRa",
@@ -3870,6 +3870,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "کول",
+    "count": 76,
+    "romanization": "kawúl",
+    "pos": "v.trans.w.compl.",
+    "ts": 1579015359582,
+    "english": "to make ____ ____ (as in \"He's making me angry.\")",
+    "r": 4,
+    "a": 3,
+    "i": 13567
   },
   {
     "pashto": "کلیسا",
@@ -3971,15 +3982,15 @@
     "i": 10921
   },
   {
-    "pashto": "کول",
+    "pashto": "کومه",
     "count": 74,
-    "romanization": "kawúl",
-    "pos": "v.trans.w.compl.",
-    "ts": 1579015359582,
-    "english": "to make ____ ____ (as in \"He's making me angry.\")",
-    "r": 4,
-    "a": 3,
-    "i": 13567
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "۴۰",
@@ -4002,17 +4013,6 @@
     "r": 4,
     "a": 3,
     "i": 8879
-  },
-  {
-    "pashto": "کومه",
-    "count": 73,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "کوله",
@@ -4136,6 +4136,17 @@
     "i": 1381
   },
   {
+    "pashto": "دومره",
+    "count": 70,
+    "romanization": "dóomra",
+    "pos": "unknown",
+    "ts": 1527812569,
+    "english": "this much, that much",
+    "r": 4,
+    "a": 2,
+    "i": 8203
+  },
+  {
     "pashto": "فریسیانو",
     "count": 70,
     "romanization": "",
@@ -4191,17 +4202,6 @@
     "i": 8225
   },
   {
-    "pashto": "دومره",
-    "count": 69,
-    "romanization": "dóomra",
-    "pos": "unknown",
-    "ts": 1527812569,
-    "english": "this much, that much",
-    "r": 4,
-    "a": 2,
-    "i": 8203
-  },
-  {
     "pashto": "ولری",
     "count": 69,
     "romanization": "",
@@ -4244,6 +4244,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "خوشحاله",
+    "count": 68,
+    "romanization": "khosh`háala",
+    "pos": "adj.",
+    "ts": 1635654222358,
+    "english": "happy, glad",
+    "r": 4,
+    "a": 3,
+    "i": 7395
   },
   {
     "pashto": "ټولې",
@@ -4312,17 +4323,6 @@
     "i": null
   },
   {
-    "pashto": "خوشحاله",
-    "count": 67,
-    "romanization": "khosh`háala",
-    "pos": "adj.",
-    "ts": 1635654222358,
-    "english": "happy, glad",
-    "r": 4,
-    "a": 3,
-    "i": 7395
-  },
-  {
     "pashto": "لومړی",
     "count": 67,
     "romanization": "loomRáy",
@@ -4332,6 +4332,17 @@
     "r": 4,
     "a": 3,
     "i": 14744
+  },
+  {
+    "pashto": "بد",
+    "count": 67,
+    "romanization": "bud",
+    "pos": "adj.",
+    "ts": 1527812511,
+    "english": "bad",
+    "r": 4,
+    "a": 3,
+    "i": 1729
   },
   {
     "pashto": "سبت",
@@ -4422,17 +4433,6 @@
     "i": 12763
   },
   {
-    "pashto": "بد",
-    "count": 66,
-    "romanization": "bud",
-    "pos": "adj.",
-    "ts": 1527812511,
-    "english": "bad",
-    "r": 4,
-    "a": 3,
-    "i": 1729
-  },
-  {
     "pashto": "پیغمبر",
     "count": 66,
     "romanization": "payghambár",
@@ -4475,6 +4475,17 @@
     "r": 3,
     "a": 2,
     "i": 18019
+  },
+  {
+    "pashto": "څومره",
+    "count": 65,
+    "romanization": "tsóomra",
+    "pos": "unknown",
+    "ts": 1527815374,
+    "english": "how many, how much?",
+    "r": 4,
+    "a": 3,
+    "i": 6589
   },
   {
     "pashto": "لیدلی",
@@ -4576,15 +4587,15 @@
     "i": null
   },
   {
-    "pashto": "څومره",
-    "count": 64,
-    "romanization": "tsóomra",
+    "pashto": "شې",
+    "count": 63,
+    "romanization": "",
     "pos": "unknown",
-    "ts": 1527815374,
-    "english": "how many, how much?",
-    "r": 4,
-    "a": 3,
-    "i": 6589
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "پیغمبرانو",
@@ -4653,6 +4664,17 @@
     "i": 7787
   },
   {
+    "pashto": "سزا",
+    "count": 62,
+    "romanization": "sazáa",
+    "pos": "n.f.",
+    "ts": 1527815025,
+    "english": "retribution (good or bad); punishment, penalty, fine",
+    "r": 3,
+    "a": 3,
+    "i": 10049
+  },
+  {
     "pashto": "بادار",
     "count": 62,
     "romanization": "baadáar",
@@ -4665,17 +4687,6 @@
   },
   {
     "pashto": "کولې",
-    "count": 61,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "شې",
     "count": 61,
     "romanization": "",
     "pos": "unknown",
@@ -4708,17 +4719,6 @@
     "i": 4988
   },
   {
-    "pashto": "سزا",
-    "count": 61,
-    "romanization": "sazáa",
-    "pos": "n.f.",
-    "ts": 1527815025,
-    "english": "retribution (good or bad); punishment, penalty, fine",
-    "r": 3,
-    "a": 3,
-    "i": 10049
-  },
-  {
     "pashto": "کوه",
     "count": 61,
     "romanization": "",
@@ -4728,6 +4728,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "ټوله",
+    "count": 60,
+    "romanization": "Tolá",
+    "pos": "n.f.",
+    "ts": 1585488917245,
+    "english": "begging; tolah (12 grams)",
+    "r": 2,
+    "a": 1,
+    "i": 5286
   },
   {
     "pashto": "شفا",
@@ -4796,17 +4807,6 @@
     "i": null
   },
   {
-    "pashto": "ټوله",
-    "count": 59,
-    "romanization": "Tolá",
-    "pos": "n.f.",
-    "ts": 1585488917245,
-    "english": "begging; tolah (12 grams)",
-    "r": 2,
-    "a": 1,
-    "i": 5286
-  },
-  {
     "pashto": "پاک",
     "count": 58,
     "romanization": "paak",
@@ -4873,6 +4873,17 @@
     "i": 18152
   },
   {
+    "pashto": "وشی",
+    "count": 58,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "یوځای",
     "count": 57,
     "romanization": "yodzáay",
@@ -4906,7 +4917,7 @@
     "i": null
   },
   {
-    "pashto": "وشی",
+    "pashto": "وکړو",
     "count": 57,
     "romanization": "",
     "pos": "unknown",
@@ -4961,6 +4972,17 @@
     "i": 5380
   },
   {
+    "pashto": "جوړه",
+    "count": 56,
+    "romanization": "joRá",
+    "pos": "n.f.",
+    "ts": 1527818635,
+    "english": "pair, match, couple, double, twin, duplicate",
+    "r": 4,
+    "a": 3,
+    "i": 5754
+  },
+  {
     "pashto": "واورېدل",
     "count": 56,
     "romanization": "",
@@ -4994,18 +5016,18 @@
     "i": null
   },
   {
-    "pashto": "نیولی",
+    "pashto": "ملګری",
     "count": 56,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
+    "romanization": "malgúray",
+    "pos": "n.m.anim.unisex",
+    "ts": 1527814159,
+    "english": "friend, companion",
+    "r": 4,
+    "a": 3,
+    "i": 16168
   },
   {
-    "pashto": "وکړو",
+    "pashto": "نیولی",
     "count": 56,
     "romanization": "",
     "pos": "unknown",
@@ -5060,17 +5082,6 @@
     "i": null
   },
   {
-    "pashto": "جوړه",
-    "count": 55,
-    "romanization": "joRá",
-    "pos": "n.f.",
-    "ts": 1527818635,
-    "english": "pair, match, couple, double, twin, duplicate",
-    "r": 4,
-    "a": 3,
-    "i": 5754
-  },
-  {
     "pashto": "چېرته",
     "count": 55,
     "romanization": "chérta",
@@ -5080,17 +5091,6 @@
     "r": 4,
     "a": 3,
     "i": 6358
-  },
-  {
-    "pashto": "ملګری",
-    "count": 55,
-    "romanization": "malgúray",
-    "pos": "n.m.anim.unisex",
-    "ts": 1527814159,
-    "english": "friend, companion",
-    "r": 4,
-    "a": 3,
-    "i": 16168
   },
   {
     "pashto": "قبر",
@@ -5258,6 +5258,17 @@
     "i": null
   },
   {
+    "pashto": "یوسف",
+    "count": 52,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "وغواړی",
     "count": 52,
     "romanization": "",
@@ -5311,17 +5322,6 @@
     "r": 4,
     "a": 3,
     "i": 2980
-  },
-  {
-    "pashto": "یوسف",
-    "count": 51,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "وکتل",
@@ -5467,6 +5467,17 @@
     "i": 14789
   },
   {
+    "pashto": "پټ",
+    "count": 50,
+    "romanization": "puT",
+    "pos": "adj.",
+    "ts": 1527815201,
+    "english": "hidden",
+    "r": 4,
+    "a": 3,
+    "i": 2892
+  },
+  {
     "pashto": "ګران",
     "count": 50,
     "romanization": "graan",
@@ -5476,6 +5487,17 @@
     "r": 4,
     "a": 3,
     "i": 13813
+  },
+  {
+    "pashto": "کس",
+    "count": 50,
+    "romanization": "kas",
+    "pos": "n.m.",
+    "ts": 1527812757,
+    "english": "person",
+    "r": 4,
+    "a": 3,
+    "i": 13090
   },
   {
     "pashto": "پای",
@@ -5553,17 +5575,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "پټ",
-    "count": 49,
-    "romanization": "puT",
-    "pos": "adj.",
-    "ts": 1527815201,
-    "english": "hidden",
-    "r": 4,
-    "a": 3,
-    "i": 2892
   },
   {
     "pashto": "مقصد",
@@ -5685,17 +5696,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "کس",
-    "count": 47,
-    "romanization": "kas",
-    "pos": "n.m.",
-    "ts": 1527812757,
-    "english": "person",
-    "r": 4,
-    "a": 3,
-    "i": 13090
   },
   {
     "pashto": "وعظ",
@@ -6094,6 +6094,17 @@
     "i": null
   },
   {
+    "pashto": "عملونه",
+    "count": 43,
+    "romanization": "amalóona",
+    "pos": "n.m.pl.",
+    "ts": 1656210282832,
+    "english": "diahhrea",
+    "r": 2,
+    "a": 2,
+    "i": 11621
+  },
+  {
     "pashto": "یهودیان",
     "count": 43,
     "romanization": "",
@@ -6202,17 +6213,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "عملونه",
-    "count": 42,
-    "romanization": "amalóona",
-    "pos": "n.m.pl.",
-    "ts": 1656210282832,
-    "english": "diahhrea",
-    "r": 2,
-    "a": 2,
-    "i": 11621
   },
   {
     "pashto": "درلود",
@@ -6369,6 +6369,17 @@
     "i": null
   },
   {
+    "pashto": "عدالت",
+    "count": 41,
+    "romanization": "adaalát",
+    "pos": "n.m.",
+    "ts": 1527812438,
+    "english": "justice",
+    "r": 4,
+    "a": 3,
+    "i": 11477
+  },
+  {
     "pashto": "واورېد",
     "count": 41,
     "romanization": "",
@@ -6510,17 +6521,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "عدالت",
-    "count": 40,
-    "romanization": "adaalát",
-    "pos": "n.m.",
-    "ts": 1527812438,
-    "english": "justice",
-    "r": 4,
-    "a": 3,
-    "i": 11477
   },
   {
     "pashto": "سلامونه",
@@ -7084,6 +7084,17 @@
     "i": null
   },
   {
+    "pashto": "وایې",
+    "count": 35,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "کرکه",
     "count": 35,
     "romanization": "krúka",
@@ -7260,17 +7271,6 @@
     "i": null
   },
   {
-    "pashto": "وایې",
-    "count": 34,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "شراب",
     "count": 34,
     "romanization": "sharáab",
@@ -7335,6 +7335,17 @@
     "r": 4,
     "a": 3,
     "i": 18328
+  },
+  {
+    "pashto": "نبی",
+    "count": 34,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "ورسوی",
@@ -7524,17 +7535,6 @@
     "i": null
   },
   {
-    "pashto": "نبی",
-    "count": 33,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "غوښتنه",
     "count": 32,
     "romanization": "ghwuxtúna",
@@ -7544,6 +7544,17 @@
     "r": 3,
     "a": 1,
     "i": 12026
+  },
+  {
+    "pashto": "کتاب",
+    "count": 32,
+    "romanization": "kitáab",
+    "pos": "n.m.",
+    "ts": 1527812817,
+    "english": "book",
+    "r": 4,
+    "a": 3,
+    "i": 12840
   },
   {
     "pashto": "څلور",
@@ -7654,17 +7665,6 @@
     "r": null,
     "a": 3,
     "i": 15839
-  },
-  {
-    "pashto": "کتاب",
-    "count": 31,
-    "romanization": "kitáab",
-    "pos": "n.m.",
-    "ts": 1527812817,
-    "english": "book",
-    "r": 4,
-    "a": 3,
-    "i": 12840
   },
   {
     "pashto": "کومې",
@@ -7797,6 +7797,28 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "قومونو",
+    "count": 30,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "غضب",
+    "count": 30,
+    "romanization": "ghazáb",
+    "pos": "n.m.",
+    "ts": 1527815714,
+    "english": "wrath, anger, fury",
+    "r": 4,
+    "a": 2,
+    "i": 11847
   },
   {
     "pashto": "راولی",
@@ -7986,17 +8008,6 @@
     "i": 11521
   },
   {
-    "pashto": "غضب",
-    "count": 29,
-    "romanization": "ghazáb",
-    "pos": "n.m.",
-    "ts": 1527815714,
-    "english": "wrath, anger, fury",
-    "r": 4,
-    "a": 2,
-    "i": 11847
-  },
-  {
     "pashto": "راښکاره",
     "count": 29,
     "romanization": "",
@@ -8028,6 +8039,17 @@
     "r": 3,
     "a": 2,
     "i": 10850
+  },
+  {
+    "pashto": "قیامت",
+    "count": 29,
+    "romanization": "qiyáam",
+    "pos": "n.m.",
+    "ts": 1527817694,
+    "english": "uprising, rising up, insurrection, revolt",
+    "r": 4,
+    "a": null,
+    "i": 12635
   },
   {
     "pashto": "انتظار",
@@ -8217,17 +8239,6 @@
     "i": 14026
   },
   {
-    "pashto": "قیامت",
-    "count": 28,
-    "romanization": "qiyáam",
-    "pos": "n.m.",
-    "ts": 1527817694,
-    "english": "uprising, rising up, insurrection, revolt",
-    "r": 4,
-    "a": null,
-    "i": 12635
-  },
-  {
     "pashto": "ټوټې",
     "count": 28,
     "romanization": "",
@@ -8347,17 +8358,6 @@
     "r": 4,
     "a": 2,
     "i": 1708
-  },
-  {
-    "pashto": "قومونو",
-    "count": 27,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "ویده",
@@ -8492,6 +8492,17 @@
     "i": null
   },
   {
+    "pashto": "اول",
+    "count": 27,
+    "romanization": "awúl",
+    "pos": "adj./ adv.",
+    "ts": 1527814109,
+    "english": "first, at first",
+    "r": 4,
+    "a": 3,
+    "i": 1360
+  },
+  {
     "pashto": "درناوی",
     "count": 27,
     "romanization": "dranaawáy",
@@ -8578,6 +8589,17 @@
     "r": 4,
     "a": 3,
     "i": 14919
+  },
+  {
+    "pashto": "ښکته",
+    "count": 26,
+    "romanization": "xkúta",
+    "pos": "loc.adv.",
+    "ts": 1527812780,
+    "english": "down, beneath",
+    "r": 4,
+    "a": 3,
+    "i": 11101
   },
   {
     "pashto": "پېژنم",
@@ -8669,6 +8691,17 @@
   },
   {
     "pashto": "زویه",
+    "count": 26,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ګوره",
     "count": 26,
     "romanization": "",
     "pos": "unknown",
@@ -8789,6 +8822,28 @@
     "i": null
   },
   {
+    "pashto": "ځایونو",
+    "count": 25,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "لرې",
+    "count": 25,
+    "romanization": "lúre",
+    "pos": "adj./ loc.adv.",
+    "ts": 1527814605,
+    "english": "far, distant",
+    "r": 4,
+    "a": 3,
+    "i": 14414
+  },
+  {
     "pashto": "یوسی",
     "count": 25,
     "romanization": "",
@@ -8809,17 +8864,6 @@
     "r": 4,
     "a": 3,
     "i": 14860
-  },
-  {
-    "pashto": "ښکته",
-    "count": 25,
-    "romanization": "xkúta",
-    "pos": "loc.adv.",
-    "ts": 1527812780,
-    "english": "down, beneath",
-    "r": 4,
-    "a": 3,
-    "i": 11101
   },
   {
     "pashto": "انکار",
@@ -8899,18 +8943,18 @@
     "i": 17675
   },
   {
-    "pashto": "وبخښل",
+    "pashto": "تباه",
     "count": 25,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
+    "romanization": "tabáah",
+    "pos": "adj.",
+    "ts": 1527812387,
+    "english": "destroyed, perished",
+    "r": 4,
+    "a": 3,
+    "i": 3974
   },
   {
-    "pashto": "ګوره",
+    "pashto": "وبخښل",
     "count": 25,
     "romanization": "",
     "pos": "unknown",
@@ -8963,17 +9007,6 @@
     "r": 3,
     "a": 3,
     "i": 8654
-  },
-  {
-    "pashto": "اول",
-    "count": 25,
-    "romanization": "awúl",
-    "pos": "adj./ adv.",
-    "ts": 1527814109,
-    "english": "first, at first",
-    "r": 4,
-    "a": 3,
-    "i": 1360
   },
   {
     "pashto": "پیروانو",
@@ -9117,28 +9150,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "ځایونو",
-    "count": 24,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "لرې",
-    "count": 24,
-    "romanization": "lúre",
-    "pos": "adj./ loc.adv.",
-    "ts": 1527814605,
-    "english": "far, distant",
-    "r": 4,
-    "a": 3,
-    "i": 14414
   },
   {
     "pashto": "اعلان",
@@ -9471,6 +9482,17 @@
     "i": 1989
   },
   {
+    "pashto": "حکومت",
+    "count": 23,
+    "romanization": "hUkoomát",
+    "pos": "n.m.",
+    "ts": 1527813749,
+    "english": "government, reign, rule",
+    "r": 4,
+    "a": 3,
+    "i": 6765
+  },
+  {
     "pashto": "نازل",
     "count": 23,
     "romanization": "naazíl",
@@ -9480,17 +9502,6 @@
     "r": 4,
     "a": 3,
     "i": 16794
-  },
-  {
-    "pashto": "تباه",
-    "count": 23,
-    "romanization": "tabáah",
-    "pos": "adj.",
-    "ts": 1527812387,
-    "english": "destroyed, perished",
-    "r": 4,
-    "a": 3,
-    "i": 3974
   },
   {
     "pashto": "کالیو",
@@ -9590,6 +9601,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "میراث",
+    "count": 23,
+    "romanization": "meeráas",
+    "pos": "n.m.",
+    "ts": 1527812015,
+    "english": "inheritance, heritage",
+    "r": 4,
+    "a": 3,
+    "i": 16575
   },
   {
     "pashto": "ولېږه",
@@ -9779,17 +9801,6 @@
     "i": null
   },
   {
-    "pashto": "حکومت",
-    "count": 22,
-    "romanization": "hUkoomát",
-    "pos": "n.m.",
-    "ts": 1527813749,
-    "english": "government, reign, rule",
-    "r": 4,
-    "a": 3,
-    "i": 6765
-  },
-  {
     "pashto": "سیند",
     "count": 22,
     "romanization": "seend",
@@ -9898,17 +9909,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "میراث",
-    "count": 22,
-    "romanization": "meeráas",
-    "pos": "n.m.",
-    "ts": 1527812015,
-    "english": "inheritance, heritage",
-    "r": 4,
-    "a": 3,
-    "i": 16575
   },
   {
     "pashto": "پسونو",
@@ -10186,6 +10186,17 @@
     "i": null
   },
   {
+    "pashto": "رویا",
+    "count": 21,
+    "romanization": "rooyáa",
+    "pos": "n.f.",
+    "ts": 1527823245,
+    "english": "dream, vision",
+    "r": 3,
+    "a": 2,
+    "i": 8991
+  },
+  {
     "pashto": "نوکران",
     "count": 21,
     "romanization": "",
@@ -10285,6 +10296,17 @@
     "i": null
   },
   {
+    "pashto": "قومونه",
+    "count": 20,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "زوم",
     "count": 20,
     "romanization": "zoom",
@@ -10319,6 +10341,17 @@
   },
   {
     "pashto": "واخله",
+    "count": 20,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ښارونو",
     "count": 20,
     "romanization": "",
     "pos": "unknown",
@@ -10593,17 +10626,6 @@
     "i": 6739
   },
   {
-    "pashto": "رویا",
-    "count": 20,
-    "romanization": "rooyáa",
-    "pos": "n.f.",
-    "ts": 1527823245,
-    "english": "dream, vision",
-    "r": 3,
-    "a": 2,
-    "i": 8991
-  },
-  {
     "pashto": "ویاړ",
     "count": 19,
     "romanization": "wyaaR",
@@ -10758,17 +10780,6 @@
     "i": null
   },
   {
-    "pashto": "قومونه",
-    "count": 19,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "وردننه",
     "count": 19,
     "romanization": "wardunúna",
@@ -10835,17 +10846,6 @@
     "i": 8943
   },
   {
-    "pashto": "ښارونو",
-    "count": 19,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "سکې",
     "count": 19,
     "romanization": "",
@@ -10877,6 +10877,17 @@
     "r": null,
     "a": null,
     "i": 10015
+  },
+  {
+    "pashto": "ملک",
+    "count": 19,
+    "romanization": "malak",
+    "pos": "n.m.anim.",
+    "ts": 1527812356,
+    "english": "angel",
+    "r": 3,
+    "a": null,
+    "i": 16158
   },
   {
     "pashto": "کړاوونه",
@@ -11075,6 +11086,17 @@
     "r": 4,
     "a": 3,
     "i": 2162
+  },
+  {
+    "pashto": "څښی",
+    "count": 18,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "انسانان",
@@ -11308,6 +11330,17 @@
     "i": null
   },
   {
+    "pashto": "اولاد",
+    "count": 18,
+    "romanization": "awláad",
+    "pos": "n.m.",
+    "ts": 1675148867739,
+    "english": "child, offspring (Arabic plural of ولد but used in the singular)",
+    "r": null,
+    "a": 3,
+    "i": 1363
+  },
+  {
     "pashto": "پېری",
     "count": 18,
     "romanization": "peráy",
@@ -11451,6 +11484,17 @@
     "i": null
   },
   {
+    "pashto": "مصیبت",
+    "count": 17,
+    "romanization": "mUseebát",
+    "pos": "n.m.",
+    "ts": 1527817720,
+    "english": "calamity, trouble, suffering, hardship, unfortunate event, bother",
+    "r": 4,
+    "a": 3,
+    "i": 15863
+  },
+  {
     "pashto": "برخې",
     "count": 17,
     "romanization": "",
@@ -11526,6 +11570,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "نیول",
+    "count": 17,
+    "romanization": "neewúl",
+    "pos": "v.trans.",
+    "ts": 1527814617,
+    "english": "to catch, grab, take, arrest; bear (fruit)",
+    "r": 4,
+    "a": 3,
+    "i": 17551
   },
   {
     "pashto": "پرېښود",
@@ -11649,17 +11704,6 @@
     "i": 9618
   },
   {
-    "pashto": "څښی",
-    "count": 17,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "ولیکه",
     "count": 17,
     "romanization": "",
@@ -11694,6 +11738,17 @@
   },
   {
     "pashto": "خلاصې",
+    "count": 17,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "خزانې",
     "count": 17,
     "romanization": "",
     "pos": "unknown",
@@ -12210,17 +12265,6 @@
     "i": 7275
   },
   {
-    "pashto": "نیول",
-    "count": 16,
-    "romanization": "neewúl",
-    "pos": "v.trans.",
-    "ts": 1527814617,
-    "english": "to catch, grab, take, arrest; bear (fruit)",
-    "r": 4,
-    "a": 3,
-    "i": 17551
-  },
-  {
     "pashto": "مطلق",
     "count": 16,
     "romanization": "mUtláq",
@@ -12309,6 +12353,17 @@
     "i": 15314
   },
   {
+    "pashto": "خور",
+    "count": 16,
+    "romanization": "khor",
+    "pos": "adj.",
+    "ts": 1577902277292,
+    "english": "spread, scattered, dispersed",
+    "r": 4,
+    "a": 3,
+    "i": 7315
+  },
+  {
     "pashto": "ګټې",
     "count": 16,
     "romanization": "",
@@ -12386,17 +12441,6 @@
     "i": null
   },
   {
-    "pashto": "خزانې",
-    "count": 16,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "راتلونکې",
     "count": 16,
     "romanization": "",
@@ -12461,17 +12505,6 @@
     "r": 4,
     "a": 3,
     "i": 16392
-  },
-  {
-    "pashto": "ملک",
-    "count": 16,
-    "romanization": "malak",
-    "pos": "n.m.anim.",
-    "ts": 1527812356,
-    "english": "angel",
-    "r": 3,
-    "a": null,
-    "i": 16158
   },
   {
     "pashto": "صدق",
@@ -12694,15 +12727,15 @@
     "i": null
   },
   {
-    "pashto": "مصیبت",
+    "pashto": "پناه",
     "count": 15,
-    "romanization": "mUseebát",
-    "pos": "n.m.",
-    "ts": 1527817720,
-    "english": "calamity, trouble, suffering, hardship, unfortunate event, bother",
+    "romanization": "panáah",
+    "pos": "n.f.",
+    "ts": 1527814031,
+    "english": "refuge, assylum, shelter",
     "r": 4,
     "a": 3,
-    "i": 15863
+    "i": 3324
   },
   {
     "pashto": "نا",
@@ -12870,18 +12903,18 @@
     "i": null
   },
   {
-    "pashto": "خور",
+    "pashto": "قیصریې",
     "count": 15,
-    "romanization": "khor",
-    "pos": "adj.",
-    "ts": 1577902277292,
-    "english": "spread, scattered, dispersed",
-    "r": 4,
-    "a": 3,
-    "i": 7315
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
-    "pashto": "قیصریې",
+    "pashto": "ښکاری",
     "count": 15,
     "romanization": "",
     "pos": "unknown",
@@ -12992,6 +13025,17 @@
   },
   {
     "pashto": "ناصرې",
+    "count": 15,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "شپې",
     "count": 15,
     "romanization": "",
     "pos": "unknown",
@@ -13255,17 +13299,6 @@
     "i": null
   },
   {
-    "pashto": "پناه",
-    "count": 14,
-    "romanization": "panáah",
-    "pos": "n.f.",
-    "ts": 1527814031,
-    "english": "refuge, assylum, shelter",
-    "r": 4,
-    "a": 3,
-    "i": 3324
-  },
-  {
     "pashto": "تږی",
     "count": 14,
     "romanization": "túGay",
@@ -13519,17 +13552,6 @@
     "i": 9642
   },
   {
-    "pashto": "ښکاری",
-    "count": 14,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "درکوی",
     "count": 14,
     "romanization": "",
@@ -13662,6 +13684,28 @@
     "i": null
   },
   {
+    "pashto": "ستورو",
+    "count": 14,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "زورور",
+    "count": 14,
+    "romanization": "zorawúr",
+    "pos": "adj.",
+    "ts": 1527816811,
+    "english": "strong, mighty, powerful",
+    "r": 4,
+    "a": 3,
+    "i": 9344
+  },
+  {
     "pashto": "دورو",
     "count": 14,
     "romanization": "",
@@ -13685,17 +13729,6 @@
   },
   {
     "pashto": "اولاده",
-    "count": 14,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "شپې",
     "count": 14,
     "romanization": "",
     "pos": "unknown",
@@ -13847,6 +13880,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "حلال",
+    "count": 14,
+    "romanization": "haláal",
+    "pos": "adj.",
+    "ts": 1527819363,
+    "english": "halal, authorized or permitted by Sharia Law",
+    "r": 4,
+    "a": 3,
+    "i": 6774
   },
   {
     "pashto": "عادلان",
@@ -14399,17 +14443,6 @@
     "i": null
   },
   {
-    "pashto": "ستورو",
-    "count": 13,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "هماغسې",
     "count": 13,
     "romanization": "",
@@ -14421,15 +14454,15 @@
     "i": null
   },
   {
-    "pashto": "زورور",
+    "pashto": "وژل",
     "count": 13,
-    "romanization": "zorawúr",
-    "pos": "adj.",
-    "ts": 1527816811,
-    "english": "strong, mighty, powerful",
+    "romanization": "wajzúl",
+    "pos": "v.trans.",
+    "ts": 1527814862,
+    "english": "to kill, slaughter",
     "r": 4,
-    "a": 3,
-    "i": 9344
+    "a": 2,
+    "i": 18280
   },
   {
     "pashto": "ووهل",
@@ -14474,17 +14507,6 @@
     "r": 4,
     "a": 3,
     "i": 10796
-  },
-  {
-    "pashto": "اولاد",
-    "count": 13,
-    "romanization": "awláad",
-    "pos": "n.m.",
-    "ts": 1675148867739,
-    "english": "child, offspring (Arabic plural of ولد but used in the singular)",
-    "r": null,
-    "a": 3,
-    "i": 1363
   },
   {
     "pashto": "ویله",
@@ -14641,17 +14663,6 @@
     "i": null
   },
   {
-    "pashto": "حلال",
-    "count": 13,
-    "romanization": "haláal",
-    "pos": "adj.",
-    "ts": 1527819363,
-    "english": "halal, authorized or permitted by Sharia Law",
-    "r": 4,
-    "a": 3,
-    "i": 6774
-  },
-  {
     "pashto": "اندریاس",
     "count": 13,
     "romanization": "",
@@ -14730,6 +14741,17 @@
   },
   {
     "pashto": "باراباس",
+    "count": 13,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "نۀ",
     "count": 13,
     "romanization": "",
     "pos": "unknown",
@@ -15147,6 +15169,17 @@
     "i": null
   },
   {
+    "pashto": "مال",
+    "count": 12,
+    "romanization": "maal",
+    "pos": "n.m.pl.",
+    "ts": 1527812145,
+    "english": "property, goods, livestock, merchandise; time",
+    "r": 3,
+    "a": 3,
+    "i": 14924
+  },
+  {
     "pashto": "واوسو",
     "count": 12,
     "romanization": "",
@@ -15279,15 +15312,15 @@
     "i": null
   },
   {
-    "pashto": "وژل",
+    "pashto": "غرونو",
     "count": 12,
-    "romanization": "wajzúl",
-    "pos": "v.trans.",
-    "ts": 1527814862,
-    "english": "to kill, slaughter",
-    "r": 4,
-    "a": 2,
-    "i": 18280
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "ناروغانو",
@@ -15827,17 +15860,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "مال",
-    "count": 11,
-    "romanization": "maal",
-    "pos": "n.m.pl.",
-    "ts": 1527812145,
-    "english": "property, goods, livestock, merchandise; time",
-    "r": 3,
-    "a": 3,
-    "i": 14924
   },
   {
     "pashto": "منلو",
@@ -16388,6 +16410,17 @@
     "r": 4,
     "a": 2,
     "i": 554
+  },
+  {
+    "pashto": "ادوم",
+    "count": 11,
+    "romanization": "adóom",
+    "pos": "n.m.",
+    "ts": 1573658287586,
+    "english": "thigh, leg",
+    "r": 1,
+    "a": 2,
+    "i": 389
   },
   {
     "pashto": "دوستانو",
@@ -16951,6 +16984,17 @@
     "i": null
   },
   {
+    "pashto": "هوښیار",
+    "count": 10,
+    "romanization": "hooxyáar",
+    "pos": "adj.",
+    "ts": 1527812680,
+    "english": "wise, smart, intelligent",
+    "r": 4,
+    "a": 3,
+    "i": 17894
+  },
+  {
     "pashto": "سوریې",
     "count": 10,
     "romanization": "",
@@ -17147,6 +17191,17 @@
     "r": 4,
     "a": 3,
     "i": 17464
+  },
+  {
+    "pashto": "تکلیف",
+    "count": 10,
+    "romanization": "takléef",
+    "pos": "n.m.",
+    "ts": 1527812109,
+    "english": "difficulty, hardship, inconvenience, efforts, labour, uneasiness",
+    "r": 4,
+    "a": 3,
+    "i": 4604
   },
   {
     "pashto": "لسو",
@@ -17422,6 +17477,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "کښې",
+    "count": 10,
+    "romanization": "kxe",
+    "pos": "adpos.",
+    "ts": 1578009689827,
+    "english": "in, at په ... کې, pa … ke (کې)",
+    "r": 4,
+    "a": 3,
+    "i": 13153
   },
   {
     "pashto": "خوندی",
@@ -17776,6 +17842,17 @@
     "i": null
   },
   {
+    "pashto": "راولم",
+    "count": 9,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "نهه",
     "count": 9,
     "romanization": "nahá",
@@ -17818,6 +17895,17 @@
     "r": 4,
     "a": 3,
     "i": 11140
+  },
+  {
+    "pashto": "عقل",
+    "count": 9,
+    "romanization": "áqul",
+    "pos": "n.m.",
+    "ts": 1527814111,
+    "english": "mind, reason, intellect, intelligence",
+    "r": 4,
+    "a": 3,
+    "i": 11565
   },
   {
     "pashto": "نوې",
@@ -17963,6 +18051,17 @@
     "i": 5758
   },
   {
+    "pashto": "دروازو",
+    "count": 9,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "بندې",
     "count": 9,
     "romanization": "",
@@ -18049,17 +18148,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "هوښیار",
-    "count": 9,
-    "romanization": "hooxyáar",
-    "pos": "adj.",
-    "ts": 1527812680,
-    "english": "wise, smart, intelligent",
-    "r": 4,
-    "a": 3,
-    "i": 17894
   },
   {
     "pashto": "ورسول",
@@ -18205,6 +18293,17 @@
     "i": null
   },
   {
+    "pashto": "ورننوتل",
+    "count": 9,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "خپور",
     "count": 9,
     "romanization": "khpor",
@@ -18326,15 +18425,15 @@
     "i": 2303
   },
   {
-    "pashto": "تکلیف",
+    "pashto": "تباهۍ",
     "count": 9,
-    "romanization": "takléef",
-    "pos": "n.m.",
-    "ts": 1527812109,
-    "english": "difficulty, hardship, inconvenience, efforts, labour, uneasiness",
-    "r": 4,
-    "a": 3,
-    "i": 4604
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "لمبو",
@@ -18489,6 +18588,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "حمله",
+    "count": 9,
+    "romanization": "hamlá",
+    "pos": "n.f.",
+    "ts": 1527811993,
+    "english": "attack, assault, invasion",
+    "r": 4,
+    "a": 3,
+    "i": 6797
   },
   {
     "pashto": "پامانی",
@@ -18986,17 +19096,6 @@
     "i": null
   },
   {
-    "pashto": "راولم",
-    "count": 8,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "اویا",
     "count": 8,
     "romanization": "awyáa",
@@ -19118,15 +19217,15 @@
     "i": 1998
   },
   {
-    "pashto": "عقل",
+    "pashto": "پټې",
     "count": 8,
-    "romanization": "áqul",
-    "pos": "n.m.",
-    "ts": 1527814111,
-    "english": "mind, reason, intellect, intelligence",
-    "r": 4,
-    "a": 3,
-    "i": 11565
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "تېل",
@@ -19426,17 +19525,6 @@
     "i": null
   },
   {
-    "pashto": "غرونو",
-    "count": 8,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "هیرودیا",
     "count": 8,
     "romanization": "",
@@ -19525,6 +19613,17 @@
     "i": 12704
   },
   {
+    "pashto": "لوټ",
+    "count": 8,
+    "romanization": "loT",
+    "pos": "n.m.",
+    "ts": 1527822868,
+    "english": "banknote, currency, paper money",
+    "r": 4,
+    "a": null,
+    "i": 14657
+  },
+  {
     "pashto": "ومې",
     "count": 8,
     "romanization": "",
@@ -19545,17 +19644,6 @@
     "r": 3,
     "a": 2,
     "i": 10540
-  },
-  {
-    "pashto": "ورننوتل",
-    "count": 8,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "غلاتیانو",
@@ -19822,17 +19910,6 @@
     "i": 1465
   },
   {
-    "pashto": "حمله",
-    "count": 8,
-    "romanization": "hamlá",
-    "pos": "n.f.",
-    "ts": 1527811993,
-    "english": "attack, assault, invasion",
-    "r": 4,
-    "a": 3,
-    "i": 6797
-  },
-  {
     "pashto": "نیمه",
     "count": 8,
     "romanization": "",
@@ -19965,6 +20042,17 @@
     "i": null
   },
   {
+    "pashto": "پچه",
+    "count": 8,
+    "romanization": "pácha",
+    "pos": "n.f.",
+    "ts": 1527811532,
+    "english": "a kiss",
+    "r": 4,
+    "a": 2,
+    "i": 2918
+  },
+  {
     "pashto": "مجدلیه",
     "count": 8,
     "romanization": "",
@@ -20084,6 +20172,50 @@
     "r": 3,
     "a": 3,
     "i": 14944
+  },
+  {
+    "pashto": "جام",
+    "count": 8,
+    "romanization": "jaam",
+    "pos": "n.m.",
+    "ts": 1527818334,
+    "english": "cup, goblet (also used for sports cup/championship)",
+    "r": 4,
+    "a": 3,
+    "i": 5439
+  },
+  {
+    "pashto": "خلق",
+    "count": 8,
+    "romanization": "khalq",
+    "pos": "n.m./ n.m.pl.",
+    "ts": 1527812343,
+    "english": "people, nation, populace; creature, created",
+    "r": 4,
+    "a": 3,
+    "i": 7184
+  },
+  {
+    "pashto": "مالک",
+    "count": 8,
+    "romanization": "maalík",
+    "pos": "n.m.anim.unisex",
+    "ts": 1527812326,
+    "english": "lord, master, owner, the Lord (God)",
+    "r": 3,
+    "a": 3,
+    "i": 14939
+  },
+  {
+    "pashto": "تۀ",
+    "count": 8,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "خیالونه",
@@ -20559,17 +20691,6 @@
     "i": null
   },
   {
-    "pashto": "پټې",
-    "count": 7,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "وانه",
     "count": 7,
     "romanization": "waanú",
@@ -20689,6 +20810,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "ظلم",
+    "count": 7,
+    "romanization": "zÚlum",
+    "pos": "n.m.",
+    "ts": 1527815453,
+    "english": "cruelty, oppression, repression, persecution, force",
+    "r": 4,
+    "a": 3,
+    "i": 11406
   },
   {
     "pashto": "ورکولای",
@@ -20821,17 +20953,6 @@
     "r": null,
     "a": null,
     "i": 12216
-  },
-  {
-    "pashto": "دروازو",
-    "count": 7,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "ګانې",
@@ -21527,17 +21648,6 @@
     "i": 2191
   },
   {
-    "pashto": "پچه",
-    "count": 7,
-    "romanization": "pácha",
-    "pos": "n.f.",
-    "ts": 1527811532,
-    "english": "a kiss",
-    "r": 4,
-    "a": 2,
-    "i": 2918
-  },
-  {
     "pashto": "کرلی",
     "count": 7,
     "romanization": "",
@@ -21604,15 +21714,15 @@
     "i": null
   },
   {
-    "pashto": "جام",
+    "pashto": "انګور",
     "count": 7,
-    "romanization": "jaam",
-    "pos": "n.m.",
-    "ts": 1527818334,
-    "english": "cup, goblet (also used for sports cup/championship)",
+    "romanization": "angóor",
+    "pos": "n.m.pl.",
+    "ts": 1527817470,
+    "english": "grapes",
     "r": 4,
-    "a": 3,
-    "i": 5439
+    "a": 2,
+    "i": 1201
   },
   {
     "pashto": "آتن",
@@ -21624,6 +21734,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "قبضه",
+    "count": 7,
+    "romanization": "qabzá",
+    "pos": "n.f.",
+    "ts": 1708002428538,
+    "english": "power, authority, seizing, foreclosure, capture, take-over, invasion, occupation",
+    "r": 4,
+    "a": 3,
+    "i": 12439
   },
   {
     "pashto": "خپرولو",
@@ -21891,6 +22012,17 @@
   },
   {
     "pashto": "جامونه",
+    "count": 6,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "څښلو",
     "count": 6,
     "romanization": "",
     "pos": "unknown",
@@ -22319,17 +22451,6 @@
     "i": 13233
   },
   {
-    "pashto": "ظلم",
-    "count": 6,
-    "romanization": "zÚlum",
-    "pos": "n.m.",
-    "ts": 1527815453,
-    "english": "cruelty, oppression, repression, persecution, force",
-    "r": 4,
-    "a": 3,
-    "i": 11406
-  },
-  {
     "pashto": "ازادی",
     "count": 6,
     "romanization": "",
@@ -22638,6 +22759,17 @@
     "i": null
   },
   {
+    "pashto": "راټولوی",
+    "count": 6,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "وځلېدله",
     "count": 6,
     "romanization": "",
@@ -22911,6 +23043,17 @@
     "r": 4,
     "a": 3,
     "i": 9463
+  },
+  {
+    "pashto": "سپک",
+    "count": 6,
+    "romanization": "spuk",
+    "pos": "adj.",
+    "ts": 1527813498,
+    "english": "light; dishonorable, not respectable",
+    "r": 4,
+    "a": 3,
+    "i": 9679
   },
   {
     "pashto": "ودرېدله",
@@ -23760,17 +23903,6 @@
     "i": 7112
   },
   {
-    "pashto": "انګور",
-    "count": 6,
-    "romanization": "angóor",
-    "pos": "n.m.pl.",
-    "ts": 1527817470,
-    "english": "grapes",
-    "r": 4,
-    "a": 2,
-    "i": 1201
-  },
-  {
     "pashto": "زکی",
     "count": 6,
     "romanization": "",
@@ -23881,6 +24013,17 @@
     "i": null
   },
   {
+    "pashto": "کړے",
+    "count": 6,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "فیلیپیانو",
     "count": 5,
     "romanization": "",
@@ -23937,6 +24080,17 @@
   },
   {
     "pashto": "تندیو",
+    "count": 5,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "بنیامین",
     "count": 5,
     "romanization": "",
     "pos": "unknown",
@@ -24783,6 +24937,17 @@
     "i": null
   },
   {
+    "pashto": "وخېژی",
+    "count": 5,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "جنیسارت",
     "count": 5,
     "romanization": "",
@@ -24894,17 +25059,6 @@
   },
   {
     "pashto": "وواژه",
-    "count": 5,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "راټولوی",
     "count": 5,
     "romanization": "",
     "pos": "unknown",
@@ -25078,17 +25232,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "لوټ",
-    "count": 5,
-    "romanization": "loT",
-    "pos": "n.m.",
-    "ts": 1527822868,
-    "english": "banknote, currency, paper money",
-    "r": 4,
-    "a": null,
-    "i": 14657
   },
   {
     "pashto": "عزتی",
@@ -25267,6 +25410,17 @@
     "i": null
   },
   {
+    "pashto": "غرور",
+    "count": 5,
+    "romanization": "ghUróor",
+    "pos": "n.m.",
+    "ts": 1527816341,
+    "english": "pride, conceit",
+    "r": 4,
+    "a": 3,
+    "i": 11781
+  },
+  {
     "pashto": "خورم",
     "count": 5,
     "romanization": "",
@@ -25320,17 +25474,6 @@
     "r": 4,
     "a": 3,
     "i": 9774
-  },
-  {
-    "pashto": "سپک",
-    "count": 5,
-    "romanization": "spuk",
-    "pos": "adj.",
-    "ts": 1527813498,
-    "english": "light; dishonorable, not respectable",
-    "r": 4,
-    "a": 3,
-    "i": 9679
   },
   {
     "pashto": "ناروغ",
@@ -25389,17 +25532,6 @@
   },
   {
     "pashto": "ورټلو",
-    "count": 5,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "تباهۍ",
     "count": 5,
     "romanization": "",
     "pos": "unknown",
@@ -26565,6 +26697,17 @@
     "i": null
   },
   {
+    "pashto": "دولت",
+    "count": 5,
+    "romanization": "dawlát",
+    "pos": "n.m.",
+    "ts": 1527812549,
+    "english": "government, state, riches",
+    "r": 3,
+    "a": 3,
+    "i": 8199
+  },
+  {
     "pashto": "شکایت",
     "count": 5,
     "romanization": "shikaayát",
@@ -26642,6 +26785,17 @@
     "i": 13358
   },
   {
+    "pashto": "واچوله",
+    "count": 5,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "بېکاره",
     "count": 5,
     "romanization": "",
@@ -26708,6 +26862,17 @@
     "i": 14765
   },
   {
+    "pashto": "دام",
+    "count": 5,
+    "romanization": "daam",
+    "pos": "n.m.",
+    "ts": 1527814364,
+    "english": "trap, snare",
+    "r": 4,
+    "a": 2,
+    "i": 7766
+  },
+  {
     "pashto": "څانګه",
     "count": 5,
     "romanization": "tsáanga",
@@ -26717,6 +26882,17 @@
     "r": 4,
     "a": 3,
     "i": 6423
+  },
+  {
+    "pashto": "لافې",
+    "count": 5,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "عقیقو",
@@ -26739,6 +26915,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "معلوم",
+    "count": 5,
+    "romanization": "ma'alóom",
+    "pos": "adj.",
+    "ts": 1527814271,
+    "english": "known, evident, apparent, obvious",
+    "r": 4,
+    "a": 3,
+    "i": 15963
   },
   {
     "pashto": "باطل",
@@ -26783,6 +26970,17 @@
     "r": 4,
     "a": 3,
     "i": 8416
+  },
+  {
+    "pashto": "تښتی",
+    "count": 5,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "یاسون",
@@ -26885,17 +27083,6 @@
   },
   {
     "pashto": "اړتیاوې",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "بنیامین",
     "count": 4,
     "romanization": "",
     "pos": "unknown",
@@ -27171,17 +27358,6 @@
   },
   {
     "pashto": "ورتو",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "څښلو",
     "count": 4,
     "romanization": "",
     "pos": "unknown",
@@ -27896,6 +28072,17 @@
     "i": null
   },
   {
+    "pashto": "عیسو",
+    "count": 4,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "عیش",
     "count": 4,
     "romanization": "a'ysh",
@@ -28050,17 +28237,6 @@
     "i": 10898
   },
   {
-    "pashto": "وخېژی",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "ارواح",
     "count": 4,
     "romanization": "",
@@ -28161,6 +28337,17 @@
   },
   {
     "pashto": "اورشلیمه",
+    "count": 4,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "خالی",
     "count": 4,
     "romanization": "",
     "pos": "unknown",
@@ -28644,17 +28831,6 @@
     "i": 17201
   },
   {
-    "pashto": "غرور",
-    "count": 4,
-    "romanization": "ghUróor",
-    "pos": "n.m.",
-    "ts": 1527816341,
-    "english": "pride, conceit",
-    "r": 4,
-    "a": 3,
-    "i": 11781
-  },
-  {
     "pashto": "وځړول",
     "count": 4,
     "romanization": "",
@@ -28864,6 +29040,28 @@
     "i": null
   },
   {
+    "pashto": "جارو",
+    "count": 4,
+    "romanization": "jaaróo",
+    "pos": "n.f.",
+    "ts": 1527818319,
+    "english": "broom",
+    "r": 4,
+    "a": 3,
+    "i": 5412
+  },
+  {
+    "pashto": "برباد",
+    "count": 4,
+    "romanization": "barbáad",
+    "pos": "adj.",
+    "ts": 1527819355,
+    "english": "ruined, destroyed, wasted, spent, perished",
+    "r": 4,
+    "a": 3,
+    "i": 1862
+  },
+  {
     "pashto": "ګېډه",
     "count": 4,
     "romanization": "géDa",
@@ -28917,6 +29115,17 @@
     "r": 3,
     "a": 2,
     "i": 11719
+  },
+  {
+    "pashto": "دری",
+    "count": 4,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "کیلومتره",
@@ -29225,6 +29434,17 @@
     "r": 3,
     "a": 2,
     "i": 538
+  },
+  {
+    "pashto": "اوسېږې",
+    "count": 4,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "غلطه",
@@ -30305,17 +30525,6 @@
     "i": 1203
   },
   {
-    "pashto": "دولت",
-    "count": 4,
-    "romanization": "dawlát",
-    "pos": "n.m.",
-    "ts": 1527812549,
-    "english": "government, state, riches",
-    "r": 3,
-    "a": 3,
-    "i": 8199
-  },
-  {
     "pashto": "خېټه",
     "count": 4,
     "romanization": "khéTa",
@@ -30479,17 +30688,6 @@
     "r": 4,
     "a": 2,
     "i": 13196
-  },
-  {
-    "pashto": "واچوله",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
   },
   {
     "pashto": "ایلی",
@@ -30822,17 +31020,6 @@
     "i": 1596
   },
   {
-    "pashto": "دام",
-    "count": 4,
-    "romanization": "daam",
-    "pos": "n.m.",
-    "ts": 1527814364,
-    "english": "trap, snare",
-    "r": 4,
-    "a": 2,
-    "i": 7766
-  },
-  {
     "pashto": "خوښې",
     "count": 4,
     "romanization": "",
@@ -30856,17 +31043,6 @@
   },
   {
     "pashto": "قضاوتونه",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "لافې",
     "count": 4,
     "romanization": "",
     "pos": "unknown",
@@ -30910,15 +31086,15 @@
     "i": null
   },
   {
-    "pashto": "معلوم",
+    "pashto": "اوچت",
     "count": 4,
-    "romanization": "ma'alóom",
+    "romanization": "oochát",
     "pos": "adj.",
-    "ts": 1527814271,
-    "english": "known, evident, apparent, obvious",
+    "ts": 1527814198,
+    "english": "high, tall, lofty",
     "r": 4,
     "a": 3,
-    "i": 15963
+    "i": 1262
   },
   {
     "pashto": "پریسکیلا",
@@ -31108,17 +31284,6 @@
     "i": null
   },
   {
-    "pashto": "تښتی",
-    "count": 4,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "تاجونه",
     "count": 4,
     "romanization": "",
@@ -31139,6 +31304,28 @@
     "r": 4,
     "a": 2,
     "i": 16244
+  },
+  {
+    "pashto": "څۀ",
+    "count": 4,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "علاقه",
+    "count": 3,
+    "romanization": "alaaqá",
+    "pos": "n.f.",
+    "ts": 1527821770,
+    "english": "interest, concern, connection, affection; region, district, zone, territory",
+    "r": 3,
+    "a": 3,
+    "i": 11583
   },
   {
     "pashto": "ورزیات",
@@ -32373,17 +32560,6 @@
     "i": null
   },
   {
-    "pashto": "عیسو",
-    "count": 3,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "وزېږېده",
     "count": 3,
     "romanization": "",
@@ -32440,6 +32616,17 @@
   },
   {
     "pashto": "دښتو",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "غارونو",
     "count": 3,
     "romanization": "",
     "pos": "unknown",
@@ -32583,17 +32770,6 @@
   },
   {
     "pashto": "وزرونو",
-    "count": 3,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "خالی",
     "count": 3,
     "romanization": "",
     "pos": "unknown",
@@ -33451,17 +33627,6 @@
     "i": null
   },
   {
-    "pashto": "جارو",
-    "count": 3,
-    "romanization": "jaaróo",
-    "pos": "n.f.",
-    "ts": 1527818319,
-    "english": "broom",
-    "r": 4,
-    "a": 3,
-    "i": 5412
-  },
-  {
     "pashto": "واخیستلې",
     "count": 3,
     "romanization": "",
@@ -33471,17 +33636,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "برباد",
-    "count": 3,
-    "romanization": "barbáad",
-    "pos": "adj.",
-    "ts": 1527819355,
-    "english": "ruined, destroyed, wasted, spent, perished",
-    "r": 4,
-    "a": 3,
-    "i": 1862
   },
   {
     "pashto": "مزدورانو",
@@ -34112,17 +34266,6 @@
   },
   {
     "pashto": "تسمې",
-    "count": 3,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "اوسېږې",
     "count": 3,
     "romanization": "",
     "pos": "unknown",
@@ -35002,6 +35145,17 @@
     "i": 16165
   },
   {
+    "pashto": "کنعان",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "روزنه",
     "count": 3,
     "romanization": "rozúna",
@@ -35385,6 +35539,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "جلاوطن",
+    "count": 3,
+    "romanization": "jalaawatán",
+    "pos": "n.m.anim.unisex",
+    "ts": 1527813742,
+    "english": "emigrant, migrant, immigrant, refugee, exile",
+    "r": 4,
+    "a": 2,
+    "i": 5607
   },
   {
     "pashto": "جلاوطنۍ",
@@ -36300,6 +36465,17 @@
     "i": 15363
   },
   {
+    "pashto": "غر",
+    "count": 3,
+    "romanization": "ghar",
+    "pos": "n.m.",
+    "ts": 1527813593,
+    "english": "mountain",
+    "r": 4,
+    "a": 3,
+    "i": 11749
+  },
+  {
     "pashto": "بختوره",
     "count": 3,
     "romanization": "",
@@ -36474,17 +36650,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "اوچت",
-    "count": 3,
-    "romanization": "oochát",
-    "pos": "adj.",
-    "ts": 1527814198,
-    "english": "high, tall, lofty",
-    "r": 4,
-    "a": 3,
-    "i": 1262
   },
   {
     "pashto": "ګالیون",
@@ -36883,8 +37048,19 @@
     "i": null
   },
   {
-    "pashto": "وړونکی",
-    "count": 2,
+    "pashto": "پښتو",
+    "count": 3,
+    "romanization": "puxtó",
+    "pos": "n.f.",
+    "ts": 1527816016,
+    "english": "Pashto, Pashtunwali",
+    "r": 4,
+    "a": 3,
+    "i": 3218
+  },
+  {
+    "pashto": "خلقو",
+    "count": 3,
     "romanization": "",
     "pos": "unknown",
     "ts": "",
@@ -36894,15 +37070,92 @@
     "i": null
   },
   {
-    "pashto": "علاقه",
-    "count": 2,
-    "romanization": "alaaqá",
-    "pos": "n.f.",
-    "ts": 1527821770,
-    "english": "interest, concern, connection, affection; region, district, zone, territory",
-    "r": 3,
+    "pashto": "فرمایی",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "هغۀ",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "زۀ",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "دشمن",
+    "count": 3,
+    "romanization": "dUshmán",
+    "pos": "n.m.",
+    "ts": 1527814358,
+    "english": "enemy, foe, adversary",
+    "r": 4,
     "a": 3,
-    "i": 11583
+    "i": 7982
+  },
+  {
+    "pashto": "بنی",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "پکار",
+    "count": 3,
+    "romanization": "pukáar",
+    "pos": "unknown",
+    "ts": 1574033675675,
+    "english": "necessary, needed, required (په کار)",
+    "r": 4,
+    "a": 2,
+    "i": 3235
+  },
+  {
+    "pashto": "درله",
+    "count": 3,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وړونکی",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "سختیو",
@@ -38181,15 +38434,15 @@
     "i": null
   },
   {
-    "pashto": "غارونو",
+    "pashto": "فتح",
     "count": 2,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
+    "romanization": "fátha",
+    "pos": "n.f.",
+    "ts": 1589023873660,
+    "english": "victory, conquest",
+    "r": 3,
+    "a": 3,
+    "i": 12166
   },
   {
     "pashto": "نڅا",
@@ -39719,6 +39972,17 @@
     "r": null,
     "a": null,
     "i": null
+  },
+  {
+    "pashto": "و",
+    "count": 2,
+    "romanization": "wo",
+    "pos": "unknown",
+    "ts": 1527815413,
+    "english": "(he) was, third pers. singular male past equative",
+    "r": 4,
+    "a": 3,
+    "i": 17964
   },
   {
     "pashto": "وخورم",
@@ -42328,17 +42592,6 @@
     "i": 15437
   },
   {
-    "pashto": "کنعان",
-    "count": 2,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "وروپېژانده",
     "count": 2,
     "romanization": "",
@@ -43736,6 +43989,17 @@
     "i": 14230
   },
   {
+    "pashto": "تښتېدل",
+    "count": 2,
+    "romanization": "tuxtedúl",
+    "pos": "v.intrans.",
+    "ts": 1527816495,
+    "english": "to run off, escape, flee",
+    "r": 4,
+    "a": 3,
+    "i": 4434
+  },
+  {
     "pashto": "پېژندلو",
     "count": 2,
     "romanization": "",
@@ -43979,6 +44243,17 @@
   },
   {
     "pashto": "راټولولی",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "اعتباری",
     "count": 2,
     "romanization": "",
     "pos": "unknown",
@@ -44726,6 +45001,17 @@
     "i": null
   },
   {
+    "pashto": "وشرمېږې",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "ووځه",
     "count": 2,
     "romanization": "",
@@ -44944,17 +45230,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "غر",
-    "count": 2,
-    "romanization": "ghar",
-    "pos": "n.m.",
-    "ts": 1527813593,
-    "english": "mountain",
-    "r": 4,
-    "a": 3,
-    "i": 11749
   },
   {
     "pashto": "قومندانانو",
@@ -45309,6 +45584,17 @@
     "i": null
   },
   {
+    "pashto": "غرونه",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
     "pashto": "قاتلانو",
     "count": 2,
     "romanization": "",
@@ -45387,6 +45673,17 @@
   },
   {
     "pashto": "زمردو",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "جوړوې",
     "count": 2,
     "romanization": "",
     "pos": "unknown",
@@ -45703,6 +46000,17 @@
     "r": 4,
     "a": 2,
     "i": 13159
+  },
+  {
+    "pashto": "چوکونو",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "دېرشو",
@@ -46913,6 +47221,149 @@
     "r": 4,
     "a": 3,
     "i": 11694
+  },
+  {
+    "pashto": "عبدیاه",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "اے",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "دوکه",
+    "count": 2,
+    "romanization": "doká",
+    "pos": "n.f.",
+    "ts": 1527812565,
+    "english": "deceit, cheating",
+    "r": 3,
+    "a": 3,
+    "i": 8190
+  },
+  {
+    "pashto": "کۀ",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "باقی",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وجه",
+    "count": 2,
+    "romanization": "wája",
+    "pos": "n.f.",
+    "ts": 1527811272,
+    "english": "reason, cause; aspect, point of view, facet",
+    "r": 4,
+    "a": 3,
+    "i": 18070
+  },
+  {
+    "pashto": "۰",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "یروشلم",
+    "count": 2,
+    "romanization": "yarooshalám",
+    "pos": "n.m.",
+    "ts": 1527812372,
+    "english": "Jerusalem",
+    "r": 2,
+    "a": 2,
+    "i": 18572
+  },
+  {
+    "pashto": "خوشحالېدل",
+    "count": 2,
+    "romanization": "khosh`haaledúl",
+    "pos": "v.stat.comp.intrans.",
+    "ts": 1675274663116,
+    "english": "to be pleased, to be happy, enjoy",
+    "r": 4,
+    "a": 3,
+    "i": 7401
+  },
+  {
+    "pashto": "مقدس",
+    "count": 2,
+    "romanization": "mUqaddás",
+    "pos": "adj.",
+    "ts": 1527812125,
+    "english": "holy, sacred",
+    "r": 4,
+    "a": 3,
+    "i": 16055
+  },
+  {
+    "pashto": "غرۀ",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "صیون",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "نجب",
+    "count": 2,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
   },
   {
     "pashto": "هڅونې",
@@ -48486,17 +48937,6 @@
     "r": null,
     "a": null,
     "i": null
-  },
-  {
-    "pashto": "فتح",
-    "count": 1,
-    "romanization": "fátha",
-    "pos": "n.f.",
-    "ts": 1589023873660,
-    "english": "victory, conquest",
-    "r": 3,
-    "a": 3,
-    "i": 12166
   },
   {
     "pashto": "زمریانو",
@@ -50314,17 +50754,6 @@
     "i": null
   },
   {
-    "pashto": "و",
-    "count": 1,
-    "romanization": "wo",
-    "pos": "unknown",
-    "ts": 1527815413,
-    "english": "(he) was, third pers. singular male past equative",
-    "r": 4,
-    "a": 3,
-    "i": 17964
-  },
-  {
     "pashto": "ړی",
     "count": 1,
     "romanization": "Ray",
@@ -50601,17 +51030,6 @@
   },
   {
     "pashto": "ورواچوی",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "دری",
     "count": 1,
     "romanization": "",
     "pos": "unknown",
@@ -54791,17 +55209,6 @@
     "i": null
   },
   {
-    "pashto": "جلاوطن",
-    "count": 1,
-    "romanization": "jalaawatán",
-    "pos": "n.m.anim.unisex",
-    "ts": 1527813742,
-    "english": "emigrant, migrant, immigrant, refugee, exile",
-    "r": 4,
-    "a": 2,
-    "i": 5607
-  },
-  {
     "pashto": "الیاقیم",
     "count": 1,
     "romanization": "",
@@ -56595,17 +57002,6 @@
     "i": null
   },
   {
-    "pashto": "تښتېدل",
-    "count": 1,
-    "romanization": "tuxtedúl",
-    "pos": "v.intrans.",
-    "ts": 1527816495,
-    "english": "to run off, escape, flee",
-    "r": 4,
-    "a": 3,
-    "i": 4434
-  },
-  {
     "pashto": "وتښته",
     "count": 1,
     "romanization": "",
@@ -57256,17 +57652,6 @@
   },
   {
     "pashto": "سیکو",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "اعتباری",
     "count": 1,
     "romanization": "",
     "pos": "unknown",
@@ -58872,17 +59257,6 @@
     "i": 15181
   },
   {
-    "pashto": "وشرمېږې",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "راغواړې",
     "count": 1,
     "romanization": "",
@@ -60192,17 +60566,6 @@
     "i": null
   },
   {
-    "pashto": "غرونه",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
     "pashto": "کیلوګرامه",
     "count": 1,
     "romanization": "",
@@ -60556,17 +60919,6 @@
   },
   {
     "pashto": "شپږڅلوېښت",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "جوړوې",
     "count": 1,
     "romanization": "",
     "pos": "unknown",
@@ -61810,17 +62162,6 @@
   },
   {
     "pashto": "وسوځاوه",
-    "count": 1,
-    "romanization": "",
-    "pos": "unknown",
-    "ts": "",
-    "english": "",
-    "r": null,
-    "a": null,
-    "i": null
-  },
-  {
-    "pashto": "چوکونو",
     "count": 1,
     "romanization": "",
     "pos": "unknown",
@@ -67628,17 +67969,6 @@
     "i": null
   },
   {
-    "pashto": "خلق",
-    "count": 1,
-    "romanization": "khalq",
-    "pos": "n.m./ n.m.pl.",
-    "ts": 1527812343,
-    "english": "people, nation, populace; creature, created",
-    "r": 4,
-    "a": 3,
-    "i": 7184
-  },
-  {
     "pashto": "لړزېدونکی",
     "count": 1,
     "romanization": "",
@@ -67824,5 +68154,775 @@
     "r": 4,
     "a": 2,
     "i": 4700
+  },
+  {
+    "pashto": "حضرت",
+    "count": 1,
+    "romanization": "hazrát",
+    "pos": "pref./ n.m.",
+    "ts": 1527812359,
+    "english": "Arabic term of respect, like sir or Mr., used for prophets etc.",
+    "r": 4,
+    "a": 2,
+    "i": 6724
+  },
+  {
+    "pashto": "ماخذ",
+    "count": 1,
+    "romanization": "maakház",
+    "pos": "n.m.",
+    "ts": 1527816241,
+    "english": "base, basis, source (of information)",
+    "r": 3,
+    "a": 2,
+    "i": 14877
+  },
+  {
+    "pashto": "انبیاء",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "باب",
+    "count": 1,
+    "romanization": "baab",
+    "pos": "adj.",
+    "ts": 1527812367,
+    "english": "widespread, fashionable, disseminated, accepted as usual",
+    "r": 4,
+    "a": 3,
+    "i": 1486
+  },
+  {
+    "pashto": "حقله",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "پېغام",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "واورېدو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "پېغمبر",
+    "count": 1,
+    "romanization": "peghambár",
+    "pos": "n.m.anim.unisex",
+    "ts": 1527813740,
+    "english": "prophet, messenger",
+    "r": 4,
+    "a": 2,
+    "i": 3824
+  },
+  {
+    "pashto": "ولېږلو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وفرمایی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "پاڅی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ادومه",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وړوکے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "اوچتو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "زمکې",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "راوستلے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "باز",
+    "count": 1,
+    "romanization": "baaz",
+    "pos": "n.m.",
+    "ts": 1610444405032,
+    "english": "a kind of hawk",
+    "r": 4,
+    "a": 3,
+    "i": 1568
+  },
+  {
+    "pashto": "والوځی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "جاله",
+    "count": 1,
+    "romanization": "jaalá",
+    "pos": "n.f.",
+    "ts": 1527818727,
+    "english": "raft, barge (made up of logs); calamity, misfortune",
+    "r": 4,
+    "a": null,
+    "i": 5435
+  },
+  {
+    "pashto": "غلۀ",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "مکمل",
+    "count": 1,
+    "romanization": "mUkamál",
+    "pos": "adj.",
+    "ts": 1610448349896,
+    "english": "complete, perfect",
+    "r": 4,
+    "a": 3,
+    "i": 16091
+  },
+  {
+    "pashto": "یوړے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "اتحادیان",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وزغلوی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "دوستان",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "تیمانه",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "جنګیالی",
+    "count": 1,
+    "romanization": "jangyaaláy",
+    "pos": "n.m.",
+    "ts": 1527816936,
+    "english": "warrior, fighter, soldier",
+    "r": 4,
+    "a": 2,
+    "i": 5692
+  },
+  {
+    "pashto": "ویریږی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ادومیانو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ملاوېدو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "دے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "شرمونو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "همېشه",
+    "count": 1,
+    "romanization": "hameshá",
+    "pos": "adv.",
+    "ts": 1527821252,
+    "english": "always, constantly, eternally",
+    "r": 4,
+    "a": 2,
+    "i": 17812
+  },
+  {
+    "pashto": "غېر",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ملکیان",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "یوړلو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "تقسیمولو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "هیڅ",
+    "count": 1,
+    "romanization": "heets",
+    "pos": "det./ adv.",
+    "ts": 1586519006879,
+    "english": "negative determiner, used for nothing, never, no, none etc. (used with negative phrases)",
+    "r": 4,
+    "a": 2,
+    "i": 17914
+  },
+  {
+    "pashto": "رویه",
+    "count": 1,
+    "romanization": "rawiyá",
+    "pos": "n.f.",
+    "ts": 1527817074,
+    "english": "behaviour, manner, conduct",
+    "r": 4,
+    "a": 3,
+    "i": 8996
+  },
+  {
+    "pashto": "قسمتۍ",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "یهوداه",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ننوتلے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "شوے",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "بچ",
+    "count": 1,
+    "romanization": "bach",
+    "pos": "n.m.",
+    "ts": 1577298685334,
+    "english": "protection; busteded tire",
+    "r": 4,
+    "a": 3,
+    "i": 1685
+  },
+  {
+    "pashto": "حواله",
+    "count": 1,
+    "romanization": "hawaalá",
+    "pos": "n.f.",
+    "ts": 1527817514,
+    "english": "draft, money order, instruction, order, authorization, commission; quotation (په حواله - according to, by the account of) reference to text/scripture (as in chapter and verse)",
+    "r": 4,
+    "a": 3,
+    "i": 6804
+  },
+  {
+    "pashto": "رانزدې",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "واپس",
+    "count": 1,
+    "romanization": "waapús",
+    "pos": "loc.adv.",
+    "ts": 1527812375,
+    "english": "back (as in return)",
+    "r": 4,
+    "a": 3,
+    "i": 17967
+  },
+  {
+    "pashto": "وڅښلو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "آخری",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "قطرې",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "څټی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "نام",
+    "count": 1,
+    "romanization": "naam",
+    "pos": "n.m.",
+    "ts": 1527821075,
+    "english": "honour, repute, glory, fame, name",
+    "r": 2,
+    "a": 2,
+    "i": 16877
+  },
+  {
+    "pashto": "نشان",
+    "count": 1,
+    "romanization": "nisháan",
+    "pos": "n.m.",
+    "ts": 1527813026,
+    "english": "sign, mark, medal, badge; taget, aim",
+    "r": 4,
+    "a": 3,
+    "i": 17092
+  },
+  {
+    "pashto": "بلکل",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "لمبه",
+    "count": 1,
+    "romanization": "lambá",
+    "pos": "n.f.",
+    "ts": 1527814000,
+    "english": "flame",
+    "r": 4,
+    "a": 3,
+    "i": 14539
+  },
+  {
+    "pashto": "بوسو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "وسوزوی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "فرماییلی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "علاقو",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "فلستیه",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "افراییم",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "سامریه",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "علاقې",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "جلعاد",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "صارفت",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "سفاراد",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "ورکونکی",
+    "count": 1,
+    "romanization": "",
+    "pos": "unknown",
+    "ts": "",
+    "english": "",
+    "r": null,
+    "a": null,
+    "i": null
+  },
+  {
+    "pashto": "بره",
+    "count": 1,
+    "romanization": "bára",
+    "pos": "adv.",
+    "ts": 1702025419267,
+    "english": "up high, above, upwards",
+    "r": null,
+    "a": 3,
+    "i": 1972
+  },
+  {
+    "pashto": "پخپله",
+    "count": 1,
+    "romanization": "pukhpúla",
+    "pos": "adv.",
+    "ts": 1527818237,
+    "english": "(doing something) himself, herself, myself, ourself etc., used to indicate actions that the subject does himself",
+    "r": 4,
+    "a": 3,
+    "i": 2928
+  },
+  {
+    "pashto": "بادشاه",
+    "count": 1,
+    "romanization": "baadsháah",
+    "pos": "n.m.",
+    "ts": 1527812329,
+    "english": "king, padishah, ruler",
+    "r": 4,
+    "a": 2,
+    "i": 1531
   }
 ]

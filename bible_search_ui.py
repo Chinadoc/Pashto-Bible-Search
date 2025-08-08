@@ -25,6 +25,7 @@ def normalize_pashto_char(text):
 # --- Configuration & Data Loading (Robust Paths) ---
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
+OT_DATA_DIR = os.path.join(APP_ROOT, 'ot_txt_copies')
 INDEX_FILE = os.path.join(DATA_DIR, 'grammatical_index_v15.json')
 WORD_FREQ_FILE = os.path.join(APP_ROOT, 'word_frequency_list.json')
 FULL_DICT_FILE = os.path.join(APP_ROOT, 'full_dictionary.json')
@@ -429,8 +430,7 @@ def load_word_frequency_data():
     except json.JSONDecodeError:
         return []
 
-@st.cache_data
-def load_bible_text():
+def _load_text_from_dir(dir_path: str):
     bible = {}
     punct = '.,:;!?؟،؛"\'()[]{}“”'
     def persian_to_int(s):
@@ -446,10 +446,9 @@ def load_bible_text():
         'mark': 'Mark', 'matthew': 'Matthew', 'philemon': 'Philemon', 'philippians': 'Philippians',
         'revelation': 'Revelation', 'romans': 'Romans', 'titus': 'Titus',
     }
-    if not os.path.isdir(DATA_DIR):
-        st.error(f"FATAL: Data directory not found at '{DATA_DIR}'")
+    if not os.path.isdir(dir_path):
         return {}
-    for filename in os.listdir(DATA_DIR):
+    for filename in os.listdir(dir_path):
         if filename.endswith('_pashto.txt'):
             base = filename.replace('_pashto.txt', '')
             match = re.match(r'([a-z]+)(\d+)', base)
@@ -457,7 +456,7 @@ def load_bible_text():
                 book_prefix, chapter_str = match.groups()
                 chapter = int(chapter_str)
                 book = book_map.get(book_prefix, book_prefix.capitalize())
-                filepath = os.path.join(DATA_DIR, filename)
+                filepath = os.path.join(dir_path, filename)
                 with open(filepath, 'r', encoding='utf-8') as f: lines = f.readlines()
                 current_verse, verse_text_lines = None, []
                 for line in lines:
@@ -472,6 +471,14 @@ def load_bible_text():
                 if current_verse is not None:
                     bible[f"{book} {chapter}:{current_verse}"] = ' '.join(verse_text_lines).strip()
     return bible
+
+@st.cache_data
+def load_bible_text():
+    return _load_text_from_dir(DATA_DIR)
+
+@st.cache_data
+def load_bible_text_ot():
+    return _load_text_from_dir(OT_DATA_DIR)
 
 @st.cache_data
 def create_form_to_root_map(_grammatical_index):
@@ -491,7 +498,8 @@ def format_for_display(word):
 
 def highlight_verse(verse_text, search_term):
     display_term = format_for_display(search_term)
-    return re.sub(f'({re.escape(display_term)})', r'<mark><b>\1</b></mark>', normalize_pashto_char(verse_text), flags=re.IGNORECASE)
+    style = "color:#ffd166; text-decoration: underline; font-weight:600; font-size:1.05em;"
+    return re.sub(f'({re.escape(display_term)})', rf'<span style="{style}">\1</span>', normalize_pashto_char(verse_text), flags=re.IGNORECASE)
 
 def find_audio_url(verse_ref):
     if not AUDIO_FILE_MAP: return None
@@ -781,7 +789,18 @@ tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    bible_text = load_bible_text()
+    scope = st.radio("Scope", options=["New Testament", "Old Testament", "Whole Bible"], horizontal=True, index=0)
+    nt_text = load_bible_text()
+    ot_text = load_bible_text_ot()
+    if scope == "New Testament":
+        bible_text = nt_text
+    elif scope == "Old Testament":
+        bible_text = ot_text
+    else:
+        merged = {}
+        merged.update(nt_text)
+        merged.update(ot_text)
+        bible_text = merged
 
     if grammatical_index is None: st.stop()
 

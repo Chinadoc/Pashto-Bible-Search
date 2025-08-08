@@ -98,25 +98,55 @@ def html_to_text(html_str: str) -> str:
 
 
 def detect_max_chapter(book_slug: str) -> int:
+    # Try chapter 1 page
     url = f"{BASE}/{book_slug}/{book_slug}-1"
     doc = fetch(url)
-    # Find all chapter links; take max
     chapters = [int(m.group(2)) for m in CHAPTER_LINK_RE.finditer(doc) if m.group(1) == book_slug]
+    # Some books may list chapters on base slug without trailing /-1
+    if not chapters:
+        try:
+            base_doc = fetch(f"{BASE}/{book_slug}")
+            chapters = [int(m.group(2)) for m in CHAPTER_LINK_RE.finditer(base_doc) if m.group(1) == book_slug]
+        except Exception:
+            pass
     return max(chapters) if chapters else 1
 
 
 def extract_verses_from_page(html_doc: str) -> list[str]:
-    text = html_to_text(html_doc)
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    # Narrow to main content around the chapter by slicing between nav markers
+    doc = html_doc
+    for marker in ["Previous chapter", "Next chapter"]:
+        # ensure markers visible for split
+        pass
+    start_idx = doc.find("Previous chapter")
+    if start_idx != -1:
+        doc = doc[start_idx:]
+    end_idx = doc.find("Next chapter")
+    if end_idx != -1:
+        doc = doc[:end_idx]
+
+    # Convert to plain text and split on likely block boundaries
+    text = html_to_text(doc)
+    blocks = re.split(r"\n+", text)
     verses: list[str] = []
-    for ln in lines:
-        m = VERSE_LINE_RE.match(ln)
+    for blk in blocks:
+        blk = blk.strip()
+        if not blk:
+            continue
+        # Accept patterns like "1 text" or "۱ text"
+        m = VERSE_LINE_RE.match(blk)
         if m:
             verses.append(f"{m.group(1)} {m.group(2).strip()}")
-    # Fallback: if nothing matched, return the lines block as single paragraph
-    if not verses:
-        return lines
-    return verses
+        else:
+            # Some lines may embed multiple verses. Split on digit boundaries.
+            parts = re.split(r"(?=\s*[0-9\u06F0-\u06F9\u0660-\u0669]{1,3}\s+)", blk)
+            for part in parts:
+                pm = VERSE_LINE_RE.match(part.strip())
+                if pm:
+                    verses.append(f"{pm.group(1)} {pm.group(2).strip()}")
+
+    # Last resort: if nothing detected, return cleaned blocks
+    return verses if verses else [b for b in blocks if b]
 
 
 def save_chapter(book_slug: str, chapter: int, verses: list[str]) -> None:
@@ -148,7 +178,7 @@ def scrape_book(book_slug: str, delay_sec: float = 0.5) -> None:
 
 def scrape_all_ot() -> None:
     for slug in OT_BOOK_SLUGS:
-        scrape_book(slug)
+        scrape_book(slug, delay_sec=0.8)
 
 
 if __name__ == "__main__":

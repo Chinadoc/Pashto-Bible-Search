@@ -21,6 +21,7 @@ from typing import Dict, List
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_ROOT, 'all_txt_copies')
+OT_DIR = os.path.join(APP_ROOT, 'ot_txt_copies')
 DICT_PATH = os.path.join(APP_ROOT, 'full_dictionary.json')
 OUT_FREQ = os.path.join(APP_ROOT, 'word_frequency_list.json')
 OUT_REF = os.path.join(APP_ROOT, 'nt_reference.json')
@@ -83,20 +84,21 @@ def load_dictionary_map() -> Dict[str, List[dict]]:
 
 def iter_texts() -> List[str]:
     texts: List[str] = []
-    if not os.path.isdir(DATA_DIR):
-        return texts
-    for filename in os.listdir(DATA_DIR):
-        if not filename.endswith('_pashto.txt'):
+    for dir_path in [DATA_DIR, OT_DIR]:
+        if not os.path.isdir(dir_path):
             continue
-        path = os.path.join(DATA_DIR, filename)
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    s = line.strip()
-                    if s:
-                        texts.append(s)
-        except Exception:
-            continue
+        for filename in os.listdir(dir_path):
+            if not filename.endswith('_pashto.txt'):
+                continue
+            path = os.path.join(dir_path, filename)
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        s = line.strip()
+                        if s:
+                            texts.append(s)
+            except Exception:
+                continue
     return texts
 
 
