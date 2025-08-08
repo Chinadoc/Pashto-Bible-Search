@@ -497,7 +497,8 @@ def format_for_display(word):
     return word.replace("_", " ")
 
 def highlight_verse(verse_text, search_term):
-    display_term = format_for_display(search_term)
+    # Normalize both verse text and the search term so Yeh variants match
+    display_term = normalize_pashto_char(format_for_display(search_term))
     style = "color:#ffd166; text-decoration: underline; font-weight:600; font-size:1.05em;"
     return re.sub(f'({re.escape(display_term)})', rf'<span style="{style}">\1</span>', normalize_pashto_char(verse_text), flags=re.IGNORECASE)
 
