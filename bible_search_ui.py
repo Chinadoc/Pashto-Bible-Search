@@ -170,10 +170,16 @@ def get_audio_bytes(url):
 
     Cached per-URL to avoid re-downloading. Includes a reasonable
     timeout so a slow network does not hang the whole page.
+    Validates the response to ensure it is actual audio and not an HTML page.
     """
     try:
-        response = requests.get(url, timeout=15)
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
+        content_type = (response.headers.get('Content-Type') or '').lower()
+        if 'audio' not in content_type and 'mpeg' not in content_type:
+            # Google Drive sometimes serves an HTML confirmation page; in that case, fall back to client-side URL playback
+            st.info("Server could not fetch audio bytes (non-audio response). Falling back to client-side playback.")
+            return None
         return response.content
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching audio: {e}")
@@ -538,6 +544,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
+            else:
+                # Fallback to client-side streaming if server-side fetch failed
+                st.audio(audio_url)
         st.markdown(f"[Download Audio]({audio_url})")
     else:
         st.caption("No audio file found for this verse.")
