@@ -261,6 +261,18 @@ def dict_pos_for(pashto_word: str) -> str:
         return ''
 
 
+def dict_english_for(pashto_word: str) -> str:
+    """Return English gloss from LingDocs dictionary when available."""
+    try:
+        key = pashto_word.replace('_', ' ')
+        entries = DICT_MAP.get(key)
+        if not entries:
+            return ''
+        return entries[0].get('e', '') or ''
+    except Exception:
+        return ''
+
+
 @st.cache_data
 def build_dictionary_dataframe():
     """Flatten DICT_MAP into a dataframe-friendly list of entries.
@@ -834,6 +846,7 @@ with tabs[1]:
                     'romanization': it.get('romanization', it.get('f', '')) or dict_romanization_for(p),
                     'pos': (it.get('pos') or it.get('c') or '') or dict_pos_for(p) or 'unknown',
                     'ts': it.get('ts', ''),
+                    'english': it.get('english', it.get('e', '')) or dict_english_for(p),
                 })
 
             pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
@@ -900,6 +913,7 @@ with tabs[1]:
                             'POS': r['pos'],
                             'Frequency': r['frequency'],
                             'ts': r.get('ts', ''),
+                            'English': r.get('english', ''),
                         }
                         for r in rows
                     ])

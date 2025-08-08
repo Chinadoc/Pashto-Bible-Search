@@ -134,6 +134,7 @@ def rebuild() -> None:
             'frequency': count,
             'romanization': rom,
             'pos': pos,
+            'english': eng,
         })
 
         ref_rows.append({
