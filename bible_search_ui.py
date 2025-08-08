@@ -30,6 +30,7 @@ WORD_FREQ_FILE = os.path.join(APP_ROOT, 'word_frequency_list.json')
 FULL_DICT_FILE = os.path.join(APP_ROOT, 'full_dictionary.json')
 FORM_TO_LEMMA_FILE = os.path.join(APP_ROOT, 'form_to_lemma.json')
 INFLECTIONS_CACHE_FILE = os.path.join(APP_ROOT, 'inflections_cache.json')
+NT_REFERENCE_FILE = os.path.join(APP_ROOT, 'nt_reference.json')
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
 WORD_FREQ_DRIVE_ID = "1PYrdE16bJlyGiNO5hi1qxed7nTF0-WCo"
 FULL_DICT_DRIVE_ID = "1Zay2s8siAV6d7pQec9uEbh-3YpzBtNol"
@@ -188,6 +189,15 @@ def load_word_frequency_data():
     except json.JSONDecodeError:
         return []
 
+@st.cache_data
+def load_nt_reference_data():
+    try:
+        if not os.path.exists(NT_REFERENCE_FILE):
+            return []
+        with open(NT_REFERENCE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
 # Optional LingDocs full dictionary (for richer POS/romanization lookups)
 @st.cache_data
 def load_lingdocs_dictionary_map():
@@ -808,7 +818,9 @@ with tabs[1]:
 
     # Frequency view: use word_frequency_list.json, includes POS categories
     with sub[0]:
-        raw_freq_items = load_word_frequency_data()
+        # Prefer the prebuilt NT reference cache if available (faster and with ts)
+        nt_ref = load_nt_reference_data()
+        raw_freq_items = nt_ref if nt_ref else load_word_frequency_data()
         if not freq_items:
             st.info("Word frequency list not available yet.")
         else:
@@ -818,9 +830,10 @@ with tabs[1]:
                 p = it.get('pashto', '')
                 freq_items.append({
                     'pashto': p,
-                    'frequency': it.get('frequency', 0),
-                    'romanization': it.get('romanization', '') or dict_romanization_for(p),
-                    'pos': dict_pos_for(p) or it.get('pos', 'unknown'),
+                    'frequency': it.get('frequency', it.get('count', 0)),
+                    'romanization': it.get('romanization', it.get('f', '')) or dict_romanization_for(p),
+                    'pos': (it.get('pos') or it.get('c') or '') or dict_pos_for(p) or 'unknown',
+                    'ts': it.get('ts', ''),
                 })
 
             pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
@@ -886,6 +899,7 @@ with tabs[1]:
                             'Romanization': r['romanization'],
                             'POS': r['pos'],
                             'Frequency': r['frequency'],
+                            'ts': r.get('ts', ''),
                         }
                         for r in rows
                     ])
