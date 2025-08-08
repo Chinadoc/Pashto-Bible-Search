@@ -120,7 +120,11 @@ def rebuild() -> None:
         if entries:
             ent = entries[0]
             rom = (ent.get('f') or '').split(',')[0].strip()
-            pos = ent.get('c', '') or 'unknown'
+            # Normalize POS label to merge minor spacing/punctuation differences
+            raw_pos = ent.get('c', '') or 'unknown'
+            pos = re.sub(r"\s*\.\s*", ".", raw_pos.lower())
+            pos = re.sub(r"\s+/\s+", " / ", pos)
+            pos = re.sub(r"\s+", " ", pos).strip()
             ts = ent.get('ts', '')
             eng = ent.get('e', '')
         else:

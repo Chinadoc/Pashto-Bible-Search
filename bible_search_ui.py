@@ -273,6 +273,19 @@ def dict_english_for(pashto_word: str) -> str:
         return ''
 
 
+def normalize_pos_label(label: str) -> str:
+    """Canonicalize POS labels to merge near-duplicates like 'n. m.' vs 'n.m.'."""
+    if not label:
+        return 'unknown'
+    s = str(label).lower()
+    # unify spaces around dots and slashes
+    s = re.sub(r"\s*\.\s*", ".", s)
+    s = re.sub(r"\s*/\s*", " / ", s)
+    # collapse multiple spaces
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
 @st.cache_data
 def build_dictionary_dataframe():
     """Flatten DICT_MAP into a dataframe-friendly list of entries.
@@ -844,7 +857,7 @@ with tabs[1]:
                     'pashto': p,
                     'frequency': it.get('frequency', it.get('count', 0)),
                     'romanization': it.get('romanization', it.get('f', '')) or dict_romanization_for(p),
-                    'pos': (it.get('pos') or it.get('c') or '') or dict_pos_for(p) or 'unknown',
+                    'pos': normalize_pos_label((it.get('pos') or it.get('c') or '') or dict_pos_for(p) or 'unknown'),
                     'ts': it.get('ts', ''),
                     'english': it.get('english', it.get('e', '')) or dict_english_for(p),
                 })
