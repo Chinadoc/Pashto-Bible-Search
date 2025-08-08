@@ -947,7 +947,7 @@ with tabs[1]:
                                 st.rerun()
                     else:
                         pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows], key=f"pick_{selected_pos}")
-                        cols_actions = st.columns(2)
+                        cols_actions = st.columns(3)
                         with cols_actions[0]:
                             if st.button("Search selected", key=f"search_{selected_pos}"):
                                 st.session_state['main_search'] = pick
@@ -962,6 +962,17 @@ with tabs[1]:
                                     else:
                                         for vref in sorted(set(occ['verses'])):
                                             display_verse_with_audio(vref, pick, bible_text)
+                        with cols_actions[2]:
+                            sel = next((r for r in rows if r.get('pashto', '') == pick), None)
+                            ts_val = sel.get('ts') if sel else ''
+                            if ts_val and st.button("Play dict audio", key=f"playdict_{selected_pos}"):
+                                dict_audio_url = f"https://storage.lingdocs.com/audio/{ts_val}.mp3"
+                                audio_bytes = get_audio_bytes(dict_audio_url)
+                                if audio_bytes:
+                                    st.audio(audio_bytes, format='audio/mp3')
+                        sel2 = next((r for r in rows if r.get('pashto', '') == pick), None)
+                        if sel2 and sel2.get('english'):
+                            st.caption(f"English: {sel2['english']}")
 
             for i, name in enumerate(tab_names):
                 with pos_tabs[i]:
