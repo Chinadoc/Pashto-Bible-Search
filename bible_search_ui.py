@@ -5,6 +5,7 @@ import os
 import requests
 import pandas as pd
 from collections import defaultdict
+import hashlib
 from search_utils import (
     search_grammatical_forms,
     get_form_occurrences,
@@ -441,8 +442,12 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     if audio_url:
         # Fetch audio lazily, only when requested. This prevents dozens of
         # simultaneous downloads that can stall the page.
+        # Use a deterministic hash of verse_ref + search_term to avoid
+        # duplicate element keys when the same verse appears under
+        # multiple forms.
+        unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
         safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
-        if st.button("Load audio", key=f"load_audio_{safe_key}"):
+        if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}"):
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
