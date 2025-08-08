@@ -127,11 +127,16 @@ def rebuild() -> None:
             pos = re.sub(r"\s+", " ", pos).strip()
             ts = ent.get('ts', '')
             eng = ent.get('e', '')
+            # Optional clues seen in JSON (r/a/i) – keep as metadata when present
+            r_field = ent.get('r')
+            a_field = ent.get('a')
+            i_field = ent.get('i')
         else:
             rom = ''
             pos = 'unknown'
             ts = ''
             eng = ''
+            r_field = a_field = i_field = None
 
         freq_rows.append({
             'pashto': pashto,
@@ -148,6 +153,9 @@ def rebuild() -> None:
             'pos': pos,
             'ts': ts,
             'english': eng,
+            'r': r_field,
+            'a': a_field,
+            'i': i_field,
         })
 
     with open(OUT_FREQ, 'w', encoding='utf-8') as f:
