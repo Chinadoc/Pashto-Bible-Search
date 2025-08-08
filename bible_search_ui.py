@@ -212,6 +212,17 @@ ensure_file_from_drive(FULL_DICT_DRIVE_ID, FULL_DICT_FILE)
 ensure_full_dictionary_from_web(FULL_DICT_FILE)
 DICT_MAP = load_lingdocs_dictionary_map()
 
+def _next_unique_suffix(key_family: str) -> str:
+    """Return a monotonically increasing suffix per family for unique widget keys.
+
+    Needed to avoid StreamlitDuplicateElementKey when identical components are
+    created multiple times in a single rerun (e.g., same verse across groups).
+    """
+    family = f"__counter__{key_family}"
+    count = st.session_state.get(family, 0) + 1
+    st.session_state[family] = count
+    return str(count)
+
 def dict_romanization_for(pashto_word: str) -> str:
     try:
         key = pashto_word.replace('_', ' ')
@@ -447,7 +458,8 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         # multiple forms.
         unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
         safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
-        if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}"):
+        suffix = _next_unique_suffix("load_audio")
+        if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
