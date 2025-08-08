@@ -921,9 +921,21 @@ with tabs[1]:
                                 st.rerun()
                     else:
                         pick = st.selectbox("Insert a word to search", options=[r.get('pashto', '') for r in rows], key=f"pick_{selected_pos}")
-                        if st.button("Search selected", key=f"search_{selected_pos}"):
-                            st.session_state['main_search'] = pick
-                            st.rerun()
+                        cols_actions = st.columns(2)
+                        with cols_actions[0]:
+                            if st.button("Search selected", key=f"search_{selected_pos}"):
+                                st.session_state['main_search'] = pick
+                                st.rerun()
+                        with cols_actions[1]:
+                            if st.button("View references", key=f"view_refs_{selected_pos}"):
+                                norm_pick = normalize_pashto_char(pick)
+                                occ = form_occurrence_index.get(norm_pick, {'count': 0, 'verses': []})
+                                with st.modal(f"References for {pick} — {occ['count']} hits"):
+                                    if not occ['verses']:
+                                        st.info("No references found in the current index.")
+                                    else:
+                                        for vref in sorted(set(occ['verses'])):
+                                            display_verse_with_audio(vref, pick, bible_text)
 
             for i, name in enumerate(tab_names):
                 with pos_tabs[i]:
