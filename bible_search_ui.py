@@ -222,6 +222,28 @@ ensure_file_from_drive(FULL_DICT_DRIVE_ID, FULL_DICT_FILE)
 ensure_full_dictionary_from_web(FULL_DICT_FILE)
 DICT_MAP = load_lingdocs_dictionary_map()
 
+@st.cache_data
+def _build_dict_norm_map():
+    norm_map = {}
+    for p, entries in DICT_MAP.items():
+        key = normalize_pashto_char(p)
+        if key not in norm_map:
+            norm_map[key] = entries
+    return norm_map
+
+DICT_NORM_MAP = _build_dict_norm_map()
+
+def _get_first_entry_for(pashto_word: str):
+    key = (pashto_word or '').replace('_', ' ')
+    entries = DICT_MAP.get(key)
+    if entries:
+        return entries[0]
+    nkey = normalize_pashto_char(key)
+    nentries = DICT_NORM_MAP.get(nkey)
+    if nentries:
+        return nentries[0]
+    return None
+
 def _next_unique_suffix(key_family: str) -> str:
     """Return a monotonically increasing suffix per family for unique widget keys.
 
@@ -235,11 +257,10 @@ def _next_unique_suffix(key_family: str) -> str:
 
 def dict_romanization_for(pashto_word: str) -> str:
     try:
-        key = pashto_word.replace('_', ' ')
-        entries = DICT_MAP.get(key)
-        if not entries:
+        ent = _get_first_entry_for(pashto_word)
+        if not ent:
             return ''
-        f = entries[0].get('f', '')
+        f = ent.get('f', '')
         if not f:
             return ''
         # Some entries contain multiple variants separated by comma
@@ -251,11 +272,10 @@ def dict_romanization_for(pashto_word: str) -> str:
 def dict_pos_for(pashto_word: str) -> str:
     """Return part-of-speech from LingDocs dictionary when available."""
     try:
-        key = pashto_word.replace('_', ' ')
-        entries = DICT_MAP.get(key)
-        if not entries:
+        ent = _get_first_entry_for(pashto_word)
+        if not ent:
             return ''
-        pos = entries[0].get('c', '')
+        pos = ent.get('c', '')
         return pos or ''
     except Exception:
         return ''
@@ -264,11 +284,10 @@ def dict_pos_for(pashto_word: str) -> str:
 def dict_english_for(pashto_word: str) -> str:
     """Return English gloss from LingDocs dictionary when available."""
     try:
-        key = pashto_word.replace('_', ' ')
-        entries = DICT_MAP.get(key)
-        if not entries:
+        ent = _get_first_entry_for(pashto_word)
+        if not ent:
             return ''
-        return entries[0].get('e', '') or ''
+        return ent.get('e', '') or ''
     except Exception:
         return ''
 
