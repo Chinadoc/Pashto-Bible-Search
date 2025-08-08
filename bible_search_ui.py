@@ -163,10 +163,14 @@ WORD_FREQ_MAP = load_word_freq_map()
 
 @st.cache_data
 def get_audio_bytes(url):
-    """Downloads the audio file and returns its content as bytes."""
+    """Downloads the audio file and returns its content as bytes.
+
+    Cached per-URL to avoid re-downloading. Includes a reasonable
+    timeout so a slow network does not hang the whole page.
+    """
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Will raise an HTTPError for bad responses
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
         return response.content
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching audio: {e}")
@@ -435,10 +439,14 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        audio_bytes = get_audio_bytes(audio_url)
-        if audio_bytes:
-            st.audio(audio_bytes, format='audio/mp3')
-            st.markdown(f"[Download Audio]({audio_url})")
+        # Fetch audio lazily, only when requested. This prevents dozens of
+        # simultaneous downloads that can stall the page.
+        safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
+        if st.button("Load audio", key=f"load_audio_{safe_key}"):
+            audio_bytes = get_audio_bytes(audio_url)
+            if audio_bytes:
+                st.audio(audio_bytes, format='audio/mp3')
+        st.markdown(f"[Download Audio]({audio_url})")
     else:
         st.caption("No audio file found for this verse.")
     st.markdown("---")
