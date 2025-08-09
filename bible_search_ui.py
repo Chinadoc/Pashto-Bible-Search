@@ -455,6 +455,22 @@ def classify_pos_family(pos_label: str) -> str:
     return 'other'
 
 
+def families_for_pos(pos_label: str) -> set:
+    s = (pos_label or '').lower()
+    fams = set()
+    if 'verb' in s or re.search(r"\bv\b|v\.", s):
+        fams.add('Verb')
+    if 'adj' in s:
+        fams.add('Adjective')
+    if 'adv' in s:
+        fams.add('Adverb')
+    if 'n.' in s or re.search(r"\bn\.", s) or 'n.m' in s or 'n.f' in s or 'noun' in s:
+        fams.add('Noun')
+    if not fams:
+        fams.add('Other')
+    return fams
+
+
 def gender_from_pos(pos_label: str) -> str:
     s = (pos_label or '').lower()
     if 'unisex' in s or 'm.f' in s or 'mf' in s:
@@ -1331,15 +1347,14 @@ with tabs[1]:
             st.info("Word frequency list not available yet.")
             return
         freq_items = build_freq_items(raw_freq_items)
-        # Build top-level POS family tabs
-        family_buckets = {
-            'All': freq_items,
-            'Verb': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'verb'],
-            'Noun': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'noun'],
-            'Adjective': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'adjective'],
-            'Adverb': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'adverb'],
-            'Other': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'other'],
-        }
+        # Build top-level POS family tabs (allow entries to appear in multiple families)
+        family_buckets = {'All': list(freq_items), 'Verb': [], 'Noun': [], 'Adjective': [], 'Adverb': [], 'Other': []}
+        for it in freq_items:
+            fams = families_for_pos(it.get('pos',''))
+            for fam in fams:
+                family_buckets[fam].append(it)
+            if fams == {'Other'}:
+                family_buckets['Other'].append(it)
         tab_names = list(family_buckets.keys())
         pos_tabs = st.tabs(tab_names)
 
@@ -1453,20 +1468,54 @@ with tabs[1]:
                 df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
             else:
                 rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
-                # Sub-filters bar
-                c1, c2, c3, c4 = st.columns([1,1,2,3])
-                # Gender filter
+                # Sub-filters bar as toggles (no dropdowns)
+                c1, c2, c3, c4 = st.columns([1.2,1,2.4,3])
+                # Gender radio (horizontal)
                 with c1:
-                    gender_val = st.selectbox("Gender", options=['', 'm', 'f', 'unisex'], index=0, key=f"{key_prefix}_gender_{selected_pos}")
-                # Number filter (for nouns)
+                    gender_val = st.radio("Gender", options=['All','m','f','unisex'], horizontal=True, key=f"{key_prefix}_gender_{selected_pos}")
+                    gender_val = '' if gender_val == 'All' else gender_val
+                # Number radio (for nouns)
                 with c2:
-                    num_val = st.selectbox("Number", options=['', 'sg', 'pl'], index=0, key=f"{key_prefix}_num_{selected_pos}") if selected_pos == 'Noun' else ''
-                # Inflection filter (for nouns)
+                    num_val = st.radio("Number", options=['All','sg','pl'], horizontal=True, key=f"{key_prefix}_num_{selected_pos}") if selected_pos == 'Noun' else 'All'
+                    num_val = '' if num_val == 'All' else num_val
+                # Inflection toggles (for nouns)
                 with c3:
-                    infl_val = st.multiselect("Inflection", options=['base','inflection_1','inflection_2','vocative'], default=[], key=f"{key_prefix}_infl_{selected_pos}") if selected_pos == 'Noun' else []
-                # Verb form/lemma filter
+                    if selected_pos == 'Noun':
+                        cc = st.columns(4)
+                        infl_opts = [('base','Base'),('inflection_1','Infl 1'),('inflection_2','Infl 2'),('vocative','Vocative')]
+                        infl_val = []
+                        for i,(key,label) in enumerate(infl_opts):
+                            if cc[i].checkbox(label, value=False, key=f"{key_prefix}_infl_{selected_pos}_{key}"):
+                                infl_val.append(key)
+                    else:
+                        infl_val = []
+                # Verb form/lemma toggles
                 with c4:
-                    vf_mode = st.selectbox("Verb entries", options=['all','lemma only','forms only'], index=0, key=f"{key_prefix}_verbmode_{selected_pos}") if selected_pos == 'Verb' else 'all'
+                    if selected_pos == 'Verb':
+                        vm_cols = st.columns(3)
+                        vm_all = vm_cols[0].checkbox('All entries', value=True, key=f"{key_prefix}_vm_all_{selected_pos}")
+                        vm_lem = vm_cols[1].checkbox('Lemmas', value=False, key=f"{key_prefix}_vm_lem_{selected_pos}")
+                        vm_forms = vm_cols[2].checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}")
+                        if vm_all:
+                            vf_mode = 'all'
+                        elif vm_lem and not vm_forms:
+                            vf_mode = 'lemma only'
+                        elif vm_forms and not vm_lem:
+                            vf_mode = 'forms only'
+                        else:
+                            vf_mode = 'all'
+                    else:
+                        vf_mode = 'all'
+                # Second-tier subcategory toggles for 'Other'
+                if selected_pos == 'Other':
+                    oc = st.columns(5)
+                    filt_other = {
+                        'interj': oc[0].checkbox('Interjection', value=False, key=f"{key_prefix}_oth_interj"),
+                        'conj': oc[1].checkbox('Conjunction', value=False, key=f"{key_prefix}_oth_conj"),
+                        'adpos': oc[2].checkbox('Adposition', value=False, key=f"{key_prefix}_oth_adpos"),
+                        'particle': oc[3].checkbox('Particle', value=False, key=f"{key_prefix}_oth_part"),
+                        'pron': oc[4].checkbox('Pronoun', value=False, key=f"{key_prefix}_oth_pron"),
+                    }
 
                 # Apply sub-filters
                 if gender_val:
@@ -1493,6 +1542,22 @@ with tabs[1]:
                         rows = [r for r in rows if r.get('Kind','') != 'verb form']
                     elif vf_mode == 'forms only':
                         rows = [r for r in rows if r.get('Kind','') == 'verb form']
+                if selected_pos == 'Other' and any(filt_other.values()):
+                    def other_match(pos: str) -> bool:
+                        s = (pos or '').lower()
+                        m = True
+                        if filt_other['interj']:
+                            m = m and ('interj' in s)
+                        if filt_other['conj']:
+                            m = m and ('conj' in s)
+                        if filt_other['adpos']:
+                            m = m and (('adpos' in s) or ('postpos' in s) or ('prep' in s))
+                        if filt_other['particle']:
+                            m = m and ('part' in s)
+                        if filt_other['pron']:
+                            m = m and ('pron' in s)
+                        return m
+                    rows = [r for r in rows if other_match(r['POS'])]
 
                 df = pd.DataFrame([
                     {
