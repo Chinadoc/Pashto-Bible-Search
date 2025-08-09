@@ -727,37 +727,24 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     audio_url = find_audio_url(verse_ref)
     if audio_url:
         # Auto-load up to configured max per page; fallback to on-demand button
-        if AUTO_LOAD_AUDIO:
-            cnt = int(st.session_state.get('audio_loaded_count', 0))
-            if cnt < AUTO_LOAD_AUDIO_MAX:
-                audio_bytes = get_audio_bytes(audio_url)
-                if audio_bytes:
-                    st.audio(audio_bytes, format='audio/mp3')
-                    st.session_state['audio_loaded_count'] = cnt + 1
-                else:
-                    unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
-                    safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
-                    suffix = _next_unique_suffix("load_audio")
-                    if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
-                        audio_bytes = get_audio_bytes(audio_url)
-                        if audio_bytes:
-                            st.audio(audio_bytes, format='audio/mp3')
-            else:
-                unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
-                safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
-                suffix = _next_unique_suffix("load_audio")
-                if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
-                    audio_bytes = get_audio_bytes(audio_url)
-                    if audio_bytes:
-                        st.audio(audio_bytes, format='audio/mp3')
+        unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
+        safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
+        session_flag = f"audio_show_{safe_key}_{unique_hash}"
+        if AUTO_LOAD_AUDIO and int(st.session_state.get('audio_loaded_count', 0)) < AUTO_LOAD_AUDIO_MAX:
+            audio_bytes = get_audio_bytes(audio_url)
+            if audio_bytes:
+                st.audio(audio_bytes, format='audio/mp3')
+                st.session_state['audio_loaded_count'] = int(st.session_state.get('audio_loaded_count', 0)) + 1
+                st.session_state[session_flag] = True
         else:
-            unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
-            safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
             suffix = _next_unique_suffix("load_audio")
             if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
-                audio_bytes = get_audio_bytes(audio_url)
-                if audio_bytes:
-                    st.audio(audio_bytes, format='audio/mp3')
+                st.session_state[session_flag] = True
+        # Persist display after rerun when requested
+        if st.session_state.get(session_flag):
+            audio_bytes = get_audio_bytes(audio_url)
+            if audio_bytes:
+                st.audio(audio_bytes, format='audio/mp3')
         st.markdown(f"[Download Audio]({audio_url})")
     # If there is no audio (e.g., most Old Testament verses), we simply omit
     # the audio UI without displaying a warning so the results remain clean.
@@ -782,7 +769,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
 
 # --- Small UI helpers ---
 def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_label: str, key_prefix: str):
-image.png    """Render forms as dropdowns (expanders) with inline verse lists and an open-in-tab link.
+    """Render forms as dropdowns (expanders) with inline verse lists and an open-in-tab link.
 
     forms_dict: mapping like conj['present'] where values are tuples (pashto, romanization)
     """
