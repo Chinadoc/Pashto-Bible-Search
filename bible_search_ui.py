@@ -730,18 +730,28 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
         safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
         session_flag = f"audio_show_{safe_key}_{unique_hash}"
-        if AUTO_LOAD_AUDIO and int(st.session_state.get('audio_loaded_count', 0)) < AUTO_LOAD_AUDIO_MAX:
+        rendered_audio = False
+        # 1) Auto-load first N clips
+        cnt = int(st.session_state.get('audio_loaded_count', 0))
+        if AUTO_LOAD_AUDIO and cnt < AUTO_LOAD_AUDIO_MAX:
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
-                st.session_state['audio_loaded_count'] = int(st.session_state.get('audio_loaded_count', 0)) + 1
+                st.session_state['audio_loaded_count'] = cnt + 1
+                rendered_audio = True
                 st.session_state[session_flag] = True
-        else:
+        # 2) Manual button if not yet rendered
+        if not rendered_audio:
             suffix = _next_unique_suffix("load_audio")
             if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
                 st.session_state[session_flag] = True
-        # Persist display after rerun when requested
-        if st.session_state.get(session_flag):
+                # immediate render on this run
+                audio_bytes = get_audio_bytes(audio_url)
+                if audio_bytes:
+                    st.audio(audio_bytes, format='audio/mp3')
+                    rendered_audio = True
+        # 3) Persist after rerun
+        if st.session_state.get(session_flag) and not rendered_audio:
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
