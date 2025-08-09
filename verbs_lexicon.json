@@ -34,6 +34,63 @@
       "perfective_root": "bótlul",
       "past_participle": "botlúlay"
     }
+  },
+  "کول": {
+    "stems": {
+      "imperfective": "کو",
+      "perfective": "وکړ"
+    },
+    "roots": {
+      "imperfective": "کول",
+      "perfective": "وکړ"
+    },
+    "past_participle": "کړی",
+    "romanization": {
+      "imperfective_stem": "ko",
+      "perfective_stem": "óokṛ",
+      "imperfective_root": "kawúl",
+      "perfective_root": "óokṛ",
+      "past_participle": "kṛúy"
+    }
+<<<<<<< Current (Your changes)
+=======
+  },
+  "تلل": {
+    "stems": {
+      "imperfective": "ځ",
+      "perfective": "لاړ ش"
+    },
+    "roots": {
+      "imperfective": "تلل",
+      "perfective": "لاړل"
+    },
+    "past_participle": "تللی",
+    "romanization": {
+      "imperfective_stem": "dz",
+      "perfective_stem": "laaR sh",
+      "imperfective_root": "tlul",
+      "perfective_root": "laaRul",
+      "past_participle": "tlúlay"
+    }
+  },
+  "کېدل": {
+    "stems": {
+      "imperfective": "کېږ",
+      "perfective": "وش"
+    },
+    "roots": {
+      "imperfective": "کېدل",
+      "perfective": "وشو"
+    },
+    "past_participle": "شوی",
+    "romanization": {
+      "imperfective_stem": "kéy̌",
+      "perfective_stem": "óosh",
+      "imperfective_root": "kedál",
+      "perfective_root": "óosho",
+      "past_participle": "shóy"
+    }
+>>>>>>> Incoming (Background Agent changes)
   }
 }
 
