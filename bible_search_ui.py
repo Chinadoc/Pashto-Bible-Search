@@ -15,6 +15,7 @@ from search_utils import (
 )
 from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form
 from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index
+import unicodedata
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
 SANDWICH_MARKERS = [
@@ -847,11 +848,33 @@ def render_past_expanders(title, forms_dict, occurrence_index, text_map):
 def is_verse_reference(query):
     return re.match(r'^[a-zA-Z\s]+\s\d+:\d+$', query.strip())
 
+BOOK_CANON_MAP = {
+    'acts': 'Acts', 'colossians': 'Colossians', 'ephesians': 'Ephesians', 'galatians': 'Galatians',
+    'hebrews': 'Hebrews', 'james': 'James', 'john': 'John', 'jude': 'Jude', 'luke': 'Luke',
+    'mark': 'Mark', 'matthew': 'Matthew', 'philemon': 'Philemon', 'philippians': 'Philippians',
+    'revelation': 'Revelation', 'romans': 'Romans', 'titus': 'Titus',
+}
+
+def canonicalize_reference(ref: str) -> str:
+    m = re.match(r'^([a-zA-Z\s]+)\s(\d+):(\d+)$', ref.strip())
+    if not m:
+        return ref
+    book_raw, ch, vs = m.groups()
+    key = book_raw.strip().lower()
+    key = re.sub(r"\s+", "", key)
+    # try direct key, else word-by-word join
+    book = BOOK_CANON_MAP.get(key)
+    if not book:
+        words = re.findall(r"[a-zA-Z]+", book_raw.strip())
+        book = " ".join(w.capitalize() for w in words) if words else book_raw.strip()
+    return f"{book} {int(ch)}:{int(vs)}"
+
 def handle_verse_search(query, bible_text):
     # reset audio counter per search render
     st.session_state['audio_loaded_count'] = 0
-    st.header(f"Verse Lookup: {query}")
-    display_verse_with_audio(query, "", bible_text)
+    canon = canonicalize_reference(query)
+    st.header(f"Verse Lookup: {canon}")
+    display_verse_with_audio(canon, "", bible_text)
 
 
 def handle_phrase_search(query, nt_text, ot_text, scope):
@@ -1199,14 +1222,62 @@ with tabs[0]:
 
     if search_query:
         st.markdown("---")
-        normalized_query = normalize_pashto_char(search_query.strip())
+        raw_query = search_query.strip()
+        normalized_query = normalize_pashto_char(raw_query)
 
-        if is_verse_reference(normalized_query):
-            handle_verse_search(normalized_query, bible_text)
+        # Romanization support -------------------------------------------------
+        def normalize_roman(s: str) -> str:
+            s = s.lower().strip()
+            # remove accents/diacritics
+            trans = str.maketrans({
+                'á':'a','à':'a','ā':'a','ä':'a','â':'a',
+                'é':'e','è':'e','ē':'e','ë':'e','ê':'e',
+                'í':'i','ì':'i','ī':'i','ï':'i','î':'i',
+                'ó':'o','ò':'o','ō':'o','ö':'o','ô':'o',
+                'ú':'u','ù':'u','ū':'u','ü':'u','û':'u',
+                'ý':'y','ÿ':'y',
+                'ḍ':'d','ṛ':'r','ṣ':'s','ṭ':'t','ẓ':'z',
+            })
+            s = s.translate(trans)
+            s = re.sub(r"[^a-z0-9]+", "", s)
+            return s
+
+        @st.cache_data
+        def build_roman_to_pashto_index():
+            idx = {}
+            for p, entries in DICT_MAP.items():
+                for ent in entries:
+                    f = ent.get('f', '') or ''
+                    if not f:
+                        continue
+                    parts = [x.strip() for x in str(f).split(',') if x.strip()]
+                    for part in parts:
+                        key = normalize_roman(part)
+                        if not key:
+                            continue
+                        idx.setdefault(key, set()).add(p)
+            # flatten to list
+            return {k: sorted(list(v)) for k, v in idx.items()}
+
+        contains_pashto = bool(re.search(r'[\u0600-\u06FF]', normalized_query))
+        ROM_IDX = build_roman_to_pashto_index()
+
+        if is_verse_reference(raw_query):
+            handle_verse_search(raw_query, bible_text)
         elif " " in normalized_query:
             handle_phrase_search(normalized_query, nt_text, ot_text, scope)
         else:
-            handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
+            if not contains_pashto:
+                rq = normalize_roman(raw_query)
+                cand = ROM_IDX.get(rq)
+                if cand:
+                    pick = cand[0]
+                    st.info(f"Interpreting romanization '{raw_query}' as '{pick}'")
+                    handle_grammatical_search(pick, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
+                else:
+                    handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
+            else:
+                handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
     else:
         st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
 
