@@ -58,6 +58,22 @@ def load_lexicon() -> Dict[str, Any]:
 
 VERBS = load_lexicon()
 
+# Optional fast dictionary index for quick romanization lookup of forms
+_FAST_INDEX_PATH = os.path.join(APP_ROOT, 'dictionary_fast_index.json')
+try:
+    if os.path.exists(_FAST_INDEX_PATH):
+        with open(_FAST_INDEX_PATH, 'r', encoding='utf-8') as _f:
+            _FAST_DIDX = json.load(_f)
+    else:
+        _FAST_DIDX = {}
+except Exception:
+    _FAST_DIDX = {}
+
+# Optional prebuilt verb forms index on disk
+_VERB_FORMS_INDEX_PATH = os.path.join(APP_ROOT, 'verb_forms_index.json')
+_FORMS_ROOT_INDEX: Dict[str, str] = {}
+_FORMS_ROM_INDEX: Dict[str, str] = {}
+
 def _normalize_pashto_key(text: str) -> str:
     if not isinstance(text, str):
         return text
@@ -376,20 +392,52 @@ def infer_root_from_form(form_ps: str) -> str:
 
 
 def build_forms_root_index() -> Dict[str, str]:
-    index: Dict[str, str] = {}
+    """Return a cached map of verb form → root; build and persist if needed."""
+    global _FORMS_ROOT_INDEX, _FORMS_ROM_INDEX
+    if _FORMS_ROOT_INDEX:
+        return _FORMS_ROOT_INDEX
+    # Try disk cache first
+    try:
+        if os.path.exists(_VERB_FORMS_INDEX_PATH) and os.path.getsize(_VERB_FORMS_INDEX_PATH) > 0:
+            with open(_VERB_FORMS_INDEX_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            _FORMS_ROOT_INDEX = data.get('form_to_root', {}) or {}
+            _FORMS_ROM_INDEX = data.get('form_to_rom', {}) or {}
+            if _FORMS_ROOT_INDEX:
+                return _FORMS_ROOT_INDEX
+    except Exception:
+        pass
+
+    form_to_root: Dict[str, str] = {}
+    form_to_rom: Dict[str, str] = {}
     for root in VERBS.keys():
         conj = conjugate_verb(root)
         if not conj:
             continue
+        # Collect tables with romanization
         for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past']:
-            for ps, _ in conj[dname].values():
-                index[ps] = root
-        # also include roots and participle
+            for ps, rom in conj[dname].values():
+                form_to_root[ps] = root
+                if rom:
+                    form_to_rom[ps] = rom
         meta = conj['meta']
-        index[meta['imperfective_root']] = root
-        index[meta['perfective_root']] = root
-        index[meta['past_participle']] = root
-    return index
+        for ps, rom in [
+            (meta['imperfective_root'], conj['meta']['romanization'].get('imperfective_root', '')),
+            (meta['perfective_root'], conj['meta']['romanization'].get('perfective_root', '')),
+            (meta['past_participle'], conj['meta']['romanization'].get('past_participle', '')),
+        ]:
+            form_to_root[ps] = root
+            if rom:
+                form_to_rom[ps] = rom
+
+    _FORMS_ROOT_INDEX = form_to_root
+    _FORMS_ROM_INDEX = form_to_rom
+    try:
+        with open(_VERB_FORMS_INDEX_PATH, 'w', encoding='utf-8') as f:
+            json.dump({'form_to_root': form_to_root, 'form_to_rom': form_to_rom}, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return _FORMS_ROOT_INDEX
 
 
 def find_lexicon_root_for_form(form_ps: str) -> str:
@@ -397,3 +445,22 @@ def find_lexicon_root_for_form(form_ps: str) -> str:
     return forms_index.get(form_ps, '')
 
 
+def romanization_for_form_fast(form_ps: str) -> str:
+    """Quickly fetch romanization using fast sources: verb forms index or dictionary fast index."""
+    try:
+        if not _FORMS_ROM_INDEX:
+            build_forms_root_index()
+        rom = _FORMS_ROM_INDEX.get(form_ps, '')
+        if rom:
+            return rom
+        if _FAST_DIDX:
+            by_p = _FAST_DIDX.get('by_pashto', {})
+            by_pn = _FAST_DIDX.get('by_pashto_norm', {})
+            if form_ps in by_p:
+                return by_p[form_ps].get('rom', '') or ''
+            nkey = _normalize_pashto_key(form_ps)
+            if nkey in by_pn:
+                return by_pn[nkey].get('rom', '') or ''
+    except Exception:
+        pass
+    return ''
