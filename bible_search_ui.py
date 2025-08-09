@@ -12,7 +12,7 @@ from search_utils import (
     get_form_occurrences_any,
     build_form_occurrence_index,
 )
-from verb_inflector import conjugate_verb, find_lexicon_root_for_form
+from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form
 from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
@@ -760,11 +760,22 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.markdown(f"[Download Audio]({audio_url})")
     # If there is no audio (e.g., most Old Testament verses), we simply omit
     # the audio UI without displaying a warning so the results remain clean.
-    # Reason annotation (heuristic)
+    # Reason annotation (heuristic) — only for nouns/adjectives
     if search_term:
-        reasons = classify_inflection_reason_struct(full_verse, search_term)
-        if reasons:
-            st.caption(f"Reason(s) for inflection (heuristic): {', '.join(reasons)}")
+        try:
+            pos = normalize_pos_label(dict_pos_for(search_term))
+            tokens = re.findall(r"[a-z]+", pos)
+            is_noun_adj = bool(set(tokens) & {"n", "noun", "adj", "adjective"})
+            # Fallback: if dictionary is silent, try noun lemma detection
+            if not is_noun_adj and 'find_noun_lemma_for_form' in globals():
+                lemma = find_noun_lemma_for_form(search_term)
+                is_noun_adj = bool(lemma and lemma in NOUNS)
+            if is_noun_adj:
+                reasons = classify_inflection_reason_struct(full_verse, search_term)
+                if reasons:
+                    st.caption(f"Reason(s) for inflection (heuristic): {', '.join(reasons)}")
+        except Exception:
+            pass
     st.markdown("---")
 
 
@@ -849,6 +860,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         form_to_lemma.get(normalized_form)
         or find_lexicon_root_for_form(normalized_form)
         or noun_forms_index.get(normalized_form)
+        or infer_root_from_form(normalized_form)
     )
     conj_for_form = conjugate_verb(lex_root) if lex_root else None
     form_rom = ''
@@ -902,12 +914,15 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             st.header(f"Grammatical Results for Root: `{format_for_display(lex_root)}`")
             meta = conj['meta']
             st.caption(
-                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
-                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
-                f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
+                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization'].get('imperfective_stem','')}) · "
+                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
+                f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
-            render_forms_summary("present", conj['present'], form_occurrence_index)
-            render_forms_summary("subjunctive", conj['subjunctive'], form_occurrence_index)
+            render_forms_summary("present", conj.get('present', {}), form_occurrence_index)
+            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index)
+            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index)
+            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index)
+            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index)
             cols = st.columns(2)
             with cols[0]:
                 st.write("present")
@@ -947,6 +962,19 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                     with st.expander(f"{ps} verses"):
                         for vref in sorted(set(occ['verses'])):
                             display_verse_with_audio(vref, ps, bible_text)
+            # Ability pasts
+            st.subheader("Ability — continuous past")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                if 'ability_continuous_past' in conj and k in conj['ability_continuous_past']:
+                    ps, rom = conj['ability_continuous_past'][k]
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+            st.subheader("Ability — simple past")
+            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
+                if 'ability_simple_past' in conj and k in conj['ability_simple_past']:
+                    ps, rom = conj['ability_simple_past'][k]
+                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
             return
     if not results:
         st.error(f"The word '{query}' was not found in any form.")
@@ -1012,13 +1040,16 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             st.subheader("Conjugation (summary)")
             meta = conj['meta']
             st.caption(
-                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization']['imperfective_stem']}) · "
-                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization']['perfective_stem']}) · "
-                f"Past Participle: {meta['past_participle']} ({meta['romanization']['past_participle']})"
+                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization'].get('imperfective_stem','')}) · "
+                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
+                f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
             # Compact overview first
-            render_forms_summary("present", conj['present'], form_occurrence_index)
-            render_forms_summary("subjunctive", conj['subjunctive'], form_occurrence_index)
+            render_forms_summary("present", conj.get('present', {}), form_occurrence_index)
+            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index)
+            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index)
+            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index)
+            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index)
 
             cols = st.columns(2)
             with cols[0]:
