@@ -1373,6 +1373,8 @@ with tabs[1]:
                         'frequency': 0,
                         'english': eng,
                         'kind': '',
+                        'noun_key': '',
+                        'noun_num': '',
                     }
                 cleaned_map[pashto]['frequency'] += freq
                 if not cleaned_map[pashto]['romanization'] and rom:
@@ -1391,6 +1393,33 @@ with tabs[1]:
                         cleaned_map[pashto]['kind'] = 'verb form'
                 except Exception:
                     pass
+
+            # If Noun family, compute noun morphology keys for filtered forms (with light memoization)
+            if selected_pos == 'Noun':
+                noun_forms_index = build_noun_forms_index() if NOUNS else {}
+                if '__noun_morph_cache' not in st.session_state:
+                    st.session_state['__noun_morph_cache'] = {}
+                cache = st.session_state['__noun_morph_cache']
+                for r in cleaned_map.values():
+                    form = r['pashto']
+                    norm = normalize_pashto_char(form)
+                    if norm in cache:
+                        r['noun_key'], r['noun_num'] = cache[norm]
+                        continue
+                    lemma = noun_forms_index.get(norm)
+                    key = ''; num = ''
+                    try:
+                        if lemma and lemma in NOUNS:
+                            n = inflect_noun(lemma)
+                            for k, (ps, _rom) in n['forms'].items():
+                                if normalize_pashto_char(ps) == norm:
+                                    key = k
+                                    num = 'pl' if 'plural' in k else 'sg'
+                                    break
+                    except Exception:
+                        pass
+                    r['noun_key'], r['noun_num'] = key, num
+                    cache[norm] = (key, num)
 
             if group_by_lemma and load_form_to_lemma_map():
                 f2l = load_form_to_lemma_map()
@@ -1424,15 +1453,46 @@ with tabs[1]:
                 df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
             else:
                 rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
-                # Optional gender sub-filter
-                subcol1, subcol2 = st.columns([1,3])
-                with subcol1:
-                    enable_gender = st.checkbox("Filter by gender", value=False, key=f"{key_prefix}_g_enable_{selected_pos}")
-                gender_val = ''
-                if enable_gender:
-                    with subcol2:
-                        gender_val = st.selectbox("Gender", options=['', 'm', 'f', 'unisex'], index=0, key=f"{key_prefix}_g_sel_{selected_pos}")
-                        rows = [r for r in rows if (not gender_val or gender_from_pos(r['POS']) == gender_val)]
+                # Sub-filters bar
+                c1, c2, c3, c4 = st.columns([1,1,2,3])
+                # Gender filter
+                with c1:
+                    gender_val = st.selectbox("Gender", options=['', 'm', 'f', 'unisex'], index=0, key=f"{key_prefix}_gender_{selected_pos}")
+                # Number filter (for nouns)
+                with c2:
+                    num_val = st.selectbox("Number", options=['', 'sg', 'pl'], index=0, key=f"{key_prefix}_num_{selected_pos}") if selected_pos == 'Noun' else ''
+                # Inflection filter (for nouns)
+                with c3:
+                    infl_val = st.multiselect("Inflection", options=['base','inflection_1','inflection_2','vocative'], default=[], key=f"{key_prefix}_infl_{selected_pos}") if selected_pos == 'Noun' else []
+                # Verb form/lemma filter
+                with c4:
+                    vf_mode = st.selectbox("Verb entries", options=['all','lemma only','forms only'], index=0, key=f"{key_prefix}_verbmode_{selected_pos}") if selected_pos == 'Verb' else 'all'
+
+                # Apply sub-filters
+                if gender_val:
+                    rows = [r for r in rows if gender_from_pos(r['POS']) == gender_val]
+                if selected_pos == 'Noun':
+                    if num_val:
+                        rows = [r for r in rows if r.get('noun_num','') == num_val]
+                    if infl_val:
+                        def map_infl(key):
+                            if not key:
+                                return ''
+                            if 'plain' in key:
+                                return 'base'
+                            if 'inflection_1' in key:
+                                return 'inflection_1'
+                            if 'inflection_2' in key:
+                                return 'inflection_2'
+                            if 'vocative' in key:
+                                return 'vocative'
+                            return ''
+                        rows = [r for r in rows if map_infl(r.get('noun_key','')) in infl_val]
+                if selected_pos == 'Verb':
+                    if vf_mode == 'lemma only':
+                        rows = [r for r in rows if r.get('Kind','') != 'verb form']
+                    elif vf_mode == 'forms only':
+                        rows = [r for r in rows if r.get('Kind','') == 'verb form']
 
                 df = pd.DataFrame([
                     {
