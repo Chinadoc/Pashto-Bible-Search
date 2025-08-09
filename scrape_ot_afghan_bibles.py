@@ -24,6 +24,7 @@ import html
 import requests
 
 BASE = "https://afghanbibles.org/eng/pashto-bible"
+DIALECT = "afeastern"
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ot_txt_copies")
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -72,13 +73,20 @@ OT_BOOK_SLUGS = [
 
 
 CHAPTER_LINK_RE = re.compile(r"/eng/pashto-bible/([a-z0-9\-]+)/\1-(\d+)")
+SCRIPTURE_DIV_RE = re.compile(r"<div id=\"scripture\"[\s\S]*?>([\s\S]*?)</div>\s*</div><!--notranslate-->", re.IGNORECASE)
+VERSE_BLOCK_RE = re.compile(r"<span class=\"verseno c\"[^>]*id=\"v(\d+)\"[^>]*>.*?</span>([\s\S]*?)<span class=\"endverse\"></span>", re.IGNORECASE)
 TAG_RE = re.compile(r"<[^>]+>")
 WS_RE = re.compile(r"\s+")
 VERSE_LINE_RE = re.compile(r"^\s*([0-9\u06F0-\u06F9\u0660-\u0669]+)\s+(.*)")
 
 
+def build_chapter_url(book_slug: str, chapter: int) -> str:
+    base = f"{BASE}/{book_slug}/{book_slug}-{chapter}"
+    return f"{base}?prefdialect={DIALECT}"
+
+
 def fetch(url: str) -> str:
-    resp = requests.get(url, timeout=30)
+    resp = requests.get(url, timeout=45)
     resp.raise_for_status()
     return resp.text
 
@@ -98,55 +106,39 @@ def html_to_text(html_str: str) -> str:
 
 
 def detect_max_chapter(book_slug: str) -> int:
-    # Try chapter 1 page
-    url = f"{BASE}/{book_slug}/{book_slug}-1"
+    # Inspect chapter 1 page for navigation select options
+    url = build_chapter_url(book_slug, 1)
     doc = fetch(url)
-    chapters = [int(m.group(2)) for m in CHAPTER_LINK_RE.finditer(doc) if m.group(1) == book_slug]
-    # Some books may list chapters on base slug without trailing /-1
-    if not chapters:
+    options = re.findall(rf"<option value='(\d+)'[^>]*>\1</option>", doc)
+    if options:
         try:
-            base_doc = fetch(f"{BASE}/{book_slug}")
-            chapters = [int(m.group(2)) for m in CHAPTER_LINK_RE.finditer(base_doc) if m.group(1) == book_slug]
+            return max(int(x) for x in options)
         except Exception:
             pass
+    # Fallback to link scanning
+    chapters = [int(m.group(2)) for m in CHAPTER_LINK_RE.finditer(doc) if m.group(1) == book_slug]
     return max(chapters) if chapters else 1
 
 
 def extract_verses_from_page(html_doc: str) -> list[str]:
-    # Narrow to main content around the chapter by slicing between nav markers
-    doc = html_doc
-    for marker in ["Previous chapter", "Next chapter"]:
-        # ensure markers visible for split
-        pass
-    start_idx = doc.find("Previous chapter")
-    if start_idx != -1:
-        doc = doc[start_idx:]
-    end_idx = doc.find("Next chapter")
-    if end_idx != -1:
-        doc = doc[:end_idx]
-
-    # Convert to plain text and split on likely block boundaries
-    text = html_to_text(doc)
-    blocks = re.split(r"\n+", text)
+    # Grab only the scripture container
+    m = SCRIPTURE_DIV_RE.search(html_doc)
+    if not m:
+        return []
+    script_html = m.group(1)
     verses: list[str] = []
-    for blk in blocks:
-        blk = blk.strip()
-        if not blk:
-            continue
-        # Accept patterns like "1 text" or "۱ text"
-        m = VERSE_LINE_RE.match(blk)
-        if m:
-            verses.append(f"{m.group(1)} {m.group(2).strip()}")
-        else:
-            # Some lines may embed multiple verses. Split on digit boundaries.
-            parts = re.split(r"(?=\s*[0-9\u06F0-\u06F9\u0660-\u0669]{1,3}\s+)", blk)
-            for part in parts:
-                pm = VERSE_LINE_RE.match(part.strip())
-                if pm:
-                    verses.append(f"{pm.group(1)} {pm.group(2).strip()}")
-
-    # Last resort: if nothing detected, return cleaned blocks
-    return verses if verses else [b for b in blocks if b]
+    for vm in VERSE_BLOCK_RE.finditer(script_html):
+        vn = vm.group(1)
+        body_html = vm.group(2)
+        body_txt = html_to_text(body_html)
+        body_txt = body_txt.replace('\u00a0', ' ').strip()
+        # Collapse multiple newlines, join with spaces
+        body_txt = re.sub(r"\s*\n\s*", " ", body_txt)
+        # Prefix Arabic/Persian verse number as-is if present in page; otherwise use vn
+        num_match = re.search(r"^[0-9\u06F0-\u06F9\u0660-\u0669]+", body_html)
+        display_num = num_match.group(0) if num_match else vn
+        verses.append(f"{display_num} {body_txt}")
+    return verses
 
 
 def save_chapter(book_slug: str, chapter: int, verses: list[str]) -> None:
@@ -157,23 +149,22 @@ def save_chapter(book_slug: str, chapter: int, verses: list[str]) -> None:
             f.write(v.strip() + "\n")
 
 
-def scrape_book(book_slug: str, delay_sec: float = 0.5) -> None:
-    try:
-        max_ch = detect_max_chapter(book_slug)
-    except Exception as e:
-        print(f"[WARN] Could not detect chapters for {book_slug}: {e}. Defaulting to 1.")
-        max_ch = 1
-    print(f"{book_slug}: {max_ch} chapters")
-    for ch in range(1, max_ch + 1):
-        url = f"{BASE}/{book_slug}/{book_slug}-{ch}"
+def scrape_book(book_slug: str, delay_sec: float = 0.6) -> None:
+    print(f"{book_slug}: scraping chapters (auto-follow)")
+    ch = 1
+    max_ch = detect_max_chapter(book_slug)
+    while ch <= max_ch:
+        url = build_chapter_url(book_slug, ch)
         try:
             html_doc = fetch(url)
             verses = extract_verses_from_page(html_doc)
             save_chapter(book_slug, ch, verses)
             print(f"  saved {book_slug} {ch}: {len(verses)} lines")
+            ch += 1
+            time.sleep(delay_sec)
         except Exception as e:
             print(f"  [ERROR] {book_slug} {ch}: {e}")
-        time.sleep(delay_sec)
+            ch += 1
 
 
 def scrape_all_ot() -> None:
