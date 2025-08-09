@@ -814,7 +814,7 @@ def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_la
             with cols[3]:
                 scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
                 href = f"?q={quote_plus(ps)}&s={scope_short}"
-                st.markdown(f"[Open tab]({href})")
+                st.link_button("Open tab", href, use_container_width=True)
     except Exception:
         pass
 
@@ -1127,6 +1127,42 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
 st.title("Pashto Bible Smart Search")
 st.caption(f"Build: {APP_VERSION}")
 
+def _get_query_params():
+    try:
+        # Streamlit >= 1.30
+        qp = getattr(st, 'query_params', None)
+        if qp is not None:
+            try:
+                return dict(qp)
+            except Exception:
+                pass
+        # Fallback
+        return st.experimental_get_query_params() if hasattr(st, 'experimental_get_query_params') else {}
+    except Exception:
+        return {}
+
+def _extract_single(param_val):
+    if param_val is None:
+        return ''
+    if isinstance(param_val, list):
+        return param_val[0] if param_val else ''
+    return str(param_val)
+
+QP = _get_query_params()
+QP_Q = _extract_single(QP.get('q'))
+QP_S = _extract_single(QP.get('s')).lower()
+
+SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
+
+def _scope_index_from_code(code: str) -> int:
+    return 0 if code == 'nt' else 1 if code == 'ot' else 2 if code == 'all' else 0
+
+# Pre-seed the main search from query params once
+if QP_Q and not st.session_state.get('main_search'):
+    st.session_state['main_search'] = QP_Q
+
+DEFAULT_SCOPE_INDEX = _scope_index_from_code(QP_S)
+
 def _clear_all_caches():
     try:
         load_data.clear()
@@ -1155,7 +1191,7 @@ tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    scope = st.radio("Scope", options=["New Testament", "Old Testament", "Whole Bible"], horizontal=True, index=0)
+    scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=True, index=DEFAULT_SCOPE_INDEX)
     nt_text = load_bible_text()
     ot_text = load_bible_text_ot()
     merged = {}
@@ -1230,7 +1266,7 @@ if SHOW_SIDEBAR:
                 st.rerun()
 
 with tabs[0]:
-    search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", "", key="main_search")
+    search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
 
     if st.button("Force refresh caches"):
         _clear_all_caches()
