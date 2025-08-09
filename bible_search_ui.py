@@ -3,6 +3,7 @@ import json
 import re
 import os
 import requests
+from urllib.parse import quote_plus
 import pandas as pd
 from collections import defaultdict
 import hashlib
@@ -780,23 +781,40 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
 
 
 # --- Small UI helpers ---
-def render_forms_summary(title, forms_dict, occurrence_index):
+def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_label: str, key_prefix: str):
     """Render a compact table of forms with counts before detailed lists.
 
     forms_dict: mapping like conj['present'] where values are tuples (pashto, romanization)
     """
     try:
-        rows = []
+        st.markdown(f"**{title} — overview**")
         order = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl']
         for k in order:
             if k not in forms_dict:
                 continue
             ps, rom = forms_dict[k]
-            occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0})
-            rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'Count': occ['count']})
-        if rows:
-            st.markdown(f"**{title} — overview**")
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+            cols = st.columns([5, 4, 2, 3])
+            with cols[0]:
+                st.markdown(f"`{ps}`")
+            with cols[1]:
+                st.caption(rom)
+            with cols[2]:
+                btn_key = f"view_{key_prefix}_{title}_{k}_{normalize_pashto_char(ps)}"
+                if st.button(str(occ.get('count', 0)), key=btn_key):
+                    with st.modal(f"References for {ps} — {occ.get('count', 0)} hits"):
+                        if not occ.get('verses'):
+                            st.info("No references in this scope.")
+                        else:
+                            for vref in sorted(set(occ['verses'])):
+                                display_verse_with_audio(vref, ps, text_map)
+                        scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
+                        href = f"?q={quote_plus(ps)}&s={scope_short}"
+                        st.markdown(f"[Open in new tab]({href})", unsafe_allow_html=True)
+            with cols[3]:
+                scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
+                href = f"?q={quote_plus(ps)}&s={scope_short}"
+                st.markdown(f"[Open tab]({href})")
     except Exception:
         pass
 
@@ -918,11 +936,11 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
                 f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
-            render_forms_summary("present", conj.get('present', {}), form_occurrence_index)
-            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index)
-            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index)
-            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index)
-            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index)
+            render_forms_summary("present", conj.get('present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum1")
+            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index, selected_text, scope, key_prefix="sum2")
+            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum3")
+            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum4")
+            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum5")
             cols = st.columns(2)
             with cols[0]:
                 st.write("present")
@@ -1045,11 +1063,11 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
             # Compact overview first
-            render_forms_summary("present", conj.get('present', {}), form_occurrence_index)
-            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index)
-            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index)
-            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index)
-            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index)
+            render_forms_summary("present", conj.get('present', {}), form_occurrence_index, bible_text, scope, key_prefix="sum6")
+            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index, bible_text, scope, key_prefix="sum7")
+            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index, bible_text, scope, key_prefix="sum8")
+            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, bible_text, scope, key_prefix="sum9")
+            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, bible_text, scope, key_prefix="sum10")
 
             cols = st.columns(2)
             with cols[0]:
