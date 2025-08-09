@@ -825,7 +825,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     st.session_state['audio_loaded_count'] = 0
     st.header(f"Exact Phrase Search Results for: \"{query}\"")
     normalized_query = normalize_pashto_char(query)
-    text_map = nt_text if scope == 'nt' else ot_text if scope == 'ot' else {**nt_text, **ot_text}
+    text_map = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
     found_verses = [ref for ref, text in text_map.items() if normalized_query in text]
     
     if not found_verses:
@@ -857,14 +857,14 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     if not form_rom:
         form_rom = romanize_from_dict_or_rules(normalized_form)
 
-    # Top section: occurrences for the searched form
-    if 'form_occurrence_index' in globals():
-        occ = form_occurrence_index.get(normalize_pashto_char(normalized_form), {'count': 0, 'verses': []})
-        if occ['count']:
-            st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {occ['count']} hits")
-            for verse_ref in sorted(set(occ['verses'])):
-                display_verse_with_audio(verse_ref, normalized_form, nt_text if scope=='nt' else ot_text)
-            st.markdown("---")
+    # Top section: occurrences for the searched form (scope-aware scan)
+    selected_text = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
+    occ = _find_occurrences_in_text(normalized_form, selected_text)
+    if occ['count']:
+        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {occ['count']} hits")
+        for verse_ref in sorted(set(occ['verses'])):
+            display_verse_with_audio(verse_ref, normalized_form, selected_text)
+        st.markdown("---")
 
     # If noun lemma found, render a grouped noun section
     if not conj_for_form and lex_root and lex_root in NOUNS:
