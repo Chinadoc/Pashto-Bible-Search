@@ -782,39 +782,28 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
 
 # --- Small UI helpers ---
 def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_label: str, key_prefix: str):
-    """Render a compact table of forms with counts before detailed lists.
+    """Render forms as dropdowns (expanders) with inline verse lists and an open-in-tab link.
 
     forms_dict: mapping like conj['present'] where values are tuples (pashto, romanization)
     """
     try:
-        st.markdown(f"**{title} — overview**")
+        st.subheader(title)
         order = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl']
+        scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
         for k in order:
             if k not in forms_dict:
                 continue
             ps, rom = forms_dict[k]
             occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-            cols = st.columns([5, 4, 2, 3])
-            with cols[0]:
-                st.markdown(f"`{ps}`")
-            with cols[1]:
-                st.caption(rom)
-            with cols[2]:
-                btn_key = f"view_{key_prefix}_{title}_{k}_{normalize_pashto_char(ps)}"
-                if st.button(str(occ.get('count', 0)), key=btn_key):
-                    with st.modal(f"References for {ps} — {occ.get('count', 0)} hits"):
-                        if not occ.get('verses'):
-                            st.info("No references in this scope.")
-                        else:
-                            for vref in sorted(set(occ['verses'])):
-                                display_verse_with_audio(vref, ps, text_map)
-                        scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
-                        href = f"?q={quote_plus(ps)}&s={scope_short}"
-                        st.markdown(f"[Open in new tab]({href})", unsafe_allow_html=True)
-            with cols[3]:
-                scope_short = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
+            title_label = f"{ps} ({rom}) — {occ.get('count', 0)} hits"
+            with st.expander(title_label):
                 href = f"?q={quote_plus(ps)}&s={scope_short}"
-                st.link_button("Open tab", href, use_container_width=True)
+                st.link_button("Open in new tab", href)
+                if not occ.get('verses'):
+                    st.info("No references in this scope.")
+                else:
+                    for vref in sorted(set(occ['verses'])):
+                        display_verse_with_audio(vref, ps, text_map)
     except Exception:
         pass
 
