@@ -782,7 +782,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
 
 # --- Small UI helpers ---
 def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_label: str, key_prefix: str):
-    """Render forms as dropdowns (expanders) with inline verse lists and an open-in-tab link.
+image.png    """Render forms as dropdowns (expanders) with inline verse lists and an open-in-tab link.
 
     forms_dict: mapping like conj['present'] where values are tuples (pashto, romanization)
     """
@@ -825,6 +825,24 @@ def render_noun_summary(title, forms_dict, occurrence_index):
         if rows:
             st.markdown(f"**{title} — overview**")
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    except Exception:
+        pass
+
+def render_past_expanders(title, forms_dict, occurrence_index, text_map):
+    try:
+        st.subheader(title)
+        order = ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']
+        for k in order:
+            if k not in forms_dict:
+                continue
+            ps, rom = forms_dict[k]
+            occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
+            with st.expander(f"{ps} ({rom}) — {occ['count']} hits"):
+                if occ['verses']:
+                    for vref in sorted(set(occ['verses'])):
+                        display_verse_with_audio(vref, ps, text_map)
+                else:
+                    st.info("No references in this scope.")
     except Exception:
         pass
 
@@ -885,8 +903,11 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
-    # If noun lemma found, render a grouped noun section
-    if not conj_for_form and lex_root and lex_root in NOUNS:
+    prefer_exact_verb = bool(lex_root and conj_for_form and normalized_form == lex_root)
+    prefer_exact_noun = bool(lex_root and (lex_root in NOUNS) and normalized_form == lex_root)
+
+    # If noun lemma found, render a grouped noun section (and optionally continue for full results)
+    if lex_root and lex_root in NOUNS:
         n = inflect_noun(lex_root)
         st.header(f"Grammatical Results for Root: `{format_for_display(lex_root)}`")
         st.caption(n['meta'].get('pattern_info') or n['meta'].get('pattern'))
@@ -908,81 +929,38 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             with st.expander(title):
                 for vref in sorted(set(occ['verses'])):
                     display_verse_with_audio(vref, ps, nt_text if scope=='nt' else ot_text)
-        return
+        if not prefer_exact_noun:
+            return
+        st.markdown("---")
 
     # Then show grammatical results for the root (if form maps to a root), otherwise for the form itself
     effective_query = lex_root if lex_root else query
     results = search_grammatical_forms(effective_query, form_to_root_map, grammatical_index)
 
-    # If no results from index but we have a lexicon root, still render a conjugation summary
-    if not results and lex_root:
-        conj = conjugate_verb(lex_root)
-        if conj:
-            st.header(f"Grammatical Results for Root: `{format_for_display(lex_root)}`")
-            meta = conj['meta']
-            st.caption(
-                f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization'].get('imperfective_stem','')}) · "
-                f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
-                f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
-            )
-            render_forms_summary("present", conj.get('present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum1")
-            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index, selected_text, scope, key_prefix="sum2")
-            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum3")
-            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum4")
-            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum5")
-            cols = st.columns(2)
-            with cols[0]:
-                st.write("present")
-                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                    ps, rom = conj['present'][k]
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                    if occ['verses']:
-                        with st.expander("Show verses"):
-                            for vref in sorted(set(occ['verses'])):
-                                display_verse_with_audio(vref, ps, bible_text)
-            with cols[1]:
-                st.write("subjunctive")
-                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                    ps, rom = conj['subjunctive'][k]
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                    if occ['verses']:
-                        with st.expander("Show verses"):
-                            for vref in sorted(set(occ['verses'])):
-                                display_verse_with_audio(vref, ps, bible_text)
-            st.subheader("Past (continuous)")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                ps, rom = conj['continuous_past'][k]
-                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                if occ['verses']:
-                    with st.expander(f"{ps} verses"):
-                        for vref in sorted(set(occ['verses'])):
-                            display_verse_with_audio(vref, ps, bible_text)
-            st.subheader("Past (simple)")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                ps, rom = conj['simple_past'][k]
-                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                if occ['verses']:
-                    with st.expander(f"{ps} verses"):
-                        for vref in sorted(set(occ['verses'])):
-                            display_verse_with_audio(vref, ps, bible_text)
-            # Ability pasts
-            st.subheader("Ability — continuous past")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                if 'ability_continuous_past' in conj and k in conj['ability_continuous_past']:
-                    ps, rom = conj['ability_continuous_past'][k]
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-            st.subheader("Ability — simple past")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                if 'ability_simple_past' in conj and k in conj['ability_simple_past']:
-                    ps, rom = conj['ability_simple_past'][k]
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
+    # Prefer showing exact lemma's full conjugations first
+    skip_summary_roots = set()
+    if lex_root and conj_for_form and (prefer_exact_verb or not results):
+        conj = conj_for_form
+        st.header(f"Grammatical Results for Root: `{format_for_display(lex_root)}`")
+        meta = conj['meta']
+        st.caption(
+            f"Imperfective Stem: {meta['imperfective_stem']} ({meta['romanization'].get('imperfective_stem','')}) · "
+            f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
+            f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
+        )
+        render_forms_summary("present", conj.get('present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum1")
+        render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index, selected_text, scope, key_prefix="sum2")
+        render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum3")
+        render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, selected_text, scope, key_prefix="sum4")
+        render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, selected_text, scope, key_prefix="sum5")
+        render_past_expanders("Past (continuous)", conj.get('continuous_past', {}), form_occurrence_index, selected_text)
+        render_past_expanders("Past (simple)", conj.get('simple_past', {}), form_occurrence_index, selected_text)
+        render_past_expanders("Ability — continuous past", conj.get('ability_continuous_past', {}), form_occurrence_index, selected_text)
+        render_past_expanders("Ability — simple past", conj.get('ability_simple_past', {}), form_occurrence_index, selected_text)
+        skip_summary_roots.add(lex_root)
+        if not results:
             return
+        st.markdown("---")
     if not results:
         st.error(f"The word '{query}' was not found in any form.")
         return
@@ -1043,7 +1021,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                         display_verse_with_audio(verse_ref, item['form'], bible_text)
 
         # If this root is in the verb lexicon, display a conjugation summary regardless of index type
-        if conj:
+        if conj and root_word not in skip_summary_roots:
             st.subheader("Conjugation (summary)")
             meta = conj['meta']
             st.caption(
@@ -1058,49 +1036,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, bible_text, scope, key_prefix="sum9")
             render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, bible_text, scope, key_prefix="sum10")
 
-            cols = st.columns(2)
-            with cols[0]:
-                st.write("present")
-                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                    ps, rom = conj['present'][k]
-                    # Use precomputed index for speed
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                    if occ['verses']:
-                        with st.expander("Show verses"):
-                            for vref in sorted(set(occ['verses'])):
-                                display_verse_with_audio(vref, ps, bible_text)
-            with cols[1]:
-                st.write("subjunctive")
-                for k in ['1sg','2sg','3sg','1pl','2pl','3pl']:
-                    ps, rom = conj['subjunctive'][k]
-                    occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                    st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                    if occ['verses']:
-                        with st.expander("Show verses"):
-                            for vref in sorted(set(occ['verses'])):
-                                display_verse_with_audio(vref, ps, bible_text)
-
         # If user entered the infinitive itself, show extended past tables
         if query == root_word and conj:
-            st.subheader("Past (continuous)")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                ps, rom = conj['continuous_past'][k]
-                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                if occ['verses']:
-                    with st.expander(f"{ps} verses"):
-                        for vref in sorted(set(occ['verses'])):
-                            display_verse_with_audio(vref, ps, bible_text)
-            st.subheader("Past (simple)")
-            for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']:
-                ps, rom = conj['simple_past'][k]
-                occ = form_occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-                st.text(f"{ps}  ({rom}) — {occ['count']} hits")
-                if occ['verses']:
-                    with st.expander(f"{ps} verses"):
-                        for vref in sorted(set(occ['verses'])):
-                            display_verse_with_audio(vref, ps, bible_text)
+            render_past_expanders("Past (continuous)", conj.get('continuous_past', {}), form_occurrence_index, bible_text)
+            render_past_expanders("Past (simple)", conj.get('simple_past', {}), form_occurrence_index, bible_text)
         elif root_word in NOUNS:
             n = inflect_noun(root_word)
             st.subheader("Noun Inflections (summary)")
