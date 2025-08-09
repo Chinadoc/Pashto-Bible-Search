@@ -52,6 +52,42 @@
       "perfective_root": "óokṛ",
       "past_participle": "kṛúy"
     }
+  },
+  "تلل": {
+    "stems": {
+      "imperfective": "ځ",
+      "perfective": "وځ"
+    },
+    "roots": {
+      "imperfective": "تلل",
+      "perfective": "وتل"
+    },
+    "past_participle": "تللی",
+    "romanization": {
+      "imperfective_stem": "dz",
+      "perfective_stem": "óodz",
+      "imperfective_root": "talúl",
+      "perfective_root": "ótalul",
+      "past_participle": "talúlay"
+    }
+  },
+  "کېدل": {
+    "stems": {
+      "imperfective": "کېږ",
+      "perfective": "وش"
+    },
+    "roots": {
+      "imperfective": "کېدل",
+      "perfective": "وشو"
+    },
+    "past_participle": "شوی",
+    "romanization": {
+      "imperfective_stem": "kéy̌",
+      "perfective_stem": "óosh",
+      "imperfective_root": "kedál",
+      "perfective_root": "óosho",
+      "past_participle": "shóy"
+    }
   }
 }
 

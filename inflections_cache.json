@@ -1,0 +1,737 @@
+{
+  "کول": [
+    {
+      "form": "کوم",
+      "romanization": "koum",
+      "category": "verb"
+    },
+    {
+      "form": "کوو",
+      "romanization": "kooo",
+      "category": "verb"
+    },
+    {
+      "form": "کوې",
+      "romanization": "koe",
+      "category": "verb"
+    },
+    {
+      "form": "کوئ",
+      "romanization": "koey",
+      "category": "verb"
+    },
+    {
+      "form": "کوي",
+      "romanization": "koee",
+      "category": "verb"
+    },
+    {
+      "form": "کوي",
+      "romanization": "koee",
+      "category": "verb"
+    },
+    {
+      "form": "وکړم",
+      "romanization": "óokṛum",
+      "category": "verb"
+    },
+    {
+      "form": "وکړو",
+      "romanization": "óokṛoo",
+      "category": "verb"
+    },
+    {
+      "form": "وکړې",
+      "romanization": "óokṛe",
+      "category": "verb"
+    },
+    {
+      "form": "وکړئ",
+      "romanization": "óokṛey",
+      "category": "verb"
+    },
+    {
+      "form": "وکړي",
+      "romanization": "óokṛee",
+      "category": "verb"
+    },
+    {
+      "form": "وکړي",
+      "romanization": "óokṛee",
+      "category": "verb"
+    },
+    {
+      "form": "کولم",
+      "romanization": "kawúlum",
+      "category": "verb"
+    },
+    {
+      "form": "کولو",
+      "romanization": "kawúloo",
+      "category": "verb"
+    },
+    {
+      "form": "کولې",
+      "romanization": "kawúle",
+      "category": "verb"
+    },
+    {
+      "form": "کولئ",
+      "romanization": "kawúley",
+      "category": "verb"
+    },
+    {
+      "form": "کولو",
+      "romanization": "kawúlo",
+      "category": "verb"
+    },
+    {
+      "form": "کوله",
+      "romanization": "kawúla",
+      "category": "verb"
+    },
+    {
+      "form": "کول",
+      "romanization": "kawúl",
+      "category": "verb"
+    },
+    {
+      "form": "وکړم",
+      "romanization": "óokṛum",
+      "category": "verb"
+    },
+    {
+      "form": "وکړو",
+      "romanization": "óokṛoo",
+      "category": "verb"
+    },
+    {
+      "form": "وکړې",
+      "romanization": "óokṛe",
+      "category": "verb"
+    },
+    {
+      "form": "وکړئ",
+      "romanization": "óokṛey",
+      "category": "verb"
+    },
+    {
+      "form": "وکړو",
+      "romanization": "óokṛo",
+      "category": "verb"
+    },
+    {
+      "form": "وکړه",
+      "romanization": "óokṛa",
+      "category": "verb"
+    },
+    {
+      "form": "وکړ",
+      "romanization": "óokṛ",
+      "category": "verb"
+    },
+    {
+      "form": "کول",
+      "romanization": "kawúl",
+      "category": "verb"
+    },
+    {
+      "form": "وکړ",
+      "romanization": "óokṛ",
+      "category": "verb"
+    },
+    {
+      "form": "کړی",
+      "romanization": "kṛúy",
+      "category": "verb"
+    }
+  ],
+  "بوتلل": [
+    {
+      "form": "بیایم",
+      "romanization": "byaayum",
+      "category": "verb"
+    },
+    {
+      "form": "بیایو",
+      "romanization": "byaayoo",
+      "category": "verb"
+    },
+    {
+      "form": "بیایې",
+      "romanization": "byaaye",
+      "category": "verb"
+    },
+    {
+      "form": "بیایئ",
+      "romanization": "byaayey",
+      "category": "verb"
+    },
+    {
+      "form": "بیایي",
+      "romanization": "byaayee",
+      "category": "verb"
+    },
+    {
+      "form": "بیایي",
+      "romanization": "byaayee",
+      "category": "verb"
+    },
+    {
+      "form": "بوځم",
+      "romanization": "bódzum",
+      "category": "verb"
+    },
+    {
+      "form": "بوځو",
+      "romanization": "bódzoo",
+      "category": "verb"
+    },
+    {
+      "form": "بوځې",
+      "romanization": "bódze",
+      "category": "verb"
+    },
+    {
+      "form": "بوځئ",
+      "romanization": "bódzey",
+      "category": "verb"
+    },
+    {
+      "form": "بوځي",
+      "romanization": "bódzee",
+      "category": "verb"
+    },
+    {
+      "form": "بوځي",
+      "romanization": "bódzee",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللم",
+      "romanization": "botlúlum",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللو",
+      "romanization": "botlúloo",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللې",
+      "romanization": "botlúle",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللئ",
+      "romanization": "botlúley",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللو",
+      "romanization": "botlúlo",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلله",
+      "romanization": "botlúla",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلل",
+      "romanization": "botlúl",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللم",
+      "romanization": "bótlulum",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللو",
+      "romanization": "bótluloo",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللې",
+      "romanization": "bótlule",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللئ",
+      "romanization": "bótluley",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللو",
+      "romanization": "bótlulo",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلله",
+      "romanization": "bótlula",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلل",
+      "romanization": "bótlul",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلل",
+      "romanization": "botlúl",
+      "category": "verb"
+    },
+    {
+      "form": "بوتلل",
+      "romanization": "botlúl",
+      "category": "verb"
+    },
+    {
+      "form": "بوتللی",
+      "romanization": "botlúlay",
+      "category": "verb"
+    }
+  ],
+  "تلل": [
+    {
+      "form": "ځم",
+      "romanization": "dzum",
+      "category": "verb"
+    },
+    {
+      "form": "ځو",
+      "romanization": "dzoo",
+      "category": "verb"
+    },
+    {
+      "form": "ځې",
+      "romanization": "dze",
+      "category": "verb"
+    },
+    {
+      "form": "ځئ",
+      "romanization": "dzey",
+      "category": "verb"
+    },
+    {
+      "form": "ځي",
+      "romanization": "dzee",
+      "category": "verb"
+    },
+    {
+      "form": "ځي",
+      "romanization": "dzee",
+      "category": "verb"
+    },
+    {
+      "form": "وځم",
+      "romanization": "óodzum",
+      "category": "verb"
+    },
+    {
+      "form": "وځو",
+      "romanization": "óodzoo",
+      "category": "verb"
+    },
+    {
+      "form": "وځې",
+      "romanization": "óodze",
+      "category": "verb"
+    },
+    {
+      "form": "وځئ",
+      "romanization": "óodzey",
+      "category": "verb"
+    },
+    {
+      "form": "وځي",
+      "romanization": "óodzee",
+      "category": "verb"
+    },
+    {
+      "form": "وځي",
+      "romanization": "óodzee",
+      "category": "verb"
+    },
+    {
+      "form": "تللم",
+      "romanization": "talúlum",
+      "category": "verb"
+    },
+    {
+      "form": "تللو",
+      "romanization": "talúloo",
+      "category": "verb"
+    },
+    {
+      "form": "تللې",
+      "romanization": "talúle",
+      "category": "verb"
+    },
+    {
+      "form": "تللئ",
+      "romanization": "talúley",
+      "category": "verb"
+    },
+    {
+      "form": "تللو",
+      "romanization": "talúlo",
+      "category": "verb"
+    },
+    {
+      "form": "تلله",
+      "romanization": "talúla",
+      "category": "verb"
+    },
+    {
+      "form": "تلل",
+      "romanization": "talúl",
+      "category": "verb"
+    },
+    {
+      "form": "وتلم",
+      "romanization": "ótalulum",
+      "category": "verb"
+    },
+    {
+      "form": "وتلو",
+      "romanization": "ótaluloo",
+      "category": "verb"
+    },
+    {
+      "form": "وتلې",
+      "romanization": "ótalule",
+      "category": "verb"
+    },
+    {
+      "form": "وتلئ",
+      "romanization": "ótaluley",
+      "category": "verb"
+    },
+    {
+      "form": "وتلو",
+      "romanization": "ótalulo",
+      "category": "verb"
+    },
+    {
+      "form": "وتله",
+      "romanization": "ótalula",
+      "category": "verb"
+    },
+    {
+      "form": "وتل",
+      "romanization": "ótalul",
+      "category": "verb"
+    },
+    {
+      "form": "تلل",
+      "romanization": "talúl",
+      "category": "verb"
+    },
+    {
+      "form": "وتل",
+      "romanization": "ótalul",
+      "category": "verb"
+    },
+    {
+      "form": "تللی",
+      "romanization": "talúlay",
+      "category": "verb"
+    }
+  ],
+  "کېدل": [
+    {
+      "form": "کېږم",
+      "romanization": "kéy̌um",
+      "category": "verb"
+    },
+    {
+      "form": "کېږو",
+      "romanization": "kéy̌oo",
+      "category": "verb"
+    },
+    {
+      "form": "کېږې",
+      "romanization": "kéy̌e",
+      "category": "verb"
+    },
+    {
+      "form": "کېږئ",
+      "romanization": "kéy̌ey",
+      "category": "verb"
+    },
+    {
+      "form": "کېږي",
+      "romanization": "kéy̌ee",
+      "category": "verb"
+    },
+    {
+      "form": "کېږي",
+      "romanization": "kéy̌ee",
+      "category": "verb"
+    },
+    {
+      "form": "وشم",
+      "romanization": "óoshum",
+      "category": "verb"
+    },
+    {
+      "form": "وشو",
+      "romanization": "óoshoo",
+      "category": "verb"
+    },
+    {
+      "form": "وشې",
+      "romanization": "óoshe",
+      "category": "verb"
+    },
+    {
+      "form": "وشئ",
+      "romanization": "óoshey",
+      "category": "verb"
+    },
+    {
+      "form": "وشي",
+      "romanization": "óoshee",
+      "category": "verb"
+    },
+    {
+      "form": "وشي",
+      "romanization": "óoshee",
+      "category": "verb"
+    },
+    {
+      "form": "کېدلم",
+      "romanization": "kedálum",
+      "category": "verb"
+    },
+    {
+      "form": "کېدلو",
+      "romanization": "kedáloo",
+      "category": "verb"
+    },
+    {
+      "form": "کېدلې",
+      "romanization": "kedále",
+      "category": "verb"
+    },
+    {
+      "form": "کېدلئ",
+      "romanization": "kedáley",
+      "category": "verb"
+    },
+    {
+      "form": "کېدلو",
+      "romanization": "kedálo",
+      "category": "verb"
+    },
+    {
+      "form": "کېدله",
+      "romanization": "kedála",
+      "category": "verb"
+    },
+    {
+      "form": "کېدل",
+      "romanization": "kedál",
+      "category": "verb"
+    },
+    {
+      "form": "وشوم",
+      "romanization": "óoshoum",
+      "category": "verb"
+    },
+    {
+      "form": "وشوو",
+      "romanization": "óoshooo",
+      "category": "verb"
+    },
+    {
+      "form": "وشوې",
+      "romanization": "óoshoe",
+      "category": "verb"
+    },
+    {
+      "form": "وشوئ",
+      "romanization": "óoshoey",
+      "category": "verb"
+    },
+    {
+      "form": "وشوو",
+      "romanization": "óoshoo",
+      "category": "verb"
+    },
+    {
+      "form": "وشوه",
+      "romanization": "óoshoa",
+      "category": "verb"
+    },
+    {
+      "form": "وشو",
+      "romanization": "óosho",
+      "category": "verb"
+    },
+    {
+      "form": "کېدل",
+      "romanization": "kedál",
+      "category": "verb"
+    },
+    {
+      "form": "وشو",
+      "romanization": "óosho",
+      "category": "verb"
+    },
+    {
+      "form": "شوی",
+      "romanization": "shóy",
+      "category": "verb"
+    }
+  ],
+  "لیدل": [
+    {
+      "form": "وینم",
+      "romanization": "weenum",
+      "category": "verb"
+    },
+    {
+      "form": "وینو",
+      "romanization": "weenoo",
+      "category": "verb"
+    },
+    {
+      "form": "وینې",
+      "romanization": "weene",
+      "category": "verb"
+    },
+    {
+      "form": "وینئ",
+      "romanization": "weeney",
+      "category": "verb"
+    },
+    {
+      "form": "ویني",
+      "romanization": "weenee",
+      "category": "verb"
+    },
+    {
+      "form": "ویني",
+      "romanization": "weenee",
+      "category": "verb"
+    },
+    {
+      "form": "ووینم",
+      "romanization": "óoweenum",
+      "category": "verb"
+    },
+    {
+      "form": "ووینو",
+      "romanization": "óoweenoo",
+      "category": "verb"
+    },
+    {
+      "form": "ووینې",
+      "romanization": "óoweene",
+      "category": "verb"
+    },
+    {
+      "form": "ووینئ",
+      "romanization": "óoweeney",
+      "category": "verb"
+    },
+    {
+      "form": "وویني",
+      "romanization": "óoweenee",
+      "category": "verb"
+    },
+    {
+      "form": "وویني",
+      "romanization": "óoweenee",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلم",
+      "romanization": "leedúlum",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلو",
+      "romanization": "leedúloo",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلې",
+      "romanization": "leedúle",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلئ",
+      "romanization": "leedúley",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلو",
+      "romanization": "leedúlo",
+      "category": "verb"
+    },
+    {
+      "form": "لیدله",
+      "romanization": "leedúla",
+      "category": "verb"
+    },
+    {
+      "form": "لیدل",
+      "romanization": "leedúl",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدلم",
+      "romanization": "óoleedulum",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدلو",
+      "romanization": "óoleeduloo",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدلې",
+      "romanization": "óoleedule",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدلئ",
+      "romanization": "óoleeduley",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدلو",
+      "romanization": "óoleedulo",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدله",
+      "romanization": "óoleedula",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدل",
+      "romanization": "óoleedul",
+      "category": "verb"
+    },
+    {
+      "form": "لیدل",
+      "romanization": "leedúl",
+      "category": "verb"
+    },
+    {
+      "form": "ولیدل",
+      "romanization": "óoleedul",
+      "category": "verb"
+    },
+    {
+      "form": "لیدلی",
+      "romanization": "leedúlay",
+      "category": "verb"
+    }
+  ]
+}
