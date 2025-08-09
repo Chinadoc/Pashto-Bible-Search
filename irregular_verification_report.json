@@ -1,0 +1,7101 @@
+[
+  {
+    "lemma": "ورکېدل",
+    "family": "aux_become",
+    "rationale": "prefix ور+کېدل",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کېدل",
+    "family": "aux_become",
+    "rationale": "auxiliary; irregular present stem کېږ-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "کېږ",
+    "perfective_stem": "وش",
+    "imperfective_root": "کېدل",
+    "perfective_root": "وشو",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "کول",
+    "family": "aux_do",
+    "rationale": "suppletive perfective stem کړ-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "کو",
+    "perfective_stem": "وکړ",
+    "imperfective_root": "کول",
+    "perfective_root": "وکړ",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "نیول",
+    "family": "capture_take",
+    "rationale": "perfective ونی-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "نیس",
+    "perfective_stem": "ونی",
+    "imperfective_root": "نیول",
+    "perfective_root": "ونیول",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "خوړل",
+    "family": "consume_eat",
+    "rationale": "perfective وخور-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "خور",
+    "perfective_stem": "وخور",
+    "imperfective_root": "خوړل",
+    "perfective_root": "وخوړل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "راکول",
+    "family": "give",
+    "rationale": "prefix + کول → راکړ- in perfective",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ورکول",
+    "family": "give",
+    "rationale": "prefix + کول → ورکړ- in perfective",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راتلل",
+    "family": "motion_come",
+    "rationale": "derived from تلل with را- prefix",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راوتل",
+    "family": "motion_come_out",
+    "rationale": "prefix + motion",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وتل",
+    "family": "motion_exit",
+    "rationale": "motion; often suppletive perfective forms",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تلل",
+    "family": "motion_go",
+    "rationale": "suppletive perfective root لاړل",
+    "irregular_by_engine": true,
+    "imperfective_stem": "ځ",
+    "perfective_stem": "لاړ ش",
+    "imperfective_root": "تلل",
+    "perfective_root": "لاړل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "ورتلل",
+    "family": "motion_go",
+    "rationale": "prefix ور+تلل",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لیدل",
+    "family": "perception_see",
+    "rationale": "stems وین-/ووین-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "وین",
+    "perfective_stem": "ووین",
+    "imperfective_root": "لیدل",
+    "perfective_root": "ولیدل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "آبادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "آبدارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "آزادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "آماده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "آورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ابلاغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اثباتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "احاطه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "احساسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "احضارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اختطاف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اخلالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ادا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ادغامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ارتاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ارزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اروېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ازارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ازمایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ازمویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ازمیښت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اسانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "استثمارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "استعمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اسیر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اشنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اصلاح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اظهارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اعدامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اعلامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اعلانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اغستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اغوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اغېړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "امبارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "امتحان اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اموخته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "انبارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "انتقال کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "انجامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "انکاري کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اهل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوترېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اودرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اور اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوزګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوچتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوړه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اوېزانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اړ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اږیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اګاه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایجابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایجاد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایسارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ایله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اېستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اېسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "اېشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "باطلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بحال کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بختور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بد رد ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بدترېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بدل اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بدله اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بدلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برائت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برابرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برالبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بربادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بربنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برخه اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برطرف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برقرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بري کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "برېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بستر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بشپړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بلدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بلوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بندي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بهر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بوڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بچ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بږنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بږی اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بڼیا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بیانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بیمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بیېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بې حس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بې سده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بې لارې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بې موراله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بې هوشه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېزاره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېسده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "بېهو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تار په تارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تازه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تامینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تاو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تاییدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تباه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تبدیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تتر بتر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تجدیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تجلیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تحلیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تحویلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تخصیص کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تخڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تدفینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تر شا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تر لاسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تربت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترجمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تردیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترسره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترسیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترمیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ترکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تزنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تس نس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تسخیر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تسلیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تسکین کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تشخیصېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تصدیق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تطبیقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تعبیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تعذیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تعقیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تعمیم کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تقسیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تلافي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تمامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تمدیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "توانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "توبه ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "توبه ویستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تورنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "توقیفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تولیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "توهینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تړپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تږی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تښتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تکرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تکمیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تڼاکي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تیارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "تېزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ثابتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ثبتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جاج اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جانجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جایزه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جبرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جدا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جذباتي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جذبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جلا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جمعه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جوتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جوختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "جګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حاصلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حاضرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حذفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حسابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حصارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حصه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حمل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "حیرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خارجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خارښتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خاموشه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ختمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خریل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خزانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خسي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خطا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خطبه ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خفه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خلاصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خلاصېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خواټولی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوشالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوشحاله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوشحالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوړینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوږمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خوښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خپلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خړوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "خیشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "داخلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دایرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دربلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "درزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "درستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "درغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "درنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دروغ ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دریافت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "درېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دفن کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دننه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دوزانو کښېنستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "دوکه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ذبح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رائجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راجع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راستنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راستونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راویښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راټولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راپورته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "راکوزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ربلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رجسټر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رحمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رخصت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رسمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رسوا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رشوت اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رغړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رفع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رهي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روږدی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روښانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "روښنایي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رویکارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رژېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رڼا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ریل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ریټایر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ریچې ریچې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ریکارډ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رېزه رېزه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "رېږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زخمي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زرغونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زره زره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زلقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زلکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زمولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زنګ اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زهیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زوړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زړه نا زړه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زیات کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زیاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زیږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "زېږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سا اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سا اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سانسورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ساه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سبق وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سبق ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستومانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستومانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستړی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ستړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سخا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سرتورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سریښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سقوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سمبالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سنت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سنتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سندرې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سنګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سنګسارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سوری کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سوق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سوځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپلای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سپکې سپورې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سکویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "سېټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شاته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شاملېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شاهدي وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شاړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شرحه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شرمنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شرمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شرنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شروع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شریکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شمارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شوارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شړمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شکل ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "شڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "صادرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "صحیح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "صفا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ضایع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "طلبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ظاهره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ظاهرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عادت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عاشق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عبثېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عذابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عملي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "عیانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غالب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غایبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غرقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غلبېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غلطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غمجنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غورځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غونجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غونډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوټه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوړپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غوږ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غچ اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غړمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غړومبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "غیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فارغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فاسدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فاش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فراخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فرشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فرمایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فلج کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فناه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "فېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قابو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قانع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قایمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قبضه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قتلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قدم اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قرباني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قربانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قرض اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قرنطینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قلابند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قید کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "قیمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لالهاندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لاندې باندې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لاهو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لت پت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لتاړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لعنت ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لغوه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لغړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "للونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لمدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لړزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لیلامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لېوالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لېونی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لېوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "لېږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ماتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ماشوم اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مایل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مایله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مایلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مایوسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مایوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "متحد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "متروکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "متمدنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "متهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "متوجه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مجازات کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مجازاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مجبورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مجهزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محدودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محرومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محسوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محفوظ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محکمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "محکومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مخامخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مخامخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مختصر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مختلف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مخکې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مخې ته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مدغمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مدللېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مرادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مراعتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مربوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مرتبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مرمت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مرمتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مروجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مرورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مزه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مستردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مستعفي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مستند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مستندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسلمانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسمومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسکی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مشتقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مشغولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مشهور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مشهورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مضبوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مطرح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "معلومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مغلوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مقاله لوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مقررېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مقصودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ملاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ملامتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ملاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ملحقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ممکنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منتخب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منحرفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منحلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منسوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منسوخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منسوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منصوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منظمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منعکس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منعکسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منفي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منقبضېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "منکرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "موسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "موسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مومیایي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "موندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مړ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مکمل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مکملېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "میده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "میراتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "میراث اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "میل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مین کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "مېشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نازلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نافذېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نامنظوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نامنظورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ناکامه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ناکامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نتیجه اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نزدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نسکورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نشرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نصب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نغومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نفس ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نهیلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نوږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نوی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نڅوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نچوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نژدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نښلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نېزدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "نېغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هرکلی وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هضمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هلاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هوارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هک دک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هک پک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هڼهڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هیبت اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هیسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "هېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واقع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واپس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واکسینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "واکمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ودانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ورانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ورزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وروستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وروسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وروستو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ورکوټی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وریتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وزن کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وصلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وقفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ولچکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ووړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وړاندې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وړوکی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وږمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویلي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویلې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "وېزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټانسل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټاټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټسټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټمبه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټونګرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټوټه ټوټه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټکنی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټینګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټیټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټیپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټیک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټېغ ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ټېکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پابندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاتې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاشل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پالش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پایمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پتېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پخسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پخلا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پراخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرانستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرانیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرتوګ ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرنجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرکالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پریړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرېشانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پرېشانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پس پا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پسخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پسې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پلانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پلنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پلیتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پلې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پناه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "په تمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "په سد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پورته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پورې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پوستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پوهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پوپنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پوڅه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پړسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پړقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پړکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پښېمانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیدا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیوند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیچیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پیکه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېشنهادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېچیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "پېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځایېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځغاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځغستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځغلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځلبلاندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځنبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځنځیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځوړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ځړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرګنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرګندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څملاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څوکرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "څیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چالو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاپېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاپېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چخڼی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چسپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چنجنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چورلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چوپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چټلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چڼکاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چیتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چینګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چیچړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "چېک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډامبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډاډه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډنګرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډیجیټلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ډېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ړنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ړوندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ږمنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ژدویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ژوبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ژړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښایسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښکاره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښکارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښکته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښکلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښکېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ښېرازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کابو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کامیابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کاوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کبابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کجاوې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کسکرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کشفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کفر ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کلوچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کلکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کمزورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کنټرولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کنډوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کنګالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کنګلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کورړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کوزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کولاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کومڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کونډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کوچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کټارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کړمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کړمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کړنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کړوپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کښته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کښېناستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ککړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کیسه ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کېناستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "کېناستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګانې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګران کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګردان کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګردانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرفتارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګروهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګمراه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګنجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګنسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګنګسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګوزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګوډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګوښه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګچه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګډوډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ګېر چاپېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یقیني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یو شان کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یو ځای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یوهومره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یوځای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یوې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "یېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  },
+  {
+    "lemma": "ویل",
+    "family": "speech_say",
+    "rationale": "stems وای-/ووای-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "وای",
+    "perfective_stem": "ووای",
+    "imperfective_root": "ویل",
+    "perfective_root": "ووویل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "راوړل",
+    "family": "transport_bring",
+    "rationale": "derived bring; both roots راوړل",
+    "irregular_by_engine": false,
+    "imperfective_stem": "راوړ",
+    "perfective_stem": "راوړ",
+    "imperfective_root": "راوړل",
+    "perfective_root": "راوړل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "وړل",
+    "family": "transport_carry",
+    "rationale": "irregular perfective ووړ-",
+    "irregular_by_engine": true,
+    "imperfective_stem": "وړ",
+    "perfective_stem": "ووړ",
+    "imperfective_root": "وړل",
+    "perfective_root": "ووړل",
+    "verified_via": "local"
+  },
+  {
+    "lemma": "بوتلل",
+    "family": "transport_pull_out",
+    "rationale": "multiple stems بیای-/بوځ-",
+    "irregular_by_engine": false,
+    "verified_via": "none"
+  }
+]

@@ -1,0 +1,5047 @@
+[
+  {
+    "lemma": "ورکېدل",
+    "family": "aux_become",
+    "rationale": "prefix ور+کېدل"
+  },
+  {
+    "lemma": "کېدل",
+    "family": "aux_become",
+    "rationale": "auxiliary; irregular present stem کېږ-"
+  },
+  {
+    "lemma": "کول",
+    "family": "aux_do",
+    "rationale": "suppletive perfective stem کړ-"
+  },
+  {
+    "lemma": "نیول",
+    "family": "capture_take",
+    "rationale": "perfective ونی-"
+  },
+  {
+    "lemma": "خوړل",
+    "family": "consume_eat",
+    "rationale": "perfective وخور-"
+  },
+  {
+    "lemma": "راکول",
+    "family": "give",
+    "rationale": "prefix + کول → راکړ- in perfective"
+  },
+  {
+    "lemma": "ورکول",
+    "family": "give",
+    "rationale": "prefix + کول → ورکړ- in perfective"
+  },
+  {
+    "lemma": "راتلل",
+    "family": "motion_come",
+    "rationale": "derived from تلل with را- prefix"
+  },
+  {
+    "lemma": "راوتل",
+    "family": "motion_come_out",
+    "rationale": "prefix + motion"
+  },
+  {
+    "lemma": "وتل",
+    "family": "motion_exit",
+    "rationale": "motion; often suppletive perfective forms"
+  },
+  {
+    "lemma": "تلل",
+    "family": "motion_go",
+    "rationale": "suppletive perfective root لاړل"
+  },
+  {
+    "lemma": "ورتلل",
+    "family": "motion_go",
+    "rationale": "prefix ور+تلل"
+  },
+  {
+    "lemma": "لیدل",
+    "family": "perception_see",
+    "rationale": "stems وین-/ووین-"
+  },
+  {
+    "lemma": "آبادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "آبدارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "آزادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "آماده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "آورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ابلاغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اثباتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "احاطه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "احساسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "احضارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اختطاف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اخلالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ادا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ادغامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ارتاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ارزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اروېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ازارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ازمایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ازمویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ازمیښت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اسانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "استثمارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "استعمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اسیر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اشنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اصلاح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اظهارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اعدامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اعلامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اعلانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اغستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اغوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اغېړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "امبارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "امتحان اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اموخته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "انبارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "انتقال کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "انجامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "انکاري کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اهل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوترېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اودرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اور اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوزګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوچتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوړه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اوېزانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اړ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اږیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اګاه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایجابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایجاد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایسارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ایله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اېستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اېسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "اېشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "باطلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بحال کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بختور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بد رد ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بدترېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بدل اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بدله اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بدلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برائت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برابرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برالبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بربادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بربنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برخه اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برطرف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برقرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بري کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "برېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بستر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بشپړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بلدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بلوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بندي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بهر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بوڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بچ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بږنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بږی اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بڼیا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بیانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بیمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بیېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بې حس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بې سده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بې لارې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بې موراله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بې هوشه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېزاره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېسده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "بېهو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تار په تارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تازه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تامینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تاو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تاییدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تباه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تبدیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تتر بتر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تجدیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تجلیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تحلیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تحویلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تخصیص کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تخڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تدفینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تر شا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تر لاسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تربت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترجمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تردیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترسره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترسیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترمیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ترکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تزنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تس نس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تسخیر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تسلیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تسکین کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تشخیصېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تصدیق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تطبیقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تعبیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تعذیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تعقیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تعمیم کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تقسیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تلافي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تمامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تمدیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "توانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "توبه ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "توبه ویستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تورنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "توقیفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تولیدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "توهینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تړپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تږی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تښتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تکرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تکمیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تڼاکي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تیارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "تېزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ثابتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ثبتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جاج اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جانجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جایزه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جبرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جدا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جذباتي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جذبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جلا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جمعه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جوتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جوختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "جګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حاصلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حاضرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حذفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حسابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حصارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حصه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حمل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "حیرانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خارجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خارښتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خاموشه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ختمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خریل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خزانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خسي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خطا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خطبه ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خفه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خلاصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خلاصېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خواټولی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوشالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوشحاله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوشحالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوړینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوږمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خوښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خپلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خړوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "خیشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "داخلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دایرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دربلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "درزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "درستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "درغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "درنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دروغ ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دریافت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "درېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دفن کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دننه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دوزانو کښېنستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "دوکه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ذبح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رائجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راجع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راستنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راستونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راویښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راټولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راپورته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "راکوزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ربلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رجسټر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رحمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رخصت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رسمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رسوا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رشوت اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رغړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رفع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رهي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روږدی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روښانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "روښنایي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رویکارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رژېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رڼا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ریل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ریټایر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ریچې ریچې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ریکارډ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رېزه رېزه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "رېږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زخمي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زرغونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زره زره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زلقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زلکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زمولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زنګ اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زهیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زوړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زړه نا زړه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زیات کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زیاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زیږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "زېږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سا اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سا اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سانسورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ساه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سبق وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سبق ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستومانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستومانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستړی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ستړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سخا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سختېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سرتورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سریښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سقوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سمبالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سنت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سنتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سندرې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سنګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سنګسارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سوری کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سوق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سوځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپلای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سپکې سپورې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سکویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "سېټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شاته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شاملېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شاهدي وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شاړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شرحه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شرمنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شرمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شرنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شروع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شریکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شمارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شوارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شړمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شکل ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "شڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "صادرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "صحیح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "صفا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ضایع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "طلبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ظاهره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ظاهرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عادت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عاشق کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عبثېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عذابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عملي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "عیانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غالب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غایبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غرقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غلبېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غلطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غمجنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غورځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوصه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غونجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غونډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوټه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوړپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غوږ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غچ اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غړمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غړومبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "غیبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فارغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فاسدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فاش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فراخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فرشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فرمایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فلج کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فناه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "فېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قابو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قانع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قایمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قبضه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قتلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قدم اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قرارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قرباني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قربانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قرض اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قرنطینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قلابند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قید کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "قیمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لالهاندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لاندې باندې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لاهو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لت پت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لتاړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لعنت ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لغوه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لغړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "للونېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لمبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لمدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لړزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لیلامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لېوالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لېونی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لېوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "لېږدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ماتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ماشوم اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مایل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مایله کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مایلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مایوسه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مایوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "متحد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "متروکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "متمدنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "متهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "متوجه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مجازات کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مجازاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مجبورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مجهزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محدودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محرومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محسوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محفوظ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محکمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "محکومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مخامخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مخامخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مختصر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مختلف کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مخکې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مخې ته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مدغمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مدللېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مرادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مراعتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مربوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مرتبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مرمت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مرمتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مروجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مرورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مزه اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مستردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مستعفي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مستند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مستندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسلمانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسمومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسکی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مشتقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مشغولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مشهور کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مشهورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مضبوطېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مطرح کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "معلومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مغلوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مقاله لوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مقررېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مقصودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ملاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ملامتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ملاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ملحقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ممکنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منتخب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منحرفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منحلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منسوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منسوخ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منسوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منصوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منظمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منعکس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منعکسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منفي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منقبضېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "منکرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "موسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "موسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مومیایي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "موندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مړ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مکمل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مکملېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "میده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "میراتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "میراث اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "میل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مین کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "مېشتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نازلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نافذېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نامنظوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نامنظورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ناکامه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ناکامېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نتیجه اخستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نزدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نسکورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نشرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نصب کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نغومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نفس ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نهیلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نوستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نومېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نوږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نوی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نڅوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نچوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نژدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نښلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نیمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نېزدې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "نېغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هرکلی وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هسکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هضمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هلاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هوارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هوسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هک دک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هک پک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هڼهڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هیبت اخیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هیسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "هېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واردېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واقع کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واپس کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واکسینېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "واکمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وایل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ودانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ورانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ورزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وروستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وروسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وروستو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ورکوټی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وریتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وزن کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وصلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وقفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ولچکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وهمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ووړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وړاندې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وړوکی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وږمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویدېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویلي کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویلې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "وېزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټانسل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټاټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټسټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټمبه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټونګرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټوټه ټوټه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټپرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټکنی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټینګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټیټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټیپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټیک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټېغ ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ټېکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پابندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاتې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاشل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پالش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پایمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پتېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پخسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پخلا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پراخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرانستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرانیستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرتوګ ایستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرنجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرکالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پریړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرېشانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پرېشانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پس پا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پسخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پسې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پلانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پلنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پلیتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پلې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پناه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "په تمه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "په سد کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پورته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پوره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پورې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پوستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پوهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پوپنا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پوڅه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پړسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پړقېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پړکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پښېمانه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیدا کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیمالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیوند کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیچیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پیکه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېشنهادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېچیده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "پېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځایېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځغاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځغستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځغلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځلبلاندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځنبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځنځیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځنډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځوړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ځړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څربېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرګنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرګندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څملاستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څوکرېیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څڅېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څښېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "څیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاغېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چالو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاودېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاپېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاپېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چاکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چخڼی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چر کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چسپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چنجنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چوخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چورلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چوپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چټلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چپ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چڼکاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چیتېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چینګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چیچړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "چېک کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډامبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډاډه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډبرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډنګرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډوبېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډونګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډیجیټلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ډېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ړندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ړنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ړوندېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ږمنځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ژدویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ژوبلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ژړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښایسته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښویېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښکاره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښکارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښکته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښکلی کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښکېل کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښیل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ښېرازېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کابو کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کامیابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کاوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کبابېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کت کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کجاوې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کرپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کسکرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کش کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کشفېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کشېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کفر ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کلوچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کلکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کمزورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کنده کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کنټرولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کنډوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کنګالېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کنګلېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کورړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کوزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کولاوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کولېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کومڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کونډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کوچېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کوړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کوکېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کوېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کټ کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کټارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کړمنېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کړمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کړنګېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کړوپېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کږېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کښته کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کښېناستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ککړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کیسه ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کېناستل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "کېناستېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګانې ویل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګران کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګردان کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګردانېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرزېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرفتارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرمېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګروهېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرځېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرړېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګمراه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګنجېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګنسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګنګسېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګورېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګوزارېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګوټېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګوډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګوښه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګوڼېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګچه کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګډوډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګډېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګیرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ګېر چاپېره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یادېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یخېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یقیني کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یو شان کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یو ځای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یوهومره کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یوځای کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یوې کېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "یېرېدل",
+    "family": "potential_irregular",
+    "rationale": "ending heuristic (یل/ېدل/ستل)"
+  },
+  {
+    "lemma": "ویل",
+    "family": "speech_say",
+    "rationale": "stems وای-/ووای-"
+  },
+  {
+    "lemma": "راوړل",
+    "family": "transport_bring",
+    "rationale": "derived bring; both roots راوړل"
+  },
+  {
+    "lemma": "وړل",
+    "family": "transport_carry",
+    "rationale": "irregular perfective ووړ-"
+  },
+  {
+    "lemma": "بوتلل",
+    "family": "transport_pull_out",
+    "rationale": "multiple stems بیای-/بوځ-"
+  }
+]
