@@ -1330,13 +1330,33 @@ with tabs[1]:
                 freq = int(r.get('frequency', 0))
                 pos = r.get('pos', '')
                 rom = r.get('romanization', '') or dict_romanization_for(pashto)
+                eng = r.get('english', '') or dict_english_for(pashto)
                 if pashto not in cleaned_map:
-                    cleaned_map[pashto] = {'pashto': pashto, 'romanization': rom, 'pos': pos, 'frequency': 0}
+                    cleaned_map[pashto] = {
+                        'pashto': pashto,
+                        'romanization': rom,
+                        'pos': pos,
+                        'frequency': 0,
+                        'english': eng,
+                        'kind': '',
+                    }
                 cleaned_map[pashto]['frequency'] += freq
                 if not cleaned_map[pashto]['romanization'] and rom:
                     cleaned_map[pashto]['romanization'] = rom
-                if cleaned_map[pashto]['pos'] == 'unknown' and pos:
-                    cleaned_map[pashto]['pos'] = pos
+                # Upgrade POS and English from dictionary when unknown/missing
+                if (not cleaned_map[pashto]['english']) and eng:
+                    cleaned_map[pashto]['english'] = eng
+                if cleaned_map[pashto]['pos'] == 'unknown':
+                    dict_pos = normalize_pos_label(dict_pos_for(pashto))
+                    if dict_pos and dict_pos != 'unknown':
+                        cleaned_map[pashto]['pos'] = dict_pos
+                # Mark verb-conjugation hint when this exact form maps to a verb root
+                try:
+                    norm_form = normalize_pashto_char(pashto)
+                    if find_lexicon_root_for_form(norm_form):
+                        cleaned_map[pashto]['kind'] = 'verb form'
+                except Exception:
+                    pass
 
             if group_by_lemma and load_form_to_lemma_map():
                 f2l = load_form_to_lemma_map()
@@ -1377,6 +1397,7 @@ with tabs[1]:
                         'POS': r['pos'],
                         'Frequency': r['frequency'],
                         'English': r.get('english', ''),
+                        'Kind': r.get('kind', ''),
                     }
                     for r in rows
                 ])
