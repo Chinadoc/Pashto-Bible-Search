@@ -1,0 +1,110 @@
+{
+  "کول": {
+    "stems": { "imperfective": "کو", "perfective": "وکړ" },
+    "roots": { "imperfective": "کول", "perfective": "وکړ" },
+    "past_participle": "کړی",
+    "romanization": {
+      "imperfective_stem": "ko",
+      "perfective_stem": "óokṛ",
+      "imperfective_root": "kawúl",
+      "perfective_root": "óokṛ",
+      "past_participle": "kṛúy"
+    }
+  },
+  "کېدل": {
+    "stems": { "imperfective": "کېږ", "perfective": "وش" },
+    "roots": { "imperfective": "کېدل", "perfective": "وشو" },
+    "past_participle": "شوی",
+    "romanization": {
+      "imperfective_stem": "kéy̌",
+      "perfective_stem": "óosh",
+      "imperfective_root": "kedál",
+      "perfective_root": "óosho",
+      "past_participle": "shóy"
+    }
+  },
+  "تلل": {
+    "stems": { "imperfective": "ځ", "perfective": "لاړ ش" },
+    "roots": { "imperfective": "تلل", "perfective": "لاړل" },
+    "past_participle": "تللی",
+    "romanization": {
+      "imperfective_stem": "dz",
+      "perfective_stem": "laaR sh",
+      "imperfective_root": "tlul",
+      "perfective_root": "laaRul",
+      "past_participle": "tlúlay"
+    }
+  },
+  "لیدل": {
+    "stems": { "imperfective": "وین", "perfective": "ووین" },
+    "roots": { "imperfective": "لیدل", "perfective": "ولیدل" },
+    "past_participle": "لیدلی",
+    "romanization": {
+      "imperfective_stem": "ween",
+      "perfective_stem": "óoween",
+      "imperfective_root": "leedúl",
+      "perfective_root": "óoleedul",
+      "past_participle": "leedúlay"
+    }
+  },
+  "وړل": {
+    "stems": { "imperfective": "وړ", "perfective": "ووړ" },
+    "roots": { "imperfective": "وړل", "perfective": "ووړل" },
+    "past_participle": "وړلی",
+    "romanization": {
+      "imperfective_stem": "wur",
+      "perfective_stem": "óowur",
+      "imperfective_root": "wurúl",
+      "perfective_root": "óowurul",
+      "past_participle": "wurúlay"
+    }
+  },
+  "راوړل": {
+    "stems": { "imperfective": "راوړ", "perfective": "راوړ" },
+    "roots": { "imperfective": "راوړل", "perfective": "راوړل" },
+    "past_participle": "راوړلی",
+    "romanization": {
+      "imperfective_stem": "raawR",
+      "perfective_stem": "ráawR",
+      "imperfective_root": "raawRúl",
+      "perfective_root": "ráawRul",
+      "past_participle": "raawRúlay"
+    }
+  },
+  "ویل": {
+    "stems": { "imperfective": "وای", "perfective": "ووای" },
+    "roots": { "imperfective": "ویل", "perfective": "ووویل" },
+    "past_participle": "ویلی",
+    "romanization": {
+      "imperfective_stem": "waay",
+      "perfective_stem": "óowaay",
+      "imperfective_root": "weel",
+      "perfective_root": "óoweel",
+      "past_participle": "weelí"
+    }
+  },
+  "خوړل": {
+    "stems": { "imperfective": "خور", "perfective": "وخور" },
+    "roots": { "imperfective": "خوړل", "perfective": "وخوړل" },
+    "past_participle": "خوړلی",
+    "romanization": {
+      "imperfective_stem": "khor",
+      "perfective_stem": "óokhor",
+      "imperfective_root": "khorúl",
+      "perfective_root": "óokhorul",
+      "past_participle": "khorúlay"
+    }
+  },
+  "نیول": {
+    "stems": { "imperfective": "نیس", "perfective": "ونی" },
+    "roots": { "imperfective": "نیول", "perfective": "ونیول" },
+    "past_participle": "نیولی",
+    "romanization": {
+      "imperfective_stem": "nees",
+      "perfective_stem": "óonee",
+      "imperfective_root": "neeúl",
+      "perfective_root": "óoneeul",
+      "past_participle": "neewalí"
+    }
+  }
+}
