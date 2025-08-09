@@ -43,7 +43,16 @@ PAST_TRANSITIVE_VERB_HINTS = ['و', 'شو', 'کړ', 'وخ']  # crude hints, can 
 # --- Utility: occurrences in a given text map ---
 def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
     norm = normalize_pashto_char(form_ps)
-    verses = [ref for ref, txt in text_map.items() if norm in normalize_pashto_char(txt)]
+    # Prefer precomputed normalized maps if available in globals
+    global NT_NORM_MAP, OT_NORM_MAP
+    src = text_map
+    if src is NT_TEXT:
+        nm = NT_NORM_MAP
+    elif src is OT_TEXT:
+        nm = OT_NORM_MAP
+    else:
+        nm = {ref: normalize_pashto_char(txt) for ref, txt in text_map.items()}
+    verses = [ref for ref, txt in nm.items() if norm in txt]
     return {'count': len(verses), 'verses': verses}
 
 
@@ -101,18 +110,18 @@ def classify_inflection_reason_struct(verse_text: str, form_ps: str) -> list:
     if idx != -1:
         left_ctx = tokens[max(0, idx-4):idx]
         right_ctx = tokens[idx+1: idx+5]
+        left_set = set(left_ctx); right_set = set(right_ctx)
         # prepositions immediately before or within 2 tokens
         for pat in SANDWICH_PATTERNS:
-            if pat['type'] == 'pre' and pat['left'] in left_ctx[-2:]:
+            if pat['type'] == 'pre' and pat['left'] in left_set:
                 reasons.append('sandwich')
                 break
             if pat['type'] == 'circ':
-                if pat['left'] in left_ctx[-3:] and pat['right'] in right_ctx[:4]:
+                if pat['left'] in left_set and pat['right'] in right_set:
                     reasons.append('sandwich')
                     break
         # plural signals
-        near_nums = any(tok.isdigit() for tok in left_ctx+right_ctx) or any(tok in NUMERAL_WORDS for tok in left_ctx+right_ctx)
-        if form_ps.endswith(PLURAL_SUFFIXES) or form_ps in plural_forms or (form_ps in second_forms and near_nums):
+        if form_ps.endswith(PLURAL_SUFFIXES) or form_ps in plural_forms or any(tok.isdigit() or tok in NUMERAL_WORDS for tok in left_ctx+right_ctx):
             reasons.append('plural')
         # past transitive subject hint
         if any(is_likely_perfective_past_token(tok) for tok in left_ctx[-3:]+right_ctx[:3]):
@@ -308,6 +317,8 @@ def load_word_frequency_data(path: str = WORD_FREQ_FILE):
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception:
+        return []
+    except json.JSONDecodeError:
         return []
 
 @st.cache_data
@@ -540,15 +551,15 @@ def load_data():
         return None
 
 @st.cache_data
-def load_word_frequency_data():
-    """Loads the word frequency and romanization data."""
+def load_ot_occurrence_index():
+    """Load OT precomputed form->occurrence index if available."""
     try:
-        with open(WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+        if not os.path.exists(OT_FORMS_INDEX_FILE):
+            return {}
+        with open(OT_FORMS_INDEX_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except FileNotFoundError:
-        return []
-    except json.JSONDecodeError:
-        return []
+    except Exception:
+        return {}
 
 def _load_text_from_dir(dir_path: str):
     bible = {}
@@ -612,6 +623,35 @@ def load_bible_text():
 @st.cache_data
 def load_bible_text_ot():
     return _load_text_from_dir(OT_DATA_DIR)
+
+@st.cache_data
+def build_normalized_text_maps(nt_text: dict, ot_text: dict) -> dict:
+    def norm_map(d):
+        return {ref: normalize_pashto_char(txt) for ref, txt in d.items()}
+    return {
+        'nt_norm': norm_map(nt_text),
+        'ot_norm': norm_map(ot_text),
+    }
+
+# Initialize global text maps early to satisfy helper references
+NT_TEXT = load_bible_text()
+OT_TEXT = load_bible_text_ot()
+_maps = build_normalized_text_maps(NT_TEXT, OT_TEXT)
+NT_NORM_MAP = _maps['nt_norm']
+OT_NORM_MAP = _maps['ot_norm']
+
+@st.cache_data
+def build_token_maps(nt_text: dict, ot_text: dict) -> dict:
+    def tok_map(d):
+        return {ref: tokenize_ps(txt) for ref, txt in d.items()}
+    return {
+        'nt_tok': tok_map(nt_text),
+        'ot_tok': tok_map(ot_text),
+    }
+
+TOK = build_token_maps(NT_TEXT, OT_TEXT)
+NT_TOK_MAP = TOK['nt_tok']
+OT_TOK_MAP = TOK['ot_tok']
 
 @st.cache_data
 def create_form_to_root_map(_grammatical_index):
@@ -718,8 +758,8 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 if audio_bytes:
                     st.audio(audio_bytes, format='audio/mp3')
         st.markdown(f"[Download Audio]({audio_url})")
-    else:
-        st.caption("No audio file found for this verse.")
+    # If there is no audio (e.g., most Old Testament verses), we simply omit
+    # the audio UI without displaying a warning so the results remain clean.
     # Reason annotation (heuristic)
     if search_term:
         reasons = classify_inflection_reason_struct(full_verse, search_term)
@@ -1219,10 +1259,20 @@ with tabs[1]:
 
             if group_by_lemma and load_form_to_lemma_map():
                 f2l = load_form_to_lemma_map()
+                # Build noun index once for grouping fallback
+                noun_forms_index = build_noun_forms_index() if NOUNS else {}
                 lemma_agg = {}
                 for r in cleaned_map.values():
                     form = r['pashto']
-                    key = f2l.get(form) or f2l.get(normalize_pashto_char(form)) or form
+                    norm_form = normalize_pashto_char(form)
+                    # Try cached mapping, then verb lexicon, then noun forms index
+                    key = (
+                        f2l.get(form)
+                        or f2l.get(norm_form)
+                        or find_lexicon_root_for_form(norm_form)
+                        or noun_forms_index.get(norm_form)
+                        or form
+                    )
                     la = lemma_agg.get(key)
                     if not la:
                         la = {
@@ -1306,7 +1356,26 @@ with tabs[1]:
 
     # Old Testament frequency
     with sub[1]:
-        raw_ot = load_word_frequency_data(OT_WORD_FREQ_FILE) if os.path.exists(OT_WORD_FREQ_FILE) else []
+        # Streaming fallback: if OT_WORD_FREQ_FILE is large or unavailable, derive a top-N list from
+        # the smaller ot_form_occurrence_index.json without loading the entire frequency file.
+        TOP_N = 5000
+        if os.path.exists(OT_WORD_FREQ_FILE):
+            try:
+                # Stream first TOP_N entries to reduce load time
+                raw_ot = []
+                with open(OT_WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+                    # Basic fast-read: if file is a list JSON, read once; otherwise fallback
+                    data = json.load(f)
+                    raw_ot = data[:TOP_N] if isinstance(data, list) else []
+            except Exception:
+                raw_ot = []
+        else:
+            idx = load_ot_occurrence_index()
+            # Build a list sorted by frequency descending, limited to TOP_N
+            raw_ot = sorted(
+                ({'pashto': k, 'frequency': int(v.get('count', 0))} for k, v in idx.items()),
+                key=lambda x: x['frequency'], reverse=True
+            )[:TOP_N]
         render_frequency_panel(raw_ot, ot_text, key_prefix="ot")
 
     # Dictionary view: LingDocs full list (if available)
