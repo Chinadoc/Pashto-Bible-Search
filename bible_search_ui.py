@@ -431,12 +431,39 @@ def normalize_pos_label(label: str) -> str:
     if not label:
         return 'unknown'
     s = str(label).lower()
-    # unify spaces around dots and slashes
+    # unify spaces around dots and slashes and remove stray commas
     s = re.sub(r"\s*\.\s*", ".", s)
     s = re.sub(r"\s*/\s*", " / ", s)
+    s = s.replace(",", "")
     # collapse multiple spaces
     s = re.sub(r"\s+", " ", s).strip()
     return s
+
+
+def classify_pos_family(pos_label: str) -> str:
+    s = (pos_label or '').lower()
+    if not s or s == 'unknown':
+        return 'other'
+    if 'verb' in s or re.search(r"\bv\b|v\.", s):
+        return 'verb'
+    if 'adj' in s:
+        return 'adjective'
+    if 'adv' in s:
+        return 'adverb'
+    if 'n.' in s or re.search(r"\bn\.", s) or 'n.m' in s or 'n.f' in s or 'noun' in s:
+        return 'noun'
+    return 'other'
+
+
+def gender_from_pos(pos_label: str) -> str:
+    s = (pos_label or '').lower()
+    if 'unisex' in s or 'm.f' in s or 'mf' in s:
+        return 'unisex'
+    if re.search(r"\bm\b|m\.", s):
+        return 'm'
+    if re.search(r"\bf\b|f\.", s):
+        return 'f'
+    return ''
 
 
 @st.cache_data
@@ -1304,18 +1331,25 @@ with tabs[1]:
             st.info("Word frequency list not available yet.")
             return
         freq_items = build_freq_items(raw_freq_items)
-        pos_values = sorted({it.get('pos', 'unknown') for it in freq_items})
-        tab_names = ["All"] + pos_values
+        # Build top-level POS family tabs
+        family_buckets = {
+            'All': freq_items,
+            'Verb': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'verb'],
+            'Noun': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'noun'],
+            'Adjective': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'adjective'],
+            'Adverb': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'adverb'],
+            'Other': [it for it in freq_items if classify_pos_family(it.get('pos','')) == 'other'],
+        }
+        tab_names = list(family_buckets.keys())
         pos_tabs = st.tabs(tab_names)
 
         def render_freq_tab(selected_pos: str):
+            base_items = family_buckets.get(selected_pos, freq_items)
             text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"{key_prefix}_freq_filter_{selected_pos}")
             show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"{key_prefix}_freq_n_{selected_pos}")
             group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False, key=f"{key_prefix}_freq_group_{selected_pos}")
 
             def match(it):
-                if selected_pos != 'All' and it.get('pos', 'unknown') != selected_pos:
-                    return False
                 q = text_q.strip().lower()
                 if not q:
                     return True
@@ -1325,7 +1359,7 @@ with tabs[1]:
                 )
 
             cleaned_map = {}
-            for r in (it for it in freq_items if match(it)):
+            for r in (it for it in base_items if match(it)):
                 pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
                 freq = int(r.get('frequency', 0))
                 pos = r.get('pos', '')
@@ -1390,6 +1424,16 @@ with tabs[1]:
                 df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
             else:
                 rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
+                # Optional gender sub-filter
+                subcol1, subcol2 = st.columns([1,3])
+                with subcol1:
+                    enable_gender = st.checkbox("Filter by gender", value=False, key=f"{key_prefix}_g_enable_{selected_pos}")
+                gender_val = ''
+                if enable_gender:
+                    with subcol2:
+                        gender_val = st.selectbox("Gender", options=['', 'm', 'f', 'unisex'], index=0, key=f"{key_prefix}_g_sel_{selected_pos}")
+                        rows = [r for r in rows if (not gender_val or gender_from_pos(r['POS']) == gender_val)]
+
                 df = pd.DataFrame([
                     {
                         'Pashto': r['pashto'],
