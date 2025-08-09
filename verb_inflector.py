@@ -58,6 +58,29 @@ def load_lexicon() -> Dict[str, Any]:
 
 VERBS = load_lexicon()
 
+def _normalize_pashto_key(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+    replacements = {'ي': 'ی', 'ى': 'ی', 'ئ': 'ی'}
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text
+
+def _lookup_verb_spec(root: str) -> Optional[Dict[str, Any]]:
+    """Find a verb spec using robust matching (normalized Yeh variants).
+
+    This prevents falling back to regular rules for irregulars like 'لیدل'.
+    """
+    if not root:
+        return None
+    if root in VERBS:
+        return VERBS[root]
+    norm = _normalize_pashto_key(root)
+    for k, spec in VERBS.items():
+        if _normalize_pashto_key(k) == norm:
+            return spec
+    return None
+
 # Present/subjunctive endings (Pashto)
 PRESENT_ENDINGS = {
     '1sg': ('م', 'um'),
@@ -280,7 +303,7 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
 
 def conjugate_verb(root: str) -> Dict[str, Any]:
     """Backwards-compatible API: prefer irregular/lexicon; fall back to dynamic rules."""
-    v = VERBS.get(root)
+    v = _lookup_verb_spec(root)
     if v:
         return _build_tables_from_spec(root, v)
     spec = _infer_regular_spec(root)
