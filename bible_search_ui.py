@@ -440,31 +440,38 @@ def normalize_pos_label(label: str) -> str:
     return s
 
 
-def classify_pos_family(pos_label: str) -> str:
+def _tokenize_pos(pos_label: str) -> list:
     s = normalize_pos_label(pos_label)
-    if not s or s == 'unknown':
+    # Replace separators with spaces, split dots
+    s = s.replace('/', ' ').replace('.', ' ')
+    tokens = [t for t in s.split() if t]
+    return tokens
+
+def classify_pos_family(pos_label: str) -> str:
+    tokens = set(_tokenize_pos(pos_label))
+    if not tokens or 'unknown' in tokens:
         return 'other'
-    if 'verb' in s or re.search(r"\bv\b|v\.", s):
+    if 'v' in tokens or 'verb' in tokens:
         return 'verb'
-    if 'adj' in s:
-        return 'adjective'
-    if 'adv' in s:
+    if 'adv' in tokens or 'adverb' in tokens:
         return 'adverb'
-    if 'n.' in s or re.search(r"\bn\.", s) or 'n.m' in s or 'n.f' in s or 'noun' in s:
+    if 'adj' in tokens or 'adjective' in tokens:
+        return 'adjective'
+    if any(t.startswith('n') for t in tokens) or 'noun' in tokens:
         return 'noun'
     return 'other'
 
 
 def families_for_pos(pos_label: str) -> set:
-    s = normalize_pos_label(pos_label)
+    tokens = set(_tokenize_pos(pos_label))
     fams = set()
-    if 'verb' in s or re.search(r"\bv\b|v\.", s):
+    if 'v' in tokens or 'verb' in tokens:
         fams.add('Verb')
-    if 'adj' in s:
+    if 'adj' in tokens or 'adjective' in tokens:
         fams.add('Adjective')
-    if 'adv' in s:
+    if 'adv' in tokens or 'adverb' in tokens:
         fams.add('Adverb')
-    if 'n.' in s or re.search(r"\bn\.", s) or 'n.m' in s or 'n.f' in s or 'noun' in s:
+    if any(t.startswith('n') for t in tokens) or 'noun' in tokens:
         fams.add('Noun')
     if not fams:
         fams.add('Other')
@@ -472,13 +479,14 @@ def families_for_pos(pos_label: str) -> set:
 
 
 def gender_from_pos(pos_label: str) -> str:
-    s = normalize_pos_label(pos_label)
-    if 'unisex' in s or 'm.f' in s or 'mf' in s:
+    tokens = set(_tokenize_pos(pos_label))
+    if {'m','f'} <= tokens or 'unisex' in tokens or 'mf' in tokens:
         return 'unisex'
-    if re.search(r"\bm\b|m\.", s):
+    if 'm' in tokens:
         return 'm'
-    if re.search(r"\bf\b|f\.", s):
+    if 'f' in tokens:
         return 'f'
+    # Handle composite tokens like n.m, n.f after dot split already
     return ''
 
 
