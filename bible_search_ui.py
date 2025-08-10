@@ -441,7 +441,7 @@ def normalize_pos_label(label: str) -> str:
 
 
 def classify_pos_family(pos_label: str) -> str:
-    s = (pos_label or '').lower()
+    s = normalize_pos_label(pos_label)
     if not s or s == 'unknown':
         return 'other'
     if 'verb' in s or re.search(r"\bv\b|v\.", s):
@@ -456,7 +456,7 @@ def classify_pos_family(pos_label: str) -> str:
 
 
 def families_for_pos(pos_label: str) -> set:
-    s = (pos_label or '').lower()
+    s = normalize_pos_label(pos_label)
     fams = set()
     if 'verb' in s or re.search(r"\bv\b|v\.", s):
         fams.add('Verb')
@@ -472,7 +472,7 @@ def families_for_pos(pos_label: str) -> set:
 
 
 def gender_from_pos(pos_label: str) -> str:
-    s = (pos_label or '').lower()
+    s = normalize_pos_label(pos_label)
     if 'unisex' in s or 'm.f' in s or 'mf' in s:
         return 'unisex'
     if re.search(r"\bm\b|m\.", s):
