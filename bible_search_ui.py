@@ -947,43 +947,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        # Auto-load up to configured max per page; fallback to on-demand button
-        unique_hash = hashlib.md5(f"{verse_ref}|{search_term}".encode("utf-8")).hexdigest()[:10]
-        safe_key = re.sub(r"[^a-zA-Z0-9_]+", "_", verse_ref)
-        session_flag = f"audio_show_{safe_key}_{unique_hash}"
-        rendered_audio = False
-        # 1) Auto-load first N clips
-        cnt = int(st.session_state.get('audio_loaded_count', 0))
-        if AUTO_LOAD_AUDIO and cnt < AUTO_LOAD_AUDIO_MAX:
-            audio_bytes = get_audio_bytes(audio_url)
-            if audio_bytes:
-                st.audio(audio_bytes, format='audio/mp3')
-                st.session_state['audio_loaded_count'] = cnt + 1
-                rendered_audio = True
-                st.session_state[session_flag] = True
-        # 2) Manual button if not yet rendered
-        if not rendered_audio:
-            suffix = _next_unique_suffix("load_audio")
-            if st.button("Load audio", key=f"load_audio_{safe_key}_{unique_hash}_{suffix}"):
-                st.session_state[session_flag] = True
-                # immediate render on this run
-                audio_bytes = get_audio_bytes(audio_url)
-                if audio_bytes:
-                    st.audio(audio_bytes, format='audio/mp3')
-                    rendered_audio = True
-                else:
-                    # Fallback: let the browser stream directly from the URL
-                    st.audio(audio_url)
-                    rendered_audio = True
-        # 3) Persist after rerun
-        if st.session_state.get(session_flag) and not rendered_audio:
-            audio_bytes = get_audio_bytes(audio_url)
-            if audio_bytes:
-                st.audio(audio_bytes, format='audio/mp3')
-            else:
-                st.audio(audio_url)
-        # Provide a user-visible download link that works regardless of direct host
-        # Convert back to the normal Drive URL for familiarity
+        # Always stream directly from the client for speed; browsers can fetch in parallel
+        st.audio(audio_url)
+        # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
             dl_url = GOOGLE_DRIVE_URL_PREFIX + file_id
@@ -992,22 +958,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.markdown(f"[Download Audio]({dl_url})")
     # If there is no audio (e.g., most Old Testament verses), we simply omit
     # the audio UI without displaying a warning so the results remain clean.
-    # Reason annotation (heuristic) — only for nouns/adjectives
-    if search_term:
-        try:
-            pos = normalize_pos_label(dict_pos_for(search_term))
-            tokens = re.findall(r"[a-z]+", pos)
-            is_noun_adj = bool(set(tokens) & {"n", "noun", "adj", "adjective"})
-            # Fallback: if dictionary is silent, try noun lemma detection
-            if not is_noun_adj and 'find_noun_lemma_for_form' in globals():
-                lemma = find_noun_lemma_for_form(search_term)
-                is_noun_adj = bool(lemma and lemma in NOUNS)
-            if is_noun_adj:
-                reasons = classify_inflection_reason_struct(full_verse, search_term)
-                if reasons:
-                    st.caption(f"Reason(s) for inflection (heuristic): {', '.join(reasons)}")
-        except Exception:
-            pass
+    # Optional: reasons for inflection (hidden by default because current
+    # heuristics are approximate and can be misleading). To re-enable, set
+    # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
 

@@ -5,6 +5,20 @@ from typing import Dict, Any, Optional
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LEXICON_PATH = os.path.join(APP_ROOT, 'nouns_lexicon.json')
 
+# Auto-detect simple noun patterns when lexicon entry missing, to surface
+# inflections for common nouns like Stressed áy endings.
+def _infer_noun_pattern_from_dict(lemma_ps: str) -> str:
+    from bible_search_ui import dict_romanization_for, normalize_pos_label, dict_pos_for  # local import to avoid cycles at module load
+    pos = normalize_pos_label(dict_pos_for(lemma_ps) or '')
+    rom = dict_romanization_for(lemma_ps) or ''
+    # Only attempt for nouns
+    if 'n.' not in pos:
+        return ''
+    # If romanization ends with áy → stressed_ay pattern
+    if rom.endswith('áy') or rom.endswith('áy'.replace('á','á')):
+        return 'stressed_ay'
+    return ''
+
 
 def load_lexicon() -> Dict[str, Any]:
     try:
