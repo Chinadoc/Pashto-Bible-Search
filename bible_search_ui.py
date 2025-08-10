@@ -1360,9 +1360,12 @@ with tabs[1]:
 
         def render_freq_tab(selected_pos: str):
             base_items = family_buckets.get(selected_pos, freq_items)
-            text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"{key_prefix}_freq_filter_{selected_pos}")
+            # Place quick toggles directly under the top family tabs
             show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"{key_prefix}_freq_n_{selected_pos}")
-            group_by_lemma = st.checkbox("Group by lemma (if cache available)", value=False, key=f"{key_prefix}_freq_group_{selected_pos}")
+            group_by_lemma = st.checkbox("Group by base word (if cache available)", value=False, key=f"{key_prefix}_freq_group_{selected_pos}")
+
+            # Search box directly beneath toggles
+            text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"{key_prefix}_freq_filter_{selected_pos}")
 
             def match(it):
                 q = text_q.strip().lower()
@@ -1519,7 +1522,7 @@ with tabs[1]:
 
                 # Apply sub-filters
                 if gender_val:
-                    rows = [r for r in rows if gender_from_pos(r['POS']) == gender_val]
+                    rows = [r for r in rows if gender_from_pos(r.get('pos','')) == gender_val]
                 if selected_pos == 'Noun':
                     if num_val:
                         rows = [r for r in rows if r.get('noun_num','') == num_val]
