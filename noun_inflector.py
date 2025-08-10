@@ -146,3 +146,37 @@ def find_noun_lemma_for_form(form_ps: str) -> str:
         return idx.get(form_ps, '')
     except Exception:
         return ''
+
+
+# --- Classification helpers (Type 1-6 mapping) ---
+
+_PATTERN_TO_TYPE = {
+    'masc_basic_consonant': 1,  # baseline masculine/feminine simple endings
+    'basic': 1,
+    'unstressed_y': 2,
+    'stressed_ay': 3,
+    'pashtoon': 4,
+    'short_squish': 5,
+    'fem_inanim_ee': 6,
+}
+
+
+def classify_inflection_type(lemma: str, pattern: Optional[str] = None) -> int:
+    """Return an integer 1..6 indicating noun inflection type.
+
+    Mapping is a pragmatic approximation based on our internal pattern names.
+    If an exact pattern is not available, we try to infer from the lemma shape.
+    """
+    entry = NOUNS.get(lemma, {})
+    pat = pattern or entry.get('pattern') or infer_default_pattern(lemma)
+    if pat in _PATTERN_TO_TYPE:
+        return _PATTERN_TO_TYPE[pat]
+    # Heuristics when pattern unknown
+    if lemma.endswith('ه'):
+        return 1
+    if lemma.endswith('ی') or lemma.endswith('ي'):
+        # Without stress info, default to 2
+        return 2
+    if lemma.endswith('ون'):
+        return 4
+    return 1

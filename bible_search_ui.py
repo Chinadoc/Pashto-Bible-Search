@@ -14,7 +14,7 @@ from search_utils import (
     build_form_occurrence_index,
 )
 from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form
-from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index
+from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index, classify_inflection_type
 import unicodedata
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
@@ -1540,6 +1540,18 @@ with tabs[1]:
                                 return 'vocative'
                             return ''
                         rows = [r for r in rows if map_infl(r.get('noun_key','')) in infl_val]
+                    # Show type classification in Kind column when available
+                    for r in rows:
+                        try:
+                            lemma = r.get('pashto','') if r.get('noun_key','') == 'base' else r.get('pashto','')
+                            # Attempt lemma via index
+                            nidx = build_noun_forms_index() if NOUNS else {}
+                            lemma = nidx.get(normalize_pashto_char(r.get('pashto','')), lemma)
+                            ntype = classify_inflection_type(lemma) if lemma else None
+                            if ntype:
+                                r['Kind'] = f"noun type {ntype}"
+                        except Exception:
+                            pass
                 if selected_pos == 'Verb':
                     if vf_mode == 'lemma only':
                         rows = [r for r in rows if r.get('Kind','') != 'verb form']
