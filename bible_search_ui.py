@@ -5,6 +5,7 @@ import os
 import requests
 from urllib.parse import quote_plus
 import pandas as pd
+from functools import lru_cache
 from collections import defaultdict
 import hashlib
 from search_utils import (
@@ -13,7 +14,7 @@ from search_utils import (
     get_form_occurrences_any,
     build_form_occurrence_index,
 )
-from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form
+from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form, romanization_for_form_fast
 from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index, classify_inflection_type
 import unicodedata
 
@@ -122,6 +123,9 @@ def classify_inflection_reason_struct(verse_text: str, form_ps: str) -> list:
                 if pat['left'] in left_set and pat['right'] in right_set:
                     reasons.append('sandwich')
                     break
+        # vocative marker near the left side
+        if any(v in left_set for v in {'اې', 'ای'}):
+            reasons.append('vocative')
         # plural signals
         if form_ps.endswith(PLURAL_SUFFIXES) or form_ps in plural_forms or any(tok.isdigit() or tok in NUMERAL_WORDS for tok in left_ctx+right_ctx):
             reasons.append('plural')
@@ -134,6 +138,8 @@ def classify_inflection_reason_struct(verse_text: str, form_ps: str) -> list:
             reasons.append('sandwich')
         if form_ps.endswith(PLURAL_SUFFIXES):
             reasons.append('plural')
+        if (' اې ' in verse_text) or (' ای ' in verse_text) or verse_text.strip().startswith(('اې','ای')):
+            reasons.append('vocative')
     # If the form matches explicit 2nd inflection and sandwich detected, suggest double inflection
     if (form_ps in second_forms) and ('sandwich' in reasons or 'subject-of-past-transitive?' in reasons):
         if 'plural' not in reasons:
@@ -162,6 +168,9 @@ FORM_TO_LEMMA_FILE = os.path.join(APP_ROOT, 'form_to_lemma.json')
 INFLECTIONS_CACHE_FILE = os.path.join(APP_ROOT, 'inflections_cache.json')
 NT_REFERENCE_FILE = os.path.join(APP_ROOT, 'nt_reference.json')
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
+# Prefer a direct-download host for server-side fetching to avoid Google Drive
+# interstitials; fall back to the regular URL for user-visible links
+GOOGLE_DRIVE_DIRECT_PREFIX = "https://drive.usercontent.google.com/download?id="
 WORD_FREQ_DRIVE_ID = "1PYrdE16bJlyGiNO5hi1qxed7nTF0-WCo"
 FULL_DICT_DRIVE_ID = "1Zay2s8siAV6d7pQec9uEbh-3YpzBtNol"
 SHOW_SIDEBAR = False
@@ -305,9 +314,22 @@ def get_audio_bytes(url):
     timeout so a slow network does not hang the whole page.
     """
     try:
-        response = requests.get(url, timeout=15)
+        # A friendlier user agent helps with some CDNs (incl. Google Drive)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+            "Accept": "audio/mpeg,audio/*;q=0.9,*/*;q=0.8",
+        }
+        response = requests.get(url, timeout=30, headers=headers, allow_redirects=True)
         response.raise_for_status()
-        return response.content
+        # Some hosts respond with HTML if access requires confirmation; in that case
+        # return empty so callers can try a URL-based embed instead
+        ctype = (response.headers.get('Content-Type') or '').lower()
+        content = response.content
+        if not content:
+            return None
+        if 'audio' not in ctype and not url.lower().endswith('.mp3'):
+            return None
+        return content
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching audio: {e}")
         return None
@@ -367,8 +389,35 @@ def _build_dict_norm_map():
 
 DICT_NORM_MAP = _build_dict_norm_map()
 
+# Optional fast dictionary index produced by normalize_dictionary_data.py
+@st.cache_data
+def _load_fast_dict_index():
+    try:
+        path = os.path.join(APP_ROOT, 'dictionary_fast_index.json')
+        if not os.path.exists(path):
+            return {}
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+FAST_DICT_INDEX = _load_fast_dict_index()
+
 def _get_first_entry_for(pashto_word: str):
     key = (pashto_word or '').replace('_', ' ')
+    # Prefer fast index when available
+    if FAST_DICT_INDEX:
+        by_p = FAST_DICT_INDEX.get('by_pashto', {})
+        by_pn = FAST_DICT_INDEX.get('by_pashto_norm', {})
+        if key in by_p:
+            # Synthesize a minimal entry structure compatible with callers
+            m = by_p[key]
+            return {'f': m.get('rom', ''), 'c': m.get('pos', ''), 'e': m.get('e', '')}
+        nkey = normalize_pashto_char(key)
+        if nkey in by_pn:
+            m = by_pn[nkey]
+            return {'f': m.get('rom', ''), 'c': m.get('pos', ''), 'e': m.get('e', '')}
+    # Fallback to full map
     entries = DICT_MAP.get(key)
     if entries:
         return entries[0]
@@ -389,6 +438,7 @@ def _next_unique_suffix(key_family: str) -> str:
     st.session_state[family] = count
     return str(count)
 
+@lru_cache(maxsize=200000)
 def dict_romanization_for(pashto_word: str) -> str:
     try:
         ent = _get_first_entry_for(pashto_word)
@@ -403,18 +453,36 @@ def dict_romanization_for(pashto_word: str) -> str:
         return ''
 
 
+@lru_cache(maxsize=200000)
 def dict_pos_for(pashto_word: str) -> str:
     """Return part-of-speech from LingDocs dictionary when available."""
     try:
         ent = _get_first_entry_for(pashto_word)
-        if not ent:
-            return ''
-        pos = ent.get('c', '')
-        return pos or ''
+        if ent:
+            pos = ent.get('c', '')
+            if pos:
+                return pos
+        # Fallback: infer lemma (e.g., ټولو → ټول) and use its POS
+        lemma = guess_lemma_in_dict(pashto_word)
+        if lemma:
+            ent2 = _get_first_entry_for(lemma)
+            if ent2:
+                return ent2.get('c', '') or ''
+        # Fallback: if this looks like a verb form in our lexicon, mark as verb
+        try:
+            norm = normalize_pashto_char(pashto_word)
+            if 'find_lexicon_root_for_form' in globals():
+                root = find_lexicon_root_for_form(norm)
+                if root:
+                    return 'v.'
+        except Exception:
+            pass
+        return ''
     except Exception:
         return ''
 
 
+@lru_cache(maxsize=200000)
 def dict_english_for(pashto_word: str) -> str:
     """Return English gloss from LingDocs dictionary when available."""
     try:
@@ -426,16 +494,15 @@ def dict_english_for(pashto_word: str) -> str:
         return ''
 
 
+@lru_cache(maxsize=10000)
 def normalize_pos_label(label: str) -> str:
-    """Canonicalize POS labels to merge near-duplicates like 'n. m.' vs 'n.m.'."""
+    """Canonicalize POS labels consistently (e.g., 'adj,/adv.' -> 'adj. / adv.')."""
     if not label:
         return 'unknown'
     s = str(label).lower()
-    # unify spaces around dots and slashes and remove stray commas
     s = re.sub(r"\s*\.\s*", ".", s)
     s = re.sub(r"\s*/\s*", " / ", s)
-    s = s.replace(",", "")
-    # collapse multiple spaces
+    s = s.replace(",", " ")
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
@@ -447,6 +514,7 @@ def _tokenize_pos(pos_label: str) -> list:
     tokens = [t for t in s.split() if t]
     return tokens
 
+@lru_cache(maxsize=10000)
 def classify_pos_family(pos_label: str) -> str:
     tokens = set(_tokenize_pos(pos_label))
     if not tokens or 'unknown' in tokens:
@@ -550,15 +618,29 @@ def build_bible_word_catalog():
 
 # --- Heuristic romanization from lemma when exact form missing in dictionary ---
 def guess_lemma_in_dict(form_ps: str) -> str:
+    # Fast path: precomputed mapping when available
+    try:
+        f2l = load_form_to_lemma_map()
+        if f2l:
+            # exact
+            if form_ps in f2l:
+                return f2l[form_ps]
+            # normalized
+            key = normalize_pashto_char(form_ps.replace('_', ' '))
+            if key in f2l:
+                return f2l[key]
+    except Exception:
+        pass
     base = form_ps.replace('_', ' ')
-    # Try feminine lemma ending ه
+    # Prefer removing final vowel inflection first (e.g., ټولو → ټول, ټولې → ټول)
     if base.endswith('و') or base.endswith('ې'):
-        cand = base[:-1] + 'ه'
-        if cand in DICT_MAP:
-            return cand
-    # Try removing plural/inflection suffixes commonly seen in fem/mask patterns
-    if base.endswith('و') and (base[:-1] in DICT_MAP):
-        return base[:-1]
+        no_last = base[:-1]
+        if no_last in DICT_MAP:
+            return no_last
+        # Secondary: try feminine ه ending (خرې → خره)
+        cand_h = no_last + 'ه'
+        if cand_h in DICT_MAP:
+            return cand_h
     return ''
 
 
@@ -593,6 +675,92 @@ def romanize_from_dict_or_rules(form_ps: str) -> str:
         if adj:
             return adj
     return ''
+
+
+# --- Master-list enrichment helpers ---
+@st.cache_data
+def classify_form_basic(form_ps: str) -> dict:
+    """Infer POS/Kind/lemma/romanization for a form using dictionary and local engines.
+
+    Returns: {pos, kind, noun_key, noun_num, lemma, romanization, english}
+    """
+    try:
+        norm = normalize_pashto_char(form_ps)
+        # dictionary fields
+        pos = normalize_pos_label(dict_pos_for(form_ps))
+        english = dict_english_for(form_ps)
+        roman = dict_romanization_for(form_ps)
+        lemma = ''
+        noun_key = ''
+        noun_num = ''
+        kind = ''
+
+        # Noun classification via inflector
+        try:
+            noun_forms_index = build_noun_forms_index() if NOUNS else {}
+            lemma = noun_forms_index.get(norm, '')
+            if lemma and lemma in NOUNS:
+                n = inflect_noun(lemma)
+                for k, (ps, rom) in n['forms'].items():
+                    if normalize_pashto_char(ps) == norm:
+                        noun_key = k
+                        noun_num = 'pl' if 'plural' in k else 'sg'
+                        kind = f"noun {k.replace('_',' ')}"
+                        if not roman:
+                            roman = rom
+                        break
+                if not english:
+                    english = dict_english_for(lemma)
+                if not pos or pos == 'unknown':
+                    pos = 'n.'
+        except Exception:
+            pass
+
+        # Verb classification via lexicon
+        if not kind:
+            try:
+                root = ''
+                if 'find_lexicon_root_for_form' in globals():
+                    root = find_lexicon_root_for_form(norm) or ''
+                if not root and 'infer_root_from_form' in globals():
+                    root = infer_root_from_form(norm) or ''
+                if root:
+                    conj = conjugate_verb(root)
+                    label = ''
+                    search_sets = ['present','subjunctive','imperfective_future','perfective_future','ability_present','continuous_past','simple_past','ability_continuous_past','ability_simple_past']
+                    for cat in search_sets:
+                        forms_map = conj.get(cat, {}) or {}
+                        for person, (ps, rom) in forms_map.items():
+                            if normalize_pashto_char(ps) == norm:
+                                label = f"verb {cat.replace('_',' ')} {person}"
+                                if not roman:
+                                    roman = rom
+                                break
+                        if label:
+                            break
+                    kind = label or 'verb form'
+                    if not pos or pos == 'unknown':
+                        pos = 'v.'
+                    if not english:
+                        english = dict_english_for(root)
+            except Exception:
+                pass
+
+        # Romanization fallback from lemma rules
+        if not roman:
+            roman = romanize_from_dict_or_rules(form_ps)
+
+        return {
+            'pos': pos or 'unknown',
+            'kind': kind,
+            'noun_key': noun_key,
+            'noun_num': noun_num,
+            'lemma': lemma,
+            'romanization': roman,
+            'english': english,
+        }
+    except Exception:
+        return {'pos': 'unknown', 'kind': '', 'noun_key': '', 'noun_num': '', 'lemma': '', 'romanization': '', 'english': ''}
 
 @st.cache_data
 def load_data():
@@ -763,7 +931,8 @@ def find_audio_url(verse_ref):
         audio_filename = f"{book.lower().replace(' ', '')}{chapter}_verse_{verse}.mp3"
         file_id = AUDIO_FILE_MAP.get(audio_filename)
         if file_id:
-            return GOOGLE_DRIVE_URL_PREFIX + file_id
+            # Prefer direct host for in-app playback
+            return f"{GOOGLE_DRIVE_DIRECT_PREFIX}{file_id}&export=download"
         return None
     except Exception:
         return None
@@ -802,12 +971,25 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 if audio_bytes:
                     st.audio(audio_bytes, format='audio/mp3')
                     rendered_audio = True
+                else:
+                    # Fallback: let the browser stream directly from the URL
+                    st.audio(audio_url)
+                    rendered_audio = True
         # 3) Persist after rerun
         if st.session_state.get(session_flag) and not rendered_audio:
             audio_bytes = get_audio_bytes(audio_url)
             if audio_bytes:
                 st.audio(audio_bytes, format='audio/mp3')
-        st.markdown(f"[Download Audio]({audio_url})")
+            else:
+                st.audio(audio_url)
+        # Provide a user-visible download link that works regardless of direct host
+        # Convert back to the normal Drive URL for familiarity
+        try:
+            file_id = audio_url.split('id=')[1].split('&')[0]
+            dl_url = GOOGLE_DRIVE_URL_PREFIX + file_id
+        except Exception:
+            dl_url = audio_url
+        st.markdown(f"[Download Audio]({dl_url})")
     # If there is no audio (e.g., most Old Testament verses), we simply omit
     # the audio UI without displaying a warning so the results remain clean.
     # Reason annotation (heuristic) — only for nouns/adjectives
@@ -1052,8 +1234,16 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         lex_conj = conjugate_verb(root_word)
         if (not rom_hint or rom_hint == 'not_found') and lex_conj:
             rom_hint = lex_conj['meta']['romanization'].get('imperfective_root')
+        if (not rom_hint or rom_hint == 'not_found'):
+            # Fast path from prebuilt indexes for the root and the query form
+            rom_hint = romanization_for_form_fast(root_word) or romanization_for_form_fast(query)
+        if (not pos_hint or pos_hint == 'unknown'):
+            # Prefer LingDocs dictionary POS
+            dp = dict_pos_for(root_word)
+            if dp:
+                pos_hint = dp
         if (not pos_hint or pos_hint == 'unknown') and lex_conj:
-            pos_hint = 'verb (trans./intrans.)' if lex_conj else pos_hint
+            pos_hint = 'verb (trans./intrans.)'
         subtitle_bits = []
         if rom_hint and rom_hint != 'not_found':
             subtitle_bits.append(rom_hint)
@@ -1343,7 +1533,7 @@ with tabs[1]:
             items.append({
                 'pashto': p,
                 'frequency': it.get('frequency', it.get('count', 0)),
-                'romanization': it.get('romanization', it.get('f', '')) or dict_romanization_for(p),
+                'romanization': it.get('romanization', it.get('f', '')) or romanization_for_form_fast(p) or romanize_from_dict_or_rules(p) or dict_romanization_for(p),
                 'pos': normalize_pos_label((it.get('pos') or it.get('c') or '') or dict_pos_for(p) or 'unknown'),
                 'ts': it.get('ts', ''),
                 'english': it.get('english', it.get('e', '')) or dict_english_for(p),
@@ -1389,36 +1579,36 @@ with tabs[1]:
                 pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
                 freq = int(r.get('frequency', 0))
                 pos = r.get('pos', '')
-                rom = r.get('romanization', '') or dict_romanization_for(pashto)
                 eng = r.get('english', '') or dict_english_for(pashto)
                 if pashto not in cleaned_map:
                     cleaned_map[pashto] = {
                         'pashto': pashto,
-                        'romanization': rom,
+                        'romanization': r.get('romanization', ''),
                         'pos': pos,
                         'frequency': 0,
                         'english': eng,
+                        'lemma': '',
                         'kind': '',
                         'noun_key': '',
                         'noun_num': '',
                     }
                 cleaned_map[pashto]['frequency'] += freq
-                if not cleaned_map[pashto]['romanization'] and rom:
-                    cleaned_map[pashto]['romanization'] = rom
-                # Upgrade POS and English from dictionary when unknown/missing
-                if (not cleaned_map[pashto]['english']) and eng:
-                    cleaned_map[pashto]['english'] = eng
-                if cleaned_map[pashto]['pos'] == 'unknown':
-                    dict_pos = normalize_pos_label(dict_pos_for(pashto))
-                    if dict_pos and dict_pos != 'unknown':
-                        cleaned_map[pashto]['pos'] = dict_pos
-                # Mark verb-conjugation hint when this exact form maps to a verb root
-                try:
-                    norm_form = normalize_pashto_char(pashto)
-                    if find_lexicon_root_for_form(norm_form):
-                        cleaned_map[pashto]['kind'] = 'verb form'
-                except Exception:
-                    pass
+                # Enrich entry holistically (pos/kind/lemma/roman/english)
+                enriched = classify_form_basic(pashto)
+                if not cleaned_map[pashto]['romanization'] and enriched.get('romanization'):
+                    cleaned_map[pashto]['romanization'] = enriched['romanization']
+                if (not cleaned_map[pashto]['pos'] or cleaned_map[pashto]['pos'] == 'unknown') and enriched.get('pos'):
+                    cleaned_map[pashto]['pos'] = enriched['pos']
+                if enriched.get('english') and not cleaned_map[pashto]['english']:
+                    cleaned_map[pashto]['english'] = enriched['english']
+                if enriched.get('lemma'):
+                    cleaned_map[pashto]['lemma'] = enriched['lemma']
+                if enriched.get('kind'):
+                    cleaned_map[pashto]['kind'] = enriched['kind']
+                if enriched.get('noun_key'):
+                    cleaned_map[pashto]['noun_key'] = enriched['noun_key']
+                if enriched.get('noun_num'):
+                    cleaned_map[pashto]['noun_num'] = enriched['noun_num']
 
             # If Noun family, compute noun morphology keys for filtered forms (with light memoization)
             if selected_pos == 'Noun':
@@ -1557,14 +1747,14 @@ with tabs[1]:
                             lemma = nidx.get(normalize_pashto_char(r.get('pashto','')), lemma)
                             ntype = classify_inflection_type(lemma) if lemma else None
                             if ntype:
-                                r['Kind'] = f"noun type {ntype}"
+                                r['kind'] = f"noun type {ntype}"
                         except Exception:
                             pass
                 if selected_pos == 'Verb':
                     if vf_mode == 'lemma only':
-                        rows = [r for r in rows if r.get('Kind','') != 'verb form']
+                        rows = [r for r in rows if r.get('kind','') != 'verb form']
                     elif vf_mode == 'forms only':
-                        rows = [r for r in rows if r.get('Kind','') == 'verb form']
+                        rows = [r for r in rows if r.get('kind','') == 'verb form']
                 if selected_pos == 'Other' and any(filt_other.values()):
                     def other_match(pos: str) -> bool:
                         s = (pos or '').lower()
@@ -1580,7 +1770,8 @@ with tabs[1]:
                         if filt_other['pron']:
                             m = m and ('pron' in s)
                         return m
-                    rows = [r for r in rows if other_match(r['POS'])]
+                    # Our rows dicts use lowercase 'pos' key; guard against missing keys
+                    rows = [r for r in rows if other_match(r.get('pos', ''))]
 
                 df = pd.DataFrame([
                     {
