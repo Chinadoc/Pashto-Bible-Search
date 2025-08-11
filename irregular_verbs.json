@@ -156,4 +156,17 @@
       "past_participle": "eestúlay"
     }
   }
+  ,
+  "بوتلل": {
+    "stems": { "imperfective": "بیای", "perfective": "بوځ" },
+    "roots": { "imperfective": "بوتلل", "perfective": "بوتلل" },
+    "past_participle": "بوتللی",
+    "romanization": {
+      "imperfective_stem": "byaay",
+      "perfective_stem": "bódz",
+      "imperfective_root": "botlúl",
+      "perfective_root": "bótlul",
+      "past_participle": "botlúlay"
+    }
+  }
 }
