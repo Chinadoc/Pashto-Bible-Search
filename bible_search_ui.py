@@ -1193,6 +1193,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}"):
                     selected_token = tok
 
+        state_key = f"__dict_sel_{verse_ref}"
         if selected_token:
             # Resolve dictionary entry (exact → normalized → lemma)
             def _lookup_entry(pword: str) -> dict:
@@ -1220,9 +1221,13 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                     'pos': dict_pos_for(pword),
                     'eng': dict_english_for(pword),
                 }
+            st.session_state[state_key] = {'token': selected_token, 'info': _lookup_entry(selected_token)}
 
-            info = _lookup_entry(selected_token)
-            with st.modal(f"Dictionary: {selected_token}"):
+        # Show popup-like expander when a token has been selected (modal fallback for older Streamlit)
+        if st.session_state.get(state_key):
+            sel = st.session_state[state_key]
+            token = sel['token']; info = sel['info']
+            with st.expander(f"Dictionary: {token}", expanded=True):
                 st.markdown(f"Pashto: **{info.get('pashto','')}**")
                 if info.get('rom'):
                     st.markdown(f"Romanization: {info['rom']}")
@@ -1230,9 +1235,10 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                     st.markdown(f"POS: {info['pos']}")
                 if info.get('eng'):
                     st.markdown(f"English: {info['eng']}")
-                # Open in LingDocs (search-based link)
-                q = quote_plus(selected_token)
+                q = quote_plus(token)
                 st.markdown(f"[Open in LingDocs](https://dictionary.lingdocs.com/?q={q})")
+                if st.button("Close", key=f"close_{state_key}"):
+                    st.session_state.pop(state_key, None)
 
 
 # --- Small UI helpers ---
