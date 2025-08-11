@@ -14,7 +14,13 @@ from search_utils import (
     get_form_occurrences_any,
     build_form_occurrence_index,
 )
-from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form, romanization_for_form_fast
+from verb_inflector import conjugate_verb, find_lexicon_root_for_form, infer_root_from_form
+# Optional fast romanization helper (older deployments may not have it)
+try:
+    from verb_inflector import romanization_for_form_fast  # type: ignore
+except Exception:
+    def romanization_for_form_fast(form_ps: str) -> str:  # fallback no-op
+        return ''
 from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index, classify_inflection_type
 import unicodedata
 
