@@ -68,7 +68,7 @@ def _generate_orthographic_variants(form_ps: str) -> list:
         return [form_ps]
 
 
-def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
+def _find_occurrences_in_text(form_ps: str, text_map: dict, whole_word: bool = True) -> dict:
     norm = normalize_pashto_char(form_ps)
     # Prefer precomputed normalized maps if available in globals
     global NT_NORM_MAP, OT_NORM_MAP
@@ -83,8 +83,21 @@ def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
     cand_forms = _generate_orthographic_variants(norm)
     verses = []
     for ref, txt in nm.items():
-        if any(cf in txt for cf in cand_forms):
-            verses.append(ref)
+        if whole_word:
+            # exact token/phrase match with whitespace boundaries
+            for cf in cand_forms:
+                if ' ' in cf:
+                    if re.search(rf'(^|\s){re.escape(cf)}(\s|$)', txt):
+                        verses.append(ref)
+                        break
+                else:
+                    toks = tokenize_ps(txt)
+                    if cf in toks:
+                        verses.append(ref)
+                        break
+        else:
+            if any(cf in txt for cf in cand_forms):
+                verses.append(ref)
     return {'count': len(verses), 'verses': verses}
 
 
@@ -1391,7 +1404,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             pass
         return True
 
-    occ = _find_occurrences_in_text(normalized_form, selected_text)
+    occ = _find_occurrences_in_text(normalized_form, selected_text, whole_word=True)
     verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
@@ -1413,8 +1426,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         try:
             rows = []
             for key, (ps, rom) in n['forms'].items():
-                occ_nt = _find_occurrences_in_text(ps, nt_text) if scope in ('all','nt') else {'count':0,'verses':[]}
-                occ_ot = _find_occurrences_in_text(ps, ot_text) if scope in ('all','ot') else {'count':0,'verses':[]}
+                occ_nt = _find_occurrences_in_text(ps, nt_text, whole_word=True) if scope in ('all','nt') else {'count':0,'verses':[]}
+                occ_ot = _find_occurrences_in_text(ps, ot_text, whole_word=True) if scope in ('all','ot') else {'count':0,'verses':[]}
                 rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'NT': occ_nt['count'], 'OT': occ_ot['count']})
             if rows:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
@@ -1422,7 +1435,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             pass
         # Per-form expanders with verses from selected scope
         for key, (ps, rom) in n['forms'].items():
-            occ = _find_occurrences_in_text(ps, nt_text if scope=='nt' else ot_text if scope=='ot' else {**nt_text, **ot_text})
+            occ = _find_occurrences_in_text(ps, nt_text if scope=='nt' else ot_text if scope=='ot' else {**nt_text, **ot_text}, whole_word=True)
             title = f"{key}: `{ps}` ({rom}) — {occ['count']} hits"
             with st.expander(title):
                 for vref in sorted(set(occ['verses'])):
