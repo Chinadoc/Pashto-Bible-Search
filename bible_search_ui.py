@@ -1030,6 +1030,23 @@ def render_noun_summary(title, forms_dict, occurrence_index):
     except Exception:
         pass
 
+@lru_cache(maxsize=200000)
+def classify_present_person_number(form_ps: str) -> tuple:
+    """Return (person, number) for present-tense forms, or ('','') otherwise."""
+    try:
+        norm = normalize_pashto_char(form_ps)
+        root = find_lexicon_root_for_form(norm) if 'find_lexicon_root_for_form' in globals() else ''
+        if not root:
+            return ('','')
+        conj = conjugate_verb(root)
+        pres = conj.get('present', {})
+        for k, (ps, _rom) in pres.items():
+            if normalize_pashto_char(ps) == norm:
+                return (k[0], 'pl' if k.endswith('pl') else 'sg')
+        return ('','')
+    except Exception:
+        return ('','')
+
 def render_past_expanders(title, forms_dict, occurrence_index, text_map):
     try:
         st.subheader(title)
@@ -1678,6 +1695,20 @@ with tabs[1]:
                             vf_mode = 'all'
                     else:
                         vf_mode = 'all'
+                # Person/number filters for present tense
+                if selected_pos == 'Verb':
+                    cpn1, cpn2 = st.columns([1,3])
+                    with cpn1:
+                        st.caption('Present filters')
+                    cpn = st.columns(6)
+                    pn_val = {
+                        '1sg': cpn[0].checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg"),
+                        '2sg': cpn[1].checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg"),
+                        '3sg': cpn[2].checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg"),
+                        '1pl': cpn[3].checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl"),
+                        '2pl': cpn[4].checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl"),
+                        '3pl': cpn[5].checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl"),
+                    }
                 # Second-tier subcategory toggles for 'Other'
                 if selected_pos == 'Other':
                     oc = st.columns(5)
@@ -1726,6 +1757,14 @@ with tabs[1]:
                         rows = [r for r in rows if r.get('kind','') != 'verb form']
                     elif vf_mode == 'forms only':
                         rows = [r for r in rows if r.get('kind','') == 'verb form']
+                # Present person/number filter
+                if selected_pos == 'Verb' and any(pn_val.values()):
+                    allowed = {k for k,v in pn_val.items() if v}
+                    def is_present_match(ps: str):
+                        p, n = classify_present_person_number(ps)
+                        key = f"{p}{n}"
+                        return key in allowed
+                    rows = [r for r in rows if is_present_match(r.get('pashto',''))]
                 if selected_pos == 'Other' and any(filt_other.values()):
                     def other_match(pos: str) -> bool:
                         s = (pos or '').lower()
