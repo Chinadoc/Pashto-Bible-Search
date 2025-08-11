@@ -1137,10 +1137,66 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
 
     # Top section: occurrences for the searched form (scope-aware scan)
     selected_text = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
+
+    # Sense disambiguation panel when a headword has multiple dictionary senses
+    def _dict_senses_for(word: str) -> list:
+        try:
+            nkey = normalize_pashto_char(word)
+            senses = []
+            if FAST_DICT_INDEX:
+                # fast index may store only one entry; fall back to DICT_MAP
+                pass
+            entries = DICT_MAP.get(word, []) or DICT_NORM_MAP.get(nkey, []) or []
+            for ent in entries:
+                senses.append({
+                    'pos': ent.get('c', ''),
+                    'rom': (ent.get('f', '') or '').split(',')[0].strip(),
+                    'english': ent.get('e', ''),
+                })
+            return senses
+        except Exception:
+            return []
+
+    senses = _dict_senses_for(normalized_form)
+    sense_filter = None
+    if len(senses) > 1:
+        with st.expander("This word has multiple dictionary senses — choose one to filter verses"):
+            cols = st.columns(min(3, len(senses)))
+            labels = []
+            for i, s in enumerate(senses):
+                lab = f"{normalize_pos_label(s.get('pos',''))} — {s.get('english','')[:60]}"
+                labels.append(lab)
+                with cols[i % len(cols)]:
+                    st.caption(f"{lab}\n\n{(s.get('rom') or '')}")
+            pick = st.radio("Sense", options=["All senses"] + labels, index=0, horizontal=False)
+            if pick != "All senses":
+                sense_filter = pick
+
+    def _sense_match(text: str) -> bool:
+        if not sense_filter:
+            return True
+        sf = sense_filter.lower()
+        # Minimal heuristics for common ambiguous terms like لور
+        # - daughter: nearby words like مور/پلار/یوازینۍ/انجلۍ/بیرته کور
+        # - direction/side: phrases like په لور, د ... لور, په لوري, په لور روان
+        # - sickle: harvest vocabulary لو/رېبل/فصل/ګندم/لور (tool context)
+        try:
+            t = text
+            if 'daughter' in sf or 'n. f' in sf:
+                return any(x in t for x in ['مور','پلار','انجلۍ','خور','یوازینۍ','د زوی','د لور'])
+            if 'direction' in sf or 'side' in sf:
+                return any(x in t for x in ['په لور','لور روان','په لوري','د ښار لور','د کور لور','د اورشلیم لور'])
+            if 'sickle' in sf:
+                return any(x in t for x in ['فصل','رېبل','لو','ګندم','لور واخیست','لور راواخله'])
+        except Exception:
+            pass
+        return True
+
     occ = _find_occurrences_in_text(normalized_form, selected_text)
-    if occ['count']:
-        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {occ['count']} hits")
-        for verse_ref in sorted(set(occ['verses'])):
+    verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
+    if verses_to_show:
+        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+        for verse_ref in verses_to_show:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
