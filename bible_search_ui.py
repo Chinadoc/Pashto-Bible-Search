@@ -1117,27 +1117,30 @@ def render_inline_dict_highlight(verse_ref: str, verse_text: str, term: str) -> 
                 """,
                 unsafe_allow_html=True,
             )
-        # Build dictionary content for the searched term
+        # Prepare replacement builder to ensure unique ids for multiple matches
         info = _lookup_dict_entry_for_popup(normalize_pashto_char(term))
-        aid = f"dict_{abs(hash(verse_ref + '|' + term)) % (10**8)}"
         safe_eng = (info.get('eng') or '').replace('<','&lt;').replace('>','&gt;')
-        tooltip = (
-            f"<span class='dict-tooltip'>"
-            f"<div class='hd'>Dictionary</div>"
-            f"Pashto: <b>{info.get('pashto','')}</b><br/>"
-            f"Romanization: {info.get('rom','')}<br/>"
-            f"POS: {info.get('pos','')}<br/>"
-            f"English: {safe_eng}<br/>"
-            f"<a class='lnk' href='https://dictionary.lingdocs.com/?q={quote_plus(term)}' target='_blank'>Open in LingDocs</a>"
-            f"</span>"
-        )
-        # Replace all occurrences of term with the anchor+tooltip
+        counter = {'i': 0}
+
+        def repl(m):
+            i = counter['i']; counter['i'] += 1
+            aid = f"dict_{abs(hash(verse_ref + '|' + term)) % (10**7)}_{i}"
+            tooltip = (
+                f"<span class='dict-tooltip'>"
+                f"<div class='hd'>Dictionary</div>"
+                f"Pashto: <b>{info.get('pashto','')}</b><br/>"
+                f"Romanization: {info.get('rom','')}<br/>"
+                f"POS: {info.get('pos','')}<br/>"
+                f"English: {safe_eng}<br/>"
+                f"<a class='lnk' href='https://dictionary.lingdocs.com/?q={quote_plus(term)}' target='_blank'>Open in LingDocs</a>"
+                f"</span>"
+            )
+            # Open tooltip only on double-click by setting the URL hash
+            mark = f"<mark ondblclick=\"location.hash='#${aid}'\">{m.group(0)}</mark>"
+            return f"<a id='{aid}' href='#{aid}' class='dict-anchor'>{mark}{tooltip}</a>"
+
         pattern = re.escape(term)
-        repl = f"<a id='{aid}' href='#{aid}' class='dict-anchor'><mark>\\g<0></mark>{tooltip}</a>"
-        try:
-            return re.sub(pattern, repl, verse_text)
-        except Exception:
-            return verse_text
+        return re.sub(pattern, repl, verse_text)
     except Exception:
         return verse_text
 
