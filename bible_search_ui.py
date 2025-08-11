@@ -21,7 +21,14 @@ try:
 except Exception:
     def romanization_for_form_fast(form_ps: str) -> str:  # fallback no-op
         return ''
-from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index, classify_inflection_type
+from noun_inflector import (
+    inflect_noun,
+    NOUNS,
+    find_noun_lemma_for_form,
+    build_noun_forms_index,
+    classify_inflection_type,
+    infer_pattern1_masc_lemma_from_form,
+)
 import unicodedata
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
@@ -824,6 +831,24 @@ def classify_form_basic(form_ps: str) -> dict:
                     english = dict_english_for(lemma)
                 if not pos or pos == 'unknown':
                     pos = 'n.'
+            # If not found, attempt heuristic for Pattern #1 feminine → masculine lemma
+            if not lemma and ('infer_pattern1_masc_lemma_from_form' in globals()):
+                guess_lemma = infer_pattern1_masc_lemma_from_form(norm)
+                if guess_lemma:
+                    lemma = guess_lemma
+                    n = inflect_noun(lemma)
+                    for k, (ps, rom) in n['forms'].items():
+                        if normalize_pashto_char(ps) == norm:
+                            noun_key = k
+                            noun_num = 'pl' if 'plural' in k else 'sg'
+                            kind = f"noun {k.replace('_',' ')}"
+                            if not roman:
+                                roman = rom
+                            break
+                    if not english:
+                        english = dict_english_for(lemma)
+                    if not pos or pos == 'unknown':
+                        pos = 'n.'
         except Exception:
             pass
 
@@ -1976,41 +2001,50 @@ with tabs[1]:
                     q in str(it.get('romanization', '')).lower()
                 )
 
-            cleaned_map = {}
-            for r in (it for it in base_items if match(it)):
-                pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
-                freq = int(r.get('frequency', 0))
-                pos = r.get('pos', '')
-                eng = r.get('english', '') or dict_english_for(pashto)
-                if pashto not in cleaned_map:
-                    cleaned_map[pashto] = {
-                        'pashto': pashto,
-                        'romanization': r.get('romanization', ''),
-                        'pos': pos,
-                        'frequency': 0,
-                        'english': eng,
-                        'lemma': '',
-                        'kind': '',
-                        'noun_key': '',
-                        'noun_num': '',
-                    }
-                cleaned_map[pashto]['frequency'] += freq
-                # Enrich entry holistically (pos/kind/lemma/roman/english)
-                enriched = classify_form_basic(pashto)
-                if not cleaned_map[pashto]['romanization'] and enriched.get('romanization'):
-                    cleaned_map[pashto]['romanization'] = enriched['romanization']
-                if (not cleaned_map[pashto]['pos'] or cleaned_map[pashto]['pos'] == 'unknown') and enriched.get('pos'):
-                    cleaned_map[pashto]['pos'] = enriched['pos']
-                if enriched.get('english') and not cleaned_map[pashto]['english']:
-                    cleaned_map[pashto]['english'] = enriched['english']
-                if enriched.get('lemma'):
-                    cleaned_map[pashto]['lemma'] = enriched['lemma']
-                if enriched.get('kind'):
-                    cleaned_map[pashto]['kind'] = enriched['kind']
-                if enriched.get('noun_key'):
-                    cleaned_map[pashto]['noun_key'] = enriched['noun_key']
-                if enriched.get('noun_num'):
-                    cleaned_map[pashto]['noun_num'] = enriched['noun_num']
+            # Cache key for heavy precomputation (base rows prior to subfilters)
+            base_cache_key = f"freq_rows_cache::{key_prefix}::{selected_pos}::group={group_by_lemma}::q={text_q.strip().lower()}"
+            if base_cache_key in st.session_state:
+                base_rows_all = st.session_state[base_cache_key]
+            else:
+                cleaned_map = {}
+                for r in (it for it in base_items if match(it)):
+                    pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
+                    freq = int(r.get('frequency', 0))
+                    pos = r.get('pos', '')
+                    eng = r.get('english', '') or dict_english_for(pashto)
+                    if pashto not in cleaned_map:
+                        cleaned_map[pashto] = {
+                            'pashto': pashto,
+                            'romanization': r.get('romanization', ''),
+                            'pos': pos,
+                            'frequency': 0,
+                            'english': eng,
+                            'lemma': '',
+                            'kind': '',
+                            'noun_key': '',
+                            'noun_num': '',
+                        }
+                    cleaned_map[pashto]['frequency'] += freq
+                    # Enrich entry holistically (pos/kind/lemma/roman/english)
+                    enriched = classify_form_basic(pashto)
+                    if not cleaned_map[pashto]['romanization'] and enriched.get('romanization'):
+                        cleaned_map[pashto]['romanization'] = enriched['romanization']
+                    if (not cleaned_map[pashto]['pos'] or cleaned_map[pashto]['pos'] == 'unknown') and enriched.get('pos'):
+                        cleaned_map[pashto]['pos'] = enriched['pos']
+                    if enriched.get('english') and not cleaned_map[pashto]['english']:
+                        cleaned_map[pashto]['english'] = enriched['english']
+                    if enriched.get('lemma'):
+                        cleaned_map[pashto]['lemma'] = enriched['lemma']
+                    if enriched.get('kind'):
+                        cleaned_map[pashto]['kind'] = enriched['kind']
+                    if enriched.get('noun_key'):
+                        cleaned_map[pashto]['noun_key'] = enriched['noun_key']
+                    if enriched.get('noun_num'):
+                        cleaned_map[pashto]['noun_num'] = enriched['noun_num']
+                # Convert to base rows list (no slicing; subfilters applied later)
+                base_rows_all = list(cleaned_map.values())
+                # Persist once per session for fast toggling between subfilters
+                st.session_state[base_cache_key] = base_rows_all
 
             # If Noun family, compute noun morphology keys for filtered forms (with light memoization)
             if selected_pos == 'Noun':
@@ -2070,7 +2104,7 @@ with tabs[1]:
                 rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
                 df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
             else:
-                rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
+                rows = sorted(base_rows_all, key=lambda x: x['frequency'], reverse=True)
                 # Sub-filters bar as toggles (no dropdowns)
                 c1, c2, c3, c4 = st.columns([1,1,1,2]) if MOBILE_MODE else st.columns([1.2,1,2.4,3])
                 # Gender radio (horizontal)
@@ -2090,7 +2124,9 @@ with tabs[1]:
                         # Distribute checkboxes across available columns
                         for i,(key,label) in enumerate(infl_opts):
                             col = cc[i % len(cc)]
-                            if col.checkbox(label, value=False, key=f"{key_prefix}_infl_{selected_pos}_{key}"):
+                            # Persist toggle state in session for fast tab switching
+                            state_key = f"{key_prefix}_infl_{selected_pos}_{key}"
+                            if col.checkbox(label, value=st.session_state.get(state_key, False), key=state_key):
                                 infl_val.append(key)
                     else:
                         infl_val = []
@@ -2142,11 +2178,11 @@ with tabs[1]:
                 if selected_pos == 'Other':
                     oc = st.columns(5)
                     filt_other = {
-                        'interj': oc[0].checkbox('Interjection', value=False, key=f"{key_prefix}_oth_interj"),
-                        'conj': oc[1].checkbox('Conjunction', value=False, key=f"{key_prefix}_oth_conj"),
-                        'adpos': oc[2].checkbox('Adposition', value=False, key=f"{key_prefix}_oth_adpos"),
-                        'particle': oc[3].checkbox('Particle', value=False, key=f"{key_prefix}_oth_part"),
-                        'pron': oc[4].checkbox('Pronoun', value=False, key=f"{key_prefix}_oth_pron"),
+                        'interj': oc[0].checkbox('Interjection', value=st.session_state.get(f"{key_prefix}_oth_interj", False), key=f"{key_prefix}_oth_interj"),
+                        'conj': oc[1].checkbox('Conjunction', value=st.session_state.get(f"{key_prefix}_oth_conj", False), key=f"{key_prefix}_oth_conj"),
+                        'adpos': oc[2].checkbox('Adposition', value=st.session_state.get(f"{key_prefix}_oth_adpos", False), key=f"{key_prefix}_oth_adpos"),
+                        'particle': oc[3].checkbox('Particle', value=st.session_state.get(f"{key_prefix}_oth_part", False), key=f"{key_prefix}_oth_part"),
+                        'pron': oc[4].checkbox('Pronoun', value=st.session_state.get(f"{key_prefix}_oth_pron", False), key=f"{key_prefix}_oth_pron"),
                     }
 
                 # Apply sub-filters
@@ -2212,6 +2248,8 @@ with tabs[1]:
                     # Our rows dicts use lowercase 'pos' key; guard against missing keys
                     rows = [r for r in rows if other_match(r.get('pos', ''))]
 
+                # Apply final limit after all subfilters
+                rows = rows[:show_n]
                 df = pd.DataFrame([
                     {
                         'Pashto': r['pashto'],
