@@ -1164,33 +1164,27 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.book-chip{display:inline-block; margin:4px; padding:6px 10px; border-radius:10px; font-size:.8rem; color:#e2f2f8;}\n.book-chip.hit{background:#0ea5b7;}\n.book-chip.zero{background:#1f2937; opacity:.65;}\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n</style>", unsafe_allow_html=True)
+        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n.chip-rail .stButton > button{background:#0ea5e9; color:#fff; padding:6px 12px; border-radius:999px; border:none; font-size:.85rem; margin:4px;}\n.chip-rail .stButton > button:hover{filter:brightness(1.08);}\.chip-rail .stButton > button:disabled{background:#334155; color:#cbd5e1; opacity:.65;}\n</style>", unsafe_allow_html=True)
         col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
         selected = st.session_state.get(sel_key, '')
-        # Render just one compact row of styled chips (hyperlinks for books with hits)
-        chips_html = []
-        scope_code = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
-        for book in books_in_scope:
-            hit = counts.get(book, 0)
-            cls = 'hit' if hit else 'zero'
-            if hit:
-                # Update both query params and session filter; encode book in URL via b=
-                href = f"?q={quote_plus(filter_key)}&s={scope_code}&b={quote_plus(book)}"
-                label = f"{book} - {hit}"
-                chips_html.append(f"<a href='{href}' class='book-chip {cls}' style='text-decoration:none;'>{label}</a>")
-            else:
-                chips_html.append(f"<span class='book-chip {cls}'>{book}</span>")
-        container_class = 'right-rail' if host is not None else ''
-        col.markdown(f"<div class='{container_class}'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
-        # Show clear button only if a filter is active
-        if st.session_state.get(sel_key) or QP_B:
+        # Render one compact row of toggle buttons (no navigation)
+        rail = col.container()
+        with rail:
+            rail_cols = st.columns(8)
+            for i, book in enumerate(books_in_scope):
+                c = rail_cols[i % len(rail_cols)]
+                hit = counts.get(book, 0)
+                label = f"{book} - {hit}" if hit else book
+                disabled = hit == 0
+                key_sfx = _next_unique_suffix("bookchip")
+                if c.button(label, key=f"{sel_key}_{book}_{key_sfx}", disabled=disabled):
+                    st.session_state[sel_key] = '' if st.session_state.get(sel_key) == book else book
+        # Clear button when filtered
+        if st.session_state.get(sel_key):
             if col.button("Show all books", key=f"{sel_key}_clear"):
                 st.session_state[sel_key] = ''
-        # Clear filter button
-        if col.button("Show all books", key=f"{sel_key}_clear"):
-            st.session_state[sel_key] = ''
     except Exception:
         pass
 
