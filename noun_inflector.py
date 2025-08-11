@@ -66,24 +66,34 @@ def infer_default_pattern(lemma: str) -> str:
 # --- Pattern implementations ---
 
 def _pattern_1_basic(lemma: str) -> Dict[str, tuple]:
-    # Pattern #1 Basic. If feminine (ends with ـه), use feminine slots; else masculine.
+    """Pattern #1 Basic (masculine consonant-ending with feminine -ه pattern).
+
+    This pattern is used for many adjectives like 'ټول'. Historically our
+    implementation only emitted forms matching the gender of the lemma.
+    To support toggling and correct mapping (e.g., ټوله, ټولې as inflections of
+    ټول), always generate both masculine and feminine slots regardless of
+    lemma gender.
+    """
     if lemma.endswith('ه'):
-        base = lemma[:-1]
-        return {
-            'plain_f': (base + 'ه', ''),
-            'inflection_1_f': (base + 'ې', ''),
-            'inflection_2_f': (base + 'و', ''),
-            'vocative_f': (base + 'ې', ''),
-            'vocative_pl_f': (base + 'و', ''),
-        }
+        base_m = lemma[:-1]
+        base_f = lemma
     else:
-        stem = lemma
-        return {
-            'plain_m': (stem, ''),
-            'inflection_1_m': (stem, ''),
-            'inflection_2_m': (stem + 'و', ''),
-            # vocatives often not distinct for masc here; omit unless needed
-        }
+        base_m = lemma
+        base_f = lemma + 'ه'
+
+    return {
+        # Masculine
+        'plain_m': (base_m, ''),
+        'inflection_1_m': (base_m, ''),
+        'inflection_2_m': (base_m + 'و', ''),
+        'vocative_m': (base_m, ''),
+        # Feminine
+        'plain_f': (base_f, ''),
+        'inflection_1_f': (base_m + 'ې', ''),
+        'inflection_2_f': (base_m + 'و', ''),
+        'vocative_f': (base_f, ''),
+        'vocative_pl_f': (base_m + 'و', ''),
+    }
 
 
 def _pattern_4_pashtoon(stem: str) -> Dict[str, tuple]:
@@ -140,6 +150,7 @@ def _pattern_half_fem_inanim_ee(lemma: str) -> Dict[str, tuple]:
     }
 
 
+@lru_cache(maxsize=2048)
 def inflect_noun(lemma: str, pattern: Optional[str] = None) -> Dict[str, Any]:
     entry = NOUNS.get(lemma, {})
     pat = pattern or entry.get('pattern') or infer_default_pattern(lemma)
@@ -171,6 +182,7 @@ def inflect_noun(lemma: str, pattern: Optional[str] = None) -> Dict[str, Any]:
 
 # --- Helpers to map forms to lemmas ---
 
+@lru_cache(maxsize=1)
 def build_noun_forms_index() -> Dict[str, str]:
     index: Dict[str, str] = {}
     for lemma in NOUNS.keys():
@@ -188,6 +200,21 @@ def find_noun_lemma_for_form(form_ps: str) -> str:
         return idx.get(form_ps, '')
     except Exception:
         return ''
+
+
+# --- Heuristics for Pattern #1 feminine/masculine alternations ---
+
+@lru_cache(maxsize=4096)
+def infer_pattern1_masc_lemma_from_form(form_ps: str) -> str:
+    """Given a form like 'ټوله' / 'ټولې' / 'ټولو', infer likely masculine lemma
+    such as 'ټول'. This is a light heuristic used when the lexicon lacks an
+    explicit entry. Returns an empty string if no safe inference can be made.
+    """
+    if not form_ps:
+        return ''
+    if form_ps.endswith('ه') or form_ps.endswith('ې') or form_ps.endswith('و'):
+        return form_ps[:-1]
+    return ''
 
 
 # --- Classification helpers (Type 1-6 mapping) ---
