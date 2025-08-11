@@ -50,6 +50,24 @@ PAST_TRANSITIVE_VERB_HINTS = ['و', 'شو', 'کړ', 'وخ']  # crude hints, can 
 
 
 # --- Utility: occurrences in a given text map ---
+def _generate_orthographic_variants(form_ps: str) -> list:
+    """Return common Pashto spelling variants for a form (best-effort).
+
+    Examples handled:
+    - واخستل ↔︎ واخیستل, اخستل ↔︎ اخیستل (insert/remove ی after خ before ست)
+    """
+    try:
+        base = normalize_pashto_char(form_ps)
+        variants = set([base])
+        # Rule: insert ی after خ when followed by ست
+        v1 = re.sub('خ(?=ست)', 'خی', base)
+        v2 = re.sub('خی(?=ست)', 'خ', base)  # reverse
+        variants.update([v1, v2])
+        return [v for v in variants if v]
+    except Exception:
+        return [form_ps]
+
+
 def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
     norm = normalize_pashto_char(form_ps)
     # Prefer precomputed normalized maps if available in globals
@@ -61,7 +79,12 @@ def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
         nm = OT_NORM_MAP
     else:
         nm = {ref: normalize_pashto_char(txt) for ref, txt in text_map.items()}
-    verses = [ref for ref, txt in nm.items() if norm in txt]
+    # Check base and orthographic variants
+    cand_forms = _generate_orthographic_variants(norm)
+    verses = []
+    for ref, txt in nm.items():
+        if any(cf in txt for cf in cand_forms):
+            verses.append(ref)
     return {'count': len(verses), 'verses': verses}
 
 
@@ -195,6 +218,36 @@ with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
     AUDIO_FILE_MAP = json.load(af)
 
 st.set_page_config(layout="wide")
+
+# --- Mobile-friendly CSS tweaks (non-invasive, responsive) ---
+st.markdown(
+    """
+    <style>
+    /* Reduce side padding and increase base font size on small screens */
+    @media (max-width: 680px) {
+      html, body, .stApp { font-size: 18px; }
+      .block-container { padding-left: 0.6rem; padding-right: 0.6rem; }
+      /* Make expander headers easier to tap */
+      details > summary { padding: 0.6rem 0.4rem; }
+      /* Tighten vertical spacing a bit */
+      .stMarkdown, .stTextInput, .stSlider, .stSelectbox, .stDataFrame, .stRadio, .stCheckbox { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+          /* Larger touch targets */
+          .stButton>button { padding: 0.6rem 1rem; font-size: 1rem; }
+          .stTextInput input { padding: 0.6rem; font-size: 1rem; }
+          /* Slightly smaller headings to reduce wrapping */
+          h1 { font-size: 1.5rem; }
+          h2 { font-size: 1.25rem; }
+          h3 { font-size: 1.1rem; }
+    }
+    /* Allow tabs to scroll horizontally when too many */
+    .stTabs [role="tablist"] { flex-wrap: nowrap; overflow-x: auto; }
+    .stTabs [role="tab"] { flex: 0 0 auto; white-space: nowrap; }
+        /* Improve mark highlight visibility in dark/light */
+        mark { padding: 0.1em 0.2em; border-radius: 0.2em; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Prefer loading the audio file map from an external JSON to keep this script small
 try:
@@ -905,6 +958,37 @@ def highlight_verse(text: str, search_term: str) -> str:
         return text
 
 
+def render_book_hit_map(verses: list, text_map: dict, scope_label: str):
+    try:
+        # Build counts per book from verse refs like "Acts 1:2"
+        counts = {}
+        for v in verses:
+            m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', v)
+            if not m:
+                continue
+            book = m.group(1).strip()
+            counts[book] = counts.get(book, 0) + 1
+        # Universe of books present in current scope
+        books_in_scope = sorted({re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
+                                 for r in text_map.keys()
+                                 if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)})
+        if not books_in_scope:
+            return
+        st.caption("Book coverage")
+        cols = st.columns(6)
+        for i, book in enumerate(books_in_scope):
+            c = cols[i % 6]
+            hit = counts.get(book, 0)
+            color = "#2ecc71" if hit else "#3a3a3a"
+            label = f"{book}{' · '+str(hit) if hit else ''}"
+            c.markdown(
+                f"<div style='background:{color};padding:6px 8px;border-radius:8px;text-align:center;color:white;font-size:12px;margin-bottom:6px;'>"+
+                label + "</div>",
+                unsafe_allow_html=True,
+            )
+    except Exception:
+        pass
+
 def classify_inflection_reason(verse_text: str, form_ps: str) -> str:
     """Heuristic: annotate why a form may be inflected (plural/sandwich/past-transitive).
     This is best-effort; we look for nearby sandwich markers and verb hints.
@@ -954,7 +1038,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     audio_url = find_audio_url(verse_ref)
     if audio_url:
         # Always stream directly from the client for speed; browsers can fetch in parallel
-        st.audio(audio_url)
+        st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -1196,6 +1280,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+        render_book_hit_map(verses_to_show, selected_text, scope)
         for verse_ref in verses_to_show:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
@@ -1267,6 +1352,9 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         by_root[r['root']].append(r)
 
     for root_word, items in by_root.items():
+        # If we already rendered this root in a dedicated summary above, skip
+        if root_word in skip_summary_roots:
+            continue
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
 
@@ -1360,6 +1448,14 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
 st.title("Pashto Bible Smart Search")
 st.caption(f"Build: {APP_VERSION}")
 
+# Global mobile layout toggle (simplifies controls on phones)
+MOBILE_MODE = st.toggle(
+    "Mobile layout",
+    value=st.session_state.get("__mobile_mode", False),
+    key="__mobile_mode",
+    help="Optimize layout for phones (condense controls and paddings)",
+)
+
 def _get_query_params():
     try:
         # Streamlit >= 1.30
@@ -1424,7 +1520,8 @@ tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=True, index=DEFAULT_SCOPE_INDEX)
+    # Vertical radio improves usability on small screens
+    scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
     nt_text = load_bible_text()
     ot_text = load_bible_text_ot()
     merged = {}
@@ -1602,12 +1699,28 @@ with tabs[1]:
 
         def render_freq_tab(selected_pos: str):
             base_items = family_buckets.get(selected_pos, freq_items)
-            # Place quick toggles directly under the top family tabs
-            show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"{key_prefix}_freq_n_{selected_pos}")
-            group_by_lemma = st.checkbox("Group by base word (if cache available)", value=False, key=f"{key_prefix}_freq_group_{selected_pos}")
-
-            # Search box directly beneath toggles
-            text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"{key_prefix}_freq_filter_{selected_pos}")
+            # Controls area — collapse into an expander on mobile
+            default_n = 200 if MOBILE_MODE else 1000
+            with st.expander("Filters", expanded=not MOBILE_MODE):
+                show_n = st.slider(
+                    "How many to show",
+                    min_value=50,
+                    max_value=5000,
+                    value=default_n,
+                    step=50,
+                    key=f"{key_prefix}_freq_n_{selected_pos}"
+                )
+                group_by_lemma = st.checkbox(
+                    "Group by base word (if cache available)",
+                    value=False,
+                    key=f"{key_prefix}_freq_group_{selected_pos}"
+                )
+                # Search box
+                text_q = st.text_input(
+                    "Filter (Pashto/Romanization)",
+                    "",
+                    key=f"{key_prefix}_freq_filter_{selected_pos}"
+                )
 
             def match(it):
                 q = text_q.strip().lower()
@@ -1714,7 +1827,7 @@ with tabs[1]:
             else:
                 rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
                 # Sub-filters bar as toggles (no dropdowns)
-                c1, c2, c3, c4 = st.columns([1.2,1,2.4,3])
+                c1, c2, c3, c4 = st.columns([1,1,1,2]) if MOBILE_MODE else st.columns([1.2,1,2.4,3])
                 # Gender radio (horizontal)
                 with c1:
                     gender_val = st.radio("Gender", options=['All','m','f','unisex'], horizontal=True, key=f"{key_prefix}_gender_{selected_pos}")
@@ -1726,21 +1839,24 @@ with tabs[1]:
                 # Inflection toggles (for nouns)
                 with c3:
                     if selected_pos == 'Noun':
-                        cc = st.columns(4)
+                        cc = st.columns(2) if MOBILE_MODE else st.columns(4)
                         infl_opts = [('base','Base'),('inflection_1','Infl 1'),('inflection_2','Infl 2'),('vocative','Vocative')]
                         infl_val = []
+                        # Distribute checkboxes across available columns
                         for i,(key,label) in enumerate(infl_opts):
-                            if cc[i].checkbox(label, value=False, key=f"{key_prefix}_infl_{selected_pos}_{key}"):
+                            col = cc[i % len(cc)]
+                            if col.checkbox(label, value=False, key=f"{key_prefix}_infl_{selected_pos}_{key}"):
                                 infl_val.append(key)
                     else:
                         infl_val = []
                 # Verb form/lemma toggles
                 with c4:
                     if selected_pos == 'Verb':
-                        vm_cols = st.columns(3)
+                        vm_cols = st.columns(2) if MOBILE_MODE else st.columns(3)
                         vm_all = vm_cols[0].checkbox('All entries', value=True, key=f"{key_prefix}_vm_all_{selected_pos}")
                         vm_lem = vm_cols[1].checkbox('Lemmas', value=False, key=f"{key_prefix}_vm_lem_{selected_pos}")
-                        vm_forms = vm_cols[2].checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}")
+                        # On mobile, place 'Forms' beneath in a separate line for larger tap target
+                        vm_forms = st.checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}") if MOBILE_MODE else vm_cols[2].checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}")
                         if vm_all:
                             vf_mode = 'all'
                         elif vm_lem and not vm_forms:
@@ -1756,15 +1872,27 @@ with tabs[1]:
                     cpn1, cpn2 = st.columns([1,3])
                     with cpn1:
                         st.caption('Present filters')
-                    cpn = st.columns(6)
-                    pn_val = {
-                        '1sg': cpn[0].checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg"),
-                        '2sg': cpn[1].checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg"),
-                        '3sg': cpn[2].checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg"),
-                        '1pl': cpn[3].checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl"),
-                        '2pl': cpn[4].checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl"),
-                        '3pl': cpn[5].checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl"),
-                    }
+                    if MOBILE_MODE:
+                        left, right = st.columns(2)
+                        with left:
+                            pn_1sg = st.checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg")
+                            pn_2sg = st.checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg")
+                            pn_3sg = st.checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg")
+                        with right:
+                            pn_1pl = st.checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl")
+                            pn_2pl = st.checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl")
+                            pn_3pl = st.checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl")
+                        pn_val = {'1sg': pn_1sg, '2sg': pn_2sg, '3sg': pn_3sg, '1pl': pn_1pl, '2pl': pn_2pl, '3pl': pn_3pl}
+                    else:
+                        cpn = st.columns(6)
+                        pn_val = {
+                            '1sg': cpn[0].checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg"),
+                            '2sg': cpn[1].checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg"),
+                            '3sg': cpn[2].checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg"),
+                            '1pl': cpn[3].checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl"),
+                            '2pl': cpn[4].checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl"),
+                            '3pl': cpn[5].checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl"),
+                        }
                 # Second-tier subcategory toggles for 'Other'
                 if selected_pos == 'Other':
                     oc = st.columns(5)
@@ -1853,7 +1981,12 @@ with tabs[1]:
             if not rows:
                 st.info("No entries match the current filters.")
             else:
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(
+                    df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=520 if MOBILE_MODE else None,
+                )
 
             if rows:
                 if group_by_lemma and isinstance(rows[0], dict) and 'Lemma' in rows[0]:
