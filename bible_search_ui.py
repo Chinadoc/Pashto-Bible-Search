@@ -1062,8 +1062,9 @@ def highlight_verse(text: str, search_term: str) -> str:
         return text
 
 
-def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global"):
+def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global", host=None):
     try:
+        col = host if host is not None else st
         # Build counts per book from verse refs like "Acts 1:2"
         counts = {}
         for v in verses:
@@ -1080,13 +1081,13 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        st.markdown("<div style='position:sticky; top:72px; font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>", unsafe_allow_html=True)
+        col.markdown("<div style='position:sticky; top:72px; font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
         selected = st.session_state.get(sel_key, '')
-        grid = st.columns(6)
+        grid = col.columns(2) if host is not None else st.columns(6)
         for i, book in enumerate(books_in_scope):
-            c = grid[i % 6]
+            c = grid[i % len(grid)]
             hit = counts.get(book, 0)
             label = f"{book}{' - '+str(hit) if hit else ''}"
             # disable button if no hits
@@ -1097,7 +1098,7 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
                     st.session_state[sel_key] = book
                     selected = book
         # Clear filter button
-        if st.button("Show all books", key=f"{sel_key}_clear"):
+        if col.button("Show all books", key=f"{sel_key}_clear"):
             st.session_state[sel_key] = ''
     except Exception:
         pass
@@ -1863,7 +1864,10 @@ if SHOW_SIDEBAR:
                 st.rerun()
 
 with tabs[0]:
+    # Floating search bar at top
+    st.markdown("<div style='position:sticky; top:0; z-index:1000; background:var(--background-color); padding:8px 4px;'>", unsafe_allow_html=True)
     search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if st.button("Force refresh caches"):
         _clear_all_caches()
