@@ -1283,8 +1283,24 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     else:
         _coverage_add(found_verses)
         render_book_hit_map(found_verses, text_map, scope)
-        for verse_ref in sorted(found_verses):
+        # Prioritize like single-word results and default to 5
+        gospels = ['Matthew','Mark','Luke','John']
+        def rank(vref: str) -> tuple:
+            m = re.match(r'^([A-Za-z\s]+)\s(\d+):(\d+)$', vref)
+            if not m:
+                return (3, 999, vref)
+            book = m.group(1).strip()
+            is_nt = book in ['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation']
+            g_rank = gospels.index(book) if book in gospels else 99
+            nt_rank = 0 if is_nt else 1
+            return (nt_rank, g_rank, book)
+        limited = sorted(found_verses, key=rank)[:5]
+        for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_query, text_map)
+        if len(found_verses) > 5:
+            with st.expander("Show all matches"):
+                for verse_ref in sorted(found_verses, key=rank):
+                    display_verse_with_audio(verse_ref, normalized_query, text_map)
 
     # Compound analysis for 2+ tokens
     toks = [t for t in query.split() if t]
@@ -1414,11 +1430,28 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     occ = _find_occurrences_in_text(normalized_form, selected_text, whole_word=True)
     verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
+        # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
         render_book_hit_map(verses_to_show, selected_text, scope)
-        for verse_ref in verses_to_show:
+        # Prioritization order
+        gospels = ['Matthew','Mark','Luke','John']
+        def rank(vref: str) -> tuple:
+            m = re.match(r'^([A-Za-z\s]+)\s(\d+):(\d+)$', vref)
+            if not m:
+                return (3, 999, vref)
+            book = m.group(1).strip()
+            is_nt = book in ['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation']
+            g_rank = gospels.index(book) if book in gospels else 99
+            nt_rank = 0 if is_nt else 1
+            return (nt_rank, g_rank, book)
+        limited = sorted(verses_to_show, key=rank)[:5]
+        for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
+        if len(verses_to_show) > 5:
+            with st.expander("Show all matches"):
+                for verse_ref in verses_to_show:
+                    display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
     prefer_exact_verb = bool(lex_root and conj_for_form and normalized_form == lex_root)
