@@ -300,11 +300,16 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
             'romanization': {},
         }
 
-    # Category 2: default .*ل → drop final ل
+    # Category 2: default .*ل → drop final ل, with y-prefix fixups for certain irregular classes
     if len(root) > 1:
         base = root[:-1]
         impf_stem = base
-        perf_stem = ('و' + base) if not base.startswith('و') else base
+        # For some irregular transport verbs (e.g., وړل) the perfective stem can surface with یـ
+        # Detect a small set and patch: وړل → یوسـ ; بوتلل handled via irregulars file
+        if root in ('وړل',):
+            perf_stem = 'یوس'
+        else:
+            perf_stem = ('و' + base) if not base.startswith('و') else base
         impf_root = root
         perf_root = ('و' + root) if not root.startswith('و') else root
         past_part = base + 'لی'

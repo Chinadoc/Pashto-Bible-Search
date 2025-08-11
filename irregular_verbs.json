@@ -118,5 +118,55 @@
       "perfective_root": "ráawustul",
       "past_participle": "raawustúlay"
     }
+  },
+  "موندل": {
+    "stems": { "imperfective": "موم", "perfective": "وموم" },
+    "roots": { "imperfective": "موندل", "perfective": "وموندل" },
+    "past_participle": "موندلی",
+    "romanization": {
+      "imperfective_stem": "moom",
+      "perfective_stem": "óomoom",
+      "imperfective_root": "moondúl",
+      "perfective_root": "óomoondul",
+      "past_participle": "moondúlay"
+    }
+  }
+  ,
+  "کښل": {
+    "stems": { "imperfective": "کاږ", "perfective": "وکاږ" },
+    "roots": { "imperfective": "کښل", "perfective": "وکښل" },
+    "past_participle": "کښلی",
+    "romanization": {
+      "imperfective_stem": "kaaG",
+      "perfective_stem": "óokaaG",
+      "imperfective_root": "kxúl",
+      "perfective_root": "óokxul",
+      "past_participle": "kxúlay"
+    }
+  },
+  "ایستل": {
+    "stems": { "imperfective": "باس", "perfective": "وباس" },
+    "roots": { "imperfective": "ایستل", "perfective": "ویستل" },
+    "past_participle": "ایستلی",
+    "romanization": {
+      "imperfective_stem": "baas",
+      "perfective_stem": "óobaas",
+      "imperfective_root": "eestúl",
+      "perfective_root": "wéestul",
+      "past_participle": "eestúlay"
+    }
+  }
+  ,
+  "بوتلل": {
+    "stems": { "imperfective": "بیای", "perfective": "بوځ" },
+    "roots": { "imperfective": "بوتلل", "perfective": "بوتلل" },
+    "past_participle": "بوتللی",
+    "romanization": {
+      "imperfective_stem": "byaay",
+      "perfective_stem": "bódz",
+      "imperfective_root": "botlúl",
+      "perfective_root": "bótlul",
+      "past_participle": "botlúlay"
+    }
   }
 }

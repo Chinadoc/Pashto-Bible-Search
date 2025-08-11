@@ -21,7 +21,14 @@ try:
 except Exception:
     def romanization_for_form_fast(form_ps: str) -> str:  # fallback no-op
         return ''
-from noun_inflector import inflect_noun, NOUNS, find_noun_lemma_for_form, build_noun_forms_index, classify_inflection_type
+from noun_inflector import (
+    inflect_noun,
+    NOUNS,
+    find_noun_lemma_for_form,
+    build_noun_forms_index,
+    classify_inflection_type,
+    infer_pattern1_masc_lemma_from_form,
+)
 import unicodedata
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
@@ -50,7 +57,25 @@ PAST_TRANSITIVE_VERB_HINTS = ['و', 'شو', 'کړ', 'وخ']  # crude hints, can 
 
 
 # --- Utility: occurrences in a given text map ---
-def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
+def _generate_orthographic_variants(form_ps: str) -> list:
+    """Return common Pashto spelling variants for a form (best-effort).
+
+    Examples handled:
+    - واخستل ↔︎ واخیستل, اخستل ↔︎ اخیستل (insert/remove ی after خ before ست)
+    """
+    try:
+        base = normalize_pashto_char(form_ps)
+        variants = set([base])
+        # Rule: insert ی after خ when followed by ست
+        v1 = re.sub('خ(?=ست)', 'خی', base)
+        v2 = re.sub('خی(?=ست)', 'خ', base)  # reverse
+        variants.update([v1, v2])
+        return [v for v in variants if v]
+    except Exception:
+        return [form_ps]
+
+
+def _find_occurrences_in_text(form_ps: str, text_map: dict, whole_word: bool = True) -> dict:
     norm = normalize_pashto_char(form_ps)
     # Prefer precomputed normalized maps if available in globals
     global NT_NORM_MAP, OT_NORM_MAP
@@ -61,7 +86,25 @@ def _find_occurrences_in_text(form_ps: str, text_map: dict) -> dict:
         nm = OT_NORM_MAP
     else:
         nm = {ref: normalize_pashto_char(txt) for ref, txt in text_map.items()}
-    verses = [ref for ref, txt in nm.items() if norm in txt]
+    # Check base and orthographic variants
+    cand_forms = _generate_orthographic_variants(norm)
+    verses = []
+    for ref, txt in nm.items():
+        if whole_word:
+            # exact token/phrase match with whitespace boundaries
+            for cf in cand_forms:
+                if ' ' in cf:
+                    if re.search(rf'(^|\s){re.escape(cf)}(\s|$)', txt):
+                        verses.append(ref)
+                        break
+                else:
+                    toks = tokenize_ps(txt)
+                    if cf in toks:
+                        verses.append(ref)
+                        break
+        else:
+            if any(cf in txt for cf in cand_forms):
+                verses.append(ref)
     return {'count': len(verses), 'verses': verses}
 
 
@@ -195,6 +238,72 @@ with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
     AUDIO_FILE_MAP = json.load(af)
 
 st.set_page_config(layout="wide")
+
+# --- Mobile-friendly CSS tweaks (non-invasive, responsive) ---
+st.markdown(
+    """
+    <style>
+    /* Reduce side padding and increase base font size on small screens */
+    @media (max-width: 680px) {
+      html, body, .stApp { font-size: 18px; }
+      .block-container { padding-left: 0.6rem; padding-right: 0.6rem; }
+      /* Make expander headers easier to tap */
+      details > summary { padding: 0.6rem 0.4rem; }
+      /* Tighten vertical spacing a bit */
+      .stMarkdown, .stTextInput, .stSlider, .stSelectbox, .stDataFrame, .stRadio, .stCheckbox { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+          /* Larger touch targets */
+          .stButton>button { padding: 0.6rem 1rem; font-size: 1rem; }
+          .stTextInput input { padding: 0.6rem; font-size: 1rem; }
+          /* Slightly smaller headings to reduce wrapping */
+          h1 { font-size: 1.5rem; }
+          h2 { font-size: 1.25rem; }
+          h3 { font-size: 1.1rem; }
+    }
+    /* Allow tabs to scroll horizontally when too many */
+    .stTabs [role="tablist"] { flex-wrap: nowrap; overflow-x: auto; }
+    .stTabs [role="tab"] { flex: 0 0 auto; white-space: nowrap; }
+        /* Improve mark highlight visibility in dark/light */
+        mark { padding: 0.1em 0.2em; border-radius: 0.2em; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# --- Detect installed web-app (A2HS/standalone) and annotate URL params ---
+# This runs on the client to set ?app=1 when launched as a standalone web app
+st.markdown(
+    """
+    <script>
+    (function(){
+      try {
+        var isStandalone = false;
+        if (window.matchMedia) {
+          isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.matchMedia('(display-mode: fullscreen)').matches
+            || window.matchMedia('(display-mode: minimal-ui)').matches;
+        }
+        if (!isStandalone && typeof window.navigator !== 'undefined') {
+          // iOS Safari A2HS
+          isStandalone = !!window.navigator.standalone;
+        }
+        var url = new URL(window.location.href);
+        if (isStandalone && !url.searchParams.has('app')) {
+          url.searchParams.set('app', '1');
+          // Force a one-time reload so the backend sees the new param
+          window.location.replace(url.toString());
+        }
+        // Also annotate mobile viewport for responsive tweaks without reload
+        var w = Math.min(window.innerWidth || 9999, (window.screen && window.screen.width) ? window.screen.width : 9999);
+        if (w <= 680 && !url.searchParams.has('m')) {
+          url.searchParams.set('m', '1');
+          window.history.replaceState(null, '', url.toString());
+        }
+      } catch (e) { /* noop */ }
+    })();
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Prefer loading the audio file map from an external JSON to keep this script small
 try:
@@ -333,11 +442,14 @@ def get_audio_bytes(url):
         content = response.content
         if not content:
             return None
-        if 'audio' not in ctype and not url.lower().endswith('.mp3'):
-            return None
+        # Be tolerant: some CDNs (incl. Drive) use application/octet-stream
+        if ('audio' not in ctype) and ('octet-stream' not in ctype):
+            # Still accept if payload looks like mp3 by magic bytes (ID3)
+            if not (len(content) >= 3 and content[:3] == b'ID3'):
+                return None
         return content
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching audio: {e}")
+        # Silent failure; UI will fall back to URL-based embed
         return None
 
 @st.cache_data
@@ -719,6 +831,24 @@ def classify_form_basic(form_ps: str) -> dict:
                     english = dict_english_for(lemma)
                 if not pos or pos == 'unknown':
                     pos = 'n.'
+            # If not found, attempt heuristic for Pattern #1 feminine → masculine lemma
+            if not lemma and ('infer_pattern1_masc_lemma_from_form' in globals()):
+                guess_lemma = infer_pattern1_masc_lemma_from_form(norm)
+                if guess_lemma:
+                    lemma = guess_lemma
+                    n = inflect_noun(lemma)
+                    for k, (ps, rom) in n['forms'].items():
+                        if normalize_pashto_char(ps) == norm:
+                            noun_key = k
+                            noun_num = 'pl' if 'plural' in k else 'sg'
+                            kind = f"noun {k.replace('_',' ')}"
+                            if not roman:
+                                roman = rom
+                            break
+                    if not english:
+                        english = dict_english_for(lemma)
+                    if not pos or pos == 'unknown':
+                        pos = 'n.'
         except Exception:
             pass
 
@@ -880,6 +1010,33 @@ TOK = build_token_maps(NT_TEXT, OT_TEXT)
 NT_TOK_MAP = TOK['nt_tok']
 OT_TOK_MAP = TOK['ot_tok']
 
+# Canonical Bible order (66-book Protestant order)
+BIBLE_BOOK_ORDER = [
+    'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
+    '1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther',
+    'Job','Psalms','Proverbs','Ecclesiastes','Song of Songs','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel',
+    'Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi',
+    'Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians',
+    'Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon',
+    'Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'
+]
+
+# Coverage aggregation helpers for right-side sticky panel
+def _coverage_reset():
+    st.session_state['__cov_refs'] = set()
+
+def _coverage_add(ref_or_refs):
+    s = st.session_state.get('__cov_refs', set())
+    if isinstance(ref_or_refs, (list, tuple, set)):
+        for r in ref_or_refs:
+            s.add(r)
+    elif isinstance(ref_or_refs, str):
+        s.add(ref_or_refs)
+    st.session_state['__cov_refs'] = s
+
+def _coverage_get():
+    return sorted(st.session_state.get('__cov_refs', set()))
+
 @st.cache_data
 def create_form_to_root_map(_grammatical_index):
     form_map = defaultdict(list)
@@ -904,6 +1061,142 @@ def highlight_verse(text: str, search_term: str) -> str:
     except Exception:
         return text
 
+
+def _lookup_dict_entry_for_popup(pword: str) -> dict:
+    try:
+        ent = _get_first_entry_for(pword)
+        if ent:
+            return {
+                'pashto': pword,
+                'rom': ent.get('f', ''),
+                'pos': ent.get('c', ''),
+                'eng': ent.get('e', ''),
+            }
+        nkey = normalize_pashto_char(pword)
+        ent2 = _get_first_entry_for(nkey)
+        if ent2:
+            return {'pashto': pword, 'rom': ent2.get('f',''), 'pos': ent2.get('c',''), 'eng': ent2.get('e','')}
+        lemma = guess_lemma_in_dict(pword)
+        if lemma:
+            ent3 = _get_first_entry_for(lemma)
+            if ent3:
+                return {'pashto': lemma, 'rom': ent3.get('f',''), 'pos': ent3.get('c',''), 'eng': ent3.get('e','')}
+        return {
+            'pashto': pword,
+            'rom': romanize_from_dict_or_rules(pword) or romanization_for_form_fast(pword),
+            'pos': dict_pos_for(pword),
+            'eng': dict_english_for(pword),
+        }
+    except Exception:
+        return {'pashto': pword, 'rom': '', 'pos': '', 'eng': ''}
+
+
+def render_inline_dict_highlight(verse_ref: str, verse_text: str, term: str) -> str:
+    """Return HTML that highlights the term and embeds a CSS-only balloon tooltip
+    with dictionary info that opens when the highlight is clicked (anchor :target).
+    """
+    try:
+        if not term:
+            return verse_text
+        # Inject CSS once per app run
+        if not st.session_state.get('_dict_balloon_css'):
+            st.session_state['_dict_balloon_css'] = True
+            st.markdown(
+                """
+                <style>
+                .dict-anchor { position: relative; text-decoration: none; }
+                .dict-anchor mark { background: #ffe54d; padding: 2px 6px; border-radius: 6px; }
+                .dict-tooltip { display:none; position:absolute; left:0; top:1.9em; z-index:1000; 
+                                background:#101418; color:#f0f3f7; border:1px solid #2c3240; 
+                                border-radius:10px; padding:10px 12px; width:min(360px, 90vw);
+                                box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:0.9rem; }
+                .dict-tooltip .hd { font-weight:600; margin-bottom:6px; }
+                .dict-tooltip .lnk { display:inline-block; margin-top:6px; font-size:0.85rem; }
+                .dict-anchor:target .dict-tooltip { display:block; }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+        # Prepare replacement builder to ensure unique ids for multiple matches
+        info = _lookup_dict_entry_for_popup(normalize_pashto_char(term))
+        safe_eng = (info.get('eng') or '').replace('<','&lt;').replace('>','&gt;')
+        counter = {'i': 0}
+
+        def repl(m):
+            i = counter['i']; counter['i'] += 1
+            aid = f"dict_{abs(hash(verse_ref + '|' + term)) % (10**7)}_{i}"
+            tooltip = (
+                f"<span class='dict-tooltip'>"
+                f"<div class='hd'>Dictionary</div>"
+                f"Pashto: <b>{info.get('pashto','')}</b><br/>"
+                f"Romanization: {info.get('rom','')}<br/>"
+                f"POS: {info.get('pos','')}<br/>"
+                f"English: {safe_eng}<br/>"
+                f"<a class='lnk' href='https://dictionary.lingdocs.com/?q={quote_plus(term)}' target='_blank'>Open in LingDocs</a>"
+                f"</span>"
+            )
+            # Open tooltip only on double-click by setting the URL hash
+            mark = f"<mark ondblclick=\"location.hash='#${aid}'\">{m.group(0)}</mark>"
+            return f"<a id='{aid}' href='#{aid}' class='dict-anchor'>{mark}{tooltip}</a>"
+
+        pattern = re.escape(term)
+        return re.sub(pattern, repl, verse_text)
+    except Exception:
+        return verse_text
+
+
+def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global", host=None):
+    try:
+        col = host if host is not None else st
+        # Build counts per book from verse refs like "Acts 1:2"
+        counts = {}
+        for v in verses:
+            m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', v)
+            if not m:
+                continue
+            book = m.group(1).strip()
+            counts[book] = counts.get(book, 0) + 1
+        # Universe of books present in current scope
+        books_found = {re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
+                        for r in text_map.keys()
+                        if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)}
+        # Use canonical order, not alphabetical
+        books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
+        if not books_in_scope:
+            return
+        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.book-chip{display:inline-block; margin:4px; padding:6px 10px; border-radius:10px; font-size:.8rem; color:#e2f2f8;}\n.book-chip.hit{background:#0ea5b7;}\n.book-chip.zero{background:#1f2937; opacity:.65;}\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n</style>", unsafe_allow_html=True)
+        col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
+        # Selected filter state
+        sel_key = f"book_filter_{filter_key}"
+        selected = st.session_state.get(sel_key, '')
+        # Render just one compact row of styled chips (hyperlinks for books with hits)
+        chips_html = []
+        scope_code = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
+        for book in books_in_scope:
+            hit = counts.get(book, 0)
+            cls = 'hit' if hit else 'zero'
+            if hit:
+                # Update both query params and session filter; encode book in URL via b=
+                href = f"?q={quote_plus(filter_key)}&s={scope_code}&b={quote_plus(book)}"
+                label = f"{book} - {hit}"
+                chips_html.append(f"<a href='{href}' class='book-chip {cls}' style='text-decoration:none;'>{label}</a>")
+            else:
+                chips_html.append(f"<span class='book-chip {cls}'>{book}</span>")
+        container_class = 'right-rail' if host is not None else ''
+        col.markdown(f"<div class='{container_class}'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
+        # Show clear button only if a filter is active
+        if st.session_state.get(sel_key) or QP_B:
+            if col.button("Show all books", key=f"{sel_key}_clear"):
+                st.session_state[sel_key] = ''
+        # Clear filter button
+        if col.button("Show all books", key=f"{sel_key}_clear"):
+            st.session_state[sel_key] = ''
+    except Exception:
+        pass
+
+def _extract_book_from_ref(vref: str) -> str:
+    m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', vref)
+    return m.group(1).strip() if m else ''
 
 def classify_inflection_reason(verse_text: str, form_ps: str) -> str:
     """Heuristic: annotate why a form may be inflected (plural/sandwich/past-transitive).
@@ -949,12 +1242,18 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.warning(f"Verse text for '{verse_ref}' not found.")
         return
 
-    st.markdown(f"**{verse_ref}**: {highlight_verse(full_verse, search_term)}", unsafe_allow_html=True)
+    # Verse line with clickable/dblclickable dictionary balloon on highlighted search term
+    verse_html = highlight_verse(full_verse, search_term)
+    st.markdown(f"**{verse_ref}**: {verse_html}", unsafe_allow_html=True)
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        # Always stream directly from the client for speed; browsers can fetch in parallel
-        st.audio(audio_url)
+        # Prefer remote stream; if it fails on some devices, fall back to server-fetched bytes
+        bytes_payload = get_audio_bytes(audio_url)
+        if bytes_payload:
+            st.audio(bytes_payload, format='audio/mp3')
+        else:
+            st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -968,6 +1267,72 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     # heuristics are approximate and can be misleading). To re-enable, set
     # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
+
+    # Optional: inline dictionary lookup (kept but collapsed and out of way)
+    with st.expander("Dictionary lookup", expanded=False):
+        tokens = [t for t in tokenize_ps(full_verse) if t]
+        # Deduplicate while preserving order to reduce button count
+        seen = set(); tokens_unique = []
+        for t in tokens:
+            if t not in seen:
+                seen.add(t); tokens_unique.append(t)
+
+        # Arrange clickable tokens in a grid
+        per_row = 8
+        selected_token = None
+        for i in range(0, len(tokens_unique), per_row):
+            row = st.columns(per_row)
+            for j, tok in enumerate(tokens_unique[i:i+per_row]):
+                uniq = _next_unique_suffix("dictbtn")
+                if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}_{uniq}"):
+                    selected_token = tok
+
+        state_key = f"__dict_sel_{verse_ref}"
+        if selected_token:
+            # Resolve dictionary entry (exact → normalized → lemma)
+            def _lookup_entry(pword: str) -> dict:
+                ent = _get_first_entry_for(pword)
+                if ent:
+                    return {
+                        'pashto': pword,
+                        'rom': ent.get('f', ''),
+                        'pos': ent.get('c', ''),
+                        'eng': ent.get('e', ''),
+                    }
+                nkey = normalize_pashto_char(pword)
+                ent2 = _get_first_entry_for(nkey)
+                if ent2:
+                    return {'pashto': pword, 'rom': ent2.get('f',''), 'pos': ent2.get('c',''), 'eng': ent2.get('e','')}
+                lemma = guess_lemma_in_dict(pword)
+                if lemma:
+                    ent3 = _get_first_entry_for(lemma)
+                    if ent3:
+                        return {'pashto': lemma, 'rom': ent3.get('f',''), 'pos': ent3.get('c',''), 'eng': ent3.get('e','')}
+                # Fallbacks
+                return {
+                    'pashto': pword,
+                    'rom': romanize_from_dict_or_rules(pword) or romanization_for_form_fast(pword),
+                    'pos': dict_pos_for(pword),
+                    'eng': dict_english_for(pword),
+                }
+            st.session_state[state_key] = {'token': selected_token, 'info': _lookup_entry(selected_token)}
+
+        # Show popup-like expander when a token has been selected (modal fallback for older Streamlit)
+        if st.session_state.get(state_key):
+            sel = st.session_state[state_key]
+            token = sel['token']; info = sel['info']
+            with st.expander(f"Dictionary: {token}", expanded=True):
+                st.markdown(f"Pashto: **{info.get('pashto','')}**")
+                if info.get('rom'):
+                    st.markdown(f"Romanization: {info['rom']}")
+                if info.get('pos'):
+                    st.markdown(f"POS: {info['pos']}")
+                if info.get('eng'):
+                    st.markdown(f"English: {info['eng']}")
+                q = quote_plus(token)
+                st.markdown(f"[Open in LingDocs](https://dictionary.lingdocs.com/?q={q})")
+                if st.button("Close", key=f"close_{state_key}"):
+                    st.session_state.pop(state_key, None)
 
 
 # --- Small UI helpers ---
@@ -1107,10 +1472,74 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
-        return
+    else:
+        _coverage_add(found_verses)
+        render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query)
+        sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
+        filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+        # Prioritize like single-word results and default to 5
+        gospels = ['Matthew','Mark','Luke','John']
+        def rank(vref: str) -> tuple:
+            m = re.match(r'^([A-Za-z\s]+)\s(\d+):(\d+)$', vref)
+            if not m:
+                return (3, 999, vref)
+            book = m.group(1).strip()
+            is_nt = book in ['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation']
+            g_rank = gospels.index(book) if book in gospels else 99
+            nt_rank = 0 if is_nt else 1
+            return (nt_rank, g_rank, book)
+        limited = sorted(filtered, key=rank)[:5]
+        for verse_ref in limited:
+            display_verse_with_audio(verse_ref, normalized_query, text_map)
+        if len(filtered) > 5:
+            with st.expander("Show all matches"):
+                for verse_ref in sorted(filtered, key=rank):
+                    display_verse_with_audio(verse_ref, normalized_query, text_map)
 
-    for verse_ref in sorted(found_verses):
-        display_verse_with_audio(verse_ref, normalized_query, text_map)
+    # Compound analysis for 2+ tokens
+    toks = [t for t in query.split() if t]
+    if len(toks) >= 2:
+        st.markdown("---")
+        do_compound = st.checkbox("Also analyze as compound verb", value=True, key="cb_compound")
+        if do_compound:
+            head = " ".join(toks[:-1])
+            aux = toks[-1]
+            aux_norm = normalize_pashto_char(aux)
+            aux_map = {
+                'کول': 'کول', 'کړل': 'کول', 'وکړل': 'کول',
+                'کېدل': 'کېدل', 'کیدل': 'کېدل', 'شو': 'کېدل', 'شول': 'کېدل'
+            }
+            aux_root = aux_map.get(aux_norm, aux_norm)
+            try:
+                conj = conjugate_verb(aux_root)
+            except Exception:
+                conj = {}
+            if conj:
+                st.subheader(f"Compound Verb Analysis — {head} + {aux_root}")
+                head_rom = dict_romanization_for(head)
+                def prefix_head(table: dict):
+                    out = {}
+                    for k, (ps, rom) in (table or {}).items():
+                        out[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
+                    return out
+                present = prefix_head(conj.get('present', {}))
+                subj = prefix_head(conj.get('subjunctive', {}))
+                cont_past = prefix_head(conj.get('continuous_past', {}))
+                simple_past = prefix_head(conj.get('simple_past', {}))
+                forms_index = {}
+                all_refs = []
+                for d in [present, subj, cont_past, simple_past]:
+                    for _k, (ps, _rom) in d.items():
+                        occ = _find_occurrences_in_text(ps, text_map)
+                        forms_index[normalize_pashto_char(ps)] = occ
+                        all_refs.extend(occ.get('verses', []))
+                if all_refs:
+                    _coverage_add(all_refs)
+                    render_book_hit_map(sorted(set(all_refs)), text_map, scope)
+                render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
+                render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
+                render_past_expanders("Past (continuous, compound)", cont_past, forms_index, text_map)
+                render_past_expanders("Past (simple, compound)", simple_past, forms_index, text_map)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_text, ot_text, scope):
     # reset audio counter per search render
@@ -1137,11 +1566,89 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
 
     # Top section: occurrences for the searched form (scope-aware scan)
     selected_text = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
-    occ = _find_occurrences_in_text(normalized_form, selected_text)
-    if occ['count']:
-        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {occ['count']} hits")
-        for verse_ref in sorted(set(occ['verses'])):
+
+    # Sense disambiguation panel when a headword has multiple dictionary senses
+    def _dict_senses_for(word: str) -> list:
+        try:
+            nkey = normalize_pashto_char(word)
+            senses = []
+            if FAST_DICT_INDEX:
+                # fast index may store only one entry; fall back to DICT_MAP
+                pass
+            entries = DICT_MAP.get(word, []) or DICT_NORM_MAP.get(nkey, []) or []
+            for ent in entries:
+                senses.append({
+                    'pos': ent.get('c', ''),
+                    'rom': (ent.get('f', '') or '').split(',')[0].strip(),
+                    'english': ent.get('e', ''),
+                })
+            return senses
+        except Exception:
+            return []
+
+    senses = _dict_senses_for(normalized_form)
+    sense_filter = None
+    if len(senses) > 1:
+        with st.expander("This word has multiple dictionary senses — choose one to filter verses"):
+            cols = st.columns(min(3, len(senses)))
+            labels = []
+            for i, s in enumerate(senses):
+                lab = f"{normalize_pos_label(s.get('pos',''))} — {s.get('english','')[:60]}"
+                labels.append(lab)
+                with cols[i % len(cols)]:
+                    st.caption(f"{lab}\n\n{(s.get('rom') or '')}")
+            pick = st.radio("Sense", options=["All senses"] + labels, index=0, horizontal=False)
+            if pick != "All senses":
+                sense_filter = pick
+
+    def _sense_match(text: str) -> bool:
+        if not sense_filter:
+            return True
+        sf = sense_filter.lower()
+        # Minimal heuristics for common ambiguous terms like لور
+        # - daughter: nearby words like مور/پلار/یوازینۍ/انجلۍ/بیرته کور
+        # - direction/side: phrases like په لور, د ... لور, په لوري, په لور روان
+        # - sickle: harvest vocabulary لو/رېبل/فصل/ګندم/لور (tool context)
+        try:
+            t = text
+            if 'daughter' in sf or 'n. f' in sf:
+                return any(x in t for x in ['مور','پلار','انجلۍ','خور','یوازینۍ','د زوی','د لور'])
+            if 'direction' in sf or 'side' in sf:
+                return any(x in t for x in ['په لور','لور روان','په لوري','د ښار لور','د کور لور','د اورشلیم لور'])
+            if 'sickle' in sf:
+                return any(x in t for x in ['فصل','رېبل','لو','ګندم','لور واخیست','لور راواخله'])
+        except Exception:
+            pass
+        return True
+
+    occ = _find_occurrences_in_text(normalized_form, selected_text, whole_word=True)
+    verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
+    if verses_to_show:
+        # Limit default list to 5 entries with NT-first prioritization (Gospels first)
+        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+        _coverage_add(verses_to_show)
+        render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form)
+        # Filter by selected book, if any
+        sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
+        filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+        # Prioritization order
+        gospels = ['Matthew','Mark','Luke','John']
+        def rank(vref: str) -> tuple:
+            m = re.match(r'^([A-Za-z\s]+)\s(\d+):(\d+)$', vref)
+            if not m:
+                return (3, 999, vref)
+            book = m.group(1).strip()
+            is_nt = book in ['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation']
+            g_rank = gospels.index(book) if book in gospels else 99
+            nt_rank = 0 if is_nt else 1
+            return (nt_rank, g_rank, book)
+        limited = sorted(filtered, key=rank)[:5]
+        for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
+        if len(filtered) > 5:
+            with st.expander("Show all matches"):
+                for verse_ref in sorted(filtered, key=rank):
+                    display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
     prefer_exact_verb = bool(lex_root and conj_for_form and normalized_form == lex_root)
@@ -1156,8 +1663,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         try:
             rows = []
             for key, (ps, rom) in n['forms'].items():
-                occ_nt = _find_occurrences_in_text(ps, nt_text) if scope in ('all','nt') else {'count':0,'verses':[]}
-                occ_ot = _find_occurrences_in_text(ps, ot_text) if scope in ('all','ot') else {'count':0,'verses':[]}
+                occ_nt = _find_occurrences_in_text(ps, nt_text, whole_word=True) if scope in ('all','nt') else {'count':0,'verses':[]}
+                occ_ot = _find_occurrences_in_text(ps, ot_text, whole_word=True) if scope in ('all','ot') else {'count':0,'verses':[]}
                 rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'NT': occ_nt['count'], 'OT': occ_ot['count']})
             if rows:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
@@ -1165,7 +1672,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             pass
         # Per-form expanders with verses from selected scope
         for key, (ps, rom) in n['forms'].items():
-            occ = _find_occurrences_in_text(ps, nt_text if scope=='nt' else ot_text if scope=='ot' else {**nt_text, **ot_text})
+            occ = _find_occurrences_in_text(ps, nt_text if scope=='nt' else ot_text if scope=='ot' else {**nt_text, **ot_text}, whole_word=True)
             title = f"{key}: `{ps}` ({rom}) — {occ['count']} hits"
             with st.expander(title):
                 for vref in sorted(set(occ['verses'])):
@@ -1211,6 +1718,9 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         by_root[r['root']].append(r)
 
     for root_word, items in by_root.items():
+        # If we already rendered this root in a dedicated summary above, skip
+        if root_word in skip_summary_roots:
+            continue
         root_data = grammatical_index.get(root_word, {})
         root_translit = root_data.get('identities', [{}])[0].get('translit', '')
 
@@ -1328,6 +1838,9 @@ def _extract_single(param_val):
 QP = _get_query_params()
 QP_Q = _extract_single(QP.get('q'))
 QP_S = _extract_single(QP.get('s')).lower()
+QP_APP = _extract_single(QP.get('app'))
+QP_M = _extract_single(QP.get('m'))
+QP_B = _extract_single(QP.get('b')) or _extract_single(QP.get('book'))
 
 SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
 
@@ -1363,12 +1876,21 @@ def _clear_all_caches():
             pass
 
 
+# Compute lightweight mobile mode from query params and width hint
+MOBILE_MODE = True if (QP_APP == '1' or QP_M == '1') else False
+
 # Tabs: Search | Lexicon (comprehensive lists)
 tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=True, index=DEFAULT_SCOPE_INDEX)
+    # Vertical radio improves usability on small screens
+    # Hide scope selector in standalone PWA to minimize chrome
+    if QP_APP == '1':
+        scope = SCOPE_LABELS[DEFAULT_SCOPE_INDEX]
+        st.caption("App mode: using default scope")
+    else:
+        scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
     nt_text = load_bible_text()
     ot_text = load_bible_text_ot()
     merged = {}
@@ -1443,7 +1965,15 @@ if SHOW_SIDEBAR:
                 st.rerun()
 
 with tabs[0]:
-    search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
+    # Floating search bar at top (sticky)
+    st.markdown("<div style='position:sticky; top:0; z-index:1000; background:var(--background-color); padding:8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25);'>", unsafe_allow_html=True)
+    cols_search = st.columns([3,1])
+    with cols_search[0]:
+        search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
+    with cols_search[1]:
+        _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
+        scope = _scope
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if st.button("Force refresh caches"):
         _clear_all_caches()
@@ -1508,7 +2038,10 @@ with tabs[0]:
             else:
                 handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
     else:
-        st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
+        if QP_APP == '1':
+            st.info("Type a word, phrase, or verse (e.g., Galatians 4:19) to begin.")
+        else:
+            st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
 
 with tabs[1]:
     st.subheader("Comprehensive Lists")
@@ -1546,12 +2079,28 @@ with tabs[1]:
 
         def render_freq_tab(selected_pos: str):
             base_items = family_buckets.get(selected_pos, freq_items)
-            # Place quick toggles directly under the top family tabs
-            show_n = st.slider("How many to show", min_value=50, max_value=5000, value=1000, step=50, key=f"{key_prefix}_freq_n_{selected_pos}")
-            group_by_lemma = st.checkbox("Group by base word (if cache available)", value=False, key=f"{key_prefix}_freq_group_{selected_pos}")
-
-            # Search box directly beneath toggles
-            text_q = st.text_input("Filter (Pashto/Romanization)", "", key=f"{key_prefix}_freq_filter_{selected_pos}")
+            # Controls area — collapse into an expander on mobile
+            default_n = 200 if MOBILE_MODE else 1000
+            with st.expander("Filters", expanded=not MOBILE_MODE):
+                show_n = st.slider(
+                    "How many to show",
+                    min_value=50,
+                    max_value=5000,
+                    value=default_n,
+                    step=50,
+                    key=f"{key_prefix}_freq_n_{selected_pos}"
+                )
+                group_by_lemma = st.checkbox(
+                    "Group by base word (if cache available)",
+                    value=False,
+                    key=f"{key_prefix}_freq_group_{selected_pos}"
+                )
+                # Search box
+                text_q = st.text_input(
+                    "Filter (Pashto/Romanization)",
+                    "",
+                    key=f"{key_prefix}_freq_filter_{selected_pos}"
+                )
 
             def match(it):
                 q = text_q.strip().lower()
@@ -1562,41 +2111,50 @@ with tabs[1]:
                     q in str(it.get('romanization', '')).lower()
                 )
 
-            cleaned_map = {}
-            for r in (it for it in base_items if match(it)):
-                pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
-                freq = int(r.get('frequency', 0))
-                pos = r.get('pos', '')
-                eng = r.get('english', '') or dict_english_for(pashto)
-                if pashto not in cleaned_map:
-                    cleaned_map[pashto] = {
-                        'pashto': pashto,
-                        'romanization': r.get('romanization', ''),
-                        'pos': pos,
-                        'frequency': 0,
-                        'english': eng,
-                        'lemma': '',
-                        'kind': '',
-                        'noun_key': '',
-                        'noun_num': '',
-                    }
-                cleaned_map[pashto]['frequency'] += freq
-                # Enrich entry holistically (pos/kind/lemma/roman/english)
-                enriched = classify_form_basic(pashto)
-                if not cleaned_map[pashto]['romanization'] and enriched.get('romanization'):
-                    cleaned_map[pashto]['romanization'] = enriched['romanization']
-                if (not cleaned_map[pashto]['pos'] or cleaned_map[pashto]['pos'] == 'unknown') and enriched.get('pos'):
-                    cleaned_map[pashto]['pos'] = enriched['pos']
-                if enriched.get('english') and not cleaned_map[pashto]['english']:
-                    cleaned_map[pashto]['english'] = enriched['english']
-                if enriched.get('lemma'):
-                    cleaned_map[pashto]['lemma'] = enriched['lemma']
-                if enriched.get('kind'):
-                    cleaned_map[pashto]['kind'] = enriched['kind']
-                if enriched.get('noun_key'):
-                    cleaned_map[pashto]['noun_key'] = enriched['noun_key']
-                if enriched.get('noun_num'):
-                    cleaned_map[pashto]['noun_num'] = enriched['noun_num']
+            # Cache key for heavy precomputation (base rows prior to subfilters)
+            base_cache_key = f"freq_rows_cache::{key_prefix}::{selected_pos}::group={group_by_lemma}::q={text_q.strip().lower()}"
+            if base_cache_key in st.session_state:
+                base_rows_all = st.session_state[base_cache_key]
+            else:
+                cleaned_map = {}
+                for r in (it for it in base_items if match(it)):
+                    pashto = (r.get('pashto', '') or '').replace('»', '').replace('›', '').strip()
+                    freq = int(r.get('frequency', 0))
+                    pos = r.get('pos', '')
+                    eng = r.get('english', '') or dict_english_for(pashto)
+                    if pashto not in cleaned_map:
+                        cleaned_map[pashto] = {
+                            'pashto': pashto,
+                            'romanization': r.get('romanization', ''),
+                            'pos': pos,
+                            'frequency': 0,
+                            'english': eng,
+                            'lemma': '',
+                            'kind': '',
+                            'noun_key': '',
+                            'noun_num': '',
+                        }
+                    cleaned_map[pashto]['frequency'] += freq
+                    # Enrich entry holistically (pos/kind/lemma/roman/english)
+                    enriched = classify_form_basic(pashto)
+                    if not cleaned_map[pashto]['romanization'] and enriched.get('romanization'):
+                        cleaned_map[pashto]['romanization'] = enriched['romanization']
+                    if (not cleaned_map[pashto]['pos'] or cleaned_map[pashto]['pos'] == 'unknown') and enriched.get('pos'):
+                        cleaned_map[pashto]['pos'] = enriched['pos']
+                    if enriched.get('english') and not cleaned_map[pashto]['english']:
+                        cleaned_map[pashto]['english'] = enriched['english']
+                    if enriched.get('lemma'):
+                        cleaned_map[pashto]['lemma'] = enriched['lemma']
+                    if enriched.get('kind'):
+                        cleaned_map[pashto]['kind'] = enriched['kind']
+                    if enriched.get('noun_key'):
+                        cleaned_map[pashto]['noun_key'] = enriched['noun_key']
+                    if enriched.get('noun_num'):
+                        cleaned_map[pashto]['noun_num'] = enriched['noun_num']
+                # Convert to base rows list (no slicing; subfilters applied later)
+                base_rows_all = list(cleaned_map.values())
+                # Persist once per session for fast toggling between subfilters
+                st.session_state[base_cache_key] = base_rows_all
 
             # If Noun family, compute noun morphology keys for filtered forms (with light memoization)
             if selected_pos == 'Noun':
@@ -1604,7 +2162,7 @@ with tabs[1]:
                 if '__noun_morph_cache' not in st.session_state:
                     st.session_state['__noun_morph_cache'] = {}
                 cache = st.session_state['__noun_morph_cache']
-                for r in cleaned_map.values():
+                for r in base_rows_all:
                     form = r['pashto']
                     norm = normalize_pashto_char(form)
                     if norm in cache:
@@ -1630,7 +2188,7 @@ with tabs[1]:
                 # Build noun index once for grouping fallback
                 noun_forms_index = build_noun_forms_index() if NOUNS else {}
                 lemma_agg = {}
-                for r in cleaned_map.values():
+                for r in base_rows_all:
                     form = r['pashto']
                     norm_form = normalize_pashto_char(form)
                     # Try cached mapping, then verb lexicon, then noun forms index
@@ -1656,9 +2214,9 @@ with tabs[1]:
                 rows = sorted(lemma_agg.values(), key=lambda x: x['Frequency'], reverse=True)[:show_n]
                 df = pd.DataFrame([{k: v for k, v in r.items() if k != 'Forms'} for r in rows])
             else:
-                rows = sorted(cleaned_map.values(), key=lambda x: x['frequency'], reverse=True)[:show_n]
+                rows = sorted(base_rows_all, key=lambda x: x['frequency'], reverse=True)
                 # Sub-filters bar as toggles (no dropdowns)
-                c1, c2, c3, c4 = st.columns([1.2,1,2.4,3])
+                c1, c2, c3, c4 = st.columns([1,1,1,2]) if MOBILE_MODE else st.columns([1.2,1,2.4,3])
                 # Gender radio (horizontal)
                 with c1:
                     gender_val = st.radio("Gender", options=['All','m','f','unisex'], horizontal=True, key=f"{key_prefix}_gender_{selected_pos}")
@@ -1670,21 +2228,26 @@ with tabs[1]:
                 # Inflection toggles (for nouns)
                 with c3:
                     if selected_pos == 'Noun':
-                        cc = st.columns(4)
+                        cc = st.columns(2) if MOBILE_MODE else st.columns(4)
                         infl_opts = [('base','Base'),('inflection_1','Infl 1'),('inflection_2','Infl 2'),('vocative','Vocative')]
                         infl_val = []
+                        # Distribute checkboxes across available columns
                         for i,(key,label) in enumerate(infl_opts):
-                            if cc[i].checkbox(label, value=False, key=f"{key_prefix}_infl_{selected_pos}_{key}"):
+                            col = cc[i % len(cc)]
+                            # Persist toggle state in session for fast tab switching
+                            state_key = f"{key_prefix}_infl_{selected_pos}_{key}"
+                            if col.checkbox(label, value=st.session_state.get(state_key, False), key=state_key):
                                 infl_val.append(key)
                     else:
                         infl_val = []
                 # Verb form/lemma toggles
                 with c4:
                     if selected_pos == 'Verb':
-                        vm_cols = st.columns(3)
+                        vm_cols = st.columns(2) if MOBILE_MODE else st.columns(3)
                         vm_all = vm_cols[0].checkbox('All entries', value=True, key=f"{key_prefix}_vm_all_{selected_pos}")
                         vm_lem = vm_cols[1].checkbox('Lemmas', value=False, key=f"{key_prefix}_vm_lem_{selected_pos}")
-                        vm_forms = vm_cols[2].checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}")
+                        # On mobile, place 'Forms' beneath in a separate line for larger tap target
+                        vm_forms = st.checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}") if MOBILE_MODE else vm_cols[2].checkbox('Forms', value=False, key=f"{key_prefix}_vm_forms_{selected_pos}")
                         if vm_all:
                             vf_mode = 'all'
                         elif vm_lem and not vm_forms:
@@ -1700,24 +2263,36 @@ with tabs[1]:
                     cpn1, cpn2 = st.columns([1,3])
                     with cpn1:
                         st.caption('Present filters')
-                    cpn = st.columns(6)
-                    pn_val = {
-                        '1sg': cpn[0].checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg"),
-                        '2sg': cpn[1].checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg"),
-                        '3sg': cpn[2].checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg"),
-                        '1pl': cpn[3].checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl"),
-                        '2pl': cpn[4].checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl"),
-                        '3pl': cpn[5].checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl"),
-                    }
+                    if MOBILE_MODE:
+                        left, right = st.columns(2)
+                        with left:
+                            pn_1sg = st.checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg")
+                            pn_2sg = st.checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg")
+                            pn_3sg = st.checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg")
+                        with right:
+                            pn_1pl = st.checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl")
+                            pn_2pl = st.checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl")
+                            pn_3pl = st.checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl")
+                        pn_val = {'1sg': pn_1sg, '2sg': pn_2sg, '3sg': pn_3sg, '1pl': pn_1pl, '2pl': pn_2pl, '3pl': pn_3pl}
+                    else:
+                        cpn = st.columns(6)
+                        pn_val = {
+                            '1sg': cpn[0].checkbox('1sg', value=False, key=f"{key_prefix}_pn_1sg"),
+                            '2sg': cpn[1].checkbox('2sg', value=False, key=f"{key_prefix}_pn_2sg"),
+                            '3sg': cpn[2].checkbox('3sg', value=False, key=f"{key_prefix}_pn_3sg"),
+                            '1pl': cpn[3].checkbox('1pl', value=False, key=f"{key_prefix}_pn_1pl"),
+                            '2pl': cpn[4].checkbox('2pl', value=False, key=f"{key_prefix}_pn_2pl"),
+                            '3pl': cpn[5].checkbox('3pl', value=False, key=f"{key_prefix}_pn_3pl"),
+                        }
                 # Second-tier subcategory toggles for 'Other'
                 if selected_pos == 'Other':
                     oc = st.columns(5)
                     filt_other = {
-                        'interj': oc[0].checkbox('Interjection', value=False, key=f"{key_prefix}_oth_interj"),
-                        'conj': oc[1].checkbox('Conjunction', value=False, key=f"{key_prefix}_oth_conj"),
-                        'adpos': oc[2].checkbox('Adposition', value=False, key=f"{key_prefix}_oth_adpos"),
-                        'particle': oc[3].checkbox('Particle', value=False, key=f"{key_prefix}_oth_part"),
-                        'pron': oc[4].checkbox('Pronoun', value=False, key=f"{key_prefix}_oth_pron"),
+                        'interj': oc[0].checkbox('Interjection', value=st.session_state.get(f"{key_prefix}_oth_interj", False), key=f"{key_prefix}_oth_interj"),
+                        'conj': oc[1].checkbox('Conjunction', value=st.session_state.get(f"{key_prefix}_oth_conj", False), key=f"{key_prefix}_oth_conj"),
+                        'adpos': oc[2].checkbox('Adposition', value=st.session_state.get(f"{key_prefix}_oth_adpos", False), key=f"{key_prefix}_oth_adpos"),
+                        'particle': oc[3].checkbox('Particle', value=st.session_state.get(f"{key_prefix}_oth_part", False), key=f"{key_prefix}_oth_part"),
+                        'pron': oc[4].checkbox('Pronoun', value=st.session_state.get(f"{key_prefix}_oth_pron", False), key=f"{key_prefix}_oth_pron"),
                     }
 
                 # Apply sub-filters
@@ -1783,6 +2358,8 @@ with tabs[1]:
                     # Our rows dicts use lowercase 'pos' key; guard against missing keys
                     rows = [r for r in rows if other_match(r.get('pos', ''))]
 
+                # Apply final limit after all subfilters
+                rows = rows[:show_n]
                 df = pd.DataFrame([
                     {
                         'Pashto': r['pashto'],
@@ -1797,7 +2374,14 @@ with tabs[1]:
             if not rows:
                 st.info("No entries match the current filters.")
             else:
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                # In app mode, reduce chrome and use a modest height to fit on phones
+                table_height = 460 if (globals().get('QP_APP') == '1') else (520 if MOBILE_MODE else None)
+                st.dataframe(
+                    df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=table_height,
+                )
 
             if rows:
                 if group_by_lemma and isinstance(rows[0], dict) and 'Lemma' in rows[0]:
