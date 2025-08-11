@@ -435,11 +435,14 @@ def get_audio_bytes(url):
         content = response.content
         if not content:
             return None
-        if 'audio' not in ctype and not url.lower().endswith('.mp3'):
-            return None
+        # Be tolerant: some CDNs (incl. Drive) use application/octet-stream
+        if ('audio' not in ctype) and ('octet-stream' not in ctype):
+            # Still accept if payload looks like mp3 by magic bytes (ID3)
+            if not (len(content) >= 3 and content[:3] == b'ID3'):
+                return None
         return content
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching audio: {e}")
+        # Silent failure; UI will fall back to URL-based embed
         return None
 
 @st.cache_data
@@ -1119,8 +1122,12 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        # Always stream directly from the client for speed; browsers can fetch in parallel
-        st.audio(audio_url, format='audio/mp3')
+        # Prefer remote stream; if it fails on some devices, fall back to server-fetched bytes
+        bytes_payload = get_audio_bytes(audio_url)
+        if bytes_payload:
+            st.audio(bytes_payload, format='audio/mp3')
+        else:
+            st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
