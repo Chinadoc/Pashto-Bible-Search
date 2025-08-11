@@ -106,5 +106,17 @@
       "perfective_root": "óoneeul",
       "past_participle": "neewalí"
     }
+  },
+  "راوستل": {
+    "stems": { "imperfective": "راول", "perfective": "راول" },
+    "roots": { "imperfective": "راوستل", "perfective": "راوستل" },
+    "past_participle": "راوستلی",
+    "romanization": {
+      "imperfective_stem": "raawul",
+      "perfective_stem": "ráawul",
+      "imperfective_root": "raawustúl",
+      "perfective_root": "ráawustul",
+      "past_participle": "raawustúlay"
+    }
   }
 }
