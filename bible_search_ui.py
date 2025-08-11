@@ -994,6 +994,18 @@ def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_la
                 else:
                     for vref in sorted(set(occ['verses'])):
                         display_verse_with_audio(vref, ps, text_map)
+                # Show common preverb variants (را / در / ور) to aid recognition
+                try:
+                    preverbs = [('را', 'rá'), ('در', 'dar'), ('ور', 'war')]
+                    variants = []
+                    for pps, prom in preverbs:
+                        v_ps = f"{pps}{ps}"
+                        v_rom = (f"{prom} {rom}").strip()
+                        variants.append(f"{v_ps} ({v_rom})")
+                    if variants:
+                        st.caption("Preverb variants: " + " · ".join(variants))
+                except Exception:
+                    pass
     except Exception:
         pass
 
