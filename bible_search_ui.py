@@ -1169,45 +1169,25 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
         selected = st.session_state.get(sel_key, '')
-        # Compact colored chips grid rendered in 1/3 right area when a host column is provided
-        if host is not None:
-            chips_html = []
-            for book in books_in_scope:
-                hit = counts.get(book, 0)
-                cls = 'hit' if hit else 'zero'
-                # Hyperlink chips for clickable books
-                if hit:
-                    href = f"?q={quote_plus(filter_key)}&s={'nt' if scope_label=='New Testament' else 'ot' if scope_label=='Old Testament' else 'all'}#book={quote_plus(book)}"
-                    label = f"{book} - {hit}"
-                    chips_html.append(f"<a href='{href}' class='book-chip {cls}' style='text-decoration:none;'>{label}</a>")
-                else:
-                    chips_html.append(f"<span class='book-chip {cls}'>{book}</span>")
-            col.markdown("<div class='right-rail'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
-            # Keep compact fallback buttons, but visually align with chips and smaller
-            gcols = col.columns(3)
-            for i, book in enumerate(books_in_scope):
-                c = gcols[i % 3]
-                hit = counts.get(book, 0)
-                if hit > 0 and c.button(f"{book} - {hit}", key=f"{sel_key}_{book}"):
-                    st.session_state[sel_key] = book
-                    selected = book
-        else:
-            st.markdown("<div class='right-rail'>", unsafe_allow_html=True)
-            chips_html = []
-            for book in books_in_scope:
-                hit = counts.get(book, 0)
-                cls = 'hit' if hit else 'zero'
-                chips_html.append(f"<span class='book-chip {cls}'>{book}{' - '+str(hit) if hit else ''}</span>")
-            col.markdown("".join(chips_html), unsafe_allow_html=True)
-            col.markdown("</div>", unsafe_allow_html=True)
-            grid = st.columns(6)
-            for i, book in enumerate(books_in_scope):
-                c = grid[i % len(grid)]
-                hit = counts.get(book, 0)
-                label = f"{book}{' - '+str(hit) if hit else ''}"
-                if c.button(label, key=f"{sel_key}_{book}", disabled=(hit==0)):
-                    st.session_state[sel_key] = book
-                    selected = book
+        # Render just one compact row of styled chips (hyperlinks for books with hits)
+        chips_html = []
+        scope_code = 'nt' if scope_label == 'New Testament' else 'ot' if scope_label == 'Old Testament' else 'all'
+        for book in books_in_scope:
+            hit = counts.get(book, 0)
+            cls = 'hit' if hit else 'zero'
+            if hit:
+                # Update both query params and session filter; encode book in URL via b=
+                href = f"?q={quote_plus(filter_key)}&s={scope_code}&b={quote_plus(book)}"
+                label = f"{book} - {hit}"
+                chips_html.append(f"<a href='{href}' class='book-chip {cls}' style='text-decoration:none;'>{label}</a>")
+            else:
+                chips_html.append(f"<span class='book-chip {cls}'>{book}</span>")
+        container_class = 'right-rail' if host is not None else ''
+        col.markdown(f"<div class='{container_class}'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
+        # Show clear button only if a filter is active
+        if st.session_state.get(sel_key) or QP_B:
+            if col.button("Show all books", key=f"{sel_key}_clear"):
+                st.session_state[sel_key] = ''
         # Clear filter button
         if col.button("Show all books", key=f"{sel_key}_clear"):
             st.session_state[sel_key] = ''
@@ -1495,7 +1475,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     else:
         _coverage_add(found_verses)
         render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query)
-        sel_book = st.session_state.get(f"book_filter_{normalized_query}", '')
+        sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritize like single-word results and default to 5
         gospels = ['Matthew','Mark','Luke','John']
@@ -1649,7 +1629,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         _coverage_add(verses_to_show)
         render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form)
         # Filter by selected book, if any
-        sel_book = st.session_state.get(f"book_filter_{normalized_form}", '')
+        sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
         filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritization order
         gospels = ['Matthew','Mark','Luke','John']
@@ -1860,6 +1840,7 @@ QP_Q = _extract_single(QP.get('q'))
 QP_S = _extract_single(QP.get('s')).lower()
 QP_APP = _extract_single(QP.get('app'))
 QP_M = _extract_single(QP.get('m'))
+QP_B = _extract_single(QP.get('b')) or _extract_single(QP.get('book'))
 
 SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
 
