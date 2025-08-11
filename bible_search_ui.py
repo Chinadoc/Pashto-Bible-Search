@@ -1512,7 +1512,7 @@ with tabs[0]:
 
 with tabs[1]:
     st.subheader("Comprehensive Lists")
-    sub = st.tabs(["Frequency — New Testament", "Frequency — Old Testament"])
+    sub = st.tabs(["Frequency — New Testament", "Frequency — Old Testament", "Frequency — All"])
 
     def build_freq_items(raw_items):
         items = []
@@ -1844,9 +1844,24 @@ with tabs[1]:
                 render_freq_tab(name)
 
     # New Testament frequency
+    @st.cache_data
+    def _derive_nt_freq_from_index():
+        idx = load_data()
+        if not idx:
+            return []
+        counts = {}
+        for root, data in idx.items():
+            for identity in data.get('identities', []):
+                for items_list in identity.get('forms', {}).values():
+                    for item in items_list:
+                        form_ps = (item.get('form', '') or '').replace('_', ' ')
+                        counts[form_ps] = counts.get(form_ps, 0) + int(item.get('count', 0))
+        rows = [{'pashto': k, 'frequency': v} for k, v in counts.items()]
+        rows.sort(key=lambda x: x['frequency'], reverse=True)
+        return rows
+
     with sub[0]:
-        nt_ref = load_nt_reference_data()
-        raw_nt = nt_ref if nt_ref else load_word_frequency_data(WORD_FREQ_FILE)
+        raw_nt = _derive_nt_freq_from_index()
         render_frequency_panel(raw_nt, nt_text, key_prefix="nt")
 
     # Old Testament frequency
@@ -1872,6 +1887,35 @@ with tabs[1]:
                 key=lambda x: x['frequency'], reverse=True
             )[:TOP_N]
         render_frequency_panel(raw_ot, ot_text, key_prefix="ot")
+
+    with sub[2]:
+        # Combine NT and OT using identical derivation processes
+        raw_nt = _derive_nt_freq_from_index()
+        # Reuse OT derivation from above
+        TOP_N = 5000
+        if os.path.exists(OT_WORD_FREQ_FILE):
+            try:
+                with open(OT_WORD_FREQ_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    raw_ot = data[:TOP_N] if isinstance(data, list) else []
+            except Exception:
+                raw_ot = []
+        else:
+            idx = load_ot_occurrence_index()
+            raw_ot = sorted(
+                ({'pashto': k, 'frequency': int(v.get('count', 0))} for k, v in idx.items()),
+                key=lambda x: x['frequency'], reverse=True
+            )[:TOP_N]
+        # merge counts by pashto
+        merged = {}
+        for row in raw_nt + raw_ot:
+            p = row.get('pashto', '')
+            merged[p] = merged.get(p, 0) + int(row.get('frequency', 0))
+        rows_all = [{'pashto': k, 'frequency': v} for k, v in merged.items()]
+        rows_all.sort(key=lambda x: x['frequency'], reverse=True)
+        # Combine verse text maps for references
+        text_map_all = {**nt_text, **ot_text}
+        render_frequency_panel(rows_all, text_map_all, key_prefix="all")
 
     # Dictionary view: LingDocs full list (if available)
     # Removed the LingDocs dictionary tab per request
