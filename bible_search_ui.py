@@ -249,6 +249,42 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# --- Detect installed web-app (A2HS/standalone) and annotate URL params ---
+# This runs on the client to set ?app=1 when launched as a standalone web app
+st.markdown(
+    """
+    <script>
+    (function(){
+      try {
+        var isStandalone = false;
+        if (window.matchMedia) {
+          isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.matchMedia('(display-mode: fullscreen)').matches
+            || window.matchMedia('(display-mode: minimal-ui)').matches;
+        }
+        if (!isStandalone && typeof window.navigator !== 'undefined') {
+          // iOS Safari A2HS
+          isStandalone = !!window.navigator.standalone;
+        }
+        var url = new URL(window.location.href);
+        if (isStandalone && !url.searchParams.has('app')) {
+          url.searchParams.set('app', '1');
+          // Force a one-time reload so the backend sees the new param
+          window.location.replace(url.toString());
+        }
+        // Also annotate mobile viewport for responsive tweaks without reload
+        var w = Math.min(window.innerWidth || 9999, (window.screen && window.screen.width) ? window.screen.width : 9999);
+        if (w <= 680 && !url.searchParams.has('m')) {
+          url.searchParams.set('m', '1');
+          window.history.replaceState(null, '', url.toString());
+        }
+      } catch (e) { /* noop */ }
+    })();
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Prefer loading the audio file map from an external JSON to keep this script small
 try:
     AUDIO_FILE_MAP_PATH = os.path.join(APP_ROOT, 'audio_file_map.json')
@@ -933,6 +969,33 @@ TOK = build_token_maps(NT_TEXT, OT_TEXT)
 NT_TOK_MAP = TOK['nt_tok']
 OT_TOK_MAP = TOK['ot_tok']
 
+# Canonical Bible order (66-book Protestant order)
+BIBLE_BOOK_ORDER = [
+    'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
+    '1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther',
+    'Job','Psalms','Proverbs','Ecclesiastes','Song of Songs','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel',
+    'Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi',
+    'Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians',
+    'Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon',
+    'Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'
+]
+
+# Coverage aggregation helpers for right-side sticky panel
+def _coverage_reset():
+    st.session_state['__cov_refs'] = set()
+
+def _coverage_add(ref_or_refs):
+    s = st.session_state.get('__cov_refs', set())
+    if isinstance(ref_or_refs, (list, tuple, set)):
+        for r in ref_or_refs:
+            s.add(r)
+    elif isinstance(ref_or_refs, str):
+        s.add(ref_or_refs)
+    st.session_state['__cov_refs'] = s
+
+def _coverage_get():
+    return sorted(st.session_state.get('__cov_refs', set()))
+
 @st.cache_data
 def create_form_to_root_map(_grammatical_index):
     form_map = defaultdict(list)
@@ -969,12 +1032,18 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str):
             book = m.group(1).strip()
             counts[book] = counts.get(book, 0) + 1
         # Universe of books present in current scope
-        books_in_scope = sorted({re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
-                                 for r in text_map.keys()
-                                 if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)})
+        books_found = {re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
+                        for r in text_map.keys()
+                        if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)}
+        # Use canonical order, not alphabetical
+        books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        st.caption("Book coverage")
+        st.markdown("""
+        <div style='position:sticky; top:72px'>
+          <div style='font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>
+        </div>
+        """, unsafe_allow_html=True)
         cols = st.columns(6)
         for i, book in enumerate(books_in_scope):
             c = cols[i % 6]
@@ -1192,11 +1261,12 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
     else:
+        _coverage_add(found_verses)
         render_book_hit_map(found_verses, text_map, scope)
         for verse_ref in sorted(found_verses):
             display_verse_with_audio(verse_ref, normalized_query, text_map)
 
-    # Offer compound-verb analysis for 2+ token phrases
+    # Compound analysis for 2+ tokens
     toks = [t for t in query.split() if t]
     if len(toks) >= 2:
         st.markdown("---")
@@ -1217,28 +1287,29 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             if conj:
                 st.subheader(f"Compound Verb Analysis — {head} + {aux_root}")
                 head_rom = dict_romanization_for(head)
-                # Build present and subjunctive by prefixing the head
-                present = {}
-                subj = {}
-                for k, (ps, rom) in (conj.get('present', {}) or {}).items():
-                    present[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
-                for k, (ps, rom) in (conj.get('subjunctive', {}) or {}).items():
-                    subj[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
-                # Quick occurrence index for these generated forms
+                def prefix_head(table: dict):
+                    out = {}
+                    for k, (ps, rom) in (table or {}).items():
+                        out[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
+                    return out
+                present = prefix_head(conj.get('present', {}))
+                subj = prefix_head(conj.get('subjunctive', {}))
+                cont_past = prefix_head(conj.get('continuous_past', {}))
+                simple_past = prefix_head(conj.get('simple_past', {}))
                 forms_index = {}
-                all_verses = []
-                for d in [present, subj]:
+                all_refs = []
+                for d in [present, subj, cont_past, simple_past]:
                     for _k, (ps, _rom) in d.items():
                         occ = _find_occurrences_in_text(ps, text_map)
                         forms_index[normalize_pashto_char(ps)] = occ
-                        all_verses.extend(occ.get('verses', []))
-                if all_verses:
-                    render_book_hit_map(sorted(set(all_verses)), text_map, scope)
-                # Render
+                        all_refs.extend(occ.get('verses', []))
+                if all_refs:
+                    _coverage_add(all_refs)
+                    render_book_hit_map(sorted(set(all_refs)), text_map, scope)
                 render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
                 render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
-            else:
-                st.info("No auxiliary verb analysis available for this phrase.")
+                render_past_expanders("Past (continuous, compound)", cont_past, forms_index, text_map)
+                render_past_expanders("Past (simple, compound)", simple_past, forms_index, text_map)
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_text, ot_text, scope):
     # reset audio counter per search render
@@ -1324,6 +1395,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+        _coverage_add(verses_to_show)
         render_book_hit_map(verses_to_show, selected_text, scope)
         for verse_ref in verses_to_show:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
@@ -1492,14 +1564,6 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
 st.title("Pashto Bible Smart Search")
 st.caption(f"Build: {APP_VERSION}")
 
-# Global mobile layout toggle (simplifies controls on phones)
-MOBILE_MODE = st.toggle(
-    "Mobile layout",
-    value=st.session_state.get("__mobile_mode", False),
-    key="__mobile_mode",
-    help="Optimize layout for phones (condense controls and paddings)",
-)
-
 def _get_query_params():
     try:
         # Streamlit >= 1.30
@@ -1524,6 +1588,8 @@ def _extract_single(param_val):
 QP = _get_query_params()
 QP_Q = _extract_single(QP.get('q'))
 QP_S = _extract_single(QP.get('s')).lower()
+QP_APP = _extract_single(QP.get('app'))
+QP_M = _extract_single(QP.get('m'))
 
 SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
 
@@ -1559,13 +1625,21 @@ def _clear_all_caches():
             pass
 
 
+# Compute lightweight mobile mode from query params and width hint
+MOBILE_MODE = True if (QP_APP == '1' or QP_M == '1') else False
+
 # Tabs: Search | Lexicon (comprehensive lists)
 tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
     # Vertical radio improves usability on small screens
-    scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
+    # Hide scope selector in standalone PWA to minimize chrome
+    if QP_APP == '1':
+        scope = SCOPE_LABELS[DEFAULT_SCOPE_INDEX]
+        st.caption("App mode: using default scope")
+    else:
+        scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
     nt_text = load_bible_text()
     ot_text = load_bible_text_ot()
     merged = {}
@@ -1705,7 +1779,10 @@ with tabs[0]:
             else:
                 handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
     else:
-        st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
+        if QP_APP == '1':
+            st.info("Type a word, phrase, or verse (e.g., Galatians 4:19) to begin.")
+        else:
+            st.info("Enter a word, phrase (e.g., زما ګرانو), or verse (e.g., Galatians 4:19) to begin.")
 
 with tabs[1]:
     st.subheader("Comprehensive Lists")
@@ -2025,11 +2102,13 @@ with tabs[1]:
             if not rows:
                 st.info("No entries match the current filters.")
             else:
+                # In app mode, reduce chrome and use a modest height to fit on phones
+                table_height = 460 if (globals().get('QP_APP') == '1') else (520 if MOBILE_MODE else None)
                 st.dataframe(
                     df,
                     use_container_width=True,
                     hide_index=True,
-                    height=520 if MOBILE_MODE else None,
+                    height=table_height,
                 )
 
             if rows:
