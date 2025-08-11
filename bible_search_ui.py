@@ -1037,7 +1037,7 @@ def highlight_verse(text: str, search_term: str) -> str:
         return text
 
 
-def render_book_hit_map(verses: list, text_map: dict, scope_label: str):
+def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global"):
     try:
         # Build counts per book from verse refs like "Acts 1:2"
         counts = {}
@@ -1055,24 +1055,31 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str):
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        st.markdown("""
-        <div style='position:sticky; top:72px'>
-          <div style='font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>
-        </div>
-        """, unsafe_allow_html=True)
-        cols = st.columns(6)
+        st.markdown("<div style='position:sticky; top:72px; font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>", unsafe_allow_html=True)
+        # Selected filter state
+        sel_key = f"book_filter_{filter_key}"
+        selected = st.session_state.get(sel_key, '')
+        grid = st.columns(6)
         for i, book in enumerate(books_in_scope):
-            c = cols[i % 6]
+            c = grid[i % 6]
             hit = counts.get(book, 0)
-            color = "#2ecc71" if hit else "#3a3a3a"
-            label = f"{book}{' · '+str(hit) if hit else ''}"
-            c.markdown(
-                f"<div style='background:{color};padding:6px 8px;border-radius:8px;text-align:center;color:white;font-size:12px;margin-bottom:6px;'>"+
-                label + "</div>",
-                unsafe_allow_html=True,
-            )
+            label = f"{book}{' - '+str(hit) if hit else ''}"
+            # disable button if no hits
+            if hit == 0:
+                c.button(label, key=f"{sel_key}_{book}", disabled=True)
+            else:
+                if c.button(label, key=f"{sel_key}_{book}"):
+                    st.session_state[sel_key] = book
+                    selected = book
+        # Clear filter button
+        if st.button("Show all books", key=f"{sel_key}_clear"):
+            st.session_state[sel_key] = ''
     except Exception:
         pass
+
+def _extract_book_from_ref(vref: str) -> str:
+    m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', vref)
+    return m.group(1).strip() if m else ''
 
 def classify_inflection_reason(verse_text: str, form_ps: str) -> str:
     """Heuristic: annotate why a form may be inflected (plural/sandwich/past-transitive).
@@ -1282,7 +1289,9 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         st.warning("No verses found containing that exact phrase.")
     else:
         _coverage_add(found_verses)
-        render_book_hit_map(found_verses, text_map, scope)
+        render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query)
+        sel_book = st.session_state.get(f"book_filter_{normalized_query}", '')
+        filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritize like single-word results and default to 5
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -1294,12 +1303,12 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             g_rank = gospels.index(book) if book in gospels else 99
             nt_rank = 0 if is_nt else 1
             return (nt_rank, g_rank, book)
-        limited = sorted(found_verses, key=rank)[:5]
+        limited = sorted(filtered, key=rank)[:5]
         for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_query, text_map)
-        if len(found_verses) > 5:
+        if len(filtered) > 5:
             with st.expander("Show all matches"):
-                for verse_ref in sorted(found_verses, key=rank):
+                for verse_ref in sorted(filtered, key=rank):
                     display_verse_with_audio(verse_ref, normalized_query, text_map)
 
     # Compound analysis for 2+ tokens
@@ -1433,7 +1442,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
-        render_book_hit_map(verses_to_show, selected_text, scope)
+        render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form)
+        # Filter by selected book, if any
+        sel_book = st.session_state.get(f"book_filter_{normalized_form}", '')
+        filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritization order
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -1445,12 +1457,12 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             g_rank = gospels.index(book) if book in gospels else 99
             nt_rank = 0 if is_nt else 1
             return (nt_rank, g_rank, book)
-        limited = sorted(verses_to_show, key=rank)[:5]
+        limited = sorted(filtered, key=rank)[:5]
         for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
-        if len(verses_to_show) > 5:
+        if len(filtered) > 5:
             with st.expander("Show all matches"):
-                for verse_ref in verses_to_show:
+                for verse_ref in sorted(filtered, key=rank):
                     display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
