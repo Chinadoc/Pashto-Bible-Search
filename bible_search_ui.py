@@ -1188,6 +1188,14 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
                     st.session_state[sel_key] = '' if disabled else book
                     selected = st.session_state[sel_key]
         else:
+            st.markdown("<div class='right-rail'>", unsafe_allow_html=True)
+            chips_html = []
+            for book in books_in_scope:
+                hit = counts.get(book, 0)
+                cls = 'hit' if hit else 'zero'
+                chips_html.append(f"<span class='book-chip {cls}'>{book}{' - '+str(hit) if hit else ''}</span>")
+            col.markdown("".join(chips_html), unsafe_allow_html=True)
+            col.markdown("</div>", unsafe_allow_html=True)
             grid = st.columns(6)
             for i, book in enumerate(books_in_scope):
                 c = grid[i % len(grid)]
@@ -2163,7 +2171,7 @@ with tabs[1]:
                 if '__noun_morph_cache' not in st.session_state:
                     st.session_state['__noun_morph_cache'] = {}
                 cache = st.session_state['__noun_morph_cache']
-                for r in cleaned_map.values():
+                for r in base_rows_all:
                     form = r['pashto']
                     norm = normalize_pashto_char(form)
                     if norm in cache:
@@ -2189,7 +2197,7 @@ with tabs[1]:
                 # Build noun index once for grouping fallback
                 noun_forms_index = build_noun_forms_index() if NOUNS else {}
                 lemma_agg = {}
-                for r in cleaned_map.values():
+                for r in base_rows_all:
                     form = r['pashto']
                     norm_form = normalize_pashto_char(form)
                     # Try cached mapping, then verb lexicon, then noun forms index
