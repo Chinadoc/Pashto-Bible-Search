@@ -349,6 +349,7 @@ def infer_root_from_form(form_ps: str) -> str:
     # Try stripping common preverbs first (را / در / ور). Keep a set of
     # variants to attempt recognition on.
     preverbs = ['را', 'در', 'ور']
+    obj_clitic_prefixes = ['و یې', 'وېې', 'ویې']
     form_variants: List[str] = [form_ps]
     for pv in preverbs:
         if form_ps.startswith(pv):
@@ -356,6 +357,11 @@ def infer_root_from_form(form_ps: str) -> str:
         # also handle preverb immediately followed by perfective و
         if form_ps.startswith(pv + 'و'):
             form_variants.append(form_ps[len(pv):])
+    for oc in obj_clitic_prefixes:
+        if form_ps.startswith(oc):
+            trimmed = form_ps[len(oc):].lstrip()
+            # assume perfective present/subjunctive behind the clitic
+            form_variants.append(trimmed)
 
     # Also attempt bare perfective stripping on each variant
     base_variants: List[str] = []
@@ -459,6 +465,21 @@ def build_forms_root_index() -> Dict[str, str]:
             (meta['past_participle'], conj['meta']['romanization'].get('past_participle', '')),
         ]:
             _add(ps, rom, root)
+
+        # Add object clitic split-head variants for perfective-leading forms
+        def _index_obj_clitic_variants(ps: str, rom_val: str) -> None:
+            if not ps or not ps.startswith('و'):
+                return
+            rest = ps[1:]
+            for oc in ['و یې', 'وېې', 'ویې']:
+                v1 = f"{oc} {rest}"
+                v2 = f"{oc}{rest}"
+                _add(v1, rom_val, root)
+                _add(v2, rom_val, root)
+
+        for dname in ['subjunctive', 'simple_past']:
+            for ps, rom in conj[dname].values():
+                _index_obj_clitic_variants(ps, rom)
 
     _FORMS_ROOT_INDEX = form_to_root
     _FORMS_ROM_INDEX = form_to_rom
