@@ -131,4 +131,29 @@
       "past_participle": "moondúlay"
     }
   }
+  ,
+  "کښل": {
+    "stems": { "imperfective": "کاږ", "perfective": "وکاږ" },
+    "roots": { "imperfective": "کښل", "perfective": "وکښل" },
+    "past_participle": "کښلی",
+    "romanization": {
+      "imperfective_stem": "kaaG",
+      "perfective_stem": "óokaaG",
+      "imperfective_root": "kxúl",
+      "perfective_root": "óokxul",
+      "past_participle": "kxúlay"
+    }
+  },
+  "ایستل": {
+    "stems": { "imperfective": "باس", "perfective": "وباس" },
+    "roots": { "imperfective": "ایستل", "perfective": "ویستل" },
+    "past_participle": "ایستلی",
+    "romanization": {
+      "imperfective_stem": "baas",
+      "perfective_stem": "óobaas",
+      "imperfective_root": "eestúl",
+      "perfective_root": "wéestul",
+      "past_participle": "eestúlay"
+    }
+  }
 }

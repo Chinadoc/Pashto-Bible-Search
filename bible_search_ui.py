@@ -1164,7 +1164,7 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.book-chip{display:inline-block; margin:4px; padding:6px 10px; border-radius:10px; font-size:.8rem; color:#fff;}\n.book-chip.hit{background:#155e75;}\n.book-chip.zero{background:#334155; opacity:.5;}\n.section-title{font-size:12px; color:#bbb; margin-bottom:6px}\n</style>", unsafe_allow_html=True)
+        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.book-chip{display:inline-block; margin:4px; padding:6px 10px; border-radius:10px; font-size:.8rem; color:#e2f2f8;}\n.book-chip.hit{background:#0ea5b7;}\n.book-chip.zero{background:#1f2937; opacity:.65;}\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n</style>", unsafe_allow_html=True)
         col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
@@ -1175,20 +1175,22 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
             for book in books_in_scope:
                 hit = counts.get(book, 0)
                 cls = 'hit' if hit else 'zero'
-                # Only show count on clickable ones
-                label = f"{book}{' - '+str(hit) if hit else ''}" if hit else book
-                chips_html.append(f"<span class='book-chip {cls}'>{label}</span>")
+                # Hyperlink chips for clickable books
+                if hit:
+                    href = f"?q={quote_plus(filter_key)}&s={'nt' if scope_label=='New Testament' else 'ot' if scope_label=='Old Testament' else 'all'}#book={quote_plus(book)}"
+                    label = f"{book} - {hit}"
+                    chips_html.append(f"<a href='{href}' class='book-chip {cls}' style='text-decoration:none;'>{label}</a>")
+                else:
+                    chips_html.append(f"<span class='book-chip {cls}'>{book}</span>")
             col.markdown("<div class='right-rail'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
-            # Add interactive fallback buttons below chips for filtering
-            gcols = col.columns(2)
+            # Keep compact fallback buttons, but visually align with chips and smaller
+            gcols = col.columns(3)
             for i, book in enumerate(books_in_scope):
-                c = gcols[i % 2]
+                c = gcols[i % 3]
                 hit = counts.get(book, 0)
-                label = f"{book}{' - '+str(hit) if hit else ''}"
-                disabled = hit == 0
-                if c.button(label, key=f"{sel_key}_{book}", disabled=disabled):
-                    st.session_state[sel_key] = '' if disabled else book
-                    selected = st.session_state[sel_key]
+                if hit > 0 and c.button(f"{book} - {hit}", key=f"{sel_key}_{book}"):
+                    st.session_state[sel_key] = book
+                    selected = book
         else:
             st.markdown("<div class='right-rail'>", unsafe_allow_html=True)
             chips_html = []
@@ -1982,9 +1984,14 @@ if SHOW_SIDEBAR:
                 st.rerun()
 
 with tabs[0]:
-    # Floating search bar at top
-    st.markdown("<div style='position:sticky; top:0; z-index:1000; background:var(--background-color); padding:8px 4px;'>", unsafe_allow_html=True)
-    search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
+    # Floating search bar at top (sticky)
+    st.markdown("<div style='position:sticky; top:0; z-index:1000; background:var(--background-color); padding:8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25);'>", unsafe_allow_html=True)
+    cols_search = st.columns([3,1])
+    with cols_search[0]:
+        search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
+    with cols_search[1]:
+        _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
+        scope = _scope
     st.markdown("</div>", unsafe_allow_html=True)
 
     if st.button("Force refresh caches"):
