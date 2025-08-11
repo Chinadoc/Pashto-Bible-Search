@@ -1175,7 +1175,9 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
             for book in books_in_scope:
                 hit = counts.get(book, 0)
                 cls = 'hit' if hit else 'zero'
-                chips_html.append(f"<span class='book-chip {cls}'>{book}{' - '+str(hit) if hit else ''}</span>")
+                # Only show count on clickable ones
+                label = f"{book}{' - '+str(hit) if hit else ''}" if hit else book
+                chips_html.append(f"<span class='book-chip {cls}'>{label}</span>")
             col.markdown("<div class='right-rail'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
             # Add interactive fallback buttons below chips for filtering
             gcols = col.columns(2)
@@ -1259,7 +1261,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         return
 
     # Verse line with clickable/dblclickable dictionary balloon on highlighted search term
-    verse_html = render_inline_dict_highlight(verse_ref, highlight_verse(full_verse, search_term), search_term or '')
+    verse_html = highlight_verse(full_verse, search_term)
     st.markdown(f"**{verse_ref}**: {verse_html}", unsafe_allow_html=True)
     
     audio_url = find_audio_url(verse_ref)
@@ -1299,7 +1301,8 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         for i in range(0, len(tokens_unique), per_row):
             row = st.columns(per_row)
             for j, tok in enumerate(tokens_unique[i:i+per_row]):
-                if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}"):
+                uniq = _next_unique_suffix("dictbtn")
+                if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}_{uniq}"):
                     selected_token = tok
 
         state_key = f"__dict_sel_{verse_ref}"
