@@ -433,6 +433,17 @@ def build_forms_root_index() -> Dict[str, str]:
 
     form_to_root: Dict[str, str] = {}
     form_to_rom: Dict[str, str] = {}
+
+    def _add(ps: str, rom: str, root_val: str) -> None:
+        form_to_root[ps] = root_val
+        if rom:
+            form_to_rom[ps] = rom
+        # Also index preverb variants for recognition in search
+        for pv in ['را', 'در', 'ور']:
+            v = pv + ps
+            form_to_root[v] = root_val
+            if rom:
+                form_to_rom[v] = rom
     for root in VERBS.keys():
         conj = conjugate_verb(root)
         if not conj:
@@ -440,18 +451,14 @@ def build_forms_root_index() -> Dict[str, str]:
         # Collect tables with romanization
         for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past']:
             for ps, rom in conj[dname].values():
-                form_to_root[ps] = root
-                if rom:
-                    form_to_rom[ps] = rom
+                _add(ps, rom, root)
         meta = conj['meta']
         for ps, rom in [
             (meta['imperfective_root'], conj['meta']['romanization'].get('imperfective_root', '')),
             (meta['perfective_root'], conj['meta']['romanization'].get('perfective_root', '')),
             (meta['past_participle'], conj['meta']['romanization'].get('past_participle', '')),
         ]:
-            form_to_root[ps] = root
-            if rom:
-                form_to_rom[ps] = rom
+            _add(ps, rom, root)
 
     _FORMS_ROOT_INDEX = form_to_root
     _FORMS_ROM_INDEX = form_to_rom
