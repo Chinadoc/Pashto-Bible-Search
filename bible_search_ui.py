@@ -1149,6 +1149,65 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
+    # Optional: inline dictionary lookup for any word in the verse
+    with st.expander("Dictionary lookup", expanded=False):
+        tokens = [t for t in tokenize_ps(full_verse) if t]
+        # Deduplicate while preserving order to reduce button count
+        seen = set(); tokens_unique = []
+        for t in tokens:
+            if t not in seen:
+                seen.add(t); tokens_unique.append(t)
+
+        # Arrange clickable tokens in a grid
+        per_row = 8
+        selected_token = None
+        for i in range(0, len(tokens_unique), per_row):
+            row = st.columns(per_row)
+            for j, tok in enumerate(tokens_unique[i:i+per_row]):
+                if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}"):
+                    selected_token = tok
+
+        if selected_token:
+            # Resolve dictionary entry (exact → normalized → lemma)
+            def _lookup_entry(pword: str) -> dict:
+                ent = _get_first_entry_for(pword)
+                if ent:
+                    return {
+                        'pashto': pword,
+                        'rom': ent.get('f', ''),
+                        'pos': ent.get('c', ''),
+                        'eng': ent.get('e', ''),
+                    }
+                nkey = normalize_pashto_char(pword)
+                ent2 = _get_first_entry_for(nkey)
+                if ent2:
+                    return {'pashto': pword, 'rom': ent2.get('f',''), 'pos': ent2.get('c',''), 'eng': ent2.get('e','')}
+                lemma = guess_lemma_in_dict(pword)
+                if lemma:
+                    ent3 = _get_first_entry_for(lemma)
+                    if ent3:
+                        return {'pashto': lemma, 'rom': ent3.get('f',''), 'pos': ent3.get('c',''), 'eng': ent3.get('e','')}
+                # Fallbacks
+                return {
+                    'pashto': pword,
+                    'rom': romanize_from_dict_or_rules(pword) or romanization_for_form_fast(pword),
+                    'pos': dict_pos_for(pword),
+                    'eng': dict_english_for(pword),
+                }
+
+            info = _lookup_entry(selected_token)
+            with st.modal(f"Dictionary: {selected_token}"):
+                st.markdown(f"Pashto: **{info.get('pashto','')}**")
+                if info.get('rom'):
+                    st.markdown(f"Romanization: {info['rom']}")
+                if info.get('pos'):
+                    st.markdown(f"POS: {info['pos']}")
+                if info.get('eng'):
+                    st.markdown(f"English: {info['eng']}")
+                # Open in LingDocs (search-based link)
+                q = quote_plus(selected_token)
+                st.markdown(f"[Open in LingDocs](https://dictionary.lingdocs.com/?q={q})")
+
 
 # --- Small UI helpers ---
 def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_label: str, key_prefix: str):
