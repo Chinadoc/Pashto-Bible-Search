@@ -119,16 +119,16 @@
       "past_participle": "raawustúlay"
     }
   },
-  "بوتلل": {
-    "stems": { "imperfective": "بیای", "perfective": "بوځ" },
-    "roots": { "imperfective": "بوتلل", "perfective": "بوتلل" },
-    "past_participle": "بوتللی",
+  "موندل": {
+    "stems": { "imperfective": "موم", "perfective": "وموم" },
+    "roots": { "imperfective": "موندل", "perfective": "وموندل" },
+    "past_participle": "موندلی",
     "romanization": {
-      "imperfective_stem": "byaay",
-      "perfective_stem": "bódz",
-      "imperfective_root": "botlúl",
-      "perfective_root": "bótlul",
-      "past_participle": "botlúlay"
+      "imperfective_stem": "moom",
+      "perfective_stem": "óomoom",
+      "imperfective_root": "moondúl",
+      "perfective_root": "óomoondul",
+      "past_participle": "moondúlay"
     }
   }
 }
