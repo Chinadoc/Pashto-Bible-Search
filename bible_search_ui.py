@@ -1062,6 +1062,86 @@ def highlight_verse(text: str, search_term: str) -> str:
         return text
 
 
+def _lookup_dict_entry_for_popup(pword: str) -> dict:
+    try:
+        ent = _get_first_entry_for(pword)
+        if ent:
+            return {
+                'pashto': pword,
+                'rom': ent.get('f', ''),
+                'pos': ent.get('c', ''),
+                'eng': ent.get('e', ''),
+            }
+        nkey = normalize_pashto_char(pword)
+        ent2 = _get_first_entry_for(nkey)
+        if ent2:
+            return {'pashto': pword, 'rom': ent2.get('f',''), 'pos': ent2.get('c',''), 'eng': ent2.get('e','')}
+        lemma = guess_lemma_in_dict(pword)
+        if lemma:
+            ent3 = _get_first_entry_for(lemma)
+            if ent3:
+                return {'pashto': lemma, 'rom': ent3.get('f',''), 'pos': ent3.get('c',''), 'eng': ent3.get('e','')}
+        return {
+            'pashto': pword,
+            'rom': romanize_from_dict_or_rules(pword) or romanization_for_form_fast(pword),
+            'pos': dict_pos_for(pword),
+            'eng': dict_english_for(pword),
+        }
+    except Exception:
+        return {'pashto': pword, 'rom': '', 'pos': '', 'eng': ''}
+
+
+def render_inline_dict_highlight(verse_ref: str, verse_text: str, term: str) -> str:
+    """Return HTML that highlights the term and embeds a CSS-only balloon tooltip
+    with dictionary info that opens when the highlight is clicked (anchor :target).
+    """
+    try:
+        if not term:
+            return verse_text
+        # Inject CSS once per app run
+        if not st.session_state.get('_dict_balloon_css'):
+            st.session_state['_dict_balloon_css'] = True
+            st.markdown(
+                """
+                <style>
+                .dict-anchor { position: relative; text-decoration: none; }
+                .dict-anchor mark { background: #ffe54d; padding: 2px 6px; border-radius: 6px; }
+                .dict-tooltip { display:none; position:absolute; left:0; top:1.9em; z-index:1000; 
+                                background:#101418; color:#f0f3f7; border:1px solid #2c3240; 
+                                border-radius:10px; padding:10px 12px; width:min(360px, 90vw);
+                                box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:0.9rem; }
+                .dict-tooltip .hd { font-weight:600; margin-bottom:6px; }
+                .dict-tooltip .lnk { display:inline-block; margin-top:6px; font-size:0.85rem; }
+                .dict-anchor:target .dict-tooltip { display:block; }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+        # Build dictionary content for the searched term
+        info = _lookup_dict_entry_for_popup(normalize_pashto_char(term))
+        aid = f"dict_{abs(hash(verse_ref + '|' + term)) % (10**8)}"
+        safe_eng = (info.get('eng') or '').replace('<','&lt;').replace('>','&gt;')
+        tooltip = (
+            f"<span class='dict-tooltip'>"
+            f"<div class='hd'>Dictionary</div>"
+            f"Pashto: <b>{info.get('pashto','')}</b><br/>"
+            f"Romanization: {info.get('rom','')}<br/>"
+            f"POS: {info.get('pos','')}<br/>"
+            f"English: {safe_eng}<br/>"
+            f"<a class='lnk' href='https://dictionary.lingdocs.com/?q={quote_plus(term)}' target='_blank'>Open in LingDocs</a>"
+            f"</span>"
+        )
+        # Replace all occurrences of term with the anchor+tooltip
+        pattern = re.escape(term)
+        repl = f"<a id='{aid}' href='#{aid}' class='dict-anchor'><mark>\\g<0></mark>{tooltip}</a>"
+        try:
+            return re.sub(pattern, repl, verse_text)
+        except Exception:
+            return verse_text
+    except Exception:
+        return verse_text
+
+
 def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global", host=None):
     try:
         col = host if host is not None else st
@@ -1081,20 +1161,36 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        col.markdown("<div style='position:sticky; top:72px; font-size:12px; color:#bbb; margin-bottom:6px'>Book coverage</div>", unsafe_allow_html=True)
+        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.book-chip{display:inline-block; margin:4px; padding:6px 10px; border-radius:10px; font-size:.8rem; color:#fff;}\n.book-chip.hit{background:#155e75;}\n.book-chip.zero{background:#334155; opacity:.5;}\n.section-title{font-size:12px; color:#bbb; margin-bottom:6px}\n</style>", unsafe_allow_html=True)
+        col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
         selected = st.session_state.get(sel_key, '')
-        grid = col.columns(2) if host is not None else st.columns(6)
-        for i, book in enumerate(books_in_scope):
-            c = grid[i % len(grid)]
-            hit = counts.get(book, 0)
-            label = f"{book}{' - '+str(hit) if hit else ''}"
-            # disable button if no hits
-            if hit == 0:
-                c.button(label, key=f"{sel_key}_{book}", disabled=True)
-            else:
-                if c.button(label, key=f"{sel_key}_{book}"):
+        # Compact colored chips grid rendered in 1/3 right area when a host column is provided
+        if host is not None:
+            chips_html = []
+            for book in books_in_scope:
+                hit = counts.get(book, 0)
+                cls = 'hit' if hit else 'zero'
+                chips_html.append(f"<span class='book-chip {cls}'>{book}{' - '+str(hit) if hit else ''}</span>")
+            col.markdown("<div class='right-rail'>" + "".join(chips_html) + "</div>", unsafe_allow_html=True)
+            # Add interactive fallback buttons below chips for filtering
+            gcols = col.columns(2)
+            for i, book in enumerate(books_in_scope):
+                c = gcols[i % 2]
+                hit = counts.get(book, 0)
+                label = f"{book}{' - '+str(hit) if hit else ''}"
+                disabled = hit == 0
+                if c.button(label, key=f"{sel_key}_{book}", disabled=disabled):
+                    st.session_state[sel_key] = '' if disabled else book
+                    selected = st.session_state[sel_key]
+        else:
+            grid = st.columns(6)
+            for i, book in enumerate(books_in_scope):
+                c = grid[i % len(grid)]
+                hit = counts.get(book, 0)
+                label = f"{book}{' - '+str(hit) if hit else ''}"
+                if c.button(label, key=f"{sel_key}_{book}", disabled=(hit==0)):
                     st.session_state[sel_key] = book
                     selected = book
         # Clear filter button
@@ -1151,7 +1247,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.warning(f"Verse text for '{verse_ref}' not found.")
         return
 
-    st.markdown(f"**{verse_ref}**: {highlight_verse(full_verse, search_term)}", unsafe_allow_html=True)
+    # Verse line with clickable/dblclickable dictionary balloon on highlighted search term
+    verse_html = render_inline_dict_highlight(verse_ref, highlight_verse(full_verse, search_term), search_term or '')
+    st.markdown(f"**{verse_ref}**: {verse_html}", unsafe_allow_html=True)
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
@@ -1175,7 +1273,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
-    # Optional: inline dictionary lookup for any word in the verse
+    # Optional: inline dictionary lookup (kept but collapsed and out of way)
     with st.expander("Dictionary lookup", expanded=False):
         tokens = [t for t in tokenize_ps(full_verse) if t]
         # Deduplicate while preserving order to reduce button count
