@@ -1191,10 +1191,54 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
-        return
+    else:
+        render_book_hit_map(found_verses, text_map, scope)
+        for verse_ref in sorted(found_verses):
+            display_verse_with_audio(verse_ref, normalized_query, text_map)
 
-    for verse_ref in sorted(found_verses):
-        display_verse_with_audio(verse_ref, normalized_query, text_map)
+    # Offer compound-verb analysis for 2+ token phrases
+    toks = [t for t in query.split() if t]
+    if len(toks) >= 2:
+        st.markdown("---")
+        do_compound = st.checkbox("Also analyze as compound verb", value=True, key="cb_compound")
+        if do_compound:
+            head = " ".join(toks[:-1])
+            aux = toks[-1]
+            aux_norm = normalize_pashto_char(aux)
+            aux_map = {
+                'کول': 'کول', 'کړل': 'کول', 'وکړل': 'کول',
+                'کېدل': 'کېدل', 'کیدل': 'کېدل', 'شو': 'کېدل', 'شول': 'کېدل'
+            }
+            aux_root = aux_map.get(aux_norm, aux_norm)
+            try:
+                conj = conjugate_verb(aux_root)
+            except Exception:
+                conj = {}
+            if conj:
+                st.subheader(f"Compound Verb Analysis — {head} + {aux_root}")
+                head_rom = dict_romanization_for(head)
+                # Build present and subjunctive by prefixing the head
+                present = {}
+                subj = {}
+                for k, (ps, rom) in (conj.get('present', {}) or {}).items():
+                    present[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
+                for k, (ps, rom) in (conj.get('subjunctive', {}) or {}).items():
+                    subj[k] = (f"{head} {ps}", f"{head_rom} {rom}".strip())
+                # Quick occurrence index for these generated forms
+                forms_index = {}
+                all_verses = []
+                for d in [present, subj]:
+                    for _k, (ps, _rom) in d.items():
+                        occ = _find_occurrences_in_text(ps, text_map)
+                        forms_index[normalize_pashto_char(ps)] = occ
+                        all_verses.extend(occ.get('verses', []))
+                if all_verses:
+                    render_book_hit_map(sorted(set(all_verses)), text_map, scope)
+                # Render
+                render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
+                render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
+            else:
+                st.info("No auxiliary verb analysis available for this phrase.")
 
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_text, ot_text, scope):
     # reset audio counter per search render
