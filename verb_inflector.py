@@ -346,18 +346,41 @@ def infer_root_from_form(form_ps: str) -> str:
     endings = ['م', 'ې', 'ي', 'و', 'ئ']  # present/subj endings
     candidates: List[str] = []
 
-    # Handle perfective present/subjunctive with initial و
-    starts_with_perf = form_ps.startswith('و')
-    core = form_ps[1:] if starts_with_perf else form_ps
+    # Try stripping common preverbs first (را / در / ور). Keep a set of
+    # variants to attempt recognition on.
+    preverbs = ['را', 'در', 'ور']
+    form_variants: List[str] = [form_ps]
+    for pv in preverbs:
+        if form_ps.startswith(pv):
+            form_variants.append(form_ps[len(pv):])
+        # also handle preverb immediately followed by perfective و
+        if form_ps.startswith(pv + 'و'):
+            form_variants.append(form_ps[len(pv):])
 
-    # Try stripping one-character endings
-    if any(core.endswith(e) for e in endings) and len(core) > 1:
-        base = core[:-1]
-        # stem → roots
-        raw_roots = [base + 'ل', base + 'دل']
-        if starts_with_perf:
-            raw_roots += ['و' + base + 'ل', 'و' + base + 'دل']
-        candidates.extend(raw_roots)
+    # Also attempt bare perfective stripping on each variant
+    base_variants: List[str] = []
+    for v in form_variants:
+        if v.startswith('و'):
+            base_variants.append(v[1:])
+        base_variants.append(v)
+
+    # Deduplicate while preserving order
+    seen_forms = set()
+    norm_forms: List[str] = []
+    for v in base_variants:
+        if v not in seen_forms:
+            seen_forms.add(v)
+            norm_forms.append(v)
+
+    for core in norm_forms:
+        starts_with_perf = form_ps.startswith('و') or core.startswith('و')
+        # Try stripping one-character endings
+        if any(core.endswith(e) for e in endings) and len(core) > 1:
+            base = core[:-1]
+            raw_roots = [base + 'ل', base + 'دل']
+            if starts_with_perf:
+                raw_roots += ['و' + base + 'ل', 'و' + base + 'دل']
+            candidates.extend(raw_roots)
 
     # Also try assuming the form is already an infinitive
     if form_ps.endswith('ل'):
