@@ -1,3 +1,6 @@
+# Generated locally; CI generates web/pashto_bible.json
+/pashto_bible.json
+
 # Ignore virtual env
 venv/
 
