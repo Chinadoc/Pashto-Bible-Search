@@ -216,6 +216,9 @@ FULL_DICT_FILE = os.path.join(APP_ROOT, 'full_dictionary.json')
 FORM_TO_LEMMA_FILE = os.path.join(APP_ROOT, 'form_to_lemma.json')
 INFLECTIONS_CACHE_FILE = os.path.join(APP_ROOT, 'inflections_cache.json')
 NT_REFERENCE_FILE = os.path.join(APP_ROOT, 'nt_reference.json')
+FORM_OCCURRENCE_FILE = os.path.join(APP_ROOT, 'form_occurrence_index.json')
+FORM_TO_ROOT_FILE = os.path.join(APP_ROOT, 'form_to_root_map.json')
+CACHE_META_FILE = os.path.join(APP_ROOT, '.cache_meta.json')
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
 # Prefer a direct-download host for server-side fetching to avoid Google Drive
 # interstitials; fall back to the regular URL for user-visible links
@@ -983,9 +986,16 @@ def load_bible_text():
 def load_bible_text_ot():
     return _load_text_from_dir(OT_DATA_DIR)
 
-@st.cache_data
-def build_normalized_text_maps(nt_text: dict, ot_text: dict) -> dict:
-    def norm_map(d):
+@st.cache_resource
+def get_normalized_text_maps_cached() -> dict:
+    """Build and cache normalized text maps without hashing huge inputs.
+
+    Using cache_resource avoids Streamlit hashing of large dict arguments and
+    ensures this expensive work runs only once per process.
+    """
+    nt_text = load_bible_text()
+    ot_text = load_bible_text_ot()
+    def norm_map(d: dict) -> dict:
         return {ref: normalize_pashto_char(txt) for ref, txt in d.items()}
     return {
         'nt_norm': norm_map(nt_text),
@@ -995,20 +1005,26 @@ def build_normalized_text_maps(nt_text: dict, ot_text: dict) -> dict:
 # Initialize global text maps early to satisfy helper references
 NT_TEXT = load_bible_text()
 OT_TEXT = load_bible_text_ot()
-_maps = build_normalized_text_maps(NT_TEXT, OT_TEXT)
+_maps = get_normalized_text_maps_cached()
 NT_NORM_MAP = _maps['nt_norm']
 OT_NORM_MAP = _maps['ot_norm']
 
-@st.cache_data
-def build_token_maps(nt_text: dict, ot_text: dict) -> dict:
-    def tok_map(d):
+@st.cache_resource
+def get_token_maps_cached() -> dict:
+    """Tokenize every verse once and cache the result as a resource.
+
+    Avoids hashing giant dicts by not taking them as parameters.
+    """
+    nt_text = load_bible_text()
+    ot_text = load_bible_text_ot()
+    def tok_map(d: dict) -> dict:
         return {ref: tokenize_ps(txt) for ref, txt in d.items()}
     return {
         'nt_tok': tok_map(nt_text),
         'ot_tok': tok_map(ot_text),
     }
 
-TOK = build_token_maps(NT_TEXT, OT_TEXT)
+TOK = get_token_maps_cached()
 NT_TOK_MAP = TOK['nt_tok']
 OT_TOK_MAP = TOK['ot_tok']
 
@@ -1166,7 +1182,7 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        col.markdown("<style>\n/* sticky right rail */\n.right-rail{position:sticky; top:56px; max-height:calc(100vh - 64px); overflow:auto;}\n/* mobile-friendly: wrap chips and allow scroll */\n@media (max-width: 768px){ .right-rail{position:fixed; right:8px; top:56px; width:40%; max-height:60vh; z-index:1000;} }\n/* chip styling */\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n.chip-rail .stButton > button{background:#0ea5e9; color:#fff; padding:6px 12px; border-radius:999px; border:none; font-size:.85rem; margin:4px;}\n.chip-rail .stButton > button:hover{filter:brightness(1.08);}\n.chip-rail .stButton > button:disabled{background:#334155; color:#cbd5e1; opacity:.65;}\n</style>", unsafe_allow_html=True)
+        col.markdown("<style>\n/* sticky right rail */\n.right-rail{position:sticky; top:56px; max-height:calc(100vh - 64px); overflow:auto;}\n/* mobile-friendly: wrap chips and allow scroll */\n@media (max-width: 768px){ .right-rail{position:fixed; right:8px; top:56px; width:28%; max-height:65vh; z-index:1100;} }\n/* chip styling: smaller and higher-contrast */\n.section-title{font-size:11px; color:#b6c7d4; margin-bottom:6px}\n.chip-rail .stButton > button{background:#0284c7; color:#eef6ff; padding:4px 8px; border-radius:999px; border:none; font-size:.78rem; margin:3px;}\n.chip-rail .stButton > button:hover{filter:brightness(1.08);}\n.chip-rail .stButton > button:disabled{background:#334155; color:#cbd5e1; opacity:.6;}\n</style>", unsafe_allow_html=True)
         col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
@@ -1174,8 +1190,8 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         # Render one compact row of toggle buttons (no navigation)
         rail = col.container()
         with rail:
-            # wide screens get 8 columns, mobile collapses to 3
-            rail_cols = st.columns(8) if not MOBILE_MODE else st.columns(3)
+            # Fewer columns in the right rail so labels don't stack vertically
+            rail_cols = st.columns(3 if host is not None else (12 if not MOBILE_MODE else 6))
             for i, book in enumerate(books_in_scope):
                 c = rail_cols[i % len(rail_cols)]
                 hit = counts.get(book, 0)
@@ -1472,7 +1488,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     else:
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
-        rail_cols = st.columns([2,1])
+        rail_cols = st.columns([3,1])
         render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=rail_cols[1])
         sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
@@ -1534,7 +1550,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                         all_refs.extend(occ.get('verses', []))
                 if all_refs:
                     _coverage_add(all_refs)
-                    rail_cols = st.columns([2,1])
+                    rail_cols = st.columns([3,1])
                     render_book_hit_map(sorted(set(all_refs)), text_map, scope, host=rail_cols[1])
                 render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
                 render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
@@ -1627,7 +1643,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
-        rail_cols = st.columns([2,1])
+        rail_cols = st.columns([3,1])
         render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form, host=rail_cols[1])
         # Filter by selected book, if any
         sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
@@ -1876,6 +1892,43 @@ def _clear_all_caches():
         except Exception:
             pass
 
+    # Clear resource caches (best-effort)
+    try:
+        get_normalized_text_maps_cached.clear()
+    except Exception:
+        pass
+    try:
+        get_token_maps_cached.clear()
+    except Exception:
+        pass
+
+@st.cache_resource
+def get_form_to_root_map_cached(version: str):
+    """Compute form→root map once per app version without hashing the full index.
+
+    The version string acts as a manual cache key so we can bust the cache when
+    the underlying grammatical index changes.
+    """
+    idx = load_data()
+    form_map = defaultdict(list)
+    for root, data in idx.items():
+        for identity in data.get('identities', []):
+            for items_list in identity.get('forms', {}).values():
+                for item in items_list:
+                    normalized_form = normalize_pashto_char(item.get('form', ''))
+                    if root not in form_map[normalized_form]:
+                        form_map[normalized_form].append(root)
+    return form_map
+
+@st.cache_resource
+def get_form_occurrence_index_cached(version: str):
+    """Aggregate occurrences for every form once per app version.
+
+    Avoids re-scanning the full index on every rerun.
+    """
+    idx = load_data()
+    return build_form_occurrence_index(idx)
+
 
 # Compute lightweight mobile mode from query params and width hint
 MOBILE_MODE = True if (QP_APP == '1' or QP_M == '1') else False
@@ -1901,8 +1954,9 @@ with tabs[0]:
 
     if grammatical_index is None: st.stop()
 
-    form_to_root_map = create_form_to_root_map(grammatical_index)
-    form_occurrence_index = build_form_occurrence_index(grammatical_index)
+    # Use resource-cached builders keyed by version to avoid hashing huge dicts
+    form_to_root_map = get_form_to_root_map_cached(APP_VERSION)
+    form_occurrence_index = get_form_occurrence_index_cached(APP_VERSION)
     # Overlay OT-only occurrences when browsing OT to ensure fast per-form lookups
     if scope == "Old Testament" and os.path.exists(OT_FORMS_INDEX_FILE):
         try:
