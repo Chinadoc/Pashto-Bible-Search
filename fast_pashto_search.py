@@ -14,6 +14,7 @@ This scans `all_txt_copies/` and `ot_txt_copies/` and writes indices to `./cache
 from __future__ import annotations
 
 import gzip
+import io
 import hashlib
 import json
 import os
@@ -23,6 +24,8 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Set, Tuple
+from bible_text_loader import load_bible_map
+import requests
 
 
 # Canonical 66-book order (used to assign compact numeric ids)
@@ -155,11 +158,7 @@ class PashtoBibleIndexBuilder:
         if self.bible_json_path and os.path.exists(self.bible_json_path):
             with open(self.bible_json_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        # Merge NT and OT text maps
-        bible = {}
-        bible.update(self._load_text_from_dir(self.nt_dir))
-        bible.update(self._load_text_from_dir(self.ot_dir))
-        return bible
+        return load_bible_map(self.nt_dir, self.ot_dir)
 
     # ---------- Normalization and tokenization ----------
     def _normalize_text(self, text: str) -> str:
@@ -354,6 +353,58 @@ class FastPashtoSearch:
             self.stem_index = aux.get('stem_index', {})
             self.book_index = aux.get('book_index', {})
             self.stats = aux.get('stats', {})
+
+    # ----- Remote loader -----
+    @classmethod
+    def load_remote(cls, base_url: str) -> "FastPashtoSearch":
+        """Load indices from a remote base URL hosting the cache files.
+
+        Expects the following files at base_url:
+          - manifest.json
+          - verses.json.gz
+          - inverted_index.pkl.gz
+          - ngram_index.pkl.gz
+          - auxiliary_indices.pkl.gz
+        """
+        def _get(url: str) -> bytes:
+            r = requests.get(url, timeout=60)
+            r.raise_for_status()
+            return r.content
+
+        def _load_json_gz_bytes(data: bytes) -> Any:
+            with gzip.GzipFile(fileobj=io.BytesIO(data), mode='rb') as gf:
+                return json.loads(gf.read().decode('utf-8'))
+
+        def _load_pickle_gz_bytes(data: bytes) -> Any:
+            with gzip.GzipFile(fileobj=io.BytesIO(data), mode='rb') as gf:
+                return pickle.loads(gf.read())
+
+        # Fetch manifest (not gz)
+        manifest_url = base_url.rstrip('/') + '/manifest.json'
+        manifest = requests.get(manifest_url, timeout=60).json()
+
+        # Fetch and load payloads
+        verses_url = base_url.rstrip('/') + '/verses.json.gz'
+        inverted_url = base_url.rstrip('/') + '/inverted_index.pkl.gz'
+        ngram_url = base_url.rstrip('/') + '/ngram_index.pkl.gz'
+        aux_url = base_url.rstrip('/') + '/auxiliary_indices.pkl.gz'
+
+        verses_dict = _load_json_gz_bytes(_get(verses_url))
+        inverted_index = _load_pickle_gz_bytes(_get(inverted_url))
+        ngram_index = _load_pickle_gz_bytes(_get(ngram_url))
+        aux = _load_pickle_gz_bytes(_get(aux_url))
+
+        # Build instance without hitting local disk
+        obj: FastPashtoSearch = cls.__new__(cls)  # type: ignore[name-defined]
+        obj.cache_dir = ''
+        obj.verses = {ref: IndexedVerse(**data) for ref, data in verses_dict.items()}
+        obj.inverted_index = inverted_index
+        obj.ngram_index = ngram_index
+        obj.consonant_index = aux.get('consonant_index', {})
+        obj.stem_index = aux.get('stem_index', {})
+        obj.book_index = aux.get('book_index', {})
+        obj.stats = aux.get('stats', {})
+        return obj
 
     # ----- Public API -----
     def search(self, query: str, mode: str = 'smart', max_results: int = 20) -> List[Dict[str, Any]]:

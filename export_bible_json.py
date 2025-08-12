@@ -23,6 +23,7 @@ import os
 import re
 import sys
 from typing import Dict, List, Tuple
+from bible_text_loader import load_bible_map
 
 
 def parse_int_mixed_digits(s: str) -> int | None:
@@ -165,13 +166,8 @@ def parse_verses_from_lines(book: str, chapter: int, lines: List[str]) -> List[D
 
 
 def build_bible_json(nt_dir: str | None, ot_dir: str | None) -> List[Dict[str, str]]:
-    items: List[Dict[str, str]] = []
-    for dir_path in [nt_dir, ot_dir]:
-        if not dir_path:
-            continue
-        for book, chapter, lines in scan_chapter_files(dir_path):
-            items.extend(parse_verses_from_lines(book, chapter, lines))
-    return items
+    bible_map = load_bible_map(nt_dir, ot_dir)
+    return [{'ref': k, 'text': v} for k, v in bible_map.items()]
 
 
 def main(argv: List[str] | None = None) -> int:
