@@ -1664,7 +1664,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             display_verse_with_audio(verse_ref, normalized_form, selected_text)
         if len(filtered) > 5:
             with st.expander("Show all matches"):
-                for verse_ref in sorted(filtered, key=rank):
+                # Lazy-render the remainder to reduce initial load time
+                for verse_ref in sorted(filtered, key=rank)[5:]:
                     display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
@@ -2041,6 +2042,8 @@ with tabs[0]:
         _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
         scope = _scope
     st.markdown("</div>", unsafe_allow_html=True)
+    # Spacer to offset fixed header
+    st.markdown("<div class='header-spacer'></div>", unsafe_allow_html=True)
 
     if st.button("Force refresh caches"):
         _clear_all_caches()
