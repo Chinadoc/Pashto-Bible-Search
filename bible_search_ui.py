@@ -37,6 +37,11 @@ from noun_inflector import (
 )
 import unicodedata
 from pashto_fuzzy_search import PashtoFuzzySearch, MatchType
+# Optional fast prebuilt index engine
+try:
+    from fast_pashto_search import FastPashtoSearch  # type: ignore
+except Exception:
+    FastPashtoSearch = None  # type: ignore
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
 SANDWICH_MARKERS = [
@@ -1040,6 +1045,16 @@ def _get_fuzzy_engine_for_scope(scope: str, nt_text: dict, ot_text: dict) -> Pas
     st.session_state[key] = eng
     return eng
 
+# Fast engine: load once from cache directory; return None if cache missing
+@st.cache_resource
+def get_fast_engine_cached():
+    try:
+        if FastPashtoSearch is None:
+            return None
+        return FastPashtoSearch('./cache')
+    except Exception:
+        return None
+
 # Defer token maps to on-demand tokenization; avoid eager full-Bible tokenization
 NT_TOK_MAP = {}
 OT_TOK_MAP = {}
@@ -1517,33 +1532,49 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     st.header(f"Exact Phrase Search Results for: \"{query}\"")
     normalized_query = normalize_pashto_char(query)
     text_map = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
-    found_verses = [ref for ref, text in text_map.items() if normalized_query in text]
+    # Prefer fast engine (prebuilt indices) when available; fall back to scan
+    found_verses = []
+    fast_engine = get_fast_engine_cached()
+    if fast_engine:
+        try:
+            fres = fast_engine.search_phrase(normalized_query, max_results=500)
+            found_verses = [r['reference'] for r in fres if r.get('reference') in text_map]
+        except Exception:
+            found_verses = []
+    if not found_verses:
+        found_verses = [ref for ref, text in text_map.items() if normalized_query in text]
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
-        # Only offer fuzzy when exact hits are zero
+        # Auto-run fuzzy only when exact hits are zero (multi-word queries)
         toks = [t for t in query.split() if t]
         if len(toks) >= 2:
-            with st.expander("Fuzzy search (Pashto-aware)"):
-                max_results = st.slider("Max results", 5, 100, 20, 5, key="fz_max_phrase")
-                min_score = st.slider("Min score", 0.0, 1.0, 0.35, 0.05, key="fz_thr_phrase")
-                if st.button("Run fuzzy search", key="fz_run_phrase"):
-                    engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
-                    res = engine.search(normalized_query, max_results=max_results, min_score=min_score)
-                    bible_text = text_map
-                    if res:
-                        frefs = [r.reference for r in res if r.reference in bible_text]
-                        if frefs:
-                            rail_cols = st.columns([3,1])
-                            st.subheader(f"Fuzzy matches — {len(frefs)} hits")
-                            _coverage_add(frefs)
-                            render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_query}", host=rail_cols[1])
-                            sel_book = st.session_state.get(f"book_filter_fz:{normalized_query}", '') or QP_B
-                            filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
-                            for verse_ref in filtered:
-                                display_verse_with_audio(verse_ref, normalized_query, bible_text)
-                    else:
-                        st.info("No fuzzy results.")
+            bible_text = text_map
+            # Try fast engine first
+            frefs: list[str] = []
+            fast_engine = get_fast_engine_cached()
+            if fast_engine:
+                try:
+                    fast_res = fast_engine.search(normalized_query, mode='smart', max_results=20)
+                    frefs = [r['reference'] for r in fast_res if r.get('reference') in bible_text]
+                except Exception:
+                    frefs = []
+            # Fallback to fuzzy engine
+            if not frefs:
+                engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
+                res = engine.search(normalized_query, max_results=20, min_score=0.35)
+                frefs = [r.reference for r in res if r.reference in bible_text]
+            if frefs:
+                rail_cols = st.columns([3,1])
+                st.subheader(f"Fuzzy matches — {len(frefs)} hits")
+                _coverage_add(frefs)
+                render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_query}", host=rail_cols[1])
+                sel_book = st.session_state.get(f"book_filter_fz:{normalized_query}", '') or QP_B
+                filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+                for verse_ref in filtered:
+                    display_verse_with_audio(verse_ref, normalized_query, bible_text)
+            else:
+                st.info("No fuzzy results.")
     else:
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
@@ -1732,28 +1763,32 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                     display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
 
-    # Only show fuzzy suggestions when there were zero exact occurrences
+    # Auto-run fuzzy suggestions when there were zero exact occurrences
     if not verses_to_show:
-        with st.expander("Fuzzy matches (Pashto-aware)"):
-            max_results = st.slider("Max results", 5, 100, 20, 5, key="fz_max_gram")
-            min_score = st.slider("Min score", 0.0, 1.0, 0.35, 0.05, key="fz_thr_gram")
-            if st.button("Run fuzzy search", key="fz_run_gram"):
-                bible_text = selected_text
-                engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
-                fres = engine.search(normalized_form, max_results=max_results, min_score=min_score)
-                if fres:
-                    frefs = [r.reference for r in fres if r.reference in bible_text]
-                    if frefs:
-                        rail_cols = st.columns([3,1])
-                        st.subheader(f"Fuzzy matches — {len(frefs)} hits")
-                        _coverage_add(frefs)
-                        render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_form}", host=rail_cols[1])
-                        sel_book = st.session_state.get(f"book_filter_fz:{normalized_form}", '') or QP_B
-                        filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
-                        for verse_ref in filtered:
-                            display_verse_with_audio(verse_ref, normalized_form, bible_text)
-                else:
-                    st.info("No fuzzy results.")
+        bible_text = selected_text
+        frefs: list[str] = []
+        fast_engine = get_fast_engine_cached()
+        if fast_engine:
+            try:
+                fast_res = fast_engine.search(normalized_form, mode='smart', max_results=20)
+                frefs = [r['reference'] for r in fast_res if r.get('reference') in bible_text]
+            except Exception:
+                frefs = []
+        if not frefs:
+            engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
+            fres = engine.search(normalized_form, max_results=20, min_score=0.35)
+            frefs = [r.reference for r in fres if r.reference in bible_text]
+        if frefs:
+            rail_cols = st.columns([3,1])
+            st.subheader(f"Fuzzy matches — {len(frefs)} hits")
+            _coverage_add(frefs)
+            render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_form}", host=rail_cols[1])
+            sel_book = st.session_state.get(f"book_filter_fz:{normalized_form}", '') or QP_B
+            filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+            for verse_ref in filtered:
+                display_verse_with_audio(verse_ref, normalized_form, bible_text)
+        else:
+            st.info("No fuzzy results.")
 
     prefer_exact_verb = bool(lex_root and conj_for_form and normalized_form == lex_root)
     prefer_exact_noun = bool(lex_root and (lex_root in NOUNS) and normalized_form == lex_root)
