@@ -1,0 +1,46 @@
+{
+  "منځ": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic"
+  },
+  "کتاب": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic"
+  },
+  "کور": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic"
+  },
+  "ښار": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic"
+  },
+  "پښتون": {
+    "pattern": "pashtoon",
+    "pattern_info": "Pattern #4: Pashtoon"
+  },
+  "ستړی": {
+    "pattern": "unstressed_y",
+    "pattern_info": "Pattern #2: Unstressed ی (ay)"
+  },
+  "لومړی": {
+    "pattern": "stressed_ay",
+    "pattern_info": "Pattern #3: Stressed ی (áy)"
+  },
+  "غل": {
+    "pattern": "short_squish",
+    "pattern_info": "Pattern #5: Short squish"
+  },
+  "آزادي": {
+    "pattern": "fem_inanim_ee",
+    "pattern_info": "Extra half: Feminine inanimate ي (ee)"
+  },
+  "خره": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic (fem)"
+  },
+  "غوره": {
+    "pattern": "masc_basic_consonant",
+    "pattern_info": "Pattern #1: Basic (fem adj)"
+  }
+}
