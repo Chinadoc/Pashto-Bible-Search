@@ -1193,8 +1193,9 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
                 hit = counts.get(book, 0)
                 label = f"{book} - {hit}" if hit else book
                 disabled = hit == 0
-                key_sfx = _next_unique_suffix("bookchip")
-                if c.button(label, key=f"{sel_key}_{book}_{key_sfx}", disabled=disabled):
+                # Use deterministic keys to avoid trigger-state crashes on rerun
+                stable_key = f"bookchip::{filter_key}::{book}"
+                if c.button(label, key=stable_key, disabled=disabled):
                     st.session_state[sel_key] = '' if st.session_state.get(sel_key) == book else book
         # Clear button when filtered
         if st.session_state.get(sel_key):
