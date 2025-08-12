@@ -1257,12 +1257,24 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        # Prefer remote stream; if it fails on some devices, fall back to server-fetched bytes
-        bytes_payload = get_audio_bytes(audio_url)
-        if bytes_payload:
-            st.audio(bytes_payload, format='audio/mp3')
+        # Gate auto-loading to reduce initial render time
+        loaded = st.session_state.get('audio_loaded_count', 0)
+        should_auto = bool(AUTO_LOAD_AUDIO) and (loaded < AUTO_LOAD_AUDIO_MAX)
+        if should_auto:
+            bytes_payload = get_audio_bytes(audio_url)
+            if bytes_payload:
+                st.audio(bytes_payload, format='audio/mp3')
+            else:
+                st.audio(audio_url, format='audio/mp3')
+            st.session_state['audio_loaded_count'] = loaded + 1
         else:
-            st.audio(audio_url, format='audio/mp3')
+            play_key = f"play_audio_{abs(hash(verse_ref))}_{_next_unique_suffix('play')}"
+            if st.button('Play audio', key=play_key):
+                bytes_payload = get_audio_bytes(audio_url)
+                if bytes_payload:
+                    st.audio(bytes_payload, format='audio/mp3')
+                else:
+                    st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -1292,8 +1304,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         for i in range(0, len(tokens_unique), per_row):
             row = st.columns(per_row)
             for j, tok in enumerate(tokens_unique[i:i+per_row]):
-                uniq = _next_unique_suffix("dictbtn")
-                if row[j].button(tok, key=f"dictbtn_{verse_ref}_{i}_{j}_{uniq}"):
+                # Use a stable key per token to avoid trigger-state errors on rerun
+                stable_key = f"dictbtn::{verse_ref}::{i}::{j}::{tok}"
+                if row[j].button(tok, key=stable_key):
                     selected_token = tok
 
         state_key = f"__dict_sel_{verse_ref}"
