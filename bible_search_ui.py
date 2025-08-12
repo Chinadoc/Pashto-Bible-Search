@@ -5,6 +5,7 @@ import os
 import requests
 from urllib.parse import quote_plus
 import pandas as pd
+from ui_backend.ui_service import build_book_coverage_view
 from functools import lru_cache
 from collections import defaultdict
 import hashlib
@@ -1024,9 +1025,9 @@ def get_token_maps_cached() -> dict:
         'ot_tok': tok_map(ot_text),
     }
 
-TOK = get_token_maps_cached()
-NT_TOK_MAP = TOK['nt_tok']
-OT_TOK_MAP = TOK['ot_tok']
+# Defer token maps to on-demand tokenization; avoid eager full-Bible tokenization
+NT_TOK_MAP = {}
+OT_TOK_MAP = {}
 
 # Canonical Bible order (66-book Protestant order)
 BIBLE_BOOK_ORDER = [
@@ -1489,6 +1490,15 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
         rail_cols = st.columns([3,1])
+        # Build view in backend and render chips here
+        view = build_book_coverage_view(
+            verses=tuple(found_verses),
+            text_map_keys=list(text_map.keys()),
+            scope_label=scope,
+            selected_book=st.session_state.get(f"book_filter_{normalized_query}", ''),
+            books_in_order=BIBLE_BOOK_ORDER,
+            rail_width='25%'
+        )
         render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=rail_cols[1])
         sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
@@ -1545,9 +1555,12 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                 all_refs = []
                 for d in [present, subj, cont_past, simple_past]:
                     for _k, (ps, _rom) in d.items():
-                        occ = _find_occurrences_in_text(ps, text_map)
-                        forms_index[normalize_pashto_char(ps)] = occ
-                        all_refs.extend(occ.get('verses', []))
+                        key = normalize_pashto_char(ps)
+                        occ = form_occurrence_index.get(key, {'count': 0, 'verses': []})
+                        # Scope-limit to visible text
+                        verses_scoped = [v for v in occ.get('verses', []) if v in text_map]
+                        forms_index[key] = {'count': len(verses_scoped), 'verses': verses_scoped}
+                        all_refs.extend(verses_scoped)
                 if all_refs:
                     _coverage_add(all_refs)
                     rail_cols = st.columns([3,1])
@@ -1637,8 +1650,9 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             pass
         return True
 
-    occ = _find_occurrences_in_text(normalized_form, selected_text, whole_word=True)
-    verses_to_show = [v for v in sorted(set(occ['verses'])) if _sense_match(selected_text.get(v, ''))]
+    # Fast path: use precomputed occurrence index and filter to current scope
+    occ = form_occurrence_index.get(normalized_form, {'count': 0, 'verses': []})
+    verses_to_show = [v for v in sorted(set(occ.get('verses', []))) if v in selected_text and _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
@@ -1680,19 +1694,24 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         try:
             rows = []
             for key, (ps, rom) in n['forms'].items():
-                occ_nt = _find_occurrences_in_text(ps, nt_text, whole_word=True) if scope in ('all','nt') else {'count':0,'verses':[]}
-                occ_ot = _find_occurrences_in_text(ps, ot_text, whole_word=True) if scope in ('all','ot') else {'count':0,'verses':[]}
-                rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'NT': occ_nt['count'], 'OT': occ_ot['count']})
+                norm_ps = normalize_pashto_char(ps)
+                occ_any = form_occurrence_index.get(norm_ps, {'count': 0, 'verses': []})
+                nt_hits = sum(1 for v in occ_any.get('verses', []) if v in nt_text)
+                ot_hits = sum(1 for v in occ_any.get('verses', []) if v in ot_text)
+                rows.append({'Form (Pashto)': ps, 'Romanization': rom, 'NT': nt_hits, 'OT': ot_hits})
             if rows:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
         except Exception:
             pass
         # Per-form expanders with verses from selected scope
         for key, (ps, rom) in n['forms'].items():
-            occ = _find_occurrences_in_text(ps, nt_text if scope=='nt' else ot_text if scope=='ot' else {**nt_text, **ot_text}, whole_word=True)
-            title = f"{key}: `{ps}` ({rom}) — {occ['count']} hits"
+            norm_ps = normalize_pashto_char(ps)
+            occ_any = form_occurrence_index.get(norm_ps, {'count': 0, 'verses': []})
+            # Limit to current scope by intersecting with selected text keys
+            verses_scoped = [v for v in occ_any.get('verses', []) if v in bible_text]
+            title = f"{key}: `{ps}` ({rom}) — {len(verses_scoped)} hits"
             with st.expander(title):
-                for vref in sorted(set(occ['verses'])):
+                for vref in sorted(set(verses_scoped)):
                     display_verse_with_audio(vref, ps, nt_text if scope=='nt' else ot_text)
         if not prefer_exact_noun:
             return
@@ -1909,6 +1928,13 @@ def get_form_to_root_map_cached(version: str):
     The version string acts as a manual cache key so we can bust the cache when
     the underlying grammatical index changes.
     """
+    # Prefer prebuilt JSON if present; fall back to computing
+    try:
+        if os.path.exists(FORM_TO_ROOT_FILE) and os.path.getsize(FORM_TO_ROOT_FILE) > 0:
+            with open(FORM_TO_ROOT_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
     idx = load_data()
     form_map = defaultdict(list)
     for root, data in idx.items():
@@ -1918,7 +1944,13 @@ def get_form_to_root_map_cached(version: str):
                     normalized_form = normalize_pashto_char(item.get('form', ''))
                     if root not in form_map[normalized_form]:
                         form_map[normalized_form].append(root)
-    return form_map
+    out = dict(form_map)
+    try:
+        with open(FORM_TO_ROOT_FILE, 'w', encoding='utf-8') as f:
+            json.dump(out, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return out
 
 @st.cache_resource
 def get_form_occurrence_index_cached(version: str):
@@ -1926,8 +1958,20 @@ def get_form_occurrence_index_cached(version: str):
 
     Avoids re-scanning the full index on every rerun.
     """
+    try:
+        if os.path.exists(FORM_OCCURRENCE_FILE) and os.path.getsize(FORM_OCCURRENCE_FILE) > 0:
+            with open(FORM_OCCURRENCE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
     idx = load_data()
-    return build_form_occurrence_index(idx)
+    out = build_form_occurrence_index(idx)
+    try:
+        with open(FORM_OCCURRENCE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(out, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return out
 
 
 # Compute lightweight mobile mode from query params and width hint
@@ -1945,12 +1989,22 @@ with tabs[0]:
         st.caption("App mode: using default scope")
     else:
         scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
-    nt_text = load_bible_text()
-    ot_text = load_bible_text_ot()
-    merged = {}
-    merged.update(nt_text)
-    merged.update(ot_text)
-    bible_text = merged
+    # Load only the required text for the selected scope to minimize startup cost
+    if scope == "New Testament":
+        nt_text = load_bible_text()
+        ot_text = {}
+        bible_text = nt_text
+    elif scope == "Old Testament":
+        ot_text = load_bible_text_ot()
+        nt_text = {}
+        bible_text = ot_text
+    else:
+        nt_text = load_bible_text()
+        ot_text = load_bible_text_ot()
+        merged = {}
+        merged.update(nt_text)
+        merged.update(ot_text)
+        bible_text = merged
 
     if grammatical_index is None: st.stop()
 
