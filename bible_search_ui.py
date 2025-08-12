@@ -224,6 +224,11 @@ NT_REFERENCE_FILE = os.path.join(APP_ROOT, 'nt_reference.json')
 FORM_OCCURRENCE_FILE = os.path.join(APP_ROOT, 'form_occurrence_index.json')
 FORM_TO_ROOT_FILE = os.path.join(APP_ROOT, 'form_to_root_map.json')
 CACHE_META_FILE = os.path.join(APP_ROOT, '.cache_meta.json')
+
+# Feature flags / UI toggles
+# Keep the main results area clean by default; dictionary balloon remains available
+# via dedicated grammatical/frequency views.
+SHOW_INLINE_DICT_LOOKUP = False
 GOOGLE_DRIVE_URL_PREFIX = "https://drive.google.com/uc?export=download&id="
 # Prefer a direct-download host for server-side fetching to avoid Google Drive
 # interstitials; fall back to the regular URL for user-visible links
@@ -234,8 +239,8 @@ SHOW_SIDEBAR = False
 INFLECT_SERVICE_URL = os.environ.get('INFLECT_SERVICE_URL', '')  # e.g., http://localhost:5050
 
 # --- Audio auto-load configuration ---
-AUTO_LOAD_AUDIO = True
-AUTO_LOAD_AUDIO_MAX = int(os.environ.get('AUTO_LOAD_AUDIO_MAX', '6'))
+AUTO_LOAD_AUDIO = False
+AUTO_LOAD_AUDIO_MAX = int(os.environ.get('AUTO_LOAD_AUDIO_MAX', '3'))
 
 # --- (ACTION REQUIRED) Audio File Mapping ---
 # You need to fill this dictionary with your Google Drive file IDs.
@@ -2203,13 +2208,8 @@ tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    # Vertical radio improves usability on small screens
-    # Hide scope selector in standalone PWA to minimize chrome
-    if QP_APP == '1':
-        scope = SCOPE_LABELS[DEFAULT_SCOPE_INDEX]
-        st.caption("App mode: using default scope")
-    else:
-        scope = st.radio("Scope", options=SCOPE_LABELS, horizontal=False, index=DEFAULT_SCOPE_INDEX)
+    # Scope will be selected in the sticky header form below; default now
+    scope = SCOPE_LABELS[DEFAULT_SCOPE_INDEX]
     # Load only the required text for the selected scope to minimize startup cost
     if scope == "New Testament":
         nt_text = load_bible_text()
@@ -2302,19 +2302,22 @@ with tabs[0]:
     except Exception:
         pass
     st.markdown("<div class='search-header'>", unsafe_allow_html=True)
-    # Debounced search: wrap in a form so typing does not trigger a rerun
+    # Debounced search + single source of truth for scope selection
     with st.form(key="search_form", clear_on_submit=False, border=False):
         search_input_val = st.text_input(
             "Enter a Pashto word, phrase, or verse reference:",
             st.session_state.get('main_search',''),
             key="main_search_input",
         )
+        _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
         submitted = st.form_submit_button("Search")
     # Commit the search only on submit (prevents work on every keystroke)
     if submitted:
         st.session_state['main_search'] = search_input_val
+        st.session_state['scope_value'] = _scope
     # Stabilize search value for this run
     search_query = st.session_state.get('main_search','')
+    scope = st.session_state.get('scope_value', st.session_state.get('scope_select', SCOPE_LABELS[DEFAULT_SCOPE_INDEX]))
     st.markdown("</div>", unsafe_allow_html=True)
     # Spacer to offset fixed header
     st.markdown("<div class='header-spacer'></div>", unsafe_allow_html=True)
