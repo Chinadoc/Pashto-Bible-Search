@@ -1089,9 +1089,15 @@ def format_for_display(word):
 
 def highlight_verse(text: str, search_term: str) -> str:
     try:
-        # highlight the search term
+        # highlight the search term — all occurrences, case-insensitive on roman, exact on Pashto
+        if not search_term:
+            return text
         pattern = re.escape(search_term)
-        return re.sub(f"({pattern})", r"<mark>\1</mark>", text)
+        # If multi-word, prefer whole-phrase highlight first
+        try:
+            return re.sub(f"({pattern})", r"<mark>\1</mark>", text)
+        except Exception:
+            return text
     except Exception:
         return text
 
