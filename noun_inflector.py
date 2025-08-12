@@ -81,19 +81,23 @@ def _pattern_1_basic(lemma: str) -> Dict[str, tuple]:
         base_m = lemma
         base_f = lemma + 'ه'
 
-    return {
+    forms = {
         # Masculine
         'plain_m': (base_m, ''),
         'inflection_1_m': (base_m, ''),
         'inflection_2_m': (base_m + 'و', ''),
-        'vocative_m': (base_m, ''),
+        'vocative_m': (base_m + 'ه', ''),
         # Feminine
         'plain_f': (base_f, ''),
         'inflection_1_f': (base_m + 'ې', ''),
         'inflection_2_f': (base_m + 'و', ''),
-        'vocative_f': (base_f, ''),
+        'vocative_f': (base_f[:-1] + 'ې', ''),
         'vocative_pl_f': (base_m + 'و', ''),
     }
+    # Bundled plural and mayo for Pattern #1 masculine
+    forms['bundled_plural_m'] = (base_m + 'ه', '')  # e.g., کال → کاله (with quantifier)
+    forms['mayo_m'] = (base_m + 'ه', '')            # e.g., له کوره، تر کوره، بې له زحمته
+    return forms
 
 
 def _pattern_4_pashtoon(stem: str) -> Dict[str, tuple]:
@@ -117,6 +121,8 @@ def _pattern_2_unstressed_y(lemma: str) -> Dict[str, tuple]:
         'inflection_1_m': (stem + 'ي', ''),
         'inflection_1_f': (stem + 'ې', ''),
         'inflection_2': (stem + 'یو', ''),
+        'vocative_m': (stem + 'یه', ''),   # ملګریه
+        'vocative_f': (stem + 'ې', ''),    # unchanged
     }
 
 
@@ -128,6 +134,8 @@ def _pattern_3_stressed_ay(lemma: str) -> Dict[str, tuple]:
         'inflection_1_m': (stem + 'ي', ''),
         'inflection_1_f': (stem + 'ۍ', ''),
         'inflection_2': (stem + 'یو', ''),
+        'vocative_m': (stem + 'یه', ''),   # بریالیه / زلمیه
+        'vocative_f': (stem + 'ۍ', ''),    # unchanged
     }
 
 
@@ -138,6 +146,8 @@ def _pattern_5_short_squish(stem: str) -> Dict[str, tuple]:
         'inflection_1_m': (stem + 'ه', ''),
         'inflection_1_f': (stem + 'ې', ''),
         'inflection_2': (stem + 'و', ''),
+        'vocative_m': (stem + 'ه', ''),
+        'vocative_f': (stem + 'ې', ''),
     }
 
 
@@ -177,6 +187,7 @@ def inflect_noun(lemma: str, pattern: Optional[str] = None) -> Dict[str, Any]:
             'pattern_info': entry.get('pattern_info', ''),
         },
         'forms': forms,
+        'plural_candidates': generate_plurals(lemma, pat, entry.get('gender', ''), entry.get('animate', False)),
     }
 
 
@@ -249,3 +260,89 @@ def classify_inflection_type(lemma: str, pattern: Optional[str] = None) -> int:
     if lemma.endswith('ون'):
         return 4
     return 1
+
+
+# --- Plurals and demonstratives/mayo helpers ---
+
+def _ends_with_long_vowel(word: str) -> bool:
+    return any(word.endswith(ch) for ch in ['ا', 'و'])
+
+
+def generate_plurals(lemma: str, pattern: str, gender: str, animate: bool) -> Dict[str, Any]:
+    """Return a dict with plausible plural forms for the lemma.
+
+    Heuristic coverage from tutorials:
+    - Masculine Pattern #1: inanimate → ونه; animate → ان
+      - ends with long vowel: use ګان; ends with ي/ی (ee) → یان
+      - Pattern #3 (stressed áy) → یان
+    - Feminine Pattern #1 animate → انې
+      - feminine long vowel (ا/و/و) → وې or ګانې
+      - feminine ending in ي/ۍ → یانې (optionally)
+    Also returns second-inflection (plural-in-sandwich/ergative) as +و.
+    """
+    out: Dict[str, Any] = {'primary': [], 'alternates': [], 'second_inflection_suffix': 'و'}
+    lemma = lemma.strip()
+    if not lemma:
+        return out
+    # Normalize basic flags
+    pat = pattern or 'basic'
+    g = (gender or '').lower()
+    is_masc = (g.startswith('m') or not g)
+    is_fem = g.startswith('f')
+
+    # Pattern 1 masculine consonant/-u
+    if pat in ('masc_basic_consonant', 'basic') and is_masc:
+        if _ends_with_long_vowel(lemma):
+            out['primary'].append(lemma + 'ګان')
+        elif lemma.endswith('ي') or lemma.endswith('ی'):
+            out['primary'].append(lemma[:-1] + 'یان')
+        else:
+            out['primary'].append(lemma + ('ان' if animate else 'ونه'))
+    # Pattern 3 stressed áy → یان
+    if pat == 'stressed_ay' and is_masc:
+        base = lemma[:-1] if (lemma.endswith('ی') or lemma.endswith('ي')) else lemma
+        out['primary'].append(base + 'یان')
+
+    # Feminine patterns
+    if is_fem or (pat in ('basic',) and lemma.endswith('ه')):
+        # Pattern 1 feminine animate default
+        out['primary'].append(lemma[:-1] + 'انې') if lemma.endswith('ه') else None
+        # Feminine long vowel plurals
+        if _ends_with_long_vowel(lemma):
+            out['alternates'].append(lemma + 'وې')
+            out['alternates'].append(lemma + 'ګانې')
+        # Feminine ending in ي/ۍ → یانې (optional)
+        if lemma.endswith('ۍ'):
+            out['alternates'].append(lemma[:-1] + 'یانې')
+        if lemma.endswith('ي') or lemma.endswith('ی'):
+            out['alternates'].append((lemma[:-1] if lemma.endswith('ي') or lemma.endswith('ی') else lemma) + 'یانې')
+
+    # Add second-inflection forms for primaries/alternates
+    seconders = [p + 'و' for p in out['primary'] + out['alternates']]
+    out['second_inflection'] = list(dict.fromkeys(seconders))
+    # Deduplicate
+    out['primary'] = list(dict.fromkeys(out['primary']))
+    out['alternates'] = [p for p in out['alternates'] if p not in out['primary']]
+    return out
+
+
+def inflect_demonstrative(token: str, number: str = 'sg', case: str = 'plain', gender: str = '') -> str:
+    """Return proper demonstrative inflection.
+    token: 'دا' | 'دغه' | 'هغه'
+    number: 'sg' | 'pl'
+    case: 'plain' | 'sandwich' | 'ergative' (past transitive subject)
+    gender not used for 'دا'; for others affects only singular feminine in sandwich/ergative.
+    """
+    token = (token or '').strip()
+    if token == 'دا':
+        return 'دې' if case in ('sandwich', 'ergative') else 'دا'
+    if token == 'دغه':
+        if case in ('sandwich', 'ergative'):
+            return 'دغو' if number == 'pl' else ('دغې' if gender.startswith('f') else 'دغه')
+        return 'دغه'
+    if token == 'هغه':
+        if case in ('sandwich', 'ergative'):
+            return 'هغو' if number == 'pl' else ('هغې' if gender.startswith('f') else 'هغه')
+        return 'هغه'
+    return token
+

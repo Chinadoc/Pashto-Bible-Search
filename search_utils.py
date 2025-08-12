@@ -1,14 +1,60 @@
-"""Utility functions for searching Pashto Bible text and grammar index."""
+"""Utility functions for searching Pashto Bible text and grammar index.
+
+Centralizes Pashto-aware normalization and tokenization so all components
+use the same logic (Streamlit app, fuzzy search, static builders).
+"""
 from collections import defaultdict
+import re
+import unicodedata
 from typing import Dict, List, Any
 
 
-def normalize_pashto_char(text: str) -> str:
-    """Normalize variant Pashto characters to a canonical form."""
-    replacements = {'ي': 'ی', 'ى': 'ی', 'ئ': 'ی'}
+def remove_diacritics_ps(text: str) -> str:
+    """Remove common Arabic diacritics."""
+    diacritics = [
+        '\u064B', '\u064C', '\u064D', '\u064E', '\u064F', '\u0650', '\u0651', '\u0652',
+        '\u0653', '\u0654', '\u0655', '\u0670',
+    ]
+    out = text
+    for d in diacritics:
+        out = out.replace(d, '')
+    return out
+
+
+def normalize_basic_ps(text: str) -> str:
+    """Basic Pashto normalization: common character and keyboard variants."""
+    # Merge characters to canonical forms
+    replacements = {
+        # Pashto letter variants
+        'ټ': 'ت', 'ډ': 'د', 'ړ': 'ر', 'ږ': 'ز', 'ښ': 'ش', 'څ': 'چ', 'ځ': 'ج', 'ڼ': 'ن',
+        'ۍ': 'ی', 'ئ': 'ی', 'ؤ': 'و', 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ة': 'ه', 'ى': 'ی',
+        # Keyboard differences
+        'ك': 'ک', 'ي': 'ی', 'ە': 'ه',
+        # Legacy normalizations used elsewhere in the repo
+        'ي': 'ی', 'ى': 'ی',
+    }
+    out = text
     for old, new in replacements.items():
-        text = text.replace(old, new)
-    return text
+        out = out.replace(old, new)
+    return unicodedata.normalize('NFC', out)
+
+
+def normalize_aggressive_ps(text: str) -> str:
+    """Aggressive normalization: basic + diacritic removal + whitespace squash."""
+    out = normalize_basic_ps(text)
+    out = remove_diacritics_ps(out)
+    out = re.sub(r"\s+", " ", out).strip()
+    return out
+
+
+def tokenize_ps(text: str) -> List[str]:
+    """Tokenize Arabic/Pashto words (returns a list of tokens)."""
+    return re.findall(r"[\u0600-\u06FF]+", text or "")
+
+
+def normalize_pashto_char(text: str) -> str:
+    """Backwards-compatible alias used across the codebase."""
+    return normalize_basic_ps(text)
 
 
 def create_form_to_root_map(grammatical_index: Dict[str, Any]) -> Dict[str, List[str]]:

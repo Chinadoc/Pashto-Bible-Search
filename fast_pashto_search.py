@@ -24,7 +24,6 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Set, Tuple
-from bible_text_loader import load_bible_map
 import requests
 
 
@@ -158,7 +157,11 @@ class PashtoBibleIndexBuilder:
         if self.bible_json_path and os.path.exists(self.bible_json_path):
             with open(self.bible_json_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        return load_bible_map(self.nt_dir, self.ot_dir)
+        # Merge NT and OT text maps
+        bible = {}
+        bible.update(self._load_text_from_dir(self.nt_dir))
+        bible.update(self._load_text_from_dir(self.ot_dir))
+        return bible
 
     # ---------- Normalization and tokenization ----------
     def _normalize_text(self, text: str) -> str:

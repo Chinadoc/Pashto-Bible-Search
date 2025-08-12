@@ -1051,6 +1051,21 @@ def get_fast_engine_cached():
     try:
         if FastPashtoSearch is None:
             return None
+        # Allow remote override via env or query param
+        remote_url = os.environ.get('FAST_INDEX_REMOTE_URL', '').strip()
+        # query param override: ?remote=URL
+        qp = _get_query_params()
+        qp_remote = ''
+        try:
+            qp_remote = (qp.get('remote') or [''])[0]
+        except Exception:
+            qp_remote = ''
+        remote_url = qp_remote or remote_url
+        if remote_url:
+            try:
+                return FastPashtoSearch.load_remote(remote_url)
+            except Exception:
+                pass
         return FastPashtoSearch('./cache')
     except Exception:
         return None
@@ -1200,6 +1215,72 @@ def render_inline_dict_highlight(verse_ref: str, verse_text: str, term: str) -> 
         return verse_text
 
 
+def _inject_scroll_spy_assets():
+    """Inject CSS/JS once to enable scroll-spy highlighting of book chips.
+
+    The script observes elements with class 'verse-observe' and 'data-book'
+    and toggles the 'active' class on the corresponding right-rail chip button
+    (matched by its label prefix which starts with the book name).
+    """
+    try:
+        if st.session_state.get('_scroll_spy_assets_injected'):
+            return
+        st.session_state['_scroll_spy_assets_injected'] = True
+        st.markdown(
+            """
+            <style>
+                /* active style for book chip buttons */
+                .stButton > button.active { background:#4A90E2 !important; color:#fff !important; font-weight:600; }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        # Minimal JS: observe verse blocks and update chip highlight
+        st.components.v1.html(
+            """
+            <script>
+            (function(){
+              const removeActive = () => {
+                document.querySelectorAll('.stButton > button.active').forEach(btn => btn.classList.remove('active'));
+              };
+              const highlightBook = (book) => {
+                if (!book) return;
+                // Find a button whose label starts with the book name
+                const buttons = Array.from(document.querySelectorAll('.stButton > button'));
+                // Prefer exact "Book - n" prefix match, else exact book label
+                const match = buttons.find(b => (b.innerText || '').trim().startsWith(book + ' '))
+                           || buttons.find(b => (b.innerText || '').trim() === book);
+                if (match) {
+                  removeActive();
+                  match.classList.add('active');
+                }
+              };
+              const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    const book = entry.target.getAttribute('data-book');
+                    highlightBook(book);
+                  }
+                });
+              }, { threshold: 0.5 });
+              const hook = () => {
+                document.querySelectorAll('.verse-observe').forEach(el => io.observe(el));
+              };
+              // initial and on reruns (Streamlit swaps DOM on rerun)
+              const ready = () => setTimeout(hook, 50);
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', ready);
+              } else {
+                ready();
+              }
+            })();
+            </script>
+            """,
+            height=0,
+        )
+    except Exception:
+        pass
+
 def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global", host=None):
     try:
         col = host if host is not None else st
@@ -1293,9 +1374,22 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
         st.warning(f"Verse text for '{verse_ref}' not found.")
         return
 
+    # Inject a small, invisible marker block used by the scroll spy to highlight chips
+    try:
+        book = _extract_book_from_ref(verse_ref)
+        st.markdown(f"<div class='verse-observe' data-book='{book}' style='height:1px;'></div>", unsafe_allow_html=True)
+    except Exception:
+        pass
+
     # Verse line with clickable/dblclickable dictionary balloon on highlighted search term
     verse_html = highlight_verse(full_verse, search_term)
     st.markdown(f"**{verse_ref}**: {verse_html}", unsafe_allow_html=True)
+    # When we have fuzzy results, optionally show where the match occurred
+    try:
+        # naive highlight already adds <mark>; nothing else needed here
+        pass
+    except Exception:
+        pass
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
@@ -1530,22 +1624,67 @@ def handle_verse_search(query, bible_text):
 def handle_phrase_search(query, nt_text, ot_text, scope):
     st.session_state['audio_loaded_count'] = 0
     st.header(f"Exact Phrase Search Results for: \"{query}\"")
+    _inject_scroll_spy_assets()
+    # Expand common Pashto prefix variants, e.g., بې + word often attaches
+    def _expand_be_variants(q: str) -> list[str]:
+        try:
+            q = q.strip()
+            out = {q}
+            # if starts with 'بې ' or 'بې\u00A0' join with next token
+            if q.startswith('بې '):
+                out.add('بې' + q[3:])
+            if q.startswith('بې\u00A0'):
+                out.add('بې' + q[3:])
+            # zero-width joiner forms
+            if q.startswith('بې\u200c'):
+                out.add('بې' + q[3:])
+            # also consider hyphen
+            if q.startswith('بې-'):
+                out.add('بې' + q[2:])
+            return list(out)
+        except Exception:
+            return [q]
     normalized_query = normalize_pashto_char(query)
+    be_variants = list({normalize_pashto_char(v) for v in _expand_be_variants(query)})
     text_map = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
     # Prefer fast engine (prebuilt indices) when available; fall back to scan
     found_verses = []
     fast_engine = get_fast_engine_cached()
     if fast_engine:
         try:
-            fres = fast_engine.search_phrase(normalized_query, max_results=500)
-            found_verses = [r['reference'] for r in fres if r.get('reference') in text_map]
+            agg = []
+            for v in be_variants:
+                fres = fast_engine.search_phrase(v, max_results=500)
+                agg.extend([r['reference'] for r in fres])
+            found_verses = [r for r in set(agg) if r in text_map]
         except Exception:
             found_verses = []
     if not found_verses:
-        found_verses = [ref for ref, text in text_map.items() if normalized_query in text]
+        # fallback scan across variants
+        hits = set()
+        for v in be_variants:
+            hits.update([ref for ref, text in text_map.items() if normalize_pashto_char(v) in text])
+        found_verses = [r for r in hits]
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
+        # Ask to switch scope if other scope might have hits
+        try:
+            other_scope = 'Old Testament' if scope == 'New Testament' else 'New Testament' if scope == 'Old Testament' else None
+            if other_scope:
+                # quick probe using fast engine against full dataset, then filter by other scope map
+                fast_engine = get_fast_engine_cached()
+                maybe_has_hits = False
+                if fast_engine:
+                    fres = fast_engine.search(normalized_query, mode='smart', max_results=5)
+                    other_map = ot_text if other_scope == 'Old Testament' else nt_text
+                    maybe_has_hits = any(r.get('reference') in other_map for r in fres)
+                if maybe_has_hits and st.button(f"Switch scope to {other_scope} and search"):
+                    st.session_state['force_scope'] = other_scope
+                    st.session_state['main_search'] = query
+                    st.rerun()
+        except Exception:
+            pass
         # Auto-run fuzzy only when exact hits are zero (multi-word queries)
         toks = [t for t in query.split() if t]
         if len(toks) >= 2:
@@ -1555,15 +1694,21 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             fast_engine = get_fast_engine_cached()
             if fast_engine:
                 try:
-                    fast_res = fast_engine.search(normalized_query, mode='smart', max_results=20)
-                    frefs = [r['reference'] for r in fast_res if r.get('reference') in bible_text]
+                    agg = []
+                    for v in be_variants:
+                        fast_res = fast_engine.search(v, mode='smart', max_results=20)
+                        agg.extend([r['reference'] for r in fast_res])
+                    frefs = [r for r in set(agg) if r in bible_text]
                 except Exception:
                     frefs = []
             # Fallback to fuzzy engine
             if not frefs:
                 engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
-                res = engine.search(normalized_query, max_results=20, min_score=0.35)
-                frefs = [r.reference for r in res if r.reference in bible_text]
+                agg2 = []
+                for v in be_variants:
+                    res = engine.search(normalize_pashto_char(v), max_results=20, min_score=0.35)
+                    agg2.extend([r.reference for r in res])
+                frefs = [r for r in set(agg2) if r in bible_text]
             if frefs:
                 rail_cols = st.columns([3,1])
                 st.subheader(f"Fuzzy matches — {len(frefs)} hits")
@@ -1653,6 +1798,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
 def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_text, ot_text, scope):
     # reset audio counter per search render
     st.session_state['audio_loaded_count'] = 0
+    _inject_scroll_spy_assets()
     # Preserve the exact form the user searched for and show its occurrences first
     normalized_form = normalize_pashto_char(query)
     # Prefer precomputed cache or external service; fall back to local lexicon
@@ -2158,17 +2304,12 @@ with tabs[0]:
     st.markdown("<div class='search-header'>", unsafe_allow_html=True)
     # Debounced search: wrap in a form so typing does not trigger a rerun
     with st.form(key="search_form", clear_on_submit=False, border=False):
-        cols_search = st.columns([3,1])
-        with cols_search[0]:
-            search_input_val = st.text_input(
-                "Enter a Pashto word, phrase, or verse reference:",
-                st.session_state.get('main_search',''),
-                key="main_search_input",
-            )
-        with cols_search[1]:
-            _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
+        search_input_val = st.text_input(
+            "Enter a Pashto word, phrase, or verse reference:",
+            st.session_state.get('main_search',''),
+            key="main_search_input",
+        )
         submitted = st.form_submit_button("Search")
-    scope = _scope
     # Commit the search only on submit (prevents work on every keystroke)
     if submitted:
         st.session_state['main_search'] = search_input_val
