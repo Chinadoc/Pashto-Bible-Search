@@ -251,8 +251,7 @@ with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
     AUDIO_FILE_MAP = json.load(af)
 
 st.set_page_config(layout="wide")
-# Global right-rail column for permanent book toggles
-RIGHT_RAIL = None
+# [deprecated] Right rail was removed in favor of animated inline panel
 
 # --- Mobile-friendly CSS tweaks (non-invasive, responsive) ---
 st.markdown(
@@ -526,11 +525,37 @@ DICT_NORM_MAP = _build_dict_norm_map()
 @st.cache_data
 def _load_fast_dict_index():
     try:
+        # Prefer remote lexicon when provided
+        remote_url = os.environ.get('FAST_LEXICON_URL', '').strip()
+        try:
+            qp = _get_query_params()
+            if qp and 'lexicon' in qp:
+                # accept either a single string or list
+                val = qp.get('lexicon')
+                if isinstance(val, list) and val:
+                    remote_url = val[0]
+                elif isinstance(val, str):
+                    remote_url = val
+        except Exception:
+            pass
+
+        if remote_url:
+            try:
+                r = requests.get(remote_url, timeout=20)
+                r.raise_for_status()
+                data = r.json()
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                # fall back to local file if remote fails
+                pass
+
+        # Local fallback
         path = os.path.join(APP_ROOT, 'dictionary_fast_index.json')
-        if not os.path.exists(path):
-            return {}
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return {}
     except Exception:
         return {}
 
@@ -1234,8 +1259,9 @@ def _inject_scroll_spy_assets():
         st.markdown(
             """
             <style>
-                /* active style for book chip buttons */
+                /* active style for book chip buttons and inline chips */
                 .stButton > button.active { background:#4A90E2 !important; color:#fff !important; font-weight:600; }
+                .chip.active { background:#4A90E2 !important; color:#fff !important; font-weight:600; }
             </style>
             """,
             unsafe_allow_html=True,
@@ -1247,18 +1273,20 @@ def _inject_scroll_spy_assets():
             (function(){
               const removeActive = () => {
                 document.querySelectorAll('.stButton > button.active').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.chip.active').forEach(ch => ch.classList.remove('active'));
               };
               const highlightBook = (book) => {
                 if (!book) return;
-                // Find a button whose label starts with the book name
                 const buttons = Array.from(document.querySelectorAll('.stButton > button'));
+                const chips = Array.from(document.querySelectorAll('.chip'));
                 // Prefer exact "Book - n" prefix match, else exact book label
-                const match = buttons.find(b => (b.innerText || '').trim().startsWith(book + ' '))
-                           || buttons.find(b => (b.innerText || '').trim() === book);
-                if (match) {
-                  removeActive();
-                  match.classList.add('active');
-                }
+                const matchBtn = buttons.find(b => (b.innerText || '').trim().startsWith(book + ' '))
+                                || buttons.find(b => (b.innerText || '').trim() === book);
+                const matchChip = chips.find(c => (c.innerText || '').trim().startsWith(book + ' '))
+                                 || chips.find(c => (c.innerText || '').trim() === book);
+                removeActive();
+                if (matchBtn) matchBtn.classList.add('active');
+                if (matchChip) matchChip.classList.add('active');
               };
               const io = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
@@ -1283,6 +1311,133 @@ def _inject_scroll_spy_assets():
             """,
             height=0,
         )
+    except Exception:
+        pass
+
+def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Coverage"):
+    """Render an animated, floating book coverage panel that allows text to wrap.
+
+    - refs: list of verse references like "Acts 1:2"
+    - text_map: dict of current-scope verses (used to compute which books are present in scope)
+    """
+    try:
+        if not refs or not text_map:
+            return
+        # Inject CSS once
+        if not st.session_state.get('_animated_panel_css_injected'):
+            st.session_state['_animated_panel_css_injected'] = True
+            st.markdown(
+                """
+                <style>
+                    /* Keyframes define the animation steps */
+                    @keyframes expandAndFloat {
+                        0% { width: 2px; transform: translateX(0%); opacity: 0.5; }
+                        40% { width: 220px; transform: translateX(0%); opacity: 1; }
+                        100% { width: 220px; transform: translateX(0%); }
+                    }
+                    .animated-panel-container {
+                        float: right;
+                        animation: expandAndFloat 1.2s ease-out forwards;
+                        margin-left: 25px;
+                        margin-bottom: 15px;
+                        padding: 15px;
+                        background-color: #262730;
+                        border-radius: 8px;
+                        border: 1px solid #444;
+                        overflow: hidden;
+                    }
+                    @media (max-width: 768px) {
+                        .animated-panel-container {
+                            float: none;
+                            width: 100%;
+                            animation: none;
+                            margin-left: 0;
+                        }
+                    }
+                    .animated-panel-container h4 { margin-top: 0; margin-bottom: 10px; }
+                    .chip { display: inline-block; padding: 4px 8px; margin: 2px; background-color: #333; border-radius: 999px; font-size: 14px; text-decoration:none; color: inherit; cursor: pointer; }
+                    .chip.disabled { opacity: 0.45; filter: grayscale(0.2); pointer-events: none; }
+                    /* active style also injected by scroll-spy, but provide fallback */
+                    .chip.active { background:#4A90E2; color:#fff; font-weight:600; }
+                    .chip.selected { background:#4A90E2; color:#fff; font-weight:600; box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset; }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+        # Inject click handler JS once to toggle the 'b' query param on chip clicks
+        if not st.session_state.get('_animated_panel_click_js'):
+            st.session_state['_animated_panel_click_js'] = True
+            st.components.v1.html(
+                """
+                <script>
+                (function(){
+                  const bindChipClicks = () => {
+                    try {
+                      const chips = Array.from(document.querySelectorAll('.animated-panel-container .chip'));
+                      chips.forEach(ch => {
+                        if (ch.dataset._clickBound) return;
+                        ch.dataset._clickBound = '1';
+                        ch.addEventListener('click', (e) => {
+                          if (ch.classList.contains('disabled')) return;
+                          e.preventDefault();
+                          const book = ch.getAttribute('data-book');
+                          const url = new URL(window.location.href);
+                          const current = url.searchParams.get('b') || url.searchParams.get('book') || '';
+                          if (current && current === book) {
+                            url.searchParams.delete('b');
+                            url.searchParams.delete('book');
+                          } else {
+                            url.searchParams.set('b', book);
+                            url.searchParams.delete('book');
+                          }
+                          const qs = url.searchParams.toString();
+                          window.location.href = url.pathname + (qs ? ('?' + qs) : '') + url.hash;
+                        });
+                      });
+                    } catch (e) {}
+                  };
+                  // bind now and after small delay to account for Streamlit reruns
+                  setTimeout(bindChipClicks, 50);
+                })();
+                </script>
+                """,
+                height=0,
+            )
+
+        # Compute counts per book from refs and scope book order
+        counts: dict[str, int] = {}
+        for v in refs:
+            m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', v)
+            if not m:
+                continue
+            book = m.group(1).strip()
+            counts[book] = counts.get(book, 0) + 1
+        books_found_in_scope = {
+            re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
+            for r in text_map.keys()
+            if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)
+        }
+        books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found_in_scope]
+        if not books_in_scope:
+            return
+
+        # Determine current filter from query params (global)
+        current_filter = (globals().get('QP_B') or '').strip()
+        chips_html = "".join([
+            (
+                f"<a href='#' class='chip{' selected' if (current_filter and current_filter==book) else ''}{' disabled' if counts.get(book,0)==0 else ''}' data-book='{book}'>"
+                + (f"{book} - {counts.get(book, 0)}" if counts.get(book,0) else book)
+                + "</a>"
+            )
+            for book in books_in_scope
+        ])
+        panel_html = f"""
+        <div class="animated-panel-container">
+            <h4>{title}</h4>
+            {chips_html}
+        </div>
+        """
+        st.markdown(panel_html, unsafe_allow_html=True)
     except Exception:
         pass
 
@@ -1715,23 +1870,24 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                     agg2.extend([r.reference for r in res])
                 frefs = [r for r in set(agg2) if r in bible_text]
             if frefs:
-                rail_cols = st.columns([3,1])
                 st.subheader(f"Fuzzy matches — {len(frefs)} hits")
                 _coverage_add(frefs)
-                render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_query}", host=rail_cols[1])
-                sel_book = st.session_state.get(f"book_filter_fz:{normalized_query}", '') or QP_B
-                filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+                render_animated_book_panel(frefs, bible_text, title="Book Coverage")
+                # Apply optional book filter
+                filtered = frefs
+                if book_filter:
+                    filtered = [v for v in frefs if _extract_book_from_ref(v) == book_filter]
                 for verse_ref in filtered:
                     display_verse_with_audio(verse_ref, normalized_query, bible_text)
+                st.markdown('<div style="clear: both;"></div>', unsafe_allow_html=True)
             else:
                 st.info("No fuzzy results.")
     else:
         _coverage_add(found_verses)
-        # Permanent right rail: render into a fixed 1/3 column next to results
-        rail_cols = st.columns([3,1])
-        render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=rail_cols[1])
-        sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
-        filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+        render_animated_book_panel(found_verses, text_map, title="Book Coverage")
+        filtered = found_verses
+        if book_filter:
+            filtered = [v for v in found_verses if _extract_book_from_ref(v) == book_filter]
         # Prioritize like single-word results and default to 5
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -1750,6 +1906,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             with st.expander("Show all matches"):
                 for verse_ref in sorted(filtered, key=rank):
                     display_verse_with_audio(verse_ref, normalized_query, text_map)
+        st.markdown('<div style="clear: both;"></div>', unsafe_allow_html=True)
 
     # Compound analysis for 2+ tokens
     toks = [t for t in query.split() if t]
@@ -1793,8 +1950,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                         all_refs.extend(verses_scoped)
                 if all_refs:
                     _coverage_add(all_refs)
-                    rail_cols = st.columns([3,1])
-                    render_book_hit_map(sorted(set(all_refs)), text_map, scope, host=rail_cols[1])
+                    render_animated_book_panel(sorted(set(all_refs)), text_map, title="Book Coverage")
                 render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
                 render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
                 render_past_expanders("Past (continuous, compound)", cont_past, forms_index, text_map)
@@ -1888,11 +2044,11 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
-        rail_cols = st.columns([3,1])
-        render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form, host=rail_cols[1])
-        # Filter by selected book, if any
-        sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
-        filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+        render_animated_book_panel(verses_to_show, selected_text, title="Book Coverage")
+        filtered = verses_to_show
+        if (globals().get('QP_B') or '').strip():
+            bf = (globals().get('QP_B') or '').strip()
+            filtered = [v for v in verses_to_show if _extract_book_from_ref(v) == bf]
         # Prioritization order
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -1912,6 +2068,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 # Lazy-render the remainder to reduce initial load time
                 for verse_ref in sorted(filtered, key=rank)[5:]:
                     display_verse_with_audio(verse_ref, normalized_form, selected_text)
+        st.markdown('<div style="clear: both;"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
     # Auto-run fuzzy suggestions when there were zero exact occurrences
@@ -1930,14 +2087,16 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             fres = engine.search(normalized_form, max_results=20, min_score=0.35)
             frefs = [r.reference for r in fres if r.reference in bible_text]
         if frefs:
-            rail_cols = st.columns([3,1])
             st.subheader(f"Fuzzy matches — {len(frefs)} hits")
             _coverage_add(frefs)
-            render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_form}", host=rail_cols[1])
-            sel_book = st.session_state.get(f"book_filter_fz:{normalized_form}", '') or QP_B
-            filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
-            for verse_ref in filtered:
+            render_animated_book_panel(frefs, bible_text, title="Book Coverage")
+            filtered_f = frefs
+            if (globals().get('QP_B') or '').strip():
+                bf = (globals().get('QP_B') or '').strip()
+                filtered_f = [v for v in frefs if _extract_book_from_ref(v) == bf]
+            for verse_ref in filtered_f:
                 display_verse_with_audio(verse_ref, normalized_form, bible_text)
+            st.markdown('<div style="clear: both;"></div>', unsafe_allow_html=True)
         else:
             st.info("No fuzzy results.")
 
@@ -2208,8 +2367,11 @@ tabs = st.tabs(["Search", "Lexicon"])
 
 with tabs[0]:
     grammatical_index = load_data()
-    # Scope will be selected in the sticky header form below; default now
-    scope = SCOPE_LABELS[DEFAULT_SCOPE_INDEX]
+    # Resolve scope early using session override or default
+    if st.session_state.get('force_scope'):
+        st.session_state['scope_value'] = st.session_state.get('force_scope')
+        del st.session_state['force_scope']
+    scope = st.session_state.get('scope_value', SCOPE_LABELS[DEFAULT_SCOPE_INDEX])
     # Load only the required text for the selected scope to minimize startup cost
     if scope == "New Testament":
         nt_text = load_bible_text()
@@ -2309,15 +2471,13 @@ with tabs[0]:
             st.session_state.get('main_search',''),
             key="main_search_input",
         )
-        _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
         submitted = st.form_submit_button("Search")
     # Commit the search only on submit (prevents work on every keystroke)
     if submitted:
         st.session_state['main_search'] = search_input_val
-        st.session_state['scope_value'] = _scope
     # Stabilize search value for this run
     search_query = st.session_state.get('main_search','')
-    scope = st.session_state.get('scope_value', st.session_state.get('scope_select', SCOPE_LABELS[DEFAULT_SCOPE_INDEX]))
+    scope = st.session_state.get('scope_value', SCOPE_LABELS[DEFAULT_SCOPE_INDEX])
     st.markdown("</div>", unsafe_allow_html=True)
     # Spacer to offset fixed header
     st.markdown("<div class='header-spacer'></div>", unsafe_allow_html=True)
@@ -2330,6 +2490,9 @@ with tabs[0]:
         st.markdown("---")
         raw_query = search_query.strip()
         normalized_query = normalize_pashto_char(raw_query)
+
+        # Apply optional book filter from query params
+        book_filter = (globals().get('QP_B') or '').strip()
 
         # Romanization support -------------------------------------------------
         def normalize_roman(s: str) -> str:
