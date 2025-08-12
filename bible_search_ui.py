@@ -1166,7 +1166,7 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found]
         if not books_in_scope:
             return
-        col.markdown("<style>\n.right-rail{position:sticky; top:72px; max-height:calc(100vh - 90px); overflow:auto;}\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n.chip-rail .stButton > button{background:#0ea5e9; color:#fff; padding:6px 12px; border-radius:999px; border:none; font-size:.85rem; margin:4px;}\n.chip-rail .stButton > button:hover{filter:brightness(1.08);}\n.chip-rail .stButton > button:disabled{background:#334155; color:#cbd5e1; opacity:.65;}\n</style>", unsafe_allow_html=True)
+        col.markdown("<style>\n/* sticky right rail */\n.right-rail{position:sticky; top:56px; max-height:calc(100vh - 64px); overflow:auto;}\n/* mobile-friendly: wrap chips and allow scroll */\n@media (max-width: 768px){ .right-rail{position:fixed; right:8px; top:56px; width:40%; max-height:60vh; z-index:1000;} }\n/* chip styling */\n.section-title{font-size:12px; color:#9fb2c0; margin-bottom:6px}\n.chip-rail .stButton > button{background:#0ea5e9; color:#fff; padding:6px 12px; border-radius:999px; border:none; font-size:.85rem; margin:4px;}\n.chip-rail .stButton > button:hover{filter:brightness(1.08);}\n.chip-rail .stButton > button:disabled{background:#334155; color:#cbd5e1; opacity:.65;}\n</style>", unsafe_allow_html=True)
         col.markdown("<div class='section-title'>Book coverage</div>", unsafe_allow_html=True)
         # Selected filter state
         sel_key = f"book_filter_{filter_key}"
@@ -1174,7 +1174,8 @@ def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_k
         # Render one compact row of toggle buttons (no navigation)
         rail = col.container()
         with rail:
-            rail_cols = st.columns(8)
+            # wide screens get 8 columns, mobile collapses to 3
+            rail_cols = st.columns(8) if not MOBILE_MODE else st.columns(3)
             for i, book in enumerate(books_in_scope):
                 c = rail_cols[i % len(rail_cols)]
                 hit = counts.get(book, 0)
@@ -1472,10 +1473,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
         rail_cols = st.columns([2,1])
-        with rail_cols[1]:
-            render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=st)
-        with rail_cols[0]:
-            pass
+        render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=rail_cols[1])
         sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritize like single-word results and default to 5
@@ -1537,10 +1535,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                 if all_refs:
                     _coverage_add(all_refs)
                     rail_cols = st.columns([2,1])
-                    with rail_cols[1]:
-                        render_book_hit_map(sorted(set(all_refs)), text_map, scope, host=st)
-                    with rail_cols[0]:
-                        pass
+                    render_book_hit_map(sorted(set(all_refs)), text_map, scope, host=rail_cols[1])
                 render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
                 render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
                 render_past_expanders("Past (continuous, compound)", cont_past, forms_index, text_map)
@@ -1633,10 +1628,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
         rail_cols = st.columns([2,1])
-        with rail_cols[1]:
-            render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form, host=st)
-        with rail_cols[0]:
-            pass
+        render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form, host=rail_cols[1])
         # Filter by selected book, if any
         sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
         filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
@@ -1975,7 +1967,7 @@ if SHOW_SIDEBAR:
 
 with tabs[0]:
     # Floating search bar at top (sticky)
-    st.markdown("<div style='position:sticky; top:0; z-index:1000; background:var(--background-color); padding:8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25);'>", unsafe_allow_html=True)
+    st.markdown("<div style='position:sticky; top:0; z-index:1200; background:var(--background-color); padding:8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25);'>", unsafe_allow_html=True)
     cols_search = st.columns([3,1])
     with cols_search[0]:
         search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
