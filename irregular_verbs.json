@@ -157,6 +157,19 @@
     }
   }
   ,
+  "اخستل": {
+    "stems": { "imperfective": "اخل", "perfective": "واخل" },
+    "roots": { "imperfective": "اخستل", "perfective": "واخستل" },
+    "past_participle": "اخستلی",
+    "romanization": {
+      "imperfective_stem": "akhl",
+      "perfective_stem": "wáakhl",
+      "imperfective_root": "akhistúl",
+      "perfective_root": "wáakhistul",
+      "past_participle": "akhistúlay"
+    }
+  }
+  ,
   "بوتلل": {
     "stems": { "imperfective": "بیای", "perfective": "بوځ" },
     "roots": { "imperfective": "بوتلل", "perfective": "بوتلل" },
