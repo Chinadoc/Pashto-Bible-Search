@@ -5,7 +5,6 @@ import os
 import requests
 from urllib.parse import quote_plus
 import pandas as pd
-from ui_backend.ui_service import build_book_coverage_view
 from functools import lru_cache
 from collections import defaultdict
 import hashlib
@@ -78,15 +77,8 @@ def _generate_orthographic_variants(form_ps: str) -> list:
 
 def _find_occurrences_in_text(form_ps: str, text_map: dict, whole_word: bool = True) -> dict:
     norm = normalize_pashto_char(form_ps)
-    # Prefer precomputed normalized maps if available in globals
-    global NT_NORM_MAP, OT_NORM_MAP
-    src = text_map
-    if src is NT_TEXT:
-        nm = NT_NORM_MAP
-    elif src is OT_TEXT:
-        nm = OT_NORM_MAP
-    else:
-        nm = {ref: normalize_pashto_char(txt) for ref, txt in text_map.items()}
+    # Build a local normalized map for the provided text corpus
+    nm = {ref: normalize_pashto_char(txt) for ref, txt in text_map.items()}
     # Check base and orthographic variants
     cand_forms = _generate_orthographic_variants(norm)
     verses = []
@@ -1003,12 +995,9 @@ def get_normalized_text_maps_cached() -> dict:
         'ot_norm': norm_map(ot_text),
     }
 
-# Initialize global text maps early to satisfy helper references
-NT_TEXT = load_bible_text()
-OT_TEXT = load_bible_text_ot()
-_maps = get_normalized_text_maps_cached()
-NT_NORM_MAP = _maps['nt_norm']
-OT_NORM_MAP = _maps['ot_norm']
+# Note: We no longer eagerly initialize global NT/OT text maps at import time
+# to keep startup fast. Use load_bible_text()/load_bible_text_ot() in the
+# request path when needed.
 
 @st.cache_resource
 def get_token_maps_cached() -> dict:
@@ -1490,15 +1479,6 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
         rail_cols = st.columns([3,1])
-        # Build view in backend and render chips here
-        view = build_book_coverage_view(
-            verses=tuple(found_verses),
-            text_map_keys=list(text_map.keys()),
-            scope_label=scope,
-            selected_book=st.session_state.get(f"book_filter_{normalized_query}", ''),
-            books_in_order=BIBLE_BOOK_ORDER,
-            rail_width='25%'
-        )
         render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=rail_cols[1])
         sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
@@ -1911,15 +1891,7 @@ def _clear_all_caches():
         except Exception:
             pass
 
-    # Clear resource caches (best-effort)
-    try:
-        get_normalized_text_maps_cached.clear()
-    except Exception:
-        pass
-    try:
-        get_token_maps_cached.clear()
-    except Exception:
-        pass
+    # Resource caches are constructed on-demand; nothing additional to clear here
 
 @st.cache_resource
 def get_form_to_root_map_cached(version: str):
@@ -1928,13 +1900,6 @@ def get_form_to_root_map_cached(version: str):
     The version string acts as a manual cache key so we can bust the cache when
     the underlying grammatical index changes.
     """
-    # Prefer prebuilt JSON if present; fall back to computing
-    try:
-        if os.path.exists(FORM_TO_ROOT_FILE) and os.path.getsize(FORM_TO_ROOT_FILE) > 0:
-            with open(FORM_TO_ROOT_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception:
-        pass
     idx = load_data()
     form_map = defaultdict(list)
     for root, data in idx.items():
@@ -1944,13 +1909,7 @@ def get_form_to_root_map_cached(version: str):
                     normalized_form = normalize_pashto_char(item.get('form', ''))
                     if root not in form_map[normalized_form]:
                         form_map[normalized_form].append(root)
-    out = dict(form_map)
-    try:
-        with open(FORM_TO_ROOT_FILE, 'w', encoding='utf-8') as f:
-            json.dump(out, f, ensure_ascii=False)
-    except Exception:
-        pass
-    return out
+    return form_map
 
 @st.cache_resource
 def get_form_occurrence_index_cached(version: str):
@@ -1958,20 +1917,8 @@ def get_form_occurrence_index_cached(version: str):
 
     Avoids re-scanning the full index on every rerun.
     """
-    try:
-        if os.path.exists(FORM_OCCURRENCE_FILE) and os.path.getsize(FORM_OCCURRENCE_FILE) > 0:
-            with open(FORM_OCCURRENCE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception:
-        pass
     idx = load_data()
-    out = build_form_occurrence_index(idx)
-    try:
-        with open(FORM_OCCURRENCE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(out, f, ensure_ascii=False)
-    except Exception:
-        pass
-    return out
+    return build_form_occurrence_index(idx)
 
 
 # Compute lightweight mobile mode from query params and width hint
@@ -2074,8 +2021,13 @@ if SHOW_SIDEBAR:
                 st.rerun()
 
 with tabs[0]:
-    # Floating search bar at top (sticky)
-    st.markdown("<div style='position:sticky; top:0; z-index:1200; background:var(--background-color); padding:8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25);'>", unsafe_allow_html=True)
+    # Floating search bar at top (sticky) via backend CSS
+    try:
+        from ui_backend.ui_service import get_ui_css
+        st.markdown(f"<style>{get_ui_css(mobile=MOBILE_MODE)}</style>", unsafe_allow_html=True)
+    except Exception:
+        pass
+    st.markdown("<div class='search-header'>", unsafe_allow_html=True)
     cols_search = st.columns([3,1])
     with cols_search[0]:
         search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")

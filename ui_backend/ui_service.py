@@ -71,3 +71,28 @@ def build_book_coverage_view(
     )
 
 
+def get_ui_css(mobile: bool = False) -> str:
+    """Return global CSS for sticky search bar and right rail.
+
+    Keep styles centralized so the Streamlit file stays thin.
+    """
+    return (
+        """
+        /* sticky search header */
+        .search-header { position: sticky; top: 0; z-index: 1200; background: var(--background-color);
+                         padding: 8px 4px; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+        /* sticky right rail */
+        .right-rail   { position: sticky; top: 56px; max-height: calc(100vh - 64px); overflow: auto; }
+        @media (max-width: 768px) { .right-rail { position: fixed; right: 8px; top: 56px; width: 28%;
+                                                  max-height: 65vh; z-index: 1100; } }
+        /* chip styling: compact, high-contrast */
+        .chip-rail .stButton > button { background: #0284c7; color: #eef6ff; padding: 4px 8px; border-radius: 999px;
+                                        border: none; font-size: .78rem; margin: 3px; }
+        .chip-rail .stButton > button:hover { filter: brightness(1.08); }
+        .chip-rail .stButton > button:disabled { background: #334155; color: #cbd5e1; opacity: .6; }
+        .section-title { font-size: 11px; color: #b6c7d4; margin-bottom: 6px }
+        """
+    )
+
+
+
