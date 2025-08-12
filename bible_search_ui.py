@@ -1279,11 +1279,10 @@ def _inject_scroll_spy_assets():
                 if (!book) return;
                 const buttons = Array.from(document.querySelectorAll('.stButton > button'));
                 const chips = Array.from(document.querySelectorAll('.chip'));
-                // Prefer exact "Book - n" prefix match, else exact book label
-                const matchBtn = buttons.find(b => (b.innerText || '').trim().startsWith(book + ' '))
-                                || buttons.find(b => (b.innerText || '').trim() === book);
-                const matchChip = chips.find(c => (c.innerText || '').trim().startsWith(book + ' '))
-                                 || chips.find(c => (c.innerText || '').trim() === book);
+                const label = (el) => (el.innerText || '').trim();
+                // Match labels that start with the book name (e.g., "Matthew - 4") or equal it
+                const matchBtn = buttons.find(b => label(b).startsWith(book)) || buttons.find(b => label(b) === book);
+                const matchChip = chips.find(c => label(c).startsWith(book)) || chips.find(c => label(c) === book);
                 removeActive();
                 if (matchBtn) matchBtn.classList.add('active');
                 if (matchChip) matchChip.classList.add('active');
@@ -1352,6 +1351,8 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
                             width: 100%;
                             animation: none;
                             margin-left: 0;
+                            position: relative;
+                            right: auto;
                         }
                     }
                     .animated-panel-container h4 { margin-top: 0; margin-bottom: 10px; }
@@ -1432,9 +1433,11 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
             for book in books_in_scope
         ])
         panel_html = f"""
-        <div class="animated-panel-container">
-            <h4>{title}</h4>
-            {chips_html}
+        <div style='display:block; width:100%;'>
+          <div class="animated-panel-container" style='float:right;'>
+              <h4>{title}</h4>
+              {chips_html}
+          </div>
         </div>
         """
         st.markdown(panel_html, unsafe_allow_html=True)
@@ -1886,8 +1889,9 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         _coverage_add(found_verses)
         render_animated_book_panel(found_verses, text_map, title="Book Coverage")
         filtered = found_verses
-        if book_filter:
-            filtered = [v for v in found_verses if _extract_book_from_ref(v) == book_filter]
+        bf = (globals().get('QP_B') or '').strip()
+        if bf:
+            filtered = [v for v in found_verses if _extract_book_from_ref(v) == bf]
         # Prioritize like single-word results and default to 5
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -2042,13 +2046,13 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     verses_to_show = [v for v in sorted(set(occ.get('verses', []))) if v in selected_text and _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
-        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+            st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
         render_animated_book_panel(verses_to_show, selected_text, title="Book Coverage")
-        filtered = verses_to_show
-        if (globals().get('QP_B') or '').strip():
+            filtered = verses_to_show
             bf = (globals().get('QP_B') or '').strip()
-            filtered = [v for v in verses_to_show if _extract_book_from_ref(v) == bf]
+            if bf:
+                filtered = [v for v in verses_to_show if _extract_book_from_ref(v) == bf]
         # Prioritization order
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
@@ -2091,8 +2095,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             _coverage_add(frefs)
             render_animated_book_panel(frefs, bible_text, title="Book Coverage")
             filtered_f = frefs
-            if (globals().get('QP_B') or '').strip():
-                bf = (globals().get('QP_B') or '').strip()
+            bf = (globals().get('QP_B') or '').strip()
+            if bf:
                 filtered_f = [v for v in frefs if _extract_book_from_ref(v) == bf]
             for verse_ref in filtered_f:
                 display_verse_with_audio(verse_ref, normalized_form, bible_text)
