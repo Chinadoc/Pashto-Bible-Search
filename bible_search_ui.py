@@ -36,6 +36,7 @@ from noun_inflector import (
     infer_pattern1_masc_lemma_from_form,
 )
 import unicodedata
+from pashto_fuzzy_search import PashtoFuzzySearch, MatchType
 
 # Sandwich markers (pre/post/circumpositions) – minimal list
 SANDWICH_MARKERS = [
@@ -1020,6 +1021,25 @@ def get_token_maps_cached() -> dict:
         'ot_tok': tok_map(ot_text),
     }
 
+# --- Fuzzy search engine cache per scope ---
+def _get_fuzzy_engine_for_scope(scope: str, nt_text: dict, ot_text: dict) -> PashtoFuzzySearch:
+    """Return a cached fuzzy engine for the selected scope to avoid rebuilds."""
+    key = f"_fz_engine_{scope}"
+    eng = st.session_state.get(key)
+    if eng:
+        return eng
+    if scope == "New Testament":
+        bible_text = nt_text
+    elif scope == "Old Testament":
+        bible_text = ot_text
+    else:
+        bible_text = {}
+        bible_text.update(nt_text)
+        bible_text.update(ot_text)
+    eng = PashtoFuzzySearch(bible_text, enable_caching=True)
+    st.session_state[key] = eng
+    return eng
+
 # Defer token maps to on-demand tokenization; avoid eager full-Bible tokenization
 NT_TOK_MAP = {}
 OT_TOK_MAP = {}
@@ -1495,6 +1515,29 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
+        # Only offer fuzzy when exact hits are zero
+        toks = [t for t in query.split() if t]
+        if len(toks) >= 2:
+            with st.expander("Fuzzy search (Pashto-aware)"):
+                max_results = st.slider("Max results", 5, 100, 20, 5, key="fz_max_phrase")
+                min_score = st.slider("Min score", 0.0, 1.0, 0.35, 0.05, key="fz_thr_phrase")
+                if st.button("Run fuzzy search", key="fz_run_phrase"):
+                    engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
+                    res = engine.search(normalized_query, max_results=max_results, min_score=min_score)
+                    bible_text = text_map
+                    if res:
+                        frefs = [r.reference for r in res if r.reference in bible_text]
+                        if frefs:
+                            rail_cols = st.columns([3,1])
+                            st.subheader(f"Fuzzy matches — {len(frefs)} hits")
+                            _coverage_add(frefs)
+                            render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_query}", host=rail_cols[1])
+                            sel_book = st.session_state.get(f"book_filter_fz:{normalized_query}", '') or QP_B
+                            filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+                            for verse_ref in filtered:
+                                display_verse_with_audio(verse_ref, normalized_query, bible_text)
+                    else:
+                        st.info("No fuzzy results.")
     else:
         _coverage_add(found_verses)
         # Permanent right rail: render into a fixed 1/3 column next to results
@@ -1682,6 +1725,29 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 for verse_ref in sorted(filtered, key=rank)[5:]:
                     display_verse_with_audio(verse_ref, normalized_form, selected_text)
         st.markdown("---")
+
+    # Only show fuzzy suggestions when there were zero exact occurrences
+    if not verses_to_show:
+        with st.expander("Fuzzy matches (Pashto-aware)"):
+            max_results = st.slider("Max results", 5, 100, 20, 5, key="fz_max_gram")
+            min_score = st.slider("Min score", 0.0, 1.0, 0.35, 0.05, key="fz_thr_gram")
+            if st.button("Run fuzzy search", key="fz_run_gram"):
+                bible_text = selected_text
+                engine = _get_fuzzy_engine_for_scope(scope, nt_text, ot_text)
+                fres = engine.search(normalized_form, max_results=max_results, min_score=min_score)
+                if fres:
+                    frefs = [r.reference for r in fres if r.reference in bible_text]
+                    if frefs:
+                        rail_cols = st.columns([3,1])
+                        st.subheader(f"Fuzzy matches — {len(frefs)} hits")
+                        _coverage_add(frefs)
+                        render_book_hit_map(frefs, bible_text, scope, filter_key=f"fz:{normalized_form}", host=rail_cols[1])
+                        sel_book = st.session_state.get(f"book_filter_fz:{normalized_form}", '') or QP_B
+                        filtered = [v for v in frefs if (not sel_book or _extract_book_from_ref(v) == sel_book)]
+                        for verse_ref in filtered:
+                            display_verse_with_audio(verse_ref, normalized_form, bible_text)
+                else:
+                    st.info("No fuzzy results.")
 
     prefer_exact_verb = bool(lex_root and conj_for_form and normalized_form == lex_root)
     prefer_exact_noun = bool(lex_root and (lex_root in NOUNS) and normalized_form == lex_root)
@@ -2049,12 +2115,24 @@ with tabs[0]:
     except Exception:
         pass
     st.markdown("<div class='search-header'>", unsafe_allow_html=True)
-    cols_search = st.columns([3,1])
-    with cols_search[0]:
-        search_query = st.text_input("Enter a Pashto word, phrase, or verse reference:", st.session_state.get('main_search',''), key="main_search")
-    with cols_search[1]:
-        _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
-        scope = _scope
+    # Debounced search: wrap in a form so typing does not trigger a rerun
+    with st.form(key="search_form", clear_on_submit=False, border=False):
+        cols_search = st.columns([3,1])
+        with cols_search[0]:
+            search_input_val = st.text_input(
+                "Enter a Pashto word, phrase, or verse reference:",
+                st.session_state.get('main_search',''),
+                key="main_search_input",
+            )
+        with cols_search[1]:
+            _scope = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
+        submitted = st.form_submit_button("Search")
+    scope = _scope
+    # Commit the search only on submit (prevents work on every keystroke)
+    if submitted:
+        st.session_state['main_search'] = search_input_val
+    # Stabilize search value for this run
+    search_query = st.session_state.get('main_search','')
     st.markdown("</div>", unsafe_allow_html=True)
     # Spacer to offset fixed header
     st.markdown("<div class='header-spacer'></div>", unsafe_allow_html=True)
@@ -2121,6 +2199,9 @@ with tabs[0]:
                     handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
             else:
                 handle_grammatical_search(normalized_query, form_to_root_map, grammatical_index, nt_text, ot_text, scope)
+
+        # Only offer fuzzy from the top bar when there were zero exact hits in the chosen branch
+        # We gate this on phrase path; single-word path already handles fuzzy in the results section.
     else:
         if QP_APP == '1':
             st.info("Type a word, phrase, or verse (e.g., Galatians 4:19) to begin.")

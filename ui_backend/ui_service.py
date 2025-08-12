@@ -93,6 +93,8 @@ def get_ui_css(mobile: bool = False) -> str:
         .chip-rail .stButton > button:hover { filter: brightness(1.08); }
         .chip-rail .stButton > button:disabled { background: #334155; color: #cbd5e1; opacity: .6; }
         .section-title { font-size: 11px; color: #b6c7d4; margin-bottom: 6px }
+        /* highlight style */
+        mark { background-color: #fcf8e3; color: #333; padding: 1px 3px; border-radius: 3px; }
         """
     )
 
