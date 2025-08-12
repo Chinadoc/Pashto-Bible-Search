@@ -198,7 +198,9 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     present = build_present(imperfective_stem, impf_stem_rom)
-    subjunctive = build_present(perfective_stem, perf_stem_rom)
+    # Normalize perfective stem for split-head subjunctive where نا/نه/وا prefixes may split tokens
+    subj_stem_ps = perfective_stem
+    subjunctive = build_present(subj_stem_ps, perf_stem_rom)
     cont_past = build_past(imperfective_root, impf_root_rom)
     simple_past = build_past(perfective_root, perf_root_rom)
 
