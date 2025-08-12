@@ -283,10 +283,96 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
 
     Implemented categories:
     - ndal (.*ندل): imperfective stem => replace 'ندل' with 'ن'; perfective stem => 'و'+imperfective stem
+    - kedul helper (.*کېدل): imperfective stem => replace 'کېدل' with 'کېږ'; perfective stem => 'ش' (no و)
+    - edul intransitive (.*ېدل): imperfective stem => replace 'ېدل' with 'ېږ'; perfective stem => 'و'+imperfective stem
     - default (.*ل): imperfective stem => drop final 'ل'; perfective stem => prefix 'و'
     """
     if not root or not root.endswith('ل'):
         return None
+
+    # Try to infer simple complement+helper compounds
+    # Pattern: "<complement> کېدل" (stative become)
+    try:
+        r = root.strip()
+        if r.endswith(' کېدل') and len(r) > 5:
+            comp = r[:-5].strip()
+            if comp:
+                # Weld/squish for imperfective stem: complement + (کېږ → ېږ when possible)
+                vowels = set(['ا','و','ي','ی','ې','ۍ'])
+                ends_with_consonant_or_ha = (len(comp) > 0 and (comp[-1] not in vowels or comp[-1] == 'ه'))
+                impf_stem = (comp + ('ېږ' if ends_with_consonant_or_ha else ' کېږ'))
+                perf_stem = comp + ' ش'
+                impf_root = comp + ' کېدل'
+                perf_root = comp + ' شول'
+                past_part = comp + ' شوی'
+                return {
+                    'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+                    'roots': {'imperfective': impf_root, 'perfective': perf_root},
+                    'past_participle': past_part,
+                    'romanization': {},
+                }
+        # Pattern: "<complement> کول" dynamic-do (default) and stative-make (fallback when needed)
+        if r.endswith(' کول') and len(r) > 4:
+            comp = r[:-4].strip()
+            if comp:
+                # Dynamic-do default: perfective takes initial و-
+                dyn_impf_stem = comp + ' کو'
+                dyn_perf_stem = comp + ' وکړ'
+                dyn_impf_root = comp + ' کول'
+                dyn_perf_root = comp + ' وکړل'
+                dyn_part = comp + ' کړی'
+                return {
+                    'stems': {'imperfective': dyn_impf_stem, 'perfective': dyn_perf_stem},
+                    'roots': {'imperfective': dyn_impf_root, 'perfective': dyn_perf_root},
+                    'past_participle': dyn_part,
+                    'romanization': {},
+                }
+    except Exception:
+        # fall through to other patterns
+        pass
+
+    # Category 0: Helper verb family — ...کېدل (to become).
+    # Default to the "become" pattern (no perfective و-). The "to happen" variant
+    # with perfective وشـ/وشول can be provided via irregulars in the lexicon.
+    if root.endswith('کېدل') and len(root) > 3:
+        base = root[:-3]  # strip 'دل' only so we keep 'کې'
+        # Normalize exact replacement for stem: replace final 'کېدل' with 'کېږ'
+        # Safer explicit slicing by 4 chars of 'کېدل'
+        base_full = root[:-4]  # strip 'کېدل'
+        impf_stem = (base_full + 'کېږ') if base_full else 'کېږ'
+        perf_stem = 'ش'  # no perfective و- for "become"
+        impf_root = root
+        perf_root = 'شول'
+        past_part = 'شوی'
+        return {
+            'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+            'roots': {'imperfective': impf_root, 'perfective': perf_root},
+            'past_participle': past_part,
+            'romanization': {},
+        }
+
+    # Category 0.5: Intransitive dynamic verbs — ...ېدل → stems ...ېږ ; perf with و-
+    if root.endswith('ېدل') and len(root) > 3:
+        base = root[:-3]  # strip 'دل'
+        base_full = root[:-3]  # keep whole up to 'ې'
+        # Replace suffix 'ېدل' → 'ېږ' for stem
+        impf_stem = (root[:-3]).rstrip()  # start with base
+        # Ensure we actually perform the intended replacement
+        impf_stem = root[:-3]  # remove 'دل'
+        if impf_stem.endswith('ې'):
+            impf_stem = impf_stem + 'ږ'
+        else:
+            impf_stem = (root[:-3] + 'ېږ')
+        perf_stem = 'و' + impf_stem if not impf_stem.startswith('و') else impf_stem
+        impf_root = root
+        perf_root = ('و' + root) if not root.startswith('و') else root
+        past_part = (root[:-1] + 'لی')  # e.g., سوځېدلی
+        return {
+            'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+            'roots': {'imperfective': impf_root, 'perfective': perf_root},
+            'past_participle': past_part,
+            'romanization': {},
+        }
 
     # Category 1: .*ندل → stem ن
     if root.endswith('ندل') and len(root) > 3:

@@ -7,7 +7,6 @@ common variations, input errors, and diacritics.
 """
 
 import re
-import unicodedata
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass
 from enum import Enum
@@ -32,25 +31,13 @@ class SearchResult:
     match_positions: Optional[List[Tuple[int, int]]] = None
 
 
+from search_utils import normalize_basic_ps, normalize_aggressive_ps
+
+
 class PashtoFuzzySearch:
     """Fuzzy search engine optimized for Pashto biblical text."""
 
-    PASHTO_CHARS = {
-        'ټ': 'ت', 'ډ': 'د', 'ړ': 'ر', 'ږ': 'ز', 'ښ': 'ش', 'څ': 'چ', 'ځ': 'ج', 'ڼ': 'ن', 'ۍ': 'ی',
-        'ئ': 'ی', 'ؤ': 'و', 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ة': 'ه', 'ى': 'ی',
-    }
-
-    DIACRITICS = [
-        '\u064B', '\u064C', '\u064D', '\u064E', '\u064F', '\u0650', '\u0651', '\u0652',
-        '\u0653', '\u0654', '\u0655', '\u0656', '\u0657', '\u0658', '\u0670',
-    ]
-
-    KEYBOARD_SUBS = {
-        'ک': 'ك',
-        'ی': 'ي',
-        'و': 'ؤ',
-        'ه': 'ە',
-    }
+    # Normalization tables are centralized in search_utils
 
     def __init__(self, bible_text: Dict[str, str], enable_caching: bool = True):
         self.bible_text = bible_text
@@ -69,23 +56,15 @@ class PashtoFuzzySearch:
             }
 
     def _normalize_basic(self, text: str) -> str:
-        normalized = text
-        for old, new in self.PASHTO_CHARS.items():
-            normalized = normalized.replace(old, new)
-        for old, new in self.KEYBOARD_SUBS.items():
-            normalized = normalized.replace(old, new)
-        return unicodedata.normalize('NFC', normalized)
+        return normalize_basic_ps(text)
 
     def _remove_diacritics(self, text: str) -> str:
-        result = text
-        for diacritic in self.DIACRITICS:
-            result = result.replace(diacritic, '')
-        return result
+        # use aggressive - diacritics removal is embedded there; but keep whitespace
+        # For precise behavior, reuse normalize_basic + manual strip of diacritics via aggressive then revert spacing
+        return normalize_aggressive_ps(text)
 
     def _normalize_aggressive(self, text: str) -> str:
-        text = self._normalize_basic(text)
-        text = self._remove_diacritics(text)
-        return re.sub(r'\s+', ' ', text).strip()
+        return normalize_aggressive_ps(text)
 
     def _consonant_skeleton(self, text: str) -> str:
         text = self._remove_diacritics(text)
