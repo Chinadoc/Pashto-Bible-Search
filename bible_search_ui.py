@@ -5,6 +5,12 @@ import os
 import requests
 from urllib.parse import quote_plus
 import pandas as pd
+# Optional UI backend module for view/CSS helpers (guarded for older deployments)
+try:
+    from ui_backend.ui_service import get_ui_css  # type: ignore
+except Exception:
+    def get_ui_css(mobile: bool = False) -> str:  # fallback no-op
+        return ""
 from functools import lru_cache
 from collections import defaultdict
 import hashlib
