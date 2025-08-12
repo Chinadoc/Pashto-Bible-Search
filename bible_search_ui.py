@@ -238,6 +238,8 @@ with open(AUDIO_FILE_MAP_PATH, 'r', encoding='utf-8') as af:
     AUDIO_FILE_MAP = json.load(af)
 
 st.set_page_config(layout="wide")
+# Global right-rail column for permanent book toggles
+RIGHT_RAIL = None
 
 # --- Mobile-friendly CSS tweaks (non-invasive, responsive) ---
 st.markdown(
@@ -1468,7 +1470,12 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         st.warning("No verses found containing that exact phrase.")
     else:
         _coverage_add(found_verses)
-        render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query)
+        # Permanent right rail: render into a fixed 1/3 column next to results
+        rail_cols = st.columns([2,1])
+        with rail_cols[1]:
+            render_book_hit_map(found_verses, text_map, scope, filter_key=normalized_query, host=st)
+        with rail_cols[0]:
+            pass
         sel_book = st.session_state.get(f"book_filter_{normalized_query}", '') or QP_B
         filtered = [v for v in found_verses if (not sel_book or _extract_book_from_ref(v) == sel_book)]
         # Prioritize like single-word results and default to 5
@@ -1529,7 +1536,11 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                         all_refs.extend(occ.get('verses', []))
                 if all_refs:
                     _coverage_add(all_refs)
-                    render_book_hit_map(sorted(set(all_refs)), text_map, scope)
+                    rail_cols = st.columns([2,1])
+                    with rail_cols[1]:
+                        render_book_hit_map(sorted(set(all_refs)), text_map, scope, host=st)
+                    with rail_cols[0]:
+                        pass
                 render_forms_summary("present (compound)", present, forms_index, text_map, scope, key_prefix="cmp1")
                 render_forms_summary("subjunctive (compound)", subj, forms_index, text_map, scope, key_prefix="cmp2")
                 render_past_expanders("Past (continuous, compound)", cont_past, forms_index, text_map)
@@ -1621,7 +1632,11 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
-        render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form)
+        rail_cols = st.columns([2,1])
+        with rail_cols[1]:
+            render_book_hit_map(verses_to_show, selected_text, scope, filter_key=normalized_form, host=st)
+        with rail_cols[0]:
+            pass
         # Filter by selected book, if any
         sel_book = st.session_state.get(f"book_filter_{normalized_form}", '') or QP_B
         filtered = [v for v in verses_to_show if (not sel_book or _extract_book_from_ref(v) == sel_book)]
