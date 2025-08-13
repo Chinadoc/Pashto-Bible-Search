@@ -1424,9 +1424,18 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
 
         # Determine current filter from query params (global)
         current_filter = (globals().get('QP_B') or '').strip()
+        # Build href that works even without JS by preserving current query params
+        q = (globals().get('QP_Q') or '').strip()
+        s = (globals().get('QP_S') or '').strip()
+        fz = (globals().get('QP_FZ') or '').strip()
+        base_params = []
+        if q: base_params.append(f"q={quote_plus(q)}")
+        if s: base_params.append(f"s={quote_plus(s)}")
+        if fz: base_params.append(f"fz={quote_plus(fz)}")
+        base_qs = ("&".join(base_params) + ("&" if base_params else ""))
         chips_html = "".join([
             (
-                f"<a href='#' class='chip{' selected' if (current_filter and current_filter==book) else ''}{' disabled' if counts.get(book,0)==0 else ''}' data-book='{book}'>"
+                f"<a href='?{base_qs}b={quote_plus(book)}' target='_self' class='chip{' selected' if (current_filter and current_filter==book) else ''}{' disabled' if counts.get(book,0)==0 else ''}' data-book='{book}'>"
                 + (f"{book} - {counts.get(book, 0)}" if counts.get(book,0) else book)
                 + "</a>"
             )
@@ -1443,6 +1452,81 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
         st.markdown(panel_html, unsafe_allow_html=True)
     except Exception:
         pass
+
+def render_sticky_chipbar(refs: list, text_map: dict, title: str = "Book Coverage"):
+	"""Render a sticky, horizontal chip bar that stays at the top while scrolling.
+
+	Chips toggle the ?b=Book filter in the URL and highlight via scroll-spy.
+	"""
+	try:
+		if not refs or not text_map:
+			return
+		# One-time CSS/JS
+		if not st.session_state.get('_sticky_chipbar_css'):
+			st.session_state['_sticky_chipbar_css'] = True
+			st.markdown(
+				"""
+				<style>
+				.sticky-chipbar{position:sticky; top:56px; z-index:1200; background:rgba(38,39,48,0.9); backdrop-filter:blur(4px); border:1px solid #444; border-radius:10px; padding:10px 12px; margin:4px 0 10px 0;}
+				.sticky-chipbar .title{font-weight:700; margin-right:10px; white-space:nowrap}
+				.sticky-chipbar .chips{display:flex; flex-wrap:nowrap; gap:8px; overflow-x:auto; padding-bottom:2px}
+				.sticky-chipbar .chip{display:inline-block; padding:4px 10px; border-radius:999px; background:#333; font-size:.85rem; color:#e5e7eb; text-decoration:none; white-space:nowrap}
+				.sticky-chipbar .chip.selected, .sticky-chipbar .chip.active{background:#4A90E2; color:#fff; font-weight:600}
+				</style>
+				""",
+				unsafe_allow_html=True,
+			)
+			st.components.v1.html(
+				"""
+				<script>
+				(function(){
+				  const bind = () => {
+				    const chips = Array.from(document.querySelectorAll('.sticky-chipbar .chip'));
+				    chips.forEach(ch => {
+				      if (ch.dataset._bound) return; ch.dataset._bound = '1';
+				      ch.addEventListener('click', (e) => {
+				        e.preventDefault();
+				        const book = ch.getAttribute('data-book');
+				        const u = new URL(window.location.href);
+				        const cur = u.searchParams.get('b') || u.searchParams.get('book') || '';
+				        if (cur && cur === book){ u.searchParams.delete('b'); u.searchParams.delete('book'); }
+				        else { u.searchParams.set('b', book); u.searchParams.delete('book'); }
+				        const qs = u.searchParams.toString();
+				        window.location.href = u.pathname + (qs?('?'+qs):'') + u.hash;
+				      });
+				    });
+				  };
+				  setTimeout(bind, 50);
+				})();
+				</script>
+				""",
+				height=0,
+			)
+		# Build counts and universe
+		counts = {}
+		for v in refs:
+			m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', v)
+			if not m: continue
+			book = m.group(1).strip()
+			counts[book] = counts.get(book, 0) + 1
+		books_found_in_scope = {
+			re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r).group(1).strip()
+			for r in text_map.keys() if re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', r)
+		}
+		books_in_scope = [b for b in BIBLE_BOOK_ORDER if b in books_found_in_scope]
+		if not books_in_scope:
+			return
+		cur = (globals().get('QP_B') or '').strip()
+		chips = []
+		for b in books_in_scope:
+			c = counts.get(b, 0)
+			cls = "chip selected" if (cur and cur==b) else "chip"
+			label = f"{b}{' - ' + str(c) if c else ''}"
+			chips.append(f"<a href='#' class='{cls}' data-book='{b}'>{label}</a>")
+		html = f"<div class='sticky-chipbar'><span class='title'>{title}</span><div class='chips'>{''.join(chips)}</div></div>"
+		st.markdown(html, unsafe_allow_html=True)
+	except Exception:
+		pass
 
 def render_book_hit_map(verses: list, text_map: dict, scope_label: str, filter_key: str = "global", host=None):
     try:
@@ -1556,7 +1640,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        # Gate auto-loading to reduce initial render time
+        // Gate auto-loading to reduce initial render time
         loaded = st.session_state.get('audio_loaded_count', 0)
         should_auto = bool(AUTO_LOAD_AUDIO) and (loaded < AUTO_LOAD_AUDIO_MAX)
         if should_auto:
@@ -1567,28 +1651,31 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 st.audio(audio_url, format='audio/mp3')
             st.session_state['audio_loaded_count'] = loaded + 1
         else:
-            play_key = f"play_audio_{abs(hash(verse_ref))}_{_next_unique_suffix('play')}"
-            if st.button('Play audio', key=play_key):
-                bytes_payload = get_audio_bytes(audio_url)
-                if bytes_payload:
-                    st.audio(bytes_payload, format='audio/mp3')
-                else:
-                    st.audio(audio_url, format='audio/mp3')
-        # Provide a user-visible download link
+            // Stable toggle per verse to ensure the player persists across reruns
+            open_key = f"__audio_open::{verse_ref}"
+            btn_key = f"btn_audio::{verse_ref}"
+            is_open = bool(st.session_state.get(open_key))
+            label = 'Hide audio' if is_open else 'Play audio'
+            if st.button(label, key=btn_key):
+                st.session_state[open_key] = not is_open
+                is_open = not is_open
+            if is_open:
+                st.audio(audio_url, format='audio/mp3')
+        // Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
             dl_url = GOOGLE_DRIVE_URL_PREFIX + file_id
         except Exception:
             dl_url = audio_url
         st.markdown(f"[Download Audio]({dl_url})")
-    # If there is no audio (e.g., most Old Testament verses), we simply omit
-    # the audio UI without displaying a warning so the results remain clean.
-    # Optional: reasons for inflection (hidden by default because current
-    # heuristics are approximate and can be misleading). To re-enable, set
-    # SHOW_INFL_REASONS = True near the top-level config and guard this block.
+    // If there is no audio (e.g., most Old Testament verses), we simply omit
+    // the audio UI without displaying a warning so the results remain clean.
+    // Optional: reasons for inflection (hidden by default because current
+    // heuristics are approximate and can be misleading). To re-enable, set
+    // SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
-    # Dictionary lookup removed (streamlined UI)
+    // Dictionary lookup removed (streamlined UI)
 
 
 # --- Small UI helpers ---
@@ -1606,16 +1693,14 @@ def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_la
                 continue
             ps, rom = forms_dict[k]
             occ = occurrence_index.get(normalize_pashto_char(ps), {'count': 0, 'verses': []})
-            title_label = f"{ps} ({rom}) — {occ.get('count', 0)} hits"
-            with st.expander(title_label):
-                href = f"?q={quote_plus(ps)}&s={scope_short}"
-                st.link_button("Open in new tab", href)
-                if not occ.get('verses'):
-                    st.info("No references in this scope.")
-                else:
+            if occ.get('verses'):
+                title_label = f"{ps} ({rom}) — {occ.get('count', 0)} hits"
+                with st.expander(title_label):
+                    href = f"?q={quote_plus(ps)}&s={scope_short}"
+                    st.link_button("Open in new tab", href)
                     for vref in sorted(set(occ['verses'])):
                         display_verse_with_audio(vref, ps, text_map)
-                # Show common preverb variants (را / در / ور) to aid recognition
+                // Show common preverb variants (را / در / ور) to aid recognition
                 try:
                     preverbs = [('را', 'rá'), ('در', 'dar'), ('ور', 'war')]
                     variants = []
@@ -1757,7 +1842,7 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             found_verses = [r for r in set(agg) if r in text_map]
         except Exception:
             found_verses = []
-    if not found_verses:
+    if not found_verses and (QP_FZ == '1'):
         # fallback scan across variants
         hits = set()
         for v in be_variants:
@@ -1822,6 +1907,9 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                 st.info("No fuzzy results.")
     else:
         _coverage_add(found_verses)
+        # Sticky chipbar at top; this reduces layout shifts and keeps coverage visible
+        render_sticky_chipbar(found_verses, text_map, title="Book Coverage")
+        # Also render the floating panel for desktop wrap if desired
         render_animated_book_panel(found_verses, text_map, title="Book Coverage")
         filtered = found_verses
         bf = (globals().get('QP_B') or '').strip()
@@ -2010,8 +2098,8 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         st.markdown('<div style="clear: both;"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
-    # Auto-run fuzzy suggestions when there were zero exact occurrences
-    if not verses_to_show:
+    # Optional: fuzzy suggestions only when enabled via ?fz=1
+    if (QP_FZ == '1') and (not verses_to_show):
         bible_text = selected_text
         frefs: list[str] = []
         fast_engine = get_fast_engine_cached()
@@ -2156,21 +2244,27 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
             st.info(f"Grammar Pattern: **{pattern}**")
 
             for item in sorted(forms, key=lambda x: x['count'], reverse=True):
-                form_display = format_for_display(item['form'])
+                # Guard against malformed items lacking 'form' or verse list
+                if not isinstance(item, dict):
+                    continue
+                form_value = item.get('form', '')
+                verses_list = item.get('verses') or []
+                if not form_value or not verses_list:
+                    continue
+                form_display = format_for_display(form_value)
                 # Prefer lexicon romanization if available for this exact Pashto form
                 translit = ''
                 if conj and isinstance(conj, dict) and 'forms_map' in conj:
-                    translit = conj['forms_map'].get(item['form'], '')
+                    translit = conj['forms_map'].get(form_value, '')
                 if not translit:
-                    form_ps = item.get('form', '')
-                    translit = romanize_from_dict_or_rules(form_ps) or item.get('translit', '')
+                    translit = romanize_from_dict_or_rules(form_value) or item.get('translit', '')
                 expander_title = (
-                    f"**{item['description']}**: `{form_display}` ({translit}) - "
-                    f"(Frequency: {item['count']})"
+                    f"**{item.get('description','')}**: `{form_display}` ({translit}) - "
+                    f"(Frequency: {item.get('count', 0)})"
                 )
                 with st.expander(expander_title):
-                    for verse_ref in sorted(set(item['verses'])):
-                        display_verse_with_audio(verse_ref, item['form'], bible_text)
+                    for verse_ref in sorted(set(verses_list)):
+                        display_verse_with_audio(verse_ref, form_value, bible_text)
 
         # If this root is in the verb lexicon, display a conjugation summary regardless of index type
         if conj and root_word not in skip_summary_roots:
@@ -2181,17 +2275,27 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
                 f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
-            # Compact overview first
-            render_forms_summary("present", conj.get('present', {}), form_occurrence_index, bible_text, scope, key_prefix="sum6")
-            render_forms_summary("subjunctive", conj.get('subjunctive', {}), form_occurrence_index, bible_text, scope, key_prefix="sum7")
-            render_forms_summary("imperfective future", conj.get('imperfective_future', {}), form_occurrence_index, bible_text, scope, key_prefix="sum8")
-            render_forms_summary("perfective future", conj.get('perfective_future', {}), form_occurrence_index, bible_text, scope, key_prefix="sum9")
-            render_forms_summary("ability (present)", conj.get('ability_present', {}), form_occurrence_index, bible_text, scope, key_prefix="sum10")
+            // Compact overview first, but skip if no hits
+            for tense, forms_dict in [
+                ("present", conj.get('present', {})),
+                ("subjunctive", conj.get('subjunctive', {})),
+                ("imperfective future", conj.get('imperfective_future', {})),
+                ("perfective future", conj.get('perfective_future', {})),
+                ("ability (present)", conj.get('ability_present', {}))
+            ]:
+                if any(occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in forms_dict.values()):
+                    render_forms_summary(tense, forms_dict, form_occurrence_index, bible_text, scope, key_prefix=f"sum_{tense}")
 
-        # If user entered the infinitive itself, show extended past tables
+        // If user entered the infinitive itself, show extended past tables, but only if they have hits
         if query == root_word and conj:
-            render_past_expanders("Past (continuous)", conj.get('continuous_past', {}), form_occurrence_index, bible_text)
-            render_past_expanders("Past (simple)", conj.get('simple_past', {}), form_occurrence_index, bible_text)
+            for past_tense, past_dict in [
+                ("Past (continuous)", conj.get('continuous_past', {})),
+                ("Past (simple)", conj.get('simple_past', {})),
+                ("Ability — continuous past", conj.get('ability_continuous_past', {})),
+                ("Ability — simple past", conj.get('ability_simple_past', {}))
+            ]:
+                if any(occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in past_dict.values()):
+                    render_past_expanders(past_tense, past_dict, form_occurrence_index, bible_text)
         elif root_word in NOUNS:
             n = inflect_noun(root_word)
             st.subheader("Noun Inflections (summary)")
@@ -2201,7 +2305,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 if occ['count']:
                     with st.expander(f"{key}: `{ps}` ({rom}) — {occ['count']} hits"):
                         for vref in sorted(set(occ['verses'])):
-                            display_verse_with_audio(vref, ps, bible_text)
+                            display_verse_with_audio(vref, ps, nt_text if scope=='nt' else ot_text)
+        if not prefer_exact_noun:
+            return
+        st.markdown("---")
 
 # --- Main Application ---
 st.title("Pashto Bible Smart Search")
@@ -2234,6 +2341,7 @@ QP_S = _extract_single(QP.get('s')).lower()
 QP_APP = _extract_single(QP.get('app'))
 QP_M = _extract_single(QP.get('m'))
 QP_B = _extract_single(QP.get('b')) or _extract_single(QP.get('book'))
+QP_FZ = _extract_single(QP.get('fz'))
 
 SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
 
@@ -2310,7 +2418,7 @@ with tabs[0]:
     if st.session_state.get('force_scope'):
         st.session_state['scope_value'] = st.session_state.get('force_scope')
         del st.session_state['force_scope']
-    scope = st.session_state.get('scope_value', SCOPE_LABELS[DEFAULT_SCOPE_INDEX])
+    scope = st.session_state.get('scope_value', st.session_state.get('scope_select', SCOPE_LABELS[DEFAULT_SCOPE_INDEX]))
     # Load only the required text for the selected scope to minimize startup cost
     if scope == "New Testament":
         nt_text = load_bible_text()
@@ -2410,10 +2518,22 @@ with tabs[0]:
             st.session_state.get('main_search',''),
             key="main_search_input",
         )
+        # Scope selector restored
+        scope_label = st.selectbox("Scope", options=SCOPE_LABELS, index=DEFAULT_SCOPE_INDEX, key="scope_select")
+        # Fuzzy optional toggle
+        fz_enabled = st.checkbox("Enable fuzzy search (slower)", value=(QP_FZ == '1'))
         submitted = st.form_submit_button("Search")
     # Commit the search only on submit (prevents work on every keystroke)
     if submitted:
         st.session_state['main_search'] = search_input_val
+        st.session_state['scope_value'] = scope_label
+        # Reflect fuzzy toggle into URL param for deterministic behavior
+        try:
+            qp = dict(st.query_params)
+            qp.update({'fz': '1' if fz_enabled else '0'})
+            st.query_params.update(qp)
+        except Exception:
+            pass
     # Stabilize search value for this run
     search_query = st.session_state.get('main_search','')
     scope = st.session_state.get('scope_value', SCOPE_LABELS[DEFAULT_SCOPE_INDEX])
