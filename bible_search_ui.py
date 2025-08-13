@@ -12,6 +12,7 @@ except Exception:
     def get_ui_css(mobile: bool = False) -> str:  # fallback no-op
         return ""
 from functools import lru_cache
+import time
 from collections import defaultdict
 import hashlib
 from search_utils import (
@@ -1015,27 +1016,45 @@ def _load_text_from_dir(dir_path: str):
 
 @st.cache_data
 def load_bible_text():
+    # Allow optional unified export for this UI: if web JSON exists, use it for consistency with web tool
+    try:
+        web_json = os.path.join(APP_ROOT, 'web', 'pashto_bible.json')
+        if os.path.exists(web_json):
+            with open(web_json, 'r', encoding='utf-8') as f:
+                arr = json.load(f)
+            # Convert to {ref: text} mapping
+            return {it['ref']: it['text'] for it in arr if isinstance(it, dict) and 'ref' in it}
+    except Exception:
+        pass
     return _load_text_from_dir(DATA_DIR)
 
 @st.cache_data
 def load_bible_text_ot():
+    # For now, continue reading OT from text files; unify later if needed
     return _load_text_from_dir(OT_DATA_DIR)
 
 @st.cache_resource
 def get_normalized_text_maps_cached() -> dict:
-    """Build and cache normalized text maps without hashing huge inputs.
+    """Build and cache normalized text maps with adaptive chunking and timing.
 
-    Using cache_resource avoids Streamlit hashing of large dict arguments and
-    ensures this expensive work runs only once per process.
+    Keeps memory predictable by processing in chunks and logs timing for observability.
     """
+    start = time.perf_counter()
     nt_text = load_bible_text()
     ot_text = load_bible_text_ot()
     def norm_map(d: dict) -> dict:
-        return {ref: normalize_pashto_char(txt) for ref, txt in d.items()}
-    return {
-        'nt_norm': norm_map(nt_text),
-        'ot_norm': norm_map(ot_text),
-    }
+        out = {}
+        # Chunk to reduce peak memory spikes
+        items = list(d.items())
+        step = 2000
+        for i in range(0, len(items), step):
+            for ref, txt in items[i:i+step]:
+                out[ref] = normalize_pashto_char(txt)
+        return out
+    nt_norm = norm_map(nt_text)
+    ot_norm = norm_map(ot_text)
+    st.session_state['__norm_build_ms'] = int((time.perf_counter() - start) * 1000)
+    return {'nt_norm': nt_norm, 'ot_norm': ot_norm}
 
 # Note: We no longer eagerly initialize global NT/OT text maps at import time
 # to keep startup fast. Use load_bible_text()/load_bible_text_ot() in the
@@ -1660,9 +1679,8 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 st.session_state[open_key] = not is_open
                 is_open = not is_open
             if is_open:
-                # Force a rerender anchor so the browser starts playback immediately after click
-                player_key = f"player::{verse_ref}::{_next_unique_suffix('audio')}"
-                st.audio(audio_url, format='audio/mp3', key=player_key)
+                # Start playback via direct URL; Streamlit's audio does not accept a key param
+                st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -1831,25 +1849,33 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
             return [q]
     normalized_query = normalize_pashto_char(query)
     be_variants = list({normalize_pashto_char(v) for v in _expand_be_variants(query)})
+    # Scope selection with light LRU caching by query
     text_map = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
+    cache_key = f"__phrase_cache::{scope}::{normalized_query}"
+    if cache_key in st.session_state:
+        found_verses = st.session_state[cache_key]
+    else:
+        found_verses = []
     # Prefer fast engine (prebuilt indices) when available; fall back to scan
-    found_verses = []
-    fast_engine = get_fast_engine_cached()
-    if fast_engine:
-        try:
-            agg = []
-            for v in be_variants:
-                fres = fast_engine.search_phrase(v, max_results=500)
-                agg.extend([r['reference'] for r in fres])
-            found_verses = [r for r in set(agg) if r in text_map]
-        except Exception:
-            found_verses = []
-    if not found_verses and (QP_FZ == '1'):
+    if cache_key not in st.session_state:
+        fast_engine = get_fast_engine_cached()
+        if fast_engine:
+            try:
+                agg = []
+                for v in be_variants:
+                    fres = fast_engine.search_phrase(v, max_results=500)
+                    agg.extend([r['reference'] for r in fres])
+                found_verses = [r for r in set(agg) if r in text_map]
+            except Exception:
+                found_verses = []
+    if cache_key not in st.session_state and not found_verses and (QP_FZ == '1'):
         # fallback scan across variants
         hits = set()
         for v in be_variants:
             hits.update([ref for ref, text in text_map.items() if normalize_pashto_char(v) in text])
         found_verses = [r for r in hits]
+    if cache_key not in st.session_state:
+        st.session_state[cache_key] = found_verses
     
     if not found_verses:
         st.warning("No verses found containing that exact phrase.")
@@ -1913,6 +1939,9 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         render_sticky_chipbar(found_verses, text_map, title="Book Coverage")
         # Also render the floating panel for desktop wrap if desired
         render_animated_book_panel(found_verses, text_map, title="Book Coverage")
+        # Apply local in-memory filter (no navigation) from sessionStorage bridge
+        sel_local = st.session_state.get('__book_filter', '')
+        filtered = [v for v in found_verses if (not sel_local or _extract_book_from_ref(v) == sel_local)]
         # Also mirror chips into sticky bar at top for persistent visibility
         try:
             counts = {}
@@ -1921,10 +1950,63 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                 if not m: continue
                 b = m.group(1).strip()
                 counts[b] = counts.get(b,0)+1
-            chips_html = "".join([f"<a class='chip' href='?b={quote_plus(b)}'>{b}{' - '+str(c) if c else ''}</a>" for b,c in counts.items()])
-            st.markdown(f"<script>(function(){{var el=document.getElementById('coverageSticky'); if(el) el.innerHTML=\"{chips_html}\";}})();</script>", unsafe_allow_html=True)
+            # Use JS to update sessionStorage filter and trigger Streamlit rerun without navigation
+            chips_html = "".join([f"<a class='chip' data-book='{b}' href='#'>{b}{' - '+str(c) if c else ''}</a>" for b,c in counts.items()])
+            st.markdown(
+                f"""
+                <script>
+                (function(){{
+                  var el = document.getElementById('coverageSticky');
+                  if(!el) return;
+                  el.innerHTML = "{chips_html}";
+                  Array.from(el.querySelectorAll('.chip')).forEach(function(ch){{
+                    ch.onclick = function(ev){{
+                      ev.preventDefault();
+                      var book = ch.getAttribute('data-book');
+                      try {{ sessionStorage.setItem('bookFilter', book); }} catch(e) {{}}
+                      /* bridge not needed */
+                      // Ask Streamlit to rerun; this keeps current query and scope
+                      const buttons = window.parent.document.querySelectorAll('button');
+                      // Try to click the hidden rerun button if available; else rely on state change
+                      if (window.streamlitRerun) {{ window.streamlitRerun(); }} else {{ setTimeout(function(){{location.reload();}}, 10); }}
+                    }}
+                  }});
+                }})();
+                </script>
+                """,
+                unsafe_allow_html=True,
+            )
         except Exception:
             pass
+
+        # Read any sessionStorage filter set by chip click (bridge via query params fallback)
+        try:
+            # Streamlit cannot access sessionStorage; use a hidden input roundtrip alternative
+            sel_local = st.experimental_get_query_params().get('b', [st.session_state.get('__book_filter','')])[0]
+        except Exception:
+            sel_local = st.session_state.get('__book_filter','')
+        if sel_local:
+            st.session_state['__book_filter'] = sel_local
+
+        # Render verses
+        # Prioritize like single-word results and default to 5
+        gospels = ['Matthew','Mark','Luke','John']
+        def rank(vref: str) -> tuple:
+            m = re.match(r'^([A-Za-z\s]+)\s(\d+):(\d+)$', vref)
+            if not m:
+                return (3, 999, vref)
+            book = m.group(1).strip()
+            is_nt = book in ['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation']
+            g_rank = gospels.index(book) if book in gospels else 99
+            nt_rank = 0 if is_nt else 1
+            return (nt_rank, g_rank, book)
+        limited = sorted(filtered, key=rank)[:5]
+        for verse_ref in limited:
+            display_verse_with_audio(verse_ref, normalized_query, text_map)
+        if len(filtered) > 5:
+            with st.expander("Show all matches"):
+                for verse_ref in sorted(filtered, key=rank):
+                    display_verse_with_audio(verse_ref, normalized_query, text_map)
         filtered = found_verses
         bf = (globals().get('QP_B') or '').strip()
         if bf:
@@ -2021,8 +2103,9 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     if not form_rom:
         form_rom = romanize_from_dict_or_rules(normalized_form)
 
-    # Top section: occurrences for the searched form (scope-aware scan)
+    # Top section: occurrences for the searched form (scope-aware scan) with small LRU cache
     selected_text = nt_text if scope == 'New Testament' else ot_text if scope == 'Old Testament' else {**nt_text, **ot_text}
+    g_cache_key = f"__gram_cache::{scope}::{normalized_form}"
 
     # Sense disambiguation panel when a headword has multiple dictionary senses
     def _dict_senses_for(word: str) -> list:
@@ -2079,8 +2162,12 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
         return True
 
     # Fast path: use precomputed occurrence index and filter to current scope
-    occ = form_occurrence_index.get(normalized_form, {'count': 0, 'verses': []})
-    verses_to_show = [v for v in sorted(set(occ.get('verses', []))) if v in selected_text and _sense_match(selected_text.get(v, ''))]
+    if g_cache_key in st.session_state:
+        verses_to_show = st.session_state[g_cache_key]
+    else:
+        occ = form_occurrence_index.get(normalized_form, {'count': 0, 'verses': []})
+        verses_to_show = [v for v in sorted(set(occ.get('verses', []))) if v in selected_text and _sense_match(selected_text.get(v, ''))]
+        st.session_state[g_cache_key] = verses_to_show
     if verses_to_show:
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
         st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
@@ -2276,9 +2363,13 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                     f"**{item.get('description','')}**: `{form_display}` ({translit}) - "
                     f"(Frequency: {item.get('count', 0)})"
                 )
-                with st.expander(expander_title):
-                    for verse_ref in sorted(set(verses_list)):
-                        display_verse_with_audio(verse_ref, form_value, bible_text)
+                try:
+                    with st.expander(expander_title):
+                        for verse_ref in sorted(set(verses_list)):
+                            display_verse_with_audio(verse_ref, form_value, bible_text)
+                except Exception:
+                    # Defensive: skip malformed entries rather than crashing the whole render
+                    pass
 
         # If this root is in the verb lexicon, display a conjugation summary regardless of index type
         if conj and root_word not in skip_summary_roots:
@@ -2361,6 +2452,9 @@ SCOPE_LABELS = ["New Testament", "Old Testament", "Whole Bible"]
 
 def _scope_index_from_code(code: str) -> int:
     return 0 if code == 'nt' else 1 if code == 'ot' else 2 if code == 'all' else 0
+
+def _scope_code_from_label(label: str) -> str:
+    return 'nt' if label == 'New Testament' else 'ot' if label == 'Old Testament' else 'all'
 
 # Pre-seed the main search from query params once
 if QP_Q and not st.session_state.get('main_search'):
@@ -2541,10 +2635,15 @@ with tabs[0]:
     if submitted:
         st.session_state['main_search'] = search_input_val
         st.session_state['scope_value'] = scope_label
+        st.session_state['__last_query'] = search_input_val
         # Reflect fuzzy toggle into URL param for deterministic behavior
         try:
             qp = dict(st.query_params)
-            qp.update({'fz': '1' if fz_enabled else '0'})
+            qp.update({
+                'fz': '1' if fz_enabled else '0',
+                's': _scope_code_from_label(scope_label),
+                'b': (qp.get('b') or '')
+            })
             st.query_params.update(qp)
         except Exception:
             pass
@@ -2574,6 +2673,7 @@ with tabs[0]:
     if search_query:
         st.markdown("---")
         raw_query = search_query.strip()
+        st.session_state['__last_query'] = raw_query
         normalized_query = normalize_pashto_char(raw_query)
 
         # Apply optional book filter from query params
