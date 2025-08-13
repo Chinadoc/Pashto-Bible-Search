@@ -1660,7 +1660,9 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 st.session_state[open_key] = not is_open
                 is_open = not is_open
             if is_open:
-                st.audio(audio_url, format='audio/mp3')
+                # Force a rerender anchor so the browser starts playback immediately after click
+                player_key = f"player::{verse_ref}::{_next_unique_suffix('audio')}"
+                st.audio(audio_url, format='audio/mp3', key=player_key)
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -1919,8 +1921,8 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
                 if not m: continue
                 b = m.group(1).strip()
                 counts[b] = counts.get(b,0)+1
-            chips_html = "".join([f"<span class='chip'>{b}{' - '+str(c) if c else ''}</span>" for b,c in counts.items()])
-            st.markdown(f"<script>document.getElementById('coverageSticky').innerHTML=\"{chips_html}\";</script>", unsafe_allow_html=True)
+            chips_html = "".join([f"<a class='chip' href='?b={quote_plus(b)}'>{b}{' - '+str(c) if c else ''}</a>" for b,c in counts.items()])
+            st.markdown(f"<script>(function(){{var el=document.getElementById('coverageSticky'); if(el) el.innerHTML=\"{chips_html}\";}})();</script>", unsafe_allow_html=True)
         except Exception:
             pass
         filtered = found_verses
