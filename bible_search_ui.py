@@ -1588,72 +1588,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
-    # Optional: inline dictionary lookup (kept but collapsed and out of way)
-    with st.expander("Dictionary lookup", expanded=False):
-        tokens = [t for t in tokenize_ps(full_verse) if t]
-        # Deduplicate while preserving order to reduce button count
-        seen = set(); tokens_unique = []
-        for t in tokens:
-            if t not in seen:
-                seen.add(t); tokens_unique.append(t)
-
-        # Arrange clickable tokens in a grid
-        per_row = 8
-        selected_token = None
-        for i in range(0, len(tokens_unique), per_row):
-            row = st.columns(per_row)
-            for j, tok in enumerate(tokens_unique[i:i+per_row]):
-                # Use a stable key per token to avoid trigger-state errors on rerun
-                stable_key = f"dictbtn::{verse_ref}::{i}::{j}::{tok}"
-                if row[j].button(tok, key=stable_key):
-                    selected_token = tok
-
-        state_key = f"__dict_sel_{verse_ref}"
-        if selected_token:
-            # Resolve dictionary entry (exact → normalized → lemma)
-            def _lookup_entry(pword: str) -> dict:
-                ent = _get_first_entry_for(pword)
-                if ent:
-                    return {
-                        'pashto': pword,
-                        'rom': ent.get('f', ''),
-                        'pos': ent.get('c', ''),
-                        'eng': ent.get('e', ''),
-                    }
-                nkey = normalize_pashto_char(pword)
-                ent2 = _get_first_entry_for(nkey)
-                if ent2:
-                    return {'pashto': pword, 'rom': ent2.get('f',''), 'pos': ent2.get('c',''), 'eng': ent2.get('e','')}
-                lemma = guess_lemma_in_dict(pword)
-                if lemma:
-                    ent3 = _get_first_entry_for(lemma)
-                    if ent3:
-                        return {'pashto': lemma, 'rom': ent3.get('f',''), 'pos': ent3.get('c',''), 'eng': ent3.get('e','')}
-                # Fallbacks
-                return {
-                    'pashto': pword,
-                    'rom': romanize_from_dict_or_rules(pword) or romanization_for_form_fast(pword),
-                    'pos': dict_pos_for(pword),
-                    'eng': dict_english_for(pword),
-                }
-            st.session_state[state_key] = {'token': selected_token, 'info': _lookup_entry(selected_token)}
-
-        # Show popup-like expander when a token has been selected (modal fallback for older Streamlit)
-        if st.session_state.get(state_key):
-            sel = st.session_state[state_key]
-            token = sel['token']; info = sel['info']
-            with st.expander(f"Dictionary: {token}", expanded=True):
-                st.markdown(f"Pashto: **{info.get('pashto','')}**")
-                if info.get('rom'):
-                    st.markdown(f"Romanization: {info['rom']}")
-                if info.get('pos'):
-                    st.markdown(f"POS: {info['pos']}")
-                if info.get('eng'):
-                    st.markdown(f"English: {info['eng']}")
-                q = quote_plus(token)
-                st.markdown(f"[Open in LingDocs](https://dictionary.lingdocs.com/?q={q})")
-                if st.button("Close", key=f"close_{state_key}"):
-                    st.session_state.pop(state_key, None)
+    # Dictionary lookup removed (streamlined UI)
 
 
 # --- Small UI helpers ---
@@ -2046,13 +1981,13 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
     verses_to_show = [v for v in sorted(set(occ.get('verses', []))) if v in selected_text and _sense_match(selected_text.get(v, ''))]
     if verses_to_show:
         # Limit default list to 5 entries with NT-first prioritization (Gospels first)
-            st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
+        st.subheader(f"Occurrences of {normalized_form} ({form_rom}) — {len(verses_to_show)} hits")
         _coverage_add(verses_to_show)
         render_animated_book_panel(verses_to_show, selected_text, title="Book Coverage")
-            filtered = verses_to_show
-            bf = (globals().get('QP_B') or '').strip()
-            if bf:
-                filtered = [v for v in verses_to_show if _extract_book_from_ref(v) == bf]
+        filtered = verses_to_show
+        bf = (globals().get('QP_B') or '').strip()
+        if bf:
+            filtered = [v for v in verses_to_show if _extract_book_from_ref(v) == bf]
         # Prioritization order
         gospels = ['Matthew','Mark','Luke','John']
         def rank(vref: str) -> tuple:
