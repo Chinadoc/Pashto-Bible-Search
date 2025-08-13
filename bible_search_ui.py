@@ -297,16 +297,16 @@ st.markdown(
             || window.matchMedia('(display-mode: minimal-ui)').matches;
         }
         if (!isStandalone && typeof window.navigator !== 'undefined') {
-          // iOS Safari A2HS
+        /* iOS Safari A2HS */
           isStandalone = !!window.navigator.standalone;
         }
         var url = new URL(window.location.href);
         if (isStandalone && !url.searchParams.has('app')) {
           url.searchParams.set('app', '1');
-          // Force a one-time reload so the backend sees the new param
+          /* Force a one-time reload so the backend sees the new param */
           window.location.replace(url.toString());
         }
-        // Also annotate mobile viewport for responsive tweaks without reload
+        /* Also annotate mobile viewport for responsive tweaks without reload */
         var w = Math.min(window.innerWidth || 9999, (window.screen && window.screen.width) ? window.screen.width : 9999);
         if (w <= 680 && !url.searchParams.has('m')) {
           url.searchParams.set('m', '1');
@@ -1280,7 +1280,7 @@ def _inject_scroll_spy_assets():
                 const buttons = Array.from(document.querySelectorAll('.stButton > button'));
                 const chips = Array.from(document.querySelectorAll('.chip'));
                 const label = (el) => (el.innerText || '').trim();
-                // Match labels that start with the book name (e.g., "Matthew - 4") or equal it
+                /* Match labels that start with the book name (e.g., "Matthew - 4") or equal it */
                 const matchBtn = buttons.find(b => label(b).startsWith(book)) || buttons.find(b => label(b) === book);
                 const matchChip = chips.find(c => label(c).startsWith(book)) || chips.find(c => label(c) === book);
                 removeActive();
@@ -1298,7 +1298,7 @@ def _inject_scroll_spy_assets():
               const hook = () => {
                 document.querySelectorAll('.verse-observe').forEach(el => io.observe(el));
               };
-              // initial and on reruns (Streamlit swaps DOM on rerun)
+              /* initial and on reruns (Streamlit swaps DOM on rerun) */
               const ready = () => setTimeout(hook, 50);
               if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', ready);
@@ -1397,7 +1397,7 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
                       });
                     } catch (e) {}
                   };
-                  // bind now and after small delay to account for Streamlit reruns
+                  /* bind now and after small delay to account for Streamlit reruns */
                   setTimeout(bindChipClicks, 50);
                 })();
                 </script>
@@ -1640,7 +1640,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
     
     audio_url = find_audio_url(verse_ref)
     if audio_url:
-        // Gate auto-loading to reduce initial render time
+        # Gate auto-loading to reduce initial render time
         loaded = st.session_state.get('audio_loaded_count', 0)
         should_auto = bool(AUTO_LOAD_AUDIO) and (loaded < AUTO_LOAD_AUDIO_MAX)
         if should_auto:
@@ -1651,7 +1651,7 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 st.audio(audio_url, format='audio/mp3')
             st.session_state['audio_loaded_count'] = loaded + 1
         else:
-            // Stable toggle per verse to ensure the player persists across reruns
+            # Stable toggle per verse to ensure the player persists across reruns
             open_key = f"__audio_open::{verse_ref}"
             btn_key = f"btn_audio::{verse_ref}"
             is_open = bool(st.session_state.get(open_key))
@@ -1661,21 +1661,21 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 is_open = not is_open
             if is_open:
                 st.audio(audio_url, format='audio/mp3')
-        // Provide a user-visible download link
+        # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
             dl_url = GOOGLE_DRIVE_URL_PREFIX + file_id
         except Exception:
             dl_url = audio_url
         st.markdown(f"[Download Audio]({dl_url})")
-    // If there is no audio (e.g., most Old Testament verses), we simply omit
-    // the audio UI without displaying a warning so the results remain clean.
-    // Optional: reasons for inflection (hidden by default because current
-    // heuristics are approximate and can be misleading). To re-enable, set
-    // SHOW_INFL_REASONS = True near the top-level config and guard this block.
+    # If there is no audio (e.g., most Old Testament verses), we simply omit
+    # the audio UI without displaying a warning so the results remain clean.
+    # Optional: reasons for inflection (hidden by default because current
+    # heuristics are approximate and can be misleading). To re-enable, set
+    # SHOW_INFL_REASONS = True near the top-level config and guard this block.
     st.markdown("---")
 
-    // Dictionary lookup removed (streamlined UI)
+    # Dictionary lookup removed (streamlined UI)
 
 
 # --- Small UI helpers ---
@@ -1700,7 +1700,7 @@ def render_forms_summary(title, forms_dict, occurrence_index, text_map, scope_la
                     st.link_button("Open in new tab", href)
                     for vref in sorted(set(occ['verses'])):
                         display_verse_with_audio(vref, ps, text_map)
-                // Show common preverb variants (را / در / ور) to aid recognition
+                # Show common preverb variants (را / در / ور) to aid recognition
                 try:
                     preverbs = [('را', 'rá'), ('در', 'dar'), ('ور', 'war')]
                     variants = []
@@ -1911,6 +1911,18 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         render_sticky_chipbar(found_verses, text_map, title="Book Coverage")
         # Also render the floating panel for desktop wrap if desired
         render_animated_book_panel(found_verses, text_map, title="Book Coverage")
+        # Also mirror chips into sticky bar at top for persistent visibility
+        try:
+            counts = {}
+            for v in found_verses:
+                m = re.match(r'^([A-Za-z\s]+)\s\d+:\d+$', v)
+                if not m: continue
+                b = m.group(1).strip()
+                counts[b] = counts.get(b,0)+1
+            chips_html = "".join([f"<span class='chip'>{b}{' - '+str(c) if c else ''}</span>" for b,c in counts.items()])
+            st.markdown(f"<script>document.getElementById('coverageSticky').innerHTML=\"{chips_html}\";</script>", unsafe_allow_html=True)
+        except Exception:
+            pass
         filtered = found_verses
         bf = (globals().get('QP_B') or '').strip()
         if bf:
@@ -2275,7 +2287,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 f"Perfective Stem: {meta['perfective_stem']} ({meta['romanization'].get('perfective_stem','')}) · "
                 f"Past Participle: {meta['past_participle']} ({meta['romanization'].get('past_participle','')})"
             )
-            // Compact overview first, but skip if no hits
+            # Compact overview first, but skip if no hits
             for tense, forms_dict in [
                 ("present", conj.get('present', {})),
                 ("subjunctive", conj.get('subjunctive', {})),
@@ -2283,10 +2295,10 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 ("perfective future", conj.get('perfective_future', {})),
                 ("ability (present)", conj.get('ability_present', {}))
             ]:
-                if any(occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in forms_dict.values()):
+                if any(form_occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in forms_dict.values()):
                     render_forms_summary(tense, forms_dict, form_occurrence_index, bible_text, scope, key_prefix=f"sum_{tense}")
 
-        // If user entered the infinitive itself, show extended past tables, but only if they have hits
+        # If user entered the infinitive itself, show extended past tables, but only if they have hits
         if query == root_word and conj:
             for past_tense, past_dict in [
                 ("Past (continuous)", conj.get('continuous_past', {})),
@@ -2294,7 +2306,7 @@ def handle_grammatical_search(query, form_to_root_map, grammatical_index, nt_tex
                 ("Ability — continuous past", conj.get('ability_continuous_past', {})),
                 ("Ability — simple past", conj.get('ability_simple_past', {}))
             ]:
-                if any(occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in past_dict.values()):
+                if any(form_occurrence_index.get(normalize_pashto_char(ps), {}).get('count', 0) > 0 for ps, _ in past_dict.values()):
                     render_past_expanders(past_tense, past_dict, form_occurrence_index, bible_text)
         elif root_word in NOUNS:
             n = inflect_noun(root_word)
@@ -2538,6 +2550,18 @@ with tabs[0]:
     search_query = st.session_state.get('main_search','')
     scope = st.session_state.get('scope_value', SCOPE_LABELS[DEFAULT_SCOPE_INDEX])
     st.markdown("</div>", unsafe_allow_html=True)
+    # Sticky book coverage bar container
+    st.markdown(
+        """
+        <style>
+          .coverage-sticky { position: sticky; top: 56px; z-index: 900; padding: 8px 0; background: rgba(13,17,23,0.85); backdrop-filter: blur(6px); }
+          .coverage-sticky .chip { display:inline-block; margin: 3px 6px; padding: 4px 10px; border-radius: 999px; background:#2a2f3a; color:#cfe6ff; }
+          @media (max-width: 768px) { .coverage-sticky { position: static; } }
+        </style>
+        <div id="coverageSticky" class="coverage-sticky"></div>
+        """,
+        unsafe_allow_html=True,
+    )
     # Spacer to offset fixed header
     st.markdown("<div class='header-spacer'></div>", unsafe_allow_html=True)
 
