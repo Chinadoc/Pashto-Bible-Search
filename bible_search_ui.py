@@ -1410,8 +1410,9 @@ def render_animated_book_panel(refs: list, text_map: dict, title: str = "Book Co
                             url.searchParams.set('b', book);
                             url.searchParams.delete('book');
                           }
-                          const qs = url.searchParams.toString();
-                          window.location.href = url.pathname + (qs ? ('?' + qs) : '') + url.hash;
+                          try { sessionStorage.setItem('bookFilter', book); } catch(e) {}
+                          // Soft-rerun without navigating away
+                          if (window.streamlitRerun) { window.streamlitRerun(); } else { setTimeout(function(){ location.reload(); }, 10); }
                         });
                       });
                     } catch (e) {}
@@ -1679,8 +1680,16 @@ def display_verse_with_audio(verse_ref, search_term, bible_text):
                 st.session_state[open_key] = not is_open
                 is_open = not is_open
             if is_open:
-                # Start playback via direct URL; Streamlit's audio does not accept a key param
-                st.audio(audio_url, format='audio/mp3')
+                # Try fetching bytes for widest CDN compatibility, then fall back to URL
+                payload = None
+                try:
+                    payload = get_audio_bytes(audio_url)
+                except Exception:
+                    payload = None
+                if payload:
+                    st.audio(payload, format='audio/mp3')
+                else:
+                    st.audio(audio_url, format='audio/mp3')
         # Provide a user-visible download link
         try:
             file_id = audio_url.split('id=')[1].split('&')[0]
@@ -2003,10 +2012,14 @@ def handle_phrase_search(query, nt_text, ot_text, scope):
         limited = sorted(filtered, key=rank)[:5]
         for verse_ref in limited:
             display_verse_with_audio(verse_ref, normalized_query, text_map)
-        if len(filtered) > 5:
-            with st.expander("Show all matches"):
-                for verse_ref in sorted(filtered, key=rank):
-                    display_verse_with_audio(verse_ref, normalized_query, text_map)
+            # Always render all results; optionally collapse below the first N
+            N = 5
+            for verse_ref in sorted(filtered, key=rank)[:N]:
+                display_verse_with_audio(verse_ref, normalized_query, text_map)
+            if len(filtered) > N:
+                with st.expander("Show all matches"):
+                    for verse_ref in sorted(filtered, key=rank)[N:]:
+                        display_verse_with_audio(verse_ref, normalized_query, text_map)
         filtered = found_verses
         bf = (globals().get('QP_B') or '').strip()
         if bf:

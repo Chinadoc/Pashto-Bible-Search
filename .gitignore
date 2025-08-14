@@ -4,8 +4,9 @@
 # Ignore virtual env
 venv/
 
-# Ignore any large audio directories
+# Ignore any large audio directories (but keep pashto-bible-react)
 pashto*/
+!pashto-bible-react/
 *.mp3
 lingdocs_dictionary/
 audio_file_map.json
