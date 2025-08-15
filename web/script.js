@@ -1,5 +1,6 @@
 const searchInput = document.getElementById('search');
 const resultsList = document.getElementById('results');
+<<<<<<< HEAD
 const statsEl = document.getElementById('stats');
 const coverageEl = document.getElementById('coverage');
 const scopeSel = document.getElementById('scope');
@@ -38,6 +39,11 @@ const lru = (() => {
     }
   };
 })();
+=======
+
+let bibleData = [];
+let debounceId = null;
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
 
 function highlight(text, query) {
   if (!query) return text;
@@ -54,6 +60,7 @@ function displayResults(results, query) {
   if (!Array.isArray(results)) return;
   if (results.length === 0) {
     resultsList.innerHTML = '<p class="meta">هیڅ نتیجه ونه موندل شوه</p>';
+<<<<<<< HEAD
     coverageEl.innerHTML = '';
     return;
   }
@@ -112,12 +119,22 @@ function updateStats(count, ms) {
   if (typeof count === 'number') parts.push(`ټولې نتايج: ${count}`);
   if (typeof ms === 'number') parts.push(`وخت: ${ms.toFixed(1)}ms`);
   statsEl.textContent = parts.join(' • ');
+=======
+    return;
+  }
+  const html = results.slice(0, 200).map(v => {
+    const h = highlight(v.text, query);
+    return `<div class="result"><div class="ref">${v.ref}</div><div class="text">${h}</div></div>`;
+  }).join('');
+  resultsList.innerHTML = html;
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
 }
 
 function doSearch(query) {
   const q = (query || '').trim();
   if (!q) {
     resultsList.innerHTML = '';
+<<<<<<< HEAD
     updateStats(0, 0);
     return;
   }
@@ -214,11 +231,19 @@ function doSearch(query) {
     updateStats(matches.length, ms);
     lru.set(q, { results: matches, ms });
   }
+=======
+    return;
+  }
+  const qn = q; // keep simple substring for now
+  const matches = bibleData.filter(v => v.text && v.text.includes(qn));
+  displayResults(matches, q);
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   resultsList.innerHTML = '<p class="meta">...د خدای کلام لوډ کیږي</p>';
   searchInput.disabled = true;
+<<<<<<< HEAD
   // Try to register service worker (optional)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -242,11 +267,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const loadJson = fetch('./pashto_bible.json').then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); });
   Promise.any([loadMsgPack, loadJson])
     .catch(() => loadJson)
+=======
+  fetch('./pashto_bible.json')
+    .then(r => { if (!r.ok) throw new Error('Network error'); return r.json(); })
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
     .then(data => {
       bibleData = data || [];
       resultsList.innerHTML = '';
       searchInput.disabled = false;
       searchInput.placeholder = 'لټون...';
+<<<<<<< HEAD
       scopeSel.value = scope;
       if (useWorker && worker) {
         worker.postMessage({ type: 'data', data: bibleData });
@@ -272,6 +302,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if (activeTab === 'lexicon') loadLexicon();
     });
   }
+=======
+    })
+    .catch(err => {
+      console.error('Failed to load bible JSON', err);
+      resultsList.innerHTML = '<p class="meta">د معلوماتو په لوډولو کې ستونزه وه</p>';
+    });
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
 });
 
 searchInput.addEventListener('input', (e) => {
@@ -280,6 +317,7 @@ searchInput.addEventListener('input', (e) => {
   debounceId = setTimeout(() => doSearch(q), 250);
 });
 
+<<<<<<< HEAD
 goBtn.addEventListener('click', () => doSearch(searchInput.value));
 scopeSel.addEventListener('change', (e) => {
   scope = e.target.value || 'all';
@@ -356,6 +394,8 @@ async function loadLexicon(){
   }
 }
 
+=======
+>>>>>>> 3be686586e355bc90e6e5ba71d1ee58c46655a7b
 
 
 

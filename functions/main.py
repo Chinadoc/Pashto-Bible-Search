@@ -22,7 +22,7 @@ app = Flask(__name__)
 def _normalize_pashto_char(s: str) -> str:
     """Standardize common Pashto character variations."""
     try:
-        return s.replace('ی', 'ي').replace('ک', 'ګ')
+        return s.replace('ی', 'ی').replace('ک', 'ک')
     except Exception:
         return s
 
@@ -116,3 +116,4 @@ def search_grammar():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080)
+

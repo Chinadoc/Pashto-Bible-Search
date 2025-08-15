@@ -49,7 +49,7 @@ def _load_lexicons() -> tuple[dict, dict]:
 
 def _normalize_pashto_char(s: str) -> str:
     try:
-        return s.replace('\u064a', '\u06cc').replace('\u0643', '\u06a9')
+        return s.replace('ی', 'ی').replace('ک', 'ک')
     except Exception:
         return s
 
