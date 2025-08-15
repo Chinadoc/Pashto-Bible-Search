@@ -1,0 +1,29 @@
+{
+  "version": "1.1",
+  "files": {
+    "irregular_verbs.json": {
+      "size": 6144,
+      "checksum": "fa2f06d957be47ef98dae5da476b088b"
+    },
+    "nouns_lexicon.json": {
+      "size": 806013,
+      "checksum": "90d09f48f5b036a228248f66f0a2a3bb"
+    },
+    "dictionary_fast_index.json": {
+      "size": 8004555,
+      "checksum": "087bda509caaacf77585988a087bea10"
+    },
+    "verbs_lexicon.json": {
+      "size": 880222,
+      "checksum": "b10fdf72c4471c8ff42817ce7e3e2c2c"
+    },
+    "manifest.json": {
+      "size": 708,
+      "checksum": "b72a68cdd15651e781aee2455fd78cc4"
+    },
+    "full_dictionary_enriched.json": {
+      "size": 6941475,
+      "checksum": "fa9f819a98f89794f97f8603906c9529"
+    }
+  }
+}

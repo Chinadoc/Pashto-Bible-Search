@@ -1,8 +1,12 @@
+# Generated locally; CI generates web/pashto_bible.json
+/pashto_bible.json
+
 # Ignore virtual env
 venv/
 
-# Ignore any large audio directories
+# Ignore any large audio directories (but keep pashto-bible-react)
 pashto*/
+!pashto-bible-react/
 *.mp3
 lingdocs_dictionary/
 audio_file_map.json
@@ -15,3 +19,4 @@ __pycache__/
 
 # MacOS
 .DS_Store
+serviceAccountKey.json
