@@ -64,38 +64,44 @@ export default function Home() {
     return results.filter((v) => v.ref.startsWith(bookFilter + " "));
   }, [results, bookFilter]);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
   const handleSearch = async () => {
-    const q = query.trim();
-    if (!q) {
-      setResults([]);
-      setCoverage([]);
-      setConjugations(null);
-      return;
-    }
     setLoading(true);
+    setResults([]);
+    setCoverage([]);
+    setConjugations(null);
+
+    const body = { query, scope };
+
     try {
+      let response: Response;
       if (mode === "phrase") {
-        const resp = await fetch(`${API_BASE}/search/phrase`, {
+        const url = process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL;
+        if (!url) throw new Error("Phrase search URL is not configured.");
+        response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope, limit: 1000 }),
+          body: JSON.stringify(body),
         });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as PhraseResponse;
+      } else {
+        const url = process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL;
+        if (!url) throw new Error("Grammar search URL is not configured.");
+        response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      const data = (await response.json()) as PhraseResponse | GrammarResponse;
+      if (mode === "phrase") {
         setResults(data.results ?? []);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
         setConjugations(null);
       } else {
-        const resp = await fetch(`${API_BASE}/search/grammar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope, limit: 500 }),
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as GrammarResponse;
         setResults(data.occurrences ?? []);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
