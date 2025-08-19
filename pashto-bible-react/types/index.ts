@@ -31,7 +31,18 @@ export interface GrammarResponse {
   occurrences: Verse[];
   coverage: CoverageItem[];
   conjugations?: Conjugations | null;
+  highlight_terms?: string[];
   ms: number;
+}
+
+export interface LexiconEntry {
+  e?: string;
+  f_primary: string;
+  f_secondary?: string;
+  gender?: string;
+  p_norm?: string;
+  pos_family?: string;
+  [key: string]: any;
 }
 
 
