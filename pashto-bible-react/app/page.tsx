@@ -97,15 +97,15 @@ export default function Home() {
       }
       const data = (await response.json()) as PhraseResponse | GrammarResponse;
       if (mode === "phrase") {
-        setResults(data.results ?? []);
+        setResults((data as PhraseResponse).results ?? []);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
         setConjugations(null);
       } else {
-        setResults(data.occurrences ?? []);
+        setResults((data as GrammarResponse).occurrences ?? []);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
-        setConjugations(data.conjugations ?? null);
+        setConjugations((data as GrammarResponse).conjugations ?? null);
       }
     } catch (e) {
       console.error("Failed to fetch search results:", e);
