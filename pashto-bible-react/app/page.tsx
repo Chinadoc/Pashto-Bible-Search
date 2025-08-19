@@ -50,13 +50,26 @@ export default function Home() {
   useEffect(() => savePersisted("pbs_scope", scope), [scope]);
   useEffect(() => savePersisted("pbs_book", bookFilter), [bookFilter]);
 
-  // load audio map once
+  // load audio map once from the new cloud function
   useEffect(() => {
-    const load = async () => {
-      const aMap = await fetch("/assets/audio_file_map.json").then((r) => r.json()).catch(() => ({}));
-      setAudioMap(aMap as AudioMap);
+    const loadAudioMap = async () => {
+      const url = process.env.NEXT_PUBLIC_AUDIO_MAP_URL;
+      if (!url) {
+        console.warn("Audio map URL is not configured. Audio will be unavailable.");
+        setAudioMap({});
+        return;
+      }
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch audio map with status ${response.status}`);
+        const aMap = (await response.json()) as AudioMap;
+        setAudioMap(aMap);
+      } catch (error) {
+        console.error("Failed to load audio map:", error);
+        setAudioMap({});
+      }
     };
-    load();
+    loadAudioMap();
   }, []);
 
   const visibleResults = useMemo(() => {
