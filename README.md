@@ -56,6 +56,55 @@ python3 -m http.server 8889 --directory ./web --bind 127.0.0.1
 - On every push, CI regenerates `web/pashto_bible.json` and deploys `web/`
 - URL: `https://chinadoc.github.io/Pashto-Bible-Search/`
 
+### Vercel / Firebase Deployment
+
+This describes how to deploy the `pashto-bible-react` frontend to Vercel and use a backend hosted on Google Cloud Functions with Firestore.
+
+**1. Populate Firestore Database**
+
+The cloud functions in `functions/main.py` rely on data being populated in a Firestore database. A script is provided to handle this data ingestion.
+
+**Instructions to run the ingestion script:**
+
+1.  **Install Dependencies:**
+    ```bash
+    pip install firebase-admin tqdm
+    ```
+
+2.  **Set Up Firebase Credentials:**
+    *   Navigate to your Firebase project console.
+    *   Go to **Project settings** > **Service accounts**.
+    *   Click **"Generate new private key"** to download a JSON service account file.
+    *   Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the absolute path of the downloaded JSON file.
+
+    *For macOS/Linux:*
+    ```bash
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/serviceAccountKey.json"
+    ```
+    *For Windows:*
+    ```powershell
+    $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\your\serviceAccountKey.json"
+    ```
+
+3.  **Run the Script:**
+    Once the credentials are set up, run the ingestion script from the root of the repository:
+    ```bash
+    python ingest_firestore.py
+    ```
+    This will upload all the necessary Bible text, lexicon, and index data to your Firestore database.
+
+**2. Deploy Backend to Google Cloud**
+
+The backend logic is in `functions/main.py`. You can deploy this as a Google Cloud Function. Refer to the Google Cloud documentation for instructions on deploying Python functions.
+
+**3. Deploy Frontend to Vercel**
+
+The `pashto-bible-react` application can be deployed to Vercel. You will need to set the following environment variables in your Vercel project to point to your deployed cloud functions:
+
+*   `NEXT_PUBLIC_PHRASE_SEARCH_URL`: The URL of your `/search_phrase` cloud function.
+*   `NEXT_PUBLIC_GRAMMAR_SEARCH_URL`: The URL of your `/search_grammar` cloud function.
+
+
 ### Deployment (Cloudflare Pages — optional)
 - Connect repo → Framework preset: None → Build command: empty → Output dir: `web`
 - Pages will serve the committed files directly from the CDN
