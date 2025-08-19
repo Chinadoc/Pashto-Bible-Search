@@ -6,141 +6,125 @@ import CoverageChips from "@/components/CoverageChips";
 import ResultsList from "@/components/ResultsList";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations } from "@/types";
 
-const OT_BOOKS = new Set([
-  "Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi"
-]);
-const NT_BOOKS = new Set([
-  "Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"
-]);
+// Helper component to render conjugation tables nicely
+const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
+  const tables = conjugations.tables ?? {};
+  return (
+    <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h3 className="font-semibold text-lg mb-2">
+        {conjugations.kind === 'verb' ? 'Conjugations' : 'Inflections'} for: <span className="font-bold text-blue-400">{conjugations.root}</span>
+      </h3>
+      {conjugations.query_rom && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Romanization: {conjugations.query_rom}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {Object.entries(tables).map(([title, values]) => (
+          <div key={title}>
+            <h4 className="font-semibold text-md capitalize border-b border-gray-300 dark:border-gray-600 pb-1 mb-2">{title.replace(/_/g, ' ')}</h4>
+            {typeof values === 'string' ? (
+              <p className="text-sm text-gray-700 dark:text-gray-200">{values}</p>
+            ) : (
+              <ul className="list-disc list-inside">
+                {Object.entries(values).map(([key, value]) => (
+                  <li key={key} className="text-sm text-gray-700 dark:text-gray-200">
+                    <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span> {Array.isArray(value) ? value.join(', ') : value}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-function loadPersisted<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function savePersisted<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-}
 
 export default function Home() {
   const [audioMap, setAudioMap] = useState<AudioMap>({});
-  const [query, setQuery] = useState<string>(" ");
+  const [query, setQuery] = useState<string>("");
   const [scope, setScope] = useState<Scope>("all");
   const [mode, setMode] = useState<Mode>("phrase");
   const [bookFilter, setBookFilter] = useState<string | null>(null);
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
+  const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // hydrate persisted UI state
+  // Hydrate persisted UI state
   useEffect(() => {
-    setQuery(loadPersisted<string>("pbs_query", ""));
-    setScope(loadPersisted<Scope>("pbs_scope", "all"));
-    setBookFilter(loadPersisted<string | null>("pbs_book", null));
+    setQuery(localStorage.getItem("pbs_query") || "");
+    setScope((localStorage.getItem("pbs_scope") as Scope) || "all");
+    setBookFilter(localStorage.getItem("pbs_book") || null);
   }, []);
 
-  useEffect(() => savePersisted("pbs_query", query), [query]);
-  useEffect(() => savePersisted("pbs_scope", scope), [scope]);
-  useEffect(() => savePersisted("pbs_book", bookFilter), [bookFilter]);
+  useEffect(() => { localStorage.setItem("pbs_query", query); }, [query]);
+  useEffect(() => { localStorage.setItem("pbs_scope", scope); }, [scope]);
+  useEffect(() => { if (bookFilter) localStorage.setItem("pbs_book", bookFilter); else localStorage.removeItem("pbs_book"); }, [bookFilter]);
 
-  // load audio map once from the new cloud function
+  // Load audio map once
   useEffect(() => {
     const loadAudioMap = async () => {
       const url = process.env.NEXT_PUBLIC_AUDIO_MAP_URL;
-      if (!url) {
-        console.warn("Audio map URL is not configured. Audio will be unavailable.");
-        setAudioMap({});
-        return;
-      }
+      if (!url) return;
       try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch audio map with status ${response.status}`);
-        const aMap = (await response.json()) as AudioMap;
-        setAudioMap(aMap);
-      } catch (error) {
-        console.error("Failed to load audio map:", error);
-        setAudioMap({});
-      }
+        const aMap = await fetch(url).then(r => r.json());
+        setAudioMap(aMap as AudioMap);
+      } catch (error) { console.error("Failed to load audio map:", error); }
     };
     loadAudioMap();
   }, []);
 
   const visibleResults = useMemo(() => {
     if (!bookFilter) return results;
-    return results.filter((v) => v && v.ref && v.ref.startsWith(bookFilter + " "));
+    return results.filter((v) => v?.ref?.startsWith(bookFilter + " "));
   }, [results, bookFilter]);
 
   const handleSearch = async () => {
+    if (!query.trim()) return;
     setLoading(true);
     setResults([]);
     setCoverage([]);
     setConjugations(null);
+    setHighlightTerms([]);
 
     const body = { query, scope };
-
+    
     try {
-      let response: Response;
-      if (mode === "phrase") {
-        const url = process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL;
-        if (!url) throw new Error("Phrase search URL is not configured.");
-        response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      } else {
-        const url = process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL;
-        if (!url) throw new Error("Grammar search URL is not configured.");
-        response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
+      const url = mode === 'phrase'
+        ? process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL
+        : process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL;
 
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      const data = (await response.json()) as PhraseResponse | GrammarResponse;
+      if (!url) throw new Error(`${mode} search URL is not configured.`);
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+      
+      const data = await response.json();
+
       if (mode === "phrase") {
-        const cleanResults = ((data as PhraseResponse).results ?? []).filter(v => v && v.ref && v.text);
-        setResults(cleanResults);
-        const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
-        setCoverage(cov);
+        setResults((data.results ?? []).filter(Boolean));
+        setHighlightTerms([query]);
         setConjugations(null);
       } else {
-        const cleanResults = ((data as GrammarResponse).occurrences ?? []).filter(v => v && v.ref && v.text);
-        setResults(cleanResults);
-        const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
-        setCoverage(cov);
-        setConjugations((data as GrammarResponse).conjugations ?? null);
+        setResults((data.occurrences ?? []).filter(Boolean));
+        setHighlightTerms(data.highlight_terms ?? [query]);
+        setConjugations(data.conjugations ?? null);
       }
+      setCoverage((data.coverage ?? []).sort((a, b) => b.count - a.count));
     } catch (e) {
       console.error("Failed to fetch search results:", e);
-      setResults([]);
-      setCoverage([]);
-      setConjugations(null);
     } finally {
       setLoading(false);
     }
   };
-
-  // Optional: run a search automatically when scope changes and a query exists
-  useEffect(() => {
-    if (query.trim()) {
-      // fire and forget
-      handleSearch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope]);
-
+  
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-4">
@@ -149,17 +133,9 @@ export default function Home() {
         {loading ? (
           <div className="py-8 text-center">Loading…</div>
         ) : (
-          <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} />
+          <ResultsList results={visibleResults} highlightTerms={highlightTerms} audioMap={audioMap} />
         )}
-        {conjugations ? (
-          <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-            <div className="font-semibold mb-2">{conjugations.kind === 'verb' ? 'Conjugations' : 'Inflections'} for {conjugations.root}</div>
-            {conjugations.query_rom ? (
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Romanization: {conjugations.query_rom}</div>
-            ) : null}
-            <pre className="whitespace-pre-wrap text-sm overflow-auto">{JSON.stringify(conjugations.tables, null, 2)}</pre>
-          </div>
-        ) : null}
+        {conjugations && <ConjugationDisplay conjugations={conjugations} />}
       </div>
     </div>
   );
