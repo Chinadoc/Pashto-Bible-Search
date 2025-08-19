@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import SearchBar from "@/components/SearchBar";
 import CoverageChips from "@/components/CoverageChips";
 import ResultsList from "@/components/ResultsList";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations } from "@/types";
+import LexiconModal from "@/components/LexiconModal";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "@/types";
 
 // Helper component to render conjugation tables nicely
 const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
@@ -51,6 +52,9 @@ export default function Home() {
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedLexiconWord, setSelectedLexiconWord] = useState<string | null>(null);
+  const [lexiconEntry, setLexiconEntry] = useState<LexiconEntry | null>(null);
+  const [lexiconLoading, setLexiconLoading] = useState<boolean>(false);
 
   // Hydrate persisted UI state
   useEffect(() => {
@@ -75,6 +79,33 @@ export default function Home() {
     };
     loadAudioMap();
   }, []);
+  
+  // Fetch lexicon entry when a word is selected
+  useEffect(() => {
+    const fetchLexiconEntry = async () => {
+      if (!selectedLexiconWord) return;
+      setLexiconLoading(true);
+      const url = process.env.NEXT_PUBLIC_LEXICON_URL;
+      if (!url) {
+        console.error("Lexicon URL is not configured.");
+        setLexiconLoading(false);
+        return;
+      }
+      try {
+        const response = await fetch(`${url}?word=${encodeURIComponent(selectedLexiconWord)}`);
+        if (!response.ok) throw new Error(`Lexicon entry not found for "${selectedLexiconWord}"`);
+        const data = await response.json();
+        setLexiconEntry(data as LexiconEntry);
+      } catch (error) {
+        console.error(error);
+        setLexiconEntry({ f_primary: selectedLexiconWord || "", e: "Definition not found." });
+      } finally {
+        setLexiconLoading(false);
+      }
+    };
+    fetchLexiconEntry();
+  }, [selectedLexiconWord]);
+
 
   const visibleResults = useMemo(() => {
     if (!bookFilter) return results;
@@ -125,6 +156,15 @@ export default function Home() {
     }
   };
   
+  const handleWordClick = (word: string) => {
+    setSelectedLexiconWord(word);
+  };
+  
+  const closeModal = () => {
+    setSelectedLexiconWord(null);
+    setLexiconEntry(null);
+  };
+
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-4">
@@ -133,9 +173,15 @@ export default function Home() {
         {loading ? (
           <div className="py-8 text-center">Loading…</div>
         ) : (
-          <ResultsList results={visibleResults} highlightTerms={highlightTerms} audioMap={audioMap} />
+          <ResultsList results={visibleResults} highlightTerms={highlightTerms} audioMap={audioMap} onWordClick={handleWordClick} />
         )}
         {conjugations && <ConjugationDisplay conjugations={conjugations} />}
+        {(lexiconLoading || lexiconEntry) && (
+          <LexiconModal 
+            entry={lexiconLoading ? {f_primary: selectedLexiconWord || "", e: "Loading..."} : lexiconEntry!}
+            onBackdropClick={closeModal}
+          />
+        )}
       </div>
     </div>
   );
