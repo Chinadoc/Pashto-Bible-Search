@@ -63,6 +63,24 @@ def _ref_from_doc(doc: firestore.DocumentSnapshot) -> str:
 # --- API Endpoints ---
 
 @https_fn.on_request(cors=options.CorsOptions(cors_origins="*", cors_methods=["get", "post"]))
+def get_audio_map(req: https_fn.Request) -> https_fn.Response:
+    """
+    Fetches the entire audio map from the 'audio_map' collection in Firestore.
+    Returns a JSON object mapping filenames to Google Drive IDs.
+    """
+    db = firestore.client()
+    try:
+        docs = db.collection('audio_map').stream()
+        audio_map = {doc.id: doc.to_dict().get('fileName', '') for doc in docs}
+        return https_fn.Response(
+            json.dumps(audio_map),
+            headers={"Content-Type": "application/json"}
+        )
+    except Exception as e:
+        print(f"Error fetching audio map: {e}")
+        return https_fn.Response("Failed to fetch audio map.", status=500)
+
+@https_fn.on_request(cors=options.CorsOptions(cors_origins="*", cors_methods=["get", "post"]))
 def search_phrase(req: https_fn.Request) -> https_fn.Response:
     """
     Performs a simple substring search across all Bible verses.
@@ -82,14 +100,9 @@ def search_phrase(req: https_fn.Request) -> https_fn.Response:
     if not query:
         return https_fn.Response("Query cannot be empty.", status=400)
 
-    # Note: Firestore doesn't support native substring search.
-    # A more scalable solution would use a dedicated search service like Algolia or Typesense.
-    # For this project, we will iterate, which is slow but functional for a demo.
-    
     verses_ref = db.collection('verses')
     results = []
     
-    # This is inefficient and will be slow. We will address this later.
     for doc in verses_ref.stream():
         data = doc.to_dict() or {}
         text = data.get('text', '')
@@ -101,9 +114,6 @@ def search_phrase(req: https_fn.Request) -> https_fn.Response:
             if len(results) >= limit:
                 break
     
-    # Coverage calculation would also require iterating all verses, which is too slow.
-    # We will omit it for this Firestore-based version.
-
     ms = (time.time() - start_time) * 1000
     return https_fn.Response(
         json.dumps({"results": results, "coverage": [], "ms": ms}),
@@ -118,8 +128,6 @@ def search_grammar(req: https_fn.Request) -> https_fn.Response:
     generating all its forms, and finding occurrences.
     """
     db = firestore.client() # Initialize Firestore client within the function
-    # --- LAZY IMPORTS ---
-    # Import heavy libraries inside the function to speed up cold starts.
     from verb_inflector import conjugate_verb, find_lexicon_root_for_form, romanization_for_form_fast
     from noun_inflector import inflect_noun
 
@@ -136,19 +144,15 @@ def search_grammar(req: https_fn.Request) -> https_fn.Response:
     if not query:
         return https_fn.Response("Query cannot be empty.", status=400)
 
-    # 1. Find the root of the queried word from the 'inflections' collection
     inflection_ref = db.collection('inflections').document(query)
     inflection_doc = inflection_ref.get()
     
-    root_word = query # Default to the query itself if no root is found
+    root_word = query 
     if inflection_doc.exists:
         root_data = inflection_doc.to_dict()
         if root_data and 'value' in root_data:
             root_word = root_data['value']
 
-    # This is a placeholder for a more advanced implementation.
-    # The ideal approach uses an inverted index, which we will build later.
-    # For now, we perform a simple substring search on the root word to demonstrate the flow.
     verses_ref = db.collection('verses')
     occurrences = []
     for doc in verses_ref.stream():
@@ -162,11 +166,8 @@ def search_grammar(req: https_fn.Request) -> https_fn.Response:
             if len(occurrences) >= limit:
                 break
 
-    # 4. Get conjugations/inflections
     conjugations = None
     try:
-        # We need to decide whether the root is a verb or a noun.
-        # This requires checking our lexicon collections.
         is_verb = db.collection('verbs').document(root_word).get().exists
         is_noun = db.collection('nouns').document(root_word).get().exists
 
@@ -184,7 +185,6 @@ def search_grammar(req: https_fn.Request) -> https_fn.Response:
                 "query_rom": romanization_for_form_fast(query)
             }
     except Exception as e:
-        # Log the error for debugging, but don't crash the function
         print(f"Error during inflection: {e}")
         pass
 
