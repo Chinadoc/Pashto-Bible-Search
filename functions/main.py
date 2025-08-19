@@ -202,4 +202,21 @@ def search_grammar(req: https_fn.Request) -> https_fn.Response:
     for doc in db.collection('verses').stream():
         data = doc.to_dict() or {}
         text = data.get('text', '')
-        ref = _ref
+        ref = _ref_from_doc(doc)
+        book = _get_book_from_ref(ref)
+        if scope == 'nt' and book not in NT_BOOKS:
+            continue
+        if scope == 'ot' and book not in OT_BOOKS:
+            continue
+        if any(term in text for term in highlight_terms):
+            occurrences.append({"ref": ref, "text": text})
+            if len(occurrences) >= limit:
+                break
+    ms = (time.time() - start_time) * 1000
+    return https_fn.Response(json.dumps({
+        "occurrences": occurrences,
+        "coverage": [],
+        "conjugations": conjugations,
+        "highlight_terms": highlight_terms,
+        "ms": ms
+    }), headers={"Content-Type": "application/json"})
