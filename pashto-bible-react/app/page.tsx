@@ -97,12 +97,14 @@ export default function Home() {
       }
       const data = (await response.json()) as PhraseResponse | GrammarResponse;
       if (mode === "phrase") {
-        setResults((data as PhraseResponse).results ?? []);
+        const cleanResults = ((data as PhraseResponse).results ?? []).filter(v => v && v.ref && v.text);
+        setResults(cleanResults);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
         setConjugations(null);
       } else {
-        setResults((data as GrammarResponse).occurrences ?? []);
+        const cleanResults = ((data as GrammarResponse).occurrences ?? []).filter(v => v && v.ref && v.text);
+        setResults(cleanResults);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
         setConjugations((data as GrammarResponse).conjugations ?? null);
