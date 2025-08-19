@@ -75,6 +75,44 @@ def _flatten_inflection_tables(tables):
 
 # --- API Endpoints ---
 @https_fn.on_request(cors=cors_options)
+def get_lexicon_entry(req: https_fn.Request) -> https_fn.Response:
+    """Fetches a lexicon entry for a given word."""
+    db = firestore.client()
+    try:
+        word = req.args.get("word", "").strip()
+        if not word:
+            return https_fn.Response("Missing 'word' query parameter.", status=400)
+
+        lexicon_ref = db.collection('lexicon').document(word)
+        lexicon_doc = lexicon_ref.get()
+
+        if lexicon_doc.exists:
+            return https_fn.Response(
+                json.dumps(lexicon_doc.to_dict()),
+                headers={"Content-Type": "application/json"}
+            )
+        else:
+            # Try a normalized version as a fallback
+            normalized_word = _normalize_pashto_char(word)
+            lexicon_ref = db.collection('lexicon').document(normalized_word)
+            lexicon_doc = lexicon_ref.get()
+            if lexicon_doc.exists:
+                return https_fn.Response(
+                    json.dumps(lexicon_doc.to_dict()),
+                    headers={"Content-Type": "application/json"}
+                )
+
+            return https_fn.Response(
+                json.dumps({"error": "Entry not found"}),
+                status=404,
+                headers={"Content-Type": "application/json"}
+            )
+    except Exception as e:
+        print(f"Error fetching lexicon entry: {e}")
+        return https_fn.Response("Failed to fetch lexicon entry.", status=500)
+
+
+@https_fn.on_request(cors=cors_options)
 def get_audio_map(req: https_fn.Request) -> https_fn.Response:
     db = firestore.client()
     try:
@@ -89,3 +127,79 @@ def search_phrase(req: https_fn.Request) -> https_fn.Response:
     db = firestore.client()
     start_time = time.time()
     try:
+        params = req.get_json()
+        query = params.get("query", "").strip()
+        scope = params.get("scope", "all").lower()
+        limit = int(params.get("limit", 200))
+    except Exception:
+        return https_fn.Response("Invalid request format.", status=400)
+
+    if not query:
+        return https_fn.Response("Query cannot be empty.", status=400)
+
+    results = []
+    # This is inefficient and should be replaced with a proper search index for production use.
+    # For now, we iterate and filter in the function.
+    for doc in db.collection('verses').stream():
+        data = doc.to_dict() or {}
+        text = data.get('text', '')
+        ref = _ref_from_doc(doc)
+        
+        book = _get_book_from_ref(ref)
+        if scope == 'nt' and book not in NT_BOOKS: continue
+        if scope == 'ot' and book not in OT_BOOKS: continue
+
+        if query in text:
+            results.append({"ref": ref, "text": text})
+            if len(results) >= limit: break
+    
+    ms = (time.time() - start_time) * 1000
+    return https_fn.Response(json.dumps({"results": results, "coverage": [], "ms": ms}), headers={"Content-Type": "application/json"})
+
+@https_fn.on_request(cors=cors_options)
+def search_grammar(req: https_fn.Request) -> https_fn.Response:
+    db = firestore.client()
+    # Lazy import heavy libraries to speed up cold starts
+    from verb_inflector import conjugate_verb, romanization_for_form_fast
+    from noun_inflector import inflect_noun
+
+    start_time = time.time()
+    try:
+        params = req.get_json()
+        query = _normalize_pashto_char(params.get("query", "").strip())
+        scope = params.get("scope", "all").lower()
+        limit = int(params.get("limit", 500))
+    except Exception:
+        return https_fn.Response("Invalid request format.", status=400)
+
+    if not query:
+        return https_fn.Response("Query cannot be empty.", status=400)
+
+    inflection_ref = db.collection('inflections').document(query)
+    root_word = query
+    if inflection_ref.get().exists:
+        root_data = inflection_ref.get().to_dict()
+        if root_data and 'value' in root_data:
+            root_word = root_data['value']
+
+    conjugations = None
+    highlight_terms = [query, root_word]
+    try:
+        is_verb = db.collection('verbs').document(root_word).get().exists
+        is_noun = db.collection('nouns').document(root_word).get().exists
+        tables = conjugate_verb(root_word) if is_verb else inflect_noun(root_word) if is_noun else None
+        if tables:
+            conjugations = {"root": root_word, "kind": "verb" if is_verb else "noun", "tables": tables, "query_rom": romanization_for_form_fast(query)}
+            highlight_terms.extend(_flatten_inflection_tables(tables))
+    except Exception as e:
+        print(f"Error during inflection: {e}")
+
+    # Use a set for efficient lookup and to remove duplicates
+    highlight_terms = list(set(term for term in highlight_terms if term))
+
+    occurrences = []
+    # Inefficient iteration: see note in search_phrase
+    for doc in db.collection('verses').stream():
+        data = doc.to_dict() or {}
+        text = data.get('text', '')
+        ref = _ref
