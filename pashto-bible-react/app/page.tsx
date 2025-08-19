@@ -61,7 +61,7 @@ export default function Home() {
 
   const visibleResults = useMemo(() => {
     if (!bookFilter) return results;
-    return results.filter((v) => v.ref.startsWith(bookFilter + " "));
+    return results.filter((v) => v && v.ref && v.ref.startsWith(bookFilter + " "));
   }, [results, bookFilter]);
 
   const handleSearch = async () => {
