@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+"use client";
+
 import { Verse, AudioMap } from '@/types';
 import { audioUrlFromRef } from '@/utils/audio';
 
@@ -9,7 +10,7 @@ const cleanVerseRef = (ref: string): string => {
   return ref.replace(/([a-zA-Z])(\d+)\s/, '$1 ');
 };
 
-const HighlightedText = ({ text, terms }: { text: string; terms: string[] }) => {
+const HighlightedText = ({ text, terms, onWordClick }: { text: string; terms: string[]; onWordClick: (word: string) => void; }) => {
   if (!terms.length || !text) {
     return <>{text}</>;
   }
@@ -22,7 +23,11 @@ const HighlightedText = ({ text, terms }: { text: string; terms: string[] }) => 
     <>
       {parts.map((part, i) =>
         sortedTerms.includes(part) ? (
-          <mark key={i} className="bg-yellow-300 dark:bg-yellow-500 text-black rounded px-1">
+          <mark 
+            key={i} 
+            className="bg-yellow-300 dark:bg-yellow-500 text-black rounded px-1 cursor-pointer hover:bg-yellow-400 dark:hover:bg-yellow-600"
+            onClick={() => onWordClick(part)}
+          >
             {part}
           </mark>
         ) : (
@@ -33,7 +38,7 @@ const HighlightedText = ({ text, terms }: { text: string; terms: string[] }) => 
   );
 };
 
-const ResultsList = ({ results, highlightTerms, audioMap }: { results: Verse[]; highlightTerms: string[]; audioMap: AudioMap }) => {
+const ResultsList = ({ results, highlightTerms, audioMap, onWordClick }: { results: Verse[]; highlightTerms: string[]; audioMap: AudioMap; onWordClick: (word: string) => void; }) => {
   if (!results.length) {
     return <div className="text-center py-8 text-gray-500">No search results</div>;
   }
@@ -54,7 +59,7 @@ const ResultsList = ({ results, highlightTerms, audioMap }: { results: Verse[]; 
               )}
             </div>
             <p className="text-lg text-gray-800 dark:text-gray-100 leading-relaxed" style={{ direction: 'rtl' }}>
-              <HighlightedText text={verse.text} terms={highlightTerms} />
+              <HighlightedText text={verse.text} terms={highlightTerms} onWordClick={onWordClick} />
             </p>
           </div>
         );
@@ -64,3 +69,5 @@ const ResultsList = ({ results, highlightTerms, audioMap }: { results: Verse[]; 
 };
 
 export default ResultsList;
+
+
