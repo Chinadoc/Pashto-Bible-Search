@@ -9,7 +9,7 @@ import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarRespo
 
 // Helper component to render conjugation tables nicely
 const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
-  const tables = conjugations.tables ?? {};
+  const tables: Record<string, unknown> = conjugations.tables ?? {};
   return (
     <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-4">
       <h3 className="font-semibold text-lg mb-2">
@@ -22,16 +22,20 @@ const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) =>
         {Object.entries(tables).map(([title, values]) => (
           <div key={title}>
             <h4 className="font-semibold text-md capitalize border-b border-gray-300 dark:border-gray-600 pb-1 mb-2">{title.replace(/_/g, ' ')}</h4>
-            {typeof values === 'string' ? (
-              <p className="text-sm text-gray-700 dark:text-gray-200">{values}</p>
+            {Array.isArray(values) || typeof values === 'string' || typeof values === 'number' || typeof values === 'boolean' ? (
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                {Array.isArray(values) ? (values as unknown[]).map(String).join(', ') : String(values)}
+              </p>
             ) : (
-              <ul className="list-disc list-inside">
-                {Object.entries(values).map(([key, value]) => (
-                  <li key={key} className="text-sm text-gray-700 dark:text-gray-200">
-                    <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span> {Array.isArray(value) ? value.join(', ') : value}
-                  </li>
-                ))}
-              </ul>
+              typeof values === 'object' && values !== null ? (
+                <ul className="list-disc list-inside">
+                  {Object.entries(values as Record<string, unknown>).map(([key, value]) => (
+                    <li key={key} className="text-sm text-gray-700 dark:text-gray-200">
+                      <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span> {Array.isArray(value) ? (value as unknown[]).map(String).join(', ') : String(value)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null
             )}
           </div>
         ))}
@@ -148,7 +152,7 @@ export default function Home() {
         setHighlightTerms(data.highlight_terms ?? [query]);
         setConjugations(data.conjugations ?? null);
       }
-      setCoverage((data.coverage ?? []).sort((a, b) => b.count - a.count));
+      setCoverage(((data.coverage ?? []) as CoverageItem[]).sort((a: CoverageItem, b: CoverageItem) => b.count - a.count));
     } catch (e) {
       console.error("Failed to fetch search results:", e);
     } finally {
