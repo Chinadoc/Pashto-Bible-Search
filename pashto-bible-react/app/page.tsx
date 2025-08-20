@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import SearchBar from "@/components/SearchBar";
-import CoverageChips from "@/components/CoverageChips";
-import ResultsList from "@/components/ResultsList";
-import LexiconModal from "@/components/LexiconModal";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "@/types";
+import SearchBar from "../components/SearchBar";
+import CoverageChips from "../components/CoverageChips";
+import ResultsList from "../components/ResultsList";
+import LexiconModal from "../components/LexiconModal";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "../types";
 
 // Helper component to render conjugation tables nicely
 const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
