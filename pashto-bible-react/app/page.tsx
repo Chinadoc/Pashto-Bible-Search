@@ -7,6 +7,13 @@ import ResultsList from "../components/ResultsList";
 import LexiconModal from "../components/LexiconModal";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "../types";
 
+// Fallback configuration for Firebase Functions
+const FUNCTIONS_BASE = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL || "https://us-central1-pashto-bible-search.cloudfunctions.net";
+const PHRASE_URL = process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL || `${FUNCTIONS_BASE}/search_phrase`;
+const GRAMMAR_URL = process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL || `${FUNCTIONS_BASE}/search_grammar`;
+const LEXICON_URL = process.env.NEXT_PUBLIC_LEXICON_URL || `${FUNCTIONS_BASE}/get_lexicon_entry`;
+const AUDIO_MAP_URL = process.env.NEXT_PUBLIC_AUDIO_MAP_URL || `${FUNCTIONS_BASE}/get_audio_map`;
+
 // Helper component to render conjugation tables nicely
 const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
   const tables: Record<string, unknown> = conjugations.tables ?? {};
@@ -74,7 +81,7 @@ export default function Home() {
   // Load audio map once
   useEffect(() => {
     const loadAudioMap = async () => {
-      const url = process.env.NEXT_PUBLIC_AUDIO_MAP_URL;
+      const url = AUDIO_MAP_URL;
       if (!url) return;
       try {
         const aMap = await fetch(url).then(r => r.json());
@@ -89,7 +96,7 @@ export default function Home() {
     const fetchLexiconEntry = async () => {
       if (!selectedLexiconWord) return;
       setLexiconLoading(true);
-      const url = process.env.NEXT_PUBLIC_LEXICON_URL;
+      const url = LEXICON_URL;
       if (!url) {
         console.error("Lexicon URL is not configured.");
         setLexiconLoading(false);
@@ -128,8 +135,8 @@ export default function Home() {
     
     try {
       const url = mode === 'phrase'
-        ? process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL
-        : process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL;
+        ? PHRASE_URL
+        : GRAMMAR_URL;
 
       if (!url) throw new Error(`${mode} search URL is not configured.`);
       
