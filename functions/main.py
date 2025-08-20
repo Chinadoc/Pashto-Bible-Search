@@ -14,7 +14,7 @@ NT_BOOKS = {"Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians"
 OT_BOOKS = {"Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi"}
 
 cors_options = options.CorsOptions(
-    cors_origins=["https://pashto-bible-search.vercel.app", "*"],
+    cors_origins=["*"],
     cors_methods=["get", "post", "options"],
 )
 
@@ -128,7 +128,7 @@ def search_phrase(req: https_fn.Request) -> https_fn.Response:
     start_time = time.time()
     try:
         params = req.get_json()
-        query = params.get("query", "").strip()
+        query = _normalize_pashto_char(params.get("query", "").strip())
         scope = params.get("scope", "all").lower()
         limit = int(params.get("limit", 200))
     except Exception:
@@ -149,7 +149,8 @@ def search_phrase(req: https_fn.Request) -> https_fn.Response:
         if scope == 'nt' and book not in NT_BOOKS: continue
         if scope == 'ot' and book not in OT_BOOKS: continue
 
-        if query in text:
+        norm_text = _normalize_pashto_char(text)
+        if query in norm_text:
             results.append({"ref": ref, "text": text})
             if len(results) >= limit: break
     
