@@ -3,7 +3,15 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
-from ..models import PhraseRequest
+try:
+    from models import PhraseRequest
+except ImportError:
+    # Fallback for when running from different directory
+    class PhraseRequest:
+        def __init__(self, query: str, scope: str = "all", limit: int = 200):
+            self.query = query
+            self.scope = scope
+            self.limit = limit
 
 
 def _normalize_pashto_char(s: str) -> str:

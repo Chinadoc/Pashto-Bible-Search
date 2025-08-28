@@ -7,12 +7,12 @@ import ResultsList from "../components/ResultsList";
 import LexiconModal from "../components/LexiconModal";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "../types";
 
-// Fallback configuration for Firebase Functions
-const FUNCTIONS_BASE = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL || "https://us-central1-pashto-bible-search.cloudfunctions.net";
-const PHRASE_URL = process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL || `${FUNCTIONS_BASE}/search_phrase`;
-const GRAMMAR_URL = process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL || `${FUNCTIONS_BASE}/search_grammar`;
-const LEXICON_URL = process.env.NEXT_PUBLIC_LEXICON_URL || `${FUNCTIONS_BASE}/get_lexicon_entry`;
-const AUDIO_MAP_URL = process.env.NEXT_PUBLIC_AUDIO_MAP_URL || `${FUNCTIONS_BASE}/get_audio_map`;
+// FastAPI backend configuration
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const PHRASE_URL = `${API_BASE}/search/phrase`;
+const GRAMMAR_URL = `${API_BASE}/search/grammar`;
+const LEXICON_URL = `${API_BASE}/lexicon/lookup`;
+const AUDIO_MAP_URL = `${API_BASE}/audio/url`;
 
 // Helper component to render conjugation tables nicely
 const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
@@ -84,8 +84,8 @@ export default function Home() {
       const url = AUDIO_MAP_URL;
       if (!url) return;
       try {
-        const aMap = await fetch(url).then(r => r.json());
-        setAudioMap(aMap as AudioMap);
+        // FastAPI doesn't have a get all audio map endpoint, so create empty map for now
+        setAudioMap({} as AudioMap);
       } catch (error) { console.error("Failed to load audio map:", error); }
     };
     loadAudioMap();
@@ -103,10 +103,12 @@ export default function Home() {
         return;
       }
       try {
-        const response = await fetch(`${url}?word=${encodeURIComponent(selectedLexiconWord)}`);
+        const response = await fetch(`${url}?query=${encodeURIComponent(selectedLexiconWord)}`);
         if (!response.ok) throw new Error(`Lexicon entry not found for "${selectedLexiconWord}"`);
         const data = await response.json();
-        setLexiconEntry(data as LexiconEntry);
+        // FastAPI returns {results: [...]}, so take the first result
+        const result = data.results && data.results.length > 0 ? data.results[0] : null;
+        setLexiconEntry(result as LexiconEntry);
       } catch (error) {
         console.error(error);
         setLexiconEntry({ f_primary: selectedLexiconWord || "", e: "Definition not found." });
@@ -156,7 +158,7 @@ export default function Home() {
         setConjugations(null);
       } else {
         setResults((data.occurrences ?? []).filter(Boolean));
-        setHighlightTerms(data.highlight_terms ?? [query]);
+        setHighlightTerms([query]); // FastAPI doesn't return highlight_terms, so use query
         setConjugations(data.conjugations ?? null);
       }
       setCoverage(((data.coverage ?? []) as CoverageItem[]).sort((a: CoverageItem, b: CoverageItem) => b.count - a.count));

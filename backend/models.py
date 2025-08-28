@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 from typing import List, Optional
-from pydantic import BaseModel, Field
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    # Fallback if pydantic not available
+    class BaseModel:
+        pass
+    def Field(*args, **kwargs):
+        return None
 
 
 class CoverageItem(BaseModel):

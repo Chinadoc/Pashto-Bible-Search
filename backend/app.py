@@ -6,24 +6,24 @@ from typing import Dict, Any
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import (
+from models import (
     PhraseRequest,
     GrammarRequest,
     PhraseResponse,
     GrammarResponse,
     AudioResponse,
 )
-from .services.bible_loader import (
+from services.bible_loader import (
     load_text_maps,
     get_text_maps,
     get_grammar_indices,
     get_audio_map,
 )
-from .services import engine_loader
-from .services.search_phrase import phrase_search
-from .services.search_grammar import grammar_search
-from .services.audio import audio_url_for
-from .services.search import simple_search, handle_grammatical_search, lookup_lexicon
+from services import engine_loader
+from services.search_phrase import phrase_search
+from services.search_grammar import grammar_search
+from services.audio import audio_url_for
+from services.search import simple_search, handle_grammatical_search, lookup_lexicon
 
 
 app = FastAPI(title="Pashto Bible Search API", version="0.1.0")
