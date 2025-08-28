@@ -1,8 +1,13 @@
 
 import os
 import json
-from . import verb_inflector
-from . import noun_inflector
+try:
+    import verb_inflector
+    import noun_inflector
+except ImportError:
+    # Fallback if modules not available
+    verb_inflector = None
+    noun_inflector = None
 
 # --- Constants ---
 # Calculate the absolute path to the project's root directory

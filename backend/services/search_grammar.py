@@ -6,7 +6,15 @@ import re
 import time
 from typing import Dict, Tuple, List, Optional
 
-from ..models import GrammarRequest
+try:
+    from models import GrammarRequest
+except ImportError:
+    # Fallback for when running from different directory
+    class GrammarRequest:
+        def __init__(self, query: str, scope: str = "all", limit: int = 100):
+            self.query = query
+            self.scope = scope
+            self.limit = limit
 
 # Optional enrichment via local lexicons/inflectors
 try:
