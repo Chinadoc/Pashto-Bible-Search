@@ -1,73 +1,46 @@
-"use client";
+// components/ResultsList.tsx
+import React, { useState } from 'react';
 
-import { Verse, AudioMap } from '@/types';
-import { audioUrlFromRef } from '@/utils/audio';
+interface Verse {
+  ref: string;
+  text: string;
+}
 
-// A more robust function to clean up verse references for display
-const cleanVerseRef = (ref: string): string => {
-  if (!ref) return "";
-  // Removes trailing digits from the book name, e.g., "1 Chronicles1" -> "1 Chronicles"
-  return ref.replace(/([a-zA-Z])(\d+)\s/, '$1 ');
-};
+interface ResultsListProps {
+  results: Verse[];
+  loading: boolean;
+}
 
-const HighlightedText = ({ text, terms, onWordClick }: { text: string; terms: string[]; onWordClick: (word: string) => void; }) => {
-  if (!terms.length || !text) {
-    return <>{text}</>;
-  }
-  // Create a regex to find all terms, sorted by length to match longer terms first
-  const sortedTerms = [...terms].sort((a, b) => b.length - a.length);
-  const regex = new RegExp(`(${sortedTerms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
-  const parts = text.split(regex);
+const ResultsList: React.FC<ResultsListProps> = ({ results, loading }) => {
+  const [page, setPage] = useState(1);
+  const resultsPerPage = 20;
+  const paginatedResults = results.slice((page - 1) * resultsPerPage, page * resultsPerPage);
 
-  return (
-    <>
-      {parts.map((part, i) =>
-        sortedTerms.includes(part) ? (
-          <mark 
-            key={i} 
-            className="bg-yellow-300 dark:bg-yellow-500 text-black rounded px-1 cursor-pointer hover:bg-yellow-400 dark:hover:bg-yellow-600"
-            onClick={() => onWordClick(part)}
-          >
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      )}
-    </>
-  );
-};
-
-const ResultsList = ({ results, highlightTerms, audioMap, onWordClick }: { results: Verse[]; highlightTerms: string[]; audioMap: AudioMap; onWordClick: (word: string) => void; }) => {
-  if (!results.length) {
-    return <div className="text-center py-8 text-gray-500">No search results</div>;
+  if (loading) {
+    return <div className="text-center">Loading results...</div>;
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="text-sm text-gray-600 dark:text-gray-400">{results.length} results</div>
-      {results.map((verse) => {
-        const audioUrl = verse.ref ? audioUrlFromRef(verse.ref, audioMap) : null;
-        return (
-          <div key={verse.ref} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-semibold text-gray-700 dark:text-gray-200">{cleanVerseRef(verse.ref)}</div>
-              {audioUrl && (
-                <audio controls src={audioUrl} className="h-8 w-64">
-                  Your browser does not support the audio element.
-                </audio>
-              )}
-            </div>
-            <p className="text-lg text-gray-800 dark:text-gray-100 leading-relaxed" style={{ direction: 'rtl' }}>
-              <HighlightedText text={verse.text} terms={highlightTerms} onWordClick={onWordClick} />
-            </p>
+    <div>
+      <h2 className="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2">Results ({results.length})</h2>
+      <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        {paginatedResults.map((result, i) => (
+          <div key={i} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <h3 className="font-bold text-lg text-blue-400">{result.ref}</h3>
+            <p className="text-xl leading-relaxed">{result.text}</p>
           </div>
-        );
-      })}
+        ))}
+      </div>
+      {/* Pagination Controls */}
+      {results.length > resultsPerPage && (
+        <div className="mt-4 flex justify-center gap-2">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="bg-gray-700 p-2 rounded">Previous</button>
+          <span>Page {page} of {Math.ceil(results.length / resultsPerPage)}</span>
+          <button onClick={() => setPage(p => Math.min(Math.ceil(results.length / resultsPerPage), p + 1))} disabled={page === Math.ceil(results.length / resultsPerPage)} className="bg-gray-700 p-2 rounded">Next</button>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ResultsList;
-
-

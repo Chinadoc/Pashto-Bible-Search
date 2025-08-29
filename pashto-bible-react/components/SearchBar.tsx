@@ -1,61 +1,49 @@
-"use client";
+// components/SearchBar.tsx
+import React from 'react';
 
-import { useCallback } from "react";
-import type { Scope, Mode } from "@/types";
-
-interface Props {
+interface SearchBarProps {
   query: string;
-  setQuery: (q: string) => void;
-  scope: Scope;
-  setScope: (s: Scope) => void;
-  mode: Mode;
-  setMode: (m: Mode) => void;
+  setQuery: (query: string) => void;
+  scope: 'all' | 'ot' | 'nt';
+  setScope: (scope: 'all' | 'ot' | 'nt') => void;
   onSearch: () => void;
+  loading: boolean;
 }
 
-export default function SearchBar({ query, setQuery, scope, setScope, mode, setMode, onSearch }: Props) {
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") onSearch();
-    },
-    [onSearch]
-  );
+const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, scope, setScope, onSearch, loading }) => {
+  const isRtl = true;
 
   return (
-    <div className="w-full flex flex-col sm:flex-row items-stretch gap-3">
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder="Search Pashto Bible..."
-        className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <select
-        value={mode}
-        onChange={(e) => setMode(e.target.value as Mode)}
-        className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
-        title="Search mode"
-      >
-        <option value="phrase">Phrase</option>
-        <option value="grammar">Grammar</option>
-      </select>
-      <select
-        value={scope}
-        onChange={(e) => setScope(e.target.value as Scope)}
-        className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
-      >
-        <option value="all">All</option>
-        <option value="ot">OT</option>
-        <option value="nt">NT</option>
-      </select>
-      <button
-        onClick={onSearch}
-        className="rounded-md bg-blue-600 text-white px-4 py-2 hover:bg-blue-700"
-      >
-        Search
-      </button>
+    <div className="max-w-xl mx-auto mb-8">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Enter Pashto term..."
+          className="flex-grow p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          style={{ textAlign: isRtl ? 'right' : 'left' }}
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+        />
+        <select
+          value={scope}
+          onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
+          className="p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        >
+          <option value="all">All Scripture</option>
+          <option value="ot">Old Testament</option>
+          <option value="nt">New Testament</option>
+        </select>
+        <button
+          onClick={onSearch}
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-md transition-colors duration-200 disabled:bg-gray-500"
+        >
+          {loading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
     </div>
   );
-}
+};
 
-
+export default SearchBar;
