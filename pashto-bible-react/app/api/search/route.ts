@@ -30,11 +30,29 @@ export async function POST(request: NextRequest) {
     const trimmedQuery = query.trim();
     let allResults: Verse[] = [];
 
-    // Build Supabase query based on scope
+    // Get Pashto variants using Edge Function (handles romanized input too)
+    let variants: string[] = [trimmedQuery];
+    try {
+      const { data: processorData, error: processorError } = await supabase
+        .functions
+        .invoke('pashto-processor', { body: { formPs: trimmedQuery } });
+
+      if (!processorError && processorData?.variants?.length) {
+        variants = Array.from(new Set<string>(processorData.variants.map((v: string) => v.trim()).filter(Boolean)));
+      }
+    } catch (e) {
+      // Silent fallback to simple query if processor unavailable
+    }
+
+    // Build Supabase query based on scope and variants
+    const orFilter = variants
+      .map((v) => `text.ilike.%${v.replace(/%/g, '')}%`)
+      .join(',');
+
     let supabaseQuery = supabase
       .from(TABLES.VERSES)
       .select('book, chapter, verse, text, testament')
-      .ilike('text', `%${trimmedQuery}%`);
+      .or(orFilter);
 
     if (scope === 'ot') {
       supabaseQuery = supabaseQuery.eq('testament', 'OT');
