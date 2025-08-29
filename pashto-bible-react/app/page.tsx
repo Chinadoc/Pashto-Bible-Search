@@ -1,199 +1,162 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
-import CoverageChips from "../components/CoverageChips";
 import ResultsList from "../components/ResultsList";
-import LexiconModal from "../components/LexiconModal";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations, LexiconEntry } from "../types";
+import SidePanels from "../components/SidePanels";
+import type { Scope } from "../types";
 
-// Fallback configuration for Firebase Functions
-const FUNCTIONS_BASE = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL || "https://us-central1-pashto-bible-search.cloudfunctions.net";
-const PHRASE_URL = process.env.NEXT_PUBLIC_PHRASE_SEARCH_URL || `${FUNCTIONS_BASE}/search_phrase`;
-const GRAMMAR_URL = process.env.NEXT_PUBLIC_GRAMMAR_SEARCH_URL || `${FUNCTIONS_BASE}/search_grammar`;
-const LEXICON_URL = process.env.NEXT_PUBLIC_LEXICON_URL || `${FUNCTIONS_BASE}/get_lexicon_entry`;
-const AUDIO_MAP_URL = process.env.NEXT_PUBLIC_AUDIO_MAP_URL || `${FUNCTIONS_BASE}/get_audio_map`;
+interface Verse {
+  ref: string;
+  text: string;
+}
 
-// Helper component to render conjugation tables nicely
-const ConjugationDisplay = ({ conjugations }: { conjugations: Conjugations }) => {
-  const tables: Record<string, unknown> = conjugations.tables ?? {};
-  return (
-    <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <h3 className="font-semibold text-lg mb-2">
-        {conjugations.kind === 'verb' ? 'Conjugations' : 'Inflections'} for: <span className="font-bold text-blue-400">{conjugations.root}</span>
-      </h3>
-      {conjugations.query_rom && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Romanization: {conjugations.query_rom}</p>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {Object.entries(tables).map(([title, values]) => (
-          <div key={title}>
-            <h4 className="font-semibold text-md capitalize border-b border-gray-300 dark:border-gray-600 pb-1 mb-2">{title.replace(/_/g, ' ')}</h4>
-            {Array.isArray(values) || typeof values === 'string' || typeof values === 'number' || typeof values === 'boolean' ? (
-              <p className="text-sm text-gray-700 dark:text-gray-200">
-                {Array.isArray(values) ? (values as unknown[]).map(String).join(', ') : String(values)}
-              </p>
-            ) : (
-              typeof values === 'object' && values !== null ? (
-                <ul className="list-disc list-inside">
-                  {Object.entries(values as Record<string, unknown>).map(([key, value]) => (
-                    <li key={key} className="text-sm text-gray-700 dark:text-gray-200">
-                      <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span> {Array.isArray(value) ? (value as unknown[]).map(String).join(', ') : String(value)}
-                    </li>
-                  ))}
-                </ul>
-              ) : null
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+interface Coverage {
+  book: string;
+  count: number;
+}
 
+interface Frequency {
+  pashto: string;
+  frequency: number;
+}
 
-export default function Home() {
-  const [audioMap, setAudioMap] = useState<AudioMap>({});
-  const [query, setQuery] = useState<string>("");
-  const [scope, setScope] = useState<Scope>("all");
-  const [mode, setMode] = useState<Mode>("phrase");
-  const [bookFilter, setBookFilter] = useState<string | null>(null);
+const Home: React.FC = () => {
+  const [query, setQuery] = useState<string>('');
+  const [scope, setScope] = useState<Scope>('all');
   const [results, setResults] = useState<Verse[]>([]);
-  const [coverage, setCoverage] = useState<CoverageItem[]>([]);
-  const [conjugations, setConjugations] = useState<Conjugations | null>(null);
-  const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
+  const [coverage, setCoverage] = useState<Coverage[]>([]);
+  const [ntFreq, setNtFreq] = useState<Frequency[]>([]);
+  const [otFreq, setOtFreq] = useState<Frequency[]>([]);
+  const [allFreq, setAllFreq] = useState<Frequency[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedLexiconWord, setSelectedLexiconWord] = useState<string | null>(null);
-  const [lexiconEntry, setLexiconEntry] = useState<LexiconEntry | null>(null);
-  const [lexiconLoading, setLexiconLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'results' | 'frequencies'>('results');
 
-  // Hydrate persisted UI state
   useEffect(() => {
-    setQuery(localStorage.getItem("pbs_query") || "");
-    setScope((localStorage.getItem("pbs_scope") as Scope) || "all");
-    setBookFilter(localStorage.getItem("pbs_book") || null);
-  }, []);
-
-  useEffect(() => { localStorage.setItem("pbs_query", query); }, [query]);
-  useEffect(() => { localStorage.setItem("pbs_scope", scope); }, [scope]);
-  useEffect(() => { if (bookFilter) localStorage.setItem("pbs_book", bookFilter); else localStorage.removeItem("pbs_book"); }, [bookFilter]);
-
-  // Load audio map once
-  useEffect(() => {
-    const loadAudioMap = async () => {
-      const url = AUDIO_MAP_URL;
-      if (!url) return;
+    const fetchFrequencyData = async () => {
       try {
-        const aMap = await fetch(url).then(r => r.json());
-        setAudioMap(aMap as AudioMap);
-      } catch (error) { console.error("Failed to load audio map:", error); }
-    };
-    loadAudioMap();
-  }, []);
-  
-  // Fetch lexicon entry when a word is selected
-  useEffect(() => {
-    const fetchLexiconEntry = async () => {
-      if (!selectedLexiconWord) return;
-      setLexiconLoading(true);
-      const url = LEXICON_URL;
-      if (!url) {
-        console.error("Lexicon URL is not configured.");
-        setLexiconLoading(false);
-        return;
-      }
-      try {
-        const response = await fetch(`${url}?word=${encodeURIComponent(selectedLexiconWord)}`);
-        if (!response.ok) throw new Error(`Lexicon entry not found for "${selectedLexiconWord}"`);
+        const response = await fetch('/api/get-frequency');
+        if (!response.ok) throw new Error('Failed to fetch frequency data');
         const data = await response.json();
-        setLexiconEntry(data as LexiconEntry);
-      } catch (error) {
-        console.error(error);
-        setLexiconEntry({ f_primary: selectedLexiconWord || "", e: "Definition not found." });
-      } finally {
-        setLexiconLoading(false);
+        setNtFreq(data.nt);
+        setOtFreq(data.ot);
+        setAllFreq(data.all);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
       }
     };
-    fetchLexiconEntry();
-  }, [selectedLexiconWord]);
-
-
-  const visibleResults = useMemo(() => {
-    if (!bookFilter) return results;
-    return results.filter((v) => v?.ref?.startsWith(bookFilter + " "));
-  }, [results, bookFilter]);
+    fetchFrequencyData();
+  }, []);
 
   const handleSearch = async () => {
-    if (!query.trim()) return;
+    if (!query) return;
     setLoading(true);
+    setError(null);
     setResults([]);
     setCoverage([]);
-    setConjugations(null);
-    setHighlightTerms([]);
 
-    const body = { query, scope };
-    
     try {
-      const url = mode === 'phrase'
-        ? PHRASE_URL
-        : GRAMMAR_URL;
-
-      if (!url) throw new Error(`${mode} search URL is not configured.`);
-      
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const response = await fetch('/api/search_phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, scope }),
       });
 
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-      
-      const data = await response.json();
-
-      if (mode === "phrase") {
-        setResults((data.results ?? []).filter(Boolean));
-        setHighlightTerms([query]);
-        setConjugations(null);
-      } else {
-        setResults((data.occurrences ?? []).filter(Boolean));
-        setHighlightTerms(data.highlight_terms ?? [query]);
-        setConjugations(data.conjugations ?? null);
+      if (!response.ok) {
+        throw new Error('Search failed. Please try again.');
       }
-      setCoverage(((data.coverage ?? []) as CoverageItem[]).sort((a: CoverageItem, b: CoverageItem) => b.count - a.count));
-    } catch (e) {
-      console.error("Failed to fetch search results:", e);
+
+      const data = await response.json();
+      setResults(data.results);
+      setCoverage(data.coverage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
       setLoading(false);
     }
   };
-  
-  const handleWordClick = (word: string) => {
-    setSelectedLexiconWord(word);
-  };
-  
-  const closeModal = () => {
-    setSelectedLexiconWord(null);
-    setLexiconEntry(null);
-  };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8">
-      <div className="max-w-5xl mx-auto flex flex-col gap-4">
-        <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} mode={mode} setMode={setMode} onSearch={handleSearch} />
-        <CoverageChips coverage={coverage} bookFilter={bookFilter} setBookFilter={setBookFilter} />
-        {loading ? (
-          <div className="py-8 text-center">Loading…</div>
-        ) : (
-          <ResultsList results={visibleResults} highlightTerms={highlightTerms} audioMap={audioMap} onWordClick={handleWordClick} />
+    <main className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto p-4">
+        <h1 className="text-4xl font-bold mb-8 text-center">Pashto Bible Search</h1>
+
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          scope={scope}
+          setScope={setScope}
+          onSearch={handleSearch}
+          loading={loading}
+        />
+
+        {error && (
+          <div className="bg-red-800 border border-red-600 text-red-200 p-4 rounded-md mb-6">
+            {error}
+          </div>
         )}
-        {conjugations && <ConjugationDisplay conjugations={conjugations} />}
-        {(lexiconLoading || lexiconEntry) && (
-          <LexiconModal 
-            entry={lexiconLoading ? {f_primary: selectedLexiconWord || "", e: "Loading..."} : lexiconEntry!}
-            onBackdropClick={closeModal}
-          />
-        )}
+
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('results')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'results'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                }`}
+              >
+                Search Results ({results.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('frequencies')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'frequencies'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                }`}
+              >
+                Word Frequencies
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {activeTab === 'results' && (
+              <ResultsList
+                results={results}
+                loading={loading}
+              />
+            )}
+
+            {activeTab === 'frequencies' && (
+              <div className="text-gray-400">
+                <p>Frequency panel will be shown here</p>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar - Coverage (only show on results tab) */}
+          {activeTab === 'results' && coverage.length > 0 && (
+            <div className="lg:col-span-1">
+              <SidePanels
+                coverage={coverage}
+                ntFreq={ntFreq}
+                otFreq={otFreq}
+                allFreq={allFreq}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </main>
   );
-}
+};
+
+export default Home;
