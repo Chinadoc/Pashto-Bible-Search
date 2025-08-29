@@ -1,44 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
-import { supabase, TABLES } from '../../../utils/supabase'
-import type { Verse, CoverageItem } from '../../../types'
 
 
 
 /**
- * Process search term using Supabase Edge Function for normalization and variants
+ * Process search term with basic normalization (no external dependencies)
  */
-async function processSearchTerm(searchTerm: string, authToken: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke('pashto-processor', {
-      body: { formPs: searchTerm, authToken }
-    })
+async function processSearchTerm(searchTerm: string) {
+  // Basic romanized to Pashto conversion
+  const latinToPashtoMap: Record<string, string> = {
+    'leedul': 'لېدل',
+    'kawul': 'کول',
+    'kawl': 'کول',
+    'kawal': 'کول',
+    'khustul': 'خستل',
+    'khustl': 'خستل',
+    'wakhtul': 'وختل',
+    'wakhtl': 'وختل',
+  };
 
-    if (error) {
-      console.error('Edge function error:', error)
-      // Fallback to basic processing if edge function fails
-      return {
-        normalized: searchTerm,
-        variants: [searchTerm],
-        romanization: ''
-      }
-    }
+  // Check if input is Latin and convert
+  const hasPashtoChars = /[\u0600-\u06FF]/.test(searchTerm);
+  const baseForm = hasPashtoChars ? searchTerm : (latinToPashtoMap[searchTerm.toLowerCase()] || searchTerm);
 
-    return data
-  } catch (error) {
-    console.error('Error calling edge function:', error)
-    // Fallback to basic processing
-    return {
-      normalized: searchTerm,
-      variants: [searchTerm],
-      romanization: ''
-    }
-  }
+  // Basic Pashto normalization
+  const normalized = baseForm
+    .normalize('NFC')
+    .replace(/[يىئ]/g, 'ی')
+    .replace(/[\u200E\u200F]/g, '');
+
+  return {
+    normalized,
+    variants: [normalized, baseForm].filter((v, i, arr) => arr.indexOf(v) === i),
+    romanization: ''
+  };
 }
 
 interface SearchRequest {
   query: string
   scope: 'all' | 'ot' | 'nt'
+}
+
+interface Verse {
+  ref: string
+  text: string
+}
+
+interface CoverageItem {
+  book: string
+  count: number
 }
 
 export async function POST(request: NextRequest) {
@@ -71,36 +81,40 @@ export async function POST(request: NextRequest) {
 
     const originalTerm = query.trim()
 
-    // Process the search term using the Edge Function
-    const processed = await processSearchTerm(originalTerm, supabaseKey)
+    // Process the search term
+    const processed = await processSearchTerm(originalTerm)
     const searchVariants = processed.variants || [originalTerm]
 
-    // Search directly in the verses table
+    // Search directly in the verses table using REST API
     const allResults: Verse[] = []
     const coverageMap = new Map<string, number>()
 
-    // Build Supabase query based on scope
-    let supabaseQuery = supabase
-      .from(TABLES.VERSES)
-      .select('book, chapter, verse, text, testament')
-
-    // Add text search for all variants
-    const searchConditions = searchVariants.map((variant: string) => `text.ilike.%${variant}%`).join(',')
-    supabaseQuery = supabaseQuery.or(searchConditions)
-
+    // Build query conditions for variants
+    const orConditions = searchVariants.map(variant => `text.ilike.*${variant}*`).join(',')
+    
+    let url = `${supabaseUrl}/rest/v1/verses?select=book,chapter,verse,text,testament&or=(${orConditions})`
+    
     // Filter by scope
     if (scope === 'ot') {
-      supabaseQuery = supabaseQuery.eq('testament', 'OT')
+      url += '&testament=eq.OT'
     } else if (scope === 'nt') {
-      supabaseQuery = supabaseQuery.eq('testament', 'NT')
+      url += '&testament=eq.NT'
     }
+    
+    url += '&limit=100'
 
-    // Execute query
-    const { data, error } = await supabaseQuery.limit(100)
+    // Execute query using fetch
+    const response = await fetch(url, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
 
-    if (error) {
-      console.error('Supabase search error:', error)
-    } else if (data) {
+    if (response.ok) {
+      const data = await response.json()
+      
       // Transform results to expected format
       for (const verse of data) {
         const result: Verse = {
@@ -112,6 +126,8 @@ export async function POST(request: NextRequest) {
         // Update coverage count
         coverageMap.set(verse.book, (coverageMap.get(verse.book) || 0) + 1)
       }
+    } else {
+      console.error('Supabase REST API error:', response.status, response.statusText)
     }
 
     // Remove duplicate results based on reference
