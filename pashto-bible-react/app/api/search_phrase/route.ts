@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const runtime = 'nodejs'
 import { supabase, TABLES } from '../../../utils/supabase'
 import type { Verse, CoverageItem } from '../../../types'
 
