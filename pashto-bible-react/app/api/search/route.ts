@@ -30,18 +30,50 @@ export async function POST(request: NextRequest) {
     const trimmedQuery = query.trim();
     let allResults: Verse[] = [];
 
+    // Basic romanized → Pashto mapping fallback (works even if Edge Function not deployed)
+    const convertLatinToPashto = (latinInput: string): string => {
+      const map: Record<string, string> = {
+        'leedul': 'لېدل',
+        'kawul': 'کول',
+        'kawl': 'کول',
+        'kawal': 'کول',
+        'khustul': 'خستل',
+        'khustl': 'خستل',
+        'wakhtul': 'وختل',
+        'wakhtl': 'وختل',
+        'raztul': 'رازتل',
+        'raztl': 'رازتل',
+      };
+      const key = latinInput.toLowerCase();
+      return map[key] || latinInput;
+    };
+
+    // Normalize common Yeh variants
+    const normalizePashto = (text: string): string =>
+      text
+        .normalize('NFC')
+        .replace(/[يىئ]/g, 'ی')
+        .replace(/[\u200E\u200F]/g, '');
+
+    // If input is Latin, convert to Pashto best-effort first
+    const hasPashtoChars = /[\u0600-\u06FF]/.test(trimmedQuery);
+    const baseQuery = hasPashtoChars ? trimmedQuery : convertLatinToPashto(trimmedQuery);
+
     // Get Pashto variants using Edge Function (handles romanized input too)
     let variants: string[] = [trimmedQuery];
     try {
       const { data: processorData, error: processorError } = await supabase
         .functions
-        .invoke('pashto-processor', { body: { formPs: trimmedQuery } });
+        .invoke('pashto-processor', { body: { formPs: baseQuery } });
 
       if (!processorError && processorData?.variants?.length) {
-        variants = Array.from(new Set<string>(processorData.variants.map((v: string) => v.trim()).filter(Boolean)));
+        variants = Array.from(new Set<string>(processorData.variants.map((v: string) => normalizePashto(v.trim())).filter(Boolean)));
+      } else {
+        variants = [normalizePashto(baseQuery)];
       }
     } catch (e) {
-      // Silent fallback to simple query if processor unavailable
+      // Silent fallback if processor unavailable
+      variants = [normalizePashto(baseQuery)];
     }
 
     // Build Supabase query based on scope and variants
