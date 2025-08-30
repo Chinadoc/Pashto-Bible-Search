@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       } else {
         variants = [normalizePashto(baseQuery)];
       }
-    } catch (e) {
+    } catch {
       // Silent fallback if processor unavailable
       variants = [normalizePashto(baseQuery)];
     }

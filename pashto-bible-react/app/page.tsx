@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import SidePanels from "../components/SidePanels";
+import BookSelector from "../components/BookSelector";
 import type { Scope } from "../types";
 
 interface Verse {
@@ -33,6 +34,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'frequencies'>('results');
   const [romanizedQuery, setRomanizedQuery] = useState<string | null>(null); // New state for romanized query
+  const [bookFilter, setBookFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFrequencyData = async () => {
@@ -78,6 +80,11 @@ const Home: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Apply client-side book filter
+  const displayedResults = bookFilter
+    ? results.filter(r => r.ref.startsWith(`${bookFilter} `))
+    : results;
 
   return (
     <main className="min-h-screen bg-gray-900 text-white">
@@ -134,11 +141,16 @@ const Home: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content */}
+          {/* Main Content */
+          }
           <div className="lg:col-span-3">
+            {/* Book Filter */}
+            <div className="mb-4">
+              <BookSelector bookFilter={bookFilter} setBookFilter={setBookFilter} />
+            </div>
             {activeTab === 'results' && (
               <ResultsList
-                results={results}
+                results={displayedResults}
                 loading={loading}
               />
             )}
@@ -158,6 +170,8 @@ const Home: React.FC = () => {
               ntFreq={ntFreq}
               otFreq={otFreq}
               allFreq={allFreq}
+              selectedBook={bookFilter}
+              onSelectBook={(book) => setBookFilter(book)}
             />
           </div>
         </div>

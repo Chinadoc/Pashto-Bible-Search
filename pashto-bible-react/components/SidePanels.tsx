@@ -17,9 +17,11 @@ interface SidePanelsProps {
   otFreq: Frequency[];
   allFreq: Frequency[];
   activeMainTab: 'results' | 'frequencies'; // New prop
+  selectedBook?: string | null;
+  onSelectBook?: (book: string | null) => void;
 }
 
-const SidePanels: React.FC<SidePanelsProps> = ({ coverage, ntFreq, otFreq, allFreq, activeMainTab }) => {
+const SidePanels: React.FC<SidePanelsProps> = ({ coverage, ntFreq, otFreq, allFreq, activeMainTab, selectedBook = null, onSelectBook }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'nt' | 'ot'>('all');
 
   const frequencyData = {
@@ -32,14 +34,31 @@ const SidePanels: React.FC<SidePanelsProps> = ({ coverage, ntFreq, otFreq, allFr
     <div className="space-y-6">
       {activeMainTab === 'results' && coverage.length > 0 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2">Coverage</h2>
-          <div className="space-y-1">
-            {coverage.map((item, i) => (
-              <div key={i} className="flex justify-between text-gray-400">
-                <span>{item.book}</span>
-                <span>{item.count}</span>
-              </div>
-            ))}
+          <h2 className="text-2xl font-semibold mb-2 border-b border-gray-700 pb-2">Books</h2>
+          {onSelectBook && (
+            <button
+              onClick={() => onSelectBook(null)}
+              className="mb-2 text-sm text-blue-300 hover:text-blue-200"
+            >
+              {selectedBook ? 'Clear book filter' : 'All books'}
+            </button>
+          )}
+          <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-1">
+            {coverage.map((item, i) => {
+              const isSelected = selectedBook === item.book;
+              return (
+                <button
+                  key={i}
+                  onClick={() => onSelectBook && onSelectBook(item.book)}
+                  className={`w-full flex justify-between items-center px-2 py-1 rounded ${
+                    isSelected ? 'bg-blue-900/40 text-blue-200' : 'text-gray-300 hover:bg-gray-800'
+                  }`}
+                >
+                  <span className="truncate text-left">{item.book}</span>
+                  <span className="ml-2 text-gray-400">{item.count}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
