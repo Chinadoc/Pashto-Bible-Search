@@ -32,45 +32,35 @@ export const TABLES = {
 };
 
 // Helper function to search verses
+type VerseRow = { book: string; chapter: number; verse: number; text: string; testament?: string }
+
 export const searchVerses = async (query: string, scope: 'all' | 'nt' | 'ot' = 'all') => {
-  let tableName = 'nt_references'; // Default to NT
-  let textField = 'verse_text';
+  // Always search the unified verses table using ILIKE substring matching
+  // This works better for Pashto than FTS configured for English.
+  let q = supabase
+    .from(TABLES.VERSES)
+    .select('book, chapter, verse, text, testament')
+    .ilike('text', `%${query}%`)
+    .limit(100);
 
-  if (scope === 'ot') {
-    // For OT, we'll search the occurrences table (simplified approach)
-    tableName = 'ot_occurrences';
-    textField = 'form_data';
+  if (scope === 'ot') q = q.eq('testament', 'OT');
+  if (scope === 'nt') q = q.eq('testament', 'NT');
+
+  const { data, error } = await q as unknown as { data: VerseRow[] | null; error: unknown | null };
+  if (error || !data) {
+    if (error) console.error('Search error:', error);
+    return [] as Array<{ ref: string; text: string }>;
   }
 
-  const { data, error } = await supabase
-    .from(tableName)
-    .select('*')
-    .textSearch(textField, query)
-    .limit(50);
-
-  if (error) {
-    console.error('Search error:', error);
-    return [];
-  }
-
-  // Transform the data to match our expected format
-  return data.map((item: any) => {
-    if (scope === 'nt') {
-      return {
-        ref: `${item.book_name} ${item.chapter}:${item.verse}`,
-        text: item.verse_text || '',
-      };
-    } else {
-      // For OT, create a simplified reference
-      return {
-        ref: `${item.pashto_form} (OT context)`,
-        text: item.form_data || '',
-      };
-    }
-  });
+  return data.map((v: VerseRow) => ({
+    ref: `${v.book} ${v.chapter}:${v.verse}`,
+    text: v.text || '',
+  }));
 };
 
 // Helper function to get word frequencies
+type WordFrequencyRow = { pashto_word: string; frequency_count: number }
+
 export const getWordFrequencies = async (scope: 'all' | 'nt' | 'ot' = 'all') => {
   const { data, error } = await supabase
     .from('word_frequencies')
@@ -83,14 +73,14 @@ export const getWordFrequencies = async (scope: 'all' | 'nt' | 'ot' = 'all') => 
     return [];
   }
 
-  return data.map((item: any) => ({
+  return (data as WordFrequencyRow[]).map((item) => ({
     pashto: item.pashto_word,
     frequency: item.frequency_count,
   }));
 };
 
 // Helper function to calculate coverage
-export const calculateCoverage = (results: any[]) => {
+export const calculateCoverage = (results: Array<{ ref: string }>) => {
   const coverageMap = new Map<string, number>();
 
   results.forEach((result) => {

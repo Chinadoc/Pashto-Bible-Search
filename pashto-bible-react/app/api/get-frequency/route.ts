@@ -5,6 +5,11 @@ interface FrequencyItem {
   frequency: number;
 }
 
+interface RawFrequencyRow {
+  word: string;
+  frequency: number;
+}
+
 export const runtime = 'nodejs'; // Ensure this runs in Node.js runtime
 
 export async function GET() {
@@ -17,7 +22,7 @@ export async function GET() {
     }
 
     // Function to fetch frequencies for a given testament
-    const fetchFrequencies = async (testament: string | null = null) => {
+    const fetchFrequencies = async (testament: string | null = null): Promise<FrequencyItem[]> => {
       let url = `${supabaseUrl}/rest/v1/word_frequencies?select=word,frequency&order=frequency.desc&limit=100`;
       if (testament) {
         url += `&testament=eq.${testament}`;
@@ -35,11 +40,11 @@ export async function GET() {
         const errorData = await response.json();
         throw new Error(`Failed to fetch frequency data for ${testament || 'all'}: ${errorData.message || response.statusText}`);
       }
-      const data = await response.json();
+      const data: RawFrequencyRow[] = await response.json();
       // Map to the expected FrequencyItem interface
-      return data.map((item: any) => ({
+      return data.map((item: RawFrequencyRow) => ({
         pashto: item.word,
-        frequency: item.frequency
+        frequency: item.frequency,
       }));
     };
 
