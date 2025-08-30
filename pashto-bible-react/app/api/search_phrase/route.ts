@@ -1,38 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '../../../utils/supabase' // Import supabase client
 export const runtime = 'nodejs'
 
-
+interface ProcessorResponse {
+  normalized: string
+  variants: string[]
+  romanization: string
+}
 
 /**
  * Process search term with basic normalization (no external dependencies)
  */
-async function processSearchTerm(searchTerm: string) {
-  // Basic romanized to Pashto conversion
-  const latinToPashtoMap: Record<string, string> = {
-    'leedul': 'لېدل',
-    'kawul': 'کول',
-    'kawl': 'کول',
-    'kawal': 'کول',
-    'khustul': 'خستل',
-    'khustl': 'خستل',
-    'wakhtul': 'وختل',
-    'wakhtl': 'وختل',
-  };
+async function processSearchTerm(searchTerm: string): Promise<ProcessorResponse> {
+  // Initial normalization for consistent processing
+  const normalizePashto = (text: string): string =>
+    text
+      .normalize('NFC')
+      .replace(/[يىئ]/g, 'ی')
+      .replace(/[\u200E\u200F]/g, '');
 
-  // Check if input is Latin and convert
-  const hasPashtoChars = /[\u0600-\u06FF]/.test(searchTerm);
-  const baseForm = hasPashtoChars ? searchTerm : (latinToPashtoMap[searchTerm.toLowerCase()] || searchTerm);
+  const trimmedTerm = searchTerm.trim();
 
-  // Basic Pashto normalization
-  const normalized = baseForm
-    .normalize('NFC')
-    .replace(/[يىئ]/g, 'ی')
-    .replace(/[\u200E\u200F]/g, '');
+  // Check if input contains Pashto characters
+  const hasPashtoChars = /[\u0600-\u06FF]/.test(trimmedTerm);
+
+  let normalized = normalizePashto(trimmedTerm);
+  let variants: string[] = [normalized];
+  let romanization = '';
+
+  // If input is not Pashto, attempt to use the Edge Function for romanization and variants
+  if (!hasPashtoChars) {
+    try {
+      const { data: processorData, error: processorError } = await supabase
+        .functions
+        .invoke('pashto-processor', { body: { formPs: trimmedTerm } });
+
+      if (!processorError && processorData) {
+        normalized = normalizePashto(processorData.normalized || trimmedTerm);
+        variants = Array.from(new Set<string>(
+          (processorData.variants || [trimmedTerm]).map((v: string) => normalizePashto(v.trim())).filter(Boolean)
+        ));
+        romanization = processorData.romanization || '';
+      } else if (processorError) {
+        console.warn('Pashto processor Edge Function error:', processorError);
+        // Fallback to basic normalization if Edge Function fails
+        variants = [normalizePashto(trimmedTerm)];
+      }
+    } catch (e) {
+      console.error('Error invoking Pashto processor Edge Function:', e);
+      // Fallback to basic normalization if Edge Function fails
+      variants = [normalizePashto(trimmedTerm)];
+    }
+  } else {
+    // If input is Pashto, still try to get romanization from Edge Function
+    try {
+      const { data: processorData, error: processorError } = await supabase
+        .functions
+        .invoke('pashto-processor', { body: { formPs: trimmedTerm } });
+
+      if (!processorError && processorData) {
+        romanization = processorData.romanization || '';
+        // Add romanized form as a variant if available and different
+        if (romanization && !variants.includes(romanization)) {
+          variants.push(romanization);
+        }
+      } else if (processorError) {
+        console.warn('Pashto processor Edge Function error (Pashto input):', processorError);
+      }
+    } catch (e) {
+      console.error('Error invoking Pashto processor Edge Function (Pashto input):', e);
+    }
+  }
 
   return {
     normalized,
-    variants: [normalized, baseForm].filter((v, i, arr) => arr.indexOf(v) === i),
-    romanization: ''
+    variants: Array.from(new Set(variants.filter(Boolean))),
+    romanization
   };
 }
 
