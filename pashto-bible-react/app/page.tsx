@@ -32,6 +32,7 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'frequencies'>('results');
+  const [romanizedQuery, setRomanizedQuery] = useState<string | null>(null); // New state for romanized query
 
   useEffect(() => {
     const fetchFrequencyData = async () => {
@@ -70,6 +71,7 @@ const Home: React.FC = () => {
       const data = await response.json();
       setResults(data.results);
       setCoverage(data.coverage);
+      setRomanizedQuery(data.processed.romanization); // Set romanized query
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
@@ -94,6 +96,12 @@ const Home: React.FC = () => {
         {error && (
           <div className="bg-red-800 border border-red-600 text-red-200 p-4 rounded-md mb-6">
             {error}
+          </div>
+        )}
+
+        {romanizedQuery && query && query !== romanizedQuery && (
+          <div className="text-center text-gray-400 mb-4">
+            Romanized: <span className="font-semibold text-blue-400">{romanizedQuery}</span>
           </div>
         )}
 
@@ -137,22 +145,21 @@ const Home: React.FC = () => {
 
             {activeTab === 'frequencies' && (
               <div className="text-gray-400">
-                <p>Frequency panel will be shown here</p>
+                <p>Frequency panel will be shown here (controlled by SidePanels)</p>
               </div>
             )}
           </div>
 
-          {/* Sidebar - Coverage (only show on results tab) */}
-          {activeTab === 'results' && coverage.length > 0 && (
-            <div className="lg:col-span-1">
-              <SidePanels
-                coverage={coverage}
-                ntFreq={ntFreq}
-                otFreq={otFreq}
-                allFreq={allFreq}
-              />
-            </div>
-          )}
+          {/* Sidebar - always visible with content based on activeTab */}
+          <div className="lg:col-span-1">
+            <SidePanels
+              activeMainTab={activeTab} // New prop to control what SidePanels shows
+              coverage={coverage}
+              ntFreq={ntFreq}
+              otFreq={otFreq}
+              allFreq={allFreq}
+            />
+          </div>
         </div>
       </div>
     </main>
