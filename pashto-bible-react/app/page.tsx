@@ -35,6 +35,8 @@ const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'results' | 'frequencies'>('results');
   const [romanizedQuery, setRomanizedQuery] = useState<string | null>(null); // New state for romanized query
   const [bookFilter, setBookFilter] = useState<string | null>(null);
+  const [audioMap, setAudioMap] = useState<Record<string, string>>({});
+  const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchFrequencyData = async () => {
@@ -50,6 +52,22 @@ const Home: React.FC = () => {
       }
     };
     fetchFrequencyData();
+  }, []);
+
+  // Load audio mappings once
+  useEffect(() => {
+    const loadAudio = async () => {
+      try {
+        const res = await fetch('/api/get_audio_map');
+        if (res.ok) {
+          const map = await res.json();
+          setAudioMap(map || {});
+        }
+      } catch {
+        // ignore audio errors on page load
+      }
+    };
+    loadAudio();
   }, []);
 
   const handleSearch = async () => {
@@ -74,6 +92,12 @@ const Home: React.FC = () => {
       setResults(data.results);
       setCoverage(data.coverage);
       setRomanizedQuery(data.processed.romanization); // Set romanized query
+      // collect highlight terms: normalized + variants (deduped)
+      const terms: string[] = Array.from(new Set<string>([
+        data.processed?.normalized,
+        ...(data.processed?.variants || []),
+      ].filter(Boolean)));
+      setHighlightTerms(terms);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
@@ -152,6 +176,8 @@ const Home: React.FC = () => {
               <ResultsList
                 results={displayedResults}
                 loading={loading}
+                highlightTerms={highlightTerms}
+                audioMap={audioMap}
               />
             )}
 
