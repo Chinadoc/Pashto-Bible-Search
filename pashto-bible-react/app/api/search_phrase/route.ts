@@ -163,14 +163,9 @@ export async function POST(request: NextRequest) {
       for (const verse of data) {
         // Build audio URL if available on the row
         let audioUrl = ''
-        if (verse.audio_drive_id) {
-          audioUrl = `https://drive.usercontent.google.com/uc?export=download&id=${verse.audio_drive_id}`
-        } else if (verse.audio_filename) {
-          if (typeof verse.audio_filename === 'string' && /\.mp3$/i.test(verse.audio_filename)) {
-            audioUrl = `https://storage.googleapis.com/pashto-bible-audio/${verse.audio_filename}`
-          } else if (typeof verse.audio_filename === 'string') {
-            audioUrl = `https://drive.usercontent.google.com/uc?export=download&id=${verse.audio_filename}`
-          }
+        // Storage-only: build from audio_filename when present; otherwise leave empty
+        if (typeof verse.audio_filename === 'string' && /\.mp3$/i.test(verse.audio_filename)) {
+          audioUrl = `${supabaseUrl}/storage/v1/object/public/audio/${encodeURIComponent(verse.audio_filename)}`
         }
         const result: Verse = {
           ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
@@ -221,4 +216,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

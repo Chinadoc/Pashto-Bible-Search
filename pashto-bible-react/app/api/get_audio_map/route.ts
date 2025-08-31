@@ -77,9 +77,9 @@ export async function GET() {
         } else if (/\.mp3$/i.test(verse_reference)) {
           // Fall back to using the verse_reference as filename in Storage
           url = storageBase + encodeURIComponent(verse_reference)
-        } else if (audio_filename) {
-          // Last resort: treat audio_filename as Drive ID
-          url = `https://drive.usercontent.google.com/uc?export=download&id=${audio_filename}`
+        } else {
+          // No storage-compatible filename – skip (do not emit Drive URLs)
+          url = ''
         }
 
         if (url) {
@@ -133,6 +133,51 @@ export async function GET() {
           if (!audioMap[ref]) audioMap[ref] = url
         }
       }
+    }
+
+    // Finally, ensure we include everything present in Storage bucket (authoritative)
+    try {
+      const pageSizeStorage = 1000
+      let offset = 0
+      const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
+      while (true) {
+        const { data: list, error: listErr } = await supabase.storage
+          .from('audio')
+          .list('', { limit: pageSizeStorage, offset })
+
+        if (listErr) {
+          console.warn('Storage list warning:', listErr)
+          break
+        }
+
+        if (!list || list.length === 0) break
+
+        for (const item of list) {
+          if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
+          const file = item.name
+          const url = storageBase + encodeURIComponent(file)
+          // insert filename key
+          const existing = audioMap[file]
+          const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
+          if (!existing || existingIsDrive) audioMap[file] = url
+
+          // add numeric-leading/trailing alternates
+          const alt1 = file.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
+          const alt2 = file.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
+          for (const alt of [alt1, alt2]) {
+            if (alt && alt !== file) {
+              const existAlt = audioMap[alt]
+              const existAltIsDrive = existAlt && /drive\.google|docs\.google/i.test(existAlt)
+              if (!existAlt || existAltIsDrive) audioMap[alt] = url
+            }
+          }
+        }
+
+        offset += list.length
+        if (list.length < pageSizeStorage) break
+      }
+    } catch (e) {
+      console.warn('Storage sync warning:', e)
     }
 
     return NextResponse.json(audioMap)

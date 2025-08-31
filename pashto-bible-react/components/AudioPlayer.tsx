@@ -47,19 +47,9 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
         friendlyError = 'Audio format not supported';
       }
 
-      // Try alternate Drive host once if we haven't yet
+      // No Drive fallback anymore; only report status
       let attemptedFallback = false;
       const primary = src;
-      const idMatch = primary.match(/[?&](?:id|ids)=([^&]+)/) || primary.match(/\/uc\?export=download&id=([^&]+)/) || primary.match(/\/d\/([^/]+)/);
-      if (!triedAlt && idMatch && idMatch[1]) {
-        const alt = primary.includes('drive.usercontent.google.com')
-          ? `https://drive.google.com/uc?export=download&id=${idMatch[1]}`
-          : `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
-        setTriedAlt(true);
-        setSrc(alt);
-        attemptedFallback = true;
-        friendlyError = 'Retrying audio...';
-      }
 
       console.error(`❌ Audio error for ${verseRef}:`, {
         code: errorCode,
@@ -120,14 +110,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       >
         Download
       </a>
-      <a
-        href={src}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-blue-300 hover:text-blue-200 underline"
-      >
-        Open
-      </a>
+      <a href={src} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:text-blue-200 underline">Open</a>
       
       {/* Debug info - remove in production */}
       <details className="text-xs">
