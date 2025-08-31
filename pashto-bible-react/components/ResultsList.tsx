@@ -68,7 +68,7 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
               <h3 className="font-bold text-lg text-blue-400">{result.ref}</h3>
               {(
                 (() => {
-                  const direct = (result as any).audioUrl as string | undefined;
+                  const direct = result.audioUrl;
                   const url = direct && direct.length > 0 ? direct : (audioMap ? audioUrlFromRef(result.ref, audioMap) : '');
                   if (url) return <AudioPlayer audioUrl={url} verseRef={result.ref} />;
                   // Subtle hint when missing; useful while wiring data
