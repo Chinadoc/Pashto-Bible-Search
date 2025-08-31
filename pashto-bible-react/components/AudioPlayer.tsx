@@ -64,8 +64,19 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
 
   if (error) {
     return (
-      <div className="text-xs text-red-500 border border-red-300 rounded px-2 py-1">
-        Audio unavailable
+      <div className="flex items-center gap-2">
+        <div className="text-xs text-red-500 border border-red-300 rounded px-2 py-1">
+          Audio unavailable
+        </div>
+        {/* Direct link fallback */}
+        <a
+          href={audioUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-300 hover:text-blue-200 underline"
+        >
+          Open
+        </a>
       </div>
     );
   }
@@ -76,6 +87,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
         ref={audioRef}
         controls 
         preload="metadata"
+        crossOrigin="anonymous"
         className="h-8 w-48"
         src={audioUrl}
       >
