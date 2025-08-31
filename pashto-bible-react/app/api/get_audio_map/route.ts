@@ -29,21 +29,26 @@ export async function GET() {
     }
 
     // If the view doesn't exist or returned nothing, fall back to tables
-    // Get all audio mappings from the dedicated table
-    const { data: audioData, error } = await supabase
-      .from(TABLES.AUDIO_MAPPINGS)
-      .select('verse_reference, audio_filename, audio_path')
-      .order('verse_reference')
+    // Fetch audio_mappings in pages to avoid PostgREST limits
+    const pageSize = 1000
+    let from = 0
+    while (true) {
+      const { data: audioData, error } = await supabase
+        .from(TABLES.AUDIO_MAPPINGS)
+        .select('verse_reference, audio_filename, audio_path')
+        .order('verse_reference')
+        .range(from, from + pageSize - 1)
 
-    if (error && !viewError && Object.keys(audioMap).length === 0) {
-      console.error('Audio map fetch error:', error)
-      return NextResponse.json(
-        {},
-        { status: 500 }
-      )
-    }
+      if (error) {
+        if (!viewError && Object.keys(audioMap).length === 0) {
+          console.error('Audio map fetch error:', error)
+          return NextResponse.json({}, { status: 500 })
+        }
+        break
+      }
 
-    if (audioData) {
+      if (!audioData || audioData.length === 0) break
+
       for (const mapping of audioData) {
         const { verse_reference, audio_filename, audio_path } = mapping as { verse_reference?: string | null; audio_filename?: string | null; audio_path?: string | null };
 
@@ -68,6 +73,9 @@ export async function GET() {
           audioMap[verse_reference] = url
         }
       }
+
+      from += audioData.length
+      if (audioData.length < pageSize) break
     }
 
     // Also pull from verses table if drive IDs or filenames exist
