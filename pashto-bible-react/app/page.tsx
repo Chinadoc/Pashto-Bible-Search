@@ -10,6 +10,7 @@ import type { Scope } from "../types";
 interface Verse {
   ref: string;
   text: string;
+  audioUrl?: string;
 }
 
 interface Coverage {

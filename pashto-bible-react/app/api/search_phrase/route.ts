@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     // Build query conditions for variants
     const orConditions = searchVariants.map(variant => `text.ilike.*${variant}*`).join(',')
     
-    let url = `${supabaseUrl}/rest/v1/verses?select=book,chapter,verse,text,testament&or=(${orConditions})`
+    let url = `${supabaseUrl}/rest/v1/verses?select=book,chapter,verse,text,testament,audio_filename,audio_drive_id&or=(${orConditions})`
     
     // Filter by scope
     if (scope === 'ot') {
@@ -160,9 +160,22 @@ export async function POST(request: NextRequest) {
       
       // Transform results to expected format
       for (const verse of data) {
+        // Build audio URL if available on the row
+        let audioUrl = ''
+        if (verse.audio_drive_id) {
+          audioUrl = `https://drive.usercontent.google.com/uc?export=download&id=${verse.audio_drive_id}`
+        } else if (verse.audio_filename) {
+          if (typeof verse.audio_filename === 'string' && /\.mp3$/i.test(verse.audio_filename)) {
+            audioUrl = `https://storage.googleapis.com/pashto-bible-audio/${verse.audio_filename}`
+          } else if (typeof verse.audio_filename === 'string') {
+            audioUrl = `https://drive.usercontent.google.com/uc?export=download&id=${verse.audio_filename}`
+          }
+        }
         const result: Verse = {
           ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
-          text: verse.text
+          text: verse.text,
+          // @ts-ignore - extend shape to include optional audioUrl for frontend
+          audioUrl
         }
         allResults.push(result)
 
@@ -208,6 +221,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
 
 
