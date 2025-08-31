@@ -54,15 +54,20 @@ const Home: React.FC = () => {
     fetchFrequencyData();
   }, []);
 
-  // Load audio mappings once
+  // Load audio mappings once (merge server map and static Google Drive map)
   useEffect(() => {
     const loadAudio = async () => {
       try {
-        const res = await fetch('/api/get_audio_map');
-        if (res.ok) {
-          const map = await res.json();
-          setAudioMap(map || {});
-        }
+        const [serverRes, staticRes] = await Promise.all([
+          fetch('/api/get_audio_map').catch(() => null),
+          fetch('/assets/audio_file_map.json').catch(() => null),
+        ]);
+
+        const serverMap = serverRes && serverRes.ok ? await serverRes.json() : {};
+        const staticMap = staticRes && staticRes.ok ? await staticRes.json() : {};
+
+        // serverMap may contain verseRef->URL; staticMap contains filename->DriveID
+        setAudioMap({ ...(staticMap || {}), ...(serverMap || {}) });
       } catch {
         // ignore audio errors on page load
       }
