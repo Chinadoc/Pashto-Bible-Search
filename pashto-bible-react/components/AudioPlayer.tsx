@@ -12,6 +12,8 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [src, setSrc] = useState<string>(audioUrl);
+  const [triedAlt, setTriedAlt] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -35,11 +37,26 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       } else if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
         friendlyError = 'Audio format not supported';
       }
-      
+
+      // Try alternate Drive host once if we haven't yet
+      let attemptedFallback = false;
+      const primary = src;
+      const idMatch = primary.match(/[?&](?:id|ids)=([^&]+)/) || primary.match(/\/uc\?export=download&id=([^&]+)/) || primary.match(/\/d\/([^/]+)/);
+      if (!triedAlt && idMatch && idMatch[1]) {
+        const alt = primary.includes('drive.usercontent.google.com')
+          ? `https://drive.google.com/uc?export=download&id=${idMatch[1]}`
+          : `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
+        setTriedAlt(true);
+        setSrc(alt);
+        attemptedFallback = true;
+        friendlyError = 'Retrying audio...';
+      }
+
       console.error(`❌ Audio error for ${verseRef}:`, {
         code: errorCode,
         message: errorMessage,
-        url: audioUrl
+        url: primary,
+        attemptedFallback
       });
       
       setError(friendlyError);
@@ -62,25 +79,6 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     };
   }, [audioUrl, verseRef]);
 
-  if (error) {
-    return (
-      <div className="flex items-center gap-2">
-        <div className="text-xs text-red-500 border border-red-300 rounded px-2 py-1">
-          Audio unavailable
-        </div>
-        {/* Direct link fallback */}
-        <a
-          href={audioUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-blue-300 hover:text-blue-200 underline"
-        >
-          Open
-        </a>
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center gap-2">
       <audio 
@@ -89,9 +87,9 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
         preload="metadata"
         crossOrigin="anonymous"
         className="h-8 w-48"
-        src={audioUrl}
+        src={src}
       >
-        <source src={audioUrl} type="audio/mpeg" />
+        <source src={src} type="audio/mpeg" />
         Your browser does not support the audio element.
       </audio>
       
@@ -104,15 +102,32 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
           {Math.round(duration)}s
         </div>
       )}
+
+      {/* Download + Open links */}
+      <a
+        href={src}
+        download
+        className="text-xs text-blue-300 hover:text-blue-200 underline"
+      >
+        Download
+      </a>
+      <a
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-blue-300 hover:text-blue-200 underline"
+      >
+        Open
+      </a>
       
       {/* Debug info - remove in production */}
       <details className="text-xs">
         <summary className="cursor-pointer text-gray-400">🔧</summary>
         <div className="mt-1 text-gray-500 space-y-1">
           <div>Ref: {verseRef}</div>
-          <div>URL: {audioUrl.substring(0, 50)}...</div>
+          <div>URL: {src.substring(0, 50)}...</div>
           {debugInfo && <div>Debug: {debugInfo}</div>}
-          {error && <div className="text-red-500">Error: {error}</div>}
+          {error && <div className="text-yellow-500">Status: {error}</div>}
         </div>
       </details>
     </div>
