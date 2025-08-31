@@ -7,6 +7,7 @@ import type { AudioMap } from '../types';
 interface Verse {
   ref: string;
   text: string;
+  audioUrl?: string;
 }
 
 interface ResultsListProps {
@@ -65,9 +66,10 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
           <div key={i} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-bold text-lg text-blue-400">{result.ref}</h3>
-              {audioMap && (
+              {(
                 (() => {
-                  const url = audioUrlFromRef(result.ref, audioMap);
+                  const direct = (result as any).audioUrl as string | undefined;
+                  const url = direct && direct.length > 0 ? direct : (audioMap ? audioUrlFromRef(result.ref, audioMap) : '');
                   if (url) return <AudioPlayer audioUrl={url} verseRef={result.ref} />;
                   // Subtle hint when missing; useful while wiring data
                   const key = refToFilename(result.ref);
