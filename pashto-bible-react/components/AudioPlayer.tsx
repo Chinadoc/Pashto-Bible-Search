@@ -48,7 +48,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       }
 
       // No Drive fallback anymore; only report status
-      let attemptedFallback = false;
+      const attemptedFallback = false;
       const primary = src;
 
       console.error(`❌ Audio error for ${verseRef}:`, {
