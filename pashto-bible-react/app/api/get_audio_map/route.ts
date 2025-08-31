@@ -13,22 +13,35 @@ export async function GET() {
       return NextResponse.json({})
     }
 
+    // Try optimized DB view first, if present
+    const { data: viewData, error: viewError } = await supabase
+      .from('audio_by_verse' as any)
+      .select('verse_ref, url')
+      .limit(10000)
+
+    // Convert the data to the expected AudioMap format
+    const audioMap: AudioMap = {}
+
+    if (viewData && Array.isArray(viewData) && viewData.length > 0) {
+      for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
+        if (row.verse_ref && row.url) audioMap[row.verse_ref] = row.url
+      }
+    }
+
+    // If the view doesn't exist or returned nothing, fall back to tables
     // Get all audio mappings from the dedicated table
     const { data: audioData, error } = await supabase
       .from(TABLES.AUDIO_MAPPINGS)
       .select('verse_reference, audio_filename, audio_path')
       .order('verse_reference')
 
-    if (error) {
+    if (error && !viewError && Object.keys(audioMap).length === 0) {
       console.error('Audio map fetch error:', error)
       return NextResponse.json(
         {},
         { status: 500 }
       )
     }
-
-    // Convert the data to the expected AudioMap format
-    const audioMap: AudioMap = {}
 
     if (audioData) {
       for (const mapping of audioData) {
