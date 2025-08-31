@@ -1,0 +1,83 @@
+import { NextResponse } from 'next/server'
+import { supabase, TABLES } from '../../../utils/supabase'
+import type { AudioMap } from '../../../types'
+
+export async function GET() {
+  try {
+    // Check if we have valid Supabase credentials
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey ||
+        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+      return NextResponse.json({})
+    }
+
+    // Get all audio mappings from the dedicated table
+    const { data: audioData, error } = await supabase
+      .from(TABLES.AUDIO_MAPPINGS)
+      .select('verse_reference, audio_filename, audio_path')
+      .order('verse_reference')
+
+    if (error) {
+      console.error('Audio map fetch error:', error)
+      return NextResponse.json(
+        {},
+        { status: 500 }
+      )
+    }
+
+    // Convert the data to the expected AudioMap format
+    const audioMap: AudioMap = {}
+
+    if (audioData) {
+      for (const mapping of audioData) {
+        const { verse_reference, audio_filename, audio_path } = mapping
+
+        if (verse_reference && audio_filename) {
+          // Use the audio path if available, otherwise construct from filename
+          const audioUrl = (audio_path && /^https?:\/\//i.test(audio_path))
+            ? audio_path
+            : (audio_filename ? `https://storage.googleapis.com/pashto-bible-audio/${audio_filename}` : '')
+          audioMap[verse_reference] = audioUrl
+        }
+      }
+    }
+
+    // Also pull from verses table if drive IDs or filenames exist
+    const { data: versesData, error: versesError } = await supabase
+      .from(TABLES.VERSES)
+      .select('book, chapter, verse, audio_filename, audio_drive_id')
+      .or('audio_filename.not.is.null,audio_drive_id.not.is.null')
+
+    if (versesError) {
+      console.warn('Audio map (verses) fetch warning:', versesError)
+    }
+
+    if (versesData) {
+      for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
+        const ref = `${v.book} ${v.chapter}:${v.verse}`
+        // Prefer Drive ID when provided, else fall back to storage filename
+        let url = ''
+        if (v.audio_drive_id) {
+          url = `https://drive.google.com/uc?export=download&id=${v.audio_drive_id}`
+        } else if (v.audio_filename) {
+          url = `https://storage.googleapis.com/pashto-bible-audio/${v.audio_filename}`
+        }
+        if (url) {
+          // Do not overwrite explicit path from audio_mappings if it exists
+          if (!audioMap[ref]) audioMap[ref] = url
+        }
+      }
+    }
+
+    return NextResponse.json(audioMap)
+
+  } catch (error) {
+    console.error('Audio map error:', error)
+    return NextResponse.json(
+      {},
+      { status: 500 }
+    )
+  }
+}
