@@ -87,6 +87,7 @@ interface SearchRequest {
 interface Verse {
   ref: string
   text: string
+  audioUrl?: string
 }
 
 interface CoverageItem {
@@ -174,7 +175,6 @@ export async function POST(request: NextRequest) {
         const result: Verse = {
           ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
           text: verse.text,
-          // @ts-ignore - extend shape to include optional audioUrl for frontend
           audioUrl
         }
         allResults.push(result)
@@ -221,5 +221,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
 
