@@ -24,13 +24,16 @@ export function refToFilename(ref: string): string | null {
   return `${slug}${chapter}_verse_${verse}.mp3`;
 }
 
-function altNumericBookSlug(bookSlug: string): string {
-  // Convert 1john -> john1, 2corinthians -> corinthians2, etc.
-  const m = bookSlug.match(/^(\d)([a-z].*)$/);
-  if (!m) return bookSlug;
-  const num = m[1];
-  const rest = m[2];
-  return `${rest}${num}`;
+function altNumericBookSlugBothWays(bookSlug: string): string[] {
+  const out = new Set<string>();
+  out.add(bookSlug);
+  // 1john -> john1
+  const m1 = bookSlug.match(/^(\d)([a-z].*)$/);
+  if (m1) out.add(`${m1[2]}${m1[1]}`);
+  // john1 -> 1john
+  const m2 = bookSlug.match(/^([a-z]+?)(\d)$/);
+  if (m2) out.add(`${m2[2]}${m2[1]}`);
+  return Array.from(out);
 }
 
 function candidateFilenames(ref: string): string[] {
@@ -39,8 +42,8 @@ function candidateFilenames(ref: string): string[] {
   const { book, chapter, verse } = parsed;
   const slug = normalizeBookNameToSlug(book);
   const primary = `${slug}${chapter}_verse_${verse}.mp3`;
-  const alt = `${altNumericBookSlug(slug)}${chapter}_verse_${verse}.mp3`;
-  return [...new Set([primary, alt])];
+  const alts = altNumericBookSlugBothWays(slug).map(s => `${s}${chapter}_verse_${verse}.mp3`);
+  return [...new Set([primary, ...alts])];
 }
 
 export function audioUrlFromRef(ref: string, map: AudioMap): string {

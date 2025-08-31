@@ -90,12 +90,16 @@ export async function GET() {
           if (!existing || (isStorage && existingIsDrive)) {
             audioMap[verse_reference] = url
           }
-          // Also add alternate key where leading number is moved to the end (e.g., 1john -> john1)
-          const alt = verse_reference.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
-          if (alt !== verse_reference) {
-            const existingAlt = audioMap[alt]
-            const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
-            if (!existingAlt || (isStorage && existingAltIsDrive)) audioMap[alt] = url
+          // Also add alternate keys for numeric-leading vs trailing
+          // 1john1_verse_x.mp3 <-> john11_verse_x.mp3 (but we only move single leading/trailing digit)
+          const alt1 = verse_reference.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
+          const alt2 = verse_reference.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
+          for (const alt of [alt1, alt2]) {
+            if (alt && alt !== verse_reference) {
+              const existingAlt = audioMap[alt]
+              const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
+              if (!existingAlt || (isStorage && existingAltIsDrive)) audioMap[alt] = url
+            }
           }
         }
       }
