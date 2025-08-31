@@ -6,16 +6,13 @@ function normalizeBookNameToSlug(bookName: string): string {
 
 function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
   if (!ref) return null;
-  // This regex is designed to be very forgiving for refs like "1 Chronicles1 5:29"
-  const match = ref.match(/^((\d\s)?[a-zA-Z\s]+?)\s*(\d+):(\d+)$/);
-  if (!match) return null;
-
-  const book = match[1].trim().replace(/([a-zA-Z])(\d+)$/, '$1'); // Clean "1 Chronicles1" -> "1 Chronicles"
-  const chapter = Number(match[3]);
-  const verse = Number(match[4]);
-
-  if (!book || isNaN(chapter) || isNaN(verse)) return null;
-
+  // Accept forms like "1-Corinthians 11:34", "1 John 2:8", "Acts 10:1"
+  const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
+  if (!m) return null;
+  const book = m[1].trim();
+  const chapter = Number(m[2]);
+  const verse = Number(m[3]);
+  if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return null;
   return { book, chapter, verse };
 }
 
