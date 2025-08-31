@@ -68,25 +68,35 @@ export async function GET() {
         if (!verse_reference) continue;
 
         let url = ''
+        const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
         if (audio_path && /^https?:\/\//i.test(audio_path)) {
           url = audio_path
-        } else if (audio_filename) {
-          // In this dataset, audio_filename may actually be a Drive ID; detect by extension
-          if (/\.mp3$/i.test(audio_filename)) {
-            url = `https://storage.googleapis.com/pashto-bible-audio/${audio_filename}`
-          } else {
-            url = `https://drive.google.com/uc?export=download&id=${audio_filename}`
-          }
+        } else if (audio_filename && /\.mp3$/i.test(audio_filename)) {
+          // Prefer Supabase Storage public URL for mp3 filenames
+          url = storageBase + encodeURIComponent(audio_filename)
         } else if (/\.mp3$/i.test(verse_reference)) {
-          // Fall back to using the verse_reference as a filename key
-          url = `https://storage.googleapis.com/pashto-bible-audio/${verse_reference}`
+          // Fall back to using the verse_reference as filename in Storage
+          url = storageBase + encodeURIComponent(verse_reference)
+        } else if (audio_filename) {
+          // Last resort: treat audio_filename as Drive ID
+          url = `https://drive.usercontent.google.com/uc?export=download&id=${audio_filename}`
         }
 
         if (url) {
-          audioMap[verse_reference] = url
+          // Prefer Storage URL over Drive URL if both encountered
+          const existing = audioMap[verse_reference]
+          const isStorage = url.includes('/storage/v1/object/public/')
+          const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
+          if (!existing || (isStorage && existingIsDrive)) {
+            audioMap[verse_reference] = url
+          }
           // Also add alternate key where leading number is moved to the end (e.g., 1john -> john1)
           const alt = verse_reference.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
-          if (alt !== verse_reference && !audioMap[alt]) audioMap[alt] = url
+          if (alt !== verse_reference) {
+            const existingAlt = audioMap[alt]
+            const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
+            if (!existingAlt || (isStorage && existingAltIsDrive)) audioMap[alt] = url
+          }
         }
       }
 
