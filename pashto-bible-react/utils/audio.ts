@@ -28,10 +28,21 @@ export function refToFilename(ref: string): string | null {
 }
 
 export function audioUrlFromRef(ref: string, map: AudioMap): string {
+  if (!ref || !map) return "";
+
+  // 1) Direct mapping by verse reference (preferred when API returns ref->URL)
+  if (map[ref]) return map[ref];
+
+  // 2) Mapping by audio filename (legacy maps)
   const filename = refToFilename(ref);
-  if (!filename || !map) return "";
-  // Firestore keys might have been created from filenames with spaces encoded
-  const driveId = map[filename] || map[decodeURIComponent(filename)];
-  if (!driveId) return "";
-  return `https://drive.google.com/uc?export=download&id=${driveId}`;
+  if (filename) {
+    const val = map[filename] || map[decodeURIComponent(filename)];
+    if (val) {
+      // If value already looks like a URL, return it; otherwise treat as Drive ID.
+      if (/^https?:\/\//i.test(val)) return val;
+      return `https://drive.google.com/uc?export=download&id=${val}`;
+    }
+  }
+
+  return "";
 }
