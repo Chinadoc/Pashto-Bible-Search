@@ -13,11 +13,24 @@ export async function GET() {
       return NextResponse.json({})
     }
 
-    // Try optimized DB view first, if present
-    const { data: viewData, error: viewError } = await supabase
-      .from('audio_by_verse' as any)
-      .select('verse_ref, url')
-      .limit(10000)
+    // Try optimized DB view first, if present (via REST to avoid TS generics)
+    let viewError: unknown = null
+    let viewData: Array<{ verse_ref?: string | null; url?: string | null }> | null = null
+    try {
+      const viewRes = await fetch(`${supabaseUrl}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      })
+      if (viewRes.ok) {
+        viewData = await viewRes.json()
+      }
+    } catch (e) {
+      viewError = e
+    }
 
     // Convert the data to the expected AudioMap format
     const audioMap: AudioMap = {}

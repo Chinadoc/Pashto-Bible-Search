@@ -16,6 +16,15 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const [triedAlt, setTriedAlt] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Reset source when incoming URL changes
+  useEffect(() => {
+    setSrc(audioUrl);
+    setTriedAlt(false);
+    setIsLoading(true);
+    setError(null);
+    setDebugInfo('');
+  }, [audioUrl]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -77,7 +86,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('canplay', handleCanPlay);
     };
-  }, [audioUrl, verseRef]);
+  }, [src, verseRef, triedAlt]);
 
   return (
     <div className="flex items-center gap-2">
