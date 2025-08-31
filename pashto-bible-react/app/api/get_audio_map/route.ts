@@ -32,14 +32,27 @@ export async function GET() {
 
     if (audioData) {
       for (const mapping of audioData) {
-        const { verse_reference, audio_filename, audio_path } = mapping
+        const { verse_reference, audio_filename, audio_path } = mapping as { verse_reference?: string | null; audio_filename?: string | null; audio_path?: string | null };
 
-        if (verse_reference && audio_filename) {
-          // Use the audio path if available, otherwise construct from filename
-          const audioUrl = (audio_path && /^https?:\/\//i.test(audio_path))
-            ? audio_path
-            : (audio_filename ? `https://storage.googleapis.com/pashto-bible-audio/${audio_filename}` : '')
-          audioMap[verse_reference] = audioUrl
+        if (!verse_reference) continue;
+
+        let url = ''
+        if (audio_path && /^https?:\/\//i.test(audio_path)) {
+          url = audio_path
+        } else if (audio_filename) {
+          // In this dataset, audio_filename may actually be a Drive ID; detect by extension
+          if (/\.mp3$/i.test(audio_filename)) {
+            url = `https://storage.googleapis.com/pashto-bible-audio/${audio_filename}`
+          } else {
+            url = `https://drive.google.com/uc?export=download&id=${audio_filename}`
+          }
+        } else if (/\.mp3$/i.test(verse_reference)) {
+          // Fall back to using the verse_reference as a filename key
+          url = `https://storage.googleapis.com/pashto-bible-audio/${verse_reference}`
+        }
+
+        if (url) {
+          audioMap[verse_reference] = url
         }
       }
     }
