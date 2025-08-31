@@ -84,6 +84,9 @@ export async function GET() {
 
         if (url) {
           audioMap[verse_reference] = url
+          // Also add alternate key where leading number is moved to the end (e.g., 1john -> john1)
+          const alt = verse_reference.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
+          if (alt !== verse_reference && !audioMap[alt]) audioMap[alt] = url
         }
       }
 
