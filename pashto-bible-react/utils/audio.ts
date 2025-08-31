@@ -28,16 +28,30 @@ export function audioUrlFromRef(ref: string, map: AudioMap): string {
   if (!ref || !map) return "";
 
   // 1) Direct mapping by verse reference (preferred when API returns ref->URL)
-  if (map[ref]) return map[ref];
+  if (map[ref]) {
+    const val = map[ref];
+    // Normalize Google Drive host to direct media host
+    if (/^https?:\/\//i.test(val) && /drive\.google\.com|docs\.google\.com/i.test(val)) {
+      const idMatch = val.match(/[?&](?:id|ids)=([^&]+)/) || val.match(/\/d\/([^/]+)/);
+      if (idMatch && idMatch[1]) return `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
+    }
+    return val;
+  }
 
   // 2) Mapping by audio filename (legacy maps)
   const filename = refToFilename(ref);
   if (filename) {
     const val = map[filename] || map[decodeURIComponent(filename)];
     if (val) {
-      // If value already looks like a URL, return it; otherwise treat as Drive ID.
-      if (/^https?:\/\//i.test(val)) return val;
-      return `https://drive.google.com/uc?export=download&id=${val}`;
+      // If value already looks like a URL, normalize Drive hosts; otherwise treat as Drive ID.
+      if (/^https?:\/\//i.test(val)) {
+        if (/drive\.google\.com|docs\.google\.com/i.test(val)) {
+          const idMatch = val.match(/[?&](?:id|ids)=([^&]+)/) || val.match(/\/d\/([^/]+)/);
+          if (idMatch && idMatch[1]) return `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
+        }
+        return val;
+      }
+      return `https://drive.usercontent.google.com/uc?export=download&id=${val}`;
     }
   }
 
