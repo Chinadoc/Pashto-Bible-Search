@@ -1,7 +1,7 @@
 // components/ResultsList.tsx
 import React, { useMemo, useState } from 'react';
 import AudioPlayer from './AudioPlayer';
-import { audioUrlFromRef } from '../utils/audio';
+import { audioUrlFromRef, refToFilename } from '../utils/audio';
 import type { AudioMap } from '../types';
 
 interface Verse {
@@ -68,7 +68,17 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
               {audioMap && (
                 (() => {
                   const url = audioUrlFromRef(result.ref, audioMap);
-                  return url ? <AudioPlayer audioUrl={url} verseRef={result.ref} /> : null;
+                  if (url) return <AudioPlayer audioUrl={url} verseRef={result.ref} />;
+                  // Subtle hint when missing; useful while wiring data
+                  const key = refToFilename(result.ref);
+                  return (
+                    <span
+                      className="text-xs text-gray-400 border border-gray-600 rounded px-2 py-1"
+                      title={`No audio. key=${key || 'n/a'} inMap=${key ? !!audioMap[key] : false}`}
+                    >
+                      No audio
+                    </span>
+                  );
                 })()
               )}
             </div>

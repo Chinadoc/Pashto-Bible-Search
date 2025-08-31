@@ -110,9 +110,14 @@ const Home: React.FC = () => {
     }
   };
 
-  // Apply client-side book filter
+  // Apply client-side book filter (normalize hyphens/spaces/case)
+  const normalizeBook = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const getBookFromRef = (ref: string) => {
+    const m = ref.match(/^(.+?)\s+\d+:\d+$/);
+    return m ? m[1] : '';
+  };
   const displayedResults = bookFilter
-    ? results.filter(r => r.ref.startsWith(`${bookFilter} `))
+    ? results.filter(r => normalizeBook(getBookFromRef(r.ref)) === normalizeBook(bookFilter))
     : results;
 
   return (
