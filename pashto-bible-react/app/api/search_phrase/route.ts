@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     url += '&limit=100'
 
     // Execute query using fetch
-    const response = await fetch(url, {
+    const resp = await fetch(url, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`,
@@ -138,8 +138,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (response.ok) {
-      const data = await response.json()
+    if (resp.ok) {
+      const data = await resp.json()
       
       // Transform results to expected format
       for (const verse of data) {
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         coverageMap.set(verse.book, (coverageMap.get(verse.book) || 0) + 1)
       }
     } else {
-      console.error('Supabase REST API error:', response.status, response.statusText)
+      console.error('Supabase REST API error:', resp.status, resp.statusText)
     }
 
     // Remove duplicate results based on reference
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       .map(([book, count]) => ({ book, count }))
       .sort((a, b) => b.count - a.count)
 
-    const response = {
+    const payload = {
       results: uniqueResults,
       coverage,
       processed: {
@@ -179,9 +179,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Cache the result
-    SEARCH_CACHE.set(cacheKey, { data: response, ts: Date.now() })
+    SEARCH_CACHE.set(cacheKey, { data: payload, ts: Date.now() })
 
-    return NextResponse.json(response)
+    return NextResponse.json(payload)
 
   } catch (error) {
     console.error('Search phrase error:', error)
@@ -196,5 +196,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
 
