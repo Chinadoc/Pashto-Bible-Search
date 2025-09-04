@@ -1,35 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Helper function to get occurrence count for a form
-async function getFormOccurrenceCount(supabaseUrl: string, supabaseKey: string, form: string): Promise<number> {
-  try {
-    // Use ILIKE for fuzzy matching to catch variations
-    const url = new URL(`${supabaseUrl}/rest/v1/verses`)
-    url.searchParams.set('select', 'id')
-    url.searchParams.set('text', `ilike.*${form}*`)
-    url.searchParams.set('limit', '1') // We just need the count, not the actual rows
-
-    const res = await fetch(url.toString(), {
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact', // Request exact count
-      },
-      cache: 'no-store',
-    })
-
-    if (res.ok) {
-      // Get count from response headers
-      const count = res.headers.get('content-range')?.split('/')[1]
-      return count ? parseInt(count, 10) : 0
-    }
-  } catch {
-    // ignore
-  }
-  return 0
-}
-
 // Simple in-memory cache for related forms
 const RELATED_FORMS_CACHE = new Map<string, { data: any; ts: number }>()
 const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
@@ -89,8 +59,8 @@ export async function POST(request: NextRequest) {
       // ignore and keep root=term
     }
 
-    // 2) Fetch all forms for this root with occurrence counts
-    const forms = new Map<string, number>()
+    // 2) Fetch all forms for this root (collect only)
+    const formSet = new Set<string>()
     try {
       const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
       url.searchParams.set('select', 'form')
@@ -104,25 +74,18 @@ export async function POST(request: NextRequest) {
         },
         cache: 'no-store',
       })
-      if (res.ok) {
-        const rows = await res.json()
-        if (Array.isArray(rows)) {
-          for (const r of rows) {
-            if (r?.form) {
-              const form = String(r.form)
-              // Get occurrence count for this form
-              const count = await getFormOccurrenceCount(supabaseUrl, supabaseKey, form)
-              forms.set(form, count)
-            }
+        if (res.ok) {
+          const rows = await res.json()
+          if (Array.isArray(rows)) {
+            for (const r of rows) if (r?.form) formSet.add(String(r.form))
           }
         }
-      }
     } catch {
       // ignore – fall back to empty suggestions
     }
 
     // 3) If no forms found via mapping, try a secondary table name if exists
-    if (forms.size === 0) {
+    if (formSet.size === 0) {
       try {
         const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
         // assume columns: root, form
@@ -140,13 +103,7 @@ export async function POST(request: NextRequest) {
         if (res.ok) {
           const rows = await res.json()
           if (Array.isArray(rows)) {
-            for (const r of rows) {
-              if (r?.form) {
-                const form = String(r.form)
-                const count = await getFormOccurrenceCount(supabaseUrl, supabaseKey, form)
-                forms.set(form, count)
-              }
-            }
+            for (const r of rows) if (r?.form) formSet.add(String(r.form))
           }
         }
       } catch {
@@ -154,18 +111,58 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4) Finalize - convert Map to sorted array with counts
-    const formsArray = Array.from(forms.entries())
-      .filter(([form]) => form && form !== term)
-      .map(([form, count]) => ({ form, count }))
-      .sort((a, b) => b.count - a.count) // Sort by frequency descending
+    // 4) Enrich counts using word_frequencies and add POS grouping
+    const formsArr = Array.from(formSet).filter(f => f && f !== term)
+    let enriched: Array<{ form: string; count?: number; pos?: string }> = formsArr.map(f => ({ form: f }))
+    // Counts via word_frequencies
+    try {
+      if (formsArr.length > 0) {
+        const url = new URL(`${supabaseUrl}/rest/v1/word_frequencies`)
+        url.searchParams.set('select', 'pashto_word,frequency_count')
+        const inList = formsArr.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+        url.searchParams.set('pashto_word', `in.(${inList})`)
+        url.searchParams.set('limit', String(formsArr.length))
+        const r = await fetch(url.toString(), {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          cache: 'no-store',
+        })
+        if (r.ok) {
+          const rows = await r.json()
+          const freqMap = new Map<string, number>()
+          for (const row of rows) if (row?.pashto_word) freqMap.set(String(row.pashto_word), Number(row.frequency_count || 0))
+          enriched.forEach(item => { if (freqMap.has(item.form)) item.count = freqMap.get(item.form) })
+        }
+      }
+    } catch {}
+    // POS grouping from lexicons based on root
+    try {
+      let rootPos: string | undefined
+      let url = new URL(`${supabaseUrl}/rest/v1/verbs_lexicon`)
+      url.searchParams.set('select', 'p_norm')
+      url.searchParams.set('p_norm', `eq.${root}`)
+      url.searchParams.set('limit', '1')
+      let r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
+      if (r.ok) {
+        const rows = await r.json()
+        if (Array.isArray(rows) && rows.length > 0) rootPos = 'verb'
+      }
+      if (!rootPos) {
+        url = new URL(`${supabaseUrl}/rest/v1/nouns_lexicon`)
+        url.searchParams.set('select', 'p_norm')
+        url.searchParams.set('p_norm', `eq.${root}`)
+        url.searchParams.set('limit', '1')
+        r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
+        if (r.ok) {
+          const rows = await r.json()
+          if (Array.isArray(rows) && rows.length > 0) rootPos = 'noun'
+        }
+      }
+      if (rootPos) enriched.forEach(item => { item.pos = rootPos })
+    } catch {}
+    // Sort by count desc then form asc
+    enriched.sort((a, b) => (b.count || 0) - (a.count || 0) || a.form.localeCompare(b.form))
 
-    const response = {
-      root,
-      forms: formsArray,
-      total: formsArray.length,
-      ms: Date.now() - started
-    }
+    const response = { root, forms: enriched, total: enriched.length, ms: Date.now() - started }
 
     // Cache the result
     RELATED_FORMS_CACHE.set(cacheKey, { data: response, ts: Date.now() })
@@ -176,4 +173,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ root: '', forms: [], ms: Date.now() - started }, { status: 500 })
   }
 }
-
