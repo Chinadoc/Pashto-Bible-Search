@@ -2,8 +2,16 @@ import { NextResponse } from 'next/server'
 import { supabase, TABLES } from '../../../utils/supabase'
 import type { AudioMap } from '../../../types'
 
+// Simple in-memory cache to reduce storage/list churn during a server's lifetime
+let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
+const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
 export async function GET() {
   try {
+    // Serve cached if fresh
+    if (AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
+      return NextResponse.json(AUDIO_MAP_CACHE.data)
+    }
     // Check if we have valid Supabase credentials
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -180,6 +188,8 @@ export async function GET() {
       console.warn('Storage sync warning:', e)
     }
 
+    // Save to cache
+    AUDIO_MAP_CACHE = { data: audioMap, ts: Date.now() }
     return NextResponse.json(audioMap)
 
   } catch (error) {
