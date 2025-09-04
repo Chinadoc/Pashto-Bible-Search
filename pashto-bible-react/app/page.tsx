@@ -40,6 +40,7 @@ const Home: React.FC = () => {
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<string[]>([]);
   const [includeInflections, setIncludeInflections] = useState<boolean>(false);
+  const [relatedFormCounts, setRelatedFormCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchFrequencyData = async () => {
@@ -118,22 +119,33 @@ const Home: React.FC = () => {
             if (Array.isArray(rel.forms)) {
               if (rel.forms.length > 0 && typeof rel.forms[0] === 'object') {
                 // New format with counts
-                setRelatedForms(rel.forms.map((item: any) => item.form));
+                const forms = rel.forms.map((item: any) => item.form as string);
+                const counts: Record<string, number> = {};
+                for (const item of rel.forms) {
+                  if (item && item.form) counts[item.form] = typeof item.count === 'number' ? item.count : 0;
+                }
+                setRelatedForms(forms);
+                setRelatedFormCounts(counts);
               } else {
                 // Old format - just strings
-                setRelatedForms(rel.forms);
+                setRelatedForms(rel.forms as string[]);
+                setRelatedFormCounts({});
               }
             } else {
               setRelatedForms([]);
+              setRelatedFormCounts({});
             }
           } else {
             setRelatedForms([]);
+            setRelatedFormCounts({});
           }
         } catch {
           setRelatedForms([]);
+          setRelatedFormCounts({});
         }
       } else {
         setRelatedForms([]);
+        setRelatedFormCounts({});
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -234,12 +246,13 @@ const Home: React.FC = () => {
                         // reset inclusion for direct search
                         setIncludeInflections(false);
                         setRelatedForms([]);
+                        setRelatedFormCounts({});
                         setTimeout(() => handleSearch(), 0);
                       }}
                       className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded border border-gray-600"
                       title="Search this form"
                     >
-                      {f}
+                      {f}{typeof relatedFormCounts[f] === 'number' ? ` (${relatedFormCounts[f]})` : ''}
                     </button>
                   ))}
                   {relatedForms.length > 24 && (
