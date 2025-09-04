@@ -35,7 +35,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       console.log(`✅ Audio loaded for ${verseRef}: ${audio.duration}s`);
     };
 
-    const handleError = (e: Event) => {
+    const handleError = async (e: Event) => {
       const target = e.target as HTMLAudioElement;
       const errorCode = target.error?.code;
       const errorMessage = target.error?.message || 'Unknown error';
@@ -46,16 +46,36 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
       } else if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
         friendlyError = 'Audio format not supported';
       }
-
-      // No Drive fallback anymore; only report status
-      const attemptedFallback = false;
+      
+      // Try one-time server-side signed URL fallback for private buckets
+      let attemptedFallback = false;
       const primary = src;
+      if (!triedAlt) {
+        try {
+          attemptedFallback = true;
+          const q = encodeURIComponent(verseRef);
+          const resp = await fetch(`/api/audio_url?ref=${q}`, { cache: 'no-store' });
+          if (resp.ok) {
+            const { url } = await resp.json();
+            if (url && typeof url === 'string') {
+              setTriedAlt(true);
+              setSrc(url);
+              setIsLoading(true);
+              setError(null);
+              setDebugInfo('Using signed URL fallback');
+              return; // let audio retry load
+            }
+          }
+        } catch {
+          // ignore and fall through to error display
+        }
+      }
 
       console.error(`❌ Audio error for ${verseRef}:`, {
         code: errorCode,
         message: errorMessage,
         url: primary,
-        attemptedFallback
+        attemptedFallback,
       });
       
       setError(friendlyError);
