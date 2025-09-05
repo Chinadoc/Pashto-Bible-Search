@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+type RelatedForm = { form: string; count?: number; pos?: string }
+type RelatedFormsResponse = { root: string; forms: RelatedForm[]; total?: number; ms: number; cached?: boolean }
+
 // Simple in-memory cache for related forms
-const RELATED_FORMS_CACHE = new Map<string, { data: any; ts: number }>()
+const RELATED_FORMS_CACHE = new Map<string, { data: RelatedFormsResponse; ts: number }>()
 const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
 
 // Attempt to fetch related forms/inflections for a given term using Supabase REST.
@@ -113,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // 4) Enrich counts using word_frequencies and add POS grouping
     const formsArr = Array.from(formSet).filter(f => f && f !== term)
-    let enriched: Array<{ form: string; count?: number; pos?: string }> = formsArr.map(f => ({ form: f }))
+    const enriched: Array<{ form: string; count?: number; pos?: string }> = formsArr.map(f => ({ form: f }))
     // Counts via word_frequencies
     try {
       if (formsArr.length > 0) {
@@ -162,7 +165,7 @@ export async function POST(request: NextRequest) {
     // Sort by count desc then form asc
     enriched.sort((a, b) => (b.count || 0) - (a.count || 0) || a.form.localeCompare(b.form))
 
-    const response = { root, forms: enriched, total: enriched.length, ms: Date.now() - started }
+    const response: RelatedFormsResponse = { root, forms: enriched, total: enriched.length, ms: Date.now() - started }
 
     // Cache the result
     RELATED_FORMS_CACHE.set(cacheKey, { data: response, ts: Date.now() })

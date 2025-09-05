@@ -114,20 +114,18 @@ const Home: React.FC = () => {
             body: JSON.stringify({ term: data.processed.normalized, limit: 200 })
           });
           if (relRes.ok) {
-            const rel = await relRes.json();
-            // Handle both old format (array of strings) and new format (array of {form, count})
+            type RelatedFormMeta = { form: string; count?: number; pos?: string };
+            type RelatedFormsAPI = { root: string; forms: string[] | RelatedFormMeta[]; total?: number; ms: number; cached?: boolean };
+            const rel: RelatedFormsAPI = await relRes.json();
             if (Array.isArray(rel.forms)) {
               if (rel.forms.length > 0 && typeof rel.forms[0] === 'object') {
-                // New format with counts
-                const forms = rel.forms.map((item: any) => item.form as string);
+                const meta = rel.forms as RelatedFormMeta[];
+                const forms = meta.map((item) => item.form);
                 const counts: Record<string, number> = {};
-                for (const item of rel.forms) {
-                  if (item && item.form) counts[item.form] = typeof item.count === 'number' ? item.count : 0;
-                }
+                meta.forEach((item) => { counts[item.form] = typeof item.count === 'number' ? item.count : 0 });
                 setRelatedForms(forms);
                 setRelatedFormCounts(counts);
               } else {
-                // Old format - just strings
                 setRelatedForms(rel.forms as string[]);
                 setRelatedFormCounts({});
               }
