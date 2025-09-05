@@ -40,12 +40,29 @@ CREATE INDEX IF NOT EXISTS nouns_lexicon_p_norm_idx ON public.nouns_lexicon (p_n
 -- CREATE INDEX IF NOT EXISTS form_occurrences_form_idx ON public.form_occurrences (form);
 -- CREATE INDEX IF NOT EXISTS form_occurrences_count_idx ON public.form_occurrences (occurrence_count DESC);
 
--- Storage policies for 'audio' bucket to allow signed URL generation and object listing via anon key
+-- Storage policies for 'audio' bucket to allow uploads, signed URL generation and object listing via anon key
 -- Note: Ensure the 'audio' bucket exists and is private.
 -- select storage.create_bucket('audio', false); -- run once if not created (false = private)
 
 -- Enable RLS on storage.objects (enabled by default)
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Allow anon role to upload to audio bucket
+DROP POLICY IF EXISTS "Allow anon upload audio objects" ON storage.objects;
+CREATE POLICY "Allow anon upload audio objects"
+  ON storage.objects
+  FOR INSERT
+  TO anon
+  WITH CHECK (bucket_id = 'audio');
+
+-- Allow anon role to update (overwrite) audio objects
+DROP POLICY IF EXISTS "Allow anon update audio objects" ON storage.objects;
+CREATE POLICY "Allow anon update audio objects"
+  ON storage.objects
+  FOR UPDATE
+  TO anon
+  USING (bucket_id = 'audio')
+  WITH CHECK (bucket_id = 'audio');
 
 -- Allow anon role to select metadata for audio bucket (required for list + signed URLs)
 DROP POLICY IF EXISTS "Allow anon read audio objects" ON storage.objects;
@@ -55,5 +72,10 @@ CREATE POLICY "Allow anon read audio objects"
   TO anon
   USING (bucket_id = 'audio');
 
--- Optional: Narrow to mp3 files only
--- AND (storage.foldername(name) IS NULL OR right(name, 4) = '.mp3')
+-- Allow anon role to delete audio objects (optional)
+DROP POLICY IF EXISTS "Allow anon delete audio objects" ON storage.objects;
+CREATE POLICY "Allow anon delete audio objects"
+  ON storage.objects
+  FOR DELETE
+  TO anon
+  USING (bucket_id = 'audio');

@@ -20,7 +20,11 @@ function altNumericBookSlugBothWays(bookSlug: string): string[] {
   return Array.from(out);
 }
 
-function candidateFilenamesFromRef(ref: string): string[] {
+function hyphenSlug(book: string): string {
+  return book.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+function candidatePathsFromRef(ref: string): string[] {
   const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
   if (!m) return [];
   const book = m[1].trim();
@@ -31,7 +35,10 @@ function candidateFilenamesFromRef(ref: string): string[] {
   const base = `${chapter}_verse_${verse}.mp3`;
   const primary = `${slug}${base}`;
   const alts = altNumericBookSlugBothWays(slug).map(s => `${s}${base}`);
-  return Array.from(new Set([primary, ...alts]));
+  const hy = hyphenSlug(book);
+  // Also support nested paths like: 1-corinthians/chapter-1-verses/verse-1.mp3
+  const nested = [`${hy}/chapter-${chapter}-verses/verse-${verse}.mp3`];
+  return Array.from(new Set([primary, ...alts, ...nested]));
 }
 
 export async function GET(request: NextRequest) {
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Try to create a signed URL for candidate filenames that match our storage scheme
     const bucketName = 'audio'
-    const candidates = candidateFilenamesFromRef(ref)
+    const candidates = candidatePathsFromRef(ref)
 
     for (const file of candidates) {
       const { data, error } = await supabase.storage
@@ -120,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Process each ref
     for (const ref of refs) {
       try {
-        const candidates = candidateFilenamesFromRef(ref)
+        const candidates = candidatePathsFromRef(ref)
         let done = false
         for (const file of candidates) {
           const { data, error } = await supabase.storage
