@@ -45,7 +45,10 @@ export async function GET() {
 
     if (viewData && Array.isArray(viewData) && viewData.length > 0) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
-        if (row.verse_ref && row.url) audioMap[row.verse_ref] = row.url
+        if (!row.verse_ref || !row.url) continue
+        const isDrive = /drive\.google|docs\.google/i.test(row.url)
+        // Avoid inserting Drive URLs here; we'll rely on Storage listing or table mappings
+        if (!isDrive) audioMap[row.verse_ref] = row.url
       }
     }
 
