@@ -52,8 +52,15 @@ export function audioUrlFromRef(ref: string, map: AudioMap): string {
   // 1) Direct mapping by verse reference (preferred when API returns ref->URL)
   if (map[ref]) {
     const val = map[ref];
-    // Normalize Google Drive host to direct media host
-    if (/^https?:\/\//i.test(val) && /drive\.google\.com|docs\.google\.com/i.test(val)) {
+    const isDrive = /^https?:\/\//i.test(val) && /drive\.google\.com|docs\.google\.com/i.test(val);
+    if (isDrive) {
+      // Prefer a Storage URL when available for the corresponding filename(s)
+      const candidates = candidateFilenames(ref);
+      for (const filename of candidates) {
+        const v2 = map[filename] || map[decodeURIComponent(filename)];
+        if (v2 && /\/storage\/v1\/object\/public\//i.test(v2)) return v2;
+      }
+      // Otherwise normalize Drive host to direct media
       const idMatch = val.match(/[?&](?:id|ids)=([^&]+)/) || val.match(/\/d\/([^/]+)/);
       if (idMatch && idMatch[1]) return `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
     }
