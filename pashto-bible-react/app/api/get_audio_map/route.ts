@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabase, TABLES } from '../../../utils/supabase'
 import type { AudioMap } from '../../../types'
 
@@ -6,10 +6,11 @@ import type { AudioMap } from '../../../types'
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
 const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const forceRefresh = request.nextUrl?.searchParams?.get('refresh') === '1'
     // Serve cached if fresh
-    if (AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
+    if (!forceRefresh && AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
       return NextResponse.json(AUDIO_MAP_CACHE.data)
     }
     // Check if we have valid Supabase credentials
