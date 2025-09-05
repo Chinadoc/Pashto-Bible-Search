@@ -44,7 +44,20 @@ interface SearchRequest {
 }
 
 // Simple in-memory cache for search responses
-const SEARCH_CACHE = new Map<string, { data: any; ts: number }>()
+interface SearchPayload {
+  results: Verse[];
+  coverage: CoverageItem[];
+  processed: {
+    original: string;
+    normalized: string;
+    variants: string[];
+    romanization: string;
+  };
+  ms: number;
+  cached?: boolean;
+  error?: string;
+}
+const SEARCH_CACHE = new Map<string, { data: SearchPayload; ts: number }>()
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 interface Verse {
@@ -196,4 +209,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
