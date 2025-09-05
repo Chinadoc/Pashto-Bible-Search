@@ -29,13 +29,16 @@ function loadEnvFile() {
 // Load environment variables
 const env = loadEnvFile();
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Prefer service role key for uploads (bypasses RLS); fall back to anon if not provided
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseKey = serviceKey || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase environment variables');
   console.log('Please ensure .env.local exists with:');
   console.log('NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
   console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
+  console.log('Optionally set SUPABASE_SERVICE_ROLE_KEY for write access (recommended).');
   process.exit(1);
 }
 
@@ -68,10 +71,22 @@ class SupabaseUploader {
   }
 
   getSupabasePath(filePath) {
-    // Convert local path to Supabase storage path
-    // Remove the source directory prefix and convert to forward slashes
-    const relativePath = path.relative(this.sourceDir, filePath);
-    return relativePath.replace(/\\/g, '/');
+    // Convert local path to Storage object name expected by the app
+    // We normalize corinthians_split_audio/1-corinthians/chapter-1-verses/verse-2.mp3
+    //   -> 1corinthians1_verse_2.mp3
+    const rel = path.relative(this.sourceDir, filePath).replace(/\\/g, '/');
+    const m = rel.match(/^(?<book>[\w-]+)\/chapter-(?<ch>\d+)-verses\/verse-(?<vs>\d+)\.mp3$/i);
+    if (m && m.groups) {
+      const bookHyphen = m.groups.book.toLowerCase();
+      const chapter = Number(m.groups.ch);
+      const verse = Number(m.groups.vs);
+      const bookSlug = bookHyphen.replace(/-/g, ''); // 1-corinthians -> 1corinthians
+      return `${bookSlug}${chapter}_verse_${verse}.mp3`;
+    }
+    // If it already looks normalized, keep basename
+    if (/\b_verse_\d+\.mp3$/i.test(rel)) return path.basename(rel);
+    // Otherwise keep rel path (will likely not be discovered by the app)
+    return path.basename(rel);
   }
 
   async uploadFile(filePath) {
@@ -165,6 +180,10 @@ class SupabaseUploader {
       }
 
       console.log('✅ Bucket access verified');
+      if (!serviceKey) {
+        console.warn('\n⚠️  Using anon key for upload. RLS may block INSERT.');
+        console.warn('   Set SUPABASE_SERVICE_ROLE_KEY to bypass RLS for seeding.');
+      }
       return true;
 
     } catch (error) {
