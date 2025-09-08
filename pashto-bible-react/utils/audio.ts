@@ -5,13 +5,14 @@ function normalizeBookNameToSlug(bookName: string): string {
 }
 
 function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
-  if (!ref) return null;
-  // Accept forms like "1-Corinthians 11:34", "1 John 2:8", "Acts 10:1"
-  const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
-  if (!m) return null;
-  const book = m[1].trim();
-  const chapter = Number(m[2]);
-  const verse = Number(m[3]);
+  // Example ref: "1 Chronicles 1:1" or "John 3:16"
+  const lastSpaceIndex = ref.lastIndexOf(" ");
+  if (lastSpaceIndex === -1) return null;
+  const book = ref.slice(0, lastSpaceIndex).trim();
+  const chapterVerse = ref.slice(lastSpaceIndex + 1).trim();
+  const [chapterStr, verseStr] = chapterVerse.split(":");
+  const chapter = Number(chapterStr);
+  const verse = Number(verseStr);
   if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return null;
   return { book, chapter, verse };
 }
@@ -24,65 +25,36 @@ export function refToFilename(ref: string): string | null {
   return `${slug}${chapter}_verse_${verse}.mp3`;
 }
 
-function altNumericBookSlugBothWays(bookSlug: string): string[] {
-  const out = new Set<string>();
-  out.add(bookSlug);
-  // 1john -> john1
-  const m1 = bookSlug.match(/^(\d)([a-z].*)$/);
-  if (m1) out.add(`${m1[2]}${m1[1]}`);
-  // john1 -> 1john
-  const m2 = bookSlug.match(/^([a-z]+?)(\d)$/);
-  if (m2) out.add(`${m2[2]}${m2[1]}`);
-  return Array.from(out);
-}
-
-function candidateFilenames(ref: string): string[] {
-  const parsed = parseRef(ref);
-  if (!parsed) return [];
-  const { book, chapter, verse } = parsed;
-  const slug = normalizeBookNameToSlug(book);
-  const primary = `${slug}${chapter}_verse_${verse}.mp3`;
-  const alts = altNumericBookSlugBothWays(slug).map(s => `${s}${chapter}_verse_${verse}.mp3`);
-  return [...new Set([primary, ...alts])];
-}
-
 export function audioUrlFromRef(ref: string, map: AudioMap): string {
-  if (!ref || !map) return "";
-
-  // 1) Direct mapping by verse reference (preferred when API returns ref->URL)
-  if (map[ref]) {
-    const val = map[ref];
-    const isDrive = /^https?:\/\//i.test(val) && /drive\.google\.com|docs\.google\.com/i.test(val);
-    if (isDrive) {
-      // Prefer a Storage URL when available for the corresponding filename(s)
-      const candidates = candidateFilenames(ref);
-      for (const filename of candidates) {
-        const v2 = map[filename] || map[decodeURIComponent(filename)];
-        if (v2 && /\/storage\/v1\/object\/public\//i.test(v2)) return v2;
-      }
-      // Otherwise normalize Drive host to direct media
-      const idMatch = val.match(/[?&](?:id|ids)=([^&]+)/) || val.match(/\/d\/([^/]+)/);
-      if (idMatch && idMatch[1]) return `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
-    }
-    return val;
+  const filename = refToFilename(ref);
+  if (!filename) return "";
+  // The Firestore map sometimes uses just the verse filename
+  // Ensure both exact and lowercase keys are checked
+  const target = map[filename] || map[filename.toLowerCase()];
+  if (!target) return "";
+  // If the map already contains a full URL (Drive link, Storage signed URL, CDN, etc.), return it directly
+  if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
+    return target;
   }
-
-  // 2) Mapping by audio filename (support numeric book swaps)
-  const candidates = candidateFilenames(ref);
-  for (const filename of candidates) {
-    const val = map[filename] || map[decodeURIComponent(filename)];
-    if (val) {
-      // If value already looks like a URL, normalize Drive hosts; otherwise treat as Drive ID.
-      if (/^https?:\/\//i.test(val)) {
-        if (/drive\.google\.com|docs\.google\.com/i.test(val)) {
-          const idMatch = val.match(/[?&](?:id|ids)=([^&]+)/) || val.match(/\/d\/([^/]+)/);
-          if (idMatch && idMatch[1]) return `https://drive.usercontent.google.com/uc?export=download&id=${idMatch[1]}`;
-        }
-        return val;
+  // If the value is a gs:// path, convert using a public bucket base if provided
+  if (typeof target === 'string' && target.startsWith('gs://')) {
+    const PUBLIC_BASE = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE; // e.g., https://storage.googleapis.com/your-bucket
+    if (PUBLIC_BASE) {
+      const withoutScheme = target.replace(/^gs:\/\//, '').split('/');
+      const bucket = withoutScheme.shift();
+      const path = withoutScheme.join('/');
+      // If PUBLIC_BASE already includes bucket, don't duplicate it
+      if (bucket && PUBLIC_BASE.includes(bucket)) {
+        return `${PUBLIC_BASE}/${path}`;
       }
-      return `https://drive.usercontent.google.com/uc?export=download&id=${val}`;
+      if (bucket) {
+        return `${PUBLIC_BASE.replace(/\/$/, '')}/${bucket}/${path}`;
+      }
     }
   }
-
-  return "";
+  // Otherwise treat it as a Google Drive file ID
+  const driveId = String(target);
+  return `https://drive.google.com/uc?export=download&id=${driveId}`;
 }
+
+

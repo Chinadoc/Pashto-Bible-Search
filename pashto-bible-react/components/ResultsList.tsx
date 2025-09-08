@@ -1,6 +1,7 @@
 // components/ResultsList.tsx
+"use client";
+
 import React, { useMemo, useState } from 'react';
-import AudioPlayer from './AudioPlayer';
 import { audioUrlFromRef, refToFilename } from '../utils/audio';
 import type { AudioMap } from '../types';
 
@@ -23,13 +24,13 @@ function escapeRegExp(s: string) {
 
 const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap = {} }) => {
   const [page, setPage] = useState(1);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const resultsPerPage = 20;
   const paginatedResults = results.slice((page - 1) * resultsPerPage, page * resultsPerPage);
 
   const highlightRegex = useMemo(() => {
     const terms = Array.from(new Set(highlightTerms.filter(Boolean)));
     if (terms.length === 0) return null;
-    // Sort by length desc to prefer longer matches first
     terms.sort((a, b) => b.length - a.length);
     return new RegExp(terms.map(escapeRegExp).join('|'), 'giu');
   }, [highlightTerms]);
@@ -65,30 +66,53 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
         {paginatedResults.map((result, i) => (
           <div key={i} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-bold text-lg text-blue-400">{result.ref}</h3>
-              {(
-                (() => {
-                  const direct = result.audioUrl;
-                  const url = direct && direct.length > 0 ? direct : (audioMap ? audioUrlFromRef(result.ref, audioMap) : '');
-                  if (url) return <AudioPlayer audioUrl={url} verseRef={result.ref} />;
-                  // Subtle hint when missing; useful while wiring data
-                  const key = refToFilename(result.ref);
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-blue-400">{result.ref}</h3>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${result.ref} — ${result.text}`);
+                      setCopiedIndex(i);
+                      setTimeout(() => setCopiedIndex(null), 1500);
+                    } catch {}
+                  }}
+                  className="text-xs px-2 py-1 rounded border border-gray-600 hover:border-gray-500 bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  title="Copy verse + reference"
+                >
+                  {copiedIndex === i ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              {(() => {
+                const direct = result.audioUrl;
+                const url = direct && direct.length > 0 ? direct : (audioMap ? audioUrlFromRef(result.ref, audioMap) : '');
+                if (url) {
+                  const suggested = refToFilename(result.ref) || 'audio.mp3';
                   return (
-                    <span
-                      className="text-xs text-gray-400 border border-gray-600 rounded px-2 py-1"
-                      title={`No audio. key=${key || 'n/a'} inMap=${key ? !!audioMap[key] : false}`}
+                    <a
+                      href={url}
+                      download={suggested}
+                      className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white shadow"
+                      title="Download audio"
                     >
-                      No audio
-                    </span>
+                      ⬇️ Download
+                    </a>
                   );
-                })()
-              )}
+                }
+                const key = refToFilename(result.ref);
+                return (
+                  <span
+                    className="text-xs text-gray-400 border border-gray-600 rounded px-2 py-1"
+                    title={`No audio. key=${key || 'n/a'} inMap=${key ? !!(audioMap as any)[key] : false}`}
+                  >
+                    No audio
+                  </span>
+                );
+              })()}
             </div>
             <p className="text-xl leading-relaxed">{renderHighlighted(result.text)}</p>
           </div>
         ))}
       </div>
-      {/* Pagination Controls */}
       {results.length > resultsPerPage && (
         <div className="mt-4 flex justify-center gap-2">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="bg-gray-700 p-2 rounded">Previous</button>
@@ -101,3 +125,4 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
 };
 
 export default ResultsList;
+

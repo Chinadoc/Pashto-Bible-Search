@@ -19,4 +19,4 @@ __pycache__/
 
 # MacOS
 .DS_Store
-serviceAccountKey.json
+.vercel
