@@ -16,13 +16,14 @@ interface ResultsListProps {
   loading: boolean;
   highlightTerms?: string[];
   audioMap?: AudioMap;
+  query?: string; // accepted for compatibility; not used here
 }
 
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap = {} }) => {
+const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap, query }) => {
   const [page, setPage] = useState(1);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const resultsPerPage = 20;
@@ -84,7 +85,8 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
               </div>
               {(() => {
                 const direct = result.audioUrl;
-                const url = direct && direct.length > 0 ? direct : (audioMap ? audioUrlFromRef(result.ref, audioMap) : '');
+                const map: AudioMap | undefined = audioMap;
+                const url = direct && direct.length > 0 ? direct : (map ? audioUrlFromRef(result.ref, map) : '');
                 if (url) {
                   const suggested = refToFilename(result.ref) || 'audio.mp3';
                   return (
@@ -102,7 +104,7 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
                 return (
                   <span
                     className="text-xs text-gray-400 border border-gray-600 rounded px-2 py-1"
-                    title={`No audio. key=${key || 'n/a'} inMap=${key ? !!(audioMap as any)[key] : false}`}
+                    title={`No audio. key=${key || 'n/a'} inMap=${key ? !!(audioMap && (audioMap as AudioMap)[key!]) : false}`}
                   >
                     No audio
                   </span>
@@ -125,4 +127,3 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
 };
 
 export default ResultsList;
-
