@@ -73,19 +73,52 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     return m;
   }, [coverage]);
 
+  // Compute intensity classes for counts (simple 4-step heat map)
+  const max = useMemo(() => Math.max(1, ...Object.values(covMap)), [covMap])
+  const tint = (count: number) => {
+    const r = count / max
+    if (r > 0.75) return 'bg-sky-600/25 border-sky-400'
+    if (r > 0.5) return 'bg-sky-600/20 border-sky-500'
+    if (r > 0.25) return 'bg-sky-600/10 border-sky-700'
+    return 'bg-transparent border-gray-700'
+  }
+
+  const Tile = ({ book }: { book: string }) => {
+    const count = covMap[book] ?? 0
+    const active = count > 0
+    return (
+      <button
+        onClick={() => active && onPickBook?.(book)}
+        className={`relative text-left rounded-md px-2 py-1 border ${compact ? 'text-xs' : 'text-sm'} ${tint(count)} ${active ? 'hover:bg-sky-700/20' : 'opacity-60'}`}
+      >
+        <span>{compact ? abbr(book) : book}</span>
+        {active ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}
+      </button>
+    )
+  }
+
   return (
-    <div className={`w-full rounded-lg border border-gray-200 dark:border-gray-700 ${compact ? "p-2" : "p-4"}`}>
+    <div className={`w-full rounded-lg border border-gray-600/60 ${compact ? 'p-2' : 'p-4'} bg-gray-900/40`}> 
       {!compact && <div className="font-semibold text-lg mb-3">Bible Coverage</div>}
       <div className="flex flex-col gap-4">
-        {(scope === "all" || scope === "ot") && (
-          <Section title="Old Testament" books={OT_BOOKS} covMap={covMap} onPick={onPickBook} compact={compact} tone="ot" />
+        {(scope === 'all' || scope === 'ot') && (
+          <div>
+            {!compact && <div className="text-sm text-gray-400 mb-1">Old Testament</div>}
+            <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
+              {OT_BOOKS.map((b) => <Tile key={b} book={b} />)}
+            </div>
+          </div>
         )}
-        {(scope === "all" || scope === "nt") && (
-          <Section title="New Testament" books={NT_BOOKS} covMap={covMap} onPick={onPickBook} compact={compact} tone="nt" />
+        {(scope === 'all' || scope === 'nt') && (
+          <div>
+            {!compact && <div className="text-sm text-gray-400 mb-1">New Testament</div>}
+            <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
+              {NT_BOOKS.map((b) => <Tile key={b} book={b} />)}
+            </div>
+          </div>
         )}
       </div>
     </div>
-  );
+  )
 }
-
 
