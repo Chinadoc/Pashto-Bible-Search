@@ -136,7 +136,8 @@ export default function Home() {
     return results.filter((v) => v.ref.startsWith(bookFilter + " "));
   }, [results, bookFilter]);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  // Prefer internal Next.js API routes for portability
+  const API_BASE = ""; // empty -> use relative /api/* endpoints
 
   function extractBook(ref: string): string {
     const m = ref.match(/^([A-Za-z0-9\s]+)\s\d+:\d+$/);
@@ -179,10 +180,10 @@ export default function Home() {
     setLoading(true);
     try {
       if (mode === "phrase") {
-        const resp = await fetch(`${API_BASE}/search/phrase`, {
+        const resp = await fetch(`/api/search_phrase`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope, limit: 1000 }),
+          body: JSON.stringify({ query: q, scope }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = (await resp.json()) as PhraseResponse;
@@ -191,17 +192,17 @@ export default function Home() {
         setCoverage(cov);
         setConjugations(null);
       } else {
-        const resp = await fetch(`${API_BASE}/search/grammar`, {
+        const resp = await fetch(`/api/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope, limit: 500 }),
+          body: JSON.stringify({ query: q, scope }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as GrammarResponse;
-        setResults(data.occurrences ?? []);
+        const data = (await resp.json()) as { results?: Verse[]; coverage?: CoverageItem[] };
+        setResults(data.results ?? []);
         const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
         setCoverage(cov);
-        setConjugations(data.conjugations ?? null);
+        setConjugations(null);
       }
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
