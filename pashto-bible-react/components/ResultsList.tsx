@@ -26,6 +26,7 @@ function escapeRegExp(s: string) {
 const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap, query }) => {
   const [page, setPage] = useState(1);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [openPlayer, setOpenPlayer] = useState<number | null>(null);
   const resultsPerPage = 20;
   const paginatedResults = results.slice((page - 1) * resultsPerPage, page * resultsPerPage);
 
@@ -90,14 +91,23 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
                 if (url) {
                   const suggested = refToFilename(result.ref) || 'audio.mp3';
                   return (
-                    <a
-                      href={url}
-                      download={suggested}
-                      className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white shadow"
-                      title="Download audio"
-                    >
-                      ⬇️ Download
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setOpenPlayer(openPlayer === i ? null : i)}
+                        className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white"
+                        title={openPlayer === i ? 'Hide player' : 'Play'}
+                      >
+                        {openPlayer === i ? '⏸️ Hide' : '▶️ Play'}
+                      </button>
+                      <a
+                        href={url}
+                        download={suggested}
+                        className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white shadow"
+                        title="Download audio"
+                      >
+                        ⬇️ Download
+                      </a>
+                    </div>
                   );
                 }
                 const key = refToFilename(result.ref);
@@ -111,6 +121,16 @@ const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTe
                 );
               })()}
             </div>
+            {(() => {
+              const map: AudioMap | undefined = audioMap;
+              const url = result.audioUrl && result.audioUrl.length > 0 ? result.audioUrl : (map ? audioUrlFromRef(result.ref, map) : '');
+              if (!url || openPlayer !== i) return null;
+              return (
+                <div className="mt-2">
+                  <audio controls preload="metadata" className="w-full" src={url} />
+                </div>
+              );
+            })()}
             <p className="text-xl leading-relaxed">{renderHighlighted(result.text)}</p>
           </div>
         ))}
