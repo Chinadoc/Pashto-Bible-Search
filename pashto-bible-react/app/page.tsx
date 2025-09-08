@@ -63,12 +63,10 @@ export default function Home() {
   // load audio map once
   useEffect(() => {
     const load = async () => {
+      // Prefer internal API route that aggregates Storage + mappings
       try {
-        const base = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
-        const explicit = process.env.NEXT_PUBLIC_AUDIO_MAP_URL;
-        const url = explicit || (base ? `${base}/get_audio_map` : "");
-        if (url) {
-          const aMap = await fetch(url).then((r) => r.json());
+        const aMap = await fetch('/api/get_audio_map?refresh=1', { cache: 'no-store' }).then((r) => r.json());
+        if (aMap && typeof aMap === 'object') {
           setAudioMap(aMap as AudioMap);
           return;
         }
