@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SearchBar from "@/components/SearchBar";
 import CoverageGrid from "@/components/CoverageGrid";
 import Tabs, { TabKey } from "@/components/Tabs";
@@ -15,20 +15,7 @@ const OT_BOOKS = [
 const NT_BOOKS = [
   "Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"
 ];
-const ABBR: Record<string, string> = {
-  Genesis: "Gen", Exodus: "Exo", Leviticus: "Lev", Numbers: "Num", Deuteronomy: "Deu",
-  Joshua: "Jos", Judges: "Jdg", Ruth: "Rut", "1 Samuel": "1Sam", "2 Samuel": "2Sam",
-  "1 Kings": "1Kgs", "2 Kings": "2Kgs", "1 Chronicles": "1Chr", "2 Chronicles": "2Chr",
-  Ezra: "Ezr", Nehemiah: "Neh", Esther: "Est", Job: "Job", Psalms: "Psa", Proverbs: "Pro",
-  Ecclesiastes: "Ecc", "Song of Solomon": "Sng", Isaiah: "Isa", Jeremiah: "Jer", Lamentations: "Lam",
-  Ezekiel: "Eze", Daniel: "Dan", Hosea: "Hos", Joel: "Joe", Amos: "Amo", Obadiah: "Oba", Jonah: "Jon",
-  Micah: "Mic", Nahum: "Nah", Habakkuk: "Hab", Zephaniah: "Zep", Haggai: "Hag", Zechariah: "Zec", Malachi: "Mal",
-  Matthew: "Mat", Mark: "Mar", Luke: "Luk", John: "Joh", Acts: "Act", Romans: "Rom",
-  "1 Corinthians": "1Cor", "2 Corinthians": "2Cor", Galatians: "Gal", Ephesians: "Eph", Philippians: "Phi",
-  Colossians: "Col", "1 Thessalonians": "1Th", "2 Thessalonians": "2Th", "1 Timothy": "1Tim", "2 Timothy": "2Tim",
-  Titus: "Tit", Philemon: "Phm", Hebrews: "Heb", James: "Jas", "1 Peter": "1Pet", "2 Peter": "2Pet",
-  "1 John": "1Joh", "2 John": "2Joh", "3 John": "3Joh", Jude: "Jud", Revelation: "Rev",
-};
+// Abbreviations omitted (not used directly on this page)
 
 const OT_BOOKS_SET = new Set(OT_BOOKS);
 const NT_BOOKS_SET = new Set(NT_BOOKS);
@@ -116,13 +103,26 @@ export default function Home() {
     let cancelled = false;
     const loadBible = async () => {
       try {
-        const arr = (await fetch("/assets/pashto_bible.json").then((r) => r.json())) as any[];
-        const normalized: Verse[] = Array.isArray(arr)
-          ? arr
-              .map((it: any) => ({ ref: String(it?.ref || it?.r || ""), text: String(it?.text || it?.t || "") }))
-              .filter((v) => v.ref && v.text)
-          : [];
-        if (!cancelled) setLocalBible(normalized);
+        const raw: unknown = await fetch("/assets/pashto_bible.json").then((r) => r.json());
+        if (Array.isArray(raw)) {
+          const arr = raw as Array<unknown>;
+          const normalized: Verse[] = arr
+            .map((it) => {
+              const obj = (it && typeof it === 'object') ? (it as Record<string, unknown>) : {};
+              const pick = (keys: string[]): string => {
+                for (const k of keys) {
+                  const v = obj[k];
+                  if (typeof v === 'string' && v) return v;
+                }
+                return '';
+              };
+              return { ref: pick(['ref','r']), text: pick(['text','t']) } as Verse;
+            })
+            .filter((v) => v.ref && v.text);
+          if (!cancelled) setLocalBible(normalized);
+        } else {
+          if (!cancelled) setLocalBible([]);
+        }
       } catch {
         if (!cancelled) setLocalBible([]);
       }
@@ -241,7 +241,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
             <main className="flex flex-col gap-3 md:col-span-3">
               <div className="sticky top-16 z-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur p-1 rounded-md">
-                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} mode={mode} setMode={setMode} onSearch={handleSearch} />
+                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
               </div>
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
@@ -277,7 +277,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
             <main className="flex flex-col gap-3 md:col-span-3">
               <div className="sticky top-16 z-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur p-1 rounded-md">
-                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} mode={"grammar" as any} setMode={() => {}} onSearch={handleSearch} />
+                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
               </div>
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
