@@ -246,7 +246,7 @@ export default function Home() {
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
               ) : (
-                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} />
+                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} loading={loading} />
               )}
               {conjugations ? (
                 <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -282,7 +282,7 @@ export default function Home() {
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
               ) : (
-                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} />
+                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} loading={loading} />
               )}
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
