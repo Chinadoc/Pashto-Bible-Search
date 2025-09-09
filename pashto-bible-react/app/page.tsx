@@ -6,7 +6,7 @@ import CoverageGrid from "@/components/CoverageGrid";
 import Tabs, { TabKey } from "@/components/Tabs";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, GrammarResponse, Mode, Conjugations } from "@/types";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -40,7 +40,6 @@ export default function Home() {
   const [tab, setTab] = useState<TabKey>("search");
   const [query, setQuery] = useState<string>(" ");
   const [scope, setScope] = useState<Scope>("all");
-  const [mode, setMode] = useState<Mode>("phrase");
   const [bookFilter, setBookFilter] = useState<string | null>(null);
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
@@ -94,7 +93,7 @@ export default function Home() {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [compactSidebar]);
 
   // load local bible JSON for fallback demo mode
   useEffect(() => {
@@ -135,7 +134,6 @@ export default function Home() {
   }, [results, bookFilter]);
 
   // Prefer internal Next.js API routes for portability
-  const API_BASE = ""; // empty -> use relative /api/* endpoints
 
   function extractBook(ref: string): string {
     const m = ref.match(/^([A-Za-z0-9\s]+)\s\d+:\d+$/);
@@ -177,40 +175,20 @@ export default function Home() {
     }
     setLoading(true);
     try {
-      if (mode === "phrase") {
-        const resp = await fetch(`/api/search_phrase`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope }),
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as PhraseResponse;
-        setResults(data.results ?? []);
-        const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
-        setCoverage(cov);
-        setConjugations(null);
-      } else {
-        const resp = await fetch(`/api/search`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: q, scope }),
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as { results?: Verse[]; coverage?: CoverageItem[] };
-        setResults(data.results ?? []);
-        const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
-        setCoverage(cov);
-        setConjugations(null);
-      }
+      const resp = await fetch(`/api/search_phrase`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q, scope }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = (await resp.json()) as PhraseResponse;
+      setResults(data.results ?? []);
+      const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
+      setCoverage(cov);
+      setConjugations(null);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
-      if (mode === "phrase") {
-        await localPhraseSearch(q);
-      } else {
-        setResults([]);
-        setCoverage([]);
-        setConjugations(null);
-      }
+      await localPhraseSearch(q);
     } finally {
       setLoading(false);
     }
@@ -245,7 +223,7 @@ export default function Home() {
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
               ) : (
-                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} loading={loading} />
+                <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
               )}
               {conjugations ? (
                 <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -265,7 +243,7 @@ export default function Home() {
         {tab === "lexicon" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
             <main className="flex flex-col gap-3 md:col-span-3">
-              <LexiconPanel items={[]} onPickForm={(f) => { setQuery(f); setTab("search"); }} />
+              <LexiconPanel onPickForm={(f) => { setQuery(f); setTab("search"); }} />
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
               <CoverageGrid coverage={coverage} onPickBook={(b) => setBookFilter(b)} compact={true} scope={scope} />
@@ -281,7 +259,7 @@ export default function Home() {
               {loading ? (
                 <div className="py-8 text-center">Loading…</div>
               ) : (
-                <ResultsList results={visibleResults} query={query.trim()} audioMap={audioMap} loading={loading} />
+                <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
               )}
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">

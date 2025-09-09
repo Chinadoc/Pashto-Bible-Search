@@ -37,34 +37,6 @@ function abbr(book: string): string {
   return ABBR[book] || book;
 }
 
-function Section({ title, books, covMap, onPick, compact, tone }: { title: string; books: string[]; covMap: Record<string, number>; onPick?: (b: string) => void; compact?: boolean; tone: 'ot'|'nt'; }) {
-  return (
-    <div>
-      {!compact && <div className="font-semibold mb-2">{title}</div>}
-      <div className={compact ? "grid grid-cols-3 gap-1" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"}>
-        {books.map((b) => {
-          const count = covMap[b] ?? 0;
-          const active = count > 0;
-          return (
-            <button
-              key={b}
-              onClick={() => active && onPick?.(b)}
-              className={`relative text-left rounded-md border ${compact ? "p-1 text-xs" : "p-2 text-sm"} ${active ? (tone === 'ot' ? "border-amber-500 bg-amber-50/50 dark:bg-amber-900/20" : "border-sky-500 bg-sky-50/50 dark:bg-sky-900/20") : "border-gray-300 dark:border-gray-700 bg-transparent"}`}
-              title={active ? `${b}: ${count}` : b}
-            >
-              <div className="flex justify-between items-center">
-                <span>{compact ? abbr(b) : b}</span>
-                {active ? (
-                  <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white ${tone === 'ot' ? 'bg-amber-600' : 'bg-sky-600'}`}>{count}</span>
-                ) : null}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all" }: Props) {
   const covMap = useMemo(() => {
