@@ -46,7 +46,27 @@ export default function Home() {
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
-  const [compactSidebar, setCompactSidebar] = useState<boolean>(false);
+  // Determine if sidebar should be compact based on screen size and tab
+  const isCompactSidebar = tab !== "search";
+
+  // Create unified coverage data for sidebar based on current tab and context
+  const sidebarCoverage = useMemo(() => {
+    if (tab === "search") {
+      // Use search results coverage for search tab
+      return coverage;
+    } else if (localBible && (tab === "lexicon" || tab === "grammar")) {
+      // For lexicon/grammar tabs, show coverage based on available bible data
+      const bookCounts: Record<string, number> = {};
+      localBible.forEach(verse => {
+        const book = extractBook(verse.ref);
+        bookCounts[book] = (bookCounts[book] || 0) + 1;
+      });
+      return Object.entries(bookCounts)
+        .map(([book, count]) => ({ book, count }))
+        .sort((a, b) => b.count - a.count);
+    }
+    return [];
+  }, [tab, coverage, localBible]);
 
   // hydrate persisted UI state
   useEffect(() => {
@@ -80,20 +100,6 @@ export default function Home() {
     load();
   }, []);
 
-  // toggle compact coverage sidebar when scrolling
-  useEffect(() => {
-    const prev = { current: compactSidebar } as { current: boolean };
-    const onScroll = () => {
-      const next = window.scrollY > 240;
-      if (next !== prev.current) {
-        prev.current = next;
-        setCompactSidebar(next);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [compactSidebar]);
 
   // load local bible JSON for fallback demo mode
   useEffect(() => {
@@ -236,7 +242,14 @@ export default function Home() {
               ) : null}
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid coverage={coverage} onPickBook={(b) => setBookFilter(b)} compact={compactSidebar} scope={scope} />
+              <CoverageGrid
+                coverage={sidebarCoverage}
+                onPickBook={(b) => setBookFilter(b)}
+                compact={isCompactSidebar}
+                scope={scope}
+                title="Search Results"
+                subtitle={`${sidebarCoverage.length} books with matches`}
+              />
             </aside>
           </div>
         )}
@@ -246,7 +259,14 @@ export default function Home() {
               <LexiconPanel onPickForm={(f) => { setQuery(f); setTab("search"); }} />
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid coverage={coverage} onPickBook={(b) => setBookFilter(b)} compact={true} scope={scope} />
+              <CoverageGrid
+                coverage={sidebarCoverage}
+                onPickBook={(b) => setBookFilter(b)}
+                compact={isCompactSidebar}
+                scope={scope}
+                title="Bible Books"
+                subtitle="Available for lexicon lookup"
+              />
             </aside>
           </div>
         )}
@@ -263,7 +283,14 @@ export default function Home() {
               )}
             </main>
             <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid coverage={coverage} onPickBook={(b) => setBookFilter(b)} compact={true} scope={scope} />
+              <CoverageGrid
+                coverage={sidebarCoverage}
+                onPickBook={(b) => setBookFilter(b)}
+                compact={isCompactSidebar}
+                scope={scope}
+                title="Grammar Context"
+                subtitle="Books available for analysis"
+              />
             </aside>
           </div>
         )}

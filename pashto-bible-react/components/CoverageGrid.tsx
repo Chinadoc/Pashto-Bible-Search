@@ -31,6 +31,8 @@ interface Props {
   onPickBook?: (b: string) => void;
   compact?: boolean;
   scope?: "all" | "nt" | "ot";
+  title?: string;
+  subtitle?: string;
 }
 
 function abbr(book: string): string {
@@ -38,7 +40,7 @@ function abbr(book: string): string {
 }
 
 
-export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all" }: Props) {
+export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle }: Props) {
   const covMap = useMemo(() => {
     const m: Record<string, number> = {};
     for (const c of coverage) m[c.book] = c.count;
@@ -70,8 +72,13 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
   }
 
   return (
-    <div className={`w-full rounded-lg border border-gray-600/60 ${compact ? 'p-2' : 'p-4'} bg-gray-900/40`}> 
-      {!compact && <div className="font-semibold text-lg mb-3">Bible Coverage</div>}
+    <div className={`w-full rounded-lg border border-gray-600/60 ${compact ? 'p-2' : 'p-4'} bg-gray-900/40`}>
+      {!compact && (
+        <div className="mb-3">
+          <div className="font-semibold text-lg">{title || "Bible Coverage"}</div>
+          {subtitle && <div className="text-sm text-gray-400 mt-1">{subtitle}</div>}
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {(scope === 'all' || scope === 'ot') && (
           <div>
