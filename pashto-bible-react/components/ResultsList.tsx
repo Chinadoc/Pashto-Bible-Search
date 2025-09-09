@@ -16,14 +16,13 @@ interface ResultsListProps {
   loading: boolean;
   highlightTerms?: string[];
   audioMap?: AudioMap;
-  query?: string; // accepted for compatibility; not used here
 }
 
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap, query }) => {
+const ResultsList: React.FC<ResultsListProps> = ({ results, loading, highlightTerms = [], audioMap }) => {
   const [page, setPage] = useState(1);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [openPlayer, setOpenPlayer] = useState<number | null>(null);

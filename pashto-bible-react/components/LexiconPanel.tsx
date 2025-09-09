@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 type Item = { form: string; root?: string; pos?: 'verb' | 'noun'; frequency: number }
 
@@ -14,16 +14,16 @@ export default function LexiconPanel({ onPickForm }: Props) {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState<boolean>(false)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const url = `/api/lexicon_frequency?scope=${scope}&pos=${pos}&inflections=${inflections ? '1' : '0'}&limit=600`
       const data = await fetch(url, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ items: [] }))
       setItems(Array.isArray(data?.items) ? data.items as Item[] : [])
     } finally { setLoading(false) }
-  }
+  }, [scope, pos, inflections])
 
-  useEffect(() => { load() }, [scope, pos, inflections])
+  useEffect(() => { load() }, [scope, pos, inflections, load])
 
   const filtered = useMemo(() => {
     const s = (q || '').trim()
@@ -40,12 +40,12 @@ export default function LexiconPanel({ onPickForm }: Props) {
           placeholder="Search forms/roots"
           className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
         />
-        <select value={scope} onChange={(e) => setScope(e.target.value as any)} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
+        <select value={scope} onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
           <option value="all">All</option>
           <option value="nt">New Testament</option>
           <option value="ot">Old Testament</option>
         </select>
-        <select value={pos} onChange={(e) => setPos(e.target.value as any)} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
+        <select value={pos} onChange={(e) => setPos(e.target.value as 'any' | 'verb' | 'noun')} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
           <option value="any">All POS</option>
           <option value="verb">Verbs</option>
           <option value="noun">Nouns</option>
