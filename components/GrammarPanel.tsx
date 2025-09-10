@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
 import type { Database } from '../types/database';
 
@@ -11,6 +11,7 @@ export default function GrammarPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRule, setSelectedRule] = useState<GrammarRule | null>(null);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     const fetchRules = async () => {
@@ -35,6 +36,17 @@ export default function GrammarPanel() {
     fetchRules();
   }, []);
 
+  const filtered = useMemo(() => {
+    const needle = q.trim();
+    if (!needle) return rules;
+    const n = needle.toLowerCase();
+    return rules.filter(r =>
+      r.rule_name.toLowerCase().includes(n) ||
+      r.part_of_speech.toLowerCase().includes(n) ||
+      String(r.pattern_description || '').toLowerCase().includes(n)
+    );
+  }, [rules, q]);
+
   if (loading) {
     return <div className="p-4 text-center">Loading grammar rules...</div>;
   }
@@ -50,8 +62,18 @@ export default function GrammarPanel() {
         Pashto Grammar Rules - Click on a rule to see details
       </p>
 
+      <div className="mb-4 flex gap-2 items-center">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search rules (e.g., verb, plural, case)"
+          className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-700"
+        />
+        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{filtered.length} / {rules.length}</span>
+      </div>
+
       <div className="grid gap-4">
-        {rules.map((rule) => (
+        {filtered.map((rule) => (
           <div
             key={rule.id}
             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"

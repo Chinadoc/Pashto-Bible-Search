@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { useFrequencyExplorer } from '../hooks/useFrequencyExplorer';
 import Pagination from '@mui/material/Pagination';
 
-export default function FrequencyExplorer() {
-  const [testament, setTestament] = useState<'all' | 'nt' | 'ot'>('all');
+interface Props { testamentProp?: 'all' | 'nt' | 'ot' }
+
+export default function FrequencyExplorer({ testamentProp }: Props) {
+  const [testament, setTestament] = useState<'all' | 'nt' | 'ot'>(testamentProp || 'all');
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -29,20 +31,22 @@ export default function FrequencyExplorer() {
       </p>
 
       {/* Testament Filter */}
-      <div className="mb-6">
-        <select
-          value={testament}
-          onChange={(e) => {
-            setTestament(e.target.value as 'all' | 'nt' | 'ot');
-            setPage(1); // Reset to first page
-          }}
-          className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="all">All Testaments</option>
-          <option value="ot">Old Testament</option>
-          <option value="nt">New Testament</option>
-        </select>
-      </div>
+      {!testamentProp && (
+        <div className="mb-6">
+          <select
+            value={testament}
+            onChange={(e) => {
+              setTestament(e.target.value as 'all' | 'nt' | 'ot');
+              setPage(1); // Reset to first page
+            }}
+            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+          >
+            <option value="all">All Testaments</option>
+            <option value="ot">Old Testament</option>
+            <option value="nt">New Testament</option>
+          </select>
+        </div>
+      )}
 
       {/* Frequency Table */}
       <div className="overflow-x-auto">

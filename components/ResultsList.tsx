@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Pagination from '@mui/material/Pagination';
 import type { Verse, AudioMap } from '../types';
+import { audioUrlFromRef } from '../utils/audio';
 
 interface Props {
   results: Verse[];
@@ -33,7 +34,8 @@ export default function ResultsList({ results, audioMap, loading }: Props) {
 
       {paginatedResults.map((verse, index) => {
         const globalIndex = (page - 1) * itemsPerPage + index;
-        const audioUrl = audioMap[verse.ref];
+        const direct = audioMap[verse.ref];
+        const audioUrl = direct || audioUrlFromRef(verse.ref, audioMap);
 
         return (
           <div key={verse.ref} className="p-4 mb-2 border rounded-md dark:bg-gray-800 dark:border-gray-600" dir="rtl">

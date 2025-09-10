@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   env: {
@@ -7,6 +8,13 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP']
+  },
+  webpack: (config) => {
+    // Ensure TS path alias `@/*` resolves at runtime during webpack bundling
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias["@"] = path.resolve(__dirname);
+    return config;
   }
 };
 

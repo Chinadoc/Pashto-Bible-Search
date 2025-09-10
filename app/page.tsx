@@ -50,6 +50,10 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
   const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
+  // Unified sections toggles (default on)
+  const [showLexicon, setShowLexicon] = useState<boolean>(true);
+  const [showMorphology, setShowMorphology] = useState<boolean>(true);
+  const [showFrequency, setShowFrequency] = useState<boolean>(true);
 
 
 
@@ -224,12 +228,38 @@ export default function Home() {
                           onSearch={handleSearch}
                           loading={loading}
                         />
+
+                        {/* Shared toggles for unified panels */}
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="flex items-center gap-1"><input type="checkbox" checked={showLexicon} onChange={(e) => setShowLexicon(e.target.checked)} /> Lexicon</label>
+                          <label className="flex items-center gap-1"><input type="checkbox" checked={showMorphology} onChange={(e) => setShowMorphology(e.target.checked)} /> Morphology</label>
+                          <label className="flex items-center gap-1"><input type="checkbox" checked={showFrequency} onChange={(e) => setShowFrequency(e.target.checked)} /> Frequency</label>
+                        </div>
+
                         {loading ? (
                           <div className="py-4 text-center text-gray-500">Loading...</div>
                         ) : (
                           <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
                         )}
                       </div>
+
+                      {showLexicon && (
+                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                          <LexiconPanel queryProp={query} onPickForm={(f) => { setQuery(f); handleSearch(); }} />
+                        </div>
+                      )}
+
+                      {showMorphology && (
+                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                          <MorphologyPanel queryProp={query} />
+                        </div>
+                      )}
+
+                      {showFrequency && (
+                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                          <FrequencyExplorer testamentProp={scope} />
+                        </div>
+                      )}
                     </div>
                   )
                 },
