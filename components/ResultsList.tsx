@@ -23,7 +23,7 @@ function highlight(text: string, terms: string[]): ReactNode[] {
     const pattern = cleanTerms.map(escapeRegExp).join('|');
     const re = new RegExp(`(${pattern})`, 'gi');
     const parts = text.split(re);
-    const out: (string | JSX.Element)[] = [];
+    const out: ReactNode[] = [];
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (part === undefined) continue;
