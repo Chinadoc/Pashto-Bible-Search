@@ -56,6 +56,7 @@ export default function Home() {
   const [showFrequency, setShowFrequency] = useState<boolean>(true);
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
+  const [variantCount, setVariantCount] = useState<number>(0);
 
 
 
@@ -159,6 +160,7 @@ export default function Home() {
       // capture variants for highlighting if provided
       const variants = (data as any)?.processed?.variants as string[] | undefined;
       setHighlightTerms(Array.isArray(variants) ? variants.slice(0, 10) : [q]);
+      setVariantCount(Array.isArray(variants) ? variants.length : 1);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
       // TODO: Implement local fallback search when API fails
@@ -166,6 +168,7 @@ export default function Home() {
       setCoverage([]);
       setConjugations(null);
       setHighlightTerms([q]);
+      setVariantCount(1);
     } finally {
       setLoading(false);
     }
@@ -243,6 +246,11 @@ export default function Home() {
                           <label className="flex items-center gap-1"><input type="checkbox" checked={showFrequency} onChange={(e) => setShowFrequency(e.target.checked)} /> Frequency</label>
                           <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
                         </div>
+                        {includeRelated && variantCount > 1 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                            Including related forms (total variants: {variantCount})
+                          </div>
+                        )}
 
                         {loading ? (
                           <div className="py-4 text-center text-gray-500">Loading...</div>
