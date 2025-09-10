@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Pagination from '@mui/material/Pagination';
-import type { Verse, AudioMap } from '@/types';
+import type { Verse, AudioMap } from '../types';
 
 interface Props {
   results: Verse[];
