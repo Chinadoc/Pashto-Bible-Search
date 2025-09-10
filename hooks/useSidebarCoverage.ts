@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { CoverageItem, Verse } from '@/types';
+import type { CoverageItem, Verse } from '../types';
 
 // Helper function to extract book from reference (move to utils if needed)
 function extractBook(ref: string): string {

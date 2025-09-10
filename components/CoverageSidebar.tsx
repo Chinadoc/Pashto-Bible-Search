@@ -1,8 +1,8 @@
 "use client";
 
 import CoverageGrid, { ComplexityLevel } from './CoverageGrid';
-import { useSidebarCoverage } from '@/hooks/useSidebarCoverage';
-import type { CoverageItem, Verse, Scope } from '@/types';
+import { useSidebarCoverage } from '../hooks/useSidebarCoverage';
+import type { CoverageItem, Verse, Scope } from '../types';
 
 interface Props {
   coverage: CoverageItem[];

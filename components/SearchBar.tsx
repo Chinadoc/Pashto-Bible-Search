@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useState } from 'react';
-import type { Scope } from '@/types';
+import type { Scope } from '../types';
 
 interface Props {
   query: string;

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
-import type { Verse, CoverageItem } from '@/types';
+import type { Verse, CoverageItem } from '../types';
 
 // Helper function to extract book from reference
 function extractBook(ref: string): string {

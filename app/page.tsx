@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import SearchBar from "@/components/SearchBar";
-import ResultsList from "@/components/ResultsList";
-import LexiconPanel from "@/components/LexiconPanel";
-import GrammarPanel from "@/components/GrammarPanel";
-import CoverageSidebar from "@/components/CoverageSidebar";
-import Tabs from "@/components/Tabs";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
-import { ComplexityLevel } from "@/components/CoverageGrid";
+import SearchBar from "../components/SearchBar";
+import ResultsList from "../components/ResultsList";
+import LexiconPanel from "../components/LexiconPanel";
+import GrammarPanel from "../components/GrammarPanel";
+import CoverageSidebar from "../components/CoverageSidebar";
+import Tabs from "../components/Tabs";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
+import { ComplexityLevel } from "../components/CoverageGrid";
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
