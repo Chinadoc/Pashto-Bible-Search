@@ -1,47 +1,47 @@
 "use client";
 
-import React from "react";
+import React, { useState } from 'react';
 
-export type TabKey = "search" | "lexicon" | "grammar";
-
-interface TabsProps {
-  active: TabKey;
-  onChange: (k: TabKey) => void;
+interface Tab {
+  id: string;
+  label: string;
+  content: React.ReactNode;
 }
 
-export default function Tabs({ active, onChange }: TabsProps) {
-  const btn = (key: TabKey, label: string) => (
-    <button
-      key={key}
-      onClick={() => onChange(key)}
-      className={`px-4 py-2 rounded-md text-sm border transition-colors ${
-        active === key
-          ? "bg-blue-600 text-white border-blue-600"
-          : "bg-transparent text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-      }`}
-    >
-      {label}
-    </button>
-  );
+interface TabsProps {
+  tabs: Tab[];
+  defaultTab?: string;
+  className?: string;
+}
+
+export default function Tabs({ tabs, defaultTab, className = '' }: TabsProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id || '');
+
+  const activeContent = tabs.find(tab => tab.id === activeTab)?.content;
 
   return (
-    <div className="w-full flex gap-2 items-center">
-      {btn("search", "Search")}
-      {btn("lexicon", "Lexicon")}
-      {btn("grammar", "Grammar")}
+    <div className={`w-full ${className}`}>
+      {/* Tab Headers */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 font-medium text-sm transition-colors ${
+              activeTab === tab.id
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="tab-content">
+        {activeContent}
+      </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

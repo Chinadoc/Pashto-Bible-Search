@@ -4,7 +4,9 @@ import { useEffect, useState, useMemo } from "react";
 import SearchBar from "@/components/SearchBar";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
+import GrammarPanel from "@/components/GrammarPanel";
 import CoverageSidebar from "@/components/CoverageSidebar";
+import Tabs from "@/components/Tabs";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
 import { ComplexityLevel } from "@/components/CoverageGrid";
 
@@ -202,22 +204,54 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Left Side - Search & Lexicon */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
-            {/* Search Section */}
-            <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-              <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
-              {loading ? (
-                <div className="py-4 text-center text-gray-500">Loading...</div>
-              ) : (
-                <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
-              )}
-            </div>
-
-            {/* Lexicon Section */}
-            <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-              <LexiconPanel onPickForm={(f) => { setQuery(f); handleSearch(); }} />
-            </div>
+          {/* Left Side - Tabs for Search/Lexicon/Grammar */}
+          <div className="lg:col-span-3">
+            <Tabs
+              tabs={[
+                {
+                  id: 'search',
+                  label: '🔍 Search',
+                  content: (
+                    <div className="space-y-4">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                        <SearchBar
+                          query={query}
+                          setQuery={setQuery}
+                          scope={scope}
+                          setScope={setScope}
+                          onSearch={handleSearch}
+                          loading={loading}
+                        />
+                        {loading ? (
+                          <div className="py-4 text-center text-gray-500">Loading...</div>
+                        ) : (
+                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
+                        )}
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  id: 'lexicon',
+                  label: '📚 Lexicon',
+                  content: (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                      <LexiconPanel onPickForm={(f) => { setQuery(f); handleSearch(); }} />
+                    </div>
+                  )
+                },
+                {
+                  id: 'grammar',
+                  label: '📖 Grammar',
+                  content: (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                      <GrammarPanel />
+                    </div>
+                  )
+                }
+              ]}
+              defaultTab="search"
+            />
           </div>
 
           {/* Right Side - Coverage */}
