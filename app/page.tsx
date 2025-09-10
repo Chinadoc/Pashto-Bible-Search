@@ -54,6 +54,8 @@ export default function Home() {
   const [showLexicon, setShowLexicon] = useState<boolean>(true);
   const [showMorphology, setShowMorphology] = useState<boolean>(true);
   const [showFrequency, setShowFrequency] = useState<boolean>(true);
+  const [includeRelated, setIncludeRelated] = useState<boolean>(false);
+  const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
 
 
 
@@ -138,6 +140,7 @@ export default function Home() {
       setResults([]);
       setCoverage([]);
       setConjugations(null);
+      setHighlightTerms([]);
       return;
     }
     setLoading(true);
@@ -145,7 +148,7 @@ export default function Home() {
       const resp = await fetch(`/api/search_phrase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, scope }),
+        body: JSON.stringify({ query: q, scope, includeRelated }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = (await resp.json()) as PhraseResponse;
@@ -153,12 +156,16 @@ export default function Home() {
       const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
       setCoverage(cov);
       setConjugations(null);
+      // capture variants for highlighting if provided
+      const variants = (data as any)?.processed?.variants as string[] | undefined;
+      setHighlightTerms(Array.isArray(variants) ? variants.slice(0, 10) : [q]);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
       // TODO: Implement local fallback search when API fails
       setResults([]);
       setCoverage([]);
       setConjugations(null);
+      setHighlightTerms([q]);
     } finally {
       setLoading(false);
     }
@@ -234,12 +241,13 @@ export default function Home() {
                           <label className="flex items-center gap-1"><input type="checkbox" checked={showLexicon} onChange={(e) => setShowLexicon(e.target.checked)} /> Lexicon</label>
                           <label className="flex items-center gap-1"><input type="checkbox" checked={showMorphology} onChange={(e) => setShowMorphology(e.target.checked)} /> Morphology</label>
                           <label className="flex items-center gap-1"><input type="checkbox" checked={showFrequency} onChange={(e) => setShowFrequency(e.target.checked)} /> Frequency</label>
+                          <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
                         </div>
 
                         {loading ? (
                           <div className="py-4 text-center text-gray-500">Loading...</div>
                         ) : (
-                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={query} />
+                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={highlightTerms?.[0] || query} />
                         )}
                       </div>
 

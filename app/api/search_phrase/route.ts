@@ -41,6 +41,8 @@ interface SearchRequest {
   scope: 'all' | 'ot' | 'nt'
   // Optional: additional variants to include (e.g., inflections)
   extraVariants?: string[]
+  // When true, expand variants by related forms (root -> forms)
+  includeRelated?: boolean
 }
 
 // Simple in-memory cache for search responses
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated }: SearchRequest = await request.json()
 
     if (!query?.trim()) {
       return NextResponse.json({
@@ -117,11 +119,44 @@ export async function POST(request: NextRequest) {
     // Process the search term
     const processed = await processSearchTerm(originalTerm)
     const baseVariants = processed.variants || [originalTerm]
+
+    // Optionally expand to related forms via Supabase REST
+    let related: string[] = []
+    if (includeRelated) {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        const norm = processed.normalized || originalTerm
+        if (supabaseUrl && supabaseKey) {
+          // 1) find root for normalized form
+          let root = norm
+          const r1 = await fetch(`${supabaseUrl}/rest/v1/form_to_root_map?select=root&form=eq.${encodeURIComponent(norm)}&limit=1`, {
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+            cache: 'no-store',
+          })
+          if (r1.ok) {
+            const rows = await r1.json().catch(() => [])
+            if (Array.isArray(rows) && rows[0]?.root) root = String(rows[0].root)
+          }
+          // 2) fetch forms by root
+          const r2 = await fetch(`${supabaseUrl}/rest/v1/form_to_root_map?select=form&root=eq.${encodeURIComponent(root)}&limit=800`, {
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+            cache: 'no-store',
+          })
+          if (r2.ok) {
+            const rows = await r2.json().catch(() => [])
+            if (Array.isArray(rows)) related = rows.map((x: any) => String(x?.form || '')).filter(Boolean)
+          }
+        }
+      } catch {}
+    }
+
     const extras = Array.isArray(extraVariants) ? extraVariants.filter(Boolean) : []
     // merge + dedupe, prioritize longer first for better OR behavior
     const searchVariants = Array.from(new Set([...
       baseVariants,
       ...extras,
+      ...related,
     ])).sort((a, b) => b.length - a.length)
 
     // Search directly in the verses table using REST API
