@@ -14,6 +14,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [nounResult, setNounResult] = useState<NounEntry | null>(null);
   const [searchType, setSearchType] = useState<'verb' | 'noun' | 'all'>('all');
   const [nounLoading, setNounLoading] = useState(false);
+  const [dict, setDict] = useState<any | null>(null);
 
   // Sync external query if provided
   useEffect(() => {
@@ -21,6 +22,24 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       setQuery(queryProp);
     }
   }, [queryProp]);
+
+  // Dictionary lookup (pashto or romanized)
+  useEffect(() => {
+    const run = async () => {
+      const q = query.trim();
+      if (!q) { setDict(null); return; }
+      try {
+        const { data, error } = await supabase
+          .from('dictionary')
+          .select('*')
+          .or(`pashto.ilike.%${q}%,romanized.ilike.%${q}%`)
+          .limit(1);
+        if (!error && data && data.length > 0) setDict(data[0]); else setDict(null);
+      } catch { setDict(null); }
+    };
+    const t = setTimeout(run, 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
   // Search for nouns when query changes and search type allows
   useEffect(() => {
@@ -129,6 +148,20 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
       {result && (searchType === 'all' || searchType === 'verb') && (
         <div className="space-y-6">
+          {/* Dictionary definition */}
+          {dict && (
+            <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Dictionary</div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-lg font-semibold">{dict.pashto || result.verb_root}</div>
+                {dict.romanized && <div className="text-sm text-gray-600">{dict.romanized}</div>}
+                {dict.pos && <div className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">{dict.pos}</div>}
+              </div>
+              {dict.definition && (
+                <div className="mt-2 text-sm text-gray-800 dark:text-gray-200">{dict.definition}</div>
+              )}
+            </div>
+          )}
           {/* Verb Header */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <h3 className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-2">
@@ -317,7 +350,6 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     </div>
   );
 }
-
 
 
 
