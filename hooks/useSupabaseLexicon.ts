@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Database } from '../types/database';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/types/database';
 
 type VerbEntry = Database['public']['Tables']['irregular_verbs']['Row'] | Database['public']['Tables']['verbs_lexicon']['Row'];
 
