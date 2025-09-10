@@ -43,6 +43,9 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const firstAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results]);
@@ -51,6 +54,33 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
   if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
 
   const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Resolve audio URLs (prefer Supabase Storage signed URLs)
+  useEffect(() => {
+    (async () => {
+      for (const verse of paginatedResults) {
+        const ref = verse.ref;
+        if (resolvedUrls[ref]) continue;
+
+        const direct = audioMap[ref];
+        const derived = direct || audioUrlFromRef(ref, audioMap);
+
+        let url = '';
+        if (derived && /^https?:\/\//i.test(derived)) {
+          url = derived;
+        } else {
+          try {
+            const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
+            const js = await r.json().catch(() => ({}));
+            url = js?.url || '';
+          } catch { /* ignore */ }
+        }
+
+        if (url) setResolvedUrls(prev => ({ ...prev, [ref]: url }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginatedResults, audioMap]);
 
   const handlePageChange = (_: any, value: number) => {
     setPage(value);
@@ -67,7 +97,7 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
       {paginatedResults.map((verse, index) => {
         const globalIndex = (page - 1) * itemsPerPage + index;
         const direct = audioMap[verse.ref];
-        const audioUrl = direct || audioUrlFromRef(verse.ref, audioMap);
+        const audioUrl = resolvedUrls[verse.ref] || direct || audioUrlFromRef(verse.ref, audioMap);
         const terms = (query && query.trim()) ? [query.trim()] : [];
         const autoPlay = index === 0 && page === 1 && !!audioUrl;
 
@@ -102,21 +132,44 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
               </div>
             </div>
 
-            {/* Inline audio player */}
+            {/* Compact audio controls */}
             {audioUrl && (
-              <audio
-                ref={index === 0 ? firstAudioRef : undefined}
-                src={audioUrl}
-                controls
-                preload="metadata"
-                className="w-full mb-2"
-                autoPlay={autoPlay}
-                onCanPlay={() => {
-                  if (autoPlay && firstAudioRef.current) {
-                    firstAudioRef.current.play().catch(() => {});
-                  }
-                }}
-              />
+              <div className="flex items-center gap-2 mb-2">
+                <audio
+                  ref={(el) => {
+                    if (index === 0) firstAudioRef.current = el;
+                    if (el) audioRefs.current.set(verse.ref, el);
+                  }}
+                  src={audioUrl}
+                  preload="metadata"
+                  className="hidden"
+                  onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
+                  onCanPlay={() => {
+                    if (autoPlay && firstAudioRef.current) {
+                      firstAudioRef.current.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+                    }
+                  }}
+                />
+                <button
+                  className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => {
+                    const el = audioRefs.current.get(verse.ref);
+                    if (!el) return;
+                    // pause others
+                    audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
+                    if (el.paused) {
+                      el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+                    } else {
+                      el.pause();
+                      setPlayingKey(null);
+                    }
+                  }}
+                  title={playingKey === verse.ref ? 'Pause' : 'Play'}
+                >
+                  {playingKey === verse.ref ? 'Pause' : 'Play'}
+                </button>
+                <span className="text-xs text-gray-500">{audioUrl.includes('/storage/') ? 'Storage' : 'Audio'}</span>
+              </div>
             )}
 
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words">
