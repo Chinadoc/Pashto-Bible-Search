@@ -1,12 +1,52 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSupabaseLexicon } from "../hooks/useSupabaseLexicon";
+import { supabase } from "../lib/supabase";
+import type { Database } from "../types/database";
+
+type NounEntry = Database['public']['Tables']['nouns_lexicon']['Row'];
 
 interface Props { onPickForm?: (form: string) => void }
 
 export default function LexiconPanel({ onPickForm }: Props) {
   const { query, setQuery, result, loading, error } = useSupabaseLexicon();
+  const [nounResult, setNounResult] = useState<NounEntry | null>(null);
+  const [searchType, setSearchType] = useState<'verb' | 'noun' | 'all'>('all');
+  const [nounLoading, setNounLoading] = useState(false);
+
+  // Search for nouns when query changes and search type allows
+  useEffect(() => {
+    if (!query.trim() || searchType === 'verb') {
+      setNounResult(null);
+      return;
+    }
+
+    const fetchNoun = async () => {
+      setNounLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('nouns_lexicon')
+          .select('*')
+          .ilike('pashto_word', `%${query}%`)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          setNounResult(data[0]);
+        } else {
+          setNounResult(null);
+        }
+      } catch (err) {
+        setNounResult(null);
+      } finally {
+        setNounLoading(false);
+      }
+    };
+
+    if (searchType === 'all' || searchType === 'noun') {
+      fetchNoun();
+    }
+  }, [query, searchType]);
 
   // Generate conjugation tables - Updated for Supabase integration
   const generateConjugationTable = (tense: string, description: string, stem: string, endings: Record<string, string[]>) => {
@@ -56,17 +96,29 @@ export default function LexiconPanel({ onPickForm }: Props) {
         Pashto Lexicon - Search for verb roots like "leedul" (لیدل)
       </p>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-4">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search verb roots (e.g., لیدل or leedul)"
+          placeholder="Search words (e.g., لیدل or leedul)"
           className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-lg"
         />
+
+        <div className="flex gap-2">
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as 'verb' | 'noun' | 'all')}
+            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+          >
+            <option value="all">All Words</option>
+            <option value="verb">Verbs Only</option>
+            <option value="noun">Nouns Only</option>
+          </select>
+        </div>
       </div>
 
-      {result ? (
+      {result && (searchType === 'all' || searchType === 'verb') && (
         <div className="space-y-6">
           {/* Verb Header */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
@@ -193,15 +245,66 @@ export default function LexiconPanel({ onPickForm }: Props) {
             </button>
           </div>
         </div>
-      ) : query ? (
-        <div className="text-center text-gray-500 mt-8">
-          No verb found for "{query}". Try searching for roots like "leedul", "kawul", or "khegul".
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 mt-8">
-          Enter a Pashto verb root to see its conjugations and information.
+      )}
+
+      {/* Noun Results */}
+      {nounResult && (searchType === 'all' || searchType === 'noun') && (
+        <div className="mt-8 space-y-6">
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-bold mb-4 text-green-600 dark:text-green-400">📝 Noun Result</h3>
+
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <h4 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-2">
+                {nounResult.pashto_word}
+              </h4>
+              <p className="text-lg text-green-600 dark:text-green-300">
+                {nounResult.romanized || 'No romanization'}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Gender: {nounResult.gender} • Number: {nounResult.number}
+              </p>
+            </div>
+
+            {/* Plural Forms */}
+            {nounResult.plural_forms && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h4 className="font-bold text-blue-800 dark:text-blue-200 mb-2">Plural Forms</h4>
+                <div className="space-y-1">
+                  {Object.entries(nounResult.plural_forms).map(([key, value]) => (
+                    <p key={key} className="text-sm">
+                      <span className="font-medium">{key}:</span> {String(value)}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Noun Search Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => onPickForm?.(nounResult.pashto_word)}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                🔍 Search "{nounResult.pashto_word}" in Bible
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Loading States */}
+      {(loading && (searchType === 'all' || searchType === 'verb')) ||
+       (nounLoading && (searchType === 'all' || searchType === 'noun')) ? (
+        <div className="text-center text-gray-500 mt-8">Searching...</div>
+      ) : !result && !nounResult && query ? (
+        <div className="text-center text-gray-500 mt-8">
+          No results found for "{query}". Try different search terms or adjust the search type.
+        </div>
+      ) : !query ? (
+        <div className="text-center text-gray-500 mt-8">
+          Enter a Pashto word to search the lexicon.
+        </div>
+      ) : null}
     </div>
   );
 }

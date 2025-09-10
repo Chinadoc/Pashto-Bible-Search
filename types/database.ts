@@ -161,6 +161,73 @@ export interface Database {
           updated_at?: string
         }
       }
+      word_frequencies: {
+        Row: {
+          id: number
+          pashto_word: string
+          frequency_count: number
+          frequency_rank: number
+          testament: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          pashto_word: string
+          frequency_count: number
+          frequency_rank: number
+          testament: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          pashto_word?: string
+          frequency_count?: number
+          frequency_rank?: number
+          testament?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      nouns_lexicon: {
+        Row: {
+          id: number
+          pashto_word: string
+          romanized: string
+          gender: string
+          number: string
+          plural_forms: Json
+          frequency: number
+          examples: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          pashto_word: string
+          romanized?: string
+          gender: string
+          number: string
+          plural_forms?: Json
+          frequency?: number
+          examples?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          pashto_word?: string
+          romanized?: string
+          gender?: string
+          number?: string
+          plural_forms?: Json
+          frequency?: number
+          examples?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
       dictionary: {
         Row: {
           id: number
@@ -195,6 +262,122 @@ export interface Database {
           frequency?: number
           examples?: Json
           enriched_info?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      form_lemmas: {
+        Row: {
+          id: number
+          lemma_form: string
+          base_word: string
+          part_of_speech: string
+          frequency: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          lemma_form: string
+          base_word: string
+          part_of_speech: string
+          frequency?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          lemma_form?: string
+          base_word?: string
+          part_of_speech?: string
+          frequency?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      form_roots: {
+        Row: {
+          id: number
+          word_form: string
+          root_word: string
+          base_word: string
+          frequency: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          word_form: string
+          root_word: string
+          base_word: string
+          frequency?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          word_form?: string
+          root_word?: string
+          base_word?: string
+          frequency?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      form_occurrences: {
+        Row: {
+          id: number
+          pashto_form: string
+          verse_reference: string
+          frequency: number
+          context: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          pashto_form: string
+          verse_reference: string
+          frequency?: number
+          context?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          pashto_form?: string
+          verse_reference?: string
+          frequency?: number
+          context?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      morphological_analysis: {
+        Row: {
+          id: number
+          word_form: string
+          base_word: string
+          analysis_results: Json
+          confidence_score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          word_form: string
+          base_word: string
+          analysis_results: Json
+          confidence_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          word_form?: string
+          base_word?: string
+          analysis_results?: Json
+          confidence_score?: number
           created_at?: string
           updated_at?: string
         }
