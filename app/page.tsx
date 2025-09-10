@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SearchBar from "@/components/SearchBar";
-import CoverageGrid from "@/components/CoverageGrid";
+import CoverageGrid, { ComplexityLevel } from "@/components/CoverageGrid";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
+import { useSidebarCoverage } from "@/hooks/useSidebarCoverage";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
 
 // Book lists + abbreviations (match CoverageGrid)
@@ -44,26 +45,10 @@ export default function Home() {
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
-  const [coverageLevel, setCoverageLevel] = useState<1 | 2 | 3>(2); // Default to basic level
+  const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
 
-  // Create unified coverage data - use search results if available, otherwise show bible availability
-  const sidebarCoverage = useMemo(() => {
-    if (coverage.length > 0) {
-      // Use search results coverage
-      return coverage;
-    } else if (localBible) {
-      // Show available bible books
-      const bookCounts: Record<string, number> = {};
-      localBible.forEach(verse => {
-        const book = extractBook(verse.ref);
-        bookCounts[book] = (bookCounts[book] || 0) + 1;
-      });
-      return Object.entries(bookCounts)
-        .map(([book, count]) => ({ book, count }))
-        .sort((a, b) => b.count - a.count);
-    }
-    return [];
-  }, [coverage, localBible]);
+  // Create unified coverage data using custom hook
+  const sidebarCoverage = useSidebarCoverage(coverage, localBible);
 
   // hydrate persisted UI state
   useEffect(() => {
@@ -219,20 +204,20 @@ export default function Home() {
               <span className="text-sm text-gray-600 dark:text-gray-400">Coverage:</span>
               <div className="flex gap-1">
                 <button
-                  onClick={() => setCoverageLevel(1)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 1 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                  onClick={() => setCoverageLevel(ComplexityLevel.Minimal)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Minimal ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
                 >
                   Min
                 </button>
                 <button
-                  onClick={() => setCoverageLevel(2)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 2 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                  onClick={() => setCoverageLevel(ComplexityLevel.Basic)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Basic ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
                 >
                   Basic
                 </button>
                 <button
-                  onClick={() => setCoverageLevel(3)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 3 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                  onClick={() => setCoverageLevel(ComplexityLevel.Full)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Full ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
                 >
                   Full
                 </button>
