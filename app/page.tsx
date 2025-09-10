@@ -5,6 +5,8 @@ import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import GrammarPanel from "../components/GrammarPanel";
+import MorphologyPanel from "../components/MorphologyPanel";
+import FrequencyExplorer from "../components/FrequencyExplorer";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
@@ -246,6 +248,24 @@ export default function Home() {
                   content: (
                     <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
                       <GrammarPanel />
+                    </div>
+                  )
+                },
+                {
+                  id: 'morphology',
+                  label: '🔬 Morphology',
+                  content: (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                      <MorphologyPanel />
+                    </div>
+                  )
+                },
+                {
+                  id: 'frequency',
+                  label: '📊 Frequency',
+                  content: (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                      <FrequencyExplorer />
                     </div>
                   )
                 }
