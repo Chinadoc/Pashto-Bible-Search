@@ -29,11 +29,22 @@ async function processSearchTerm(searchTerm: string) {
     .replace(/[يىئ]/g, 'ی')
     .replace(/[\u200E\u200F]/g, '');
 
-  return {
+  // Generate orthographic variants to improve match coverage
+  const yehArabic = normalized.replace(/ی/g, 'ي'); // Farsi Yeh -> Arabic Yeh
+  const kafArabic = normalized.replace(/ک/g, 'ك');  // Keheh -> Arabic Kaf
+  const combined = normalized
+    .replace(/ی/g, 'ي')
+    .replace(/ک/g, 'ك');
+
+  const variants = [
     normalized,
-    variants: [normalized, baseForm].filter((v, i, arr) => arr.indexOf(v) === i),
-    romanization: ''
-  };
+    baseForm,
+    yehArabic,
+    kafArabic,
+    combined,
+  ].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i);
+
+  return { normalized, variants, romanization: '' };
 }
 
 interface SearchRequest {
