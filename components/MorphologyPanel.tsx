@@ -1,10 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useMorphologySearch } from "../hooks/useMorphologySearch";
 
-export default function MorphologyPanel() {
+interface Props { queryProp?: string }
+
+export default function MorphologyPanel({ queryProp }: Props) {
   const { query, setQuery, result, loading, error } = useMorphologySearch();
+
+  useEffect(() => {
+    if (typeof queryProp === 'string') setQuery(queryProp);
+  }, [queryProp]);
 
   if (loading) {
     return <div className="p-4 text-center">Analyzing morphology...</div>;
@@ -21,15 +27,17 @@ export default function MorphologyPanel() {
         Morphological Analysis - Analyze word forms, roots, and grammatical structures
       </p>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Enter a base word to analyze (e.g., لیدل)"
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-lg"
-        />
-      </div>
+      {!queryProp && (
+        <div className="mb-6">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Enter a base word to analyze (e.g., لیدل)"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-lg"
+          />
+        </div>
+      )}
 
       {result ? (
         <div className="space-y-6">

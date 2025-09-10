@@ -7,13 +7,20 @@ import type { Database } from "../types/database";
 
 type NounEntry = Database['public']['Tables']['nouns_lexicon']['Row'];
 
-interface Props { onPickForm?: (form: string) => void }
+interface Props { onPickForm?: (form: string) => void; queryProp?: string }
 
-export default function LexiconPanel({ onPickForm }: Props) {
+export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const { query, setQuery, result, loading, error } = useSupabaseLexicon();
   const [nounResult, setNounResult] = useState<NounEntry | null>(null);
   const [searchType, setSearchType] = useState<'verb' | 'noun' | 'all'>('all');
   const [nounLoading, setNounLoading] = useState(false);
+
+  // Sync external query if provided
+  useEffect(() => {
+    if (typeof queryProp === 'string') {
+      setQuery(queryProp);
+    }
+  }, [queryProp]);
 
   // Search for nouns when query changes and search type allows
   useEffect(() => {
@@ -97,13 +104,15 @@ export default function LexiconPanel({ onPickForm }: Props) {
       </p>
 
       <div className="mb-6 space-y-4">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search words (e.g., لیدل or leedul)"
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-lg"
-        />
+        {!queryProp && (
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search words (e.g., لیدل or leedul)"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-lg"
+          />
+        )}
 
         <div className="flex gap-2">
           <select
@@ -308,7 +317,6 @@ export default function LexiconPanel({ onPickForm }: Props) {
     </div>
   );
 }
-
 
 
 
