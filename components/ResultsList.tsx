@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Pagination from '@mui/material/Pagination';
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef } from '../utils/audio';
@@ -16,7 +16,7 @@ function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(text: string, terms: string[]): (string | JSX.Element)[] {
+function highlight(text: string, terms: string[]): ReactNode[] {
   const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
   if (cleanTerms.length === 0) return [text];
   try {
