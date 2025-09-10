@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSupabaseLexicon } from "../hooks/useSupabaseLexicon";
-import { supabase } from "@/lib/supabase";
-import type { Database } from "@/types/database";
+import { supabase } from "../utils/supabase";
+import type { Database } from "../types/database";
 
 type NounEntry = Database['public']['Tables']['nouns_lexicon']['Row'];
 
