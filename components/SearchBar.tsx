@@ -1,49 +1,49 @@
-// components/SearchBar.tsx
-import React from 'react';
+"use client";
 
-interface SearchBarProps {
+import { ChangeEvent, useState } from 'react';
+import type { Scope } from '@/types';
+
+interface Props {
   query: string;
   setQuery: (query: string) => void;
-  scope: 'all' | 'ot' | 'nt';
-  setScope: (scope: 'all' | 'ot' | 'nt') => void;
+  scope: Scope;
+  setScope: (scope: Scope) => void;
   onSearch: () => void;
   loading: boolean;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, scope, setScope, onSearch, loading }) => {
-  const isRtl = true;
+export default function SearchBar({ query, setQuery, scope, setScope, onSearch, loading }: Props) {
+  const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
+  const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => setScope(e.target.value as Scope);
 
   return (
-    <div className="max-w-xl mx-auto mb-8">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Enter Pashto term..."
-          className="flex-grow p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          style={{ textAlign: isRtl ? 'right' : 'left' }}
-          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-        />
-        <select
-          value={scope}
-          onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
-          className="p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        >
-          <option value="all">All Scripture</option>
-          <option value="ot">Old Testament</option>
-          <option value="nt">New Testament</option>
-        </select>
-        <button
-          onClick={onSearch}
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-md transition-colors duration-200 disabled:bg-gray-500"
-        >
-          {loading ? 'Searching...' : 'Search'}
-        </button>
-      </div>
+    <div className="flex flex-wrap gap-2 mb-4">
+      <input
+        type="text"
+        value={query}
+        onChange={handleQueryChange}
+        placeholder="Leedul"
+        className="flex-1 p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800"
+        dir="rtl"
+        disabled={loading}
+      />
+      <select
+        value={scope}
+        onChange={handleScopeChange}
+        className="p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800"
+        disabled={loading}
+      >
+        <option value="all">All</option>
+        <option value="ot">Old Testament</option>
+        <option value="nt">New Testament</option>
+      </select>
+      <button
+        onClick={onSearch}
+        disabled={loading}
+        className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? 'Searching...' : 'Search'}
+      </button>
     </div>
   );
-};
-
-export default SearchBar;
+}
