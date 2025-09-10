@@ -33,6 +33,7 @@ interface Props {
   scope?: "all" | "nt" | "ot";
   title?: string;
   subtitle?: string;
+  complexityLevel?: 1 | 2 | 3; // 1=minimal, 2=basic, 3=full
 }
 
 function abbr(book: string): string {
@@ -40,16 +41,17 @@ function abbr(book: string): string {
 }
 
 
-export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle }: Props) {
+export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = 3 }: Props) {
   const covMap = useMemo(() => {
     const m: Record<string, number> = {};
     for (const c of coverage) m[c.book] = c.count;
     return m;
   }, [coverage]);
 
-  // Compute intensity classes for counts (simple 4-step heat map)
+  // Compute intensity classes for counts (only for level 3)
   const max = useMemo(() => Math.max(1, ...Object.values(covMap)), [covMap])
   const tint = (count: number) => {
+    if (complexityLevel < 3) return 'bg-transparent border-gray-700'
     const r = count / max
     if (r > 0.75) return 'bg-sky-600/25 border-sky-400'
     if (r > 0.5) return 'bg-sky-600/20 border-sky-500'
@@ -60,29 +62,32 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
   const Tile = ({ book }: { book: string }) => {
     const count = covMap[book] ?? 0
     const active = count > 0
+    const showCount = complexityLevel >= 2 && active
+    const useHeatmap = complexityLevel >= 3
+
     return (
       <button
         onClick={() => active && onPickBook?.(book)}
-        className={`relative text-left rounded-md px-2 py-1 border ${compact ? 'text-xs' : 'text-sm'} ${tint(count)} ${active ? 'hover:bg-sky-700/20' : 'opacity-60'}`}
+        className={`relative text-left rounded-md px-2 py-1 border ${compact ? 'text-xs' : 'text-sm'} ${useHeatmap ? tint(count) : 'bg-transparent border-gray-700'} ${active ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-60'}`}
       >
         <span>{compact ? abbr(book) : book}</span>
-        {active ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}
+        {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}
       </button>
     )
   }
 
   return (
-    <div className={`w-full rounded-lg border border-gray-600/60 ${compact ? 'p-2' : 'p-4'} bg-gray-900/40`}>
-      {!compact && (
-        <div className="mb-3">
-          <div className="font-semibold text-lg">{title || "Bible Coverage"}</div>
-          {subtitle && <div className="text-sm text-gray-400 mt-1">{subtitle}</div>}
+    <div className={`w-full border border-gray-300 dark:border-gray-600 ${compact ? 'p-2' : 'p-3'}`}>
+      {complexityLevel >= 2 && !compact && (
+        <div className="mb-2">
+          <div className="font-medium text-sm">{title || "Bible Coverage"}</div>
+          {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
         </div>
       )}
       <div className="flex flex-col gap-4">
         {(scope === 'all' || scope === 'ot') && (
           <div>
-            {!compact && <div className="text-sm text-gray-400 mb-1">Old Testament</div>}
+            {complexityLevel >= 2 && !compact && <div className="text-xs text-gray-500 mb-1">Old Testament</div>}
             <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
               {OT_BOOKS.map((b) => <Tile key={b} book={b} />)}
             </div>
@@ -90,7 +95,7 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         )}
         {(scope === 'all' || scope === 'nt') && (
           <div>
-            {!compact && <div className="text-sm text-gray-400 mb-1">New Testament</div>}
+            {complexityLevel >= 2 && !compact && <div className="text-xs text-gray-500 mb-1">New Testament</div>}
             <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
               {NT_BOOKS.map((b) => <Tile key={b} book={b} />)}
             </div>
