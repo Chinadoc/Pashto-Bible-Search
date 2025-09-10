@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import classNames from "classnames";
 import type { CoverageItem } from "@/types";
 
 const OT_BOOKS = [
@@ -46,24 +47,22 @@ function abbr(book: string): string {
   return ABBR[book] || book;
 }
 
+// Helper for tint classes - extracted for testability
+function getTintClasses(count: number, maxCount: number): string {
+  const r = count / Math.max(1, maxCount);
+  if (r > 0.75) return 'bg-sky-600/25 border-sky-400';
+  if (r > 0.5) return 'bg-sky-600/20 border-sky-500';
+  if (r > 0.25) return 'bg-sky-600/10 border-sky-700';
+  return 'bg-transparent border-gray-700';
+}
+
 function getTileClasses(count: number, maxCount: number, complexityLevel: ComplexityLevel, compact: boolean): string {
-  let base = `relative text-left rounded-md px-2 py-1 border ${compact ? 'text-xs' : 'text-sm'}`;
-
-  if (complexityLevel >= ComplexityLevel.Full) {
-    // Use heatmap tinting
-    const r = count / Math.max(1, maxCount);
-    if (r > 0.75) base += ' bg-sky-600/25 border-sky-400';
-    else if (r > 0.5) base += ' bg-sky-600/20 border-sky-500';
-    else if (r > 0.25) base += ' bg-sky-600/10 border-sky-700';
-    else base += ' bg-transparent border-gray-700';
-  } else {
-    base += ' bg-transparent border-gray-700';
-  }
-
-  if (count > 0) base += ' hover:bg-gray-100 dark:hover:bg-gray-800';
-  else base += ' opacity-60';
-
-  return base;
+  return classNames(
+    'relative text-left rounded-md px-2 py-1 border',
+    compact ? 'text-xs' : 'text-sm',
+    count > 0 ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-60',
+    complexityLevel >= ComplexityLevel.Full ? getTintClasses(count, maxCount) : 'bg-transparent border-gray-700'
+  );
 }
 
 

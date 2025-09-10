@@ -1,22 +1,69 @@
-# Generated locally; CI generates web/pashto_bible.json
-/pashto_bible.json
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
 
-# Ignore virtual env
-venv/
+# Testing
+/coverage
 
-# Ignore any large audio directories (but keep pashto-bible-react)
-pashto*/
-!pashto-bible-react/
-*.mp3
-lingdocs_dictionary/
-audio_file_map.json
-full_dictionary.json
-word_frequency_list.json
+# Next.js
+/.next/
+/out/
 
-# Byte-compiled / caches
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+firebase-debug*.log
+
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# MacOS
-.DS_Store
-.vercel
+# Database
+*.db
+*.sqlite
+*.sqlite3

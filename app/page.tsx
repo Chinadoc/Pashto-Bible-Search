@@ -6,6 +6,7 @@ import CoverageGrid, { ComplexityLevel } from "@/components/CoverageGrid";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
 import { useSidebarCoverage } from "@/hooks/useSidebarCoverage";
+import { useBibleSearch } from "@/hooks/useBibleSearch";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
 
 // Book lists + abbreviations (match CoverageGrid)
@@ -49,6 +50,9 @@ export default function Home() {
 
   // Create unified coverage data using custom hook
   const sidebarCoverage = useSidebarCoverage(coverage, localBible);
+
+  // Optimized search functionality with Fuse.js
+  const { search: bibleSearch, loading: searchLoading } = useBibleSearch(localBible, scope);
 
   // hydrate persisted UI state
   useEffect(() => {
@@ -123,35 +127,7 @@ export default function Home() {
 
   // Prefer internal Next.js API routes for portability
 
-  function extractBook(ref: string): string {
-    const m = ref.match(/^([A-Za-z0-9\s]+)\s\d+:\d+$/);
-    return m ? m[1].trim() : ref.split(" ").slice(0, -1).join(" ");
-  }
 
-  async function localPhraseSearch(q: string) {
-    const data = localBible ?? [];
-    const withinScope = (book: string) => {
-      if (scope === "nt") return NT_BOOKS_SET.has(book);
-      if (scope === "ot") return OT_BOOKS_SET.has(book);
-      return true;
-    };
-    const hits: Verse[] = [];
-    const counts: Record<string, number> = {};
-    for (const v of data) {
-      const b = extractBook(v.ref);
-      if (!withinScope(b)) continue;
-      if (v.text && v.text.includes(q)) {
-        hits.push(v);
-        counts[b] = (counts[b] || 0) + 1;
-        if (hits.length >= 1000) break;
-      }
-    }
-    const cov: CoverageItem[] = Object.entries(counts).map(([book, count]) => ({ book, count }));
-    cov.sort((a, b) => b.count - a.count);
-    setResults(hits);
-    setCoverage(cov);
-    setConjugations(null);
-  }
 
   const handleSearch = async () => {
     const q = query.trim();
@@ -176,7 +152,10 @@ export default function Home() {
       setConjugations(null);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
-      await localPhraseSearch(q);
+      const fallbackResult = await bibleSearch(q);
+      setResults(fallbackResult.hits);
+      setCoverage(Object.entries(fallbackResult.counts).map(([book, count]) => ({ book, count })));
+      setConjugations(null);
     } finally {
       setLoading(false);
     }
