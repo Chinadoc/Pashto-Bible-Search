@@ -4,9 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
-import GrammarPanel from "../components/GrammarPanel";
-import MorphologyPanel from "../components/MorphologyPanel";
-import FrequencyExplorer from "../components/FrequencyExplorer";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
@@ -50,10 +47,7 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
   const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
-  // Unified sections toggles (default on)
-  const [showLexicon, setShowLexicon] = useState<boolean>(true);
-  const [showMorphology, setShowMorphology] = useState<boolean>(true);
-  const [showFrequency, setShowFrequency] = useState<boolean>(true);
+  // Minimal UI (two tabs: Search, Lexicon)
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [variantCount, setVariantCount] = useState<number>(0);
@@ -239,11 +233,8 @@ export default function Home() {
                           loading={loading}
                         />
 
-                        {/* Shared toggles for unified panels */}
+                        {/* Options */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
-                          <label className="flex items-center gap-1"><input type="checkbox" checked={showLexicon} onChange={(e) => setShowLexicon(e.target.checked)} /> Lexicon</label>
-                          <label className="flex items-center gap-1"><input type="checkbox" checked={showMorphology} onChange={(e) => setShowMorphology(e.target.checked)} /> Morphology</label>
-                          <label className="flex items-center gap-1"><input type="checkbox" checked={showFrequency} onChange={(e) => setShowFrequency(e.target.checked)} /> Frequency</label>
                           <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
                         </div>
                         {includeRelated && variantCount > 1 && (
@@ -259,23 +250,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      {showLexicon && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                          <LexiconPanel queryProp={query} onPickForm={(f) => { setQuery(f); handleSearch(); }} />
-                        </div>
-                      )}
-
-                      {showMorphology && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                          <MorphologyPanel queryProp={query} />
-                        </div>
-                      )}
-
-                      {showFrequency && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                          <FrequencyExplorer testamentProp={scope} onPickForm={(f) => { setQuery(f); handleSearch(); }} />
-                        </div>
-                      )}
+                      {/* Keep search focused. Lexicon is a separate tab. */}
                     </div>
                   )
                 },
@@ -285,33 +260,6 @@ export default function Home() {
                   content: (
                     <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
                       <LexiconPanel onPickForm={(f) => { setQuery(f); handleSearch(); }} />
-                    </div>
-                  )
-                },
-                {
-                  id: 'grammar',
-                  label: '📖 Grammar',
-                  content: (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                      <GrammarPanel />
-                    </div>
-                  )
-                },
-                {
-                  id: 'morphology',
-                  label: '🔬 Morphology',
-                  content: (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                      <MorphologyPanel />
-                    </div>
-                  )
-                },
-                {
-                  id: 'frequency',
-                  label: '📊 Frequency',
-                  content: (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                      <FrequencyExplorer />
                     </div>
                   )
                 }
