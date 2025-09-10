@@ -239,7 +239,7 @@ export default function Home() {
                         {loading ? (
                           <div className="py-4 text-center text-gray-500">Loading...</div>
                         ) : (
-                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
+                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={query} />
                         )}
                       </div>
 

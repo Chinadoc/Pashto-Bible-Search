@@ -32,7 +32,7 @@ export default function CoverageSidebar({
         coverage={sidebarCoverage}
         onPickBook={onPickBook}
         scope={scope}
-        complexityLevel={coverageLevel}
+        complexityLevel={ComplexityLevel.Basic}
         title={title}
         subtitle={subtitle}
         compact={true}
