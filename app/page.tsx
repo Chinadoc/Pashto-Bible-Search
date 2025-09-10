@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
+import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
@@ -185,30 +186,7 @@ export default function Home() {
           <div className="px-2 py-3 flex items-center justify-between">
             <div className="font-semibold text-lg">Pashto Bible</div>
 
-            {/* Coverage Level Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Coverage:</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setCoverageLevel(ComplexityLevel.Minimal)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Minimal ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
-                >
-                  Min
-                </button>
-                <button
-                  onClick={() => setCoverageLevel(ComplexityLevel.Basic)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Basic ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
-                >
-                  Basic
-                </button>
-                <button
-                  onClick={() => setCoverageLevel(ComplexityLevel.Full)}
-                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === ComplexityLevel.Full ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
-                >
-                  Full
-                </button>
-              </div>
-            </div>
+            {/* Coverage toggles removed for consistent behavior */}
           </div>
         </div>
 
@@ -248,6 +226,9 @@ export default function Home() {
                         ) : (
                           <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={highlightTerms?.[0] || query} />
                         )}
+
+                        {/* Inline frequency summary */}
+                        <InlineFrequency term={query} scope={scope} includeRelated={includeRelated} onPick={(f) => { setQuery(f); handleSearch(); }} />
                       </div>
 
                       {/* Keep search focused. Lexicon is a separate tab. */}

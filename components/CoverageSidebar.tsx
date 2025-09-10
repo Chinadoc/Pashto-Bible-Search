@@ -22,9 +22,7 @@ export default function CoverageSidebar({
   const sidebarCoverage = useSidebarCoverage(coverage, localBible);
 
   const title = coverage.length > 0 ? "Search Results" : "Bible Books";
-  const subtitle = coverage.length > 0
-    ? `${sidebarCoverage.length} books with matches`
-    : "Available for search";
+  const subtitle = undefined;
 
   return (
     <div className="w-full lg:w-auto">
