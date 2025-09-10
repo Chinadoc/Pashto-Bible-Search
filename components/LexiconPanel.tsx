@@ -15,6 +15,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [searchType, setSearchType] = useState<'verb' | 'noun' | 'all'>('all');
   const [nounLoading, setNounLoading] = useState(false);
   const [dict, setDict] = useState<any | null>(null);
+  const [rootFromForm, setRootFromForm] = useState<string | null>(null);
 
   // Sync external query if provided
   useEffect(() => {
@@ -40,6 +41,37 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     const t = setTimeout(run, 250);
     return () => clearTimeout(t);
   }, [query]);
+
+  // If user typed an inflected form, find its root via form_to_root_map and load verb entry
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setRootFromForm(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: map } = await supabase
+          .from('form_to_root_map')
+          .select('root')
+          .eq('form', q)
+          .limit(1)
+        const root = (map && map[0]?.root) ? String(map[0].root) : null
+        if (cancelled) return
+        setRootFromForm(root)
+        if (root && !result) {
+          // Load verb by root if verb panel didn't find it
+          const { data: verbs } = await supabase
+            .from('verbs_lexicon')
+            .select('*')
+            .eq('verb_root', root)
+            .limit(1)
+          // We intentionally don't mutate useSupabaseLexicon's state; just show a hint below
+        }
+      } catch {
+        if (!cancelled) setRootFromForm(null)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [query, result])
 
   // Search for nouns when query changes and search type allows
   useEffect(() => {
@@ -148,6 +180,11 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
       {result && (searchType === 'all' || searchType === 'verb') && (
         <div className="space-y-6">
+          {rootFromForm && rootFromForm !== result.verb_root && (
+            <div className="p-2 text-sm bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-400/40">
+              The form <span className="font-mono">{query}</span> maps to root <button className="underline" onClick={() => setQuery(rootFromForm!)}>{rootFromForm}</button>.
+            </div>
+          )}
           {/* Dictionary definition */}
           {dict && (
             <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-lg">
@@ -350,7 +387,6 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     </div>
   );
 }
-
 
 
 
