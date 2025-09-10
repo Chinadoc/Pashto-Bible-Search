@@ -228,7 +228,7 @@ export default function Home() {
                           <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={highlightTerms?.[0] || query} />
                         )}
 
-                        {/* Inline frequency summary */
+                        {/* Inline frequency summary */}
                         <InlineFrequency term={query} scope={scope} includeRelated={includeRelated} onPick={(f) => { setQuery(f); handleSearch(); }} />
 
                         {/* Related forms panel */}
