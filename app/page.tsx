@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useMemo } from "react";
 import SearchBar from "@/components/SearchBar";
-import CoverageGrid, { ComplexityLevel } from "@/components/CoverageGrid";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
-import { useSidebarCoverage } from "@/hooks/useSidebarCoverage";
-import { useBibleSearch } from "@/hooks/useBibleSearch";
+import CoverageSidebar from "@/components/CoverageSidebar";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
+import { ComplexityLevel } from "@/components/CoverageGrid";
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -48,11 +47,7 @@ export default function Home() {
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
   const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
 
-  // Create unified coverage data using custom hook
-  const sidebarCoverage = useSidebarCoverage(coverage, localBible);
 
-  // Optimized search functionality with Fuse.js
-  const { search: bibleSearch, loading: searchLoading } = useBibleSearch(localBible, scope);
 
   // hydrate persisted UI state
   useEffect(() => {
@@ -152,9 +147,9 @@ export default function Home() {
       setConjugations(null);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
-      const fallbackResult = await bibleSearch(q);
-      setResults(fallbackResult.hits);
-      setCoverage(Object.entries(fallbackResult.counts).map(([book, count]) => ({ book, count })));
+      // TODO: Implement local fallback search when API fails
+      setResults([]);
+      setCoverage([]);
       setConjugations(null);
     } finally {
       setLoading(false);
@@ -227,13 +222,12 @@ export default function Home() {
 
           {/* Right Side - Coverage */}
           <div className="lg:col-span-1">
-            <CoverageGrid
-              coverage={sidebarCoverage}
-              onPickBook={(b) => setBookFilter(b)}
+            <CoverageSidebar
+              coverage={coverage}
+              localBible={localBible}
               scope={scope}
-              complexityLevel={coverageLevel}
-              title={coverage.length > 0 ? "Search Results" : "Bible Books"}
-              subtitle={coverage.length > 0 ? `${sidebarCoverage.length} books with matches` : "Available for search"}
+              coverageLevel={coverageLevel}
+              onPickBook={(b) => setBookFilter(b)}
             />
           </div>
         </div>
