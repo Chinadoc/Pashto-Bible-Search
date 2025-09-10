@@ -8,7 +8,7 @@ interface Props { onPickForm?: (form: string) => void }
 export default function LexiconPanel({ onPickForm }: Props) {
   const { query, setQuery, result, loading, error } = useSupabaseLexicon();
 
-  // Generate conjugation tables
+  // Generate conjugation tables - Updated for Supabase integration
   const generateConjugationTable = (tense: string, description: string, stem: string, endings: Record<string, string[]>) => {
     const persons = ['1st', '2nd', '3rd'];
     const numbers = ['singular', 'plural'];
