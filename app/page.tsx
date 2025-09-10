@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import SearchBar from "@/components/SearchBar";
 import CoverageGrid from "@/components/CoverageGrid";
-import Tabs, { TabKey } from "@/components/Tabs";
 import ResultsList from "@/components/ResultsList";
 import LexiconPanel from "@/components/LexiconPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "@/types";
@@ -37,7 +36,6 @@ function savePersisted<T>(key: string, value: T): void {
 
 export default function Home() {
   const [audioMap, setAudioMap] = useState<AudioMap>({});
-  const [tab, setTab] = useState<TabKey>("search");
   const [query, setQuery] = useState<string>(" ");
   const [scope, setScope] = useState<Scope>("all");
   const [bookFilter, setBookFilter] = useState<string | null>(null);
@@ -46,16 +44,15 @@ export default function Home() {
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
-  // Determine if sidebar should be compact based on screen size and tab
-  const isCompactSidebar = tab !== "search";
+  const [coverageLevel, setCoverageLevel] = useState<1 | 2 | 3>(2); // Default to basic level
 
-  // Create unified coverage data for sidebar based on current tab and context
+  // Create unified coverage data - use search results if available, otherwise show bible availability
   const sidebarCoverage = useMemo(() => {
-    if (tab === "search") {
-      // Use search results coverage for search tab
+    if (coverage.length > 0) {
+      // Use search results coverage
       return coverage;
-    } else if (localBible && (tab === "lexicon" || tab === "grammar")) {
-      // For lexicon/grammar tabs, show coverage based on available bible data
+    } else if (localBible) {
+      // Show available bible books
       const bookCounts: Record<string, number> = {};
       localBible.forEach(verse => {
         const book = extractBook(verse.ref);
@@ -66,7 +63,7 @@ export default function Home() {
         .sort((a, b) => b.count - a.count);
     }
     return [];
-  }, [tab, coverage, localBible]);
+  }, [coverage, localBible]);
 
   // hydrate persisted UI state
   useEffect(() => {
@@ -210,88 +207,81 @@ export default function Home() {
   }, [scope]);
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 md:p-6">
+    <div className="min-h-screen p-2 sm:p-4">
       <div className="max-w-6xl mx-auto flex flex-col gap-4">
-        <div className="sticky top-0 z-30 bg-white/85 dark:bg-gray-900/85 backdrop-blur border-b border-gray-200 dark:border-gray-800">
-          <div className="px-2 sm:px-3 md:px-4 py-2 flex items-center justify-between">
-            <div className="font-semibold tracking-wide">Pashto Bible</div>
-            <Tabs active={tab} onChange={(k) => setTab(k)} />
+        {/* Header */}
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <div className="px-2 py-3 flex items-center justify-between">
+            <div className="font-semibold text-lg">Pashto Bible</div>
+
+            {/* Coverage Level Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Coverage:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCoverageLevel(1)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 1 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Min
+                </button>
+                <button
+                  onClick={() => setCoverageLevel(2)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 2 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Basic
+                </button>
+                <button
+                  onClick={() => setCoverageLevel(3)}
+                  className={`px-2 py-1 text-xs rounded border ${coverageLevel === 3 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}`}
+                >
+                  Full
+                </button>
+              </div>
+            </div>
           </div>
-          {/* Linear book bar at top in very compact form */}
-          {/* Top coverage bar removed per request */}
         </div>
-        {tab === "search" && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-            <main className="flex flex-col gap-3 md:col-span-3">
-              <div className="sticky top-16 z-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur p-1 rounded-md">
-                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
-              </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Left Side - Search & Lexicon */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
+            {/* Search Section */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+              <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
               {loading ? (
-                <div className="py-8 text-center">Loading…</div>
+                <div className="py-4 text-center text-gray-500">Loading...</div>
               ) : (
                 <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
               )}
-              {conjugations ? (
-                <div className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                  <div className="font-semibold mb-2">{conjugations.kind === 'verb' ? 'Conjugations' : 'Inflections'} for {conjugations.root}</div>
-                  {conjugations.query_rom ? (
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Romanization: {conjugations.query_rom}</div>
-                  ) : null}
-                  <pre className="whitespace-pre-wrap text-sm overflow-auto">{JSON.stringify(conjugations.tables, null, 2)}</pre>
-                </div>
-              ) : null}
-            </main>
-            <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid
-                coverage={sidebarCoverage}
-                onPickBook={(b) => setBookFilter(b)}
-                compact={isCompactSidebar}
-                scope={scope}
-                title="Search Results"
-                subtitle={`${sidebarCoverage.length} books with matches`}
-              />
-            </aside>
+            </div>
+
+            {/* Lexicon Section */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+              <LexiconPanel onPickForm={(f) => { setQuery(f); handleSearch(); }} />
+            </div>
           </div>
-        )}
-        {tab === "lexicon" && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-            <main className="flex flex-col gap-3 md:col-span-3">
-              <LexiconPanel onPickForm={(f) => { setQuery(f); setTab("search"); }} />
-            </main>
-            <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid
-                coverage={sidebarCoverage}
-                onPickBook={(b) => setBookFilter(b)}
-                compact={isCompactSidebar}
-                scope={scope}
-                title="Bible Books"
-                subtitle="Available for lexicon lookup"
-              />
-            </aside>
+
+          {/* Right Side - Coverage */}
+          <div className="lg:col-span-1">
+            <CoverageGrid
+              coverage={sidebarCoverage}
+              onPickBook={(b) => setBookFilter(b)}
+              scope={scope}
+              complexityLevel={coverageLevel}
+              title={coverage.length > 0 ? "Search Results" : "Bible Books"}
+              subtitle={coverage.length > 0 ? `${sidebarCoverage.length} books with matches` : "Available for search"}
+            />
           </div>
-        )}
-        {tab === "grammar" && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-            <main className="flex flex-col gap-3 md:col-span-3">
-              <div className="sticky top-16 z-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur p-1 rounded-md">
-                <SearchBar query={query} setQuery={setQuery} scope={scope} setScope={setScope} onSearch={handleSearch} loading={loading} />
-              </div>
-              {loading ? (
-                <div className="py-8 text-center">Loading…</div>
-              ) : (
-                <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} />
-              )}
-            </main>
-            <aside className="md:col-span-1 md:sticky md:top-16 md:self-start flex flex-col gap-3 max-h-[calc(100vh-5rem)] overflow-auto">
-              <CoverageGrid
-                coverage={sidebarCoverage}
-                onPickBook={(b) => setBookFilter(b)}
-                compact={isCompactSidebar}
-                scope={scope}
-                title="Grammar Context"
-                subtitle="Books available for analysis"
-              />
-            </aside>
+        </div>
+
+        {/* Bottom Section - Conjugations */}
+        {conjugations && (
+          <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+            <div className="font-medium mb-2">{conjugations.kind === 'verb' ? 'Conjugations' : 'Inflections'} for {conjugations.root}</div>
+            {conjugations.query_rom && (
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Romanization: {conjugations.query_rom}</div>
+            )}
+            <pre className="whitespace-pre-wrap text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-auto">{JSON.stringify(conjugations.tables, null, 2)}</pre>
           </div>
         )}
       </div>
