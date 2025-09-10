@@ -69,8 +69,11 @@ export async function GET(request: NextRequest) {
         .from(bucketName)
         .createSignedUrl(file, 60 * 60)
       if (!error && data?.signedUrl) {
+        // Force download when used in links by adding download=1
+        const hasQuery = data.signedUrl.includes('?')
+        const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
         return NextResponse.json({
-          url: data.signedUrl,
+          url: withDl,
           ref,
           filename: file,
           isSigned: true,
@@ -79,16 +82,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback to public URL for the first candidate (works if bucket is public)
-    const publicUrlBase = `${supabaseUrl}/storage/v1/object/public/${bucketName}/`
-    const fallback = candidates[0] || ''
-    return NextResponse.json({
-      url: fallback ? publicUrlBase + encodeURIComponent(fallback) : '',
-      ref,
-      filename: fallback,
-      isSigned: false,
-      ms: Date.now() - started,
-    })
+    // No match in storage — return empty (client will hide audio controls)
+    return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
 
   } catch (error) {
     console.error('Audio URL generation error:', error)
@@ -134,15 +129,15 @@ export async function POST(request: NextRequest) {
             .from('audio')
             .createSignedUrl(file, 60 * 60)
           if (!error && data?.signedUrl) {
-            results[ref] = { url: data.signedUrl, filename: file, isSigned: true }
+            const hasQuery = data.signedUrl.includes('?')
+            const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+            results[ref] = { url: withDl, filename: file, isSigned: true }
             done = true
             break
           }
         }
         if (!done) {
-          const file = candidates[0] || ''
-          const publicUrl = file ? `${supabaseUrl}/storage/v1/object/public/audio/${encodeURIComponent(file)}` : ''
-          results[ref] = { url: publicUrl, filename: file, isSigned: false }
+          results[ref] = { url: '', filename: '', isSigned: false }
         }
       } catch {
         continue

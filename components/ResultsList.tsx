@@ -5,6 +5,10 @@ import Pagination from '@mui/material/Pagination';
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef } from '../utils/audio';
 
+const OT_BOOKS = new Set([
+  'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
+]);
+
 interface Props {
   results: Verse[];
   audioMap: AudioMap;
@@ -61,6 +65,10 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
       for (const verse of paginatedResults) {
         const ref = verse.ref;
         if (resolvedUrls[ref]) continue;
+        // Skip OT books for now (no audio)
+        const lastSpaceIndex = ref.lastIndexOf(' ');
+        const book = lastSpaceIndex > 0 ? ref.slice(0, lastSpaceIndex) : '';
+        if (OT_BOOKS.has(book)) continue;
 
         const direct = audioMap[ref];
         const derived = direct || audioUrlFromRef(ref, audioMap);
@@ -97,7 +105,7 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
       {paginatedResults.map((verse, index) => {
         const globalIndex = (page - 1) * itemsPerPage + index;
         const direct = audioMap[verse.ref];
-        const audioUrl = resolvedUrls[verse.ref] || direct || audioUrlFromRef(verse.ref, audioMap);
+        const audioUrl = resolvedUrls[verse.ref] || (direct && /^https?:\/\//i.test(direct) ? direct : '');
         const terms = (query && query.trim()) ? [query.trim()] : [];
         const autoPlay = index === 0 && page === 1 && !!audioUrl;
 
@@ -168,7 +176,7 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
                 >
                   {playingKey === verse.ref ? 'Pause' : 'Play'}
                 </button>
-                <span className="text-xs text-gray-500">{audioUrl.includes('/storage/') ? 'Storage' : 'Audio'}</span>
+                {/* no label */}
               </div>
             )}
 
