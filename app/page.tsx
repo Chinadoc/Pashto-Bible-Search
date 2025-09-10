@@ -273,7 +273,7 @@ export default function Home() {
 
                       {showFrequency && (
                         <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                          <FrequencyExplorer testamentProp={scope} />
+                          <FrequencyExplorer testamentProp={scope} onPickForm={(f) => { setQuery(f); handleSearch(); }} />
                         </div>
                       )}
                     </div>

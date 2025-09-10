@@ -1,48 +1,44 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
-import type { Database } from '../types/database';
 
-type FrequencyData = Database['public']['Tables']['word_frequencies']['Row'];
+export type PosFilter = 'any' | 'verb' | 'noun'
+export type FrequencyItem = { form: string; root?: string; pos?: 'verb' | 'noun'; frequency: number }
 
-export function useFrequencyExplorer(testament: 'all' | 'nt' | 'ot' = 'all') {
-  const [frequencies, setFrequencies] = useState<FrequencyData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function useFrequencyExplorer(params: {
+  testament?: 'all' | 'nt' | 'ot';
+  pos?: PosFilter;
+  aggregateByRoot?: boolean; // if true, groups inflections by root
+  limit?: number;
+}) {
+  const { testament = 'all', pos = 'any', aggregateByRoot = false, limit = 300 } = params || {}
+  const [items, setItems] = useState<FrequencyItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchFrequencies = async () => {
-      setLoading(true);
-      setError(null);
-
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        let query = supabase
-          .from('word_frequencies')
-          .select('*')
-          .order('frequency_rank', { ascending: true })
-          .limit(100); // Top 100 most frequent words
-
-        if (testament !== 'all') {
-          query = query.eq('testament', testament);
-        }
-
-        const { data, error: freqError } = await query;
-
-        if (freqError) {
-          setError(freqError.message);
-        } else {
-          setFrequencies(data || []);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load frequency data');
+        const qs = new URLSearchParams()
+        qs.set('scope', testament)
+        qs.set('limit', String(limit))
+        qs.set('pos', pos)
+        if (aggregateByRoot) qs.set('inflections', '1')
+        const r = await fetch(`/api/lexicon_frequency?${qs.toString()}`, { cache: 'no-store' })
+        const json = await r.json().catch(() => ({ items: [] }))
+        if (!cancelled) setItems(Array.isArray(json?.items) ? json.items : [])
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to load frequency data')
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false)
       }
-    };
+    }
+    run()
+    return () => { cancelled = true }
+  }, [testament, pos, aggregateByRoot, limit])
 
-    fetchFrequencies();
-  }, [testament]);
-
-  return { frequencies, loading, error };
+  return { items, loading, error }
 }
