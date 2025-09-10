@@ -5,6 +5,7 @@ import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
+import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
@@ -227,8 +228,13 @@ export default function Home() {
                           <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={highlightTerms?.[0] || query} />
                         )}
 
-                        {/* Inline frequency summary */}
+                        {/* Inline frequency summary */
                         <InlineFrequency term={query} scope={scope} includeRelated={includeRelated} onPick={(f) => { setQuery(f); handleSearch(); }} />
+
+                        {/* Related forms panel */}
+                        {includeRelated && (
+                          <RelatedForms term={query} onPick={(f) => { setQuery(f); handleSearch(); }} />
+                        )}
                       </div>
 
                       {/* Keep search focused. Lexicon is a separate tab. */}

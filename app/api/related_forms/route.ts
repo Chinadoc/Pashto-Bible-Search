@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-type RelatedForm = { form: string; count?: number; pos?: string }
+type RelatedForm = { form: string; count?: number; pos?: string; relation?: 'root' | 'inflection' | 'mapped'; info?: any }
 type RelatedFormsResponse = { root: string; forms: RelatedForm[]; total?: number; ms: number; cached?: boolean }
 
 // Simple in-memory cache for related forms
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       try {
         const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
         // assume columns: root, form
-        url.searchParams.set('select', 'form')
-        url.searchParams.set('root', `eq.${root}`)
+        url.searchParams.set('select', 'inflected_form')
+        url.searchParams.set('base_word', `eq.${root}`)
         url.searchParams.set('limit', String(limit))
         const res = await fetch(url.toString(), {
           headers: {
@@ -105,9 +105,7 @@ export async function POST(request: NextRequest) {
         })
         if (res.ok) {
           const rows = await res.json()
-          if (Array.isArray(rows)) {
-            for (const r of rows) if (r?.form) formSet.add(String(r.form))
-          }
+          if (Array.isArray(rows)) rows.forEach((r:any)=>{ if (r?.inflected_form) formSet.add(String(r.inflected_form)) })
         }
       } catch {
         // ignore
@@ -116,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // 4) Enrich counts using word_frequencies and add POS grouping
     const formsArr = Array.from(formSet).filter(f => f && f !== term)
-    const enriched: Array<{ form: string; count?: number; pos?: string }> = formsArr.map(f => ({ form: f }))
+    const enriched: Array<RelatedForm> = formsArr.map(f => ({ form: f }))
     // Counts via word_frequencies
     try {
       if (formsArr.length > 0) {
@@ -161,6 +159,25 @@ export async function POST(request: NextRequest) {
         }
       }
       if (rootPos) enriched.forEach(item => { item.pos = rootPos })
+    } catch {}
+
+    // Morphology info from inflections
+    try {
+      const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
+      url.searchParams.set('select', 'inflected_form,grammatical_info')
+      url.searchParams.set('base_word', `eq.${root}`)
+      url.searchParams.set('limit', String(limit))
+      const r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
+      if (r.ok) {
+        const rows: Array<{ inflected_form: string; grammatical_info: any }> = await r.json()
+        const infoMap = new Map<string, any>()
+        rows.forEach(row => { if (row?.inflected_form) infoMap.set(row.inflected_form, row.grammatical_info) })
+        enriched.forEach(item => {
+          if (item.form === root) item.relation = 'root'
+          else if (infoMap.has(item.form)) { item.relation = 'inflection'; item.info = infoMap.get(item.form) }
+          else item.relation = 'mapped'
+        })
+      }
     } catch {}
     // Sort by count desc then form asc
     enriched.sort((a, b) => (b.count || 0) - (a.count || 0) || a.form.localeCompare(b.form))
