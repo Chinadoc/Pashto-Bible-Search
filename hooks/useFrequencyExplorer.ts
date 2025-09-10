@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Database } from '../types/database';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/types/database';
 
 type FrequencyData = Database['public']['Tables']['word_frequencies']['Row'];
 
