@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import SearchBar from "@/components/SearchBar";
 import CoverageGrid, { ComplexityLevel } from "@/components/CoverageGrid";
 import ResultsList from "@/components/ResultsList";
