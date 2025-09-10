@@ -163,22 +163,17 @@ export async function POST(request: NextRequest) {
     const allResults: Verse[] = []
     const coverageMap = new Map<string, number>()
 
-    // Build query conditions for variants
+    // Build URL safely to ensure proper encoding (esp. Pashto chars)
+    const u = new URL(`${supabaseUrl}/rest/v1/verses`)
+    u.searchParams.set('select', 'book,chapter,verse,text,testament')
     const orConditions = searchVariants.map(variant => `text.ilike.*${variant}*`).join(',')
-    
-    let url = `${supabaseUrl}/rest/v1/verses?select=book,chapter,verse,text,testament&or=(${orConditions})`
-    
-    // Filter by scope
-    if (scope === 'ot') {
-      url += '&testament=eq.OT'
-    } else if (scope === 'nt') {
-      url += '&testament=eq.NT'
-    }
-    
-    url += '&limit=100'
+    u.searchParams.set('or', `(${orConditions})`)
+    if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
+    if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
+    u.searchParams.set('limit', '100')
 
     // Execute query using fetch
-    const resp = await fetch(url, {
+    const resp = await fetch(u.toString(), {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`,
