@@ -50,7 +50,7 @@ export default function Home() {
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
   const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
   // Minimal UI (two tabs: Search, Lexicon)
-  const [includeRelated, setIncludeRelated] = useState<boolean>(false);
+  const [includeRelated, setIncludeRelated] = useState<boolean>(true);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [variantCount, setVariantCount] = useState<number>(0);
 
