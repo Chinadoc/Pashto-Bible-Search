@@ -180,9 +180,15 @@ export async function POST(request: NextRequest) {
 
     // Build URL safely to ensure proper encoding (esp. Pashto chars)
     const u = new URL(`${supabaseUrl}/rest/v1/verses`)
-    u.searchParams.set('select', 'book,chapter,verse,text,testament')
-    const orConditions = searchVariants.map(variant => `text.ilike.*${variant}*`).join(',')
-    u.searchParams.set('or', `(${orConditions})`)
+    u.searchParams.set('select', 'book,chapter,verse,text,testament,pashto_text,pashto')
+    const candidateCols = ['text','pashto_text','pashto']
+    const orParts: string[] = []
+    for (const v of searchVariants) {
+      for (const c of candidateCols) {
+        orParts.push(`${c}.ilike.*${v}*`)
+      }
+    }
+    u.searchParams.set('or', `(${orParts.join(',')})`)
     if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
     if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
     u.searchParams.set('limit', '100')
