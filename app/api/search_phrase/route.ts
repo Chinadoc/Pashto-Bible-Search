@@ -220,6 +220,53 @@ export async function POST(request: NextRequest) {
       console.error('Supabase REST API error:', resp.status, resp.statusText)
     }
 
+    // Fallback: if no verses matched via text search, try occurrences -> references
+    if (allResults.length === 0) {
+      try {
+        // Gather candidate forms
+        const forms = Array.from(new Set(searchVariants)).slice(0, 200)
+        const headers = { apikey: supabaseKey as string, Authorization: `Bearer ${supabaseKey}` }
+        const occSet = new Set<string>()
+        // Query occurrences in chunks
+        for (let i = 0; i < forms.length; i += 100) {
+          const part = forms.slice(i, i + 100)
+          const inList = part.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+          const occUrl = new URL(`${supabaseUrl}/rest/v1/form_occurrences`)
+          occUrl.searchParams.set('select', 'pashto_form,verse_reference')
+          occUrl.searchParams.set('pashto_form', `in.(${inList})`)
+          const r = await fetch(occUrl.toString(), { headers, cache: 'no-store' })
+          if (r.ok) {
+            const rows = await r.json()
+            if (Array.isArray(rows)) rows.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
+          }
+        }
+        const refs = Array.from(occSet).slice(0, 100)
+        // Resolve verse text for each ref
+        for (const ref of refs) {
+          const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
+          if (!m) continue
+          const book = m[1]
+          const chapter = Number(m[2])
+          const verseNo = Number(m[3])
+          const vUrl = new URL(`${supabaseUrl}/rest/v1/verses`)
+          vUrl.searchParams.set('select', 'book,chapter,verse,text,testament,pashto_text,pashto')
+          vUrl.searchParams.set('book', `eq.${book}`)
+          vUrl.searchParams.set('chapter', `eq.${chapter}`)
+          vUrl.searchParams.set('verse', `eq.${verseNo}`)
+          const vr = await fetch(vUrl.toString(), { headers, cache: 'no-store' })
+          if (vr.ok) {
+            const arr = await vr.json()
+            const row = Array.isArray(arr) && arr[0]
+            const text = row?.text || row?.pashto_text || row?.pashto || ''
+            allResults.push({ ref, text })
+            coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
+          }
+        }
+      } catch (e) {
+        console.warn('Fallback occurrences lookup failed:', e)
+      }
+    }
+
     // Remove duplicate results based on reference
     const uniqueResults = allResults.filter((verse, index, self) =>
       index === self.findIndex(v => v.ref === verse.ref)
