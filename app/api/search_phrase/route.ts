@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Create cache key from search parameters
     const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
-    const cacheKey = `${query.trim()}-${scope}-${variantsKey}`
+    const cacheKey = `${query.trim()}-${scope}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
 
     // Check cache first
     const cached = SEARCH_CACHE.get(cacheKey)
@@ -182,6 +182,7 @@ export async function POST(request: NextRequest) {
     // First try via supabase-js to avoid invalid column references
     const selectCols = 'book,chapter,verse,text,testament,pashto_text,pashto'
     const candidateCols = ['text','pashto_text','pashto'] as const
+    let textSearchHit = false
     for (const col of candidateCols) {
       try {
         const orParts = searchVariants.map(v => `${col}.ilike.%${v.replace(/%/g,'')}%`).join(',')
@@ -190,6 +191,7 @@ export async function POST(request: NextRequest) {
         if (scope === 'nt') q = q.eq('testament', 'NT')
         const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
+          textSearchHit = true
           for (const v of data) {
             const text = v.text || v.pashto_text || v.pashto || ''
             allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
@@ -316,7 +318,12 @@ export async function POST(request: NextRequest) {
         variants: searchVariants,
         romanization: processed.romanization
       },
-      ms: Date.now() - startTime
+      ms: Date.now() - startTime,
+      debug: {
+        textSearchHit,
+        variantsTried: searchVariants.length,
+        resultsCount: uniqueResults.length
+      }
     }
 
     // Cache the result
