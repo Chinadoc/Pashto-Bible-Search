@@ -30,6 +30,31 @@ export default function RelatedForms({ term, onPick }: { term: string; onPick: (
 
   if (!term.trim()) return null
 
+  const verbs = items.filter(it => it.pos === 'verb')
+  const nouns = items.filter(it => it.pos === 'noun')
+  const others = items.filter(it => it.pos !== 'verb' && it.pos !== 'noun')
+
+  const Section = ({ title, list }: { title: string; list: Item[] }) => (
+    <div className="mt-2">
+      <div className="text-xs text-gray-500 mb-1">{title} ({list.length})</div>
+      <div className="flex flex-wrap gap-2">
+        {list.map(it => (
+          <button
+            key={`${title}-${it.form}`}
+            onClick={() => onPick(it.form)}
+            className="px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            title={it.info ? JSON.stringify(it.info) : undefined}
+          >
+            {it.form}
+            {it.relation && <span className="ml-1 text-xs text-gray-500">({it.relation})</span>}
+            {typeof it.count === 'number' && <span className="ml-1 text-xs text-gray-500">{it.count}</span>}
+          </button>
+        ))}
+        {list.length === 0 && <span className="text-gray-400">—</span>}
+      </div>
+    </div>
+  )
+
   return (
     <div className="mt-2 rounded border border-gray-200 dark:border-gray-700 p-2 text-sm">
       <div className="flex items-center justify-between">
@@ -37,24 +62,12 @@ export default function RelatedForms({ term, onPick }: { term: string; onPick: (
         <button onClick={() => setOpen(!open)} className="text-xs px-2 py-0.5 border rounded">{open ? 'Hide' : 'Show'}</button>
       </div>
       {open && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {items.length === 0 ? (
-            <div className="text-gray-500">No related forms.</div>
-          ) : items.map((it) => (
-            <button
-              key={it.form}
-              onClick={() => onPick(it.form)}
-              className="px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-              title={JSON.stringify(it.info || {}, null, 0)}
-            >
-              {it.form}
-              {it.relation && <span className="ml-1 text-xs text-gray-500">({it.relation})</span>}
-              {typeof it.count === 'number' && <span className="ml-1 text-xs text-gray-500">{it.count}</span>}
-            </button>
-          ))}
+        <div className="mt-2">
+          <Section title="Verbs" list={verbs} />
+          <Section title="Nouns" list={nouns} />
+          <Section title="Other" list={others} />
         </div>
       )}
     </div>
   )
 }
-
