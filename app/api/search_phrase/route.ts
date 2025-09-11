@@ -223,23 +223,52 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: if no verses matched via text search, try occurrences -> references
+    // Fallback: if no verses matched via text search, try occurrences -> references.
+    // Expand the query to root -> all forms via form_to_root_map/inflections.
     if (allResults.length === 0) {
       try {
-        // Gather candidate forms
-        const forms = Array.from(new Set(searchVariants)).slice(0, 200)
+        // 1) Determine root for the normalized term
+        let root = processed.normalized
+        {
+          const { data: m1 } = await supabase
+            .from('form_to_root_map')
+            .select('root')
+            .eq('form', processed.normalized)
+            .limit(1)
+          if (Array.isArray(m1) && m1[0]?.root) root = String(m1[0].root)
+        }
+        // 2) Expand forms by root via mapping then inflections if needed
+        const formSet = new Set<string>()
+        {
+          const { data: m2 } = await supabase
+            .from('form_to_root_map')
+            .select('form')
+            .eq('root', root)
+            .limit(2000)
+          if (Array.isArray(m2)) m2.forEach((r:any)=>{ if (r?.form) formSet.add(String(r.form)) })
+        }
+        if (formSet.size === 0) {
+          const { data: infl } = await supabase
+            .from('inflections')
+            .select('inflected_form')
+            .eq('base_word', root)
+            .limit(2000)
+          if (Array.isArray(infl)) infl.forEach((r:any)=>{ if (r?.inflected_form) formSet.add(String(r.inflected_form)) })
+        }
+        // Always include the literal variants as a last resort
+        searchVariants.forEach(v => formSet.add(v))
+
+        const forms = Array.from(formSet).slice(0, 500)
         const occSet = new Set<string>()
-        // Query occurrences with supabase-js to avoid URL-encoding pitfalls
-        for (let i = 0; i < forms.length; i += 100) {
-          const part = forms.slice(i, i + 100)
-          const { data: occ, error: occErr } = await supabase
+        // Query occurrences with supabase-js
+        for (let i = 0; i < forms.length; i += 200) {
+          const part = forms.slice(i, i + 200)
+          const { data: occ } = await supabase
             .from('form_occurrences')
             .select('pashto_form,verse_reference')
             .in('pashto_form', part)
-            .limit(1000)
-          if (!occErr && Array.isArray(occ)) {
-            occ.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
-          }
+            .limit(2000)
+          if (Array.isArray(occ)) occ.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
         }
         const refs = Array.from(occSet).slice(0, 100)
         // Resolve verse text for each ref
