@@ -228,19 +228,17 @@ export async function POST(request: NextRequest) {
       try {
         // Gather candidate forms
         const forms = Array.from(new Set(searchVariants)).slice(0, 200)
-        const headers = { apikey: supabaseKey as string, Authorization: `Bearer ${supabaseKey}` }
         const occSet = new Set<string>()
-        // Query occurrences in chunks
+        // Query occurrences with supabase-js to avoid URL-encoding pitfalls
         for (let i = 0; i < forms.length; i += 100) {
           const part = forms.slice(i, i + 100)
-          const inList = part.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
-          const occUrl = new URL(`${supabaseUrl}/rest/v1/form_occurrences`)
-          occUrl.searchParams.set('select', 'pashto_form,verse_reference')
-          occUrl.searchParams.set('pashto_form', `in.(${inList})`)
-          const r = await fetch(occUrl.toString(), { headers, cache: 'no-store' })
-          if (r.ok) {
-            const rows = await r.json()
-            if (Array.isArray(rows)) rows.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
+          const { data: occ, error: occErr } = await supabase
+            .from('form_occurrences')
+            .select('pashto_form,verse_reference')
+            .in('pashto_form', part)
+            .limit(1000)
+          if (!occErr && Array.isArray(occ)) {
+            occ.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
           }
         }
         const refs = Array.from(occSet).slice(0, 100)
@@ -251,16 +249,16 @@ export async function POST(request: NextRequest) {
           const book = m[1]
           const chapter = Number(m[2])
           const verseNo = Number(m[3])
-          const vUrl = new URL(`${supabaseUrl}/rest/v1/verses`)
-          vUrl.searchParams.set('select', 'book,chapter,verse,text,testament,pashto_text,pashto')
-          vUrl.searchParams.set('book', `eq.${book}`)
-          vUrl.searchParams.set('chapter', `eq.${chapter}`)
-          vUrl.searchParams.set('verse', `eq.${verseNo}`)
-          const vr = await fetch(vUrl.toString(), { headers, cache: 'no-store' })
-          if (vr.ok) {
-            const arr = await vr.json()
-            const row = Array.isArray(arr) && arr[0]
-            const text = row?.text || row?.pashto_text || row?.pashto || ''
+          const { data: vr, error: vErr } = await supabase
+            .from('verses')
+            .select('book,chapter,verse,text,testament,pashto_text,pashto')
+            .eq('book', book)
+            .eq('chapter', chapter)
+            .eq('verse', verseNo)
+            .limit(1)
+          if (!vErr && Array.isArray(vr) && vr[0]) {
+            const row:any = vr[0]
+            const text = row.text || row.pashto_text || row.pashto || ''
             allResults.push({ ref, text })
             coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
           }
