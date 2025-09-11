@@ -26,12 +26,14 @@ async function processSearchTerm(searchTerm: string) {
   // Basic Pashto normalization
   const normalized = baseForm
     .normalize('NFC')
-    .replace(/[يىئ]/g, 'ی')
-    .replace(/[\u200E\u200F]/g, '');
+    .replace(/[يىئ]/g, 'ی') // unify Arabic yehs to Farsi Yeh
+    .replace(/[\u200C\u200D\u200E\u200F]/g, ''); // strip ZWNJ/ZWJ/LRM/RLM
 
   // Generate orthographic variants to improve match coverage
   const yehArabic = normalized.replace(/ی/g, 'ي'); // Farsi Yeh -> Arabic Yeh
   const kafArabic = normalized.replace(/ک/g, 'ك');  // Keheh -> Arabic Kaf
+  const pashtoE = normalized.replace(/ی/g, 'ې');    // Farsi Yeh -> Pashto Yeh (U+06D0)
+  const revertE = normalized.replace(/ې/g, 'ی');    // Pashto Yeh -> Farsi Yeh
   const combined = normalized
     .replace(/ی/g, 'ي')
     .replace(/ک/g, 'ك');
@@ -42,6 +44,8 @@ async function processSearchTerm(searchTerm: string) {
     yehArabic,
     kafArabic,
     combined,
+    pashtoE,
+    revertE,
   ].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i);
 
   return { normalized, variants, romanization: '' };
