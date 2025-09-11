@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '../../../utils/supabase'
 export const runtime = 'nodejs'
 
 
@@ -178,46 +179,48 @@ export async function POST(request: NextRequest) {
     const allResults: Verse[] = []
     const coverageMap = new Map<string, number>()
 
-    // Build URL safely to ensure proper encoding (esp. Pashto chars)
-    const u = new URL(`${supabaseUrl}/rest/v1/verses`)
-    u.searchParams.set('select', 'book,chapter,verse,text,testament,pashto_text,pashto')
-    const candidateCols = ['text','pashto_text','pashto']
-    const orParts: string[] = []
-    for (const v of searchVariants) {
-      for (const c of candidateCols) {
-        orParts.push(`${c}.ilike.*${v}*`)
-      }
-    }
-    u.searchParams.set('or', `(${orParts.join(',')})`)
-    if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
-    if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
-    u.searchParams.set('limit', '100')
-
-    // Execute query using fetch
-    const resp = await fetch(u.toString(), {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (resp.ok) {
-      const data = await resp.json()
-      
-      // Transform results to expected format
-      for (const verse of data) {
-        const result: Verse = {
-          ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
-          text: verse.text
+    // First try via supabase-js to avoid invalid column references
+    const selectCols = 'book,chapter,verse,text,testament,pashto_text,pashto'
+    const candidateCols = ['text','pashto_text','pashto'] as const
+    for (const col of candidateCols) {
+      try {
+        const orParts = searchVariants.map(v => `${col}.ilike.%${v.replace(/%/g,'')}%`).join(',')
+        let q = supabase.from('verses').select(selectCols).or(orParts)
+        if (scope === 'ot') q = q.eq('testament', 'OT')
+        if (scope === 'nt') q = q.eq('testament', 'NT')
+        const { data, error } = await q.limit(100)
+        if (!error && Array.isArray(data) && data.length > 0) {
+          for (const v of data) {
+            const text = v.text || v.pashto_text || v.pashto || ''
+            allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
+            coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
+          }
+          break
         }
-        allResults.push(result)
+      } catch {}
+    }
 
-        // Update coverage count
-        coverageMap.set(verse.book, (coverageMap.get(verse.book) || 0) + 1)
+    // As a final attempt, try REST with all columns (if above yielded nothing)
+    if (allResults.length === 0) {
+      const u = new URL(`${supabaseUrl}/rest/v1/verses`)
+      u.searchParams.set('select', selectCols)
+      const orParts: string[] = []
+      for (const v of searchVariants) {
+        for (const c of candidateCols) orParts.push(`${c}.ilike.*${v}*`)
       }
-    } else {
-      console.error('Supabase REST API error:', resp.status, resp.statusText)
+      u.searchParams.set('or', `(${orParts.join(',')})`)
+      if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
+      if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
+      u.searchParams.set('limit', '100')
+      const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
+      if (resp.ok) {
+        const data = await resp.json()
+        for (const v of data) {
+          const text = v.text || v.pashto_text || v.pashto || ''
+          allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
+          coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
+        }
+      }
     }
 
     // Fallback: if no verses matched via text search, try occurrences -> references
