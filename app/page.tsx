@@ -225,7 +225,13 @@ export default function Home() {
                         {loading ? (
                           <div className="py-4 text-center text-gray-500">Loading...</div>
                         ) : (
-                          <ResultsList results={visibleResults} audioMap={audioMap} loading={loading} query={highlightTerms?.[0] || query} />
+                          <ResultsList
+                            results={visibleResults}
+                            audioMap={audioMap}
+                            loading={loading}
+                            query={highlightTerms?.[0] || query}
+                            terms={highlightTerms?.length ? highlightTerms.slice(0, 10) : undefined}
+                          />
                         )}
 
                         {/* Inline frequency summary */}
