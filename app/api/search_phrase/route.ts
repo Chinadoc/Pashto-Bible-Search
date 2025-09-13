@@ -205,8 +205,8 @@ export async function POST(request: NextRequest) {
     const coverageMap = new Map<string, number>()
 
     // First try via supabase-js to avoid invalid column references
-    const selectCols = 'book,chapter,verse,text,testament,pashto_text,pashto'
-    const candidateCols = ['text','pashto_text','pashto'] as const
+    const selectCols = 'book,chapter,verse,text,testament'
+    const candidateCols = ['text'] as const
     let textSearchHit = false
     for (const col of candidateCols) {
       try {
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
           for (const v of data) {
-            const text = v.text || v.pashto_text || v.pashto || ''
+            const text = v.text || ''
             allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
             coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
           }
@@ -245,33 +245,37 @@ export async function POST(request: NextRequest) {
       if (resp.ok) {
         const data = await resp.json()
         for (const v of data) {
-          const text = v.text || v.pashto_text || v.pashto || ''
+          const text = v.text || ''
           allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
           coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
         }
       }
     }
 
-    // Fuzzy search fallback via RPC if still no results (skip when a specific book filter is active)
-    if (allResults.length === 0 && !bookFilter) {
+    // Fuzzy search fallback if still no results
+    if (allResults.length === 0) {
       try {
-        const { data, error } = await supabase
-          .rpc('search_verses_similar', { q: processed.normalized || originalTerm, scope, max_results: 100 }) as any
+        const { data, error } = await supabase.rpc('search_verses_similar', {
+            q: originalTerm,
+            scope: scope,
+            max_results: 100
+        });
+
         if (!error && Array.isArray(data) && data.length > 0) {
-          textSearchHit = true
-          for (const v of data) {
-            const text = v.text || ''
-            allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
-            coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
-          }
+            textSearchHit = true; // Consider it a text hit
+            for (const v of data) {
+                const text = v.text || '';
+                allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text });
+                coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1);
+            }
         }
       } catch (e) {
-        console.warn('Fuzzy search RPC failed:', e)
+          console.warn('Fuzzy search RPC failed:', e);
       }
     }
 
     // Fallback: if no verses matched via text search, try occurrences -> references.
-    // Expand the query to root -> all forms via form_to_root_map/inflections.
+    // This is now less likely to be needed but kept as a final resort.
     if (allResults.length === 0) {
       try {
         // 1) Determine root for the normalized term
@@ -327,14 +331,14 @@ export async function POST(request: NextRequest) {
           const verseNo = Number(m[3])
           const { data: vr, error: vErr } = await supabase
             .from('verses')
-            .select('book,chapter,verse,text,testament,pashto_text,pashto')
+            .select('book,chapter,verse,text,testament')
             .eq('book', book)
             .eq('chapter', chapter)
             .eq('verse', verseNo)
             .limit(1)
           if (!vErr && Array.isArray(vr) && vr[0]) {
             const row:any = vr[0]
-            const text = row.text || row.pashto_text || row.pashto || ''
+            const text = row.text || ''
             allResults.push({ ref, text })
             coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
           }
