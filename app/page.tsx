@@ -122,16 +122,13 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-  const visibleResults = useMemo(() => {
-    if (!bookFilter) return results;
-    return results.filter((v) => v.ref.startsWith(bookFilter + " "));
-  }, [results, bookFilter]);
+  const visibleResults = useMemo(() => results, [results]);
 
   // Prefer internal Next.js API routes for portability
 
 
 
-  const handleSearch = async () => {
+  const handleSearch = async (book?: string | null) => {
     const q = query.trim();
     if (!q) {
       setResults([]);
@@ -145,7 +142,7 @@ export default function Home() {
       const resp = await fetch(`/api/search_phrase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, scope, includeRelated }),
+        body: JSON.stringify({ query: q, scope, includeRelated, bookFilter: book === undefined ? bookFilter : book }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = (await resp.json()) as PhraseResponse;
@@ -177,7 +174,14 @@ export default function Home() {
       handleSearch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope]);
+  }, [scope, includeRelated]);
+
+  const onBookSelect = (book: string | null) => {
+    setBookFilter(book);
+    if (query.trim()) {
+      handleSearch(book);
+    }
+  }
 
   return (
     <div className="min-h-screen p-2 sm:p-4">
@@ -268,7 +272,7 @@ export default function Home() {
               localBible={localBible}
               scope={scope}
               coverageLevel={coverageLevel}
-              onPickBook={(b) => setBookFilter(b)}
+              onPickBook={onBookSelect}
             />
           </div>
         </div>

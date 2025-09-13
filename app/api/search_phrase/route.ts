@@ -55,6 +55,7 @@ async function processSearchTerm(searchTerm: string) {
 interface SearchRequest {
   query: string
   scope: 'all' | 'ot' | 'nt'
+  bookFilter?: string | null
   // Optional: additional variants to include (e.g., inflections)
   extraVariants?: string[]
   // When true, expand variants by related forms (root -> forms)
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants, includeRelated }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated, bookFilter }: SearchRequest = await request.json()
 
     if (!query?.trim()) {
       return NextResponse.json({
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     // Create cache key from search parameters
     const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
-    const cacheKey = `${query.trim()}-${scope}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
+    const cacheKey = `${query.trim()}-${scope}-${bookFilter || 'all'}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
 
     // Check cache first
     const cached = SEARCH_CACHE.get(cacheKey)
@@ -208,6 +209,7 @@ export async function POST(request: NextRequest) {
         let q = supabase.from('verses').select(selectCols).or(orParts)
         if (scope === 'ot') q = q.eq('testament', 'OT')
         if (scope === 'nt') q = q.eq('testament', 'NT')
+        if (bookFilter) q = q.eq('book', bookFilter)
         const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
@@ -232,6 +234,7 @@ export async function POST(request: NextRequest) {
       u.searchParams.set('or', `(${orParts.join(',')})`)
       if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
       if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
+      if (bookFilter) u.searchParams.set('book', `eq.${bookFilter}`)
       u.searchParams.set('limit', '100')
       const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
       if (resp.ok) {
@@ -241,6 +244,24 @@ export async function POST(request: NextRequest) {
           allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
           coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
         }
+      }
+    }
+
+    // Fuzzy search fallback via RPC if still no results (skip when a specific book filter is active)
+    if (allResults.length === 0 && !bookFilter) {
+      try {
+        const { data, error } = await supabase
+          .rpc('search_verses_similar', { q: processed.normalized || originalTerm, scope, max_results: 100 }) as any
+        if (!error && Array.isArray(data) && data.length > 0) {
+          textSearchHit = true
+          for (const v of data) {
+            const text = v.text || ''
+            allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
+            coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
+          }
+        }
+      } catch (e) {
+        console.warn('Fuzzy search RPC failed:', e)
       }
     }
 
