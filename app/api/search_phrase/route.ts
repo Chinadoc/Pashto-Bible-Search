@@ -133,19 +133,32 @@ export async function POST(request: NextRequest) {
 
     const originalTerm = query.trim()
 
-    // Prefer local normalization to avoid cross‑service latency/timeouts.
-    // Edge Function can be re‑enabled later via a flag.
+    // Prefer Supabase Edge Function for richer variants if available
     let processed = { normalized: originalTerm, variants: [originalTerm], romanization: '' as string }
-    let usedProcessor = false
-    {
+    try {
+      const { data, error } = await supabase
+        .functions
+        .invoke('pashto-processor', { body: { formPs: originalTerm, includeRelated } }) as any
+      if (!error && data && Array.isArray(data.variants)) {
+        processed = {
+          normalized: data.normalized || originalTerm,
+          variants: data.variants.length ? data.variants : [originalTerm],
+          romanization: data.romanization || ''
+        }
+      } else {
+        // Fallback to local normalization if function not deployed
+        const p = await processSearchTerm(originalTerm)
+        processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
+      }
+    } catch {
       const p = await processSearchTerm(originalTerm)
       processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
     }
     const baseVariants = processed.variants || [originalTerm]
 
-    // Optionally expand to related forms via Supabase REST ONLY when processor wasn't used
+    // Optionally expand to related forms via Supabase REST
     let related: string[] = []
-    if (includeRelated && !usedProcessor) {
+    if (includeRelated) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -176,64 +189,67 @@ export async function POST(request: NextRequest) {
 
     const extras = Array.isArray(extraVariants) ? extraVariants.filter(Boolean) : []
     // merge + dedupe, prioritize longer first for better OR behavior
-    let searchVariants = Array.from(new Set([...
+    const searchVariants = Array.from(new Set([...
       baseVariants,
       ...extras,
       ...related,
     ])).sort((a, b) => b.length - a.length)
-    // Cap variants for text search to avoid timeouts in serverless env
-    const cap = includeRelated ? 25 : 12
-    searchVariants = searchVariants.slice(0, cap)
 
-    // Search directly in the verses table using REST API
-    const allResults: Verse[] = []
     const coverageMap = new Map<string, number>()
 
-    // First try via supabase-js to avoid invalid column references
+    // First try via supabase-js with sequential ILIKE calls per variant
+    // This avoids giant PostgREST or= URLs that can trip Cloudflare Workers.
     const selectCols = 'book,chapter,verse,text,testament'
-    const candidateCols = ['text'] as const
     let textSearchHit = false
-    for (const col of candidateCols) {
+    for (const v of searchVariants) {
       try {
-        const orParts = searchVariants.map(v => `${col}.ilike.%${v.replace(/%/g,'')}%`).join(',')
-        let q = supabase.from('verses').select(selectCols).or(orParts)
+        let q = supabase.from('verses').select(selectCols).ilike('text', `%${v.replace(/%/g,'')}%`)
         if (scope === 'ot') q = q.eq('testament', 'OT')
         if (scope === 'nt') q = q.eq('testament', 'NT')
         if (bookFilter) q = q.eq('book', bookFilter)
         const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
-          for (const v of data) {
-            const text = v.text || ''
-            allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
-            coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
+          for (const row of data) {
+            const text = row.text || ''
+            const ref = `${row.book} ${row.chapter}:${row.verse}`
+            if (!allResults.find(r => r.ref === ref)) {
+              allResults.push({ ref, text })
+              coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+            }
+            if (allResults.length >= 100) break
           }
-          break
         }
+        if (allResults.length >= 100) break
       } catch {}
     }
 
-    // As a final attempt, try REST with all columns (if above yielded nothing)
+    // As a final attempt, try REST per-variant (keeps URLs short)
     if (allResults.length === 0) {
-      const u = new URL(`${supabaseUrl}/rest/v1/verses`)
-      u.searchParams.set('select', selectCols)
-      const orParts: string[] = []
       for (const v of searchVariants) {
-        for (const c of candidateCols) orParts.push(`${c}.ilike.*${v}*`)
-      }
-      u.searchParams.set('or', `(${orParts.join(',')})`)
-      if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
-      if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
-      if (bookFilter) u.searchParams.set('book', `eq.${bookFilter}`)
-      u.searchParams.set('limit', '100')
-      const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
-      if (resp.ok) {
-        const data = await resp.json()
-        for (const v of data) {
-          const text = v.text || ''
-          allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text })
-          coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1)
+        const u = new URL(`${supabaseUrl}/rest/v1/verses`)
+        u.searchParams.set('select', selectCols)
+        u.searchParams.set('text', `ilike.*${encodeURIComponent(v)}*`)
+        if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
+        if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
+        if (bookFilter) u.searchParams.set('book', `eq.${bookFilter}`)
+        u.searchParams.set('limit', '100')
+        const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
+        if (resp.ok) {
+          const data = await resp.json()
+          if (Array.isArray(data)) {
+            for (const row of data) {
+              const text = row.text || ''
+              const ref = `${row.book} ${row.chapter}:${row.verse}`
+              if (!allResults.find(r => r.ref === ref)) {
+                allResults.push({ ref, text })
+                coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+              }
+              if (allResults.length >= 100) break
+            }
+          }
         }
+        if (allResults.length >= 100) break
       }
     }
 
