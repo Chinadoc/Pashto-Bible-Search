@@ -32,6 +32,10 @@ Ensure these tables exist in your Supabase database:
 - `grammar_rules` - Grammar transformation rules
 - `dictionary` - General word definitions
 
+### Optional SQL helpers
+
+- `supabase/sql/search_functions.sql`: installs `pg_trgm` and creates `search_verses_similar(q, scope, max_results)` RPC for fuzzy fallback. Run this in Supabase SQL editor to enable fuzzy search via REST.
+
 ## Usage
 
 1. **Search Tab**: Search for Bible verses
@@ -48,6 +52,26 @@ npm run dev
 ## Deployment
 
 The app is configured for Vercel deployment with the environment variables above.
+
+### Supabase Edge Functions (optional, recommended)
+
+This repo includes an Edge Function to normalize Pashto and expand variants, used by `/api/search_phrase` when available:
+
+- `supabase/functions/pashto-processor/index.ts`
+
+Deploy it with the Supabase CLI:
+
+```
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+supabase functions deploy pashto-processor --no-verify-jwt
+```
+
+- `--no-verify-jwt` lets the Next.js server call the function without a user session. If you prefer to require auth, omit the flag and call with a valid user JWT.
+- The function will use the service role (if provided) to read helper tables like `form_to_root_map`, `inflections`, and `romanized_dictionary`.
+
+No code changes are needed; `app/api/search_phrase/route.ts` will try the function first and fall back to local normalization if it’s not deployed.
 
 ## Technologies
 
