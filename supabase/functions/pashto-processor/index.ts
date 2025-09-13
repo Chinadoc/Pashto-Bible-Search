@@ -55,7 +55,7 @@ function orthoVariants(text: string): string[] {
 async function getSupabaseClient() {
   const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('SUPABASE_URL')
   // Prefer service role for unrestricted reads; fall back to anon if not set
-  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_KEY')
   const anon = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY')
   const key = service || anon
   if (!url || !key) return null
