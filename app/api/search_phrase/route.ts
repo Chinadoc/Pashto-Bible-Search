@@ -135,6 +135,7 @@ export async function POST(request: NextRequest) {
 
     // Prefer Supabase Edge Function for richer variants if available
     let processed = { normalized: originalTerm, variants: [originalTerm], romanization: '' as string }
+    let usedProcessor = false
     try {
       const { data, error } = await supabase
         .functions
@@ -145,6 +146,7 @@ export async function POST(request: NextRequest) {
           variants: data.variants.length ? data.variants : [originalTerm],
           romanization: data.romanization || ''
         }
+        usedProcessor = true
       } else {
         // Fallback to local normalization if function not deployed
         const p = await processSearchTerm(originalTerm)
@@ -156,9 +158,9 @@ export async function POST(request: NextRequest) {
     }
     const baseVariants = processed.variants || [originalTerm]
 
-    // Optionally expand to related forms via Supabase REST
+    // Optionally expand to related forms via Supabase REST ONLY when processor wasn't used
     let related: string[] = []
-    if (includeRelated) {
+    if (includeRelated && !usedProcessor) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -189,11 +191,14 @@ export async function POST(request: NextRequest) {
 
     const extras = Array.isArray(extraVariants) ? extraVariants.filter(Boolean) : []
     // merge + dedupe, prioritize longer first for better OR behavior
-    const searchVariants = Array.from(new Set([...
+    let searchVariants = Array.from(new Set([...
       baseVariants,
       ...extras,
       ...related,
     ])).sort((a, b) => b.length - a.length)
+    // Cap variants for text search to avoid timeouts in serverless env
+    const cap = includeRelated ? 25 : 12
+    searchVariants = searchVariants.slice(0, cap)
 
     // Search directly in the verses table using REST API
     const allResults: Verse[] = []
