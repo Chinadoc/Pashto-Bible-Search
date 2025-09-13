@@ -132,8 +132,27 @@ export async function POST(request: NextRequest) {
 
     const originalTerm = query.trim()
 
-    // Process the search term
-    const processed = await processSearchTerm(originalTerm)
+    // Prefer Supabase Edge Function for richer variants if available
+    let processed = { normalized: originalTerm, variants: [originalTerm], romanization: '' as string }
+    try {
+      const { data, error } = await supabase
+        .functions
+        .invoke('pashto-processor', { body: { formPs: originalTerm, includeRelated } }) as any
+      if (!error && data && Array.isArray(data.variants)) {
+        processed = {
+          normalized: data.normalized || originalTerm,
+          variants: data.variants.length ? data.variants : [originalTerm],
+          romanization: data.romanization || ''
+        }
+      } else {
+        // Fallback to local normalization if function not deployed
+        const p = await processSearchTerm(originalTerm)
+        processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
+      }
+    } catch {
+      const p = await processSearchTerm(originalTerm)
+      processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
+    }
     const baseVariants = processed.variants || [originalTerm]
 
     // Optionally expand to related forms via Supabase REST
