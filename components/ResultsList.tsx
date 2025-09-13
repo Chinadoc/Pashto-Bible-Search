@@ -13,7 +13,8 @@ interface Props {
   results: Verse[];
   audioMap: AudioMap;
   loading: boolean;
-  query?: string; // highlight term
+  query?: string; // legacy single-term highlight (fallback)
+  terms?: string[]; // preferred: multiple variants to highlight
 }
 
 function escapeRegExp(s: string) {
@@ -31,11 +32,13 @@ function highlight(text: string, terms: string[]): ReactNode[] {
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (part === undefined) continue;
-      if (re.test(part)) {
-        out.push(<mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>);
-      } else {
-        out.push(part);
-      }
+      // split with a capturing group produces: even indexes = non-match, odd indexes = matched terms
+      const isMatch = i % 2 === 1;
+      out.push(
+        isMatch
+          ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>
+          : part
+      );
     }
     return out;
   } catch {
@@ -43,7 +46,7 @@ function highlight(text: string, terms: string[]): ReactNode[] {
   }
 }
 
-export default function ResultsList({ results, audioMap, loading, query }: Props) {
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp }: Props) {
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const firstAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -106,7 +109,9 @@ export default function ResultsList({ results, audioMap, loading, query }: Props
         const globalIndex = (page - 1) * itemsPerPage + index;
         const direct = audioMap[verse.ref];
         const audioUrl = resolvedUrls[verse.ref] || (direct && /^https?:\/\//i.test(direct) ? direct : '');
-        const terms = (query && query.trim()) ? [query.trim()] : [];
+        const terms = termsProp && termsProp.length > 0
+          ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
+          : (query && query.trim()) ? [query.trim()] : [];
         const autoPlay = index === 0 && page === 1 && !!audioUrl;
 
         return (
