@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     // FAST PATH: Skip expensive processing, do direct database search
     const searchVariants = [originalTerm]
     
-    // Only add simple romanization lookup if input looks romanized
+    // Add romanization variants if input looks romanized
     if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
         // Search romanized_dictionary with correct column name
@@ -166,6 +166,26 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch {}
+      
+      // Common romanization patterns for frequently searched words
+      const commonMappings: Record<string, string[]> = {
+        'munda': ['منډه'],
+        'manda': ['منډه'],
+        'leedul': ['لیدل', 'لېدل'],
+        'wral': ['ورل'],
+        'kand': ['کند'],
+        'wur': ['ور', 'وور'],
+        'wahul': ['وهل'],
+        'wahel': ['وهل'],
+        'kawul': ['کول'],
+        'kedal': ['کېدل'],
+        'kedel': ['کېدل']
+      }
+      
+      const lowerTerm = originalTerm.toLowerCase()
+      if (commonMappings[lowerTerm]) {
+        searchVariants.push(...commonMappings[lowerTerm])
+      }
     }
 
     // Simple related forms lookup if requested (but limited for speed)
