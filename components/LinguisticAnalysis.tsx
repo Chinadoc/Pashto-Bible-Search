@@ -9,9 +9,15 @@ interface LinguisticAnalysisProps {
 }
 
 interface VerbCategory {
-  type: 'irregular_verb' | 'regular_verb';
+  type: 'irregular_verb' | 'regular_verb' | 'compound_irregular_verb' | 'compound_regular_verb';
   part_of_speech: 'verb';
   transitivity: string;
+  compound_info?: {
+    full_phrase: string;
+    noun_part: string;
+    auxiliary_verb: string;
+    compound_type: string;
+  };
   stems: {
     imperfective: string;
     perfective: string;
@@ -99,7 +105,12 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
   if (loading) return <div className="p-4 text-center">Loading linguistic analysis...</div>;
   if (!analysis) return null;
 
-  const verbCategory = analysis.categories.find(c => c.type === 'irregular_verb' || c.type === 'regular_verb') as VerbCategory | undefined;
+  const verbCategory = analysis.categories.find(c => 
+    c.type === 'irregular_verb' || 
+    c.type === 'regular_verb' || 
+    c.type === 'compound_irregular_verb' || 
+    c.type === 'compound_regular_verb'
+  ) as VerbCategory | undefined;
   const nounCategory = analysis.categories.find(c => c.type === 'noun') as NounCategory | undefined;
 
   return (
@@ -137,6 +148,37 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
         </div>
       )}
 
+      {/* Compound Verb Information */}
+      {verbCategory?.compound_info && (
+        <div className="space-y-2">
+          <button 
+            onClick={() => toggleSection('compound')}
+            className="flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100"
+          >
+            {expandedSections.has('compound') ? '▲' : '▼'}
+            Compound Structure
+          </button>
+          {expandedSections.has('compound') && (
+            <div className="pl-6 space-y-2 text-sm">
+              <div className="font-medium text-gray-700 dark:text-gray-300">{verbCategory.compound_info.compound_type}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-gray-600 dark:text-gray-400">Noun Part (Object)</div>
+                  <div className="text-lg font-mono">{verbCategory.compound_info.noun_part}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600 dark:text-gray-400">Auxiliary Verb</div>
+                  <div className="text-lg font-mono">{verbCategory.compound_info.auxiliary_verb}</div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                Full phrase: {verbCategory.compound_info.full_phrase}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Verb Information */}
       {verbCategory && (
         <div className="space-y-2">
@@ -145,7 +187,7 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
             className="flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100"
           >
             {expandedSections.has('verb') ? '▲' : '▼'}
-            🌳 Roots and Stems
+            🌳 Roots and Stems {verbCategory.compound_info ? 'for Aux. Verb' : ''}
           </button>
           {expandedSections.has('verb') && (
             <div className="pl-6 space-y-3">
@@ -206,30 +248,156 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
             className="flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100"
           >
             {expandedSections.has('conjugations') ? '▲' : '▼'}
-            Tense Category
+            🧪 Tense Category
           </button>
           {expandedSections.has('conjugations') && (
-            <div className="pl-6 space-y-3 text-sm">
-              {verbCategory.conjugations.imperfective_imperative && (
+            <div className="pl-6 space-y-4 text-sm">
+              
+              {/* Imperative Forms */}
+              {(verbCategory.conjugations.imperfective_imperative || verbCategory.conjugations.perfective_imperative) && (
+                <div className="space-y-2">
+                  {verbCategory.conjugations.imperfective_imperative && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300">Imperfective Imperative</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">
+                        imperfective stem + imperative ending • agrees w/ subject
+                      </div>
+                      <div className="font-mono text-base">
+                        {verbCategory.conjugations.imperfective_imperative.second_person_singular}
+                      </div>
+                    </div>
+                  )}
+                  {verbCategory.conjugations.perfective_imperative && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300">Perfective Imperative</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">
+                        perfective stem + imperative ending • agrees w/ subject
+                      </div>
+                      <div className="font-mono text-base">
+                        {verbCategory.conjugations.perfective_imperative.second_person_singular}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Present Tense */}
+              {verbCategory.conjugations.present && (
                 <div>
-                  <div className="font-medium text-gray-700 dark:text-gray-300">Imperfective Imperative</div>
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">
-                    imperfective stem + imperative ending • agrees w/ subject
+                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Present</div>
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
+                    imperfective stem + present verb ending • agrees w/ subject
                   </div>
-                  <div className="font-mono text-lg">
-                    {verbCategory.conjugations.imperfective_imperative.second_person_singular}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="font-medium">Pers.</div>
+                    <div className="font-medium">Singular</div>
+                    <div className="font-medium">Plural</div>
+                    <div>1st</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.first_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.first_person_plural}</div>
+                    <div>2nd</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.second_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.second_person_plural}</div>
+                    <div>3rd</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.third_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.present.third_person_plural}</div>
                   </div>
                 </div>
               )}
-              {verbCategory.conjugations.perfective_imperative && (
+
+              {/* Subjunctive */}
+              {verbCategory.conjugations.subjunctive && (
                 <div>
-                  <div className="font-medium text-gray-700 dark:text-gray-300">Perfective Imperative</div>
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">
-                    perfective stem + imperative ending • agrees w/ subject
+                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Subjunctive</div>
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
+                    perfective stem + present verb ending • agrees w/ subject
                   </div>
-                  <div className="font-mono text-lg">
-                    {verbCategory.conjugations.perfective_imperative.second_person_singular}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="font-medium">Pers.</div>
+                    <div className="font-medium">Singular</div>
+                    <div className="font-medium">Plural</div>
+                    <div>1st</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.first_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.first_person_plural}</div>
+                    <div>2nd</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.second_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.second_person_plural}</div>
+                    <div>3rd</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.third_person_singular}</div>
+                    <div className="font-mono">{verbCategory.conjugations.subjunctive.third_person_plural}</div>
                   </div>
+                </div>
+              )}
+
+              {/* Future Tenses */}
+              {(verbCategory.conjugations.imperfective_future || verbCategory.conjugations.perfective_future) && (
+                <div className="space-y-3">
+                  {verbCategory.conjugations.imperfective_future && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Imperfective Future</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">ba + present • agrees w/ subject</div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="font-medium">Pers.</div>
+                        <div className="font-medium">Singular</div>
+                        <div className="font-medium">Plural</div>
+                        <div>1st</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.first_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.first_person_plural}</div>
+                        <div>2nd</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.second_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.second_person_plural}</div>
+                        <div>3rd</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.third_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.imperfective_future.third_person_plural}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {verbCategory.conjugations.perfective_future && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Perfective Future</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">ba + subjunctive • agrees w/ subject</div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="font-medium">Pers.</div>
+                        <div className="font-medium">Singular</div>
+                        <div className="font-medium">Plural</div>
+                        <div>1st</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.first_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.first_person_plural}</div>
+                        <div>2nd</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.second_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.second_person_plural}</div>
+                        <div>3rd</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.third_person_singular}</div>
+                        <div className="font-mono">{verbCategory.conjugations.perfective_future.third_person_plural}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Past Tenses */}
+              {(verbCategory.conjugations.continuous_past || verbCategory.conjugations.simple_past) && (
+                <div className="space-y-3">
+                  {verbCategory.conjugations.continuous_past && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Continuous Past</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
+                        imperfective root + past verb ending • {verbCategory.conjugations.continuous_past.note}
+                      </div>
+                      <div className="font-mono text-base">{verbCategory.conjugations.continuous_past.form}</div>
+                    </div>
+                  )}
+                  
+                  {verbCategory.conjugations.simple_past && (
+                    <div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Simple Past</div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
+                        perfective root + past verb ending • {verbCategory.conjugations.simple_past.note}
+                      </div>
+                      <div className="font-mono text-base">{verbCategory.conjugations.simple_past.form}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
