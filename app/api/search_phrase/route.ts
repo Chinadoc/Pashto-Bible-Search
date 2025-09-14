@@ -393,36 +393,12 @@ export async function POST(request: NextRequest) {
     const refSet = new Set<string>()
     const coverageMap = new Map<string, number>()
 
-    // FAST search: Direct database query with minimal processing
+    // FAST search: Search ALL variants and combine results
     const selectCols = 'book,chapter,verse,text,testament'
     let textSearchHit = false
     
-    // Use the first (primary) search term only for fastest results
-    const primaryTerm = searchVariants[0]
-    if (primaryTerm) {
-      try {
-        let q = supabase.from('verses').select(selectCols).ilike('text', `%${primaryTerm.replace(/%/g,'')}%`)
-        if (scope === 'ot') q = q.eq('testament', 'OT')
-        if (scope === 'nt') q = q.eq('testament', 'NT')
-        if (bookFilter) {
-          const books = bookVariants(bookFilter).slice(0, 5)
-          if (books.length > 0) q = (q as any).in('book', books)
-        }
-        const { data, error } = await q.limit(100)
-        if (!error && Array.isArray(data) && data.length > 0) {
-          textSearchHit = true
-          for (const row of data as any[]) {
-            const text = (row as any).text || ''
-            const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-            allResults.push({ ref, text })
-            coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
-          }
-        }
-      } catch {}
-    }
-
-    // If no results, try additional variants (up to 3 total)
-    for (let i = 1; i < Math.min(searchVariants.length, 3) && allResults.length === 0; i++) {
+    // Search all variants (up to 5) and combine results
+    for (let i = 0; i < Math.min(searchVariants.length, 5); i++) {
       const variantTerm = searchVariants[i]
       if (!variantTerm) continue
       
@@ -440,12 +416,18 @@ export async function POST(request: NextRequest) {
           for (const row of data as any[]) {
             const text = (row as any).text || ''
             const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-            allResults.push({ ref, text })
-            coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
+            // Deduplicate by reference
+            if (!refSet.has(ref)) {
+              refSet.add(ref)
+              allResults.push({ ref, text })
+              coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
+            }
           }
-          break // Found results, stop trying variants
         }
       } catch {}
+      
+      // Cap total results to avoid timeout
+      if (allResults.length >= 100) break
     }
 
     // Skip expensive fallbacks for speed
