@@ -188,9 +188,11 @@ export default function Home() {
   }, [scope, includeRelated]);
 
   const onBookSelect = (book: string | null) => {
-    setBookFilter(book);
+    // If same book is clicked, clear the filter
+    const newBookFilter = bookFilter === book ? null : book;
+    setBookFilter(newBookFilter);
     if (query.trim()) {
-      handleSearch(book);
+      handleSearch(newBookFilter);
     }
   }
 
