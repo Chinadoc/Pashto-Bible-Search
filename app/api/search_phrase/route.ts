@@ -146,233 +146,136 @@ export async function POST(request: NextRequest) {
 
     const originalTerm = query.trim()
 
-    // Prefer Supabase Edge Function for richer variants if available
-    let processed = { normalized: originalTerm, variants: [originalTerm], romanization: '' as string }
-    try {
-      const { data, error } = await supabase
-        .functions
-        .invoke('pashto-processor', { body: { formPs: originalTerm, includeRelated } }) as any
-      if (!error && data && Array.isArray(data.variants)) {
-        processed = {
-          normalized: data.normalized || originalTerm,
-          variants: data.variants.length ? data.variants : [originalTerm],
-          romanization: data.romanization || ''
-        }
-      } else {
-        // Fallback to local normalization if function not deployed
-        const p = await processSearchTerm(originalTerm)
-        processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
-      }
-    } catch {
-      const p = await processSearchTerm(originalTerm)
-      processed = { normalized: p.normalized, variants: p.variants, romanization: p.romanization || '' }
-    }
-    const baseVariants = processed.variants || [originalTerm]
-
-    // Optionally expand to related forms via Supabase REST
-    let related: string[] = []
-    if (includeRelated) {
+    // FAST PATH: Skip expensive processing, do direct database search
+    const searchVariants = [originalTerm]
+    
+    // Only add simple romanization lookup if input looks romanized
+    if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-        const norm = processed.normalized || originalTerm
-        if (supabaseUrl && supabaseKey) {
-          // 1) find root for normalized form
-          let root = norm
-          const r1 = await fetch(`${supabaseUrl}/rest/v1/form_to_root_map?select=root&form=eq.${encodeURIComponent(norm)}&limit=1`, {
-            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-            cache: 'no-store',
-          })
-          if (r1.ok) {
-            const rows = await r1.json().catch(() => [])
-            if (Array.isArray(rows) && rows[0]?.root) root = String(rows[0].root)
-          }
-          // 2) fetch forms by root
-          const r2 = await fetch(`${supabaseUrl}/rest/v1/form_to_root_map?select=form&root=eq.${encodeURIComponent(root)}&limit=800`, {
-            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-            cache: 'no-store',
-          })
-          if (r2.ok) {
-            const rows = await r2.json().catch(() => [])
-            if (Array.isArray(rows)) related = rows.map((x: any) => String(x?.form || '')).filter(Boolean)
-          }
+        const { data } = await supabase
+          .from('romanized_dictionary') 
+          .select('pashto')
+          .ilike('romanized', `%${originalTerm}%`)
+          .limit(1)
+        if (data && data.length > 0 && data[0].pashto) {
+          searchVariants.push(data[0].pashto)
         }
       } catch {}
     }
 
-    const extras = Array.isArray(extraVariants) ? extraVariants.filter(Boolean) : []
-    // merge + dedupe, prioritize longer first for better OR behavior
-    // PERFORMANCE: Limit to first 5 variants to avoid timeout
-    const searchVariants = Array.from(new Set([...
-      baseVariants,
-      ...extras,
-      ...related,
-    ])).sort((a, b) => b.length - a.length).slice(0, 5)
+    // Simple related forms lookup if requested (but limited for speed)
+    if (includeRelated && searchVariants.length > 0) {
+      try {
+        const { data } = await supabase
+          .from('form_roots')
+          .select('word_form')
+          .eq('root_form', searchVariants[0])
+          .limit(2)
+        if (data && data.length > 0) {
+          searchVariants.push(...data.map(d => d.word_form).filter(Boolean))
+        }
+      } catch {}
+    }
 
     const allResults: Verse[] = []
     const refSet = new Set<string>()
     const coverageMap = new Map<string, number>()
 
-    // First try via supabase-js with sequential ILIKE calls per variant
-    // This avoids giant PostgREST or= URLs that can trip Cloudflare Workers.
+    // FAST search: Direct database query with minimal processing
     const selectCols = 'book,chapter,verse,text,testament'
     let textSearchHit = false
-    for (const v of searchVariants) {
+    
+    // Use the first (primary) search term only for fastest results
+    const primaryTerm = searchVariants[0]
+    if (primaryTerm) {
       try {
-        let q = supabase.from('verses').select(selectCols).ilike('text', `%${v.replace(/%/g,'')}%`)
+        let q = supabase.from('verses').select(selectCols).ilike('text', `%${primaryTerm.replace(/%/g,'')}%`)
         if (scope === 'ot') q = q.eq('testament', 'OT')
         if (scope === 'nt') q = q.eq('testament', 'NT')
         if (bookFilter) {
-          const books = bookVariants(bookFilter).slice(0, 10)
+          const books = bookVariants(bookFilter).slice(0, 5)
           if (books.length > 0) q = (q as any).in('book', books)
         }
-        const { data, error } = await q.limit(50)
+        const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
           for (const row of data as any[]) {
             const text = (row as any).text || ''
             const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-            if (!refSet.has(ref)) {
-              refSet.add(ref)
-              allResults.push({ ref, text })
-              coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
-            }
-            if (allResults.length >= 100) break
+            allResults.push({ ref, text })
+            coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
           }
         }
-        if (allResults.length >= 100) break
       } catch {}
     }
 
-    // Skip REST fallback if we have reasonable results (performance optimization)
-    if (allResults.length === 0) {
-      for (const v of searchVariants) {
-        const u = new URL(`${supabaseUrl}/rest/v1/verses`)
-        u.searchParams.set('select', selectCols)
-        u.searchParams.set('text', `ilike.*${encodeURIComponent(v)}*`)
-        if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
-        if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
+    // If no results and we have additional variants, try one more
+    if (allResults.length === 0 && searchVariants.length > 1) {
+      const secondTerm = searchVariants[1]
+      try {
+        let q = supabase.from('verses').select(selectCols).ilike('text', `%${secondTerm.replace(/%/g,'')}%`)
+        if (scope === 'ot') q = q.eq('testament', 'OT')
+        if (scope === 'nt') q = q.eq('testament', 'NT')
         if (bookFilter) {
-          // Prefer a hyphenated variant for REST eq filter (short URL)
-          const bvars = bookVariants(bookFilter)
-          const prefer = bvars.find(b => /-/.test(b)) || bvars[0]
-          if (prefer) u.searchParams.set('book', `eq.${prefer}`)
+          const books = bookVariants(bookFilter).slice(0, 5)
+          if (books.length > 0) q = (q as any).in('book', books)
         }
-        u.searchParams.set('limit', '100')
-        const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
-        if (resp.ok) {
-          const data = await resp.json()
-          if (Array.isArray(data)) {
-            for (const row of data as any[]) {
-              const text = (row as any).text || ''
-              const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-              if (!refSet.has(ref)) {
-                refSet.add(ref)
-                allResults.push({ ref, text })
-                coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
-              }
-              if (allResults.length >= 100) break
-            }
-          }
-        }
-        if (allResults.length >= 100) break
-      }
-    }
-
-    // Fuzzy search fallback if still no results
-    if (allResults.length === 0) {
-      try {
-        const { data, error } = await supabase.rpc('search_verses_similar', {
-            q: originalTerm,
-            scope: scope,
-            max_results: 100
-        });
-
+        const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
-            textSearchHit = true; // Consider it a text hit
-            for (const v of data) {
-                const text = v.text || '';
-                allResults.push({ ref: `${v.book} ${v.chapter}:${v.verse}`, text });
-                coverageMap.set(v.book, (coverageMap.get(v.book) || 0) + 1);
-            }
-        }
-      } catch (e) {
-          console.warn('Fuzzy search RPC failed:', e);
-      }
-    }
-
-    // Fallback: if no verses matched via text search, try occurrences -> references.
-    // This is now less likely to be needed but kept as a final resort.
-    if (allResults.length === 0) {
-      try {
-        // 1) Determine root for the normalized term
-        let root = processed.normalized
-        {
-          const { data: m1 } = await supabase
-            .from('form_to_root_map')
-            .select('root')
-            .eq('form', processed.normalized)
-            .limit(1)
-          if (Array.isArray(m1) && m1[0]?.root) root = String(m1[0].root)
-        }
-        // 2) Expand forms by root via mapping then inflections if needed
-        const formSet = new Set<string>()
-        {
-          const { data: m2 } = await supabase
-            .from('form_to_root_map')
-            .select('form')
-            .eq('root', root)
-            .limit(2000)
-          if (Array.isArray(m2)) m2.forEach((r:any)=>{ if (r?.form) formSet.add(String(r.form)) })
-        }
-        if (formSet.size === 0) {
-          const { data: infl } = await supabase
-            .from('inflections')
-            .select('inflected_form')
-            .eq('base_word', root)
-            .limit(2000)
-          if (Array.isArray(infl)) infl.forEach((r:any)=>{ if (r?.inflected_form) formSet.add(String(r.inflected_form)) })
-        }
-        // Always include the literal variants as a last resort
-        searchVariants.forEach(v => formSet.add(v))
-
-        const forms = Array.from(formSet).slice(0, 500)
-        const occSet = new Set<string>()
-        // Query occurrences with supabase-js
-        for (let i = 0; i < forms.length; i += 200) {
-          const part = forms.slice(i, i + 200)
-          const { data: occ } = await supabase
-            .from('form_occurrences')
-            .select('pashto_form,verse_reference')
-            .in('pashto_form', part)
-            .limit(2000)
-          if (Array.isArray(occ)) occ.forEach((row:any)=>{ if (row?.verse_reference) occSet.add(String(row.verse_reference)) })
-        }
-        const refs = Array.from(occSet).slice(0, 100)
-        // Resolve verse text for each ref
-        for (const ref of refs) {
-          const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
-          if (!m) continue
-          const book = m[1]
-          const chapter = Number(m[2])
-          const verseNo = Number(m[3])
-          const { data: vr, error: vErr } = await supabase
-            .from('verses')
-            .select('book,chapter,verse,text,testament')
-            .eq('book', book)
-            .eq('chapter', chapter)
-            .eq('verse', verseNo)
-            .limit(1)
-          if (!vErr && Array.isArray(vr) && vr[0]) {
-            const row:any = vr[0]
-            const text = row.text || ''
+          textSearchHit = true
+          for (const row of data as any[]) {
+            const text = (row as any).text || ''
+            const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
             allResults.push({ ref, text })
-            coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
+            coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
           }
         }
-      } catch (e) {
-        console.warn('Fallback occurrences lookup failed:', e)
-      }
+      } catch {}
+    }
+
+    // Skip expensive fallbacks for speed
+
+    // Skip expensive fuzzy search
+
+    // Simple final fallback: check form_occurrences only
+    if (allResults.length === 0 && primaryTerm) {
+      // Simple form_occurrences check only
+      try {
+        const { data } = await supabase
+          .from('form_occurrences')
+          .select('verses')
+          .eq('pashto_form', primaryTerm)
+          .limit(1)
+        
+        if (data && data.length > 0 && Array.isArray(data[0].verses)) {
+          // Take first few verse references and try to find them
+          const verseRefs = data[0].verses.slice(0, 10)
+          for (const ref of verseRefs) {
+            if (typeof ref === 'string' && ref.includes(' ')) {
+              const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
+              if (match) {
+                const [, book, chapter, verse] = match
+                const { data: verseData } = await supabase
+                  .from('verses')
+                  .select(selectCols)
+                  .eq('book', book)
+                  .eq('chapter', parseInt(chapter))
+                  .eq('verse', parseInt(verse))
+                  .limit(1)
+                if (verseData && verseData.length > 0) {
+                  const row = verseData[0]
+                  allResults.push({ 
+                    ref: `${row.book} ${row.chapter}:${row.verse}`, 
+                    text: row.text || '' 
+                  })
+                  coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+                  if (allResults.length >= 10) break
+                }
+              }
+            }
+          }
+        }
+      } catch {}
     }
 
     // Remove duplicate results based on reference
@@ -390,9 +293,9 @@ export async function POST(request: NextRequest) {
       coverage,
       processed: {
         original: originalTerm,
-        normalized: processed.normalized,
+        normalized: originalTerm,
         variants: searchVariants,
-        romanization: processed.romanization
+        romanization: ""
       },
       ms: Date.now() - startTime,
       debug: {
@@ -425,3 +328,4 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ ok: true, route: 'search_phrase', expects: 'POST', ts: Date.now() })
 }
+
