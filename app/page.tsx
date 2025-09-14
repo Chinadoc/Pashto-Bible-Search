@@ -236,7 +236,11 @@ export default function Home() {
                         {query.trim() && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                             {includeRelated ? `Including related forms (total variants: ${variantCount})` : `Direct search (${results.length} results found)`}
-                            {bookFilter && ` - Filtered by: ${bookFilter}`}
+                            {bookFilter && (
+                              results.length === 0 
+                                ? ` - No results in: ${bookFilter}` 
+                                : ` - Filtered by: ${bookFilter}`
+                            )}
                           </div>
                         )}
 
