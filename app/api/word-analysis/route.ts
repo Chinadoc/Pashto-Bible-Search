@@ -22,6 +22,12 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseKey)
     const normalizedWord = word.trim()
 
+    // Check if this is a compound verb (contains space and multiple parts)
+    const isCompoundPhrase = normalizedWord.includes(' ')
+    const wordParts = isCompoundPhrase ? normalizedWord.split(' ').filter(Boolean) : [normalizedWord]
+    const auxiliaryVerb = isCompoundPhrase ? wordParts[wordParts.length - 1] : null // Last word is typically the auxiliary verb
+    const compoundNoun = isCompoundPhrase && wordParts.length >= 2 ? wordParts.slice(0, -1).join(' ') : null
+
     // Parallel queries for comprehensive linguistic data
     const [
       irregularVerbResult,
@@ -31,18 +37,18 @@ export async function POST(request: NextRequest) {
       relatedFormsResult,
       frequencyResult
     ] = await Promise.all([
-      // Check irregular verbs
+      // Check irregular verbs (try full phrase first, then auxiliary verb)
       supabase
         .from('irregular_verbs')
         .select('*')
-        .eq('verb_root', normalizedWord)
+        .eq('verb_root', auxiliaryVerb || normalizedWord)
         .limit(1),
       
-      // Check regular verbs  
+      // Check regular verbs (try full phrase first, then auxiliary verb)
       supabase
         .from('verbs_lexicon')
         .select('*')
-        .eq('verb_root', normalizedWord)
+        .eq('verb_root', auxiliaryVerb || normalizedWord)
         .limit(1),
       
       // Check nouns
@@ -84,21 +90,29 @@ export async function POST(request: NextRequest) {
     // Process irregular verb data
     if (irregularVerbResult.data && irregularVerbResult.data.length > 0) {
       const verb = irregularVerbResult.data[0]
+      const conjugations = generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
+      
       analysis.categories.push({
-        type: 'irregular_verb',
+        type: isCompoundPhrase ? 'compound_irregular_verb' : 'irregular_verb',
         part_of_speech: 'verb',
-        transitivity: 'trans.', // You can enhance this based on your data
+        transitivity: isCompoundPhrase ? 'dyn. comp. trans.' : 'trans.',
+        compound_info: isCompoundPhrase ? {
+          full_phrase: normalizedWord,
+          noun_part: compoundNoun,
+          auxiliary_verb: auxiliaryVerb,
+          compound_type: 'dynamic compound'
+        } : null,
         stems: {
           imperfective: verb.stems?.imperfective || '',
           perfective: verb.stems?.perfective || ''
         },
         roots: {
-          imperfective: verb.roots?.imperfective || normalizedWord,
+          imperfective: verb.roots?.imperfective || (auxiliaryVerb || normalizedWord),
           perfective: verb.roots?.perfective || ''
         },
         past_participle: verb.past_participle || '',
         romanization: verb.romanization || {},
-        conjugations: generateConjugations(verb),
+        conjugations,
         irregularity_type: verb.irregularity_type || 'stem_change'
       })
     }
@@ -106,15 +120,23 @@ export async function POST(request: NextRequest) {
     // Process regular verb data
     else if (regularVerbResult.data && regularVerbResult.data.length > 0) {
       const verb = regularVerbResult.data[0]
+      const conjugations = generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
+      
       analysis.categories.push({
-        type: 'regular_verb',
+        type: isCompoundPhrase ? 'compound_regular_verb' : 'regular_verb',
         part_of_speech: 'verb',
-        transitivity: verb.transitivity || 'trans.',
+        transitivity: verb.transitivity || (isCompoundPhrase ? 'dyn. comp. trans.' : 'trans.'),
+        compound_info: isCompoundPhrase ? {
+          full_phrase: normalizedWord,
+          noun_part: compoundNoun,
+          auxiliary_verb: auxiliaryVerb,
+          compound_type: 'dynamic compound'
+        } : null,
         stems: verb.stems || {},
         roots: verb.roots || {},
         past_participle: verb.past_participle || '',
         romanization: verb.romanization || {},
-        conjugations: generateConjugations(verb),
+        conjugations,
         aspect: verb.aspect || ''
       })
     }
@@ -176,27 +198,94 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Generate conjugations based on stems and grammatical rules
-function generateConjugations(verbData: any) {
+// Generate comprehensive conjugations based on stems and grammatical rules
+function generateConjugations(verbData: any, isCompound = false, compoundNoun = '') {
   const imperfStem = verbData.stems?.imperfective || ''
   const perfStem = verbData.stems?.perfective || ''
+  const imperfRoot = verbData.roots?.imperfective || ''
+  const perfRoot = verbData.roots?.perfective || ''
   
   if (!imperfStem && !perfStem) return {}
 
-  // Basic imperative forms (simplified - you can expand this)
   const conjugations: any = {}
+  const prefix = isCompound && compoundNoun ? `${compoundNoun} ` : ''
   
+  // Imperative forms
   if (imperfStem) {
     conjugations.imperfective_imperative = {
-      second_person_singular: imperfStem + 'ه',
-      second_person_plural: imperfStem + 'ئ'
+      second_person_singular: `${prefix}${imperfStem}ه`,
+      second_person_plural: `${prefix}${imperfStem}ئ`
     }
   }
   
   if (perfStem) {
     conjugations.perfective_imperative = {
-      second_person_singular: perfStem + 'ه', 
-      second_person_plural: perfStem + 'ئ'
+      second_person_singular: `${prefix}${perfStem}ه`, 
+      second_person_plural: `${prefix}${perfStem}ئ`
+    }
+  }
+
+  // Present tense (imperfective stem + present endings)
+  if (imperfStem) {
+    conjugations.present = {
+      first_person_singular: `${prefix}${imperfStem}م`,
+      second_person_singular: `${prefix}${imperfStem}ې`,
+      third_person_singular: `${prefix}${imperfStem}ي`,
+      first_person_plural: `${prefix}${imperfStem}و`,
+      second_person_plural: `${prefix}${imperfStem}ئ`,
+      third_person_plural: `${prefix}${imperfStem}ي`
+    }
+  }
+
+  // Subjunctive (perfective stem + present endings)
+  if (perfStem) {
+    conjugations.subjunctive = {
+      first_person_singular: `${prefix}${perfStem}م`,
+      second_person_singular: `${prefix}${perfStem}ې`,
+      third_person_singular: `${prefix}${perfStem}ي`,
+      first_person_plural: `${prefix}${perfStem}و`,
+      second_person_plural: `${prefix}${perfStem}ئ`,
+      third_person_plural: `${prefix}${perfStem}ي`
+    }
+  }
+
+  // Future tenses (با + present/subjunctive)
+  if (imperfStem) {
+    conjugations.imperfective_future = {
+      first_person_singular: `... به ... ${prefix}${imperfStem}م`,
+      second_person_singular: `... به ... ${prefix}${imperfStem}ې`,
+      third_person_singular: `... به ... ${prefix}${imperfStem}ي`,
+      first_person_plural: `... به ... ${prefix}${imperfStem}و`,
+      second_person_plural: `... به ... ${prefix}${imperfStem}ئ`,
+      third_person_plural: `... به ... ${prefix}${imperfStem}ي`
+    }
+  }
+
+  if (perfStem) {
+    conjugations.perfective_future = {
+      first_person_singular: `... به ... ${prefix}${perfStem}م`,
+      second_person_singular: `... به ... ${prefix}${perfStem}ې`,
+      third_person_singular: `... به ... ${prefix}${perfStem}ي`,
+      first_person_plural: `... به ... ${prefix}${perfStem}و`,
+      second_person_plural: `... به ... ${prefix}${perfStem}ئ`,
+      third_person_plural: `... به ... ${prefix}${perfStem}ي`
+    }
+  }
+
+  // Past tenses (agree with object for transitive verbs)
+  if (imperfRoot) {
+    const pastForm = isCompound ? `${prefix}${imperfRoot.replace(/ل$/, 'له')}` : `${imperfRoot.replace(/ل$/, 'له')}`
+    conjugations.continuous_past = {
+      form: pastForm,
+      note: isCompound ? `agrees w/ object noun (${compoundNoun})` : 'agrees w/ subject/object'
+    }
+  }
+
+  if (perfRoot) {
+    const pastForm = isCompound ? `${prefix}${perfRoot.replace(/ل$/, 'له')}` : `${perfRoot.replace(/ل$/, 'له')}`
+    conjugations.simple_past = {
+      form: pastForm,
+      note: isCompound ? `agrees w/ object noun (${compoundNoun})` : 'agrees w/ subject/object'
     }
   }
 
