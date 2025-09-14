@@ -47,6 +47,7 @@ export default function Home() {
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [conjugations, setConjugations] = useState<Conjugations | null>(null);
+  const [relatedForms, setRelatedForms] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [localBible, setLocalBible] = useState<Verse[] | null>(null);
   const [coverageLevel, setCoverageLevel] = useState<ComplexityLevel>(ComplexityLevel.Basic); // Default to basic level
@@ -136,6 +137,7 @@ export default function Home() {
       setResults([]);
       setCoverage([]);
       setConjugations(null);
+      setRelatedForms(null);
       setHighlightTerms([]);
       return;
     }
@@ -157,6 +159,9 @@ export default function Home() {
       setHighlightTerms(Array.isArray(variants) ? variants.slice(0, 10) : [q]);
       setVariantCount(Array.isArray(variants) ? variants.length : 1);
       
+      // Capture related forms data
+      setRelatedForms((data as any)?.relatedForms || null);
+      
       // Set word for linguistic analysis
       setAnalysisWord(q);
     } catch (e) {
@@ -165,6 +170,7 @@ export default function Home() {
       setResults([]);
       setCoverage([]);
       setConjugations(null);
+      setRelatedForms(null);
       setHighlightTerms([q]);
       setVariantCount(1);
     } finally {
@@ -248,7 +254,7 @@ export default function Home() {
 
                         {/* Related forms panel */}
                         {includeRelated && (
-                          <RelatedForms term={query} onPick={(f) => { setQuery(f); handleSearch(); }} />
+                          <RelatedForms relatedForms={relatedForms} onPick={(f) => { setQuery(f); handleSearch(); }} />
                         )}
                       </div>
 

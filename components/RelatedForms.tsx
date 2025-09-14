@@ -1,53 +1,37 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-type Item = { form: string; count?: number; pos?: string; relation?: 'root' | 'inflection' | 'mapped'; info?: any }
+type RelatedFormsData = {
+  verbs: string[]
+  nouns: string[]
+  other: string[]
+  total: number
+} | null
 
-export default function RelatedForms({ term, onPick }: { term: string; onPick: (form: string) => void }) {
-  const [items, setItems] = useState<Item[]>([])
-  const [root, setRoot] = useState<string>('')
+export default function RelatedForms({ relatedForms, onPick }: { 
+  relatedForms: RelatedFormsData; 
+  onPick: (form: string) => void 
+}) {
   const [open, setOpen] = useState<boolean>(false)
 
-  useEffect(() => {
-    const q = term.trim();
-    if (!q) { setItems([]); setRoot(''); return }
-    let cancelled = false
-    ;(async () => {
-      try {
-        const r = await fetch('/api/related_forms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ term: q, limit: 500 }) })
-        const js = await r.json()
-        if (!cancelled) {
-          setItems(Array.isArray(js?.forms) ? js.forms : [])
-          setRoot(js?.root || '')
-        }
-      } catch {
-        if (!cancelled) { setItems([]); setRoot('') }
-      }
-    })()
-    return () => { cancelled = true }
-  }, [term])
+  if (!relatedForms || relatedForms.total === 0) return null
 
-  if (!term.trim()) return null
+  const verbs = relatedForms.verbs || []
+  const nouns = relatedForms.nouns || []
+  const others = relatedForms.other || []
 
-  const verbs = items.filter(it => it.pos === 'verb')
-  const nouns = items.filter(it => it.pos === 'noun')
-  const others = items.filter(it => it.pos !== 'verb' && it.pos !== 'noun')
-
-  const Section = ({ title, list }: { title: string; list: Item[] }) => (
+  const Section = ({ title, list }: { title: string; list: string[] }) => (
     <div className="mt-2">
       <div className="text-xs text-gray-500 mb-1">{title} ({list.length})</div>
       <div className="flex flex-wrap gap-2">
-        {list.map(it => (
+        {list.map(form => (
           <button
-            key={`${title}-${it.form}`}
-            onClick={() => onPick(it.form)}
+            key={`${title}-${form}`}
+            onClick={() => onPick(form)}
             className="px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            title={it.info ? JSON.stringify(it.info) : undefined}
           >
-            {it.form}
-            {it.relation && <span className="ml-1 text-xs text-gray-500">({it.relation})</span>}
-            {typeof it.count === 'number' && <span className="ml-1 text-xs text-gray-500">{it.count}</span>}
+            {form}
           </button>
         ))}
         {list.length === 0 && <span className="text-gray-400">—</span>}
