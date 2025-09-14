@@ -41,6 +41,7 @@ interface Props {
   title?: string;
   subtitle?: string;
   complexityLevel?: ComplexityLevel;
+  selectedBook?: string | null;
 }
 
 function abbr(book: string): string {
@@ -66,7 +67,7 @@ function getTileClasses(count: number, maxCount: number, complexityLevel: Comple
 }
 
 
-export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full }: Props) {
+export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook }: Props) {
   const covMap = useMemo(() => {
     const m: Record<string, number> = {};
     for (const c of coverage) m[c.book] = c.count;
@@ -80,11 +81,17 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     const count = covMap[book] ?? 0
     const active = count > 0
     const showCount = complexityLevel >= ComplexityLevel.Basic && active
+    const isSelected = selectedBook === book
+
+    // Override classes for selected book
+    const tileClasses = isSelected 
+      ? `relative p-2 m-0.5 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold hover:bg-blue-200 dark:hover:bg-blue-700 ${compact ? 'text-xs' : 'text-sm'}`
+      : getTileClasses(count, maxCount, complexityLevel, compact ?? false)
 
     return (
       <button
         onClick={() => onPickBook?.(book)}
-        className={getTileClasses(count, maxCount, complexityLevel, compact ?? false)}
+        className={tileClasses}
       >
         <span>{compact ? abbr(book) : book}</span>
         {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}

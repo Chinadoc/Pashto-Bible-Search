@@ -15,6 +15,7 @@ interface Props {
   loading: boolean;
   query?: string; // legacy single-term highlight (fallback)
   terms?: string[]; // preferred: multiple variants to highlight
+  highlightBook?: string | null; // book to visually highlight
 }
 
 function escapeRegExp(s: string) {
@@ -46,7 +47,7 @@ function highlight(text: string, terms: string[]): ReactNode[] {
   }
 }
 
-export default function ResultsList({ results, audioMap, loading, query, terms: termsProp }: Props) {
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook }: Props) {
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const firstAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -113,9 +114,21 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
           : (query && query.trim()) ? [query.trim()] : [];
         const autoPlay = index === 0 && page === 1 && !!audioUrl;
+        
+        // Check if this verse matches the highlighted book
+        const verseBook = verse.ref.split(' ')[0]; // "Hebrews 12:1" -> "Hebrews"
+        const isHighlighted = highlightBook && verseBook === highlightBook;
 
         return (
-          <div key={verse.ref} className="p-4 mb-2 border rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-600" dir="rtl">
+          <div 
+            key={verse.ref} 
+            className={`p-4 mb-2 border rounded-md ${
+              isHighlighted 
+                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700' 
+                : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
+            }`} 
+            dir="rtl"
+          >
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref}</h3>
               <div className="flex items-center gap-2">

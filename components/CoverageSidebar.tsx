@@ -10,6 +10,7 @@ interface Props {
   scope: Scope;
   coverageLevel: ComplexityLevel;
   onPickBook: (book: string) => void;
+  selectedBook?: string | null;
 }
 
 export default function CoverageSidebar({
@@ -17,7 +18,8 @@ export default function CoverageSidebar({
   localBible,
   scope,
   coverageLevel,
-  onPickBook
+  onPickBook,
+  selectedBook
 }: Props) {
   const sidebarCoverage = useSidebarCoverage(coverage, localBible);
 
@@ -34,6 +36,7 @@ export default function CoverageSidebar({
         title={title}
         subtitle={subtitle}
         compact={true}
+        selectedBook={selectedBook}
       />
     </div>
   );
