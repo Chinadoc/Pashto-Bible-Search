@@ -8,6 +8,7 @@ import InlineFrequency from "../components/InlineFrequency";
 import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
+import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 
@@ -53,6 +54,7 @@ export default function Home() {
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [variantCount, setVariantCount] = useState<number>(0);
+  const [analysisWord, setAnalysisWord] = useState<string>("");
 
 
 
@@ -154,6 +156,9 @@ export default function Home() {
       const variants = (data as any)?.processed?.variants as string[] | undefined;
       setHighlightTerms(Array.isArray(variants) ? variants.slice(0, 10) : [q]);
       setVariantCount(Array.isArray(variants) ? variants.length : 1);
+      
+      // Set word for linguistic analysis
+      setAnalysisWord(q);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
       // TODO: Implement local fallback search when API fails
@@ -257,6 +262,27 @@ export default function Home() {
                   content: (
                     <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
                       <LexiconPanel onPickForm={(f) => { setQuery(f); handleSearch(); }} />
+                    </div>
+                  )
+                },
+                {
+                  id: 'analysis',
+                  label: '🧪 Analysis',
+                  content: (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                      {analysisWord ? (
+                        <LinguisticAnalysis 
+                          word={analysisWord} 
+                          onRelatedWordClick={(word) => { 
+                            setQuery(word); 
+                            handleSearch(); 
+                          }} 
+                        />
+                      ) : (
+                        <div className="text-center text-gray-500 py-8">
+                          Search for a word to see linguistic analysis
+                        </div>
+                      )}
                     </div>
                   )
                 }
