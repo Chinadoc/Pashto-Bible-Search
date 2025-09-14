@@ -262,12 +262,12 @@ export async function POST(request: NextRequest) {
     // Enhanced romanization lookup using proper dictionary hierarchy
     if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
-        // 1. Primary dictionary lookup for romanized terms
+        // 1. Primary dictionary lookup for romanized terms (exact and close matches)
         const { data: dictData } = await supabase
           .from('dictionary')
           .select('pashto')
-          .ilike('romanized', `%${originalTerm}%`)
-          .limit(5)
+          .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
+          .limit(3)
         if (dictData && dictData.length > 0) {
           for (const row of dictData) {
             if (row.pashto) {
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
         }
       } catch {}
       
-      // 3. Common romanization patterns as final fallback  
+      // 3. Common romanization patterns - high priority for known terms
       const commonMappings: Record<string, string[]> = {
         'munda': ['منډه'],
         'manda': ['منډه'],
@@ -311,8 +311,9 @@ export async function POST(request: NextRequest) {
       }
       
       const lowerTerm = originalTerm.toLowerCase()
-      if (commonMappings[lowerTerm] && searchVariants.length === 1) {
-        // Only add if dictionary lookup didn't find anything
+      if (commonMappings[lowerTerm]) {
+        // Clear previous variants and prioritize known mappings
+        searchVariants.length = 1 // Keep only original term
         searchVariants.push(...commonMappings[lowerTerm])
       }
     }
