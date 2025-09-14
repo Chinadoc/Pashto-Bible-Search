@@ -202,11 +202,12 @@ export async function POST(request: NextRequest) {
 
     const extras = Array.isArray(extraVariants) ? extraVariants.filter(Boolean) : []
     // merge + dedupe, prioritize longer first for better OR behavior
+    // PERFORMANCE: Limit to first 5 variants to avoid timeout
     const searchVariants = Array.from(new Set([...
       baseVariants,
       ...extras,
       ...related,
-    ])).sort((a, b) => b.length - a.length)
+    ])).sort((a, b) => b.length - a.length).slice(0, 5)
 
     const allResults: Verse[] = []
     const refSet = new Set<string>()
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
           const books = bookVariants(bookFilter).slice(0, 10)
           if (books.length > 0) q = (q as any).in('book', books)
         }
-        const { data, error } = await q.limit(100)
+        const { data, error } = await q.limit(50)
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
           for (const row of data as any[]) {
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // As a final attempt, try REST per-variant (keeps URLs short)
+    // Skip REST fallback if we have reasonable results (performance optimization)
     if (allResults.length === 0) {
       for (const v of searchVariants) {
         const u = new URL(`${supabaseUrl}/rest/v1/verses`)
