@@ -259,6 +259,25 @@ export async function POST(request: NextRequest) {
     // FAST PATH: Skip expensive processing, do direct database search
     const searchVariants = [originalTerm]
     
+    // Auto-expand inflected feminine nouns back to base form
+    if (/[\u0600-\u06FF]/.test(originalTerm)) {
+      // If term ends with ې, also search base form ending with ه
+      if (originalTerm.endsWith('ې')) {
+        const baseFem = originalTerm.slice(0, -1) + 'ه'
+        searchVariants.push(baseFem)
+      }
+      // If term ends with و, also search base form ending with ه  
+      if (originalTerm.endsWith('و')) {
+        const baseFem = originalTerm.slice(0, -1) + 'ه'
+        searchVariants.push(baseFem)
+      }
+      // If term ends with ه, also search inflected forms
+      if (originalTerm.endsWith('ه')) {
+        const stem = originalTerm.slice(0, -1)
+        searchVariants.push(stem + 'ې', stem + 'و')
+      }
+    }
+    
     // Enhanced romanization lookup using proper dictionary hierarchy
     if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
@@ -433,8 +452,8 @@ export async function POST(request: NextRequest) {
 
     // Skip expensive fuzzy search
 
-    // Simple final fallback: check form_occurrences only (but only if no book filter)
-    if (allResults.length === 0 && primaryTerm && !bookFilter) {
+    // Simple final fallback: check form_occurrences only
+    if (allResults.length === 0 && primaryTerm) {
       // Simple form_occurrences check only
       try {
         const { data } = await supabase
