@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         }
       } catch {}
       
-      // Common romanization patterns for frequently searched words
+      // Common romanization patterns for frequently searched words  
       const commonMappings: Record<string, string[]> = {
         'munda': ['منډه'],
         'manda': ['منډه'],
@@ -184,7 +184,8 @@ export async function POST(request: NextRequest) {
       
       const lowerTerm = originalTerm.toLowerCase()
       if (commonMappings[lowerTerm]) {
-        searchVariants.push(...commonMappings[lowerTerm])
+        // Insert common mappings at beginning for higher priority
+        searchVariants.splice(1, 0, ...commonMappings[lowerTerm])
       }
     }
 
