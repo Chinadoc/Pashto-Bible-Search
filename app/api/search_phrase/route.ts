@@ -152,13 +152,18 @@ export async function POST(request: NextRequest) {
     // Only add simple romanization lookup if input looks romanized
     if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
+        // Search romanized_dictionary with correct column name
         const { data } = await supabase
           .from('romanized_dictionary') 
-          .select('pashto')
-          .ilike('romanized', `%${originalTerm}%`)
-          .limit(1)
-        if (data && data.length > 0 && data[0].pashto) {
-          searchVariants.push(data[0].pashto)
+          .select('pashto_word')
+          .ilike('romanization', `%${originalTerm}%`)
+          .limit(3)
+        if (data && data.length > 0) {
+          for (const row of data) {
+            if (row.pashto_word) {
+              searchVariants.push(row.pashto_word)
+            }
+          }
         }
       } catch {}
     }
