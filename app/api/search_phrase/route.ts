@@ -301,16 +301,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Simple related forms lookup if requested (but limited for speed)
+    // Enhanced related forms lookup if requested
     if (includeRelated && searchVariants.length > 0) {
       try {
-        const { data } = await supabase
+        // Check if this is a high-frequency root (needs categorization)
+        const { data: rootData } = await supabase
           .from('form_roots')
           .select('word_form')
           .eq('root_form', searchVariants[0])
-          .limit(2)
-        if (data && data.length > 0) {
-          searchVariants.push(...data.map(d => d.word_form).filter(Boolean))
+          .limit(25)
+        
+        if (rootData && rootData.length > 0) {
+          const relatedForms = rootData.map(d => d.word_form).filter(Boolean)
+          
+          // If 20+ variants, it's a high-frequency root - add categorized forms
+          if (relatedForms.length >= 20) {
+            // Add some key related forms but limit to prevent timeout
+            searchVariants.push(...relatedForms.slice(0, 8))
+          } else {
+            // Low frequency - add all related forms
+            searchVariants.push(...relatedForms)
+          }
+        }
+        
+        // Add noun inflection patterns for feminine nouns ending in ه
+        const primaryTerm = searchVariants[0]
+        if (/ه$/.test(primaryTerm)) {
+          // Basic feminine noun patterns: منډه → منډې → منډو  
+          const stem = primaryTerm.slice(0, -1) // Remove final ه
+          searchVariants.push(
+            stem + 'ې', // 1st inflection  
+            stem + 'و'  // 2nd inflection
+          )
         }
       } catch {}
     }
@@ -429,9 +451,56 @@ export async function POST(request: NextRequest) {
       .map(([book, count]) => ({ book, count }))
       .sort((a, b) => b.count - a.count)
 
+    // Build related forms categorization if requested
+    let relatedForms: any = null
+    if (includeRelated) {
+      try {
+        const primaryTerm = originalTerm
+        
+        // Get all related forms for categorization
+        const { data: allRelatedData } = await supabase
+          .from('form_roots')
+          .select('word_form')
+          .eq('root_form', primaryTerm)
+          .limit(50)
+        
+        const allRelated = allRelatedData?.map(d => d.word_form).filter(Boolean) || []
+        
+        // Categorize forms (basic heuristics)
+        const verbs = allRelated.filter(form => 
+          form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول')
+        ).slice(0, 10)
+        
+        const nouns = allRelated.filter(form => 
+          form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || 
+          form.endsWith('ان') || form.endsWith('ونه')
+        ).slice(0, 10)
+        
+        const other = allRelated.filter(form => 
+          !verbs.includes(form) && !nouns.includes(form)
+        ).slice(0, 5)
+        
+        // Add automatic noun inflections for primary term
+        if (/ه$/.test(primaryTerm)) {
+          const stem = primaryTerm.slice(0, -1)
+          nouns.unshift(primaryTerm) // Add the base form first
+          if (!nouns.includes(stem + 'ې')) nouns.push(stem + 'ې')
+          if (!nouns.includes(stem + 'و')) nouns.push(stem + 'و')
+        }
+        
+        relatedForms = {
+          verbs: verbs.length > 0 ? verbs : [],
+          nouns: nouns.length > 0 ? nouns : [],
+          other: other.length > 0 ? other : [],
+          total: allRelated.length
+        }
+      } catch {}
+    }
+
     const payload = {
       results: uniqueResults,
       coverage,
+      relatedForms,
       processed: {
         original: originalTerm,
         normalized: originalTerm,
