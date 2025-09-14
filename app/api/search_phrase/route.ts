@@ -102,6 +102,17 @@ function bookVariants(input: string | null | undefined): string[] {
   return Array.from(out).filter(Boolean)
 }
 
+// Compound verb helpers
+const AUX_SET = new Set(['وهل','کول','کېدل'])
+
+function splitCompound(q: string): { object: string; aux: string } | null {
+  const parts = q.trim().split(/\s+/).filter(Boolean)
+  if (parts.length !== 2) return null
+  const [obj, aux] = parts
+  if (!AUX_SET.has(aux)) return null
+  return { object: obj, aux }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
@@ -145,6 +156,89 @@ export async function POST(request: NextRequest) {
     }
 
     const originalTerm = query.trim()
+
+    // Try compound verb expansion first (NOUN + AUX)
+    const comp = splitCompound(originalTerm)
+    if (comp) {
+      const { object, aux } = comp
+      let forms: string[] = []
+      try {
+        // Prefer DB inflections for the auxiliary
+        const { data } = await supabase
+          .from('inflections')
+          .select('inflected_form')
+          .eq('base_word', aux)
+          .order('frequency', { ascending: false })
+          .limit(40)
+        if (Array.isArray(data)) forms = data.map(r => String((r as any).inflected_form || '')).filter(Boolean)
+      } catch {}
+
+      // Lightweight fallback for وهل (covers common forms; extend similarly for کول/کېدل as needed)
+      if (forms.length === 0 && aux === 'وهل') {
+        forms = ['وهه','ووهه','وهم','وهو','وهې','وهئ','وهي','ووهم','ووهو','ووهې','ووهئ','ووهي']
+      }
+      if (forms.length === 0 && aux === 'کول') {
+        forms = ['کوه','کړه','کوم','کوو','کوې','کوئ','کوي','کړم','کړو','کړې','کړئ','کړي']
+      }
+      if (forms.length === 0 && aux === 'کېدل') {
+        forms = ['کېږه','شه','کېږم','کېږو','کېږې','کېږئ','کېږي','شوم','شوو','شوې','شوئ','شوي']
+      }
+
+      // Build phrase variants and search per-variant (cap + dedupe)
+      const phrases = Array.from(new Set(forms.map(f => `${object} ${f}`))).slice(0, 25)
+      const selectCols = 'book,chapter,verse,text,testament'
+      const allResults: Verse[] = []
+      const refSet = new Set<string>()
+      const coverageMap = new Map<string, number>()
+
+      for (const p of phrases) {
+        try {
+          let q = supabase.from('verses').select(selectCols).ilike('text', `%${p.replace(/%/g,'')}%`)
+          if (scope === 'ot') q = q.eq('testament', 'OT')
+          if (scope === 'nt') q = q.eq('testament', 'NT')
+          if (bookFilter) {
+            const books = bookVariants(bookFilter).slice(0, 5)
+            if (books.length) q = (q as any).in('book', books)
+          }
+          const { data, error } = await q.limit(60)
+          if (!error && Array.isArray(data) && data.length > 0) {
+            for (const row of data as any[]) {
+              const text = row.text || ''
+              const ref = `${row.book} ${row.chapter}:${row.verse}`
+              if (!refSet.has(ref)) {
+                refSet.add(ref)
+                allResults.push({ ref, text })
+                coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+              }
+              if (allResults.length >= 100) break
+            }
+          }
+          if (allResults.length >= 100) break
+        } catch {}
+      }
+
+      if (allResults.length > 0) {
+        const coverage: CoverageItem[] = Array.from(coverageMap.entries())
+          .map(([book, count]) => ({ book, count }))
+          .sort((a, b) => b.count - a.count)
+
+        const payload = {
+          results: allResults,
+          coverage,
+          processed: {
+            original: originalTerm,
+            normalized: originalTerm,
+            variants: phrases,
+            romanization: ''
+          },
+          ms: Date.now() - startTime,
+          debug: { textSearchHit: true, variantsTried: phrases.length, resultsCount: allResults.length }
+        }
+
+        SEARCH_CACHE.set(`${cacheKey}-compound`, { data: payload, ts: Date.now() })
+        return NextResponse.json(payload)
+      }
+    }
 
     // FAST PATH: Skip expensive processing, do direct database search
     const searchVariants = [originalTerm]
