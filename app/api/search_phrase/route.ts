@@ -259,25 +259,41 @@ export async function POST(request: NextRequest) {
     // FAST PATH: Skip expensive processing, do direct database search
     const searchVariants = [originalTerm]
     
-    // Add romanization variants if input looks romanized
+    // Enhanced romanization lookup using proper dictionary hierarchy
     if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
       try {
-        // Search romanized_dictionary with correct column name
-        const { data } = await supabase
-          .from('romanized_dictionary') 
-          .select('pashto_word')
-          .ilike('romanization', `%${originalTerm}%`)
-          .limit(3)
-        if (data && data.length > 0) {
-          for (const row of data) {
-            if (row.pashto_word) {
-              searchVariants.push(row.pashto_word)
+        // 1. Primary dictionary lookup for romanized terms
+        const { data: dictData } = await supabase
+          .from('dictionary')
+          .select('pashto')
+          .ilike('romanized', `%${originalTerm}%`)
+          .limit(5)
+        if (dictData && dictData.length > 0) {
+          for (const row of dictData) {
+            if (row.pashto) {
+              searchVariants.push(row.pashto)
+            }
+          }
+        }
+
+        // 2. Fallback to romanized_dictionary 
+        if (searchVariants.length === 1) { // Only original term found
+          const { data } = await supabase
+            .from('romanized_dictionary') 
+            .select('pashto_word')
+            .ilike('romanization', `%${originalTerm}%`)
+            .limit(3)
+          if (data && data.length > 0) {
+            for (const row of data) {
+              if (row.pashto_word) {
+                searchVariants.push(row.pashto_word)
+              }
             }
           }
         }
       } catch {}
       
-      // Common romanization patterns for frequently searched words  
+      // 3. Common romanization patterns as final fallback  
       const commonMappings: Record<string, string[]> = {
         'munda': ['منډه'],
         'manda': ['منډه'],
@@ -295,20 +311,23 @@ export async function POST(request: NextRequest) {
       }
       
       const lowerTerm = originalTerm.toLowerCase()
-      if (commonMappings[lowerTerm]) {
-        // Insert common mappings at beginning for higher priority
-        searchVariants.splice(1, 0, ...commonMappings[lowerTerm])
+      if (commonMappings[lowerTerm] && searchVariants.length === 1) {
+        // Only add if dictionary lookup didn't find anything
+        searchVariants.push(...commonMappings[lowerTerm])
       }
     }
 
-    // Enhanced related forms lookup if requested
+    // Enhanced related forms lookup using proper database hierarchy
     if (includeRelated && searchVariants.length > 0) {
       try {
-        // Check if this is a high-frequency root (needs categorization)
+        // Get the best Pashto term for related forms lookup
+        let lookupTerm = searchVariants.find(v => /[\u0600-\u06FF]/.test(v)) || searchVariants[0]
+        
+        // 1. Check form_roots for morphological variants
         const { data: rootData } = await supabase
           .from('form_roots')
           .select('word_form')
-          .eq('root_form', searchVariants[0])
+          .eq('root_form', lookupTerm)
           .limit(25)
         
         if (rootData && rootData.length > 0) {
@@ -324,11 +343,24 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Add noun inflection patterns for feminine nouns ending in ه
-        const primaryTerm = searchVariants[0]
-        if (/ه$/.test(primaryTerm)) {
+        // 2. Check nouns_lexicon for systematic inflection patterns
+        const { data: nounData } = await supabase
+          .from('nouns_lexicon')
+          .select('noun_root, plural_forms')
+          .eq('noun_root', lookupTerm)
+          .limit(1)
+        
+        if (nounData && nounData.length > 0) {
+          const pluralForms = nounData[0].plural_forms
+          if (Array.isArray(pluralForms)) {
+            searchVariants.push(...pluralForms.filter(Boolean).slice(0, 3))
+          }
+        }
+        
+        // 3. Add automatic noun inflection patterns for feminine nouns ending in ه
+        if (/ه$/.test(lookupTerm)) {
           // Basic feminine noun patterns: منډه → منډې → منډو  
-          const stem = primaryTerm.slice(0, -1) // Remove final ه
+          const stem = lookupTerm.slice(0, -1) // Remove final ه
           searchVariants.push(
             stem + 'ې', // 1st inflection  
             stem + 'و'  // 2nd inflection
@@ -408,7 +440,7 @@ export async function POST(request: NextRequest) {
           .from('form_occurrences')
           .select('verses')
           .eq('pashto_form', primaryTerm)
-          .limit(1)
+            .limit(1)
         
         if (data && data.length > 0 && Array.isArray(data[0].verses)) {
           // Take first few verse references and try to find them
@@ -419,12 +451,12 @@ export async function POST(request: NextRequest) {
               if (match) {
                 const [, book, chapter, verse] = match
                 const { data: verseData } = await supabase
-                  .from('verses')
+            .from('verses')
                   .select(selectCols)
-                  .eq('book', book)
+            .eq('book', book)
                   .eq('chapter', parseInt(chapter))
                   .eq('verse', parseInt(verse))
-                  .limit(1)
+            .limit(1)
                 if (verseData && verseData.length > 0) {
                   const row = verseData[0]
                   allResults.push({ 
@@ -465,14 +497,39 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Get all related forms for categorization
-        const { data: allRelatedData } = await supabase
+        // Get comprehensive related forms from multiple sources
+        const allRelated: string[] = []
+        
+        // 1. Get morphological variants from form_roots
+        const { data: rootData } = await supabase
           .from('form_roots')
           .select('word_form')
           .eq('root_form', lookupTerm)
           .limit(50)
+        if (rootData) {
+          allRelated.push(...rootData.map(d => d.word_form).filter(Boolean))
+        }
         
-        const allRelated = allRelatedData?.map(d => d.word_form).filter(Boolean) || []
+        // 2. Get dictionary entries with same root
+        const { data: dictData } = await supabase
+          .from('dictionary')
+          .select('pashto')
+          .ilike('pashto', `${lookupTerm}%`)
+          .limit(20)
+        if (dictData) {
+          allRelated.push(...dictData.map(d => d.pashto).filter(Boolean))
+        }
+        
+        // 3. Get high-frequency related forms from form_occurrences
+        const { data: freqData } = await supabase
+          .from('form_occurrences')
+          .select('pashto_form')
+          .ilike('pashto_form', `%${lookupTerm.slice(0, -1)}%`)
+          .gte('occurrence_count', 10)
+          .limit(15)
+        if (freqData) {
+          allRelated.push(...freqData.map(d => d.pashto_form).filter(Boolean))
+        }
         
         // Categorize forms (basic heuristics)
         const verbs = allRelated.filter(form => 
