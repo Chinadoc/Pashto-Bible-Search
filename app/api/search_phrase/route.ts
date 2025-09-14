@@ -451,13 +451,22 @@ export async function POST(request: NextRequest) {
               const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
               if (match) {
                 const [, book, chapter, verse] = match
-                const { data: verseData } = await supabase
+                let verseQuery = supabase
             .from('verses')
                   .select(selectCols)
             .eq('book', book)
                   .eq('chapter', parseInt(chapter))
                   .eq('verse', parseInt(verse))
-            .limit(1)
+                
+                // Apply book filter to fallback search too
+                if (bookFilter) {
+                  const books = bookVariants(bookFilter).slice(0, 5)
+                  if (books.length > 0 && !books.includes(book)) {
+                    continue // Skip this verse if it doesn't match book filter
+                  }
+                }
+                
+                const { data: verseData } = await verseQuery.limit(1)
                 if (verseData && verseData.length > 0) {
                   const row = verseData[0]
                   allResults.push({ 
