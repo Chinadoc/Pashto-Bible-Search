@@ -83,7 +83,7 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
 
     return (
       <button
-        onClick={() => active && onPickBook?.(book)}
+        onClick={() => onPickBook?.(book)}
         className={getTileClasses(count, maxCount, complexityLevel, compact ?? false)}
       >
         <span>{compact ? abbr(book) : book}</span>
