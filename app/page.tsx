@@ -233,9 +233,10 @@ export default function Home() {
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
                           <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
                         </div>
-                        {includeRelated && variantCount > 1 && (
+                        {query.trim() && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                            Including related forms (total variants: {variantCount})
+                            {includeRelated ? `Including related forms (total variants: ${variantCount})` : `Direct search (${results.length} results found)`}
+                            {bookFilter && ` - Filtered by: ${bookFilter}`}
                           </div>
                         )}
 
