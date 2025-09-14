@@ -89,6 +89,19 @@ interface CoverageItem {
   count: number
 }
 
+// Normalize book name and generate a few common variants so filters match DB names
+function bookVariants(input: string | null | undefined): string[] {
+  if (!input) return []
+  const raw = String(input).trim()
+  const dehyphen = raw.replace(/-/g, ' ')
+  const singleSp = dehyphen.replace(/\s+/g, ' ').trim()
+  const hyDashLead = singleSp.replace(/^(\d)\s+/, '$1-')
+  const hyphenAll = singleSp.replace(/\s+/g, '-')
+  const collapsed = singleSp.replace(/\s+/g, '')
+  const out = new Set<string>([raw, dehyphen, singleSp, hyDashLead, hyphenAll, collapsed])
+  return Array.from(out).filter(Boolean)
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
@@ -195,6 +208,8 @@ export async function POST(request: NextRequest) {
       ...related,
     ])).sort((a, b) => b.length - a.length)
 
+    const allResults: Verse[] = []
+    const refSet = new Set<string>()
     const coverageMap = new Map<string, number>()
 
     // First try via supabase-js with sequential ILIKE calls per variant
@@ -206,16 +221,20 @@ export async function POST(request: NextRequest) {
         let q = supabase.from('verses').select(selectCols).ilike('text', `%${v.replace(/%/g,'')}%`)
         if (scope === 'ot') q = q.eq('testament', 'OT')
         if (scope === 'nt') q = q.eq('testament', 'NT')
-        if (bookFilter) q = q.eq('book', bookFilter)
+        if (bookFilter) {
+          const books = bookVariants(bookFilter).slice(0, 10)
+          if (books.length > 0) q = (q as any).in('book', books)
+        }
         const { data, error } = await q.limit(100)
         if (!error && Array.isArray(data) && data.length > 0) {
           textSearchHit = true
-          for (const row of data) {
-            const text = row.text || ''
-            const ref = `${row.book} ${row.chapter}:${row.verse}`
-            if (!allResults.find(r => r.ref === ref)) {
+          for (const row of data as any[]) {
+            const text = (row as any).text || ''
+            const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
+            if (!refSet.has(ref)) {
+              refSet.add(ref)
               allResults.push({ ref, text })
-              coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+              coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
             }
             if (allResults.length >= 100) break
           }
@@ -232,18 +251,24 @@ export async function POST(request: NextRequest) {
         u.searchParams.set('text', `ilike.*${encodeURIComponent(v)}*`)
         if (scope === 'ot') u.searchParams.set('testament', 'eq.OT')
         if (scope === 'nt') u.searchParams.set('testament', 'eq.NT')
-        if (bookFilter) u.searchParams.set('book', `eq.${bookFilter}`)
+        if (bookFilter) {
+          // Prefer a hyphenated variant for REST eq filter (short URL)
+          const bvars = bookVariants(bookFilter)
+          const prefer = bvars.find(b => /-/.test(b)) || bvars[0]
+          if (prefer) u.searchParams.set('book', `eq.${prefer}`)
+        }
         u.searchParams.set('limit', '100')
         const resp = await fetch(u.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } })
         if (resp.ok) {
           const data = await resp.json()
           if (Array.isArray(data)) {
-            for (const row of data) {
-              const text = row.text || ''
-              const ref = `${row.book} ${row.chapter}:${row.verse}`
-              if (!allResults.find(r => r.ref === ref)) {
+            for (const row of data as any[]) {
+              const text = (row as any).text || ''
+              const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
+              if (!refSet.has(ref)) {
+                refSet.add(ref)
                 allResults.push({ ref, text })
-                coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+                coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
               }
               if (allResults.length >= 100) break
             }
@@ -393,4 +418,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Health/diagnostic endpoint for quick checks in browser
+export async function GET() {
+  return NextResponse.json({ ok: true, route: 'search_phrase', expects: 'POST', ts: Date.now() })
 }
