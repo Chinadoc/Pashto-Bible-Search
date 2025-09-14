@@ -234,11 +234,13 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // If no results and we have additional variants, try one more
-    if (allResults.length === 0 && searchVariants.length > 1) {
-      const secondTerm = searchVariants[1]
+    // If no results, try additional variants (up to 3 total)
+    for (let i = 1; i < Math.min(searchVariants.length, 3) && allResults.length === 0; i++) {
+      const variantTerm = searchVariants[i]
+      if (!variantTerm) continue
+      
       try {
-        let q = supabase.from('verses').select(selectCols).ilike('text', `%${secondTerm.replace(/%/g,'')}%`)
+        let q = supabase.from('verses').select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
         if (scope === 'ot') q = q.eq('testament', 'OT')
         if (scope === 'nt') q = q.eq('testament', 'NT')
         if (bookFilter) {
@@ -254,6 +256,7 @@ export async function POST(request: NextRequest) {
             allResults.push({ ref, text })
             coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
           }
+          break // Found results, stop trying variants
         }
       } catch {}
     }
