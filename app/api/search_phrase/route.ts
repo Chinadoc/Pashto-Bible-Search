@@ -455,13 +455,21 @@ export async function POST(request: NextRequest) {
     let relatedForms: any = null
     if (includeRelated) {
       try {
-        const primaryTerm = originalTerm
+        // Use the best Pashto term from searchVariants, not the original romanized term
+        let lookupTerm = originalTerm
+        for (const variant of searchVariants) {
+          if (/[\u0600-\u06FF]/.test(variant)) {
+            // Found a Pashto script term, prefer this for lookup
+            lookupTerm = variant
+            break
+          }
+        }
         
         // Get all related forms for categorization
         const { data: allRelatedData } = await supabase
           .from('form_roots')
           .select('word_form')
-          .eq('root_form', primaryTerm)
+          .eq('root_form', lookupTerm)
           .limit(50)
         
         const allRelated = allRelatedData?.map(d => d.word_form).filter(Boolean) || []
@@ -480,10 +488,10 @@ export async function POST(request: NextRequest) {
           !verbs.includes(form) && !nouns.includes(form)
         ).slice(0, 5)
         
-        // Add automatic noun inflections for primary term
-        if (/ه$/.test(primaryTerm)) {
-          const stem = primaryTerm.slice(0, -1)
-          nouns.unshift(primaryTerm) // Add the base form first
+        // Add automatic noun inflections for lookup term
+        if (/ه$/.test(lookupTerm)) {
+          const stem = lookupTerm.slice(0, -1)
+          nouns.unshift(lookupTerm) // Add the base form first
           if (!nouns.includes(stem + 'ې')) nouns.push(stem + 'ې')
           if (!nouns.includes(stem + 'و')) nouns.push(stem + 'و')
         }
