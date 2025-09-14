@@ -259,22 +259,20 @@ export async function POST(request: NextRequest) {
     // FAST PATH: Skip expensive processing, do direct database search
     const searchVariants = [originalTerm]
     
-    // Auto-expand inflected feminine nouns back to base form
+    // Auto-expand feminine noun inflections (comprehensive)
     if (/[\u0600-\u06FF]/.test(originalTerm)) {
-      // If term ends with ې, also search base form ending with ه
-      if (originalTerm.endsWith('ې')) {
-        const baseFem = originalTerm.slice(0, -1) + 'ه'
-        searchVariants.push(baseFem)
-      }
-      // If term ends with و, also search base form ending with ه  
-      if (originalTerm.endsWith('و')) {
-        const baseFem = originalTerm.slice(0, -1) + 'ه'
-        searchVariants.push(baseFem)
-      }
-      // If term ends with ه, also search inflected forms
-      if (originalTerm.endsWith('ه')) {
-        const stem = originalTerm.slice(0, -1)
-        searchVariants.push(stem + 'ې', stem + 'و')
+      const stem = originalTerm.endsWith('ه') ? originalTerm.slice(0, -1) :
+                   originalTerm.endsWith('ې') ? originalTerm.slice(0, -1) :
+                   originalTerm.endsWith('و') ? originalTerm.slice(0, -1) : null
+      
+      if (stem) {
+        // Add all three forms: base (ه), 1st inflection (ې), 2nd inflection (و)
+        const allForms = [stem + 'ه', stem + 'ې', stem + 'و']
+        for (const form of allForms) {
+          if (form !== originalTerm && !searchVariants.includes(form)) {
+            searchVariants.push(form)
+          }
+        }
       }
     }
     
