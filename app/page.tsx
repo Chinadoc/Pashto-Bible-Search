@@ -146,7 +146,7 @@ export default function Home() {
       const resp = await fetch(`/api/search_phrase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, scope, includeRelated }),
+        body: JSON.stringify({ query: q, scope, includeRelated, bookFilter: book === undefined ? bookFilter : book }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = (await resp.json()) as PhraseResponse;
@@ -188,10 +188,12 @@ export default function Home() {
   }, [scope, includeRelated]);
 
   const onBookSelect = (book: string | null) => {
-    // If same book is clicked, clear the highlight
+    // If same book is clicked, clear the filter
     const newBookFilter = bookFilter === book ? null : book;
     setBookFilter(newBookFilter);
-    // No need to re-search - just update visual highlighting
+    if (query.trim()) {
+      handleSearch(newBookFilter);
+    }
   }
 
   return (
@@ -234,7 +236,11 @@ export default function Home() {
                         {query.trim() && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                             {includeRelated ? `Including related forms (total variants: ${variantCount})` : `Direct search (${results.length} results found)`}
-                            {bookFilter && ` - Highlighting: ${bookFilter}`}
+                            {bookFilter && (
+                              results.length === 0 
+                                ? ` - No results in: ${bookFilter}` 
+                                : ` - Filtered by: ${bookFilter}`
+                            )}
                           </div>
                         )}
 
@@ -247,7 +253,6 @@ export default function Home() {
                             loading={loading}
                             query={highlightTerms?.[0] || query}
                             terms={highlightTerms?.length ? highlightTerms.slice(0, 10) : undefined}
-                            highlightBook={bookFilter}
                           />
                         )}
 
