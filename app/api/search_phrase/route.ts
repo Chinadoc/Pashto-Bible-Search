@@ -170,12 +170,28 @@ export async function POST(request: NextRequest) {
           .eq('base_word', aux)
           .order('frequency', { ascending: false })
           .limit(40)
-        if (Array.isArray(data)) forms = data.map(r => String((r as any).inflected_form || '')).filter(Boolean)
+        if (Array.isArray(data) && data.length > 0) {
+          for (const row of data) {
+            try {
+              const inflectedForm = (row as any).inflected_form
+              if (typeof inflectedForm === 'string') {
+                const parsed = JSON.parse(inflectedForm)
+                if (Array.isArray(parsed)) {
+                  for (const item of parsed) {
+                    if (item && typeof item === 'object' && item.form) {
+                      forms.push(String(item.form))
+                    }
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
       } catch {}
 
       // Lightweight fallback for وهل (covers common forms; extend similarly for کول/کېدل as needed)
       if (forms.length === 0 && aux === 'وهل') {
-        forms = ['وهه','ووهه','وهم','وهو','وهې','وهئ','وهي','ووهم','ووهو','ووهې','ووهئ','ووهي']
+        forms = ['کړه','وکړه','کړم','کړو','کړې','کړئ','کړي','وهه','ووهه','وهم','وهو','وهې','وهئ','وهي','ووهم','ووهو','ووهې','ووهئ','ووهي']
       }
       if (forms.length === 0 && aux === 'کول') {
         forms = ['کوه','کړه','کوم','کوو','کوې','کوئ','کوي','کړم','کړو','کړې','کړئ','کړي']
