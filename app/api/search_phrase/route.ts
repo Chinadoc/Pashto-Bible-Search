@@ -281,6 +281,8 @@ export async function POST(request: NextRequest) {
       const commonMappings: Record<string, string[]> = {
         'munda': ['منډه'],
         'manda': ['منډه'],
+        'munda wahul': ['منډه وهل'],
+        'manda wahul': ['منډه وهل'],
         'leedul': ['لیدل', 'لېدل'],
         'wral': ['ورل'],
         'kand': ['کند'],
