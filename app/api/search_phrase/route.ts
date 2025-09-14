@@ -433,8 +433,8 @@ export async function POST(request: NextRequest) {
 
     // Skip expensive fuzzy search
 
-    // Simple final fallback: check form_occurrences only
-    if (allResults.length === 0 && primaryTerm) {
+    // Simple final fallback: check form_occurrences only (but only if no book filter)
+    if (allResults.length === 0 && primaryTerm && !bookFilter) {
       // Simple form_occurrences check only
       try {
         const { data } = await supabase
