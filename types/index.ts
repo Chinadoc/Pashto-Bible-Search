@@ -11,6 +11,7 @@ export interface Verse {
 export interface CoverageItem {
   book: string;
   count: number;
+  translation?: string;
 }
 
 export type AudioMap = Record<string, string>;
