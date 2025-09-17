@@ -8,8 +8,21 @@ function extractBook(ref: string): string {
 }
 
 // Utility function to get coverage from search results
+function aggregateCoverageByBook(items: CoverageItem[]): CoverageItem[] {
+  if (!items || items.length === 0) return [];
+  const bookCounts = new Map<string, number>();
+  for (const item of items) {
+    const current = bookCounts.get(item.book) || 0;
+    bookCounts.set(item.book, current + item.count);
+  }
+  return Array.from(bookCounts.entries())
+    .map(([book, count]) => ({ book, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 function getSearchCoverage(coverage: CoverageItem[]): CoverageItem[] | null {
-  return coverage.length > 0 ? coverage : null;
+  if (!coverage || coverage.length === 0) return null;
+  return aggregateCoverageByBook(coverage);
 }
 
 // Utility function to get coverage from the local Bible data

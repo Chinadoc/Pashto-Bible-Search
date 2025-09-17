@@ -932,8 +932,16 @@ export async function POST(request: NextRequest) {
               const text = typeof rawText === 'string'
                 ? rawText.replace(/[\u00a0]/g, ' ').replace(/&nbsp;/gi, ' ')
                 : String(rawText)
-              const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-              const bookName = (row as any).book as string
+              // Ensure proper book name formatting
+              let bookName = (row as any).book as string;
+              // Handle common abbreviations that might be truncated
+              if (bookName === 'Corinthians' && table.name.includes('1')) {
+                bookName = '1 Corinthians';
+              } else if (bookName === 'Corinthians' && table.name.includes('2')) {
+                bookName = '2 Corinthians';
+              }
+              // Add other common fixes as needed
+              const ref = `${bookName} ${(row as any).chapter}:${(row as any).verse}`
               const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
 
               if (!coverageRefSet.has(fullRef)) {
@@ -953,7 +961,8 @@ export async function POST(request: NextRequest) {
                   ref,
                   text,
                   translation: table.translation,
-                  dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined
+                  dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
+                  tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined
                 })
               }
             }
@@ -1035,7 +1044,14 @@ export async function POST(request: NextRequest) {
 
     // Convert coverage map to array and sort by count
     const coverage: CoverageItem[] = Array.from(coverageMap.entries())
-      .map(([book, count]) => ({ book, count }))
+      .map(([key, count]) => {
+        if (key.includes(':')) {
+          const [translation, ...rest] = key.split(':');
+          const book = rest.join(':') || key;
+          return { book, count, translation };
+        }
+        return { book: key, count };
+      })
       .sort((a, b) => b.count - a.count)
 
     // Build related forms categorization if requested

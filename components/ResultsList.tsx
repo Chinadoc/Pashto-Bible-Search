@@ -163,7 +163,14 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   return (
     <div>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
-        <span>Showing {paginatedResults.length} of {results.length} results</span>
+        <span>
+          Showing {paginatedResults.length} of {results.length} results
+          {results.length > itemsPerPage && (
+            <span className="ml-2 text-xs">
+              (Page {page} of {Math.ceil(results.length / itemsPerPage)})
+            </span>
+          )}
+        </span>
         {showPagination && paginationControl('top')}
       </div>
 
@@ -242,6 +249,13 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                     // pause others
                     audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
                     if (el.paused) {
+                      // For Yousafzai verses, seek to verse start time if timing data is available
+                      if (verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0) {
+                        const firstSegment = verse.tags[0];
+                        if (Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number') {
+                          el.currentTime = firstSegment[0]; // Start time from jktags
+                        }
+                      }
                       el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
                     } else {
                       el.pause();

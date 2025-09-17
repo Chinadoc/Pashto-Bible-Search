@@ -69,16 +69,39 @@ function getTileClasses(count: number, maxCount: number, complexityLevel: Comple
 
 export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook }: Props) {
   const covMap = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const c of coverage) m[c.book] = c.count;
+    const m: Record<string, { count: number; translation?: string }> = {};
+    for (const c of coverage) {
+      // Handle coverage keys that include translation (format: "Translation:Book")
+      let bookName = c.book;
+      let translation: string | undefined;
+
+      if (c.book.includes(':')) {
+        const parts = c.book.split(':');
+        if (parts.length >= 2) {
+          translation = parts[0];
+          bookName = parts.slice(1).join(':'); // Handle book names that might contain colons
+        }
+      }
+
+      // Also check if the coverage item has explicit translation field
+      translation = translation || c.translation;
+
+      const key = bookName;
+      if (!m[key]) {
+        m[key] = { count: 0, translation };
+      }
+      m[key].count += c.count;
+    }
     return m;
   }, [coverage]);
 
   // Compute max count for heatmap (only needed for Full level)
-  const maxCount = useMemo(() => Math.max(1, ...Object.values(covMap)), [covMap])
+  const maxCount = useMemo(() => Math.max(1, ...Object.values(covMap).map(item => item.count)), [covMap])
 
   const Tile = ({ book }: { book: string }) => {
-    const count = covMap[book] ?? 0
+    const item = covMap[book]
+    const count = item?.count ?? 0
+    const translation = item?.translation
     const active = count > 0
     const showCount = complexityLevel >= ComplexityLevel.Basic && active
     const isSelected = selectedBook === book
@@ -92,8 +115,14 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
       <button
         onClick={() => onPickBook?.(book)}
         className={tileClasses}
+        title={translation ? `${book} (${translation})` : book}
       >
         <span>{compact ? abbr(book) : book}</span>
+        {translation && (
+          <span className="absolute -top-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-orange-500 text-white text-[8px]">
+            {translation === 'Yousafzai 2019' ? '🕌' : '📖'}
+          </span>
+        )}
         {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}
       </button>
     )
@@ -128,4 +157,3 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     </div>
   )
 }
-
