@@ -250,13 +250,24 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                     audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
                     if (el.paused) {
                       // For Yousafzai verses, seek to verse start time if timing data is available
-                      if (verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0) {
-                        const firstSegment = verse.tags[0];
-                        if (Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number') {
-                          el.currentTime = firstSegment[0]; // Start time from jktags
-                        }
+                      const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
+                        ? (() => {
+                            const firstSegment = verse.tags[0];
+                            return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
+                              ? firstSegment[0] // Start time from jktags
+                              : null;
+                          })()
+                        : null;
+
+                      if (seekTime !== null) {
+                        // Seek after play starts to ensure audio is ready
+                        el.play().then(() => {
+                          el.currentTime = seekTime;
+                          setPlayingKey(verse.ref);
+                        }).catch(() => {});
+                      } else {
+                        el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
                       }
-                      el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
                     } else {
                       el.pause();
                       setPlayingKey(null);
