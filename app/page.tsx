@@ -9,7 +9,8 @@ import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import LinguisticAnalysis from "../components/LinguisticAnalysis";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations } from "../types";
+import VariantDetailsPanel from "../components/VariantDetailsPanel";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 
 // Book lists + abbreviations (match CoverageGrid)
@@ -55,7 +56,11 @@ export default function Home() {
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [variantCount, setVariantCount] = useState<number>(0);
+  const [variantGroups, setVariantGroups] = useState<VariantGroupMeta[]>([]);
+  const [variantDetails, setVariantDetails] = useState<VariantDetailMeta[]>([]);
+  const [showVariantDetails, setShowVariantDetails] = useState<boolean>(false);
   const [analysisWord, setAnalysisWord] = useState<string>("");
+  const [lastSearchedQuery, setLastSearchedQuery] = useState<string>('');
 
 
 
@@ -139,14 +144,32 @@ export default function Home() {
       setConjugations(null);
       setRelatedForms(null);
       setHighlightTerms([]);
+      setVariantCount(0);
+      setVariantGroups([]);
+      setVariantDetails([]);
+      setShowVariantDetails(false);
+      setLastSearchedQuery('');
+      setBookFilter(null);
       return;
     }
+
+    const isNewQuery = q !== lastSearchedQuery;
+    let effectiveBook = book;
+    if (effectiveBook === undefined) {
+      effectiveBook = isNewQuery ? null : bookFilter;
+    }
+    if (book === undefined && isNewQuery && bookFilter !== null) {
+      setBookFilter(null);
+    } else if (book !== undefined) {
+      setBookFilter(book);
+    }
+
     setLoading(true);
     try {
       const resp = await fetch(`/api/search_phrase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, scope, includeRelated, bookFilter: book === undefined ? bookFilter : book }),
+        body: JSON.stringify({ query: q, scope, includeRelated, bookFilter: effectiveBook ?? null }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = (await resp.json()) as PhraseResponse;
@@ -154,25 +177,35 @@ export default function Home() {
       const cov = (data.coverage ?? []).slice().sort((a, b) => b.count - a.count);
       setCoverage(cov);
       setConjugations(null);
-      // capture variants for highlighting if provided
-      const variants = (data as any)?.processed?.variants as string[] | undefined;
-      setHighlightTerms(Array.isArray(variants) ? variants.slice(0, 10) : [q]);
+      const processed = data.processed;
+      const variants = processed?.variants;
+      setHighlightTerms(Array.isArray(variants) && variants.length > 0 ? variants.slice(0, 10) : [q]);
       setVariantCount(Array.isArray(variants) ? variants.length : 1);
-      
-      // Capture related forms data
+      if (Array.isArray(processed?.variantGroups)) {
+        setVariantGroups(processed.variantGroups.filter((group) => group && group.label && Array.isArray(group.forms) && group.forms.length > 0));
+      } else {
+        setVariantGroups([]);
+      }
+      if (Array.isArray(processed?.variantDetails)) {
+        setVariantDetails(processed.variantDetails.filter((detail) => detail && detail.form));
+      } else {
+        setVariantDetails([]);
+      }
+
       setRelatedForms((data as any)?.relatedForms || null);
-      
-      // Set word for linguistic analysis
       setAnalysisWord(q);
+      setLastSearchedQuery(q);
     } catch (e) {
       console.error("Failed to fetch search results, using local fallback:", e);
-      // TODO: Implement local fallback search when API fails
       setResults([]);
       setCoverage([]);
       setConjugations(null);
       setRelatedForms(null);
       setHighlightTerms([q]);
       setVariantCount(1);
+      setVariantGroups([]);
+      setVariantDetails([]);
+      setShowVariantDetails(false);
     } finally {
       setLoading(false);
     }

@@ -47,13 +47,28 @@ function highlight(text: string, terms: string[]): ReactNode[] {
   }
 }
 
+function getTranslationBadge(translation?: string, dialect?: string): ReactNode {
+  if (!translation || translation === 'Standard') return null;
+
+  const isYousafzai = translation === 'Yousafzai 2019';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+      isYousafzai
+        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-300'
+        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300'
+    }`}>
+      {isYousafzai ? '🕌' : '📖'} {translation}
+    </span>
+  );
+}
+
 export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook }: Props) {
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
-  const firstAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
   const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results]);
@@ -94,16 +109,57 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paginatedResults, audioMap]);
 
-  const handlePageChange = (_: any, value: number) => {
-    setPage(value);
-    // Scroll to top of results on page change
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleDownload = async (ref: string, url: string) => {
+    if (!url) return;
+    setDownloadingMap((prev) => ({ ...prev, [ref]: true }));
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to download ${ref}`);
+      const blob = await response.blob();
+      const sanitizedRef = ref.replace(/[^0-9A-Za-z]+/g, '_') || 'audio';
+      const filename = `${sanitizedRef}.mp3`;
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error('Audio download failed', error);
+    } finally {
+      setDownloadingMap((prev) => {
+        const next = { ...prev };
+        delete next[ref];
+        return next;
+      });
+    }
   };
+
+  const showPagination = results.length > itemsPerPage
+
+  const paginationControl = (position: 'top' | 'bottom') => (
+    <div
+      className={position === 'bottom' ? 'mt-6 flex justify-center' : 'flex justify-end'}
+    >
+      <Pagination
+        count={Math.ceil(results.length / itemsPerPage)}
+        page={page}
+        onChange={handlePageChange}
+        color="primary"
+        size={position === 'bottom' ? 'medium' : 'small'}
+        showFirstButton={position === 'bottom'}
+        showLastButton={position === 'bottom'}
+      />
+    </div>
+  )
 
   return (
     <div>
-      <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        Showing {paginatedResults.length} of {results.length} results
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
+        <span>Showing {paginatedResults.length} of {results.length} results</span>
+        {showPagination && paginationControl('top')}
       </div>
 
       {paginatedResults.map((verse, index) => {
@@ -113,7 +169,6 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         const terms = termsProp && termsProp.length > 0
           ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
           : (query && query.trim()) ? [query.trim()] : [];
-        const autoPlay = index === 0 && page === 1 && !!audioUrl;
         
         // Check if this verse matches the highlighted book
         const verseBook = verse.ref.split(' ')[0]; // "Hebrews 12:1" -> "Hebrews"
@@ -130,7 +185,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             dir="rtl"
           >
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref}</h3>
+                {getTranslationBadge(verse.translation, verse.dialect)}
+              </div>
               <div className="flex items-center gap-2">
                 {/* Copy verse */}
                 <button
@@ -146,14 +204,15 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 </button>
                 {/* Download audio */}
                 {audioUrl && (
-                  <a
-                    href={audioUrl}
-                    download
-                    className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(verse.ref, audioUrl)}
+                    className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
                     title="Download audio"
+                    disabled={!!downloadingMap[verse.ref]}
                   >
-                    Download
-                  </a>
+                    {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
+                  </button>
                 )}
               </div>
             </div>
@@ -163,18 +222,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               <div className="flex items-center gap-2 mb-2">
                 <audio
                   ref={(el) => {
-                    if (index === 0) firstAudioRef.current = el;
                     if (el) audioRefs.current.set(verse.ref, el);
                   }}
                   src={audioUrl}
                   preload="metadata"
                   className="hidden"
                   onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
-                  onCanPlay={() => {
-                    if (autoPlay && firstAudioRef.current) {
-                      firstAudioRef.current.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
-                    }
-                  }}
                 />
                 <button
                   className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -205,19 +258,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         );
       })}
 
-      {results.length > itemsPerPage && (
-        <div className="flex justify-center mt-6">
-          <Pagination
-            count={Math.ceil(results.length / itemsPerPage)}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-            size="medium"
-            showFirstButton
-            showLastButton
-          />
-        </div>
-      )}
+      {showPagination && paginationControl('bottom')}
     </div>
   );
 }
