@@ -38,7 +38,7 @@ export default function SearchBar({ query, setQuery, scope, setScope, onSearch, 
         <option value="nt">New Testament</option>
       </select>
       <button
-        onClick={onSearch}
+        onClick={() => onSearch()}
         disabled={loading}
         className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
       >

@@ -147,6 +147,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Supplement with Yousafzai chapter audio (per-verse mapping to chapter files)
+    try {
+      const { data: yousafzaiData, error: yousafzaiError } = await supabase
+        .from('verses_yousafzai')
+        .select('book, chapter, verse, audio_chapter_url')
+
+      if (yousafzaiError) {
+        console.warn('Audio map (verses_yousafzai) fetch warning:', yousafzaiError)
+      }
+
+      if (Array.isArray(yousafzaiData)) {
+        for (const row of yousafzaiData as Array<{ book?: string | null; chapter?: number | null; verse?: number | null; audio_chapter_url?: string | null }>) {
+          if (!row?.book || row.chapter == null || row.verse == null) continue
+          const url = typeof row.audio_chapter_url === 'string' && row.audio_chapter_url ? row.audio_chapter_url : ''
+          if (!url) continue
+          const ref = `${row.book} ${row.chapter}:${row.verse}`
+          if (!audioMap[ref]) {
+            audioMap[ref] = url
+          }
+        }
+      }
+    } catch (yError) {
+      console.warn('Audio map (verses_yousafzai) catch:', yError)
+    }
+
     // Finally, ensure we include everything present in Storage bucket (authoritative)
     try {
       const pageSizeStorage = 1000
