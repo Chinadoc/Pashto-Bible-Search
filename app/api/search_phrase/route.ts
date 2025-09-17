@@ -939,14 +939,14 @@ export async function POST(request: NextRequest) {
               const ref = `${bookName} ${(row as any).chapter}:${(row as any).verse}`
               const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
 
+              if (allowedBooks && !allowedBooks.has(bookName)) {
+                continue
+              }
+
               if (!coverageRefSet.has(fullRef)) {
                 coverageRefSet.add(fullRef)
                 const coverageKey = `${table.translation}:${bookName}`
                 coverageMap.set(coverageKey, (coverageMap.get(coverageKey) || 0) + 1)
-              }
-
-              if (allowedBooks && !allowedBooks.has(bookName)) {
-                continue
               }
 
               // Deduplicate by reference
