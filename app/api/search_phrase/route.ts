@@ -964,7 +964,8 @@ export async function POST(request: NextRequest) {
                       const chapterPadded = String((row as any).chapter).padStart(3, '0')
                       const versePadded = String((row as any).verse).padStart(3, '0')
                       const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`
-                      audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`
+                      // Use local server for testing
+                      audioVerseUrl = `http://localhost:8888/${filename}`
                     }
                   }
                 }
