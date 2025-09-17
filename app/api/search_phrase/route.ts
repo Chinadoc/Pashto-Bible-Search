@@ -84,12 +84,6 @@ interface SearchPayload {
 const SEARCH_CACHE = new Map<string, { data: SearchPayload; ts: number }>()
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
-interface Verse {
-  ref: string
-  text: string
-  translation?: string
-  dialect?: string
-}
 
 interface CoverageItem {
   book: string
