@@ -7,6 +7,7 @@ export interface Verse {
   translation?: string;
   dialect?: string;
   tags?: any[][]; // Timing segments for audio playback (jktags data) - added for Yousafzai audio seeking
+  audio_verse_url?: string; // Individual verse audio clip URL for Yousafzai
 }
 
 export interface CoverageItem {
