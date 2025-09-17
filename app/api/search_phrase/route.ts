@@ -69,7 +69,11 @@ interface SearchPayload {
   processed: {
     original: string;
     normalized: string;
+    primaryVariant?: string;
     variants: string[];
+    variantsSearched?: string[];
+    variantDetails?: VariantMeta[];
+    variantGroups?: VariantGroup[];
     romanization: string;
   };
   ms: number;
@@ -82,6 +86,8 @@ const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 interface Verse {
   ref: string
   text: string
+  translation?: string
+  dialect?: string
 }
 
 interface CoverageItem {
@@ -111,6 +117,505 @@ function splitCompound(q: string): { object: string; aux: string } | null {
   const [obj, aux] = parts
   if (!AUX_SET.has(aux)) return null
   return { object: obj, aux }
+}
+
+const PASHTO_CHAR_RE = /[\u0600-\u06FF]/
+
+function dedupePreserveOrder(values: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of values) {
+    const trimmed = value.trim()
+    if (!trimmed || seen.has(trimmed)) continue
+    seen.add(trimmed)
+    out.push(trimmed)
+  }
+  return out
+}
+
+function pushIfUnique(list: string[], seen: Set<string>, value: string) {
+  const trimmed = value.trim()
+  if (!trimmed || seen.has(trimmed)) return
+  seen.add(trimmed)
+  list.push(trimmed)
+}
+
+function expandFeminineVariants(term: string): string[] {
+  const trimmed = term.trim()
+  if (!trimmed) return []
+
+  const result: string[] = []
+  const seen = new Set<string>()
+  pushIfUnique(result, seen, trimmed)
+
+  if (!PASHTO_CHAR_RE.test(trimmed)) {
+    return result
+  }
+
+  const suffix = trimmed.slice(-1)
+  const stem = trimmed.slice(0, -1)
+
+  if (stem) {
+    if (suffix === 'ه' || suffix === 'ې' || suffix === 'و') {
+      pushIfUnique(result, seen, `${stem}ه`)
+      pushIfUnique(result, seen, `${stem}ې`)
+      pushIfUnique(result, seen, `${stem}و`)
+    } else if (suffix === 'ۍ') {
+      pushIfUnique(result, seen, `${stem}ۍ`)
+      pushIfUnique(result, seen, `${stem}ې`)
+      pushIfUnique(result, seen, `${stem}ي`)
+    }
+  }
+
+  return result
+}
+
+interface VariantMeta {
+  form: string
+  sources: string[]
+  pos?: string
+  frequency?: number
+  note?: string
+  romanization?: string
+  pattern?: string
+}
+
+interface VariantGroup {
+  label: string
+  forms: string[]
+}
+
+interface VariantCollector {
+  add: (form: string, meta?: Partial<VariantMeta>) => void
+  addMany: (forms: string[], source: string, meta?: Partial<VariantMeta>) => void
+  replaceWith: (entries: Array<{ form: string; meta?: Partial<VariantMeta> }>) => void
+  list: () => string[]
+  details: () => VariantMeta[]
+  get: (form: string) => VariantMeta | undefined
+  ensureFeminine: () => void
+}
+
+function createVariantCollector(initialTerm: string): VariantCollector {
+  const order: string[] = []
+  const metaMap = new Map<string, VariantMeta>()
+
+  const normalize = (value: string): string => (value || '').trim()
+
+  const add = (form: string, meta?: Partial<VariantMeta>) => {
+    const trimmed = normalize(form)
+    if (!trimmed) return
+
+    const incomingSources = Array.isArray(meta?.sources) ? meta!.sources.filter(Boolean) : []
+    const existing = metaMap.get(trimmed)
+    if (existing) {
+      if (incomingSources.length) {
+        existing.sources = Array.from(new Set([...existing.sources, ...incomingSources]))
+      }
+      if (meta?.pos && !existing.pos) existing.pos = meta.pos
+      if (typeof meta?.frequency === 'number' && Number.isFinite(meta.frequency)) {
+        const freq = Number(meta.frequency)
+        existing.frequency = existing.frequency ? Math.max(existing.frequency, freq) : freq
+      }
+      if (meta?.note && !existing.note) existing.note = meta.note
+      if (meta?.romanization && !existing.romanization) existing.romanization = meta.romanization
+      if (meta?.pattern && !existing.pattern) existing.pattern = meta.pattern
+      return
+    }
+
+    const entry: VariantMeta = {
+      form: trimmed,
+      sources: incomingSources.length ? Array.from(new Set(incomingSources)) : [],
+      pos: meta?.pos,
+      frequency: typeof meta?.frequency === 'number' && Number.isFinite(meta.frequency) ? meta.frequency : undefined,
+      note: meta?.note,
+      romanization: meta?.romanization,
+      pattern: meta?.pattern,
+    }
+    metaMap.set(trimmed, entry)
+    order.push(trimmed)
+  }
+
+  const addMany = (forms: string[], source: string, meta?: Partial<VariantMeta>) => {
+    if (!Array.isArray(forms)) return
+    for (const form of forms) {
+      add(form, { ...meta, sources: [source, ...(meta?.sources ?? [])] })
+    }
+  }
+
+  const replaceWith = (entries: Array<{ form: string; meta?: Partial<VariantMeta> }>) => {
+    order.length = 0
+    metaMap.clear()
+    for (const entry of entries) {
+      add(entry.form, entry.meta)
+    }
+  }
+
+  const get = (form: string): VariantMeta | undefined => metaMap.get(normalize(form))
+
+  const ensureFeminine = () => {
+    const snapshot = order.slice()
+    for (const form of snapshot) {
+      for (const expanded of expandFeminineVariants(form)) {
+        if (expanded !== form) {
+          add(expanded, { sources: ['feminine-pattern'] })
+        }
+      }
+    }
+  }
+
+  const initialMeta: Partial<VariantMeta> = { sources: ['query'] }
+  if (!PASHTO_CHAR_RE.test(initialTerm)) {
+    initialMeta.romanization = initialTerm
+  }
+  add(initialTerm, initialMeta)
+
+  return {
+    add,
+    addMany,
+    replaceWith,
+    list: () => order.slice(),
+    details: () => order
+      .map((form) => metaMap.get(form))
+      .filter((meta): meta is VariantMeta => Boolean(meta)),
+    get,
+    ensureFeminine,
+  }
+}
+
+function computeVariantScore(meta: VariantMeta, originalTerm: string): number {
+  let score = 0
+
+  if (PASHTO_CHAR_RE.test(meta.form)) score += 6
+  else score -= 4
+
+  if (meta.form === originalTerm) score += 2
+  if (meta.sources.includes('query')) score += 4
+  if (meta.sources.includes('feminine-pattern')) score += 1
+  if (meta.sources.includes('dictionary')) score += 1
+  if (meta.sources.includes('inflection-table')) score += 1
+  if (meta.sources.includes('directional-base')) score += 1
+  if (meta.sources.includes('irregular-verb')) score += 6
+
+  if (meta.pos) {
+    const pos = meta.pos.toLowerCase()
+    if (pos.includes('verb')) score += 2
+    else if (pos.includes('noun')) score += 2
+    else score += 1
+  }
+
+  if (typeof meta.frequency === 'number' && meta.frequency > 0) {
+    score += Math.min(3, Math.log10(meta.frequency + 1))
+  }
+
+  return score
+}
+
+function prioritizeVariants(details: VariantMeta[], originalTerm: string): VariantMeta[] {
+  return details
+    .map((meta, index) => ({ meta, index, score: computeVariantScore(meta, originalTerm) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map((entry) => entry.meta)
+}
+
+function formatPosLabel(pos: string): string {
+  const cleaned = (pos || '').replace(/[_-]+/g, ' ').trim()
+  if (!cleaned) return 'Other'
+  return cleaned
+    .split(/\s+/)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ')
+}
+
+async function backfillRomanizations(
+  client: any,
+  details: VariantMeta[],
+  limit: number
+) {
+  const missing = dedupePreserveOrder(
+    details
+      .filter((meta) => PASHTO_CHAR_RE.test(meta.form) && !meta.romanization)
+      .map((meta) => meta.form)
+  ).slice(0, limit)
+
+  if (missing.length === 0) return
+
+  try {
+    const { data } = await client
+      .from('dictionary')
+      .select('pashto,romanized')
+      .in('pashto', missing)
+    if (Array.isArray(data)) {
+      const map = new Map<string, string>()
+      for (const row of data) {
+        if (row?.pashto && typeof row?.romanized === 'string' && row.romanized) {
+          map.set(String(row.pashto), String(row.romanized))
+        }
+      }
+      if (map.size > 0) {
+        for (const meta of details) {
+          if (!meta.romanization && map.has(meta.form)) {
+            meta.romanization = map.get(meta.form)
+          }
+        }
+      }
+    }
+  } catch {}
+
+  const stillMissing = details
+    .filter((meta) => PASHTO_CHAR_RE.test(meta.form) && !meta.romanization)
+    .map((meta) => meta.form)
+  const remaining = dedupePreserveOrder(stillMissing).slice(0, limit)
+  if (remaining.length === 0) return
+
+  try {
+    const { data } = await client
+      .from('romanized_dictionary')
+      .select('pashto_word,romanization')
+      .in('pashto_word', remaining)
+    if (Array.isArray(data)) {
+      const map = new Map<string, string>()
+      for (const row of data) {
+        if (row?.pashto_word && typeof row?.romanization === 'string' && row.romanization) {
+          map.set(String(row.pashto_word), String(row.romanization))
+        }
+      }
+      if (map.size > 0) {
+        for (const meta of details) {
+          if (!meta.romanization && map.has(meta.form)) {
+            meta.romanization = map.get(meta.form)
+          }
+        }
+      }
+    }
+  } catch {}
+}
+
+const DIRECTIONAL_PREFIXES = ['راو','را','ور','وار','در','له','لا']
+
+function groupVariantsByPos(details: VariantMeta[]): VariantGroup[] {
+  const groups = new Map<string, Set<string>>()
+
+  for (const meta of details) {
+    if (!meta.pos) continue
+    const label = formatPosLabel(meta.pos)
+    if (!groups.has(label)) groups.set(label, new Set<string>())
+    groups.get(label)!.add(meta.form)
+  }
+
+  return Array.from(groups.entries())
+    .map(([label, forms]) => ({ label, forms: Array.from(forms) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'en'))
+}
+
+function extractRomanizationText(raw: any): string | undefined {
+  if (!raw) return undefined
+  if (typeof raw === 'string') return raw || undefined
+  if (typeof raw === 'object') {
+    for (const key of ['imperfective_root','imperfective_stem','perfective_root','perfective_stem','past_participle','base']) {
+      const value = (raw as Record<string, any>)[key]
+      if (typeof value === 'string' && value) return value
+    }
+  }
+  return undefined
+}
+
+async function addDirectionalVariants(collector: VariantCollector) {
+  const snapshot = collector.details()
+  for (const meta of snapshot) {
+    if (!PASHTO_CHAR_RE.test(meta.form)) continue
+    const baseRoman = meta.romanization
+    for (const prefix of DIRECTIONAL_PREFIXES) {
+      if (meta.form.startsWith(prefix) && meta.form.length > prefix.length + 1) {
+        const remainder = meta.form.slice(prefix.length)
+        if (remainder) {
+          collector.add(remainder, { sources: ['directional-base'], pos: meta.pos, romanization: baseRoman })
+          if (!remainder.startsWith('و')) {
+            collector.add(`و${remainder}`, { sources: ['directional-base'], pos: meta.pos, romanization: baseRoman })
+          }
+        }
+      }
+    }
+  }
+}
+
+async function enrichIrregularVariants(
+  client: any,
+  collector: VariantCollector
+) {
+  const pashtoForms = dedupePreserveOrder(
+    collector.details()
+      .filter((meta) => PASHTO_CHAR_RE.test(meta.form))
+      .map((meta) => meta.form)
+  ).slice(0, 20)
+
+  if (pashtoForms.length === 0) return
+
+  try {
+    const { data } = await client
+      .from('irregular_verbs')
+      .select('verb_root,roots,stems,past_participle,romanization')
+      .in('verb_root', pashtoForms)
+
+    if (Array.isArray(data)) {
+      for (const row of data) {
+        if (!row?.verb_root) continue
+        const root = String(row.verb_root)
+        const romanization = extractRomanizationText(row?.romanization)
+        const romanizationRecord = (row?.romanization && typeof row?.romanization === 'object') ? (row.romanization as Record<string, any>) : undefined
+        const patternLabel = 'Irregular verb'
+        const noteLabel = 'Irregular verb'
+        const baseRoman = typeof romanizationRecord?.imperfective_root === 'string' ? romanizationRecord.imperfective_root : (romanization || undefined)
+
+        const baseMeta: Partial<VariantMeta> = {
+          sources: ['irregular-verb'],
+          romanization: baseRoman,
+          pattern: patternLabel,
+          note: noteLabel,
+          pos: 'verb'
+        }
+
+        collector.add(root, baseMeta)
+
+        const detail = collector.get(root)
+        if (detail) {
+          if (!detail.pattern) detail.pattern = patternLabel
+          if (!detail.note) detail.note = noteLabel
+          if (!detail.pos) detail.pos = 'verb'
+          if (!detail.romanization && baseRoman) detail.romanization = baseRoman
+          if (!detail.sources.includes('irregular-verb')) {
+            detail.sources.push('irregular-verb')
+          }
+        }
+
+        const addIrregularForm = (formValue: any, romanKey?: string) => {
+          if (typeof formValue !== 'string' || !formValue.trim()) return
+          const rom = romanKey && romanizationRecord && typeof romanizationRecord[romanKey] === 'string'
+            ? romanizationRecord[romanKey] as string
+            : baseRoman || romanization || undefined
+          collector.add(formValue.trim(), { sources: ['irregular-verb'], romanization: rom, pattern: patternLabel, note: noteLabel, pos: 'verb' })
+        }
+
+        if (row?.roots && typeof row.roots === 'object') {
+          const rootsRecord = row.roots as Record<string, any>
+          addIrregularForm(rootsRecord.perfective, 'perfective_root')
+          addIrregularForm(rootsRecord.imperfective, 'imperfective_root')
+        }
+
+        addIrregularForm(row?.past_participle, 'past_participle')
+      }
+    }
+  } catch {}
+}
+
+async function enrichVariantsFromSupabase(
+  client: any,
+  lookupTerm: string,
+  collector: VariantCollector,
+  includeRelated: boolean
+) {
+  const term = lookupTerm.trim()
+  if (!term) return
+
+  const baseLimit = includeRelated ? 80 : 35
+
+  try {
+    const { data } = await client
+      .from('form_lemmas')
+      .select('lemma_form,base_word,part_of_speech,frequency')
+      .or(`base_word.eq.${term},lemma_form.eq.${term}`)
+      .order('frequency', { ascending: false })
+      .limit(baseLimit)
+    if (Array.isArray(data)) {
+      for (const row of data) {
+        const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
+        const freq = Number(row?.frequency)
+        const frequency = Number.isFinite(freq) ? freq : undefined
+        if (row?.lemma_form) collector.add(row.lemma_form, { sources: ['lemma'], pos, frequency })
+        if (row?.base_word) collector.add(row.base_word, { sources: ['lemma-base'], pos, frequency })
+      }
+    }
+  } catch {}
+
+  try {
+    const { data } = await client
+      .from('form_roots')
+      .select('word_form,base_word,root_word,frequency')
+      .or(`base_word.eq.${term},root_word.eq.${term}`)
+      .order('frequency', { ascending: false })
+      .limit(baseLimit)
+    if (Array.isArray(data)) {
+      for (const row of data) {
+        const freq = Number(row?.frequency)
+        const frequency = Number.isFinite(freq) ? freq : undefined
+        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'], frequency })
+        if (includeRelated && row?.base_word) collector.add(row.base_word, { sources: ['root-base'], frequency })
+        if (includeRelated && row?.root_word) collector.add(row.root_word, { sources: ['root'], frequency })
+      }
+    }
+  } catch {}
+
+  try {
+    const { data } = await client
+      .from('inflections')
+      .select('inflected_form,grammatical_info,frequency')
+      .eq('base_word', term)
+      .order('frequency', { ascending: false })
+      .limit(baseLimit)
+    if (Array.isArray(data)) {
+      for (const row of data) {
+        const info = row?.grammatical_info as Record<string, any> | null | undefined
+        const raw = row?.inflected_form
+        const freq = Number(row?.frequency)
+        const frequency = Number.isFinite(freq) ? freq : undefined
+        const pos = info && typeof info.pos === 'string'
+          ? info.pos
+          : info && typeof info.part_of_speech === 'string'
+            ? info.part_of_speech
+            : undefined
+        const note = info && typeof info.pattern === 'string' ? info.pattern : undefined
+        const pattern = info && typeof info.pattern_info === 'string' ? info.pattern_info : (info && typeof info.pattern === 'string' ? info.pattern : undefined)
+        const romanization = info && typeof info.romanization === 'string' ? info.romanization : (info && typeof info.romanized === 'string' ? info.romanized : (info && typeof info.phonetic === 'string' ? info.phonetic : undefined))
+
+        const forms: string[] = []
+        if (Array.isArray(raw)) {
+          for (const entry of raw) {
+            if (typeof entry === 'string') forms.push(entry)
+            else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form)
+          }
+        } else if (typeof raw === 'string') {
+          let parsed: any = null
+          try {
+            parsed = JSON.parse(raw)
+          } catch {
+            parsed = null
+          }
+          if (Array.isArray(parsed)) {
+            for (const entry of parsed) {
+              if (typeof entry === 'string') forms.push(entry)
+              else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form)
+            }
+          } else if (parsed && typeof parsed === 'object' && typeof parsed.form === 'string') {
+            forms.push(parsed.form)
+          } else {
+            forms.push(raw)
+          }
+        } else if (raw && typeof raw === 'object' && typeof (raw as any).form === 'string') {
+          forms.push((raw as any).form)
+        }
+
+        if (forms.length === 0 && term) {
+          forms.push(term)
+        }
+
+        for (const form of forms) {
+          collector.add(form, { sources: ['inflection-table'], pos, frequency, note, pattern, romanization })
+        }
+      }
+    }
+  } catch {}
+
+  await enrichIrregularVariants(client, collector)
+  addDirectionalVariants(collector)
 }
 
 export async function POST(request: NextRequest) {
@@ -256,61 +761,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // FAST PATH: Skip expensive processing, do direct database search
-    const searchVariants = [originalTerm]
-    
-    // Auto-expand feminine noun inflections (comprehensive)
-    if (/[\u0600-\u06FF]/.test(originalTerm)) {
-      const stem = originalTerm.endsWith('ه') ? originalTerm.slice(0, -1) :
-                   originalTerm.endsWith('ې') ? originalTerm.slice(0, -1) :
-                   originalTerm.endsWith('و') ? originalTerm.slice(0, -1) : null
-      
-      if (stem) {
-        // Add all three forms: base (ه), 1st inflection (ې), 2nd inflection (و)
-        const allForms = [stem + 'ه', stem + 'ې', stem + 'و']
-        for (const form of allForms) {
-          if (form !== originalTerm && !searchVariants.includes(form)) {
-            searchVariants.push(form)
-          }
+    // Build comprehensive variant list starting from the original query
+    const variantCollector = createVariantCollector(originalTerm)
+    variantCollector.ensureFeminine()
+
+    if (Array.isArray(extraVariants)) {
+      for (const value of extraVariants) {
+        if (typeof value === 'string') {
+          variantCollector.add(value, { sources: ['extra'] })
         }
       }
     }
-    
-    // Enhanced romanization lookup using proper dictionary hierarchy
-    if (!/[\u0600-\u06FF]/.test(originalTerm) && originalTerm.length > 2) {
+
+    if (!PASHTO_CHAR_RE.test(originalTerm) && originalTerm.length > 2) {
       try {
-        // 1. Primary dictionary lookup for romanized terms (exact and close matches)
         const { data: dictData } = await supabase
           .from('dictionary')
-          .select('pashto')
+          .select('pashto,pos,romanized')
           .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
           .limit(3)
-        if (dictData && dictData.length > 0) {
+        if (Array.isArray(dictData)) {
           for (const row of dictData) {
-            if (row.pashto) {
-              searchVariants.push(row.pashto)
-            }
-          }
-        }
-
-        // 2. Fallback to romanized_dictionary 
-        if (searchVariants.length === 1) { // Only original term found
-          const { data } = await supabase
-            .from('romanized_dictionary') 
-            .select('pashto_word')
-            .ilike('romanization', `%${originalTerm}%`)
-            .limit(3)
-          if (data && data.length > 0) {
-            for (const row of data) {
-              if (row.pashto_word) {
-                searchVariants.push(row.pashto_word)
-              }
+            if (row?.pashto) {
+              const pos = typeof row?.pos === 'string' ? row.pos : undefined
+              const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
+              variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
             }
           }
         }
       } catch {}
-      
-      // 3. Common romanization patterns - high priority for known terms
+
+      if (!variantCollector.list().some((form) => PASHTO_CHAR_RE.test(form))) {
+        try {
+          const { data } = await supabase
+            .from('romanized_dictionary')
+            .select('pashto_word,pos,romanization')
+            .ilike('romanization', `%${originalTerm}%`)
+            .limit(3)
+          if (Array.isArray(data)) {
+            for (const row of data) {
+              if (row?.pashto_word) {
+                const pos = typeof row?.pos === 'string' ? row.pos : undefined
+                const romanized = typeof row?.romanization === 'string' ? row.romanization : undefined
+                variantCollector.add(row.pashto_word, { sources: ['romanized-dictionary'], pos, romanization: romanized })
+              }
+            }
+          }
+        } catch {}
+      }
+
       const commonMappings: Record<string, string[]> = {
         'munda': ['منډه'],
         'manda': ['منډه'],
@@ -326,105 +825,146 @@ export async function POST(request: NextRequest) {
         'kedal': ['کېدل'],
         'kedel': ['کېدل']
       }
-      
+
       const lowerTerm = originalTerm.toLowerCase()
       if (commonMappings[lowerTerm]) {
-        // Clear previous variants and prioritize known mappings
-        searchVariants.length = 1 // Keep only original term
-        searchVariants.push(...commonMappings[lowerTerm])
+        variantCollector.addMany(commonMappings[lowerTerm], 'known-mapping')
       }
-    }
-
-    // Enhanced related forms lookup using proper database hierarchy
-    if (includeRelated && searchVariants.length > 0) {
+    } else {
       try {
-        // Get the best Pashto term for related forms lookup
-        let lookupTerm = searchVariants.find(v => /[\u0600-\u06FF]/.test(v)) || searchVariants[0]
-        
-        // 1. Check form_roots for morphological variants
-        const { data: rootData } = await supabase
-          .from('form_roots')
-          .select('word_form')
-          .eq('root_form', lookupTerm)
-          .limit(25)
-        
-        if (rootData && rootData.length > 0) {
-          const relatedForms = rootData.map(d => d.word_form).filter(Boolean)
-          
-          // If 20+ variants, it's a high-frequency root - add categorized forms
-          if (relatedForms.length >= 20) {
-            // Add some key related forms but limit to prevent timeout
-            searchVariants.push(...relatedForms.slice(0, 8))
-          } else {
-            // Low frequency - add all related forms
-            searchVariants.push(...relatedForms)
-          }
-        }
-        
-        // 2. Check nouns_lexicon for systematic inflection patterns
-        const { data: nounData } = await supabase
-          .from('nouns_lexicon')
-          .select('noun_root, plural_forms')
-          .eq('noun_root', lookupTerm)
+        const { data: dictRows } = await supabase
+          .from('dictionary')
+          .select('pashto,pos,romanized')
+          .eq('pashto', originalTerm)
           .limit(1)
-        
-        if (nounData && nounData.length > 0) {
-          const pluralForms = nounData[0].plural_forms
-          if (Array.isArray(pluralForms)) {
-            searchVariants.push(...pluralForms.filter(Boolean).slice(0, 3))
+        if (Array.isArray(dictRows) && dictRows.length > 0) {
+          const row = dictRows[0]
+          if (row?.pos) {
+            const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
+            variantCollector.add(originalTerm, { sources: ['dictionary'], pos: row.pos, romanization: romanized })
           }
-        }
-        
-        // 3. Add automatic noun inflection patterns for feminine nouns ending in ه
-        if (/ه$/.test(lookupTerm)) {
-          // Basic feminine noun patterns: منډه → منډې → منډو  
-          const stem = lookupTerm.slice(0, -1) // Remove final ه
-          searchVariants.push(
-            stem + 'ې', // 1st inflection  
-            stem + 'و'  // 2nd inflection
-          )
         }
       } catch {}
     }
 
+    let lookupTerm = variantCollector.list().find((form) => PASHTO_CHAR_RE.test(form)) || originalTerm
+
+    await enrichVariantsFromSupabase(supabase, lookupTerm, variantCollector, !!includeRelated)
+
+    variantCollector.ensureFeminine()
+
+    let variantDetails = variantCollector.details()
+
+    const pashtoFormsForFrequency = dedupePreserveOrder(
+      variantDetails
+        .filter((meta) => PASHTO_CHAR_RE.test(meta.form))
+        .map((meta) => meta.form)
+    ).slice(0, includeRelated ? 80 : 40)
+
+    if (pashtoFormsForFrequency.length > 0) {
+      try {
+        const { data } = await supabase
+          .from('word_frequencies')
+          .select('pashto_word,frequency_count')
+          .in('pashto_word', pashtoFormsForFrequency)
+        if (Array.isArray(data)) {
+          const freqMap = new Map<string, number>()
+          for (const row of data) {
+            if (row?.pashto_word) {
+              const freqVal = Number(row.frequency_count)
+              if (Number.isFinite(freqVal)) {
+                freqMap.set(String(row.pashto_word), freqVal)
+              }
+            }
+          }
+          for (const meta of variantDetails) {
+            const freq = freqMap.get(meta.form)
+            if (typeof freq === 'number') {
+              meta.frequency = meta.frequency ? Math.max(meta.frequency, freq) : freq
+            }
+          }
+        }
+      } catch {}
+    }
+
+    variantDetails = prioritizeVariants(variantDetails, originalTerm)
+
+    await backfillRomanizations(supabase, variantDetails, includeRelated ? 80 : 40)
+
+    const searchVariants = variantDetails.map((meta) => meta.form)
+    const primaryTerm = searchVariants.find((form) => PASHTO_CHAR_RE.test(form)) || searchVariants[0]
+    lookupTerm = variantDetails.find((meta) => PASHTO_CHAR_RE.test(meta.form))?.form || primaryTerm
+    const variantGroups = groupVariantsByPos(variantDetails)
+    const variantsToSearch = searchVariants.slice(0, includeRelated ? 12 : 7)
+
     const allResults: Verse[] = []
     const refSet = new Set<string>()
     const coverageMap = new Map<string, number>()
+    const coverageRefSet = new Set<string>()
+    const allowedBooks = bookFilter
+      ? new Set(bookVariants(bookFilter).slice(0, 5))
+      : null
 
     // FAST search: Search ALL variants and combine results
     const selectCols = 'book,chapter,verse,text,testament'
     let textSearchHit = false
     
-    // Search all variants (up to 5) and combine results
-    for (let i = 0; i < Math.min(searchVariants.length, 5); i++) {
-      const variantTerm = searchVariants[i]
-      if (!variantTerm) continue
-      
-      try {
-        let q = supabase.from('verses').select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
-        if (scope === 'ot') q = q.eq('testament', 'OT')
-        if (scope === 'nt') q = q.eq('testament', 'NT')
-        if (bookFilter) {
-          const books = bookVariants(bookFilter).slice(0, 5)
-          if (books.length > 0) q = (q as any).in('book', books)
-        }
-        const { data, error } = await q.limit(100)
-        if (!error && Array.isArray(data) && data.length > 0) {
-          textSearchHit = true
-          for (const row of data as any[]) {
-            const text = (row as any).text || ''
-            const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
-            // Deduplicate by reference
-            if (!refSet.has(ref)) {
-              refSet.add(ref)
-              allResults.push({ ref, text })
-              coverageMap.set((row as any).book, (coverageMap.get((row as any).book) || 0) + 1)
+    // Search all variants in both main verses table and Yousafzai table
+    const tablesToSearch = [
+      { name: 'verses', translation: 'Standard' },
+      { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
+    ]
+
+    for (const table of tablesToSearch) {
+      for (let i = 0; i < variantsToSearch.length; i++) {
+        const variantTerm = variantsToSearch[i]
+        if (!variantTerm) continue
+
+        try {
+          let q = supabase.from(table.name).select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
+          if (scope === 'ot') q = q.eq('testament', 'OT')
+          if (scope === 'nt') q = q.eq('testament', 'NT')
+          const { data, error } = await q.limit(50) // Lower limit per table to avoid timeout
+          if (!error && Array.isArray(data) && data.length > 0) {
+            textSearchHit = true
+            for (const row of data as any[]) {
+              const text = (row as any).text || ''
+              const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
+              const bookName = (row as any).book as string
+              const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
+
+              if (!coverageRefSet.has(fullRef)) {
+                coverageRefSet.add(fullRef)
+                const coverageKey = `${table.translation}:${bookName}`
+                coverageMap.set(coverageKey, (coverageMap.get(coverageKey) || 0) + 1)
+              }
+
+              if (allowedBooks && !allowedBooks.has(bookName)) {
+                continue
+              }
+
+              // Deduplicate by reference
+              if (!refSet.has(fullRef)) {
+                refSet.add(fullRef)
+                allResults.push({
+                  ref,
+                  text,
+                  translation: table.translation,
+                  dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined
+                })
+              }
             }
           }
+        } catch (error) {
+          // Silently skip Yousafzai table if it doesn't exist yet
+          if (table.name === 'verses_yousafzai') continue
+          throw error
         }
-      } catch {}
-      
-      // Cap total results to avoid timeout
+
+        // Cap total results to avoid timeout
+        if (allResults.length >= 100) break
+      }
+
       if (allResults.length >= 100) break
     }
 
@@ -451,35 +991,38 @@ export async function POST(request: NextRequest) {
               if (match) {
                 const [, book, chapter, verse] = match
                 let verseQuery = supabase
-            .from('verses')
+                  .from('verses')
                   .select(selectCols)
-            .eq('book', book)
+                  .eq('book', book)
                   .eq('chapter', parseInt(chapter))
                   .eq('verse', parseInt(verse))
-                
+
                 // Apply book filter to fallback search too
-                if (bookFilter) {
-                  const books = bookVariants(bookFilter).slice(0, 5)
-                  if (books.length > 0 && !books.includes(book)) {
-                    continue // Skip this verse if it doesn't match book filter
-                  }
+                if (allowedBooks && !allowedBooks.has(book)) {
+                  continue // Skip this verse if it doesn't match book filter
                 }
-                
+
                 const { data: verseData } = await verseQuery.limit(1)
                 if (verseData && verseData.length > 0) {
                   const row = verseData[0]
+                  const fallbackRef = `${row.book} ${row.chapter}:${row.verse}`
+                  if (!coverageRefSet.has(fallbackRef)) {
+                    coverageRefSet.add(fallbackRef)
+                    coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+                  }
                   allResults.push({ 
-                    ref: `${row.book} ${row.chapter}:${row.verse}`, 
+                    ref: fallbackRef, 
                     text: row.text || '' 
                   })
-                  coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
                   if (allResults.length >= 10) break
                 }
               }
             }
           }
         }
-      } catch {}
+      } catch (error) {
+        console.warn('form_occurrences fallback failed', error)
+      }
     }
 
     // Remove duplicate results based on reference
@@ -496,77 +1039,74 @@ export async function POST(request: NextRequest) {
     let relatedForms: any = null
     if (includeRelated) {
       try {
-        // Use the best Pashto term from searchVariants, not the original romanized term
-        let lookupTerm = originalTerm
-        for (const variant of searchVariants) {
-          if (/[\u0600-\u06FF]/.test(variant)) {
-            // Found a Pashto script term, prefer this for lookup
-            lookupTerm = variant
-            break
-          }
+        let relatedLookupTerm = lookupTerm
+        if (!PASHTO_CHAR_RE.test(relatedLookupTerm)) {
+          const fallbackPashto = searchVariants.find((variant) => PASHTO_CHAR_RE.test(variant))
+          if (fallbackPashto) relatedLookupTerm = fallbackPashto
         }
-        
-        // Get comprehensive related forms from multiple sources
+
+        const normalizedLookup = relatedLookupTerm.trim() || originalTerm
+
         const allRelated: string[] = []
-        
-        // 1. Get morphological variants from form_roots
+
         const { data: rootData } = await supabase
           .from('form_roots')
           .select('word_form')
-          .eq('root_form', lookupTerm)
+          .eq('root_form', normalizedLookup)
           .limit(50)
         if (rootData) {
           allRelated.push(...rootData.map(d => d.word_form).filter(Boolean))
         }
-        
-        // 2. Get dictionary entries with same root
+
         const { data: dictData } = await supabase
           .from('dictionary')
           .select('pashto')
-          .ilike('pashto', `${lookupTerm}%`)
+          .ilike('pashto', `${normalizedLookup}%`)
           .limit(20)
         if (dictData) {
           allRelated.push(...dictData.map(d => d.pashto).filter(Boolean))
         }
-        
-        // 3. Get high-frequency related forms from form_occurrences
-        const { data: freqData } = await supabase
-          .from('form_occurrences')
-          .select('pashto_form')
-          .ilike('pashto_form', `%${lookupTerm.slice(0, -1)}%`)
-          .gte('occurrence_count', 10)
-          .limit(15)
-        if (freqData) {
-          allRelated.push(...freqData.map(d => d.pashto_form).filter(Boolean))
+
+        const lookupStem = normalizedLookup.length > 1 ? normalizedLookup.slice(0, -1) : normalizedLookup
+        if (lookupStem) {
+          const { data: freqData } = await supabase
+            .from('form_occurrences')
+            .select('pashto_form')
+            .ilike('pashto_form', `%${lookupStem}%`)
+            .gte('occurrence_count', 10)
+            .limit(15)
+          if (freqData) {
+            allRelated.push(...freqData.map(d => d.pashto_form).filter(Boolean))
+          }
         }
-        
-        // Categorize forms (basic heuristics)
-        const verbs = allRelated.filter(form => 
+
+        const uniqueRelated = dedupePreserveOrder(allRelated.map((form) => form.trim()).filter(Boolean))
+
+        const verbs = uniqueRelated.filter(form =>
           form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول')
         ).slice(0, 10)
-        
-        const nouns = allRelated.filter(form => 
-          form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || 
+
+        const nouns = uniqueRelated.filter(form =>
+          form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') ||
           form.endsWith('ان') || form.endsWith('ونه')
         ).slice(0, 10)
-        
-        const other = allRelated.filter(form => 
+
+        const other = uniqueRelated.filter(form =>
           !verbs.includes(form) && !nouns.includes(form)
         ).slice(0, 5)
-        
-        // Add automatic noun inflections for lookup term
-        if (/ه$/.test(lookupTerm)) {
-          const stem = lookupTerm.slice(0, -1)
-          nouns.unshift(lookupTerm) // Add the base form first
-          if (!nouns.includes(stem + 'ې')) nouns.push(stem + 'ې')
-          if (!nouns.includes(stem + 'و')) nouns.push(stem + 'و')
+
+        if (/ه$/.test(normalizedLookup)) {
+          const stem = normalizedLookup.slice(0, -1)
+          nouns.unshift(normalizedLookup)
+          if (stem && !nouns.includes(stem + 'ې')) nouns.push(stem + 'ې')
+          if (stem && !nouns.includes(stem + 'و')) nouns.push(stem + 'و')
         }
-        
+
         relatedForms = {
           verbs: verbs.length > 0 ? verbs : [],
           nouns: nouns.length > 0 ? nouns : [],
           other: other.length > 0 ? other : [],
-          total: allRelated.length
+          total: uniqueRelated.length
         }
       } catch {}
     }
@@ -578,7 +1118,19 @@ export async function POST(request: NextRequest) {
       processed: {
         original: originalTerm,
         normalized: originalTerm,
+        primaryVariant: primaryTerm,
         variants: searchVariants,
+        variantsSearched: variantsToSearch,
+        variantDetails: variantDetails.map(({ form, sources, pos, frequency, note, romanization, pattern }) => ({
+          form,
+          sources,
+          pos,
+          frequency,
+          note,
+          romanization,
+          pattern,
+        })),
+        variantGroups,
         romanization: ""
       },
       ms: Date.now() - startTime,
@@ -612,4 +1164,3 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ ok: true, route: 'search_phrase', expects: 'POST', ts: Date.now() })
 }
-

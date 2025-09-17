@@ -4,6 +4,8 @@ export type Mode = "phrase" | "grammar";
 export interface Verse {
   ref: string;
   text: string;
+  translation?: string;
+  dialect?: string;
 }
 
 export interface CoverageItem {
@@ -18,6 +20,34 @@ export interface PhraseResponse {
   results: Verse[];
   coverage: CoverageItem[];
   ms: number;
+  processed?: ProcessedSearchMetadata;
+  relatedForms?: Record<string, unknown>;
+}
+
+export interface VariantDetailMeta {
+  form: string;
+  sources: string[];
+  pos?: string;
+  frequency?: number;
+  note?: string;
+  romanization?: string;
+  pattern?: string;
+}
+
+export interface VariantGroupMeta {
+  label: string;
+  forms: string[];
+}
+
+export interface ProcessedSearchMetadata {
+  original: string;
+  normalized: string;
+  primaryVariant?: string;
+  variants: string[];
+  variantsSearched?: string[];
+  variantDetails?: VariantDetailMeta[];
+  variantGroups?: VariantGroupMeta[];
+  romanization?: string;
 }
 
 export interface Conjugations {
@@ -44,5 +74,3 @@ export interface LexiconEntry {
   pos_family?: string;
   [key: string]: any;
 }
-
-
