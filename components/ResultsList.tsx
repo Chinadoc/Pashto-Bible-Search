@@ -91,7 +91,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         // Skip OT books for now (no audio)
         const lastSpaceIndex = ref.lastIndexOf(' ');
         const book = lastSpaceIndex > 0 ? ref.slice(0, lastSpaceIndex) : '';
-        if (OT_BOOKS.has(book)) continue;
+        const isYousafzai = verse.translation === 'Yousafzai 2019';
+        if (OT_BOOKS.has(book) && !isYousafzai) continue;
 
         const direct = audioMap[ref];
         const derived = direct || audioUrlFromRef(ref, audioMap);

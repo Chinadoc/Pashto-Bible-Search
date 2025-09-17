@@ -137,6 +137,7 @@ export default function Home() {
 
 
   const handleSearch = async (book?: string | null) => {
+    const normalizedBook = (typeof book === 'string' || book === null) ? book : undefined;
     const q = query.trim();
     if (!q) {
       setResults([]);
@@ -154,14 +155,15 @@ export default function Home() {
     }
 
     const isNewQuery = q !== lastSearchedQuery;
-    let effectiveBook = book;
+    let effectiveBook = normalizedBook;
     if (effectiveBook === undefined) {
       effectiveBook = isNewQuery ? null : bookFilter;
     }
-    if (book === undefined && isNewQuery && bookFilter !== null) {
+    const bookArgProvided = book !== undefined;
+    if (!bookArgProvided && isNewQuery && bookFilter !== null) {
       setBookFilter(null);
-    } else if (book !== undefined) {
-      setBookFilter(book);
+    } else if (bookArgProvided) {
+      setBookFilter(normalizedBook ?? null);
     }
 
     setLoading(true);
