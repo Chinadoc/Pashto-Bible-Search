@@ -94,13 +94,19 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         const isYousafzai = verse.translation === 'Yousafzai 2019';
         if (OT_BOOKS.has(book) && !isYousafzai) continue;
 
-        const direct = audioMap[ref];
-        const derived = direct || audioUrlFromRef(ref, audioMap);
-
+        // For Yousafzai verses, prefer individual verse clip over chapter MP3
         let url = '';
-        if (derived && /^https?:\/\//i.test(derived)) {
-          url = derived;
+        if (isYousafzai && verse.audio_verse_url) {
+          url = verse.audio_verse_url;
         } else {
+          const direct = audioMap[ref];
+          const derived = direct || audioUrlFromRef(ref, audioMap);
+          if (derived && /^https?:\/\//i.test(derived)) {
+            url = derived;
+          }
+        }
+        
+        if (!url) {
           try {
             const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
             const js = await r.json().catch(() => ({}));
@@ -249,24 +255,32 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                     // pause others
                     audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
                     if (el.paused) {
-                      // For Yousafzai verses, seek to verse start time if timing data is available
-                      const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
-                        ? (() => {
-                            const firstSegment = verse.tags[0];
-                            return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
-                              ? firstSegment[0] // Start time from jktags
-                              : null;
-                          })()
-                        : null;
-
-                      if (seekTime !== null) {
-                        // Seek after play starts to ensure audio is ready
-                        el.play().then(() => {
-                          el.currentTime = seekTime;
-                          setPlayingKey(verse.ref);
-                        }).catch(() => {});
-                      } else {
+                      // For Yousafzai verses with individual verse clips, no seeking needed
+                      const hasIndividualClip = verse.translation === 'Yousafzai 2019' && verse.audio_verse_url;
+                      
+                      if (hasIndividualClip) {
+                        // Individual verse clip - play from beginning
                         el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+                      } else {
+                        // Chapter MP3 - seek to verse start time if timing data is available
+                        const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
+                          ? (() => {
+                              const firstSegment = verse.tags[0];
+                              return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
+                                ? firstSegment[0] // Start time from jktags
+                                : null;
+                            })()
+                          : null;
+
+                        if (seekTime !== null) {
+                          // Seek after play starts to ensure audio is ready
+                          el.play().then(() => {
+                            el.currentTime = seekTime;
+                            setPlayingKey(verse.ref);
+                          }).catch(() => {});
+                        } else {
+                          el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+                        }
                       }
                     } else {
                       el.pause();

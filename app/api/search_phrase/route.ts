@@ -957,7 +957,8 @@ export async function POST(request: NextRequest) {
                   text,
                   translation: table.translation,
                   dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
-                  tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined
+                  tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined,
+                  audio_verse_url: table.name === 'verses_yousafzai' ? (row as any).audio_verse_url : undefined
                 })
               }
             }
