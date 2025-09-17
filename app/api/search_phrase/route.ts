@@ -952,13 +952,30 @@ export async function POST(request: NextRequest) {
               // Deduplicate by reference
               if (!refSet.has(fullRef)) {
                 refSet.add(fullRef)
+                // Generate audio_verse_url for Yousafzai verses if not already set
+                let audioVerseUrl = undefined
+                if (table.name === 'verses_yousafzai') {
+                  audioVerseUrl = (row as any).audio_verse_url
+                  // If not set in database, generate the expected URL pattern
+                  if (!audioVerseUrl) {
+                    const bookSlug = (row as any).book?.toLowerCase() === 'psalms' ? 'psalms' : 
+                                    (row as any).book?.toLowerCase() === 'proverbs' ? 'proverbs' : null
+                    if (bookSlug) {
+                      const chapterPadded = String((row as any).chapter).padStart(3, '0')
+                      const versePadded = String((row as any).verse).padStart(3, '0')
+                      const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`
+                      audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`
+                    }
+                  }
+                }
+
                 allResults.push({
                   ref,
                   text,
                   translation: table.translation,
                   dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
                   tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined,
-                  audio_verse_url: table.name === 'verses_yousafzai' ? (row as any).audio_verse_url : undefined
+                  audio_verse_url: audioVerseUrl
                 })
               }
             }
