@@ -928,7 +928,10 @@ export async function POST(request: NextRequest) {
           if (!error && Array.isArray(data) && data.length > 0) {
             textSearchHit = true
             for (const row of data as any[]) {
-              const text = (row as any).text || ''
+              const rawText = (row as any).text || ''
+              const text = typeof rawText === 'string'
+                ? rawText.replace(/[\u00a0]/g, ' ').replace(/&nbsp;/gi, ' ')
+                : String(rawText)
               const ref = `${(row as any).book} ${(row as any).chapter}:${(row as any).verse}`
               const bookName = (row as any).book as string
               const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
