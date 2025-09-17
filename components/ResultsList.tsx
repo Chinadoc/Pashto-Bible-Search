@@ -73,6 +73,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results]);
 
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
 
