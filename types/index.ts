@@ -6,6 +6,7 @@ export interface Verse {
   text: string;
   translation?: string;
   dialect?: string;
+  tags?: any[][]; // Timing segments for audio playback (jktags data)
 }
 
 export interface CoverageItem {
