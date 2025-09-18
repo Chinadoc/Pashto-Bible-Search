@@ -1139,6 +1139,7 @@ export async function POST(request: NextRequest) {
 
     // Build related forms categorization if requested
     let relatedForms: any = null
+    console.log('DEBUG: includeRelated =', includeRelated, 'lookupTerm =', lookupTerm)
     if (includeRelated) {
       try {
         let relatedLookupTerm = lookupTerm
@@ -1308,7 +1309,21 @@ export async function POST(request: NextRequest) {
             total: existingForms.length
           })
         }
-      } catch {}
+        
+        // Fallback: If no forms found, at least show the inflected variants
+        if (existingForms.length === 0 && allPossibleForms.length > 1) {
+          console.log('DEBUG: No forms found in database, showing generated forms as fallback')
+          const fallbackForms = allPossibleForms.slice(1, 11).map(form => ({ form, count: 0 }))
+          relatedForms = {
+            verbs: fallbackForms.filter(f => f.form.includes('ول') || f.form.includes('کول')),
+            nouns: fallbackForms.filter(f => !f.form.includes('ول') && !f.form.includes('کول')),
+            other: [],
+            total: fallbackForms.length
+          }
+        }
+      } catch (error) {
+        console.log('DEBUG: Error in related forms:', error)
+      }
     }
 
     const payload = {
