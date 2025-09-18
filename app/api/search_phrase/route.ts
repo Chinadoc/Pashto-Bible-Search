@@ -135,7 +135,7 @@ function pushIfUnique(list: string[], seen: Set<string>, value: string) {
   list.push(trimmed)
 }
 
-function expandFeminineVariants(term: string): string[] {
+function expandInflectionVariants(term: string): string[] {
   const trimmed = term.trim()
   if (!trimmed) return []
 
@@ -147,37 +147,86 @@ function expandFeminineVariants(term: string): string[] {
     return result
   }
 
-  const suffix = trimmed.slice(-1)
+  // Pattern 1: Basic (برګ, کور, ښځه, etc.)
+  // Masculine: consonant or ـه, Feminine: ـه
+  const lastChar = trimmed.slice(-1)
   const stem = trimmed.slice(0, -1)
 
   if (stem) {
-    if (suffix === 'ه' || suffix === 'ې' || suffix === 'و') {
-      pushIfUnique(result, seen, `${stem}ه`)
-      pushIfUnique(result, seen, `${stem}ې`)
-      pushIfUnique(result, seen, `${stem}و`)
-    } else if (suffix === 'ۍ') {
-      pushIfUnique(result, seen, `${stem}ۍ`)
-      pushIfUnique(result, seen, `${stem}ې`)
-      pushIfUnique(result, seen, `${stem}ي`)
-    } else if (suffix === 'ی') {
-      // Pattern #3: stressed ی - áy (e.g., ځلمی -> ځلمي, ځلمیو)
-      pushIfUnique(result, seen, `${stem}ی`)  // Original form
-      pushIfUnique(result, seen, `${stem}ي`)  // 1st inflection
-      pushIfUnique(result, seen, `${stem}یو`) // 2nd inflection
-    } else if (suffix === 'ي' && stem) {
-      // Reverse lookup: if searching ځلمي, also find ځلمی and ځلمیو
-      pushIfUnique(result, seen, `${stem}ی`)  // Base form
-      pushIfUnique(result, seen, `${stem}ي`)  // Current form
-      pushIfUnique(result, seen, `${stem}یو`) // 2nd inflection
+    // Pattern 1: ـه/ـې/ـو endings (feminine basic pattern)
+    if (lastChar === 'ه' || lastChar === 'ې' || lastChar === 'و') {
+      pushIfUnique(result, seen, `${stem}ه`)  // Plain feminine
+      pushIfUnique(result, seen, `${stem}ې`)  // 1st inflection
+      pushIfUnique(result, seen, `${stem}و`)  // 2nd inflection
+    }
+    
+    // Pattern 1: Add feminine forms for masculine words ending in consonants
+    // e.g., برګ -> برګه, برګې, برګو
+    if (![' ه', 'ې', 'و', 'ی', 'ي', 'ۍ'].includes(lastChar)) {
+      pushIfUnique(result, seen, `${trimmed}ه`)  // Feminine plain
+      pushIfUnique(result, seen, `${trimmed}ې`)  // Feminine 1st
+      pushIfUnique(result, seen, `${trimmed}و`)  // Feminine 2nd
+    }
+
+    // Pattern 2: Unstressed ی - ay (ستړی)
+    if (lastChar === 'ی') {
+      pushIfUnique(result, seen, `${stem}ی`)   // Masculine plain
+      pushIfUnique(result, seen, `${stem}ي`)   // Masculine 1st
+      pushIfUnique(result, seen, `${stem}یو`)  // Masculine 2nd
+      pushIfUnique(result, seen, `${stem}ې`)   // Feminine plain/1st
+    }
+
+    // Pattern 3: Stressed ی - áy (ځلمی, لومړی)
+    if (lastChar === 'ي') {
+      pushIfUnique(result, seen, `${stem}ی`)   // Base form
+      pushIfUnique(result, seen, `${stem}ي`)   // Current form
+      pushIfUnique(result, seen, `${stem}یو`)  // 2nd inflection
+      pushIfUnique(result, seen, `${stem}ې`)   // Feminine (pattern 2)
+      pushIfUnique(result, seen, `${stem}ۍ`)   // Feminine (pattern 3)
+    }
+
+    // Pattern 5.5: Feminine nouns ending in ي - ee (آزادي)
+    if (lastChar === 'ي' && trimmed.endsWith('ي')) {
+      pushIfUnique(result, seen, `${trimmed}`)     // Plain
+      pushIfUnique(result, seen, `${stem}ۍ`)       // 1st inflection  
+      pushIfUnique(result, seen, `${stem}یو`)      // 2nd inflection
+    }
+
+    // Pattern with ۍ ending
+    if (lastChar === 'ۍ') {
+      pushIfUnique(result, seen, `${stem}ۍ`)   // Current form
+      pushIfUnique(result, seen, `${stem}ې`)   // Alternative
+      pushIfUnique(result, seen, `${stem}ي`)   // Base
+      pushIfUnique(result, seen, `${stem}یو`)  // 2nd inflection
     }
   }
 
-  // Handle ـیو ending (Pattern #3 second inflection)
+  // Pattern 3: Handle ـیو ending (second inflection)
   if (trimmed.endsWith('یو') && trimmed.length > 2) {
     const stemYo = trimmed.slice(0, -2)
-    pushIfUnique(result, seen, `${stemYo}ی`)  // Base form
-    pushIfUnique(result, seen, `${stemYo}ي`)  // 1st inflection  
-    pushIfUnique(result, seen, `${stemYo}یو`) // Current form
+    pushIfUnique(result, seen, `${stemYo}ی`)   // Base form
+    pushIfUnique(result, seen, `${stemYo}ي`)   // 1st inflection  
+    pushIfUnique(result, seen, `${stemYo}یو`)  // Current form
+    pushIfUnique(result, seen, `${stemYo}ې`)   // Feminine
+    pushIfUnique(result, seen, `${stemYo}ۍ`)   // Feminine (stressed)
+  }
+
+  // Pattern 4: "Pashtoon" pattern (پښتون -> پښتانه, پښتنه, etc.)
+  if (trimmed.endsWith('ون')) {
+    const base = trimmed.slice(0, -2)
+    pushIfUnique(result, seen, `${base}ون`)     // Plain masculine
+    pushIfUnique(result, seen, `${base}انه`)    // 1st masculine  
+    pushIfUnique(result, seen, `${base}نو`)     // 2nd masculine
+    pushIfUnique(result, seen, `${base}نه`)     // Plain feminine
+    pushIfUnique(result, seen, `${base}نې`)     // 1st feminine
+  }
+
+  // Pattern 5: Shorter words that squish (غل -> غله)
+  if (trimmed.length <= 3 && ![' ه', 'ې', 'و', 'ی', 'ي'].includes(lastChar)) {
+    pushIfUnique(result, seen, `${trimmed}`)     // Plain masculine
+    pushIfUnique(result, seen, `${trimmed}ه`)    // 1st masculine/Plain feminine
+    pushIfUnique(result, seen, `${trimmed}و`)    // 2nd masculine/feminine
+    pushIfUnique(result, seen, `${trimmed}ې`)    // 1st feminine
   }
 
   return result
@@ -268,9 +317,9 @@ function createVariantCollector(initialTerm: string): VariantCollector {
   const ensureFeminine = () => {
     const snapshot = order.slice()
     for (const form of snapshot) {
-      for (const expanded of expandFeminineVariants(form)) {
+      for (const expanded of expandInflectionVariants(form)) {
         if (expanded !== form) {
-          add(expanded, { sources: ['feminine-pattern'] })
+          add(expanded, { sources: ['inflection-pattern'] })
         }
       }
     }
@@ -303,7 +352,7 @@ function computeVariantScore(meta: VariantMeta, originalTerm: string): number {
 
   if (meta.form === originalTerm) score += 2
   if (meta.sources.includes('query')) score += 4
-  if (meta.sources.includes('feminine-pattern')) score += 1
+  if (meta.sources.includes('inflection-pattern')) score += 2
   if (meta.sources.includes('dictionary')) score += 1
   if (meta.sources.includes('inflection-table')) score += 1
   if (meta.sources.includes('directional-base')) score += 1
