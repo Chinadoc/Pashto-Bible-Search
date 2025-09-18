@@ -159,7 +159,25 @@ function expandFeminineVariants(term: string): string[] {
       pushIfUnique(result, seen, `${stem}ۍ`)
       pushIfUnique(result, seen, `${stem}ې`)
       pushIfUnique(result, seen, `${stem}ي`)
+    } else if (suffix === 'ی') {
+      // Pattern #3: stressed ی - áy (e.g., ځلمی -> ځلمي, ځلمیو)
+      pushIfUnique(result, seen, `${stem}ی`)  // Original form
+      pushIfUnique(result, seen, `${stem}ي`)  // 1st inflection
+      pushIfUnique(result, seen, `${stem}یو`) // 2nd inflection
+    } else if (suffix === 'ي' && stem) {
+      // Reverse lookup: if searching ځلمي, also find ځلمی and ځلمیو
+      pushIfUnique(result, seen, `${stem}ی`)  // Base form
+      pushIfUnique(result, seen, `${stem}ي`)  // Current form
+      pushIfUnique(result, seen, `${stem}یو`) // 2nd inflection
     }
+  }
+
+  // Handle ـیو ending (Pattern #3 second inflection)
+  if (trimmed.endsWith('یو') && trimmed.length > 2) {
+    const stemYo = trimmed.slice(0, -2)
+    pushIfUnique(result, seen, `${stemYo}ی`)  // Base form
+    pushIfUnique(result, seen, `${stemYo}ي`)  // 1st inflection  
+    pushIfUnique(result, seen, `${stemYo}یو`) // Current form
   }
 
   return result
