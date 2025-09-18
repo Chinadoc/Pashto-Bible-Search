@@ -996,13 +996,16 @@ export async function POST(request: NextRequest) {
                 : String(rawText)
               // Ensure proper book name formatting
               let bookName = (row as any).book as string;
+              // Convert hyphenated book names to proper format
+              if (bookName.includes('-')) {
+                bookName = bookName.replace(/-/g, ' '); // "1-Corinthians" -> "1 Corinthians"
+              }
               // Handle common abbreviations that might be truncated
               if (bookName === 'Corinthians' && table.name.includes('1')) {
                 bookName = '1 Corinthians';
               } else if (bookName === 'Corinthians' && table.name.includes('2')) {
                 bookName = '2 Corinthians';
               }
-              // Add other common fixes as needed
               const ref = `${bookName} ${(row as any).chapter}:${(row as any).verse}`
               const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
 
