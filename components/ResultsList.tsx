@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import Pagination from '@mui/material/Pagination';
+// Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef } from '../utils/audio';
 
@@ -150,21 +150,49 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
   const showPagination = results.length > itemsPerPage
 
-  const paginationControl = (position: 'top' | 'bottom') => (
-    <div
-      className={position === 'bottom' ? 'mt-6 flex justify-center' : 'flex justify-end'}
-    >
-      <Pagination
-        count={Math.ceil(results.length / itemsPerPage)}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-        size={position === 'bottom' ? 'medium' : 'small'}
-        showFirstButton={position === 'bottom'}
-        showLastButton={position === 'bottom'}
-      />
-    </div>
-  )
+  const paginationControl = (position: 'top' | 'bottom') => {
+    const totalPages = Math.ceil(results.length / itemsPerPage)
+    if (totalPages <= 1) return null
+    
+    return (
+      <div className={position === 'bottom' ? 'mt-6 flex justify-center' : 'flex justify-end'}>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange({} as any, 1)}
+            disabled={page === 1}
+            className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            First
+          </button>
+          <button
+            onClick={() => handlePageChange({} as any, page - 1)}
+            disabled={page === 1}
+            className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Prev
+          </button>
+          <span className="px-3 py-1 text-sm bg-blue-500 text-white rounded">
+            {page}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400">of {totalPages}</span>
+          <button
+            onClick={() => handlePageChange({} as any, page + 1)}
+            disabled={page === totalPages}
+            className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Next
+          </button>
+          <button
+            onClick={() => handlePageChange({} as any, totalPages)}
+            disabled={page === totalPages}
+            className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Last
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
