@@ -1146,66 +1146,100 @@ export async function POST(request: NextRequest) {
 
         const normalizedLookup = relatedLookupTerm.trim() || originalTerm
 
-        const allRelated: string[] = []
-
-        const { data: rootData } = await supabase
-          .from('form_roots')
-          .select('word_form')
-          .eq('root_form', normalizedLookup)
-          .limit(50)
-        if (rootData) {
-          allRelated.push(...rootData.map(d => d.word_form).filter(Boolean))
-        }
-
-        const { data: dictData } = await supabase
-          .from('dictionary')
-          .select('pashto')
-          .ilike('pashto', `${normalizedLookup}%`)
-          .limit(20)
-        if (dictData) {
-          allRelated.push(...dictData.map(d => d.pashto).filter(Boolean))
-        }
-
-        const lookupStem = normalizedLookup.length > 1 ? normalizedLookup.slice(0, -1) : normalizedLookup
-        if (lookupStem) {
-          const { data: freqData } = await supabase
-            .from('form_occurrences')
-            .select('pashto_form')
-            .ilike('pashto_form', `%${lookupStem}%`)
-            .gte('occurrence_count', 10)
-            .limit(15)
-          if (freqData) {
-            allRelated.push(...freqData.map(d => d.pashto_form).filter(Boolean))
+        // Generate all inflected forms using our comprehensive pattern system
+        const allPossibleForms = expandInflectionVariants(normalizedLookup)
+        
+        // Add compound verb forms (منډه وهل, منډې وهل, etc.)
+        const auxVerbs = ['کول', 'وهل', 'کړل', 'کېدل', 'ورکول']
+        for (const aux of auxVerbs) {
+          for (const form of allPossibleForms.slice(0, 8)) { // Limit to avoid too many combinations
+            allPossibleForms.push(`${form} ${aux}`)
           }
         }
 
-        const uniqueRelated = dedupePreserveOrder(allRelated.map((form) => form.trim()).filter(Boolean))
+        // Check which forms actually exist in the Bible using form_occurrences
+        const existingForms: Array<{form: string, count: number}> = []
+        
+        // Query in batches to avoid URL length limits
+        const batchSize = 15
+        for (let i = 0; i < Math.min(allPossibleForms.length, 60); i += batchSize) {
+          const batch = allPossibleForms.slice(i, i + batchSize)
+          
+          try {
+            const { data: occurrenceData } = await supabase
+              .from('form_occurrences')
+              .select('form, frequency')
+              .in('form', batch)
+              .gte('frequency', 1)
+              .order('frequency', { ascending: false })
+              .limit(30)
 
-        const verbs = uniqueRelated.filter(form =>
-          form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول')
-        ).slice(0, 10)
+            if (Array.isArray(occurrenceData)) {
+              for (const row of occurrenceData) {
+                if (row?.form && row?.frequency) {
+                  existingForms.push({
+                    form: row.form,
+                    count: Number(row.frequency) || 0
+                  })
+                }
+              }
+            }
+          } catch {}
+        }
 
-        const nouns = uniqueRelated.filter(form =>
-          form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') ||
-          form.endsWith('ان') || form.endsWith('ونه')
-        ).slice(0, 10)
+        // Also check word_frequencies table for additional forms
+        try {
+          const { data: wordFreqData } = await supabase
+            .from('word_frequencies')
+            .select('word, frequency')
+            .in('word', allPossibleForms.slice(0, 30))
+            .gte('frequency', 1)
+            .order('frequency', { ascending: false })
+            .limit(20)
 
-        const other = uniqueRelated.filter(form =>
-          !verbs.includes(form) && !nouns.includes(form)
-        ).slice(0, 5)
+          if (Array.isArray(wordFreqData)) {
+            for (const row of wordFreqData) {
+              if (row?.word && row?.frequency && !existingForms.find(e => e.form === row.word)) {
+                existingForms.push({
+                  form: row.word,
+                  count: Number(row.frequency) || 0
+                })
+              }
+            }
+          }
+        } catch {}
 
-        if (/ه$/.test(normalizedLookup)) {
-          const stem = normalizedLookup.slice(0, -1)
-          nouns.unshift(normalizedLookup)
-          if (stem && !nouns.includes(stem + 'ې')) nouns.push(stem + 'ې')
-          if (stem && !nouns.includes(stem + 'و')) nouns.push(stem + 'و')
+        // Sort by frequency and categorize
+        existingForms.sort((a, b) => b.count - a.count)
+
+        const verbs: Array<{form: string, count: number}> = []
+        const nouns: Array<{form: string, count: number}> = []
+        const other: Array<{form: string, count: number}> = []
+
+        for (const item of existingForms) {
+          const form = item.form
+          
+          // Categorize based on form characteristics  
+          if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
+            // Compound verbs (منډه وهل, etc.)
+            verbs.push(item)
+          } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
+            // Simple verbs
+            verbs.push(item)
+          } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') || 
+                     form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
+            // Nouns and adjectives (all inflected forms)
+            nouns.push(item)
+          } else {
+            other.push(item)
+          }
         }
 
         relatedForms = {
-          verbs: verbs.length > 0 ? verbs : [],
-          nouns: nouns.length > 0 ? nouns : [],
-          other: other.length > 0 ? other : [],
-          total: uniqueRelated.length
+          verbs: verbs.slice(0, 8),  // Top 8 verbs with counts
+          nouns: nouns.slice(0, 12), // Top 12 nouns with counts  
+          other: other.slice(0, 6),  // Top 6 other forms with counts
+          total: existingForms.length
         }
       } catch {}
     }
