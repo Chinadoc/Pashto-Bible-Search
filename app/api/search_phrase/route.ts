@@ -1159,6 +1159,11 @@ export async function POST(request: NextRequest) {
             allPossibleForms.push(`${form} ${aux}`)
           }
         }
+        
+        // Debug logging for جوړول
+        if (normalizedLookup.includes('جوړول')) {
+          console.log(`DEBUG: جوړول - Generated ${allPossibleForms.length} possible forms:`, allPossibleForms.slice(0, 20))
+        }
 
         // Check which forms actually exist in the Bible using form_occurrences
         const existingForms: Array<{form: string, count: number}> = []
@@ -1187,7 +1192,29 @@ export async function POST(request: NextRequest) {
                 }
               }
             }
-          } catch {}
+          } catch (error: any) {
+            // Try different column names if the first attempt fails
+            try {
+              const { data: occurrenceData2 } = await supabase
+                .from('form_occurrences')
+                .select('pashto_form, occurrence_count')
+                .in('pashto_form', batch)
+                .gte('occurrence_count', 1)
+                .order('occurrence_count', { ascending: false })
+                .limit(30)
+
+              if (Array.isArray(occurrenceData2)) {
+                for (const row of occurrenceData2) {
+                  if (row?.pashto_form && row?.occurrence_count) {
+                    existingForms.push({
+                      form: row.pashto_form,
+                      count: Number(row.occurrence_count) || 0
+                    })
+                  }
+                }
+              }
+            } catch {}
+          }
         }
 
         // Also check word_frequencies table for additional forms
@@ -1210,10 +1237,37 @@ export async function POST(request: NextRequest) {
               }
             }
           }
-        } catch {}
+        } catch {
+          // Try different column names
+          try {
+            const { data: wordFreqData2 } = await supabase
+              .from('word_frequencies')
+              .select('pashto_word, frequency_count')
+              .in('pashto_word', allPossibleForms.slice(0, 30))
+              .gte('frequency_count', 1)
+              .order('frequency_count', { ascending: false })
+              .limit(20)
+
+            if (Array.isArray(wordFreqData2)) {
+              for (const row of wordFreqData2) {
+                if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
+                  existingForms.push({
+                    form: row.pashto_word,
+                    count: Number(row.frequency_count) || 0
+                  })
+                }
+              }
+            }
+          } catch {}
+        }
 
         // Sort by frequency and categorize
         existingForms.sort((a, b) => b.count - a.count)
+
+        // Debug logging for جوړول
+        if (normalizedLookup.includes('جوړول')) {
+          console.log(`DEBUG: جوړول - Found ${existingForms.length} existing forms:`, existingForms.slice(0, 10))
+        }
 
         const verbs: Array<{form: string, count: number}> = []
         const nouns: Array<{form: string, count: number}> = []
@@ -1243,6 +1297,16 @@ export async function POST(request: NextRequest) {
           nouns: nouns.slice(0, 12), // Top 12 nouns with counts  
           other: other.slice(0, 6),  // Top 6 other forms with counts
           total: existingForms.length
+        }
+        
+        // Debug logging for جوړول
+        if (normalizedLookup.includes('جوړول')) {
+          console.log(`DEBUG: جوړول - Final relatedForms:`, { 
+            verbsCount: verbs.length,
+            nounsCount: nouns.length, 
+            otherCount: other.length,
+            total: existingForms.length
+          })
         }
       } catch {}
     }
