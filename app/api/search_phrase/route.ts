@@ -240,33 +240,74 @@ const IRREGULAR_VERBS: Record<string, {
 // Generate forms for regular verbs following standard Pashto conjugation rules
 function generateRegularVerbForms(infinitive: string): string[] {
   const forms: string[] = []
-  const root = infinitive.replace(/ل$/, '') // Remove final ل
   
   // Add base form
   forms.push(infinitive)
   
+  // Generate stems based on verb patterns
+  let imperfectiveStem: string
+  let perfectiveStem: string
+  
+  // Pattern detection for better stem generation
+  if (infinitive.endsWith('ېدل')) {
+    // Already handled by fused compound function
+    const root = infinitive.replace(/ېدل$/, '')
+    imperfectiveStem = root + 'ېږ'
+    perfectiveStem = 'و' + root + 'ېږ'
+  } else if (infinitive.endsWith('ول')) {
+    // -ول verbs (e.g., لیدل -> وین)
+    const root = infinitive.replace(/ول$/, '')
+    imperfectiveStem = root + 'ین'
+    perfectiveStem = 'و' + root + 'ین'
+  } else if (infinitive.endsWith('ېل')) {
+    // -ېل verbs (e.g., اورېل -> اورېږ)
+    const root = infinitive.replace(/ېل$/, '')
+    imperfectiveStem = root + 'ېږ'
+    perfectiveStem = 'و' + root + 'ېږ'
+  } else if (infinitive.endsWith('ال')) {
+    // -ال verbs (e.g., وهال -> وهاړ)
+    const root = infinitive.replace(/ال$/, '')
+    imperfectiveStem = root + 'اړ'
+    perfectiveStem = 'و' + root + 'اړ'
+  } else {
+    // Default pattern: -ل verbs (e.g., کول -> کړ)
+    const root = infinitive.replace(/ل$/, '')
+    if (root.endsWith('و')) {
+      // کول -> کړ pattern
+      const stemRoot = root.replace(/و$/, '')
+      imperfectiveStem = stemRoot + 'ړ'
+      perfectiveStem = 'و' + stemRoot + 'ړ'
+    } else {
+      // General pattern
+      imperfectiveStem = root + 'ې'
+      perfectiveStem = 'و' + root + 'ې'
+    }
+  }
+  
   // Imperfective forms (present tense)
-  const imperfectiveStem = root + 'ې' // Basic imperfective stem
   forms.push(imperfectiveStem + 'م') // 1st singular
   forms.push(imperfectiveStem + 'ې') // 2nd singular  
   forms.push(imperfectiveStem + 'ي') // 3rd singular
   forms.push(imperfectiveStem + 'و') // 1st plural
   forms.push(imperfectiveStem + 'ئ') // 2nd plural
   
-  // Perfective forms (with و prefix)
+  // Perfective forms 
   const perfectiveRoot = 'و' + infinitive
   forms.push(perfectiveRoot)
   
-  // Past forms
-  forms.push(root + 'لو') // 3rd singular masculine past
-  forms.push(root + 'له') // 3rd singular feminine past
-  forms.push(root + 'لل') // Past participle base
-  
   // Subjunctive (perfective stem + present endings)
-  const perfectiveStem = 'و' + root
   forms.push(perfectiveStem + 'م') // 1st singular subjunctive
   forms.push(perfectiveStem + 'ې') // 2nd singular subjunctive
   forms.push(perfectiveStem + 'ي') // 3rd singular subjunctive
+  forms.push(perfectiveStem + 'و') // 1st plural subjunctive
+  forms.push(perfectiveStem + 'ئ') // 2nd plural subjunctive
+  
+  // Past forms
+  const pastRoot = infinitive.replace(/ل$/, '')
+  forms.push(pastRoot + 'لو') // 3rd singular masculine past
+  forms.push(pastRoot + 'له') // 3rd singular feminine past
+  forms.push(pastRoot + 'لل') // Past participle base
+  forms.push(pastRoot + 'لی') // Past participle inflected
   
   return forms.filter(Boolean)
 }
@@ -281,21 +322,39 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
   forms.push(infinitive) // Base form
   
   if (isStative) {
-    // Stative compounds: welding/squishing in imperfective
-    // e.g., ګرم کېدل -> ګرم کېږم (squished)
+    // Stative compounds: Generate both squished and non-squished forms
+    // e.g., ګرم کېدل -> both "ګرم کېږم" AND "ګرمېږم"
     if (helper === 'کېدل') {
+      // Non-squished forms (spaced)
       forms.push(main + ' کېږم') // 1st singular
       forms.push(main + ' کېږې') // 2nd singular  
       forms.push(main + ' کېږي') // 3rd singular
+      forms.push(main + ' کېږو') // 1st plural
+      forms.push(main + ' کېږئ') // 2nd plural
       forms.push(main + ' شو') // Past (perfective)
       forms.push(main + ' شوه') // Past feminine
+      
+      // Squished forms (fused) - Critical for proper matching!
+      forms.push(main + 'ېږم') // 1st singular squished
+      forms.push(main + 'ېږې') // 2nd singular squished
+      forms.push(main + 'ېږي') // 3rd singular squished
+      forms.push(main + 'ېږو') // 1st plural squished
+      forms.push(main + 'ېږئ') // 2nd plural squished
+      forms.push(main + 'ېدل') // Infinitive squished
+      
     } else if (helper === 'کول') {
-      // Stative with کول
+      // Stative with کول - Non-squished
       forms.push(main + ' کوم') // 1st singular
       forms.push(main + ' کوې') // 2nd singular
       forms.push(main + ' کوي') // 3rd singular
       forms.push(main + ' کړ') // Past
       forms.push(main + ' کړه') // Past feminine
+      
+      // Squished forms for کول compounds
+      forms.push(main + 'کوم') // 1st singular squished
+      forms.push(main + 'کوې') // 2nd singular squished
+      forms.push(main + 'کوي') // 3rd singular squished
+      forms.push(main + 'کول') // Infinitive squished
     }
   } else {
     // Dynamic compounds: no welding
@@ -345,6 +404,52 @@ function generateIrregularVerbForms(infinitive: string): string[] {
   return forms.filter(Boolean)
 }
 
+// Generate forms for fused compound verbs (e.g., ګرمېدل)
+function generateFusedCompoundVerbForms(infinitive: string): string[] {
+  const forms: string[] = [infinitive]
+  
+  // Detect fused stative compounds ending in ېدل or کېدل
+  if (infinitive.endsWith('ېدل')) {
+    const stem = infinitive.slice(0, -3) // Remove ېدل
+    
+    // Generate conjugated forms
+    forms.push(stem + 'ېږم')    // 1st singular
+    forms.push(stem + 'ېږې')    // 2nd singular  
+    forms.push(stem + 'ېږي')    // 3rd singular
+    forms.push(stem + 'ېږو')    // 1st plural
+    forms.push(stem + 'ېږئ')    // 2nd plural
+    
+    // Generate both squished and non-squished forms
+    const baseObj = stem
+    forms.push(baseObj + ' کېدل')    // Non-squished infinitive
+    forms.push(baseObj + ' کېږم')    // Non-squished 1st singular
+    forms.push(baseObj + ' کېږې')    // Non-squished 2nd singular
+    forms.push(baseObj + ' کېږي')    // Non-squished 3rd singular
+    forms.push(baseObj + ' کېږو')    // Non-squished 1st plural
+    forms.push(baseObj + ' کېږئ')    // Non-squished 2nd plural
+    
+  } else if (infinitive.endsWith('کېدل')) {
+    const stem = infinitive.slice(0, -4) // Remove کېدل
+    
+    // Generate conjugated forms
+    forms.push(stem + 'کېږم')    // 1st singular
+    forms.push(stem + 'کېږې')    // 2nd singular
+    forms.push(stem + 'کېږي')    // 3rd singular
+    forms.push(stem + 'کېږو')    // 1st plural
+    forms.push(stem + 'کېږئ')    // 2nd plural
+    
+    // Generate spaced version
+    forms.push(stem + ' کېدل')    // Spaced infinitive
+    forms.push(stem + ' کېږم')    // Spaced 1st singular
+    forms.push(stem + ' کېږې')    // Spaced 2nd singular
+    forms.push(stem + ' کېږي')    // Spaced 3rd singular
+    forms.push(stem + ' کېږو')    // Spaced 1st plural
+    forms.push(stem + ' کېږئ')    // Spaced 2nd plural
+  }
+  
+  return forms.filter(Boolean)
+}
+
 // Simple in-memory cache for search responses
 interface SearchPayload {
   results: Verse[];
@@ -386,7 +491,7 @@ function bookVariants(input: string | null | undefined): string[] {
 }
 
 // Compound verb helpers
-const AUX_SET = new Set(['وهل','کول','کېدل'])
+const AUX_SET = new Set(['وهل','کول','کېدل','ېدل'])
 
 function splitCompound(q: string): { object: string; aux: string } | null {
   const parts = q.trim().split(/\s+/).filter(Boolean)
@@ -1445,7 +1550,12 @@ export async function POST(request: NextRequest) {
             verbForms = generateIrregularVerbForms(normalizedLookup)
             console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
           }
-          // Priority 2: Check if it's a compound verb
+          // Priority 2: Check if it's a fused compound verb (ګرمېدل, etc.)
+          else if (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل')) {
+            verbForms = generateFusedCompoundVerbForms(normalizedLookup)
+            console.log(`DEBUG: ${normalizedLookup} - Found fused compound verb, generated ${verbForms.length} forms`)
+          }
+          // Priority 3: Check if it's a spaced compound verb
           else if (normalizedLookup.includes(' ')) {
             // Detect stative vs dynamic compound
             const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') || 
@@ -1453,7 +1563,7 @@ export async function POST(request: NextRequest) {
             verbForms = generateCompoundVerbForms(normalizedLookup, isStative)
             console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
           }
-          // Priority 3: Regular verb
+          // Priority 4: Regular verb
           else {
             verbForms = generateRegularVerbForms(normalizedLookup)
             console.log(`DEBUG: ${normalizedLookup} - Found regular verb, generated ${verbForms.length} forms`)
