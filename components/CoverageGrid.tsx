@@ -100,16 +100,18 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
 
   const Tile = ({ book }: { book: string }) => {
     const item = covMap[book]
-    const count = item?.count ?? 0
+    const rawCount = item?.count ?? 0
     const translation = item?.translation
-    const active = count > 0
-    const showCount = complexityLevel >= ComplexityLevel.Basic && active
     const isSelected = selectedBook === book
+    const shouldSuppress = !!selectedBook && !isSelected
+    const displayCount = shouldSuppress ? 0 : rawCount
+    const active = displayCount > 0
+    const showCount = complexityLevel >= ComplexityLevel.Basic && active
 
     // Override classes for selected book
     const tileClasses = isSelected 
       ? `relative p-2 m-0.5 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold hover:bg-blue-200 dark:hover:bg-blue-700 ${compact ? 'text-xs' : 'text-sm'}`
-      : getTileClasses(count, maxCount, complexityLevel, compact ?? false)
+      : getTileClasses(displayCount, maxCount, complexityLevel, compact ?? false)
 
     return (
       <button
@@ -118,12 +120,12 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         title={translation ? `${book} (${translation})` : book}
       >
         <span>{compact ? abbr(book) : book}</span>
-        {translation && (
+        {translation && displayCount > 0 && (
           <span className="absolute -top-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-orange-500 text-white text-[8px]">
             {translation === 'Yousafzai 2019' ? '🕌' : '📖'}
           </span>
         )}
-        {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{count}</span> : null}
+        {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{rawCount}</span> : null}
       </button>
     )
   }

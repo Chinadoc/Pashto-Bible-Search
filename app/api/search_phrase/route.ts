@@ -63,6 +63,288 @@ interface SearchRequest {
   includeRelated?: boolean
 }
 
+// Irregular verbs map based on the comprehensive table provided
+const IRREGULAR_VERBS: Record<string, {
+  meaning: string
+  imperfectiveStem: string
+  perfectiveStem: string
+  imperfectiveRoot: string
+  perfectiveRoot: string
+  pastParticiple: string
+  notes: string
+}> = {
+  'لیدل': {
+    meaning: 'to see',
+    imperfectiveStem: 'وینـ',
+    perfectiveStem: 'ووینـ',
+    imperfectiveRoot: 'لیدل',
+    perfectiveRoot: 'ولیدل',
+    pastParticiple: 'لیدلی',
+    notes: 'Irregular imperfective stem; transitive; dynamic compounds'
+  },
+  'خوړل': {
+    meaning: 'to eat',
+    imperfectiveStem: 'خورـ',
+    perfectiveStem: 'وخورـ',
+    imperfectiveRoot: 'خوړل',
+    perfectiveRoot: 'وخوړل',
+    pastParticiple: 'خوړلی',
+    notes: 'Irregular imperfective stem; transitive; dynamic compounds'
+  },
+  'بوتلل': {
+    meaning: 'to take/send (by leading)',
+    imperfectiveStem: 'بیایـ',
+    perfectiveStem: 'بوځـ',
+    imperfectiveRoot: 'بوتلل',
+    perfectiveRoot: 'بوتلل',
+    pastParticiple: 'بوتللی',
+    notes: 'Highly irregular stems/roots; transitive; dynamic compounds'
+  },
+  'وړل': {
+    meaning: 'to carry/take (physically)',
+    imperfectiveStem: 'وړـ',
+    perfectiveStem: 'یوسـ',
+    imperfectiveRoot: 'وړل',
+    perfectiveRoot: 'ووړل',
+    pastParticiple: 'وړلی',
+    notes: 'Suppletive perfective stem; transitive; dynamic compounds'
+  },
+  'تلل': {
+    meaning: 'to go',
+    imperfectiveStem: 'ځـ',
+    perfectiveStem: 'لاړ شـ',
+    imperfectiveRoot: 'تلل',
+    perfectiveRoot: 'تلو',
+    pastParticiple: 'تللی',
+    notes: 'Suppletive perfective form; intransitive; irregular imperfective stem'
+  },
+  'کول': {
+    meaning: 'to do/make',
+    imperfectiveStem: 'کوـ',
+    perfectiveStem: 'کړـ',
+    imperfectiveRoot: 'کول',
+    perfectiveRoot: 'کړل',
+    pastParticiple: 'کړی',
+    notes: 'Irregular perfective stem; transitive; key helper in compounds'
+  },
+  'کېدل': {
+    meaning: 'to become/happen',
+    imperfectiveStem: 'کېږـ',
+    perfectiveStem: 'شـ',
+    imperfectiveRoot: 'کېدل',
+    perfectiveRoot: 'کېدل',
+    pastParticiple: 'شوی',
+    notes: 'Suppletive perfective stem; intransitive; key helper in stative compounds'
+  },
+  'اخیستل': {
+    meaning: 'to buy/take',
+    imperfectiveStem: 'اخلـ',
+    perfectiveStem: 'اخیستـ',
+    imperfectiveRoot: 'اخیستل',
+    perfectiveRoot: 'واخیستل',
+    pastParticiple: 'اخیستلی',
+    notes: 'Different present/past stems; transitive; irregular imperfective stem'
+  },
+  'ایښودل': {
+    meaning: 'to put/place',
+    imperfectiveStem: 'ږدـ',
+    perfectiveStem: 'ایښودـ',
+    imperfectiveRoot: 'ایښودل',
+    perfectiveRoot: 'ویښودل',
+    pastParticiple: 'ایښودلی',
+    notes: 'Irregular stems; transitive; stative compounds'
+  },
+  'اغوستل': {
+    meaning: 'to wear',
+    imperfectiveStem: 'اغوندـ',
+    perfectiveStem: 'اغوستـ',
+    imperfectiveRoot: 'اغوستل',
+    perfectiveRoot: 'واغوستل',
+    pastParticiple: 'اغوستلی',
+    notes: 'Different present/past stems; transitive'
+  },
+  'الوتل': {
+    meaning: 'to fly',
+    imperfectiveStem: 'الوزـ',
+    perfectiveStem: 'الوتـ',
+    imperfectiveRoot: 'الوتل',
+    perfectiveRoot: 'والوتل',
+    pastParticiple: 'الوتلی',
+    notes: 'Irregular stems; intransitive'
+  },
+  'ایستل': {
+    meaning: 'to take out',
+    imperfectiveStem: 'باسـ',
+    perfectiveStem: 'ایستـ',
+    imperfectiveRoot: 'ایستل',
+    perfectiveRoot: 'ویستل',
+    pastParticiple: 'ایستلی',
+    notes: 'Suppletive imperfective stem; transitive'
+  },
+  'اوبدل': {
+    meaning: 'to weave',
+    imperfectiveStem: 'اوبـ',
+    perfectiveStem: 'اوبدـ',
+    imperfectiveRoot: 'اوبدل',
+    perfectiveRoot: 'واوبدل',
+    pastParticiple: 'اوبدلی',
+    notes: 'Irregular stems; transitive'
+  },
+  'پرېښودل': {
+    meaning: 'to leave/let go',
+    imperfectiveStem: 'پرېږدـ',
+    perfectiveStem: 'پرېښودـ',
+    imperfectiveRoot: 'پرېښودل',
+    perfectiveRoot: 'وپرېښودل',
+    pastParticiple: 'پرېښودلی',
+    notes: 'Irregular stems; transitive; stative compounds'
+  },
+  'پېژندل': {
+    meaning: 'to recognize/know',
+    imperfectiveStem: 'پېژنـ',
+    perfectiveStem: 'پېژندـ',
+    imperfectiveRoot: 'پېژندل',
+    perfectiveRoot: 'وپېژندل',
+    pastParticiple: 'پېژندلی',
+    notes: 'Different present/past stems; transitive'
+  },
+  'ختل': {
+    meaning: 'to climb/ascend',
+    imperfectiveStem: 'خېژـ',
+    perfectiveStem: 'ختـ',
+    imperfectiveRoot: 'ختل',
+    perfectiveRoot: 'وختل',
+    pastParticiple: 'ختلی',
+    notes: 'Irregular stems; intransitive'
+  },
+  'غوښتل': {
+    meaning: 'to want',
+    imperfectiveStem: 'غواړـ',
+    perfectiveStem: 'غوښتـ',
+    imperfectiveRoot: 'غوښتل',
+    perfectiveRoot: 'وغوښتل',
+    pastParticiple: 'غوښتلی',
+    notes: 'Irregular stems; transitive'
+  },
+  'کتل': {
+    meaning: 'to look at',
+    imperfectiveStem: 'ګورـ',
+    perfectiveStem: 'کتـ',
+    imperfectiveRoot: 'کتل',
+    perfectiveRoot: 'وکتل',
+    pastParticiple: 'کتلی',
+    notes: 'Suppletive imperfective stem; transitive'
+  }
+}
+
+// Generate forms for regular verbs following standard Pashto conjugation rules
+function generateRegularVerbForms(infinitive: string): string[] {
+  const forms: string[] = []
+  const root = infinitive.replace(/ل$/, '') // Remove final ل
+  
+  // Add base form
+  forms.push(infinitive)
+  
+  // Imperfective forms (present tense)
+  const imperfectiveStem = root + 'ې' // Basic imperfective stem
+  forms.push(imperfectiveStem + 'م') // 1st singular
+  forms.push(imperfectiveStem + 'ې') // 2nd singular  
+  forms.push(imperfectiveStem + 'ي') // 3rd singular
+  forms.push(imperfectiveStem + 'و') // 1st plural
+  forms.push(imperfectiveStem + 'ئ') // 2nd plural
+  
+  // Perfective forms (with و prefix)
+  const perfectiveRoot = 'و' + infinitive
+  forms.push(perfectiveRoot)
+  
+  // Past forms
+  forms.push(root + 'لو') // 3rd singular masculine past
+  forms.push(root + 'له') // 3rd singular feminine past
+  forms.push(root + 'لل') // Past participle base
+  
+  // Subjunctive (perfective stem + present endings)
+  const perfectiveStem = 'و' + root
+  forms.push(perfectiveStem + 'م') // 1st singular subjunctive
+  forms.push(perfectiveStem + 'ې') // 2nd singular subjunctive
+  forms.push(perfectiveStem + 'ي') // 3rd singular subjunctive
+  
+  return forms.filter(Boolean)
+}
+
+// Generate forms for compound verbs (stative vs dynamic)
+function generateCompoundVerbForms(infinitive: string, isStative: boolean): string[] {
+  const forms: string[] = []
+  const parts = infinitive.split(' ')
+  if (parts.length !== 2) return [infinitive]
+  
+  const [main, helper] = parts
+  forms.push(infinitive) // Base form
+  
+  if (isStative) {
+    // Stative compounds: welding/squishing in imperfective
+    // e.g., ګرم کېدل -> ګرم کېږم (squished)
+    if (helper === 'کېدل') {
+      forms.push(main + ' کېږم') // 1st singular
+      forms.push(main + ' کېږې') // 2nd singular  
+      forms.push(main + ' کېږي') // 3rd singular
+      forms.push(main + ' شو') // Past (perfective)
+      forms.push(main + ' شوه') // Past feminine
+    } else if (helper === 'کول') {
+      // Stative with کول
+      forms.push(main + ' کوم') // 1st singular
+      forms.push(main + ' کوې') // 2nd singular
+      forms.push(main + ' کوي') // 3rd singular
+      forms.push(main + ' کړ') // Past
+      forms.push(main + ' کړه') // Past feminine
+    }
+  } else {
+    // Dynamic compounds: no welding
+    // e.g., منډه وهل -> منډه وهم (not welded)
+    const helperRoot = helper.replace(/ل$/, '')
+    forms.push(`${main} ${helperRoot}م`) // 1st singular
+    forms.push(`${main} ${helperRoot}ې`) // 2nd singular
+    forms.push(`${main} ${helperRoot}ي`) // 3rd singular
+    forms.push(`${main} و${helper}`) // Perfective
+    forms.push(`${main} ${helperRoot}لو`) // Past masculine
+    forms.push(`${main} ${helperRoot}له`) // Past feminine
+  }
+  
+  return forms.filter(Boolean)
+}
+
+// Generate forms for irregular verbs using the predefined map
+function generateIrregularVerbForms(infinitive: string): string[] {
+  const verb = IRREGULAR_VERBS[infinitive]
+  if (!verb) return [infinitive]
+  
+  const forms: string[] = [infinitive]
+  
+  // Use the irregular stems
+  const impStem = verb.imperfectiveStem.replace(/ـ$/, '') // Remove stem marker
+  const perfStem = verb.perfectiveStem.replace(/ـ$/, '')
+  
+  // Imperfective forms
+  forms.push(impStem + 'م') // 1st singular
+  forms.push(impStem + 'ې') // 2nd singular
+  forms.push(impStem + 'ي') // 3rd singular
+  forms.push(impStem + 'و') // 1st plural
+  forms.push(impStem + 'ئ') // 2nd plural
+  
+  // Perfective forms  
+  if (perfStem !== impStem) {
+    forms.push(perfStem + 'م') // 1st singular subjunctive
+    forms.push(perfStem + 'ې') // 2nd singular subjunctive
+    forms.push(perfStem + 'ي') // 3rd singular subjunctive
+  }
+  
+  // Add roots and participle
+  forms.push(verb.imperfectiveRoot)
+  forms.push(verb.perfectiveRoot)
+  forms.push(verb.pastParticiple)
+  
+  return forms.filter(Boolean)
+}
+
 // Simple in-memory cache for search responses
 interface SearchPayload {
   results: Verse[];
@@ -1153,11 +1435,41 @@ export async function POST(request: NextRequest) {
         // Generate all inflected forms using our comprehensive pattern system
         const allPossibleForms = expandInflectionVariants(normalizedLookup)
         
-        // Add compound verb forms (منډه وهل, منډې وهل, etc.)
-        const auxVerbs = ['کول', 'وهل', 'کړل', 'کېدل', 'ورکول']
-        for (const aux of auxVerbs) {
-          for (const form of allPossibleForms.slice(0, 8)) { // Limit to avoid too many combinations
-            allPossibleForms.push(`${form} ${aux}`)
+        // NEW: Detect if this is a verb and generate appropriate conjugations
+        const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
+        if (isVerb) {
+          let verbForms: string[] = []
+          
+          // Priority 1: Check if it's an irregular verb
+          if (normalizedLookup in IRREGULAR_VERBS) {
+            verbForms = generateIrregularVerbForms(normalizedLookup)
+            console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
+          }
+          // Priority 2: Check if it's a compound verb
+          else if (normalizedLookup.includes(' ')) {
+            // Detect stative vs dynamic compound
+            const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') || 
+                             normalizedLookup.includes('کېدل') || normalizedLookup.includes('شول')
+            verbForms = generateCompoundVerbForms(normalizedLookup, isStative)
+            console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
+          }
+          // Priority 3: Regular verb
+          else {
+            verbForms = generateRegularVerbForms(normalizedLookup)
+            console.log(`DEBUG: ${normalizedLookup} - Found regular verb, generated ${verbForms.length} forms`)
+          }
+          
+          // Add verb forms to the possible forms list
+          allPossibleForms.push(...verbForms)
+        }
+        
+        // Legacy: Add compound verb forms (منډه وهل, منډې وهل, etc.) for non-verbs
+        if (!isVerb) {
+          const auxVerbs = ['کول', 'وهل', 'کړل', 'کېدل', 'ورکول']
+          for (const aux of auxVerbs) {
+            for (const form of allPossibleForms.slice(0, 8)) { // Limit to avoid too many combinations
+              allPossibleForms.push(`${form} ${aux}`)
+            }
           }
         }
         
