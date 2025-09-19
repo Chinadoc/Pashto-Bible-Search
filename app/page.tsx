@@ -343,7 +343,6 @@ export default function Home() {
           <div className="lg:col-span-1">
             <CoverageSidebar
               coverage={coverage}
-              localBible={localBible}
               scope={scope}
               coverageLevel={coverageLevel}
               onPickBook={onBookSelect}
