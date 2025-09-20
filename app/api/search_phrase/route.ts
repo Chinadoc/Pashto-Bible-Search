@@ -1660,6 +1660,36 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // If book filter is applied, get accurate counts for related forms within that book
+        if (bookFilter && existingForms.length > 0) {
+          const bookVariantsList = bookVariants(bookFilter).slice(0, 3) // Limit to avoid too many queries
+
+          // For book-filtered searches, we need to recount forms within the specific book
+          const bookFilteredForms: Array<{form: string, count: number}> = []
+
+          for (const formData of existingForms.slice(0, 8)) { // Check top 8 forms to avoid timeout
+            try {
+              const { count } = await supabase
+                .from('verses')
+                .select('*', { count: 'exact', head: true })
+                .in('book', bookVariantsList)
+                .ilike('text', `%${formData.form.replace(/[%_]/g, '\\$&')}%`) // Escape SQL wildcards
+
+              if (count && count > 0) {
+                bookFilteredForms.push({
+                  form: formData.form,
+                  count: count
+                })
+              }
+            } catch (error) {
+              console.warn(`Error counting ${formData.form} in book ${bookFilter}:`, error)
+            }
+          }
+
+          // Replace existing forms with book-filtered counts
+          existingForms.splice(0, existingForms.length, ...bookFilteredForms)
+        }
+
         // Also check word_frequencies table for additional forms
         try {
           const { data: wordFreqData } = await supabase
