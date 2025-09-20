@@ -1,0 +1,44 @@
+{
+  "book": "Psalms",
+  "chapter": 1,
+  "verseCount": 6,
+  "expectedVerses": 6,
+  "markers": [
+    {
+      "verse": 1,
+      "startTime": 4,
+      "timeString": "0:04",
+      "source": "digits"
+    },
+    {
+      "verse": 2,
+      "startTime": 2,
+      "timeString": "0:02",
+      "source": "digits"
+    },
+    {
+      "verse": 3,
+      "startTime": 4,
+      "timeString": "0:04",
+      "source": "digits"
+    },
+    {
+      "verse": 4,
+      "startTime": 14,
+      "timeString": "0:14",
+      "source": "digits"
+    },
+    {
+      "verse": 5,
+      "startTime": 1,
+      "timeString": "0:01",
+      "source": "digits"
+    },
+    {
+      "verse": 6,
+      "startTime": 14,
+      "timeString": "0:14",
+      "source": "digits"
+    }
+  ]
+}

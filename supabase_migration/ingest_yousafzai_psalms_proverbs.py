@@ -285,6 +285,39 @@ def upload_audio_clip(supabase_url: str, service_key: str, file_path: Path, targ
     return public
 
 
+def process_audio_clips_from_local(supabase_url: str, service_key: str, verses: List[Dict], local_base_dir: str) -> None:
+    """Process audio clips from local directory and upload to Supabase storage."""
+    local_base = Path(local_base_dir)
+    
+    for verse in verses:
+        book_slug = verse.get("book_slug")
+        chapter = verse.get("chapter")
+        verse_num = verse.get("verse")
+        
+        if not book_slug or chapter is None or verse_num is None:
+            continue
+            
+        # Look for the local audio file
+        expected_filename = f"yousafzai_{book_slug}{int(chapter):03d}_verse_{int(verse_num):03d}.mp3"
+        
+        # Check in the book subdirectory
+        local_file = local_base / book_slug / f"chapter-{int(chapter)}-verses" / expected_filename
+        if not local_file.exists():
+            # Check directly in book directory 
+            local_file = local_base / book_slug / expected_filename
+            
+        if local_file.exists():
+            storage_name = storage_filename(book_slug, int(chapter), int(verse_num))
+            try:
+                public_url = upload_audio_clip(supabase_url, service_key, local_file, storage_name)
+                verse["audio_verse_url"] = public_url
+                verse["audio_storage_filename"] = storage_name
+                print(f"  ✓ Uploaded {storage_name}")
+            except Exception as e:
+                print(f"  ✗ Failed to upload {expected_filename}: {e}")
+        else:
+            print(f"  ⚠ Local file not found: {expected_filename}")
+
 def process_audio_clips(supabase_url: str, service_key: str, verses: List[Dict]) -> None:
     ensure_ffmpeg()
     temp_dir = Path(tempfile.mkdtemp(prefix="yousafzai_audio_"))
@@ -308,9 +341,9 @@ def process_audio_clips(supabase_url: str, service_key: str, verses: List[Dict])
             slice_audio_segment(src, float(start), float(end), clip_path)
             storage_name = storage_filename(book_slug, int(chapter), int(verse_num))
             public_url = upload_audio_clip(supabase_url, service_key, clip_path, storage_name)
-            verse["audio_public_url"] = public_url
-            verse["audio_chapter_url"] = public_url
+            verse["audio_verse_url"] = public_url  # Individual verse clip
             verse["audio_storage_filename"] = storage_name
+            # Keep audio_chapter_url as the chapter MP3 for fallback
             print(f"  ✓ Uploaded {storage_name}")
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -340,6 +373,8 @@ ALLOWED_COLUMNS = {
     "dialect",
     "testament",
     "audio_chapter_url",
+    "audio_verse_url",
+    "audio_storage_filename",
     "source_url",
 }
 
@@ -355,12 +390,45 @@ def prepare_payload(rows: List[Dict]) -> List[Dict]:
 def upsert_rows(supabase_url: str, service_key: str, rows: List[Dict]):
     endpoint = f"{supabase_url}/rest/v1/verses_yousafzai"
     headers = supabase_headers(service_key)
+    
+    # First batch - add columns if they don't exist (will fail silently if they do)
+    first_batch = True
     for batch in chunk(rows, 250):
         payload = prepare_payload(batch)
+        
+        # For the first batch, use merge-duplicates to handle potential column additions
+        if first_batch:
+            headers["Prefer"] = "resolution=merge-duplicates,return=minimal"
+            first_batch = False
+        
         resp = requests.post(endpoint, headers=headers, json=payload)
         if resp.status_code not in (200, 201, 204):
             raise RuntimeError(f"Supabase upsert failed: {resp.status_code} {resp.text}")
         time.sleep(0.2)
+
+
+def fetch_existing_verses(supabase_url: str, service_key: str) -> List[Dict]:
+    """Fetch existing verses from Supabase to reprocess audio clips."""
+    headers = supabase_headers(service_key)
+    all_verses = []
+    
+    for book in BOOKS:
+        book_name = book['name']
+        for chapter in range(1, book['chapters'] + 1):
+            url = f"{supabase_url}/rest/v1/verses_yousafzai?book=eq.{book_name}&chapter=eq.{chapter}&order=verse"
+            resp = requests.get(url, headers=headers)
+            if resp.status_code == 200:
+                verses = resp.json()
+                for verse in verses:
+                    # Add the book_slug needed for audio processing
+                    verse['book_slug'] = book['slug']
+                    # Rebuild the audio_chapter_url from the original source
+                    verse['audio_chapter_url'] = f"{AUDIO_BASE}/{book['slug']}-{chapter}.mp3"
+                all_verses.extend(verses)
+            else:
+                print(f"Warning: Failed to fetch {book_name} {chapter}: {resp.status_code}")
+    
+    return all_verses
 
 
 def create_table_if_needed(url: str, service_key: str):
@@ -384,6 +452,36 @@ def main():
     if not supabase_url or not service_key:
         print("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY", file=sys.stderr)
         sys.exit(1)
+
+    # Check if we should only process audio clips
+    if "--audio-only" in sys.argv:
+        print("Audio-only mode: fetching existing verses and processing audio clips...")
+        all_rows = fetch_existing_verses(supabase_url, service_key)
+        if not all_rows:
+            print("No existing verses found", file=sys.stderr)
+            return
+        print(f"Found {len(all_rows)} existing verses")
+        print("Processing audio clips and uploading to storage...")
+        process_audio_clips(supabase_url, service_key, all_rows)
+        print("Updating database with new audio URLs...")
+        upsert_rows(supabase_url, service_key, all_rows)
+        print("Done.")
+        return
+    
+    if "--local-audio" in sys.argv:
+        print("Local audio mode: fetching existing verses and uploading local audio clips...")
+        all_rows = fetch_existing_verses(supabase_url, service_key)
+        if not all_rows:
+            print("No existing verses found", file=sys.stderr)
+            return
+        print(f"Found {len(all_rows)} existing verses")
+        local_audio_dir = "/Users/jeremysamuels/Documents/Pashto Bible split into verses/yousafzai_split_audio"
+        print(f"Uploading local audio clips from {local_audio_dir}...")
+        process_audio_clips_from_local(supabase_url, service_key, all_rows, local_audio_dir)
+        print("Updating database with new audio URLs...")
+        upsert_rows(supabase_url, service_key, all_rows)
+        print("Done.")
+        return
 
     all_rows: List[Dict] = []
     for book in BOOKS:
