@@ -391,6 +391,14 @@ function generateIrregularVerbForms(infinitive: string): string[] {
     }
   }
 
+  // Future Forms (به + present/subjunctive)
+  for (const ending of presentEndings) {
+    forms.push(`به ${impStem}${ending}`) // Imperfective Future
+    if (perfStem !== impStem) {
+      forms.push(`به ${perfStem}${ending}`) // Perfective Future
+    }
+  }
+
   // Past Forms (Continuous & Simple)
   const pastEndings = ['لم', 'لو', 'لې', 'لئ', 'ل', 'له']
   for (const ending of pastEndings) {
@@ -398,24 +406,59 @@ function generateIrregularVerbForms(infinitive: string): string[] {
     forms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending)   // Simple Past
   }
 
-  // Negative Forms
+  // Perfect Tenses - Comprehensive (all gender/number combinations)
+  const perfectEquatives = [
+    'یم', 'یو', 'یې', 'یئ', 'دی', 'ده', 'دي',  // Present
+    'وم', 'وو', 'وې', 'وئ', 'و', 'وه', 'ول',  // Past
+    'وی', 'وای' // Subjunctive
+  ]
+
+  const participleBase = verb.pastParticiple.replace(/ی$/, '') // Remove ی to get base
+
+  for (const equative of perfectEquatives) {
+    // Masculine singular
+    forms.push(`${verb.pastParticiple} ${equative}`)
+    // Feminine singular (add ې)
+    forms.push(`${participleBase}ې ${equative}`)
+    // Plural (add ی)
+    forms.push(`${participleBase}ي ${equative}`)
+  }
+
+  // Ability Moods - Comprehensive
+  forms.push(`${verb.pastParticiple} شم`) // Present Ability M.S.
+  forms.push(`و${verb.pastParticiple} شم`) // Subjunctive Ability M.S.
+  forms.push(`${verb.pastParticiple} شول`) // Past Ability
+
+  // Imperative Forms
+  forms.push(impStem + 'ه') // Imperfective Imperative
+  forms.push(perfStem + 'ه') // Perfective Imperative
+  forms.push(`مه ${impStem}ه`) // Negative Imperfective Imperative
+  forms.push(`مه ${perfStem}ه`) // Negative Perfective Imperative
+
+  // Comprehensive Negative Forms
   forms.push(`نه ${impStem}م`)     // Negative Present
   forms.push(`ونه ${perfStem}م`)   // Negative Subjunctive
   forms.push(`نه ${verb.imperfectiveRoot}`) // Negative Continuous Past
   forms.push(`ونه ${verb.perfectiveRoot}`)   // Negative Simple Past
-  
-  // Perfect Tenses (common forms)
-  forms.push(`${verb.pastParticiple} دی`) // Present Perfect M.S.
-  forms.push(`${verb.pastParticiple} ده`) // Present Perfect F.S.
-  forms.push(`${verb.pastParticiple} دي`) // Present Perfect Pl.
-  forms.push(`${verb.pastParticiple} و`)  // Past Perfect M.S.
-  forms.push(`${verb.pastParticiple} وه`) // Past Perfect F.S.
-  forms.push(`${verb.pastParticiple} ول`) // Past Perfect Pl.
-  
-  // Ability Moods (common forms)
-  forms.push(`${verb.pastParticiple} شم`) // Present Ability
-  forms.push(`و${verb.pastParticiple} شم`) // Subjunctive Ability
-  forms.push(`${verb.pastParticiple} شول`) // Past Ability
+
+  // Negative forms for all persons
+  for (const ending of presentEndings) {
+    forms.push(`نه ${impStem}${ending}`) // Negative Present
+    forms.push(`ونه ${impStem}${ending}`) // Negative Present Subjunctive (some verbs use this)
+    if (perfStem !== impStem) {
+      forms.push(`ونه ${perfStem}${ending}`) // Negative Subjunctive
+    }
+  }
+
+  // Negative Perfect Forms
+  forms.push(`نه یم ${verb.pastParticiple}`)
+  forms.push(`ونه یم ${verb.pastParticiple}`)
+  forms.push(`نه ول ${verb.pastParticiple}`)
+  forms.push(`ونه ول ${verb.pastParticiple}`)
+
+  // Negative Ability Forms
+  forms.push(`نه شم ${verb.pastParticiple}`)
+  forms.push(`ونه شم ${verb.pastParticiple}`)
 
   // Add roots and participle
   forms.push(verb.imperfectiveRoot)
