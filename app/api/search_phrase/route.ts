@@ -1571,9 +1571,6 @@ export async function POST(request: NextRequest) {
 
         // Combine all forms but track their origin
         const allPossibleForms = [...nounForms, ...verbForms]
-        console.log(`DEBUG: Generated ${verbForms.length} verb forms and ${nounForms.length} noun forms`)
-        console.log(`DEBUG: Verb forms: ${verbForms.slice(0, 5).join(', ')}${verbForms.length > 5 ? '...' : ''}`)
-        console.log(`DEBUG: Total allPossibleForms: ${allPossibleForms.length}`)
         
         // Legacy: Add compound verb forms (منډه وهل, منډې وهل, etc.) for non-verbs
         if (!isVerb) {
@@ -1698,32 +1695,29 @@ export async function POST(request: NextRequest) {
         const nouns: Array<{form: string, count: number}> = []
         const other: Array<{form: string, count: number}> = []
 
-        console.log(`DEBUG: Found ${existingForms.length} forms in database`)
-        console.log(`DEBUG: First 10 forms: ${existingForms.slice(0, 10).map(f => f.form).join(', ')}`)
-
         for (const item of existingForms) {
           const form = item.form
 
           // Categorize based on form origin and characteristics
           if (verbForms.includes(form)) {
             // This form was generated from verb conjugation
-            console.log(`DEBUG: Categorizing ${form} as VERB (from verbForms array)`)
             verbs.push(item)
           } else if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
             // Compound verbs (منډه وهل, etc.)
-            console.log(`DEBUG: Categorizing ${form} as VERB (compound)`)
             verbs.push(item)
           } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
             // Simple verbs (infinitives)
-            console.log(`DEBUG: Categorizing ${form} as VERB (infinitive)`)
+            verbs.push(item)
+          } else if ((form.endsWith('م') || form.endsWith('ې') || form.endsWith('ي') || form.endsWith('و') || form.endsWith('ئ')) &&
+                     !form.endsWith('ی') && !form.endsWith('ي') && !form.endsWith('یو') && !form.endsWith('ونه')) {
+            // Likely verb conjugations (1st/2nd/3rd person endings) - NOT noun endings
+            // Exclude noun endings like ې, ы, يو, ونه
             verbs.push(item)
           } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
             // Nouns and adjectives (all inflected forms)
-            console.log(`DEBUG: Categorizing ${form} as NOUN (${form.slice(-1)})`)
             nouns.push(item)
           } else {
-            console.log(`DEBUG: Categorizing ${form} as OTHER`)
             other.push(item)
           }
         }
