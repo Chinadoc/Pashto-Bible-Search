@@ -30,8 +30,9 @@ export default function SearchBar({
   showFirstPerson,
   setShowFirstPerson,
   verbTense,
-  setVerbTense
-}: Props) {
+  setVerbTense,
+  includeRelated = false
+}: Props & { includeRelated?: boolean }) {
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
   const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => setScope(e.target.value as Scope);
 
@@ -64,43 +65,8 @@ export default function SearchBar({
         {loading ? 'Searching...' : 'Search'}
       </button>
 
-      {/* Verb understanding options */}
-      <div className="flex items-center gap-3">
-        {/* Tense selection */}
-        {verbTense && setVerbTense && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Tense:</span>
-            <select
-              value={verbTense}
-              onChange={(e) => setVerbTense(e.target.value as 'present' | 'past' | 'future' | 'perfect')}
-              className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
-            >
-              <option value="present">Present (م)</option>
-              <option value="past">Past (لم)</option>
-              <option value="future">Future (به)</option>
-              <option value="perfect">Perfect (لیدلی)</option>
-            </select>
-          </div>
-        )}
 
-        {/* Person selection */}
-        {verbPerson && setVerbPerson && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Person:</span>
-            <select
-              value={verbPerson}
-              onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
-              className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
-            >
-              <option value="1st">1st Person (م)</option>
-              <option value="2nd">2nd Person (ې)</option>
-              <option value="3rd">3rd Person (ي)</option>
-            </select>
-          </div>
-        )}
-      </div>
-
-      {showFirstPerson !== undefined && setShowFirstPerson && (
+      {includeRelated && showFirstPerson !== undefined && setShowFirstPerson && (
         <button
           onClick={() => setShowFirstPerson(!showFirstPerson)}
           className={`px-3 py-1 rounded text-sm border ${
