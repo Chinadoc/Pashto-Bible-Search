@@ -284,28 +284,60 @@ function generateRegularVerbForms(infinitive: string): string[] {
     }
   }
   
-  // Imperfective forms (present tense)
-  forms.push(imperfectiveStem + 'م') // 1st singular
-  forms.push(imperfectiveStem + 'ې') // 2nd singular  
-  forms.push(imperfectiveStem + 'ي') // 3rd singular
-  forms.push(imperfectiveStem + 'و') // 1st plural
-  forms.push(imperfectiveStem + 'ئ') // 2nd plural
+  // Imperfective forms (present tense) using LingDocs structure
+  const presentEndings = [
+    // 1st person singular
+    [[{ p: 'م', f: 'um' }]],
+    // 1st person plural
+    [[{ p: 'و', f: 'oo' }]],
+    // 2nd person singular masculine
+    [[{ p: 'ې', f: 'e' }]],
+    // 2nd person singular feminine
+    [[{ p: 'ې', f: 'e' }]],
+    // 3rd person singular
+    [[{ p: 'ي', f: 'ee' }]],
+    // 3rd person plural
+    [[{ p: 'ي', f: 'ee' }]]
+  ]
+
+  for (let i = 0; i < presentEndings.length; i++) {
+    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(imperfectiveStem + ending.p) // Present
+  }
   
   // Perfective forms 
   const perfectiveRoot = 'و' + infinitive
   forms.push(perfectiveRoot)
   
   // Subjunctive (perfective stem + present endings)
-  forms.push(perfectiveStem + 'م') // 1st singular subjunctive
-  forms.push(perfectiveStem + 'ې') // 2nd singular subjunctive
-  forms.push(perfectiveStem + 'ي') // 3rd singular subjunctive
-  forms.push(perfectiveStem + 'و') // 1st plural subjunctive
-  forms.push(perfectiveStem + 'ئ') // 2nd plural subjunctive
+  for (let i = 0; i < presentEndings.length; i++) {
+    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(perfectiveStem + ending.p) // Subjunctive
+  }
   
-  // Past forms
+  // Past forms using LingDocs structure
+  const pastEndings = [
+    // 1st person singular
+    [[{ p: 'لم', f: 'lum' }]],
+    // 1st person plural
+    [[{ p: 'لو', f: 'loo' }]],
+    // 2nd person singular masculine
+    [[{ p: 'لې', f: 'le' }]],
+    // 2nd person singular feminine
+    [[{ p: 'لې', f: 'le' }]],
+    // 3rd person singular masculine
+    [[{ p: 'ل', f: 'ul' }]],
+    // 3rd person singular feminine
+    [[{ p: 'له', f: 'la' }]]
+  ]
+
   const pastRoot = infinitive.replace(/ل$/, '')
-  forms.push(pastRoot + 'لو') // 3rd singular masculine past
-  forms.push(pastRoot + 'له') // 3rd singular feminine past
+  for (let i = 0; i < pastEndings.length; i++) {
+    const ending = pastEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(pastRoot + ending.p) // Past
+  }
+
+  // Past participles
   forms.push(pastRoot + 'لل') // Past participle base
   forms.push(pastRoot + 'لی') // Past participle inflected
   
@@ -325,47 +357,116 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
     // Stative compounds: Generate both squished and non-squished forms
     // e.g., ګرم کېدل -> both "ګرم کېږم" AND "ګرمېږم"
     if (helper === 'کېدل') {
+      // Present forms for stative compounds using LingDocs structure
+      const presentEndings = [
+        // 1st person singular
+        [[{ p: 'ېږم', f: 'eGum' }]],
+        // 1st person plural
+        [[{ p: 'ېږو', f: 'eGoo' }]],
+        // 2nd person singular masculine
+        [[{ p: 'ېږې', f: 'eGe' }]],
+        // 2nd person singular feminine
+        [[{ p: 'ېږې', f: 'eGe' }]],
+        // 3rd person singular
+        [[{ p: 'ېږي', f: 'eGee' }]],
+        // 3rd person plural
+        [[{ p: 'ېږي', f: 'eGee' }]]
+      ]
+
       // Non-squished forms (spaced)
-      forms.push(main + ' کېږم') // 1st singular
-      forms.push(main + ' کېږې') // 2nd singular  
-      forms.push(main + ' کېږي') // 3rd singular
-      forms.push(main + ' کېږو') // 1st plural
-      forms.push(main + ' کېږئ') // 2nd plural
+      for (let i = 0; i < presentEndings.length; i++) {
+        const ending = presentEndings[i][0][0]
+        forms.push(main + ' ک' + ending.p) // Spaced present
+      }
       forms.push(main + ' شو') // Past (perfective)
       forms.push(main + ' شوه') // Past feminine
-      
+
       // Squished forms (fused) - Critical for proper matching!
-      forms.push(main + 'ېږم') // 1st singular squished
-      forms.push(main + 'ېږې') // 2nd singular squished
-      forms.push(main + 'ېږي') // 3rd singular squished
-      forms.push(main + 'ېږو') // 1st plural squished
-      forms.push(main + 'ېږئ') // 2nd plural squished
+      for (let i = 0; i < presentEndings.length; i++) {
+        const ending = presentEndings[i][0][0]
+        forms.push(main + ending.p) // Squished present
+      }
       forms.push(main + 'ېدل') // Infinitive squished
-      
+
     } else if (helper === 'کول') {
-      // Stative with کول - Non-squished
-      forms.push(main + ' کوم') // 1st singular
-      forms.push(main + ' کوې') // 2nd singular
-      forms.push(main + ' کوي') // 3rd singular
+      // Present forms for کول compounds using LingDocs structure
+      const presentEndings = [
+        // 1st person singular
+        [[{ p: 'وم', f: 'wum' }]],
+        // 1st person plural
+        [[{ p: 'وو', f: 'woo' }]],
+        // 2nd person singular masculine
+        [[{ p: 'وې', f: 'we' }]],
+        // 2nd person singular feminine
+        [[{ p: 'وې', f: 'we' }]],
+        // 3rd person singular
+        [[{ p: 'وي', f: 'wee' }]],
+        // 3rd person plural
+        [[{ p: 'وي', f: 'wee' }]]
+      ]
+
+      // Non-squished forms (spaced)
+      for (let i = 0; i < presentEndings.length; i++) {
+        const ending = presentEndings[i][0][0]
+        forms.push(main + ' ک' + ending.p) // Spaced present
+      }
       forms.push(main + ' کړ') // Past
       forms.push(main + ' کړه') // Past feminine
-      
+
       // Squished forms for کول compounds
-      forms.push(main + 'کوم') // 1st singular squished
-      forms.push(main + 'کوې') // 2nd singular squished
-      forms.push(main + 'کوي') // 3rd singular squished
+      for (let i = 0; i < presentEndings.length; i++) {
+        const ending = presentEndings[i][0][0]
+        forms.push(main + ending.p) // Squished present
+      }
       forms.push(main + 'کول') // Infinitive squished
     }
   } else {
-    // Dynamic compounds: no welding
-    // e.g., منډه وهل -> منډه وهم (not welded)
+    // Dynamic compounds: no welding using LingDocs structure
     const helperRoot = helper.replace(/ل$/, '')
-    forms.push(`${main} ${helperRoot}م`) // 1st singular
-    forms.push(`${main} ${helperRoot}ې`) // 2nd singular
-    forms.push(`${main} ${helperRoot}ي`) // 3rd singular
+
+    // Present forms for dynamic compounds
+    const presentEndings = [
+      // 1st person singular
+      [[{ p: 'م', f: 'um' }]],
+      // 1st person plural
+      [[{ p: 'و', f: 'oo' }]],
+      // 2nd person singular masculine
+      [[{ p: 'ې', f: 'e' }]],
+      // 2nd person singular feminine
+      [[{ p: 'ې', f: 'e' }]],
+      // 3rd person singular
+      [[{ p: 'ي', f: 'ee' }]],
+      // 3rd person plural
+      [[{ p: 'ي', f: 'ee' }]]
+    ]
+
+    for (let i = 0; i < presentEndings.length; i++) {
+      const ending = presentEndings[i][0][0]
+      forms.push(`${main} ${helperRoot}${ending.p}`) // Present
+    }
+
+    // Past forms for dynamic compounds
+    const pastEndings = [
+      // 1st person singular
+      [[{ p: 'لم', f: 'lum' }]],
+      // 1st person plural
+      [[{ p: 'لو', f: 'loo' }]],
+      // 2nd person singular masculine
+      [[{ p: 'لې', f: 'le' }]],
+      // 2nd person singular feminine
+      [[{ p: 'لې', f: 'le' }]],
+      // 3rd person singular masculine
+      [[{ p: 'ل', f: 'ul' }]],
+      // 3rd person singular feminine
+      [[{ p: 'له', f: 'la' }]]
+    ]
+
+    for (let i = 0; i < pastEndings.length; i++) {
+      const ending = pastEndings[i][0][0]
+      forms.push(`${main} ${helperRoot}${ending.p}`) // Past
+    }
+
     forms.push(`${main} و${helper}`) // Perfective
-    forms.push(`${main} ${helperRoot}لو`) // Past masculine
-    forms.push(`${main} ${helperRoot}له`) // Past feminine
   }
   
   return forms.filter(Boolean)
@@ -382,28 +483,60 @@ function generateIrregularVerbForms(infinitive: string): string[] {
   const impStem = verb.imperfectiveStem.replace(/ـ$/, '') // Remove stem marker
   const perfStem = verb.perfectiveStem.replace(/ـ$/, '')
 
-  // Present & Subjunctive Forms
-  const presentEndings = ['م', 'ې', 'ي', 'و', 'ئ']
-  for (const ending of presentEndings) {
-    forms.push(impStem + ending) // Present
+  // Present & Subjunctive Forms using LingDocs VerbBlock structure
+  const presentEndings = [
+    // 1st person singular
+    [[{ p: 'م', f: 'um' }]],
+    // 1st person plural
+    [[{ p: 'و', f: 'oo' }]],
+    // 2nd person singular masculine
+    [[{ p: 'ې', f: 'e' }]],
+    // 2nd person singular feminine
+    [[{ p: 'ې', f: 'e' }]],
+    // 3rd person singular
+    [[{ p: 'ي', f: 'ee' }]],
+    // 3rd person plural
+    [[{ p: 'ي', f: 'ee' }]]
+  ]
+
+  // Generate present forms
+  for (let i = 0; i < presentEndings.length; i++) {
+    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(impStem + ending.p) // Present
     if (perfStem !== impStem) {
-      forms.push(perfStem + ending) // Subjunctive
+      forms.push(perfStem + ending.p) // Subjunctive
     }
   }
 
   // Future Forms (به + present/subjunctive)
-  for (const ending of presentEndings) {
-    forms.push(`به ${impStem}${ending}`) // Imperfective Future
+  for (let i = 0; i < presentEndings.length; i++) {
+    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(`به ${impStem}${ending.p}`) // Imperfective Future
     if (perfStem !== impStem) {
-      forms.push(`به ${perfStem}${ending}`) // Perfective Future
+      forms.push(`به ${perfStem}${ending.p}`) // Perfective Future
     }
   }
 
-  // Past Forms (Continuous & Simple)
-  const pastEndings = ['لم', 'لو', 'لې', 'لئ', 'ل', 'له']
-  for (const ending of pastEndings) {
-    forms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending) // Continuous Past
-    forms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending)   // Simple Past
+  // Past Forms (Continuous & Simple) using LingDocs structure
+  const pastEndings = [
+    // 1st person singular
+    [[{ p: 'لم', f: 'lum' }]],
+    // 1st person plural
+    [[{ p: 'لو', f: 'loo' }]],
+    // 2nd person singular masculine
+    [[{ p: 'لې', f: 'le' }]],
+    // 2nd person singular feminine
+    [[{ p: 'لې', f: 'le' }]],
+    // 3rd person singular masculine
+    [[{ p: 'ل', f: 'ul' }]],
+    // 3rd person singular feminine
+    [[{ p: 'له', f: 'la' }]]
+  ]
+
+  for (let i = 0; i < pastEndings.length; i++) {
+    const ending = pastEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending.p) // Continuous Past
+    forms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending.p)   // Simple Past
   }
 
   // Perfect Tenses - Comprehensive (all gender/number combinations)
@@ -442,11 +575,12 @@ function generateIrregularVerbForms(infinitive: string): string[] {
   forms.push(`ونه ${verb.perfectiveRoot}`)   // Negative Simple Past
 
   // Negative forms for all persons
-  for (const ending of presentEndings) {
-    forms.push(`نه ${impStem}${ending}`) // Negative Present
-    forms.push(`ونه ${impStem}${ending}`) // Negative Present Subjunctive (some verbs use this)
+  for (let i = 0; i < presentEndings.length; i++) {
+    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
+    forms.push(`نه ${impStem}${ending.p}`) // Negative Present
+    forms.push(`ونه ${impStem}${ending.p}`) // Negative Present Subjunctive (some verbs use this)
     if (perfStem !== impStem) {
-      forms.push(`ونه ${perfStem}${ending}`) // Negative Subjunctive
+      forms.push(`ونه ${perfStem}${ending.p}`) // Negative Subjunctive
     }
   }
 
