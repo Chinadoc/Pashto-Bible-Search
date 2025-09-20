@@ -1484,10 +1484,7 @@ export async function POST(request: NextRequest) {
           let q = supabase.from('verses').select(selectCols).ilike('text', `%${p.replace(/%/g,'')}%`)
           if (scope === 'ot') q = q.eq('testament', 'OT')
           if (scope === 'nt') q = q.eq('testament', 'NT')
-          if (bookFilter) {
-            const books = bookVariants(bookFilter).slice(0, 5)
-            if (books.length) q = (q as any).in('book', books)
-          }
+          // Don't filter by book here - search across all books but track book information
           const { data, error } = await q.limit(60)
           if (!error && Array.isArray(data) && data.length > 0) {
             for (const row of data as any[]) {
@@ -1669,9 +1666,9 @@ export async function POST(request: NextRequest) {
     const refSet = new Set<string>()
     const coverageMap = new Map<string, number>()
     const coverageRefSet = new Set<string>()
-    const allowedBooks = bookFilter
-      ? new Set(bookVariants(bookFilter).slice(0, 5))
-      : null
+    // Don't restrict search by book - show results from all books that contain the search term
+    // When bookFilter is set, RelatedForms will show counts specific to that book
+    const allowedBooks = null
 
     // FAST search: Search ALL variants and combine results
     const selectCols = 'book,chapter,verse,text,testament'
