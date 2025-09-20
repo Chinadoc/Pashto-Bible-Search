@@ -73,11 +73,11 @@ export default function RelatedForms({
 
     // Filter by person (basic heuristic)
     if (person === '1st') {
-      filtered = filtered.filter(f => f.endsWith('م') || f.endsWith('و'))
+      filtered = filtered.filter(f => f.form.endsWith('م') || f.form.endsWith('و'))
     } else if (person === '2nd') {
-      filtered = filtered.filter(f => f.endsWith('ې') || f.endsWith('ئ'))
+      filtered = filtered.filter(f => f.form.endsWith('ې') || f.form.endsWith('ئ'))
     } else if (person === '3rd') {
-      filtered = filtered.filter(f => f.endsWith('ي'))
+      filtered = filtered.filter(f => f.form.endsWith('ي'))
     }
 
     return filtered
