@@ -1662,7 +1662,8 @@ export async function POST(request: NextRequest) {
     const primaryTerm = searchVariants.find((form) => PASHTO_CHAR_RE.test(form)) || searchVariants[0]
     lookupTerm = variantDetails.find((meta) => PASHTO_CHAR_RE.test(meta.form))?.form || primaryTerm
     const variantGroups = groupVariantsByPos(variantDetails)
-    const variantsToSearch = searchVariants.slice(0, includeRelated ? 12 : 7)
+    // Search ALL variants when includeRelated is true (up to 40 to avoid timeout)
+    const variantsToSearch = searchVariants.slice(0, includeRelated ? 40 : 7)
 
     const allResults: Verse[] = []
     const refSet = new Set<string>()
@@ -1910,7 +1911,8 @@ export async function POST(request: NextRequest) {
         
         // Query in batches to avoid URL length limits
         const batchSize = 15
-        for (let i = 0; i < Math.min(allPossibleForms.length, 60); i += batchSize) {
+        const maxFormsToCheck = includeRelated ? 120 : 60 // Check more forms when includeRelated is true
+        for (let i = 0; i < Math.min(allPossibleForms.length, maxFormsToCheck); i += batchSize) {
           const batch = allPossibleForms.slice(i, i + batchSize)
           
           try {
@@ -1959,12 +1961,14 @@ export async function POST(request: NextRequest) {
 
         // If book filter is applied, get accurate counts for related forms within that book
         if (bookFilter && existingForms.length > 0) {
-          const bookVariantsList = bookVariants(bookFilter).slice(0, 3) // Limit to avoid too many queries
+          const bookVariantsList = bookVariants(bookFilter).slice(0, 5) // Use all book variants
 
           // For book-filtered searches, we need to recount forms within the specific book
           const bookFilteredForms: Array<{form: string, count: number}> = []
 
-          for (const formData of existingForms.slice(0, 8)) { // Check top 8 forms to avoid timeout
+          // Process more forms when book filtering to ensure comprehensive results
+          const formsToCheck = includeRelated ? existingForms.slice(0, 20) : existingForms.slice(0, 12)
+          for (const formData of formsToCheck) {
             try {
               const { count } = await supabase
                 .from('verses')
@@ -1992,7 +1996,7 @@ export async function POST(request: NextRequest) {
           const { data: wordFreqData } = await supabase
             .from('word_frequencies')
             .select('word, frequency')
-            .in('word', allPossibleForms.slice(0, 30))
+            .in('word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
             .gte('frequency', 1)
             .order('frequency', { ascending: false })
             .limit(20)
@@ -2013,7 +2017,7 @@ export async function POST(request: NextRequest) {
             const { data: wordFreqData2 } = await supabase
               .from('word_frequencies')
               .select('pashto_word, frequency_count')
-              .in('pashto_word', allPossibleForms.slice(0, 30))
+              .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
               .gte('frequency_count', 1)
               .order('frequency_count', { ascending: false })
               .limit(20)
