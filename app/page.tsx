@@ -62,6 +62,10 @@ export default function Home() {
   const [analysisWord, setAnalysisWord] = useState<string>("");
   const [lastSearchedQuery, setLastSearchedQuery] = useState<string>('');
 
+  // Verb understanding features
+  const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('1st');
+  const [showFirstPerson, setShowFirstPerson] = useState<boolean>(false);
+
 
 
   // hydrate persisted UI state
@@ -262,12 +266,29 @@ export default function Home() {
                           setScope={setScope}
                           onSearch={handleSearch}
                           loading={loading}
+                          verbPerson={verbPerson}
+                          setVerbPerson={setVerbPerson}
+                          showFirstPerson={showFirstPerson}
+                          setShowFirstPerson={setShowFirstPerson}
                         />
 
                         {/* Options */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
                           <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
                         </div>
+
+                        {/* Verb understanding help */}
+                        {(showFirstPerson || verbPerson !== '1st') && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded mb-2">
+                            <div className="font-medium mb-1">🧠 Verb Understanding Mode</div>
+                            {showFirstPerson && <div>• Showing 1st person present forms (م for "I")</div>}
+                            {verbPerson === '2nd' && <div>• Showing 2nd person forms (ې for "you")</div>}
+                            {verbPerson === '3rd' && <div>• Showing 3rd person forms (ي for "he/she")</div>}
+                            <div className="mt-1 text-gray-600 dark:text-gray-400">
+                              Click the 👤 1st Person button to toggle between direct search and 1st person forms
+                            </div>
+                          </div>
+                        )}
                         {query.trim() && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                             {includeRelated ? `Including related forms (total variants: ${variantCount})` : `Direct search (${results.length} results found)`}

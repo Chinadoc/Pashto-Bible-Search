@@ -10,9 +10,24 @@ interface Props {
   setScope: (scope: Scope) => void;
   onSearch: () => void;
   loading: boolean;
+  verbPerson?: '1st' | '2nd' | '3rd';
+  setVerbPerson?: (person: '1st' | '2nd' | '3rd') => void;
+  showFirstPerson?: boolean;
+  setShowFirstPerson?: (show: boolean) => void;
 }
 
-export default function SearchBar({ query, setQuery, scope, setScope, onSearch, loading }: Props) {
+export default function SearchBar({
+  query,
+  setQuery,
+  scope,
+  setScope,
+  onSearch,
+  loading,
+  verbPerson,
+  setVerbPerson,
+  showFirstPerson,
+  setShowFirstPerson
+}: Props) {
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
   const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => setScope(e.target.value as Scope);
 
@@ -44,6 +59,36 @@ export default function SearchBar({ query, setQuery, scope, setScope, onSearch, 
       >
         {loading ? 'Searching...' : 'Search'}
       </button>
+
+      {/* Verb understanding options */}
+      {verbPerson && setVerbPerson && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Person:</span>
+          <select
+            value={verbPerson}
+            onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
+            className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
+          >
+            <option value="1st">1st Person (م)</option>
+            <option value="2nd">2nd Person (ې)</option>
+            <option value="3rd">3rd Person (ي)</option>
+          </select>
+        </div>
+      )}
+
+      {showFirstPerson !== undefined && setShowFirstPerson && (
+        <button
+          onClick={() => setShowFirstPerson(!showFirstPerson)}
+          className={`px-3 py-1 rounded text-sm border ${
+            showFirstPerson
+              ? 'bg-green-500 text-white border-green-500'
+              : 'bg-gray-200 text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
+          } hover:opacity-80 transition-colors`}
+          title="Toggle 1st person present forms"
+        >
+          {showFirstPerson ? '✅ 1st Person' : '👤 1st Person'}
+        </button>
+      )}
     </div>
   );
 }
