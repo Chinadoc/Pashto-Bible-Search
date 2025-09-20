@@ -566,22 +566,73 @@ function generateIrregularVerbForms(infinitive: string): string[] {
 
   // Past forms are now handled in the comprehensive modal structure above
 
-  // Perfect Tenses - Comprehensive (all gender/number combinations)
-  const perfectEquatives = [
-    'یم', 'یو', 'یې', 'یئ', 'دی', 'ده', 'دي',  // Present
-    'وم', 'وو', 'وې', 'وئ', 'و', 'وه', 'ول',  // Past
-    'وی', 'وای' // Subjunctive
-  ]
+  // Perfect Tenses using LingDocs equative endings structure
+  const equativeEndings = {
+    past: {
+      short: [
+        [[{ p: 'وم', f: 'wum' }]],
+        [[{ p: 'وو', f: 'woo' }]],
+        [[{ p: 'وې', f: 'we' }]],
+        [[{ p: 'وې', f: 'we' }]],
+        [[{ p: 'و', f: 'wo' }]],
+        [[{ p: 'وه', f: 'wa' }]]
+      ],
+      long: [
+        [[{ p: 'ول', f: 'wul' }]],
+        [[{ p: 'ول', f: 'wul' }]],
+        [[{ p: 'وې', f: 'we' }]],
+        [[{ p: 'وې', f: 'we' }]],
+        [[{ p: 'ول', f: 'wul' }]],
+        [[{ p: 'وې', f: 'we' }]]
+      ]
+    },
+    present: [
+      [[{ p: 'یم', f: 'yum' }]],
+      [[{ p: 'یو', f: 'yoo' }]],
+      [[{ p: 'یې', f: 'ye' }]],
+      [[{ p: 'یې', f: 'ye' }]],
+      [[{ p: 'دی', f: 'day' }]],
+      [[{ p: 'ده', f: 'da' }]]
+    ],
+    habitual: [
+      [[{ p: 'یم', f: 'yum' }]],
+      [[{ p: 'یو', f: 'yoo' }]],
+      [[{ p: 'یې', f: 'ye' }]],
+      [[{ p: 'یې', f: 'ye' }]],
+      [[{ p: 'وي', f: 'wee' }]],
+      [[{ p: 'وي', f: 'wee' }]]
+    ],
+    subjunctive: [
+      [[{ p: 'وم', f: 'wum' }]],
+      [[{ p: 'وو', f: 'woo' }]],
+      [[{ p: 'وې', f: 'we' }]],
+      [[{ p: 'وې', f: 'we' }]],
+      [[{ p: 'وي', f: 'wee' }]],
+      [[{ p: 'وي', f: 'wee' }]]
+    ],
+    pastSubjunctive: [
+      [[{ p: 'وای', f: 'waay' }]],
+      [[{ p: 'وای', f: 'waay' }]],
+      [[{ p: 'وای', f: 'waay' }]],
+      [[{ p: 'وای', f: 'waay' }]],
+      [[{ p: 'وای', f: 'waay' }]],
+      [[{ p: 'وای', f: 'waay' }]]
+    ]
+  }
 
   const participleBase = verb.pastParticiple.replace(/ی$/, '') // Remove ی to get base
 
-  for (const equative of perfectEquatives) {
-    // Masculine singular
-    forms.push(`${verb.pastParticiple} ${equative}`)
-    // Feminine singular (add ې)
-    forms.push(`${participleBase}ې ${equative}`)
-    // Plural (add ی)
-    forms.push(`${participleBase}ي ${equative}`)
+  // Generate perfect forms for all equative types
+  for (const [type, endings] of Object.entries(equativeEndings)) {
+    for (let i = 0; i < endings.length; i++) {
+      const ending = endings[i][0][0]
+      // Masculine singular
+      forms.push(`${verb.pastParticiple} ${ending.p}`)
+      // Feminine singular (add ې)
+      forms.push(`${participleBase}ې ${ending.p}`)
+      // Plural (add ی)
+      forms.push(`${participleBase}ي ${ending.p}`)
+    }
   }
 
   // Ability Moods - Comprehensive
