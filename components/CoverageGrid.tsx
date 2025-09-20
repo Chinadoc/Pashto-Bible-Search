@@ -103,13 +103,13 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     const rawCount = item?.count ?? 0
     const translation = item?.translation
     const isSelected = selectedBook === book
-    const shouldSuppress = !!selectedBook && !isSelected
+    const shouldSuppress = false // Don't suppress other books when one is selected
     const displayCount = shouldSuppress ? 0 : rawCount
     const active = displayCount > 0
     const showCount = complexityLevel >= ComplexityLevel.Basic && active
 
     // Override classes for selected book
-    const tileClasses = isSelected 
+    const tileClasses = isSelected
       ? `relative p-2 m-0.5 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold hover:bg-blue-200 dark:hover:bg-blue-700 ${compact ? 'text-xs' : 'text-sm'}`
       : getTileClasses(displayCount, maxCount, complexityLevel, compact ?? false)
 

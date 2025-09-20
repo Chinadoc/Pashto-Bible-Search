@@ -45,7 +45,10 @@ export default function RelatedForms({
 }) {
   const [open, setOpen] = useState<boolean>(false)
 
-  if (!relatedForms || relatedForms.total === 0) return null
+  if (!relatedForms) return null
+
+  // Show the interface even if no forms found yet, to allow user to see the controls
+  const hasAnyForms = relatedForms.total > 0
 
   const verbs = relatedForms.verbs || []
   const nouns = relatedForms.nouns || []
@@ -150,29 +153,38 @@ export default function RelatedForms({
       {open && (
         <div className="mt-2">
           {/* Verb forms - filtered or unfiltered based on controls */}
-          {filteredVerbs.length > 0 && (
-            <div className="mb-3">
-              <div className="text-xs text-gray-500 mb-2 font-medium">
-                Verbs ({verbState ? `Filtered: ${filteredVerbs.length}` : verbs.length})
-              </div>
-              {verbState ? (
-                // Show filtered results when controls are active
-                <Section title={`${verbState.tense} - ${verbState.person}`} list={filteredVerbs} />
-              ) : (
-                // Show categorized when no specific filtering
-                <>
-                  {presentTense.length > 0 && <Section title="Present Tense" list={presentTense} />}
-                  {pastTense.length > 0 && <Section title="Past Tense" list={pastTense} />}
-                  {perfectForms.length > 0 && <Section title="Perfect Forms" list={perfectForms} />}
-                  {otherVerbs.length > 0 && <Section title="Other Verbs" list={otherVerbs} />}
-                </>
+          {hasAnyForms ? (
+            <>
+              {filteredVerbs.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 mb-2 font-medium">
+                    Verbs ({verbState ? `Filtered: ${filteredVerbs.length}` : verbs.length})
+                  </div>
+                  {verbState ? (
+                    // Show filtered results when controls are active
+                    <Section title={`${verbState.tense} - ${verbState.person}`} list={filteredVerbs} />
+                  ) : (
+                    // Show categorized when no specific filtering
+                    <>
+                      {presentTense.length > 0 && <Section title="Present Tense" list={presentTense} />}
+                      {pastTense.length > 0 && <Section title="Past Tense" list={pastTense} />}
+                      {perfectForms.length > 0 && <Section title="Perfect Forms" list={perfectForms} />}
+                      {otherVerbs.length > 0 && <Section title="Other Verbs" list={otherVerbs} />}
+                    </>
+                  )}
+                </div>
               )}
+
+              {/* Other forms */}
+              {nouns.length > 0 && <Section title="Nouns" list={nouns} />}
+              {others.length > 0 && <Section title="Other" list={others} />}
+            </>
+          ) : (
+            // Show placeholder when no forms found
+            <div className="text-xs text-gray-500 italic">
+              No related forms found. Try searching for a different term.
             </div>
           )}
-
-          {/* Other forms */}
-          <Section title="Nouns" list={nouns} />
-          <Section title="Other" list={others} />
         </div>
       )}
     </div>
