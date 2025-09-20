@@ -1729,10 +1729,9 @@ export async function POST(request: NextRequest) {
           } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
             // Simple verbs (infinitives)
             verbs.push(item)
-          } else if ((form.endsWith('م') || form.endsWith('ې') || form.endsWith('ي') || form.endsWith('و') || form.endsWith('ئ')) &&
-                     !form.endsWith('ی') && !form.endsWith('ي') && !form.endsWith('یو') && !form.endsWith('ونه')) {
-            // Likely verb conjugations (1st/2nd/3rd person endings) - NOT noun endings
-            // Exclude noun endings like ې, ы, يو, ونه
+          } else if ((form.endsWith('م') || form.endsWith('ې') || form.endsWith('ي') || form.endsWith('و') || form.endsWith('ئ'))) {
+            // Verb conjugations - these are the actual verb person endings
+            // Don't exclude 'ي' here as it's a valid verb ending (3rd person singular)
             verbs.push(item)
           } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
