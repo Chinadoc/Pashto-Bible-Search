@@ -508,36 +508,63 @@ function generateIrregularVerbForms(infinitive: string): string[] {
     }
   }
 
-  // Future Forms (به + present/subjunctive)
+  // Comprehensive Modal Content Structure (matching LingDocs)
+  const baParticle = 'به'
+
+  // Generate all person forms for present
+  const presentForms: string[] = []
+  const subjunctiveForms: string[] = []
+  const futureForms: string[] = []
+  const pastForms: string[] = []
+  const habitualPastForms: string[] = []
+  const hypotheticalPastForms: string[] = []
+
   for (let i = 0; i < presentEndings.length; i++) {
-    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
-    forms.push(`به ${impStem}${ending.p}`) // Imperfective Future
+    const ending = presentEndings[i][0][0]
+    presentForms.push(impStem + ending.p)
     if (perfStem !== impStem) {
-      forms.push(`به ${perfStem}${ending.p}`) // Perfective Future
+      subjunctiveForms.push(perfStem + ending.p)
     }
   }
 
-  // Past Forms (Continuous & Simple) using LingDocs structure
-  const pastEndings = [
-    // 1st person singular
-    [[{ p: 'لم', f: 'lum' }]],
-    // 1st person plural
-    [[{ p: 'لو', f: 'loo' }]],
-    // 2nd person singular masculine
-    [[{ p: 'لې', f: 'le' }]],
-    // 2nd person singular feminine
-    [[{ p: 'لې', f: 'le' }]],
-    // 3rd person singular masculine
-    [[{ p: 'ل', f: 'ul' }]],
-    // 3rd person singular feminine
-    [[{ p: 'له', f: 'la' }]]
-  ]
-
-  for (let i = 0; i < pastEndings.length; i++) {
-    const ending = pastEndings[i][0][0] // Get the first (and usually only) ending
-    forms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending.p) // Continuous Past
-    forms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending.p)   // Simple Past
+  // Future forms
+  for (const form of presentForms) {
+    futureForms.push(`${baParticle} ${form}`)
   }
+  if (perfStem !== impStem) {
+    for (const form of subjunctiveForms) {
+      futureForms.push(`${baParticle} ${form}`)
+    }
+  }
+
+  // Past forms
+  for (let i = 0; i < pastEndings.length; i++) {
+    const ending = pastEndings[i][0][0]
+    pastForms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending.p)
+    pastForms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending.p)
+  }
+
+  // Habitual past forms
+  for (const form of pastForms) {
+    habitualPastForms.push(`${baParticle} ${form}`)
+  }
+
+  // Hypothetical past forms (using 'aay' endings as seen in LingDocs)
+  const aayTail = ['ای', 'ی']
+  for (const tail of aayTail) {
+    hypotheticalPastForms.push(verb.imperfectiveRoot.replace(/ل$/, '') + tail)
+    hypotheticalPastForms.push(verb.perfectiveRoot.replace(/ل$/, '') + tail)
+  }
+
+  // Add all modal forms to main forms array
+  forms.push(...presentForms)
+  forms.push(...subjunctiveForms)
+  forms.push(...futureForms)
+  forms.push(...pastForms)
+  forms.push(...habitualPastForms)
+  forms.push(...hypotheticalPastForms)
+
+  // Past forms are now handled in the comprehensive modal structure above
 
   // Perfect Tenses - Comprehensive (all gender/number combinations)
   const perfectEquatives = [
