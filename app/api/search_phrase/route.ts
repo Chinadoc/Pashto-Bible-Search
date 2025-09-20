@@ -680,6 +680,48 @@ function generateIrregularVerbForms(infinitive: string): string[] {
   return forms.filter(Boolean)
 }
 
+// Organize forms into LingDocs aspect-based structure
+function organizeFormsByAspect(forms: string[]): {
+  imperfective: string[]
+  perfective: string[]
+  perfect: string[]
+  ability: string[]
+  modal: string[]
+} {
+  const aspectStructure = {
+    imperfective: [] as string[], // Present, subjunctive
+    perfective: [] as string[],   // Perfective forms
+    perfect: [] as string[],     // Perfect tenses
+    ability: [] as string[],     // Ability moods
+    modal: [] as string[]        // Future, habitual, hypothetical
+  }
+
+  for (const form of forms) {
+    if (form.includes('به ')) {
+      aspectStructure.modal.push(form) // Future and habitual forms
+    } else if (form.includes('لیدلی') || form.includes('لیدلې') || form.includes('لیدلي')) {
+      if (form.includes('شم') || form.includes('شول')) {
+        aspectStructure.ability.push(form) // Ability forms
+      } else {
+        aspectStructure.perfect.push(form) // Perfect tenses
+      }
+    } else if (form.includes('وو') || form.includes('ولیدل') || form.includes('وو')) {
+      aspectStructure.perfective.push(form) // Perfective aspect
+    } else if (form.includes('وین') && !form.includes('وو')) {
+      aspectStructure.imperfective.push(form) // Imperfective aspect (present/subjunctive)
+    } else if (form.includes('یدل') && form.includes('ل') && !form.includes('وو') && !form.includes('لیدل')) {
+      aspectStructure.perfective.push(form) // Continuous past forms
+    } else if (form.includes('یدل') && !form.includes('وو') && !form.includes('لیدل')) {
+      aspectStructure.imperfective.push(form) // Other forms
+    } else {
+      // Default to imperfective for unclassified forms
+      aspectStructure.imperfective.push(form)
+    }
+  }
+
+  return aspectStructure
+}
+
 // Generate forms for fused compound verbs (e.g., ګرمېدل)
 function generateFusedCompoundVerbForms(infinitive: string): string[] {
   const forms: string[] = [infinitive]
