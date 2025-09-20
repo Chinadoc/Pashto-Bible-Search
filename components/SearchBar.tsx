@@ -14,6 +14,8 @@ interface Props {
   setVerbPerson?: (person: '1st' | '2nd' | '3rd') => void;
   showFirstPerson?: boolean;
   setShowFirstPerson?: (show: boolean) => void;
+  verbTense?: 'present' | 'past' | 'future' | 'perfect';
+  setVerbTense?: (tense: 'present' | 'past' | 'future' | 'perfect') => void;
 }
 
 export default function SearchBar({
@@ -26,7 +28,9 @@ export default function SearchBar({
   verbPerson,
   setVerbPerson,
   showFirstPerson,
-  setShowFirstPerson
+  setShowFirstPerson,
+  verbTense,
+  setVerbTense
 }: Props) {
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
   const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => setScope(e.target.value as Scope);
@@ -61,20 +65,40 @@ export default function SearchBar({
       </button>
 
       {/* Verb understanding options */}
-      {verbPerson && setVerbPerson && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Person:</span>
-          <select
-            value={verbPerson}
-            onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
-            className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
-          >
-            <option value="1st">1st Person (م)</option>
-            <option value="2nd">2nd Person (ې)</option>
-            <option value="3rd">3rd Person (ي)</option>
-          </select>
-        </div>
-      )}
+      <div className="flex items-center gap-3">
+        {/* Tense selection */}
+        {verbTense && setVerbTense && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Tense:</span>
+            <select
+              value={verbTense}
+              onChange={(e) => setVerbTense(e.target.value as 'present' | 'past' | 'future' | 'perfect')}
+              className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="present">Present (م)</option>
+              <option value="past">Past (لم)</option>
+              <option value="future">Future (به)</option>
+              <option value="perfect">Perfect (لیدلی)</option>
+            </select>
+          </div>
+        )}
+
+        {/* Person selection */}
+        {verbPerson && setVerbPerson && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Person:</span>
+            <select
+              value={verbPerson}
+              onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
+              className="p-1 border border-gray-300 rounded text-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="1st">1st Person (م)</option>
+              <option value="2nd">2nd Person (ې)</option>
+              <option value="3rd">3rd Person (ي)</option>
+            </select>
+          </div>
+        )}
+      </div>
 
       {showFirstPerson !== undefined && setShowFirstPerson && (
         <button

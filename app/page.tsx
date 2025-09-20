@@ -65,6 +65,7 @@ export default function Home() {
   // Verb understanding features
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('1st');
   const [showFirstPerson, setShowFirstPerson] = useState<boolean>(false);
+  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect'>('present');
 
 
 
@@ -270,6 +271,8 @@ export default function Home() {
                           setVerbPerson={setVerbPerson}
                           showFirstPerson={showFirstPerson}
                           setShowFirstPerson={setShowFirstPerson}
+                          verbTense={verbTense}
+                          setVerbTense={setVerbTense}
                         />
 
                         {/* Options */}
@@ -278,14 +281,17 @@ export default function Home() {
                         </div>
 
                         {/* Verb understanding help */}
-                        {(showFirstPerson || verbPerson !== '1st') && (
+                        {(showFirstPerson || verbPerson !== '1st' || verbTense !== 'present') && (
                           <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded mb-2">
                             <div className="font-medium mb-1">🧠 Verb Understanding Mode</div>
                             {showFirstPerson && <div>• Showing 1st person present forms (م for "I")</div>}
                             {verbPerson === '2nd' && <div>• Showing 2nd person forms (ې for "you")</div>}
                             {verbPerson === '3rd' && <div>• Showing 3rd person forms (ي for "he/she")</div>}
+                            {verbTense === 'past' && <div>• Showing past tense forms (لم for "I did")</div>}
+                            {verbTense === 'future' && <div>• Showing future tense forms (به for "I will")</div>}
+                            {verbTense === 'perfect' && <div>• Showing perfect forms (لیدلی for "I have seen")</div>}
                             <div className="mt-1 text-gray-600 dark:text-gray-400">
-                              Click the 👤 1st Person button to toggle between direct search and 1st person forms
+                              Use the Tense and Person dropdowns to explore different verb conjugations
                             </div>
                           </div>
                         )}
