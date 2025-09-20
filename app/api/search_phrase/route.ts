@@ -375,32 +375,53 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
 function generateIrregularVerbForms(infinitive: string): string[] {
   const verb = IRREGULAR_VERBS[infinitive]
   if (!verb) return [infinitive]
-  
+
   const forms: string[] = [infinitive]
-  
+
   // Use the irregular stems
   const impStem = verb.imperfectiveStem.replace(/ـ$/, '') // Remove stem marker
   const perfStem = verb.perfectiveStem.replace(/ـ$/, '')
-  
-  // Imperfective forms
-  forms.push(impStem + 'م') // 1st singular
-  forms.push(impStem + 'ې') // 2nd singular
-  forms.push(impStem + 'ي') // 3rd singular
-  forms.push(impStem + 'و') // 1st plural
-  forms.push(impStem + 'ئ') // 2nd plural
-  
-  // Perfective forms  
-  if (perfStem !== impStem) {
-    forms.push(perfStem + 'م') // 1st singular subjunctive
-    forms.push(perfStem + 'ې') // 2nd singular subjunctive
-    forms.push(perfStem + 'ي') // 3rd singular subjunctive
+
+  // Present & Subjunctive Forms
+  const presentEndings = ['م', 'ې', 'ي', 'و', 'ئ']
+  for (const ending of presentEndings) {
+    forms.push(impStem + ending) // Present
+    if (perfStem !== impStem) {
+      forms.push(perfStem + ending) // Subjunctive
+    }
   }
+
+  // Past Forms (Continuous & Simple)
+  const pastEndings = ['لم', 'لو', 'لې', 'لئ', 'ل', 'له']
+  for (const ending of pastEndings) {
+    forms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending) // Continuous Past
+    forms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending)   // Simple Past
+  }
+
+  // Negative Forms
+  forms.push(`نه ${impStem}م`)     // Negative Present
+  forms.push(`ونه ${perfStem}م`)   // Negative Subjunctive
+  forms.push(`نه ${verb.imperfectiveRoot}`) // Negative Continuous Past
+  forms.push(`ونه ${verb.perfectiveRoot}`)   // Negative Simple Past
   
+  // Perfect Tenses (common forms)
+  forms.push(`${verb.pastParticiple} دی`) // Present Perfect M.S.
+  forms.push(`${verb.pastParticiple} ده`) // Present Perfect F.S.
+  forms.push(`${verb.pastParticiple} دي`) // Present Perfect Pl.
+  forms.push(`${verb.pastParticiple} و`)  // Past Perfect M.S.
+  forms.push(`${verb.pastParticiple} وه`) // Past Perfect F.S.
+  forms.push(`${verb.pastParticiple} ول`) // Past Perfect Pl.
+  
+  // Ability Moods (common forms)
+  forms.push(`${verb.pastParticiple} شم`) // Present Ability
+  forms.push(`و${verb.pastParticiple} شم`) // Subjunctive Ability
+  forms.push(`${verb.pastParticiple} شول`) // Past Ability
+
   // Add roots and participle
   forms.push(verb.imperfectiveRoot)
   forms.push(verb.perfectiveRoot)
   forms.push(verb.pastParticiple)
-  
+
   return forms.filter(Boolean)
 }
 
