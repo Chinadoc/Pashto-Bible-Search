@@ -1614,8 +1614,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Build comprehensive variant list starting from the original query
+    console.log('DEBUG: Creating variant collector for:', originalTerm)
     const variantCollector = createVariantCollector(originalTerm)
+    console.log('DEBUG: Initial variant list:', variantCollector.list())
     variantCollector.ensureFeminine()
+    console.log('DEBUG: After ensureFeminine:', variantCollector.list())
 
     if (Array.isArray(extraVariants)) {
       for (const value of extraVariants) {
@@ -1707,6 +1710,16 @@ export async function POST(request: NextRequest) {
 
     let variantDetails = variantCollector.details()
 
+    // For direct search, ensure the original term is available for searching
+    if (!includeRelated && variantDetails.length === 0) {
+      console.log('DEBUG: Adding original term for direct search:', originalTerm)
+      variantCollector.add(originalTerm, { sources: ['query'] })
+      variantDetails = variantCollector.details()
+      console.log('DEBUG: After adding original term, variantDetails:', variantDetails.length)
+    }
+
+    console.log('DEBUG: Final variantDetails length:', variantDetails.length)
+
     // Filter out invalid forms before processing
     variantDetails = variantDetails.filter((meta) => isValidPashtoForm(meta.form))
 
@@ -1753,8 +1766,11 @@ export async function POST(request: NextRequest) {
     const primaryTerm = searchVariants.find((form) => PASHTO_CHAR_RE.test(form)) || searchVariants[0]
     lookupTerm = variantDetails.find((meta) => PASHTO_CHAR_RE.test(meta.form))?.form || primaryTerm
     const variantGroups = groupVariantsByPos(variantDetails)
-    // Search ALL variants when includeRelated is true (up to 40 to avoid timeout)
-    const variantsToSearch = searchVariants.slice(0, includeRelated ? 40 : 7)
+    // Search variants - ensure we search the original term for direct search
+    let variantsToSearch = searchVariants.slice(0, includeRelated ? 40 : 7)
+    if (!includeRelated && (variantsToSearch.length === 0 || !variantsToSearch.includes(originalTerm))) {
+      variantsToSearch = [originalTerm, ...variantsToSearch].slice(0, 7)
+    }
 
     const allResults: Verse[] = []
     const refSet = new Set<string>()
