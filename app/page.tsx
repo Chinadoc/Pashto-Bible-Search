@@ -273,6 +273,7 @@ export default function Home() {
                           setShowFirstPerson={setShowFirstPerson}
                           verbTense={verbTense}
                           setVerbTense={setVerbTense}
+                          includeRelated={includeRelated}
                         />
 
                         {/* Options */}
@@ -323,7 +324,15 @@ export default function Home() {
 
                         {/* Related forms panel */}
                         {includeRelated && (
-                          <RelatedForms relatedForms={relatedForms} onPick={(f) => { setQuery(f); handleSearch(); }} />
+                          <RelatedForms
+                            relatedForms={relatedForms}
+                            onPick={(f) => { setQuery(f); handleSearch(); }}
+                            verbState={{person: verbPerson, tense: verbTense}}
+                            setVerbState={(state) => {
+                              setVerbPerson(state.person)
+                              setVerbTense(state.tense)
+                            }}
+                          />
                         )}
                       </div>
 

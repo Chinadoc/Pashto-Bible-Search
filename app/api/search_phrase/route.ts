@@ -1614,11 +1614,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Build comprehensive variant list starting from the original query
-    console.log('DEBUG: Creating variant collector for:', originalTerm)
     const variantCollector = createVariantCollector(originalTerm)
-    console.log('DEBUG: Initial variant list:', variantCollector.list())
     variantCollector.ensureFeminine()
-    console.log('DEBUG: After ensureFeminine:', variantCollector.list())
 
     if (Array.isArray(extraVariants)) {
       for (const value of extraVariants) {
@@ -1712,13 +1709,9 @@ export async function POST(request: NextRequest) {
 
     // For direct search, ensure the original term is available for searching
     if (!includeRelated && variantDetails.length === 0) {
-      console.log('DEBUG: Adding original term for direct search:', originalTerm)
       variantCollector.add(originalTerm, { sources: ['query'] })
       variantDetails = variantCollector.details()
-      console.log('DEBUG: After adding original term, variantDetails:', variantDetails.length)
     }
-
-    console.log('DEBUG: Final variantDetails length:', variantDetails.length)
 
     // Filter out invalid forms before processing
     variantDetails = variantDetails.filter((meta) => isValidPashtoForm(meta.form))
