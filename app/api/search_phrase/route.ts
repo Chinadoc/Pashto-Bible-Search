@@ -875,17 +875,17 @@ function expandInflectionVariants(term: string): string[] {
   if (stem) {
     // Pattern 1: ـه/ـې/ـو endings (feminine basic pattern)
     if (lastChar === 'ه' || lastChar === 'ې' || lastChar === 'و') {
-      pushIfUnique(result, seen, `${stem}ه`)  // Plain feminine
-      pushIfUnique(result, seen, `${stem}ې`)  // 1st inflection
-      pushIfUnique(result, seen, `${stem}و`)  // 2nd inflection
+      if (isValidInflection(trimmed, `${stem}ه`)) pushIfUnique(result, seen, `${stem}ه`)  // Plain feminine
+      if (isValidInflection(trimmed, `${stem}ې`)) pushIfUnique(result, seen, `${stem}ې`)  // 1st inflection
+      if (isValidInflection(trimmed, `${stem}و`)) pushIfUnique(result, seen, `${stem}و`)  // 2nd inflection
     }
-    
+
     // Pattern 1: Add feminine forms for masculine words ending in consonants
     // e.g., برګ -> برګه, برګې, برګو
     if (![' ه', 'ې', 'و', 'ی', 'ي', 'ۍ'].includes(lastChar)) {
-      pushIfUnique(result, seen, `${trimmed}ه`)  // Feminine plain
-      pushIfUnique(result, seen, `${trimmed}ې`)  // Feminine 1st
-      pushIfUnique(result, seen, `${trimmed}و`)  // Feminine 2nd
+      if (isValidInflection(trimmed, `${trimmed}ه`)) pushIfUnique(result, seen, `${trimmed}ه`)  // Feminine plain
+      if (isValidInflection(trimmed, `${trimmed}ې`)) pushIfUnique(result, seen, `${trimmed}ې`)  // Feminine 1st
+      if (isValidInflection(trimmed, `${trimmed}و`)) pushIfUnique(result, seen, `${trimmed}و`)  // Feminine 2nd
     }
 
     // Pattern 2: Unstressed ی - ay (ستړی)
@@ -950,6 +950,74 @@ function expandInflectionVariants(term: string): string[] {
   }
 
   return result
+}
+
+// Pattern validation to prevent invalid inflection forms
+function isValidInflection(base: string, inflected: string): boolean {
+  // Check for doubled endings that are linguistically invalid
+  if (/هه|ېې|وو|يي|اا|ےے|ۍۍ/.test(inflected)) {
+    return false
+  }
+
+  // Check inflection level limits (max 2 levels)
+  const baseInflections = (base.match(/ه|ې|و|ي|ۍ/g) || []).length
+  const inflectedInflections = (inflected.match(/ه|ې|و|ي|ۍ/g) || []).length
+  if (inflectedInflections > baseInflections + 2) {
+    return false
+  }
+
+  // Check length constraints (not too long)
+  if (inflected.length > base.length + 3) {
+    return false
+  }
+
+  // Check for too many consecutive vowels
+  if (/[اےيوۍ]{4,}/.test(inflected)) {
+    return false
+  }
+
+  // Check for invalid character combinations
+  if (/[هېويۍ][هېويۍ]/.test(inflected)) {
+    return false
+  }
+
+  return true
+}
+
+// Form validation to reject linguistically invalid forms
+function isValidPashtoForm(form: string): boolean {
+  // Reject forms with invalid patterns
+  if (/هه|ېې|وو|يي|اا|ےے|ۍۍ/.test(form)) {
+    return false
+  }
+
+  // Reject overly long forms
+  if (form.length > 12) {
+    return false
+  }
+
+  // Reject forms with too many consecutive vowels
+  if (/[اےيوۍ]{4,}/.test(form)) {
+    return false
+  }
+
+  // Reject forms with invalid character combinations
+  if (/[بپتٹثجچحخدذرڑزژسشصضطظعغفقکگلمنوہھیئے]{3,}/.test(form)) {
+    return false
+  }
+
+  return true
+}
+
+// Quality scoring function for form prioritization
+function scoreVariant(meta: VariantMeta): number {
+  let score = 0
+  if (meta.sources.includes('dictionary')) score += 5
+  if (meta.sources.includes('lemma')) score += 4
+  if (meta.pos) score += 3
+  if (meta.frequency && meta.frequency > 0) score += 2
+  if (meta.sources.includes('inflection-pattern')) score += 1
+  return score
 }
 
 interface VariantMeta {
@@ -1037,9 +1105,14 @@ function createVariantCollector(initialTerm: string): VariantCollector {
   const ensureFeminine = () => {
     const snapshot = order.slice()
     for (const form of snapshot) {
+      const baseMeta = metaMap.get(normalize(form))
       for (const expanded of expandInflectionVariants(form)) {
-        if (expanded !== form) {
-          add(expanded, { sources: ['inflection-pattern'] })
+        if (expanded !== form && isValidInflection(form, expanded)) {
+          add(expanded, {
+            sources: ['inflection-pattern'],
+            pos: baseMeta?.pos, // Inherit POS from base form
+            frequency: baseMeta?.frequency ? Math.floor(baseMeta.frequency * 0.3) : undefined // Estimated frequency
+          })
         }
       }
     }
@@ -1633,6 +1706,12 @@ export async function POST(request: NextRequest) {
     variantCollector.ensureFeminine()
 
     let variantDetails = variantCollector.details()
+
+    // Filter out invalid forms before processing
+    variantDetails = variantDetails.filter((meta) => isValidPashtoForm(meta.form))
+
+    // Sort by quality score to prioritize better forms
+    variantDetails = variantDetails.sort((a, b) => scoreVariant(b) - scoreVariant(a))
 
     const pashtoFormsForFrequency = dedupePreserveOrder(
       variantDetails
