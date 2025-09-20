@@ -1538,40 +1538,42 @@ export async function POST(request: NextRequest) {
         const normalizedLookup = relatedLookupTerm.trim() || originalTerm
 
         // Generate all inflected forms using our comprehensive pattern system
-        const allPossibleForms = expandInflectionVariants(normalizedLookup)
-        
+        const nounForms = expandInflectionVariants(normalizedLookup)
+        const verbForms: string[] = []
+
         // NEW: Detect if this is a verb and generate appropriate conjugations
         const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
         if (isVerb) {
-          let verbForms: string[] = []
-          
           // Priority 1: Check if it's an irregular verb
           if (normalizedLookup in IRREGULAR_VERBS) {
-            verbForms = generateIrregularVerbForms(normalizedLookup)
+            verbForms.push(...generateIrregularVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
           }
           // Priority 2: Check if it's a fused compound verb (ګرمېدل, etc.)
           else if (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل')) {
-            verbForms = generateFusedCompoundVerbForms(normalizedLookup)
+            verbForms.push(...generateFusedCompoundVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found fused compound verb, generated ${verbForms.length} forms`)
           }
           // Priority 3: Check if it's a spaced compound verb
           else if (normalizedLookup.includes(' ')) {
             // Detect stative vs dynamic compound
-            const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') || 
+            const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') ||
                              normalizedLookup.includes('کېدل') || normalizedLookup.includes('شول')
-            verbForms = generateCompoundVerbForms(normalizedLookup, isStative)
+            verbForms.push(...generateCompoundVerbForms(normalizedLookup, isStative))
             console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
           }
           // Priority 4: Regular verb
           else {
-            verbForms = generateRegularVerbForms(normalizedLookup)
+            verbForms.push(...generateRegularVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found regular verb, generated ${verbForms.length} forms`)
           }
-          
-          // Add verb forms to the possible forms list
-          allPossibleForms.push(...verbForms)
         }
+
+        // Combine all forms but track their origin
+        const allPossibleForms = [...nounForms, ...verbForms]
+        console.log(`DEBUG: Generated ${verbForms.length} verb forms and ${nounForms.length} noun forms`)
+        console.log(`DEBUG: Verb forms: ${verbForms.slice(0, 5).join(', ')}${verbForms.length > 5 ? '...' : ''}`)
+        console.log(`DEBUG: Total allPossibleForms: ${allPossibleForms.length}`)
         
         // Legacy: Add compound verb forms (منډه وهل, منډې وهل, etc.) for non-verbs
         if (!isVerb) {
@@ -1696,21 +1698,32 @@ export async function POST(request: NextRequest) {
         const nouns: Array<{form: string, count: number}> = []
         const other: Array<{form: string, count: number}> = []
 
+        console.log(`DEBUG: Found ${existingForms.length} forms in database`)
+        console.log(`DEBUG: First 10 forms: ${existingForms.slice(0, 10).map(f => f.form).join(', ')}`)
+
         for (const item of existingForms) {
           const form = item.form
-          
-          // Categorize based on form characteristics  
-          if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
+
+          // Categorize based on form origin and characteristics
+          if (verbForms.includes(form)) {
+            // This form was generated from verb conjugation
+            console.log(`DEBUG: Categorizing ${form} as VERB (from verbForms array)`)
+            verbs.push(item)
+          } else if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
             // Compound verbs (منډه وهل, etc.)
+            console.log(`DEBUG: Categorizing ${form} as VERB (compound)`)
             verbs.push(item)
           } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
-            // Simple verbs
+            // Simple verbs (infinitives)
+            console.log(`DEBUG: Categorizing ${form} as VERB (infinitive)`)
             verbs.push(item)
-          } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') || 
+          } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
             // Nouns and adjectives (all inflected forms)
+            console.log(`DEBUG: Categorizing ${form} as NOUN (${form.slice(-1)})`)
             nouns.push(item)
           } else {
+            console.log(`DEBUG: Categorizing ${form} as OTHER`)
             other.push(item)
           }
         }
@@ -1737,8 +1750,8 @@ export async function POST(request: NextRequest) {
           console.log('DEBUG: No forms found in database, showing generated forms as fallback')
           const fallbackForms = allPossibleForms.slice(1, 11).map(form => ({ form, count: 0 }))
           relatedForms = {
-            verbs: fallbackForms.filter(f => f.form.includes('ول') || f.form.includes('کول')),
-            nouns: fallbackForms.filter(f => !f.form.includes('ول') && !f.form.includes('کول')),
+            verbs: fallbackForms.filter(f => verbForms.includes(f.form) || f.form.includes('ول') || f.form.includes('کول')),
+            nouns: fallbackForms.filter(f => !verbForms.includes(f.form) && !f.form.includes('ول') && !f.form.includes('کول')),
             other: [],
             total: fallbackForms.length
           }
