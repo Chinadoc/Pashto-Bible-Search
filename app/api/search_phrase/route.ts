@@ -1761,7 +1761,9 @@ export async function POST(request: NextRequest) {
     const variantGroups = groupVariantsByPos(variantDetails)
     // Search variants - ensure we search the original term for direct search
     let variantsToSearch = searchVariants.slice(0, includeRelated ? 40 : 7)
-    if (!includeRelated && (variantsToSearch.length === 0 || !variantsToSearch.includes(originalTerm))) {
+    if (variantsToSearch.length === 0) {
+      variantsToSearch = [originalTerm] // Always search the original term if no variants found
+    } else if (!includeRelated && !variantsToSearch.includes(originalTerm)) {
       variantsToSearch = [originalTerm, ...variantsToSearch].slice(0, 7)
     }
 
