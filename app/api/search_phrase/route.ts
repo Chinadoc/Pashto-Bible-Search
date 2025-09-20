@@ -537,7 +537,22 @@ function generateIrregularVerbForms(infinitive: string): string[] {
     }
   }
 
-  // Past forms
+  // Past forms using LingDocs structure
+  const pastEndings = [
+    // 1st person singular
+    [[{ p: 'لم', f: 'lum' }]],
+    // 1st person plural
+    [[{ p: 'لو', f: 'loo' }]],
+    // 2nd person singular masculine
+    [[{ p: 'لې', f: 'le' }]],
+    // 2nd person singular feminine
+    [[{ p: 'لې', f: 'le' }]],
+    // 3rd person singular masculine
+    [[{ p: 'ل', f: 'ul' }]],
+    // 3rd person singular feminine
+    [[{ p: 'له', f: 'la' }]]
+  ]
+
   for (let i = 0; i < pastEndings.length; i++) {
     const ending = pastEndings[i][0][0]
     pastForms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending.p)
@@ -567,7 +582,7 @@ function generateIrregularVerbForms(infinitive: string): string[] {
   // Past forms are now handled in the comprehensive modal structure above
 
   // Perfect Tenses using LingDocs equative endings structure
-  const equativeEndings = {
+  const equativeEndings: Record<string, any> = {
     past: {
       short: [
         [[{ p: 'وم', f: 'wum' }]],
@@ -1668,7 +1683,7 @@ export async function POST(request: NextRequest) {
     const coverageRefSet = new Set<string>()
     // Don't restrict search by book - show results from all books that contain the search term
     // When bookFilter is set, RelatedForms will show counts specific to that book
-    const allowedBooks = null
+    const allowedBooks: Set<string> | null = null
 
     // FAST search: Search ALL variants and combine results
     const selectCols = 'book,chapter,verse,text,testament'
@@ -1712,9 +1727,8 @@ export async function POST(request: NextRequest) {
               const ref = `${bookName} ${(row as any).chapter}:${(row as any).verse}`
               const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
 
-              if (allowedBooks && !allowedBooks.has(bookName)) {
-                continue
-              }
+              // Book filtering is disabled - search all books
+              // allowedBooks is null, so no filtering applied
 
               if (!coverageRefSet.has(fullRef)) {
                 coverageRefSet.add(fullRef)
@@ -1795,10 +1809,8 @@ export async function POST(request: NextRequest) {
                   .eq('chapter', parseInt(chapter))
                   .eq('verse', parseInt(verse))
 
-                // Apply book filter to fallback search too
-                if (allowedBooks && !allowedBooks.has(book)) {
-                  continue // Skip this verse if it doesn't match book filter
-                }
+                // Book filtering is disabled - search all books
+                // allowedBooks is null, so no filtering applied
 
                 const { data: verseData } = await verseQuery.limit(1)
                 if (verseData && verseData.length > 0) {
