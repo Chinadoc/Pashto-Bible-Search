@@ -1572,7 +1572,11 @@ export async function POST(request: NextRequest) {
           let q = supabase.from('verses').select(selectCols).ilike('text', `%${p.replace(/%/g,'')}%`)
           if (scope === 'ot') q = q.eq('testament', 'OT')
           if (scope === 'nt') q = q.eq('testament', 'NT')
-          // Don't filter by book here - search across all books but track book information
+          // Apply book filter if provided
+          if (bookFilter) {
+            const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
+            q = q.in('book', bookVariantsList)
+          }
           const { data, error } = await q.limit(60)
           if (!error && Array.isArray(data) && data.length > 0) {
             for (const row of data as any[]) {
@@ -1809,6 +1813,11 @@ export async function POST(request: NextRequest) {
           let q = supabase.from(table.name).select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
           if (scope === 'ot') q = q.eq('testament', 'OT')
           if (scope === 'nt') q = q.eq('testament', 'NT')
+          // Apply book filter if provided
+          if (bookFilter) {
+            const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
+            q = q.in('book', bookVariantsList)
+          }
           const { data, error } = await q.limit(50) // Lower limit per table to avoid timeout
           if (!error && Array.isArray(data) && data.length > 0) {
             textSearchHit = true
@@ -1926,8 +1935,11 @@ export async function POST(request: NextRequest) {
                   .eq('chapter', parseInt(chapter))
                   .eq('verse', parseInt(verse))
 
-                // Book filtering is disabled - search all books
-                // allowedBooks is null, so no filtering applied
+                // Apply book filter if provided - this ensures verse lookups respect book filtering
+                if (bookFilter) {
+                  const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
+                  verseQuery = verseQuery.in('book', bookVariantsList)
+                }
 
                 const { data: verseData } = await verseQuery.limit(1)
                 if (verseData && verseData.length > 0) {
