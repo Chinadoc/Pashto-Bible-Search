@@ -1580,10 +1580,21 @@ export async function POST(request: NextRequest) {
               const ref = `${row.book} ${row.chapter}:${row.verse}`
               if (!refSet.has(ref)) {
                 refSet.add(ref)
+                // Determine testament based on book name if not in database
+                let testament = row.testament
+                if (!testament) {
+                  const bookName = row.book?.toLowerCase() || ''
+                  if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
+                    testament = 'OT'
+                  } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
+                    testament = 'NT'
+                  }
+                }
+
                 allResults.push({
                   ref,
                   text,
-                  testament: row.testament
+                  testament
                 })
                 coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
               }
@@ -1850,6 +1861,17 @@ export async function POST(request: NextRequest) {
                   }
                 }
 
+                // Determine testament based on book name if not in database
+                let testament = (row as any).testament
+                if (!testament) {
+                  const bookName = (row as any).book?.toLowerCase() || ''
+                  if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
+                    testament = 'OT'
+                  } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
+                    testament = 'NT'
+                  }
+                }
+
                 allResults.push({
                   ref,
                   text,
@@ -1857,7 +1879,7 @@ export async function POST(request: NextRequest) {
                   dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
                   tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined,
                   audio_verse_url: audioVerseUrl,
-                  testament: (row as any).testament
+                  testament
                 })
               }
             }
@@ -1915,10 +1937,21 @@ export async function POST(request: NextRequest) {
                     coverageRefSet.add(fallbackRef)
                     coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
                   }
+                  // Determine testament based on book name if not in database
+                  let testament = row.testament
+                  if (!testament) {
+                    const bookName = row.book?.toLowerCase() || ''
+                    if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
+                      testament = 'OT'
+                    } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
+                      testament = 'NT'
+                    }
+                  }
+
                   allResults.push({
                     ref: fallbackRef,
                     text: row.text || '',
-                    testament: row.testament
+                    testament
                   })
                   if (allResults.length >= 10) break
                 }
