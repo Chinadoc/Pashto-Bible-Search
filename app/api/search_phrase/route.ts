@@ -1501,7 +1501,13 @@ export async function POST(request: NextRequest) {
 
     // Create cache key from search parameters
     const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
-    const cacheKey = `${query.trim()}-${scope}-${bookFilter || 'all'}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
+    const bookFilterKey = bookFilter === null ? 'null' : (bookFilter || 'all')
+    const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
+
+    // Debug logging for book filtering
+    if (bookFilter) {
+      console.log(`DEBUG: Book filter applied: ${bookFilter}`)
+    }
 
     // Check cache first
     const cached = SEARCH_CACHE.get(cacheKey)
