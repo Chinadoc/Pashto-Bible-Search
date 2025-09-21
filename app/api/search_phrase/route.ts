@@ -1580,7 +1580,11 @@ export async function POST(request: NextRequest) {
               const ref = `${row.book} ${row.chapter}:${row.verse}`
               if (!refSet.has(ref)) {
                 refSet.add(ref)
-                allResults.push({ ref, text })
+                allResults.push({
+                  ref,
+                  text,
+                  testament: row.testament
+                })
                 coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
               }
               if (allResults.length >= 100) break
@@ -1852,7 +1856,8 @@ export async function POST(request: NextRequest) {
                   translation: table.translation,
                   dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
                   tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined,
-                  audio_verse_url: audioVerseUrl
+                  audio_verse_url: audioVerseUrl,
+                  testament: (row as any).testament
                 })
               }
             }
@@ -1910,9 +1915,10 @@ export async function POST(request: NextRequest) {
                     coverageRefSet.add(fallbackRef)
                     coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
                   }
-                  allResults.push({ 
-                    ref: fallbackRef, 
-                    text: row.text || '' 
+                  allResults.push({
+                    ref: fallbackRef,
+                    text: row.text || '',
+                    testament: row.testament
                   })
                   if (allResults.length >= 10) break
                 }
