@@ -828,6 +828,10 @@ function bookVariants(input: string | null | undefined): string[] {
   const hyphenAll = singleSp.replace(/\s+/g, '-')
   const collapsed = singleSp.replace(/\s+/g, '')
   const out = new Set<string>([raw, dehyphen, singleSp, hyDashLead, hyphenAll, collapsed])
+  // Add some common variations for book names
+  if (raw.includes('Corinthians')) {
+    out.add('1 Corinthians').add('2 Corinthians')
+  }
   return Array.from(out).filter(Boolean)
 }
 
