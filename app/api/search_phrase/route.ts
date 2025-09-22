@@ -1404,19 +1404,35 @@ async function enrichVariantsFromSupabase(
   } catch {}
 
   try {
-    const { data } = await client
+    // Query form_roots for word_form matches
+    const { data: wordFormData } = await client
       .from('form_roots')
-      .select('word_form,base_word,root_word,frequency')
-      .or(`base_word.eq.${term},root_word.eq.${term}`)
+      .select('word_form,root_form')
+      .eq('word_form', term)
       .order('frequency', { ascending: false })
       .limit(baseLimit)
-    if (Array.isArray(data)) {
-      for (const row of data) {
-        const freq = Number(row?.frequency)
-        const frequency = Number.isFinite(freq) ? freq : undefined
-        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'], frequency })
-        if (includeRelated && row?.base_word) collector.add(row.base_word, { sources: ['root-base'], frequency })
-        if (includeRelated && row?.root_word) collector.add(row.root_word, { sources: ['root'], frequency })
+    if (Array.isArray(wordFormData)) {
+      for (const row of wordFormData) {
+        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+          collector.add(row.root_form, { sources: ['root'] })
+        }
+      }
+    }
+
+    // Query form_roots for root_form matches
+    const { data: rootFormData } = await client
+      .from('form_roots')
+      .select('word_form,root_form')
+      .eq('root_form', term)
+      .order('frequency', { ascending: false })
+      .limit(baseLimit)
+    if (Array.isArray(rootFormData)) {
+      for (const row of rootFormData) {
+        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+          collector.add(row.root_form, { sources: ['root'] })
+        }
       }
     }
   } catch {}
