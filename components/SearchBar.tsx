@@ -37,8 +37,8 @@ export default function SearchBar({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="relative z-10">
+    <div className="space-y-3 w-full flex flex-col">
+      <div className="relative z-10 w-full flex">
         <input
           type="text"
           value={query}
@@ -48,6 +48,7 @@ export default function SearchBar({
           className="w-full p-3 pl-12 pr-20 sm:pr-24 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           dir="rtl"
           disabled={loading}
+          style={{ boxSizing: 'border-box' }}
         />
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
           🔍
