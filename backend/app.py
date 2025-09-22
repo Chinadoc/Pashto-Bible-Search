@@ -67,8 +67,12 @@ def ep_search_grammar(req: GrammarRequest) -> GrammarResponse:
     if isinstance(results, dict) and 'verses' in results:
         # New format with related forms
         occurrences = [{"ref": verse, "text": ""} for verse in results['verses'][:req.limit]]
-        # For now, don't include conjugations in the response
-        conjugations = None
+        # Include related forms in conjugations field
+        conjugations = {
+            'root': results.get('root', ''),
+            'related_forms': results.get('related_forms', []),
+            'total_verses': results.get('total_verses', 0)
+        }
         coverage = []
     else:
         # Old format (list of verses)
