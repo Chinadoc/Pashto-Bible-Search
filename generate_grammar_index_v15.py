@@ -47,9 +47,17 @@ def normalize_lexicon(lexicon):
     for key, value in lexicon.items():
         normalized_key = normalize_pashto_char(key)
         normalized_value = value.copy()
-        for field in ['stems', 'inflected_forms', 'related_roots', 'base_root']:
+        # Add missing fields for compatibility
+        if 'type' not in normalized_value:
+            normalized_value['type'] = 'Verb'
+        if 'pattern_info' not in normalized_value:
+            normalized_value['pattern_info'] = 'Transitive Verb'
+        if 'translit' not in normalized_value:
+            normalized_value['translit'] = transliterate(key)
+        
+        for field in ['stems', 'inflected_forms', 'related_roots', 'base_root', 'roots', 'romanization']:
             if field in normalized_value and isinstance(normalized_value[field], dict):
-                normalized_value[field] = {k: normalize_pashto_char(v) for k, v in normalized_value[field].items()}
+                normalized_value[field] = {k: normalize_pashto_char(v) if isinstance(v, str) else v for k, v in normalized_value[field].items()}
             elif field in normalized_value and isinstance(normalized_value[field], list):
                 normalized_value[field] = [normalize_pashto_char(item) for item in normalized_value[field]]
             elif field in normalized_value and isinstance(normalized_value[field], str):
@@ -58,12 +66,20 @@ def normalize_lexicon(lexicon):
     return normalized_lexicon
 
 # --- Definitive Lexicon (v15) ---
-VERB_LEXICON = normalize_lexicon({
-    'بوتلل': {'type': 'Verb', 'pattern_info': 'Irregular Verb', 'stems': {'imperfective': 'بیای', 'perfective': 'بوځ', 'past_participle': 'بوتللی'}, 'translit': 'botlúl'},
-    'رسول': {'type': 'Verb', 'pattern_info': 'Transitive Verb (to deliver/send)', 'stems': {'imperfective': 'رسو', 'perfective': 'ورسو', 'past_participle': 'رسولی'}, 'related_roots': ['پوهول'], 'translit': 'rasawúl'},
-    'پوهول': {'type': 'Verb', 'pattern_info': 'Causative Verb (to make understand)', 'stems': {'imperfective': 'پوهو', 'perfective': 'وپوهو', 'past_participle': 'پوهولی'}, 'base_root': 'کول', 'translit': 'pohawúl'}
-    # Add other verbs from previous versions...
-})
+def load_verb_lexicon():
+    try:
+        with open('verbs_lexicon.json', 'r', encoding='utf-8') as f:
+            lexicon = json.load(f)
+        return normalize_lexicon(lexicon)
+    except Exception:
+        # Fallback to minimal lexicon if file not found
+        return normalize_lexicon({
+            'بوتلل': {'type': 'Verb', 'pattern_info': 'Irregular Verb', 'stems': {'imperfective': 'بیای', 'perfective': 'بوځ', 'past_participle': 'بوتللی'}, 'translit': 'botlúl'},
+            'رسول': {'type': 'Verb', 'pattern_info': 'Transitive Verb (to deliver/send)', 'stems': {'imperfective': 'رسو', 'perfective': 'ورسو', 'past_participle': 'رسولی'}, 'related_roots': ['پوهول'], 'translit': 'rasawúl'},
+            'پوهول': {'type': 'Verb', 'pattern_info': 'Causative Verb (to make understand)', 'stems': {'imperfective': 'پوهو', 'perfective': 'وپوهو', 'past_participle': 'پوهولی'}, 'base_root': 'کول', 'translit': 'pohawúl'}
+        })
+
+VERB_LEXICON = load_verb_lexicon()
 
 IRREGULAR_NOUN_ADJ_LEXICON = normalize_lexicon({
     'پښتون': {'type': 'Noun/Adj', 'pattern_info': 'Pattern 4: Pashtoon', 'inflected_forms': ['پښتانه', 'پښتنو', 'پښتنه', 'پښتنې'], 'translit': 'puxtoon'},
@@ -126,8 +142,22 @@ def find_all_possible_roots(word, all_words_set):
                  desc = f"Inflection of '{possible_root}'"
                  interpretations.append((possible_root, {'type': 'Noun/Adj', 'pattern_info': 'Regular Noun/Adj', 'form_description': desc}))
 
+    # 4. Verb Conjugation Analysis using verb inflector
+    try:
+        from verb_inflector import find_lexicon_root_for_form
+        if find_lexicon_root_for_form:
+            root_from_form = find_lexicon_root_for_form(word)
+            if root_from_form and root_from_form in VERB_LEXICON:
+                details = VERB_LEXICON[root_from_form]
+                interpretations.append((root_from_form, {'type': 'Verb', 'pattern_info': details['pattern_info'], 'form_description': f'Conjugated form of "{root_from_form}"'}))
+    except ImportError:
+        # If verb_inflector is not available, skip conjugation analysis
+        pass
+    except Exception:
+        # If there's any other error, skip conjugation analysis
+        pass
 
-    # 4. Fallback for un-lexiconed words
+    # 5. Fallback for un-lexiconed words
     if not interpretations and word in all_words_set:
         interpretations.append((word, {'type': 'Unknown', 'pattern_info': 'N/A', 'form_description': 'Base Form'}))
 
