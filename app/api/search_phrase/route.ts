@@ -2103,17 +2103,17 @@ export async function POST(request: NextRequest) {
           try {
             const { data: occurrenceData } = await supabase
               .from('form_occurrences')
-              .select('form, frequency')
-              .in('form', batch)
+              .select('pashto_form, frequency')
+              .in('pashto_form', batch)
               .gte('frequency', 1)
               .order('frequency', { ascending: false })
               .limit(30)
 
             if (Array.isArray(occurrenceData)) {
               for (const row of occurrenceData) {
-                if (row?.form && row?.frequency) {
+                if (row?.pashto_form && row?.frequency) {
                   existingForms.push({
-                    form: row.form,
+                    form: row.pashto_form,
                     count: Number(row.frequency) || 0
                   })
                 }
@@ -2124,18 +2124,18 @@ export async function POST(request: NextRequest) {
             try {
               const { data: occurrenceData2 } = await supabase
                 .from('form_occurrences')
-                .select('pashto_form, occurrence_count')
+                .select('pashto_form, frequency')
                 .in('pashto_form', batch)
-                .gte('occurrence_count', 1)
-                .order('occurrence_count', { ascending: false })
+                .gte('frequency', 1)
+                .order('frequency', { ascending: false })
                 .limit(30)
 
               if (Array.isArray(occurrenceData2)) {
                 for (const row of occurrenceData2) {
-                  if (row?.pashto_form && row?.occurrence_count) {
+                  if (row?.pashto_form && row?.frequency) {
                     existingForms.push({
                       form: row.pashto_form,
-                      count: Number(row.occurrence_count) || 0
+                      count: Number(row.frequency) || 0
                     })
                   }
                 }
