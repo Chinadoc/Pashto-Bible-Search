@@ -60,15 +60,40 @@ def ep_search_phrase(req: PhraseRequest) -> PhraseResponse:
 def ep_search_grammar(req: GrammarRequest) -> GrammarResponse:
     indices = get_grammar_indices()
     t0 = time.perf_counter()
-    results = handle_grammatical_search(req.query, indices.get("all", {}))
+    results = handle_grammatical_search(req.query, req.scope)
     ms = (time.perf_counter() - t0) * 1000.0
-    return GrammarResponse(results=results, ms=ms)
+
+    # Handle both old and new response formats
+    if isinstance(results, dict) and 'verses' in results:
+        # New format with related forms
+        occurrences = [{"ref": verse, "text": ""} for verse in results['verses'][:req.limit]]
+        # For now, don't include conjugations in the response
+        conjugations = None
+        coverage = []
+    else:
+        # Old format (list of verses)
+        occurrences = [{"ref": verse, "text": ""} for verse in results[:req.limit]]
+        conjugations = None
+        coverage = []
+
+    return GrammarResponse(occurrences=occurrences, conjugations=conjugations, coverage=coverage, ms=ms)
 
 
 @app.get("/search/grammatical")
 def ep_search_grammatical(query: str = Query(..., min_length=1), scope: str = Query("ALL", min_length=2)):
     results = handle_grammatical_search(query, scope)
-    return {"results": results}
+    # Handle both old and new response formats
+    if isinstance(results, dict) and 'verses' in results:
+        # New format with related forms
+        return {
+            "results": results['verses'][:200],  # Limit results
+            "related_forms": results['related_forms'],
+            "root": results['root'],
+            "total_verses": results['total_verses']
+        }
+    else:
+        # Old format (list of verses)
+        return {"results": results[:200]}
 
 
 @app.get("/lexicon/lookup")

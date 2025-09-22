@@ -92,18 +92,38 @@ def handle_grammatical_search(query, scope):
             total_hits += occurrences.get('count', 0)
 
     # 5. Structure the response
-    # For now, returning a flat list of verses from all found forms.
-    # Can be enhanced to group by form later.
-    
+    # Return both the verses and the related forms with their counts
+
     aggregated_verses = []
     for form, data in final_results.items():
         for verse in data.get('verses', []):
             if verse not in aggregated_verses:
                  aggregated_verses.append(verse)
 
+    # Also include related forms information
+    related_forms = []
+    for form, data in final_results.items():
+        count = data.get('count', 0)
+        if count > 0:
+            related_forms.append({
+                'form': form,
+                'count': count,
+                'translit': data.get('translit', ''),
+                'root': root
+            })
+
+    # Sort related forms by count (descending)
+    related_forms.sort(key=lambda x: x['count'], reverse=True)
+
     print(f"Found {len(aggregated_verses)} unique verses.")
+    print(f"Found {len(related_forms)} related forms.")
     print(f"--- Smart Search Finished ---")
-    return aggregated_verses
+    return {
+        'verses': aggregated_verses,
+        'related_forms': related_forms,
+        'root': root,
+        'total_verses': len(aggregated_verses)
+    }
 
 def is_nt(verse_ref):
     book = verse_ref.split(" ")[0]
