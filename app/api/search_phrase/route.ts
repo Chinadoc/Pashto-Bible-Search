@@ -1377,8 +1377,9 @@ async function enrichIrregularVariants(
 // Load JSON data for form mappings
 const FORM_TO_ROOT_MAP = (() => {
   try {
-    const fs = require('fs');
-    const path = require('path');
+    // Use dynamic import for JSON files in Next.js API routes
+    const fs = require('fs') as any;
+    const path = require('path') as any;
     const filePath = path.join(process.cwd(), 'form_to_root_map.json');
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
@@ -1389,8 +1390,9 @@ const FORM_TO_ROOT_MAP = (() => {
 
 const GRAMMATICAL_INDEX = (() => {
   try {
-    const fs = require('fs');
-    const path = require('path');
+    // Use dynamic import for JSON files in Next.js API routes
+    const fs = require('fs') as any;
+    const path = require('path') as any;
     const filePath = path.join(process.cwd(), 'grammatical_index_v15.json');
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
@@ -1421,7 +1423,7 @@ async function enrichVariantsFromSupabase(
 
         // Find all forms that map to this root
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             collector.add(form, { sources: ['root-map'] });
           }
         }
@@ -1432,8 +1434,12 @@ async function enrichVariantsFromSupabase(
         const entry = GRAMMATICAL_INDEX[term];
         for (const identity of entry.identities || []) {
           for (const [formType, forms] of Object.entries(identity.forms || {})) {
-            for (const form of forms) {
-              collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+            if (Array.isArray(forms)) {
+              for (const form of forms) {
+                if (form && typeof form === 'object' && form.form) {
+                  collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+                }
+              }
             }
           }
         }
@@ -1461,7 +1467,7 @@ async function enrichVariantsFromSupabase(
         const root = FORM_TO_ROOT_MAP[term][0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             // Determine if this is a verb conjugation based on the form
             const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
             collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
