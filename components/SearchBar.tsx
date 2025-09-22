@@ -38,24 +38,24 @@ export default function SearchBar({
 
   return (
     <div className="space-y-3">
-      <div className="relative">
+      <div className="relative z-10">
         <input
           type="text"
           value={query}
           onChange={handleQueryChange}
           onKeyPress={handleKeyPress}
           placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
-          className="w-full p-3 pr-12 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-3 pl-12 pr-20 sm:pr-24 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           dir="rtl"
           disabled={loading}
         />
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
           🔍
         </div>
         <button
           onClick={() => onSearch()}
           disabled={loading || !query.trim()}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 sm:px-3 py-1 bg-blue-500 text-white text-xs sm:text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors z-20"
         >
           {loading ? '...' : 'Search'}
         </button>
