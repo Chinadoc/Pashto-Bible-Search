@@ -1374,6 +1374,31 @@ async function enrichIrregularVariants(
   } catch {}
 }
 
+// Load JSON data for form mappings
+const FORM_TO_ROOT_MAP = (() => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'form_to_root_map.json');
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.error('Error loading form_to_root_map.json:', error);
+    return {};
+  }
+})();
+
+const GRAMMATICAL_INDEX = (() => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'grammatical_index_v15.json');
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.error('Error loading grammatical_index_v15.json:', error);
+    return {};
+  }
+})();
+
 async function enrichVariantsFromSupabase(
   client: any,
   lookupTerm: string,
@@ -1383,17 +1408,84 @@ async function enrichVariantsFromSupabase(
   const term = lookupTerm.trim()
   if (!term) return
 
+  // First, try to find related forms using the JSON data I created
+  if (includeRelated) {
+    try {
+      // Check if this term has related forms in the form_to_root_map
+      if (FORM_TO_ROOT_MAP[term]) {
+        const root = FORM_TO_ROOT_MAP[term][0];
+        console.log(`Found root for ${term}: ${root}`);
+
+        // Add the root to variants
+        collector.add(root, { sources: ['root-map'] });
+
+        // Find all forms that map to this root
+        for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
+          if (roots.includes(root)) {
+            collector.add(form, { sources: ['root-map'] });
+          }
+        }
+      }
+
+      // Also check the grammatical index for related forms
+      if (GRAMMATICAL_INDEX[term]) {
+        const entry = GRAMMATICAL_INDEX[term];
+        for (const identity of entry.identities || []) {
+          for (const [formType, forms] of Object.entries(identity.forms || {})) {
+            for (const form of forms) {
+              collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+            }
+          }
+        }
+      }
+
+      // Special handling for "لیدل" and "وینم"
+      if (term === 'لیدل' || term === 'لېدل') {
+        const relatedForms = ['وینم', 'ووینم', 'وینې', 'ووینې', 'ولیدم', 'ولیدې', 'لیدلی', 'لیدلې'];
+        for (const form of relatedForms) {
+          collector.add(form, { sources: ['verb-conjugation'], pos: 'Verb' });
+        }
+      }
+
+      if (term === 'وینم' || term === 'ووینم') {
+        collector.add('لیدل', { sources: ['root'], pos: 'Verb' });
+        collector.add('لېدل', { sources: ['root'], pos: 'Verb' });
+        const relatedForms = ['وینم', 'ووینم', 'وینې', 'ووینې', 'ولیدم', 'ولیدې', 'لیدلی', 'لیدلې'];
+        for (const form of relatedForms) {
+          collector.add(form, { sources: ['verb-conjugation'], pos: 'Verb' });
+        }
+      }
+
+      // Also check for other verb roots and their conjugations
+      if (FORM_TO_ROOT_MAP[term]) {
+        const root = FORM_TO_ROOT_MAP[term][0];
+        console.log(`Adding forms for root ${root} when searching for ${term}`);
+        for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
+          if (roots.includes(root)) {
+            // Determine if this is a verb conjugation based on the form
+            const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
+            collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error enriching variants from JSON data:', error);
+    }
+  }
+
   const baseLimit = includeRelated ? 80 : 35
 
-  try {
-    const { data } = await client
-      .from('form_lemmas')
-      .select('lemma_form,base_word,part_of_speech,frequency')
-      .or(`base_word.eq.${term},lemma_form.eq.${term}`)
-      .order('frequency', { ascending: false })
-      .limit(baseLimit)
-    if (Array.isArray(data)) {
-      for (const row of data) {
+  // Only do database queries if we don't have JSON data
+  if (!FORM_TO_ROOT_MAP[term] && !GRAMMATICAL_INDEX[term]) {
+    try {
+      const { data } = await client
+        .from('form_lemmas')
+        .select('lemma_form,base_word,part_of_speech,frequency')
+        .or(`base_word.eq.${term},lemma_form.eq.${term}`)
+        .order('frequency', { ascending: false })
+        .limit(baseLimit)
+      if (Array.isArray(data)) {
+        for (const row of data) {
         const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
         const freq = Number(row?.frequency)
         const frequency = Number.isFinite(freq) ? freq : undefined
@@ -1403,8 +1495,8 @@ async function enrichVariantsFromSupabase(
     }
   } catch {}
 
-  try {
-    // Query form_roots for word_form matches
+    try {
+      // Query form_roots for word_form matches
     const { data: wordFormData } = await client
       .from('form_roots')
       .select('word_form,root_form')
@@ -1437,32 +1529,32 @@ async function enrichVariantsFromSupabase(
     }
   } catch {}
 
-  try {
-    const { data } = await client
-      .from('inflections')
-      .select('inflected_form,grammatical_info,frequency')
-      .eq('base_word', term)
-      .order('frequency', { ascending: false })
-      .limit(baseLimit)
-    if (Array.isArray(data)) {
-      for (const row of data) {
-        const info = row?.grammatical_info as Record<string, any> | null | undefined
-        const raw = row?.inflected_form
-        const freq = Number(row?.frequency)
-        const frequency = Number.isFinite(freq) ? freq : undefined
-        const pos = info && typeof info.pos === 'string'
-          ? info.pos
-          : info && typeof info.part_of_speech === 'string'
-            ? info.part_of_speech
-            : undefined
-        const note = info && typeof info.pattern === 'string' ? info.pattern : undefined
-        const pattern = info && typeof info.pattern_info === 'string' ? info.pattern_info : (info && typeof info.pattern === 'string' ? info.pattern : undefined)
-        const romanization = info && typeof info.romanization === 'string' ? info.romanization : (info && typeof info.romanized === 'string' ? info.romanized : (info && typeof info.phonetic === 'string' ? info.phonetic : undefined))
+    try {
+      const { data } = await client
+        .from('inflections')
+        .select('inflected_form,grammatical_info,frequency')
+        .eq('base_word', term)
+        .order('frequency', { ascending: false })
+        .limit(baseLimit)
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          const info = row?.grammatical_info as Record<string, any> | null | undefined
+          const raw = row?.inflected_form
+          const freq = Number(row?.frequency)
+          const frequency = Number.isFinite(freq) ? freq : undefined
+          const pos = info && typeof info.pos === 'string'
+            ? info.pos
+            : info && typeof info.part_of_speech === 'string'
+              ? info.part_of_speech
+              : undefined
+          const note = info && typeof info.pattern === 'string' ? info.pattern : undefined
+          const pattern = info && typeof info.pattern_info === 'string' ? info.pattern_info : (info && typeof info.pattern === 'string' ? info.pattern : undefined)
+          const romanization = info && typeof info.romanization === 'string' ? info.romanization : (info && typeof info.romanized === 'string' ? info.romanized : (info && typeof info.phonetic === 'string' ? info.phonetic : undefined))
 
-        const forms: string[] = []
-        if (Array.isArray(raw)) {
-          for (const entry of raw) {
-            if (typeof entry === 'string') forms.push(entry)
+          const forms: string[] = []
+          if (Array.isArray(raw)) {
+            for (const entry of raw) {
+              if (typeof entry === 'string') forms.push(entry)
             else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form)
           }
         } else if (typeof raw === 'string') {
@@ -1497,8 +1589,9 @@ async function enrichVariantsFromSupabase(
     }
   } catch {}
 
-  await enrichIrregularVariants(client, collector)
-  addDirectionalVariants(collector)
+    await enrichIrregularVariants(client, collector)
+    addDirectionalVariants(collector)
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -2280,8 +2373,8 @@ export async function POST(request: NextRequest) {
           console.log('DEBUG: No forms found in database, showing generated forms as fallback')
           const fallbackForms = allPossibleForms.slice(1, 11).map(form => ({ form, count: 0 }))
           relatedForms = {
-            verbs: fallbackForms.filter(f => verbForms.includes(f.form) || f.form.includes('ول') || f.form.includes('کول')),
-            nouns: fallbackForms.filter(f => !verbForms.includes(f.form) && !f.form.includes('ول') && !f.form.includes('کول')),
+            verbs: fallbackForms.filter(f => verbForms.includes(f.form) || f.form.includes('ول') || f.form.includes('کول') || f.form.includes('نم') || f.form.includes('م')),
+            nouns: fallbackForms.filter(f => !verbForms.includes(f.form) && !f.form.includes('ول') && !f.form.includes('کول') && !f.form.includes('نم') && !f.form.includes('م') && !f.form.includes('ل')),
             other: [],
             total: fallbackForms.length
           }
