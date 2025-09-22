@@ -65,11 +65,8 @@ export async function POST(request: NextRequest) {
       // ignore and keep root=term
     }
 
-    // 2) For now, skip complex form lookup since form_to_root_map is stored as documents
-    // This would require scanning all documents to find forms for a root, which is inefficient
+    // 2) Get related forms from inflections table
     const formSet = new Set<string>()
-
-    // 3) If no forms found via mapping, try a secondary table name if exists
     if (formSet.size === 0) {
       try {
         const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
@@ -121,8 +118,8 @@ export async function POST(request: NextRequest) {
     try {
       let rootPos: string | undefined
       let url = new URL(`${supabaseUrl}/rest/v1/verbs_lexicon`)
-      url.searchParams.set('select', 'p_norm')
-      url.searchParams.set('p_norm', `eq.${root}`)
+      url.searchParams.set('select', 'verb_root')
+      url.searchParams.set('verb_root', `eq.${root}`)
       url.searchParams.set('limit', '1')
       let r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
       if (r.ok) {
