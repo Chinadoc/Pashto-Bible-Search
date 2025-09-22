@@ -21,64 +21,49 @@ interface Props {
 export default function SearchBar({
   query,
   setQuery,
-  scope,
-  setScope,
   onSearch,
-  loading,
-  verbPerson,
-  setVerbPerson,
-  showFirstPerson,
-  setShowFirstPerson,
-  verbTense,
-  setVerbTense,
-  includeRelated = false
-}: Props & { includeRelated?: boolean }) {
+  loading
+}: {
+  query: string;
+  setQuery: (query: string) => void;
+  onSearch: () => void;
+  loading: boolean;
+}) {
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
-  const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => setScope(e.target.value as Scope);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading) {
+      onSearch();
+    }
+  };
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <input
-        type="text"
-        value={query}
-        onChange={handleQueryChange}
-        placeholder="Leedul"
-        className="flex-1 p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800"
-        dir="rtl"
-        disabled={loading}
-      />
-      <select
-        value={scope}
-        onChange={handleScopeChange}
-        className="p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800"
-        disabled={loading}
-      >
-        <option value="all">All</option>
-        <option value="ot">Old Testament</option>
-        <option value="nt">New Testament</option>
-      </select>
-      <button
-        onClick={() => onSearch()}
-        disabled={loading}
-        className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? 'Searching...' : 'Search'}
-      </button>
-
-
-      {includeRelated && showFirstPerson !== undefined && setShowFirstPerson && (
+    <div className="space-y-3">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={handleQueryChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
+          className="w-full p-3 pr-12 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          dir="rtl"
+          disabled={loading}
+        />
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          🔍
+        </div>
         <button
-          onClick={() => setShowFirstPerson(!showFirstPerson)}
-          className={`px-3 py-1 rounded text-sm border ${
-            showFirstPerson
-              ? 'bg-green-500 text-white border-green-500'
-              : 'bg-gray-200 text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
-          } hover:opacity-80 transition-colors`}
-          title="Toggle 1st person present forms"
+          onClick={() => onSearch()}
+          disabled={loading || !query.trim()}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {showFirstPerson ? '✅ 1st Person' : '👤 1st Person'}
+          {loading ? '...' : 'Search'}
         </button>
-      )}
+      </div>
+
+      <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+        Press Enter or click Search • Supports Pashto text and English transliteration
+      </div>
     </div>
   );
 }

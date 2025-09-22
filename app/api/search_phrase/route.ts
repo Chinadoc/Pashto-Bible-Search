@@ -1504,10 +1504,11 @@ export async function POST(request: NextRequest) {
     const bookFilterKey = bookFilter === null ? 'null' : (bookFilter || 'all')
     const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
 
-    // Debug logging for book filtering
+    // Debug logging for book filtering and scope
     if (bookFilter) {
       console.log(`DEBUG: Book filter applied: ${bookFilter}`)
     }
+    console.log(`DEBUG: Scope: ${scope}, Book filter: ${bookFilter}`)
 
     // Check cache first
     const cached = SEARCH_CACHE.get(cacheKey)
