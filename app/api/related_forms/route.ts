@@ -42,9 +42,10 @@ export async function POST(request: NextRequest) {
     // 1) Determine root for the term
     let root = term
     try {
+      // Query form_to_root_map as document storage (id=form, data=root)
       const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
-      url.searchParams.set('select', 'root')
-      url.searchParams.set('form', `eq.${term}`)
+      url.searchParams.set('select', 'data')
+      url.searchParams.set('id', `eq.${term}`)
       url.searchParams.set('limit', '1')
       const res = await fetch(url.toString(), {
         headers: {
@@ -56,36 +57,19 @@ export async function POST(request: NextRequest) {
       })
       if (res.ok) {
         const rows = await res.json()
-        if (Array.isArray(rows) && rows[0]?.root) root = rows[0].root
+        if (Array.isArray(rows) && rows[0]?.data) {
+          // data is an array of roots, take the first one
+          const roots = Array.isArray(rows[0].data) ? rows[0].data : [rows[0].data]
+          if (roots.length > 0) root = roots[0]
+        }
       }
     } catch {
       // ignore and keep root=term
     }
 
-    // 2) Fetch all forms for this root (collect only)
+    // 2) For now, skip complex form lookup since form_to_root_map is stored as documents
+    // This would require scanning all documents to find forms for a root, which is inefficient
     const formSet = new Set<string>()
-    try {
-      const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
-      url.searchParams.set('select', 'form')
-      url.searchParams.set('root', `eq.${root}`)
-      url.searchParams.set('limit', String(limit))
-      const res = await fetch(url.toString(), {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      })
-        if (res.ok) {
-          const rows = await res.json()
-          if (Array.isArray(rows)) {
-            for (const r of rows) if (r?.form) formSet.add(String(r.form))
-          }
-        }
-    } catch {
-      // ignore – fall back to empty suggestions
-    }
 
     // 3) If no forms found via mapping, try a secondary table name if exists
     if (formSet.size === 0) {
@@ -148,14 +132,15 @@ export async function POST(request: NextRequest) {
         if (Array.isArray(rows) && rows.length > 0) rootPos = 'verb'
       }
       if (!rootPos) {
+        // Query nouns_lexicon as document storage (id, data)
         url = new URL(`${supabaseUrl}/rest/v1/nouns_lexicon`)
-        url.searchParams.set('select', 'p_norm')
-        url.searchParams.set('p_norm', `eq.${root}`)
+        url.searchParams.set('select', 'data')
+        url.searchParams.set('id', `eq.${root}`)
         url.searchParams.set('limit', '1')
         r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
         if (r.ok) {
           const rows = await r.json()
-          if (Array.isArray(rows) && rows.length > 0) rootPos = 'noun'
+          if (Array.isArray(rows) && rows.length > 0 && rows[0]?.data) rootPos = 'noun'
         }
       }
       if (rootPos) enriched.forEach(item => { item.pos = rootPos })
