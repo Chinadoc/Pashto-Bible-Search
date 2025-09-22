@@ -57,8 +57,30 @@ export async function POST(request: NextRequest) {
       })
       if (res.ok) {
         const rows = await res.json()
-        if (Array.isArray(rows) && rows[0]?.root_form) {
+        if (Array.isArray(rows) && rows.length > 0 && rows[0]?.root_form) {
           root = rows[0].root_form
+        }
+      }
+
+      // Also try root_form if word_form didn't work
+      if (root === term) {
+        const url2 = new URL(`${supabaseUrl}/rest/v1/form_roots`)
+        url2.searchParams.set('select', 'root_form')
+        url2.searchParams.set('root_form', `eq.${term}`)
+        url2.searchParams.set('limit', '1')
+        const res2 = await fetch(url2.toString(), {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        })
+        if (res2.ok) {
+          const rows2 = await res2.json()
+          if (Array.isArray(rows2) && rows2.length > 0 && rows2[0]?.root_form) {
+            root = rows2[0].root_form
+          }
         }
       }
     } catch {
@@ -84,7 +106,44 @@ export async function POST(request: NextRequest) {
         })
         if (res.ok) {
           const rows = await res.json()
-          if (Array.isArray(rows)) rows.forEach((r:any)=>{ if (r?.inflected_form) formSet.add(String(r.inflected_form)) })
+          if (Array.isArray(rows)) {
+            rows.forEach((r: any) => {
+              if (r?.inflected_form) {
+                try {
+                  // inflected_form could be a JSON array or a JSON string
+                  let forms;
+                  if (Array.isArray(r.inflected_form)) {
+                    forms = r.inflected_form;
+                  } else {
+                    forms = JSON.parse(r.inflected_form);
+                  }
+
+                  if (Array.isArray(forms)) {
+                    forms.forEach((formObj: any) => {
+                      if (formObj?.form) {
+                        formSet.add(String(formObj.form))
+                      }
+                    })
+                  } else {
+                    // If forms is not an array, add it as a single form
+                    formSet.add(String(forms))
+                  }
+                } catch (e) {
+                  // If parsing fails, try to extract forms using regex
+                  const formStr = String(r.inflected_form);
+                  const formMatches = formStr.match(/'form':\s*'([^']+)'/g)
+                  if (formMatches) {
+                    formMatches.forEach((match) => {
+                      const formMatch = match.match(/'form':\s*'([^']+)'/)
+                      if (formMatch && formMatch[1]) {
+                        formSet.add(formMatch[1])
+                      }
+                    })
+                  }
+                }
+              }
+            })
+          }
         }
       } catch {
         // ignore
