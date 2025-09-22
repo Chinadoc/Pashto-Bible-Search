@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     // 1) Determine root for the term
     let root = term
     try {
-      // Query form_to_root_map as document storage (id=form, data=root)
-      const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
-      url.searchParams.set('select', 'data')
-      url.searchParams.set('id', `eq.${term}`)
+      // Query form_roots table (relational format)
+      const url = new URL(`${supabaseUrl}/rest/v1/form_roots`)
+      url.searchParams.set('select', 'root_form')
+      url.searchParams.set('word_form', `eq.${term}`)
       url.searchParams.set('limit', '1')
       const res = await fetch(url.toString(), {
         headers: {
@@ -57,10 +57,8 @@ export async function POST(request: NextRequest) {
       })
       if (res.ok) {
         const rows = await res.json()
-        if (Array.isArray(rows) && rows[0]?.data) {
-          // data is an array of roots, take the first one
-          const roots = Array.isArray(rows[0].data) ? rows[0].data : [rows[0].data]
-          if (roots.length > 0) root = roots[0]
+        if (Array.isArray(rows) && rows[0]?.root_form) {
+          root = rows[0].root_form
         }
       }
     } catch {
@@ -132,15 +130,15 @@ export async function POST(request: NextRequest) {
         if (Array.isArray(rows) && rows.length > 0) rootPos = 'verb'
       }
       if (!rootPos) {
-        // Query nouns_lexicon as document storage (id, data)
+        // Query nouns_lexicon (relational format)
         url = new URL(`${supabaseUrl}/rest/v1/nouns_lexicon`)
-        url.searchParams.set('select', 'data')
-        url.searchParams.set('id', `eq.${root}`)
+        url.searchParams.set('select', 'noun_root')
+        url.searchParams.set('noun_root', `eq.${root}`)
         url.searchParams.set('limit', '1')
         r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
         if (r.ok) {
           const rows = await r.json()
-          if (Array.isArray(rows) && rows.length > 0 && rows[0]?.data) rootPos = 'noun'
+          if (Array.isArray(rows) && rows.length > 0) rootPos = 'noun'
         }
       }
       if (rootPos) enriched.forEach(item => { item.pos = rootPos })
