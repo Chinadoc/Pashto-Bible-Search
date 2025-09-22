@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, ChangeEvent } from "react";
 import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
@@ -12,6 +12,104 @@ import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
+
+// Search input component - prominent and visible
+function SearchInput({ query, setQuery, onSearch, loading }: {
+  query: string;
+  setQuery: (query: string) => void;
+  onSearch: () => void;
+  loading: boolean;
+}) {
+  const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !loading) {
+      onSearch();
+    }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={handleQueryChange}
+        onKeyPress={handleKeyPress}
+        placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
+        className="w-full p-4 pr-16 text-lg border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+        dir="rtl"
+        disabled={loading}
+      />
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">
+        🔍
+      </div>
+      <button
+        onClick={() => onSearch()}
+        disabled={loading || !query.trim()}
+        className="absolute right-3 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {loading ? '...' : 'Search'}
+      </button>
+    </div>
+  );
+}
+
+// Search controls component - separate panel
+function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount }: {
+  scope: Scope;
+  setScope: (scope: Scope) => void;
+  includeRelated: boolean;
+  setIncludeRelated: (include: boolean) => void;
+  resultsCount: number;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {/* Scope Selection as Tabs */}
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
+          {[
+            {key: 'all', label: 'All', icon: '📚'},
+            {key: 'ot', label: 'OT', icon: '📖'},
+            {key: 'nt', label: 'NT', icon: '📜'}
+          ].map((option) => (
+            <button
+              key={option.key}
+              onClick={() => setScope(option.key as Scope)}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                scope === option.key
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title={option.label}
+            >
+              <span className="mr-1">{option.icon}</span>
+              <span className="hidden sm:inline">{option.label}</span>
+              <span className="sm:hidden">{option.key.toUpperCase()}</span>
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeRelated}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setIncludeRelated(e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-gray-700 dark:text-gray-300 font-medium">Include related forms</span>
+        </label>
+      </div>
+
+      {/* Quick Search Actions */}
+      <div className="flex items-center justify-between sm:justify-end gap-2">
+        {resultsCount > 0 && (
+          <span className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full font-medium">
+            {resultsCount} results
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -259,70 +357,29 @@ export default function Home() {
                   label: '🔍 Search',
                   content: (
                     <div className="space-y-4">
+                      {/* Search Input - Prominent and separate */}
+                      <div className="mb-6">
+                        <SearchInput
+                          query={query}
+                          setQuery={setQuery}
+                          onSearch={handleSearch}
+                          loading={loading}
+                        />
+                      </div>
+
+                      {/* Search Controls Panel - Separate element */}
+                      <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <SearchControls
+                          scope={scope}
+                          setScope={setScope}
+                          includeRelated={includeRelated}
+                          setIncludeRelated={setIncludeRelated}
+                          resultsCount={results.length}
+                        />
+                      </div>
+
                       {/* Search Section */}
                       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
-                        <div className="flex flex-col space-y-4">
-                          {/* Search Input Row */}
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <SearchBar
-                                query={query}
-                                setQuery={setQuery}
-                                onSearch={handleSearch}
-                                loading={loading}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Search Options Row */}
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                              {/* Scope Selection as Tabs */}
-                              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
-                                {[
-                                  {key: 'all', label: 'All', icon: '📚'},
-                                  {key: 'ot', label: 'OT', icon: '📖'},
-                                  {key: 'nt', label: 'NT', icon: '📜'}
-                                ].map((option) => (
-                                  <button
-                                    key={option.key}
-                                    onClick={() => setScope(option.key as Scope)}
-                                    className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-colors whitespace-nowrap ${
-                                      scope === option.key
-                                        ? 'bg-blue-500 text-white'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                    }`}
-                                    title={option.label}
-                                  >
-                                    <span className="mr-1">{option.icon}</span>
-                                    <span className="hidden sm:inline">{option.label}</span>
-                                    <span className="sm:hidden">{option.key.toUpperCase()}</span>
-                                  </button>
-                                ))}
-                              </div>
-
-                              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={includeRelated}
-                                  onChange={(e) => setIncludeRelated(e.target.checked)}
-                                  className="rounded"
-                                />
-                                <span className="text-gray-700 dark:text-gray-300">Include related forms</span>
-                              </label>
-                            </div>
-
-                            {/* Quick Search Actions */}
-                            <div className="flex items-center justify-between sm:justify-end gap-2">
-                              {query.trim() && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
-                                  {results.length} results
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Verb Understanding Panel */}
                       {(showFirstPerson || verbPerson !== '1st' || verbTense !== 'present') && (
