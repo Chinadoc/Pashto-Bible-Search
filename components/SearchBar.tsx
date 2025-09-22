@@ -45,7 +45,7 @@ export default function SearchBar({
           onChange={handleQueryChange}
           onKeyPress={handleKeyPress}
           placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
-          className="w-full p-3 pr-12 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-3 pr-16 pl-10 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           dir="rtl"
           disabled={loading}
         />
@@ -55,7 +55,7 @@ export default function SearchBar({
         <button
           onClick={() => onSearch()}
           disabled={loading || !query.trim()}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
         >
           {loading ? '...' : 'Search'}
         </button>

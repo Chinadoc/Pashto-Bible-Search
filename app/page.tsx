@@ -260,7 +260,7 @@ export default function Home() {
                   content: (
                     <div className="space-y-4">
                       {/* Search Section */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm mt-2">
                         <div className="flex flex-col space-y-4">
                           {/* Search Input Row */}
                           <div className="flex items-center gap-3">
