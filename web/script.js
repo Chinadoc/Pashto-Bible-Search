@@ -165,17 +165,35 @@ function doSearch(query) {
           results = results.filter(v => (v.ref || '').startsWith(bookFilter + ' '));
         }
         displayResults(results, q);
-        // Show conjugations/inflections panel for single-word grammar results
+        // Show related forms panel for single-word grammar results
         try {
-          if (isSingleWord && data && data.conjugations) {
-            const c = data.conjugations;
+          if (isSingleWord && data && data.conjugations && data.conjugations.related_forms && data.conjugations.related_forms.length > 0) {
+            const root = data.conjugations.root || '';
             const panel = document.createElement('div');
-            panel.className = 'result';
-            const kind = (c.kind || '').toUpperCase();
-            const root = c.root || '';
-            const rom = c.query_rom ? ` <span class="meta">(${c.query_rom})</span>` : '';
-            const body = `<pre class="text" style="white-space:pre-wrap">${escapeHtml(JSON.stringify(c.tables || c, null, 2))}</pre>`;
-            panel.innerHTML = `<div class="ref">${kind} · ${root}${rom}</div>${body}`;
+            panel.className = 'result related-forms-panel';
+            const rom = data.conjugations.query_rom ? ` <span class="meta">(${data.conjugations.query_rom})</span>` : '';
+
+            // Create related forms list
+            const formsHtml = data.conjugations.related_forms.map(form => {
+              const count = form.count || 0;
+              const translit = form.translit ? ` <span class="meta">(${form.translit})</span>` : '';
+              return `<div class="related-form" data-form="${form.form}">${form.form}${translit} · ${count} occurrences</div>`;
+            }).join('');
+
+            const totalForms = data.conjugations.related_forms.length;
+            panel.innerHTML = `<div class="ref">Related Forms · ${root}${rom} · ${totalForms} forms</div><div class="related-forms-list">${formsHtml}</div>`;
+
+            // Add click handlers for related forms
+            panel.querySelectorAll('.related-form').forEach(el => {
+              el.addEventListener('click', () => {
+                const form = el.getAttribute('data-form');
+                if (form) {
+                  searchInput.value = form;
+                  doSearch(form);
+                }
+              });
+            });
+
             resultsList.prepend(panel);
           }
         } catch {}
