@@ -1741,6 +1741,46 @@ async function localPashtoProcessing(term: string, includeRelated: boolean): Pro
   }
 }
 
+// Fast search function (no edge function overhead) - progressive enhancement
+async function fastSearch(supabase: any, searchTerm: string, scope: string = 'all', maxResults: number = 50): Promise<any[]> {
+  const processed = await processSearchTerm(searchTerm)
+  const allResults: any[] = []
+
+  // Try each variant but limit to avoid timeout
+  for (const variant of processed.variants.slice(0, 3)) { // Only first 3 variants for speed
+    if (!variant || variant.trim() === '') continue
+
+    try {
+      const searchPattern = `%${variant}%`
+      let query = supabase
+        .from('verses')
+        .select('book, chapter, verse, text, testament')
+        .ilike('text', searchPattern)
+        .limit(10) // Limit per variant
+
+      if (scope === 'ot') {
+        query = query.eq('testament', 'OT')
+      } else if (scope === 'nt') {
+        query = query.eq('testament', 'NT')
+      }
+
+      const { data, error } = await query
+      if (error) continue
+
+      allResults.push(...(data || []))
+    } catch (error) {
+      console.warn(`Fast search error for variant "${variant}":`, error)
+    }
+  }
+
+  // Remove duplicates and limit total results
+  const uniqueResults = allResults.filter((verse, index, self) =>
+    index === self.findIndex(v => v.book === verse.book && v.chapter === verse.chapter && v.verse === verse.verse)
+  ).slice(0, maxResults)
+
+  return uniqueResults
+}
+
 // Helper function to call search_verses_similar RPC
 async function searchVersesSimilar(supabase: any, query: string, scope: string, maxResults: number = 100): Promise<any[]> {
   try {
@@ -1779,29 +1819,74 @@ export async function POST(request: NextRequest) {
     const originalTerm = query.trim()
     console.log(`DEBUG: Searching for "${originalTerm}" with scope "${scope}"`)
 
-    // Use simple direct search (no edge functions)
-    const results = await searchVersesDirect(originalTerm, scope, 50)
+    let results: any[]
+    let processed: any
+
+    // Progressive Enhancement: Try fast search first, then enhanced if needed
+    try {
+      // Step 1: Fast search (no edge function overhead)
+      console.log(`DEBUG: Trying fast search first...`)
+      results = await fastSearch(supabase, originalTerm, scope, 50)
+
+      // If we get good results with fast search, use them
+      if (results.length > 0) {
+        console.log(`DEBUG: Fast search found ${results.length} results in ${Date.now() - startTime}ms`)
+
+        processed = {
+          normalized: originalTerm,
+          variants: [originalTerm],
+          romanization: '',
+          searchType: 'fast'
+        }
+      } else {
+        // Step 2: Enhanced search with edge function (only if fast search fails)
+        console.log(`DEBUG: Fast search found no results, trying enhanced search...`)
+        const startEnhanced = Date.now()
+
+        try {
+          processed = await callPashtoProcessor(supabaseUrl, supabaseKey, originalTerm, includeRelated)
+          console.log(`DEBUG: Enhanced search processed in ${Date.now() - startEnhanced}ms`)
+
+          // Use enhanced search results
+          results = await searchVersesDirect(originalTerm, scope, 50)
+        } catch (enhancedError) {
+          console.warn('Enhanced search failed, falling back to fast search:', enhancedError)
+          processed = {
+            normalized: originalTerm,
+            variants: [originalTerm],
+            romanization: '',
+            searchType: 'fallback'
+          }
+        }
+      }
+    } catch (fastError) {
+      console.warn('Fast search failed, trying direct search:', fastError)
+      results = await searchVersesDirect(originalTerm, scope, 50)
+      processed = {
+        normalized: originalTerm,
+        variants: [originalTerm],
+        romanization: '',
+        searchType: 'direct'
+      }
+    }
 
     // Calculate coverage
     const coverageMap = new Map<string, number>()
     results.forEach(result => {
-      coverageMap.set(result.ref.split(' ')[0], (coverageMap.get(result.ref.split(' ')[0]) || 0) + 1)
+      const book = result.book || result.ref?.split(' ')[0] || 'Unknown'
+      coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
     })
 
     const coverage = Array.from(coverageMap.entries())
       .map(([book, count]) => ({ book, count }))
       .sort((a, b) => b.count - a.count)
 
-    console.log(`DEBUG: Found ${results.length} results in ${Date.now() - startTime}ms`)
+    console.log(`DEBUG: Found ${results.length} results in ${Date.now() - startTime}ms (type: ${processed.searchType})`)
 
     return NextResponse.json({
       results,
       coverage,
-      processed: {
-        normalized: originalTerm,
-        variants: [originalTerm],
-        romanization: ''
-      },
+      processed,
       ms: Date.now() - startTime
     })
 
