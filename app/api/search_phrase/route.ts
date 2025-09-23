@@ -1806,7 +1806,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants, includeRelated, bookFilter }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated = false, bookFilter }: SearchRequest = await request.json()
 
     if (!query?.trim()) {
       return NextResponse.json({
