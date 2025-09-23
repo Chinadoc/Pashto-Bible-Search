@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo, ChangeEvent } from "react";
-import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -12,6 +11,7 @@ import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
+import { TextField, Button, IconButton } from '@mui/material';
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -40,45 +40,6 @@ function savePersisted<T>(key: string, value: T): void {
   } catch {}
 }
 
-// Search input component
-function SearchInput({ query, setQuery, onSearch, loading }: {
-  query: string;
-  setQuery: (query: string) => void;
-  onSearch: () => void;
-  loading: boolean;
-}) {
-  const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !loading) {
-      onSearch();
-    }
-  };
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={query}
-        onChange={handleQueryChange}
-        onKeyPress={handleKeyPress}
-        placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
-        className="w-full p-3 pr-12 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        dir="rtl"
-        disabled={loading}
-      />
-      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-        🔍
-      </div>
-      <button
-        onClick={() => onSearch()}
-        disabled={loading || !query.trim()}
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {loading ? '...' : 'Search'}
-      </button>
-    </div>
-  );
-}
 
 // Search controls component
 function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount }: {
@@ -163,13 +124,18 @@ export default function Home() {
   // Verb understanding features
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('1st');
   const [showFirstPerson, setShowFirstPerson] = useState<boolean>(false);
-  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect'>('present');
+  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual'>('present');
+  const [verbAspect, setVerbAspect] = useState<'imperfective' | 'perfective'>('imperfective');
+  const [verbMood, setVerbMood] = useState<'indicative' | 'subjunctive' | 'imperative' | 'ability'>('indicative');
 
 
 
-  // hydrate persisted UI state
+  // hydrate persisted UI state and clear any problematic initial values
   useEffect(() => {
-    setQuery(loadPersisted<string>("pbs_query", ""));
+    const savedQuery = loadPersisted<string>("pbs_query", "");
+    // Clear any problematic initial values (like "ldsoc" or similar)
+    const cleanQuery = savedQuery && savedQuery.trim() && !savedQuery.includes('ldsoc') ? savedQuery : "";
+    setQuery(cleanQuery);
     setScope(loadPersisted<Scope>("pbs_scope", "all"));
     setBookFilter(loadPersisted<string | null>("pbs_book", null));
   }, []);
@@ -297,7 +263,32 @@ export default function Home() {
         setVariantDetails([]);
       }
 
-      setRelatedForms((data as any)?.relatedForms || null);
+      // Fetch related forms if "Include related forms" is checked
+      if (includeRelated && q.trim()) {
+        try {
+          const relatedResponse = await fetch('/api/related_forms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ term: q.trim() })
+          });
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            // Transform API response to match RelatedForms component expectations
+            const transformedData = {
+              verbs: relatedData.forms.filter((f: any) => f.pos === 'verb'),
+              nouns: relatedData.forms.filter((f: any) => f.pos === 'noun'),
+              other: relatedData.forms.filter((f: any) => !f.pos || f.pos === 'other'),
+              total: relatedData.total || 0
+            };
+            setRelatedForms(transformedData);
+          }
+        } catch (error) {
+          console.error('Failed to fetch related forms:', error);
+        }
+      } else {
+        setRelatedForms(null);
+      }
+
       setAnalysisWord(q);
       setLastSearchedQuery(q);
     } catch (e) {
@@ -347,9 +338,9 @@ export default function Home() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Left Side - Tabs for Search/Lexicon/Grammar */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          <div className="lg:col-span-4 order-2 lg:order-1">
             <Tabs
               tabs={[
                 {
@@ -362,12 +353,85 @@ export default function Home() {
                         <div className="flex flex-col space-y-4">
                           {/* Search Components */}
                           <div className="flex flex-col space-y-4">
-                            <SearchInput
-                              query={query}
-                              setQuery={setQuery}
-                              onSearch={handleSearch}
-                              loading={loading}
-                            />
+                            {/* MUI Search Input with proper z-index and positioning */}
+                            <div className="relative z-10">
+                              <TextField
+                                variant="outlined"
+                                placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && !loading) {
+                                    handleSearch();
+                                  }
+                                }}
+                                disabled={loading}
+                                className="w-full max-w-2xl"
+                                InputProps={{
+                                  startAdornment: (
+                                    <IconButton disabled>
+                                      🔍
+                                    </IconButton>
+                                  ),
+                                  endAdornment: (
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => handleSearch()}
+                                      disabled={loading || !query.trim()}
+                                      sx={{
+                                        whiteSpace: 'nowrap',
+                                        minWidth: '80px',
+                                        height: '100%',
+                                      }}
+                                    >
+                                      {loading ? '...' : 'Search'}
+                                    </Button>
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiInputBase-root': {
+                                    backgroundColor: '#2A2F3A',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#60A5FA',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#3B82F6',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#2563EB',
+                                      borderWidth: '2px',
+                                    },
+                                  },
+                                  '& input': {
+                                    color: 'white',
+                                    '&::placeholder': {
+                                      color: '#9CA3AF',
+                                      opacity: 1,
+                                    },
+                                  },
+                                  '& .MuiIconButton-root': {
+                                    color: '#9CA3AF',
+                                  },
+                                  '& .MuiButton-root': {
+                                    backgroundColor: '#3B82F6',
+                                    '&:hover': {
+                                      backgroundColor: '#2563EB',
+                                    },
+                                    '&.Mui-disabled': {
+                                      backgroundColor: '#6B7280',
+                                      color: '#D1D5DB',
+                                    },
+                                  },
+                                }}
+                                inputProps={{
+                                  dir: 'rtl',
+                                  style: {
+                                    textAlign: 'right',
+                                    padding: '12px 16px',
+                                  }
+                                }}
+                              />
+                            </div>
 
                             <SearchControls
                               scope={scope}
@@ -455,10 +519,12 @@ export default function Home() {
                           <RelatedForms
                             relatedForms={relatedForms}
                             onPick={(f) => { setQuery(f); handleSearch(); }}
-                            verbState={{person: verbPerson, tense: verbTense}}
+                            verbState={{person: verbPerson, tense: verbTense, aspect: verbAspect, mood: verbMood}}
                             setVerbState={(state) => {
                               setVerbPerson(state.person)
                               setVerbTense(state.tense)
+                              setVerbAspect(state.aspect)
+                              setVerbMood(state.mood)
                             }}
                           />
                         </div>
@@ -481,18 +547,63 @@ export default function Home() {
                   id: 'analysis',
                   label: '🧪 Analysis',
                   content: (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                      {analysisWord ? (
-                        <LinguisticAnalysis 
-                          word={analysisWord} 
-                          onRelatedWordClick={(word) => { 
-                            setQuery(word); 
-                            handleSearch(); 
-                          }} 
-                        />
-                      ) : (
-                        <div className="text-center text-gray-500 py-8">
-                          Search for a word to see linguistic analysis
+                    <div className="space-y-4">
+                      {/* Main Linguistic Analysis */}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                        {analysisWord ? (
+                          <LinguisticAnalysis
+                            word={analysisWord}
+                            onRelatedWordClick={(word) => {
+                              setQuery(word);
+                              handleSearch();
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center text-gray-500 py-8">
+                            Search for a word to see linguistic analysis
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Related Forms Section - Shows when "Include related forms" is checked */}
+                      {includeRelated && relatedForms && (
+                        <div className="border border-blue-200 dark:border-blue-700 rounded p-4 bg-blue-50 dark:bg-blue-900/20">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-blue-600 dark:text-blue-400">🔗</span>
+                            <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                              Related Forms for "{analysisWord}"
+                            </h3>
+                            <span className="text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded-full text-blue-700 dark:text-blue-300">
+                              {relatedForms.total} total forms
+                            </span>
+                          </div>
+
+                          <RelatedForms
+                            relatedForms={relatedForms}
+                            onPick={(form) => {
+                              setQuery(form);
+                              handleSearch();
+                            }}
+                            verbState={{person: verbPerson, tense: verbTense, aspect: verbAspect, mood: verbMood}}
+                            setVerbState={(state) => {
+                              setVerbPerson(state.person);
+                              setVerbTense(state.tense);
+                              setVerbAspect(state.aspect);
+                              setVerbMood(state.mood);
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Show message when related forms is checked but no forms found */}
+                      {includeRelated && !relatedForms && analysisWord && (
+                        <div className="border border-yellow-200 dark:border-yellow-700 rounded p-4 bg-yellow-50 dark:bg-yellow-900/20">
+                          <div className="flex items-center gap-2">
+                            <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+                            <span className="text-yellow-800 dark:text-yellow-200 text-sm">
+                              No related forms found for "{analysisWord}". Try searching for a different term.
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>

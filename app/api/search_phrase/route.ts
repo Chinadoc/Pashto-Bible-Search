@@ -1,6 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
 import type { Verse } from '../../../types'
+import { createClient } from '@supabase/supabase-js'
+
+// Use the real Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nkombdutnjvaasxrbmdn.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rb21iZHV0bmp2YWFzeHJibWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzMxNDMsImV4cCI6MjA3MjA0OTE0M30.dBdCCD8hJAWV4Y8sRNVi2uUSnDrZbUM4TxR6vl8-ENg'
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Simple direct search using real Supabase client
+async function searchVersesDirect(searchTerm: string, scope: string = 'all', maxResults: number = 50) {
+  console.log(`DEBUG: Starting search for "${searchTerm}" with scope "${scope}"`);
+
+  const processed = await processSearchTerm(searchTerm);
+  const allResults: Verse[] = [];
+
+  console.log(`DEBUG: Processed variants:`, processed.variants);
+
+  // Try each variant but limit to avoid timeout
+  for (const variant of processed.variants.slice(0, 5)) {
+    if (!variant || variant.trim() === '') continue;
+
+    console.log(`DEBUG: Searching for variant "${variant}"`);
+
+    try {
+      const searchPattern = `%${variant}%`;
+
+      // Use real Supabase client
+      let query = supabase
+        .from('verses')
+        .select('book, chapter, verse, text, testament')
+        .ilike('text', searchPattern)
+        .limit(15);
+
+      if (scope === 'ot') {
+        query = query.eq('testament', 'OT');
+      } else if (scope === 'nt') {
+        query = query.eq('testament', 'NT');
+      }
+
+      const { data, error } = await query;
+
+      console.log(`DEBUG: Query returned ${data?.length || 0} results for variant "${variant}"`);
+
+      if (error) {
+        console.warn(`Search error for variant "${variant}":`, error);
+        continue;
+      }
+
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const ref = `${row.book} ${row.chapter}:${row.verse}`;
+          const fullRef = `${row.book} ${row.chapter}:${row.verse}`;
+
+          if (!allResults.find(r => r.ref === fullRef)) {
+            allResults.push({
+              ref: fullRef,
+              text: row.text || '',
+              testament: row.testament
+            });
+            console.log(`DEBUG: Added result: ${fullRef}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Error searching variant "${variant}":`, error);
+    }
+
+    if (allResults.length >= maxResults) break;
+  }
+
+  console.log(`DEBUG: Final search found ${allResults.length} total results for "${searchTerm}"`);
+  return allResults.slice(0, maxResults);
+}
 
 // Book name constants for testament determination
 const OT_BOOKS = [
@@ -1600,11 +1672,141 @@ async function enrichVariantsFromSupabase(
   }
 }
 
+// Helper function to check if Edge Function is available
+async function checkEdgeFunctionAvailability(supabaseUrl: string, supabaseKey: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/pashto-processor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ formPs: 'test' })
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+// Helper function to call pashto-processor Edge Function with new architecture
+async function callPashtoProcessor(supabaseUrl: string, supabaseKey: string, term: string, includeRelated: boolean): Promise<any> {
+  // Determine search type based on input
+  const isRomanized = !/[\u0600-\u06FF]/.test(term)
+  const searchType = isRomanized ? 'fuzzy' : 'frequency'
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/pashto-processor`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseKey}`
+    },
+    body: JSON.stringify({
+      formPs: term,
+      includeRelated,
+      searchType,
+      enableFuzzy: isRomanized // Enable fuzzy search for romanized input
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error(`Edge function failed: ${response.statusText}`)
+  }
+
+  return await response.json()
+}
+
+// Helper function for local Pashto processing (fallback)
+async function localPashtoProcessing(term: string, includeRelated: boolean): Promise<any> {
+  // Basic normalization
+  const normalized = term
+    .normalize('NFC')
+    .replace(/[يىئ]/g, 'ی')
+    .replace(/[\u200C\u200D\u200E\u200F]/g, '')
+
+  // Generate basic variants
+  const variants = [
+    normalized,
+    normalized.replace(/ی/g, 'ي'),
+    normalized.replace(/ک/g, 'ك'),
+    normalized.replace(/ی/g, 'ې'),
+    normalized.replace(/ې/g, 'ی')
+  ].filter(Boolean)
+
+  return {
+    normalized,
+    variants,
+    romanization: '',
+    root: includeRelated ? normalized : undefined
+  }
+}
+
+// Fast search function (no edge function overhead) - progressive enhancement
+async function fastSearch(supabase: any, searchTerm: string, scope: string = 'all', maxResults: number = 50): Promise<any[]> {
+  const processed = await processSearchTerm(searchTerm)
+  const allResults: any[] = []
+
+  // Try each variant but limit to avoid timeout
+  for (const variant of processed.variants.slice(0, 3)) { // Only first 3 variants for speed
+    if (!variant || variant.trim() === '') continue
+
+    try {
+      const searchPattern = `%${variant}%`
+      let query = supabase
+        .from('verses')
+        .select('book, chapter, verse, text, testament')
+        .ilike('text', searchPattern)
+        .limit(10) // Limit per variant
+
+      if (scope === 'ot') {
+        query = query.eq('testament', 'OT')
+      } else if (scope === 'nt') {
+        query = query.eq('testament', 'NT')
+      }
+
+      const { data, error } = await query
+      if (error) continue
+
+      allResults.push(...(data || []))
+    } catch (error) {
+      console.warn(`Fast search error for variant "${variant}":`, error)
+    }
+  }
+
+  // Remove duplicates and limit total results
+  const uniqueResults = allResults.filter((verse, index, self) =>
+    index === self.findIndex(v => v.book === verse.book && v.chapter === verse.chapter && v.verse === verse.verse)
+  ).slice(0, maxResults)
+
+  return uniqueResults
+}
+
+// Helper function to call search_verses_similar RPC
+async function searchVersesSimilar(supabase: any, query: string, scope: string, maxResults: number = 100): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.rpc('search_verses_similar', {
+      q: query,
+      scope: scope,
+      max_results: maxResults
+    })
+
+    if (error) {
+      console.error('RPC search failed:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('RPC search error:', error)
+    return []
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants, includeRelated, bookFilter }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated = false, bookFilter }: SearchRequest = await request.json()
 
     if (!query?.trim()) {
       return NextResponse.json({
@@ -1614,828 +1816,88 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create cache key from search parameters
-    const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
-    const bookFilterKey = bookFilter === null ? 'null' : (bookFilter || 'all')
-    const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
-
-    // Debug logging for book filtering and scope
-    if (bookFilter) {
-      console.log(`DEBUG: Book filter applied: ${bookFilter}`)
-    }
-    console.log(`DEBUG: Scope: ${scope}, Book filter: ${bookFilter}`)
-
-    // Check cache first
-    const cached = SEARCH_CACHE.get(cacheKey)
-    if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
-      return NextResponse.json({
-        ...cached.data,
-        cached: true,
-        ms: Date.now() - startTime
-      })
-    }
-
-    // Check if we have valid Supabase credentials
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      return NextResponse.json({
-        results: [],
-        coverage: [],
-        error: 'Database not configured',
-        ms: Date.now() - startTime
-      })
-    }
-
     const originalTerm = query.trim()
+    console.log(`DEBUG: Searching for "${originalTerm}" with scope "${scope}"`)
 
-    // Try compound verb expansion first (NOUN + AUX)
-    const comp = splitCompound(originalTerm)
-    if (comp) {
-      const { object, aux } = comp
-      let forms: string[] = []
-      try {
-        // Prefer DB inflections for the auxiliary
-        const { data } = await supabase
-          .from('inflections')
-          .select('inflected_form')
-          .eq('base_word', aux)
-          .order('frequency', { ascending: false })
-          .limit(40)
-        if (Array.isArray(data) && data.length > 0) {
-          for (const row of data) {
-            try {
-              const inflectedForm = (row as any).inflected_form
-              if (typeof inflectedForm === 'string') {
-                const parsed = JSON.parse(inflectedForm)
-                if (Array.isArray(parsed)) {
-                  for (const item of parsed) {
-                    if (item && typeof item === 'object' && item.form) {
-                      forms.push(String(item.form))
-                    }
-                  }
-                }
-              }
-            } catch {}
-          }
+    let results: any[]
+    let processed: any
+
+    // Progressive Enhancement: Try fast search first, then enhanced if needed
+    try {
+      // Step 1: Fast search (no edge function overhead)
+      console.log(`DEBUG: Trying fast search first...`)
+      results = await fastSearch(supabase, originalTerm, scope, 50)
+
+      // If we get good results with fast search, use them
+      if (results.length > 0) {
+        console.log(`DEBUG: Fast search found ${results.length} results in ${Date.now() - startTime}ms`)
+
+        processed = {
+          normalized: originalTerm,
+          variants: [originalTerm],
+          romanization: '',
+          searchType: 'fast'
         }
-      } catch {}
+      } else {
+        // Step 2: Enhanced search with edge function (only if fast search fails)
+        console.log(`DEBUG: Fast search found no results, trying enhanced search...`)
+        const startEnhanced = Date.now()
 
-      // Lightweight fallback for وهل (covers common forms; extend similarly for کول/کېدل as needed)
-      if (forms.length === 0 && aux === 'وهل') {
-        forms = ['کړه','وکړه','کړم','کړو','کړې','کړئ','کړي','وهه','ووهه','وهم','وهو','وهې','وهئ','وهي','ووهم','ووهو','ووهې','ووهئ','ووهي']
-      }
-      if (forms.length === 0 && aux === 'کول') {
-        forms = ['کوه','کړه','کوم','کوو','کوې','کوئ','کوي','کړم','کړو','کړې','کړئ','کړي']
-      }
-      if (forms.length === 0 && aux === 'کېدل') {
-        forms = ['کېږه','شه','کېږم','کېږو','کېږې','کېږئ','کېږي','شوم','شوو','شوې','شوئ','شوي']
-      }
-
-      // Build phrase variants and search per-variant (cap + dedupe)
-      const phrases = Array.from(new Set(forms.map(f => `${object} ${f}`))).slice(0, 25)
-      const selectCols = 'book,chapter,verse,text,testament'
-      const allResults: Verse[] = []
-      const refSet = new Set<string>()
-      const coverageMap = new Map<string, number>()
-
-      for (const p of phrases) {
         try {
-          let q = supabase.from('verses').select(selectCols).ilike('text', `%${p.replace(/%/g,'')}%`)
-          if (scope === 'ot') q = q.eq('testament', 'OT')
-          if (scope === 'nt') q = q.eq('testament', 'NT')
-          // Apply book filter if provided
-          if (bookFilter) {
-            const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-            q = q.in('book', bookVariantsList)
-          }
-          const { data, error } = await q.limit(60)
-          if (!error && Array.isArray(data) && data.length > 0) {
-            for (const row of data as any[]) {
-              const text = row.text || ''
-              const ref = `${row.book} ${row.chapter}:${row.verse}`
-              if (!refSet.has(ref)) {
-                refSet.add(ref)
-                // Determine testament based on book name if not in database
-                let testament = row.testament
-                if (!testament) {
-                  const bookName = row.book?.toLowerCase() || ''
-                  if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
-                    testament = 'OT'
-                  } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
-                    testament = 'NT'
-                  }
-                }
+          processed = await callPashtoProcessor(supabaseUrl, supabaseKey, originalTerm, includeRelated)
+          console.log(`DEBUG: Enhanced search processed in ${Date.now() - startEnhanced}ms`)
 
-                allResults.push({
-                  ref,
-                  text,
-                  testament
-                })
-                coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
-              }
-              if (allResults.length >= 100) break
-            }
-          }
-          if (allResults.length >= 100) break
-        } catch {}
-      }
-
-      if (allResults.length > 0) {
-        const coverage: CoverageItem[] = Array.from(coverageMap.entries())
-          .map(([book, count]) => ({ book, count }))
-          .sort((a, b) => b.count - a.count)
-
-        const payload = {
-          results: allResults,
-          coverage,
-          processed: {
-            original: originalTerm,
+          // Use enhanced search results
+          results = await searchVersesDirect(originalTerm, scope, 50)
+        } catch (enhancedError) {
+          console.warn('Enhanced search failed, falling back to fast search:', enhancedError)
+          processed = {
             normalized: originalTerm,
-            variants: phrases,
-            romanization: ''
-          },
-          ms: Date.now() - startTime,
-          debug: { textSearchHit: true, variantsTried: phrases.length, resultsCount: allResults.length }
+            variants: [originalTerm],
+            romanization: '',
+            searchType: 'fallback'
+          }
         }
-
-        SEARCH_CACHE.set(`${cacheKey}-compound`, { data: payload, ts: Date.now() })
-        return NextResponse.json(payload)
+      }
+    } catch (fastError) {
+      console.warn('Fast search failed, trying direct search:', fastError)
+      results = await searchVersesDirect(originalTerm, scope, 50)
+      processed = {
+        normalized: originalTerm,
+        variants: [originalTerm],
+        romanization: '',
+        searchType: 'direct'
       }
     }
 
-    // Build comprehensive variant list starting from the original query
-    const variantCollector = createVariantCollector(originalTerm)
-    variantCollector.ensureFeminine()
-
-    if (Array.isArray(extraVariants)) {
-      for (const value of extraVariants) {
-        if (typeof value === 'string') {
-          variantCollector.add(value, { sources: ['extra'] })
-        }
-      }
-    }
-
-    if (!PASHTO_CHAR_RE.test(originalTerm) && originalTerm.length > 2) {
-      try {
-        const { data: dictData } = await supabase
-          .from('dictionary')
-          .select('pashto,pos,romanized')
-          .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
-          .limit(3)
-        if (Array.isArray(dictData)) {
-          for (const row of dictData) {
-            if (row?.pashto) {
-              const pos = typeof row?.pos === 'string' ? row.pos : undefined
-              const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
-              variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
-            }
-          }
-        }
-      } catch {}
-
-      if (!variantCollector.list().some((form) => PASHTO_CHAR_RE.test(form))) {
-        try {
-          const { data } = await supabase
-            .from('romanized_dictionary')
-            .select('pashto_word,pos,romanization')
-            .ilike('romanization', `%${originalTerm}%`)
-            .limit(3)
-          if (Array.isArray(data)) {
-            for (const row of data) {
-              if (row?.pashto_word) {
-                const pos = typeof row?.pos === 'string' ? row.pos : undefined
-                const romanized = typeof row?.romanization === 'string' ? row.romanization : undefined
-                variantCollector.add(row.pashto_word, { sources: ['romanized-dictionary'], pos, romanization: romanized })
-              }
-            }
-          }
-        } catch {}
-      }
-
-      const commonMappings: Record<string, string[]> = {
-        'munda': ['منډه'],
-        'manda': ['منډه'],
-        'munda wahul': ['منډه وهل'],
-        'manda wahul': ['منډه وهل'],
-        'leedul': ['لیدل', 'لېدل'],
-        'wral': ['ورل'],
-        'kand': ['کند'],
-        'wur': ['ور', 'وور'],
-        'wahul': ['وهل'],
-        'wahel': ['وهل'],
-        'kawul': ['کول'],
-        'kedal': ['کېدل'],
-        'kedel': ['کېدل']
-      }
-
-      const lowerTerm = originalTerm.toLowerCase()
-      if (commonMappings[lowerTerm]) {
-        variantCollector.addMany(commonMappings[lowerTerm], 'known-mapping')
-      }
-    } else {
-      try {
-        const { data: dictRows } = await supabase
-          .from('dictionary')
-          .select('pashto,pos,romanized')
-          .eq('pashto', originalTerm)
-          .limit(1)
-        if (Array.isArray(dictRows) && dictRows.length > 0) {
-          const row = dictRows[0]
-          if (row?.pos) {
-            const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
-            variantCollector.add(originalTerm, { sources: ['dictionary'], pos: row.pos, romanization: romanized })
-          }
-        }
-      } catch {}
-    }
-
-    let lookupTerm = variantCollector.list().find((form) => PASHTO_CHAR_RE.test(form)) || originalTerm
-
-    await enrichVariantsFromSupabase(supabase, lookupTerm, variantCollector, !!includeRelated)
-
-    variantCollector.ensureFeminine()
-
-    let variantDetails = variantCollector.details()
-
-    // For direct search, ensure the original term is available for searching
-    if (!includeRelated && variantDetails.length === 0) {
-      variantCollector.add(originalTerm, { sources: ['query'] })
-      variantDetails = variantCollector.details()
-    }
-
-    // Filter out invalid forms before processing
-    variantDetails = variantDetails.filter((meta) => isValidPashtoForm(meta.form))
-
-    // Sort by quality score to prioritize better forms
-    variantDetails = variantDetails.sort((a, b) => scoreVariant(b) - scoreVariant(a))
-
-    const pashtoFormsForFrequency = dedupePreserveOrder(
-      variantDetails
-        .filter((meta) => PASHTO_CHAR_RE.test(meta.form))
-        .map((meta) => meta.form)
-    ).slice(0, includeRelated ? 80 : 40)
-
-    if (pashtoFormsForFrequency.length > 0) {
-      try {
-        const { data } = await supabase
-          .from('word_frequencies')
-          .select('pashto_word,frequency_count')
-          .in('pashto_word', pashtoFormsForFrequency)
-        if (Array.isArray(data)) {
-          const freqMap = new Map<string, number>()
-          for (const row of data) {
-            if (row?.pashto_word) {
-              const freqVal = Number(row.frequency_count)
-              if (Number.isFinite(freqVal)) {
-                freqMap.set(String(row.pashto_word), freqVal)
-              }
-            }
-          }
-          for (const meta of variantDetails) {
-            const freq = freqMap.get(meta.form)
-            if (typeof freq === 'number') {
-              meta.frequency = meta.frequency ? Math.max(meta.frequency, freq) : freq
-            }
-          }
-        }
-      } catch {}
-    }
-
-    variantDetails = prioritizeVariants(variantDetails, originalTerm)
-
-    await backfillRomanizations(supabase, variantDetails, includeRelated ? 80 : 40)
-
-    const searchVariants = variantDetails.map((meta) => meta.form)
-    const primaryTerm = searchVariants.find((form) => PASHTO_CHAR_RE.test(form)) || searchVariants[0]
-    lookupTerm = variantDetails.find((meta) => PASHTO_CHAR_RE.test(meta.form))?.form || primaryTerm
-    const variantGroups = groupVariantsByPos(variantDetails)
-    // Search variants - ensure we search the original term for direct search
-    let variantsToSearch = searchVariants.slice(0, includeRelated ? 40 : 7)
-    if (variantsToSearch.length === 0) {
-      variantsToSearch = [originalTerm] // Always search the original term if no variants found
-    } else if (!includeRelated && !variantsToSearch.includes(originalTerm)) {
-      variantsToSearch = [originalTerm, ...variantsToSearch].slice(0, 7)
-    }
-
-    const allResults: Verse[] = []
-    const refSet = new Set<string>()
+    // Calculate coverage
     const coverageMap = new Map<string, number>()
-    const coverageRefSet = new Set<string>()
-    // Don't restrict search by book - show results from all books that contain the search term
-    // When bookFilter is set, RelatedForms will show counts specific to that book
-    const allowedBooks: Set<string> | null = null
+    results.forEach(result => {
+      const book = result.book || result.ref?.split(' ')[0] || 'Unknown'
+      coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
+    })
 
-    // FAST search: Search ALL variants and combine results
-    const selectCols = 'book,chapter,verse,text,testament'
-    let textSearchHit = false
-    
-    // Search all variants in both main verses table and Yousafzai table
-    const tablesToSearch = [
-      { name: 'verses', translation: 'Standard' },
-      { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
-    ]
-
-    for (const table of tablesToSearch) {
-      for (let i = 0; i < variantsToSearch.length; i++) {
-        const variantTerm = variantsToSearch[i]
-        if (!variantTerm) continue
-
-        try {
-          let q = supabase.from(table.name).select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
-          if (scope === 'ot') q = q.eq('testament', 'OT')
-          if (scope === 'nt') q = q.eq('testament', 'NT')
-          // Apply book filter if provided
-          if (bookFilter) {
-            const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-            q = q.in('book', bookVariantsList)
-          }
-          const { data, error } = await q.limit(50) // Lower limit per table to avoid timeout
-          if (!error && Array.isArray(data) && data.length > 0) {
-            textSearchHit = true
-            for (const row of data as any[]) {
-              const rawText = (row as any).text || ''
-              const text = typeof rawText === 'string'
-                ? rawText.replace(/[\u00a0]/g, ' ').replace(/&nbsp;/gi, ' ')
-                : String(rawText)
-              // Ensure proper book name formatting
-              let bookName = (row as any).book as string;
-              // Convert hyphenated book names to proper format
-              if (bookName.includes('-')) {
-                bookName = bookName.replace(/-/g, ' '); // "1-Corinthians" -> "1 Corinthians"
-              }
-              // Handle common abbreviations that might be truncated
-              if (bookName === 'Corinthians' && table.name.includes('1')) {
-                bookName = '1 Corinthians';
-              } else if (bookName === 'Corinthians' && table.name.includes('2')) {
-                bookName = '2 Corinthians';
-              }
-              const ref = `${bookName} ${(row as any).chapter}:${(row as any).verse}`
-              const fullRef = `${table.translation}:${ref}` // Include translation in dedupe key
-
-              // Book filtering is disabled - search all books
-              // allowedBooks is null, so no filtering applied
-
-              if (!coverageRefSet.has(fullRef)) {
-                coverageRefSet.add(fullRef)
-                const coverageKey = `${table.translation}:${bookName}`
-                coverageMap.set(coverageKey, (coverageMap.get(coverageKey) || 0) + 1)
-              }
-
-              // Deduplicate by reference
-              if (!refSet.has(fullRef)) {
-                refSet.add(fullRef)
-                // Generate audio_verse_url for Yousafzai verses if not already set
-                let audioVerseUrl = undefined
-                if (table.name === 'verses_yousafzai') {
-                  audioVerseUrl = (row as any).audio_verse_url
-                  // If not set in database, generate the expected URL pattern
-                  if (!audioVerseUrl) {
-                    const bookSlug = (row as any).book?.toLowerCase() === 'psalms' ? 'psalms' : 
-                                    (row as any).book?.toLowerCase() === 'proverbs' ? 'proverbs' : null
-                    if (bookSlug) {
-                      const chapterPadded = String((row as any).chapter).padStart(3, '0')
-                      const versePadded = String((row as any).verse).padStart(3, '0')
-                      const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`
-                      audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`
-                    }
-                  }
-                }
-
-                // Determine testament based on book name if not in database
-                let testament = (row as any).testament
-                if (!testament) {
-                  const bookName = (row as any).book?.toLowerCase() || ''
-                  if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
-                    testament = 'OT'
-                  } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
-                    testament = 'NT'
-                  }
-                }
-
-                allResults.push({
-                  ref,
-                  text,
-                  translation: table.translation,
-                  dialect: table.name === 'verses_yousafzai' ? 'yousafzai' : undefined,
-                  tags: table.name === 'verses_yousafzai' ? (row as any).tags : undefined,
-                  audio_verse_url: audioVerseUrl,
-                  testament
-                })
-              }
-            }
-          }
-        } catch (error) {
-          // Silently skip Yousafzai table if it doesn't exist yet
-          if (table.name === 'verses_yousafzai') continue
-          throw error
-        }
-
-        // Cap total results to avoid timeout
-        if (allResults.length >= 100) break
-      }
-
-      if (allResults.length >= 100) break
-    }
-
-    // Skip expensive fallbacks for speed
-
-    // Skip expensive fuzzy search
-
-    // Simple final fallback: check form_occurrences only
-    if (allResults.length === 0 && primaryTerm) {
-      // Simple form_occurrences check only
-      try {
-        const { data } = await supabase
-          .from('form_occurrences')
-          .select('verses')
-          .eq('pashto_form', primaryTerm)
-            .limit(1)
-        
-        if (data && data.length > 0 && Array.isArray(data[0].verses)) {
-          // Take first few verse references and try to find them
-          const verseRefs = data[0].verses.slice(0, 10)
-          for (const ref of verseRefs) {
-            if (typeof ref === 'string' && ref.includes(' ')) {
-              const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
-              if (match) {
-                const [, book, chapter, verse] = match
-                let verseQuery = supabase
-                  .from('verses')
-                  .select(selectCols)
-                  .eq('book', book)
-                  .eq('chapter', parseInt(chapter))
-                  .eq('verse', parseInt(verse))
-
-                // Apply book filter if provided - this ensures verse lookups respect book filtering
-                if (bookFilter) {
-                  const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-                  verseQuery = verseQuery.in('book', bookVariantsList)
-                }
-
-                const { data: verseData } = await verseQuery.limit(1)
-                if (verseData && verseData.length > 0) {
-                  const row = verseData[0]
-                  const fallbackRef = `${row.book} ${row.chapter}:${row.verse}`
-                  if (!coverageRefSet.has(fallbackRef)) {
-                    coverageRefSet.add(fallbackRef)
-                    coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
-                  }
-                  // Determine testament based on book name if not in database
-                  let testament = row.testament
-                  if (!testament) {
-                    const bookName = row.book?.toLowerCase() || ''
-                    if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
-                      testament = 'OT'
-                    } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
-                      testament = 'NT'
-                    }
-                  }
-
-                  allResults.push({
-                    ref: fallbackRef,
-                    text: row.text || '',
-                    testament
-                  })
-                  if (allResults.length >= 10) break
-                }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('form_occurrences fallback failed', error)
-      }
-    }
-
-    // Remove duplicate results based on reference
-    const uniqueResults = allResults.filter((verse, index, self) =>
-      index === self.findIndex(v => v.ref === verse.ref)
-    )
-
-    // Convert coverage map to array and sort by count
-    const coverage: CoverageItem[] = Array.from(coverageMap.entries())
-      .map(([key, count]) => {
-        if (key.includes(':')) {
-          const [translation, ...rest] = key.split(':');
-          const book = rest.join(':') || key;
-          return { book, count, translation };
-        }
-        return { book: key, count };
-      })
+    const coverage = Array.from(coverageMap.entries())
+      .map(([book, count]) => ({ book, count }))
       .sort((a, b) => b.count - a.count)
 
-    // Build related forms categorization if requested
-    let relatedForms: any = null
-    console.log('DEBUG: includeRelated =', includeRelated, 'lookupTerm =', lookupTerm)
-    if (includeRelated) {
-      try {
-        let relatedLookupTerm = lookupTerm
-        if (!PASHTO_CHAR_RE.test(relatedLookupTerm)) {
-          const fallbackPashto = searchVariants.find((variant) => PASHTO_CHAR_RE.test(variant))
-          if (fallbackPashto) relatedLookupTerm = fallbackPashto
-        }
+    console.log(`DEBUG: Found ${results.length} results in ${Date.now() - startTime}ms (type: ${processed.searchType})`)
 
-        const normalizedLookup = relatedLookupTerm.trim() || originalTerm
-
-        // Generate all inflected forms using our comprehensive pattern system
-        const nounForms = expandInflectionVariants(normalizedLookup)
-        const verbForms: string[] = []
-
-        // NEW: Detect if this is a verb and generate appropriate conjugations
-        const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
-        if (isVerb) {
-          // Priority 1: Check if it's an irregular verb
-          if (normalizedLookup in IRREGULAR_VERBS) {
-            verbForms.push(...generateIrregularVerbForms(normalizedLookup))
-            console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
-          }
-          // Priority 2: Check if it's a fused compound verb (ګرمېدل, etc.)
-          else if (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل')) {
-            verbForms.push(...generateFusedCompoundVerbForms(normalizedLookup))
-            console.log(`DEBUG: ${normalizedLookup} - Found fused compound verb, generated ${verbForms.length} forms`)
-          }
-          // Priority 3: Check if it's a spaced compound verb
-          else if (normalizedLookup.includes(' ')) {
-            // Detect stative vs dynamic compound
-            const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') ||
-                             normalizedLookup.includes('کېدل') || normalizedLookup.includes('شول')
-            verbForms.push(...generateCompoundVerbForms(normalizedLookup, isStative))
-            console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
-          }
-          // Priority 4: Regular verb
-          else {
-            verbForms.push(...generateRegularVerbForms(normalizedLookup))
-            console.log(`DEBUG: ${normalizedLookup} - Found regular verb, generated ${verbForms.length} forms`)
-          }
-        }
-
-        // Combine all forms but track their origin
-        const allPossibleForms = [...nounForms, ...verbForms]
-        
-        // Legacy: Add compound verb forms (منډه وهل, منډې وهل, etc.) for non-verbs
-        if (!isVerb) {
-          const auxVerbs = ['کول', 'وهل', 'کړل', 'کېدل', 'ورکول']
-          for (const aux of auxVerbs) {
-            for (const form of allPossibleForms.slice(0, 8)) { // Limit to avoid too many combinations
-              allPossibleForms.push(`${form} ${aux}`)
-            }
-          }
-        }
-        
-        // Debug logging for جوړول
-        if (normalizedLookup.includes('جوړول')) {
-          console.log(`DEBUG: جوړول - Generated ${allPossibleForms.length} possible forms:`, allPossibleForms.slice(0, 20))
-        }
-
-        // Check which forms actually exist in the Bible using form_occurrences
-        const existingForms: Array<{form: string, count: number}> = []
-        
-        // Query in batches to avoid URL length limits
-        const batchSize = 15
-        const maxFormsToCheck = includeRelated ? 120 : 60 // Check more forms when includeRelated is true
-        for (let i = 0; i < Math.min(allPossibleForms.length, maxFormsToCheck); i += batchSize) {
-          const batch = allPossibleForms.slice(i, i + batchSize)
-          
-          try {
-            const { data: occurrenceData } = await supabase
-              .from('form_occurrences')
-              .select('pashto_form, frequency')
-              .in('pashto_form', batch)
-              .gte('frequency', 1)
-              .order('frequency', { ascending: false })
-              .limit(30)
-
-            if (Array.isArray(occurrenceData)) {
-              for (const row of occurrenceData) {
-                if (row?.pashto_form && row?.frequency) {
-                  existingForms.push({
-                    form: row.pashto_form,
-                    count: Number(row.frequency) || 0
-                  })
-                }
-              }
-            }
-          } catch (error: any) {
-            // Try different column names if the first attempt fails
-            try {
-              const { data: occurrenceData2 } = await supabase
-                .from('form_occurrences')
-                .select('pashto_form, frequency')
-                .in('pashto_form', batch)
-                .gte('frequency', 1)
-                .order('frequency', { ascending: false })
-                .limit(30)
-
-              if (Array.isArray(occurrenceData2)) {
-                for (const row of occurrenceData2) {
-                  if (row?.pashto_form && row?.frequency) {
-                    existingForms.push({
-                      form: row.pashto_form,
-                      count: Number(row.frequency) || 0
-                    })
-                  }
-                }
-              }
-            } catch {}
-          }
-        }
-
-        // If book filter is applied, get accurate counts for related forms within that book
-        if (bookFilter && existingForms.length > 0) {
-          const bookVariantsList = bookVariants(bookFilter).slice(0, 5) // Use all book variants
-
-          // For book-filtered searches, we need to recount forms within the specific book
-          const bookFilteredForms: Array<{form: string, count: number}> = []
-
-          // Process more forms when book filtering to ensure comprehensive results
-          const formsToCheck = includeRelated ? existingForms.slice(0, 20) : existingForms.slice(0, 12)
-          for (const formData of formsToCheck) {
-            try {
-              const { count } = await supabase
-                .from('verses')
-                .select('*', { count: 'exact', head: true })
-                .in('book', bookVariantsList)
-                .ilike('text', `%${formData.form.replace(/[%_]/g, '\\$&')}%`) // Escape SQL wildcards
-
-              if (count && count > 0) {
-                bookFilteredForms.push({
-                  form: formData.form,
-                  count: count
-                })
-              }
-            } catch (error) {
-              console.warn(`Error counting ${formData.form} in book ${bookFilter}:`, error)
-            }
-          }
-
-          // Replace existing forms with book-filtered counts
-          existingForms.splice(0, existingForms.length, ...bookFilteredForms)
-        }
-
-        // Also check word_frequencies table for additional forms
-        try {
-          const { data: wordFreqData } = await supabase
-            .from('word_frequencies')
-            .select('word, frequency')
-            .in('word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-            .gte('frequency', 1)
-            .order('frequency', { ascending: false })
-            .limit(20)
-
-          if (Array.isArray(wordFreqData)) {
-            for (const row of wordFreqData) {
-              if (row?.word && row?.frequency && !existingForms.find(e => e.form === row.word)) {
-                existingForms.push({
-                  form: row.word,
-                  count: Number(row.frequency) || 0
-                })
-              }
-            }
-          }
-        } catch {
-          // Try different column names
-          try {
-            const { data: wordFreqData2 } = await supabase
-              .from('word_frequencies')
-              .select('pashto_word, frequency_count')
-              .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-              .gte('frequency_count', 1)
-              .order('frequency_count', { ascending: false })
-              .limit(20)
-
-            if (Array.isArray(wordFreqData2)) {
-              for (const row of wordFreqData2) {
-                if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
-                  existingForms.push({
-                    form: row.pashto_word,
-                    count: Number(row.frequency_count) || 0
-                  })
-                }
-              }
-            }
-          } catch {}
-        }
-
-        // Sort by frequency and categorize
-        existingForms.sort((a, b) => b.count - a.count)
-
-        // Debug logging for جوړول
-        if (normalizedLookup.includes('جوړول')) {
-          console.log(`DEBUG: جوړول - Found ${existingForms.length} existing forms:`, existingForms.slice(0, 10))
-        }
-
-        const verbs: Array<{form: string, count: number}> = []
-        const nouns: Array<{form: string, count: number}> = []
-        const other: Array<{form: string, count: number}> = []
-
-        for (const item of existingForms) {
-          const form = item.form
-
-          // Categorize based on form origin and characteristics
-          if (verbForms.includes(form)) {
-            // This form was generated from verb conjugation
-            verbs.push(item)
-          } else if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
-            // Compound verbs (منډه وهل, etc.)
-            verbs.push(item)
-          } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
-            // Simple verbs (infinitives)
-            verbs.push(item)
-          } else if ((form.endsWith('م') || form.endsWith('ې') || form.endsWith('ي') || form.endsWith('و') || form.endsWith('ئ'))) {
-            // Verb conjugations - these are the actual verb person endings
-            // Don't exclude 'ي' here as it's a valid verb ending (3rd person singular)
-            verbs.push(item)
-          } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
-                     form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
-            // Nouns and adjectives (all inflected forms)
-            nouns.push(item)
-          } else {
-            other.push(item)
-          }
-        }
-
-        relatedForms = {
-          verbs: verbs.slice(0, 8),  // Top 8 verbs with counts
-          nouns: nouns.slice(0, 12), // Top 12 nouns with counts  
-          other: other.slice(0, 6),  // Top 6 other forms with counts
-          total: existingForms.length
-        }
-        
-        // Debug logging for جوړول
-        if (normalizedLookup.includes('جوړول')) {
-          console.log(`DEBUG: جوړول - Final relatedForms:`, { 
-            verbsCount: verbs.length,
-            nounsCount: nouns.length, 
-            otherCount: other.length,
-            total: existingForms.length
-          })
-        }
-        
-        // Fallback: If no forms found, at least show the inflected variants
-        if (existingForms.length === 0 && allPossibleForms.length > 1) {
-          console.log('DEBUG: No forms found in database, showing generated forms as fallback')
-          const fallbackForms = allPossibleForms.slice(1, 11).map(form => ({ form, count: 0 }))
-          relatedForms = {
-            verbs: fallbackForms.filter(f => verbForms.includes(f.form) || f.form.includes('ول') || f.form.includes('کول') || f.form.includes('نم') || f.form.includes('م')),
-            nouns: fallbackForms.filter(f => !verbForms.includes(f.form) && !f.form.includes('ول') && !f.form.includes('کول') && !f.form.includes('نم') && !f.form.includes('م') && !f.form.includes('ل')),
-            other: [],
-            total: fallbackForms.length
-          }
-        }
-      } catch (error) {
-        console.log('DEBUG: Error in related forms:', error)
-      }
-    }
-
-    const payload = {
-      results: uniqueResults,
+    return NextResponse.json({
+      results,
       coverage,
-      relatedForms,
-      processed: {
-        original: originalTerm,
-        normalized: originalTerm,
-        primaryVariant: primaryTerm,
-        variants: searchVariants,
-        variantsSearched: variantsToSearch,
-        variantDetails: variantDetails.map(({ form, sources, pos, frequency, note, romanization, pattern }) => ({
-          form,
-          sources,
-          pos,
-          frequency,
-          note,
-          romanization,
-          pattern,
-        })),
-        variantGroups,
-        romanization: ""
-      },
-      ms: Date.now() - startTime,
-      debug: {
-        textSearchHit,
-        variantsTried: searchVariants.length,
-        resultsCount: uniqueResults.length
-      }
-    }
-
-    // Cache the result
-    SEARCH_CACHE.set(cacheKey, { data: payload, ts: Date.now() })
-
-    return NextResponse.json(payload)
+      processed,
+      ms: Date.now() - startTime
+    })
 
   } catch (error) {
-    console.error('Search phrase error:', error)
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        results: [],
-        coverage: [],
-        ms: Date.now() - startTime
-      },
-      { status: 500 }
-    )
+    console.error('Search error:', error)
+    return NextResponse.json({
+      results: [],
+      coverage: [],
+      error: 'Search failed',
+      ms: Date.now() - startTime
+    })
   }
 }
 

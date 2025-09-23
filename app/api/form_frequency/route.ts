@@ -2,6 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 
 type Scope = 'all' | 'ot' | 'nt'
 
+// Simple in-memory cache for form frequency results
+const cache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 10 * 60 * 1000 // 10 minutes
+
+function getCached(key: string): any | null {
+  const entry = cache.get(key)
+  if (entry && (Date.now() - entry.timestamp) < CACHE_TTL) {
+    return entry.data
+  }
+  if (entry) cache.delete(key) // Expired, remove
+  return null
+}
+
+function setCached(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() })
+  // Limit cache size
+  if (cache.size > 1000) {
+    const firstKey = cache.keys().next().value
+    if (firstKey) {
+      cache.delete(firstKey)
+    }
+  }
+}
+
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
@@ -15,6 +39,13 @@ export async function GET(request: NextRequest) {
     const scope = (params.get('scope') as Scope) || 'all'
     const includeRelated = params.get('includeRelated') === '1'
     if (!q) return NextResponse.json({ total: 0, items: [] })
+
+    // Check cache first
+    const cacheKey = `${q}:${scope}:${includeRelated}`
+    const cached = getCached(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
+    }
 
     const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' }
 
@@ -58,7 +89,9 @@ export async function GET(request: NextRequest) {
     items.sort((a, b) => b.frequency - a.frequency || a.form.localeCompare(b.form))
     const total = items.reduce((s, it) => s + (it.frequency || 0), 0)
 
-    return NextResponse.json({ total, items })
+    const result = { total, items }
+    setCached(cacheKey, result)
+    return NextResponse.json(result)
   } catch (e) {
     console.error('form_frequency error:', e)
     return NextResponse.json({ total: 0, items: [] }, { status: 500 })
