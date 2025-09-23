@@ -299,7 +299,32 @@ export default function Home() {
         setVariantDetails([]);
       }
 
-      setRelatedForms((data as any)?.relatedForms || null);
+      // Fetch related forms if "Include related forms" is checked
+      if (includeRelated && q.trim()) {
+        try {
+          const relatedResponse = await fetch('/api/related_forms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ term: q.trim() })
+          });
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            // Transform API response to match RelatedForms component expectations
+            const transformedData = {
+              verbs: relatedData.forms.filter((f: any) => f.pos === 'verb'),
+              nouns: relatedData.forms.filter((f: any) => f.pos === 'noun'),
+              other: relatedData.forms.filter((f: any) => !f.pos || f.pos === 'other'),
+              total: relatedData.total || 0
+            };
+            setRelatedForms(transformedData);
+          }
+        } catch (error) {
+          console.error('Failed to fetch related forms:', error);
+        }
+      } else {
+        setRelatedForms(null);
+      }
+
       setAnalysisWord(q);
       setLastSearchedQuery(q);
     } catch (e) {
@@ -485,18 +510,63 @@ export default function Home() {
                   id: 'analysis',
                   label: '🧪 Analysis',
                   content: (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                      {analysisWord ? (
-                        <LinguisticAnalysis 
-                          word={analysisWord} 
-                          onRelatedWordClick={(word) => { 
-                            setQuery(word); 
-                            handleSearch(); 
-                          }} 
-                        />
-                      ) : (
-                        <div className="text-center text-gray-500 py-8">
-                          Search for a word to see linguistic analysis
+                    <div className="space-y-4">
+                      {/* Main Linguistic Analysis */}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                        {analysisWord ? (
+                          <LinguisticAnalysis
+                            word={analysisWord}
+                            onRelatedWordClick={(word) => {
+                              setQuery(word);
+                              handleSearch();
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center text-gray-500 py-8">
+                            Search for a word to see linguistic analysis
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Related Forms Section - Shows when "Include related forms" is checked */}
+                      {includeRelated && relatedForms && (
+                        <div className="border border-blue-200 dark:border-blue-700 rounded p-4 bg-blue-50 dark:bg-blue-900/20">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-blue-600 dark:text-blue-400">🔗</span>
+                            <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                              Related Forms for "{analysisWord}"
+                            </h3>
+                            <span className="text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded-full text-blue-700 dark:text-blue-300">
+                              {relatedForms.total} total forms
+                            </span>
+                          </div>
+
+                          <RelatedForms
+                            relatedForms={relatedForms}
+                            onPick={(form) => {
+                              setQuery(form);
+                              handleSearch();
+                            }}
+                            verbState={{person: verbPerson, tense: verbTense, aspect: verbAspect, mood: verbMood}}
+                            setVerbState={(state) => {
+                              setVerbPerson(state.person);
+                              setVerbTense(state.tense);
+                              setVerbAspect(state.aspect);
+                              setVerbMood(state.mood);
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Show message when related forms is checked but no forms found */}
+                      {includeRelated && !relatedForms && analysisWord && (
+                        <div className="border border-yellow-200 dark:border-yellow-700 rounded p-4 bg-yellow-50 dark:bg-yellow-900/20">
+                          <div className="flex items-center gap-2">
+                            <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+                            <span className="text-yellow-800 dark:text-yellow-200 text-sm">
+                              No related forms found for "{analysisWord}". Try searching for a different term.
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>

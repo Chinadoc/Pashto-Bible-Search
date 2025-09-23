@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       nounResult,
       dictionaryResult,
       relatedFormsResult,
-      frequencyResult
+      frequencyResult,
+      conjugationsResult
     ] = await Promise.all([
       // Check irregular verbs (try full phrase first, then auxiliary verb)
       supabase
@@ -43,40 +44,47 @@ export async function POST(request: NextRequest) {
         .select('*')
         .eq('verb_root', auxiliaryVerb || normalizedWord)
         .limit(1),
-      
+
       // Check regular verbs (try full phrase first, then auxiliary verb)
       supabase
         .from('verbs_lexicon')
         .select('*')
         .eq('verb_root', auxiliaryVerb || normalizedWord)
         .limit(1),
-      
+
       // Check nouns
       supabase
         .from('nouns_lexicon')
         .select('*')
         .eq('noun_root', normalizedWord)
         .limit(1),
-      
+
       // Dictionary entry
       supabase
         .from('dictionary')
         .select('*')
         .eq('pashto', normalizedWord)
         .limit(1),
-      
+
       // Related forms via roots
       supabase
         .from('form_roots')
         .select('word_form')
         .eq('root_form', normalizedWord)
         .limit(20),
-      
+
       // Word frequency
       supabase
         .from('word_frequencies')
         .select('*')
         .eq('pashto_word', normalizedWord)
+        .limit(1),
+
+      // Real conjugation data for verbs
+      supabase
+        .from('pashto_conjugations')
+        .select('*')
+        .eq('verb_root', auxiliaryVerb || normalizedWord)
         .limit(1)
     ])
 
@@ -90,8 +98,10 @@ export async function POST(request: NextRequest) {
     // Process irregular verb data
     if (irregularVerbResult.data && irregularVerbResult.data.length > 0) {
       const verb = irregularVerbResult.data[0]
-      const conjugations = generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
-      
+      const realConjugations = conjugationsResult.data && conjugationsResult.data.length > 0
+        ? conjugationsResult.data[0].conjugations || {}
+        : generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
+
       analysis.categories.push({
         type: isCompoundPhrase ? 'compound_irregular_verb' : 'irregular_verb',
         part_of_speech: 'verb',
@@ -112,16 +122,18 @@ export async function POST(request: NextRequest) {
         },
         past_participle: verb.past_participle || '',
         romanization: verb.romanization || {},
-        conjugations,
+        conjugations: realConjugations,
         irregularity_type: verb.irregularity_type || 'stem_change'
       })
     }
-    
+
     // Process regular verb data
     else if (regularVerbResult.data && regularVerbResult.data.length > 0) {
       const verb = regularVerbResult.data[0]
-      const conjugations = generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
-      
+      const realConjugations = conjugationsResult.data && conjugationsResult.data.length > 0
+        ? conjugationsResult.data[0].conjugations || {}
+        : generateConjugations(verb, isCompoundPhrase, compoundNoun || '')
+
       analysis.categories.push({
         type: isCompoundPhrase ? 'compound_regular_verb' : 'regular_verb',
         part_of_speech: 'verb',
@@ -136,7 +148,7 @@ export async function POST(request: NextRequest) {
         roots: verb.roots || {},
         past_participle: verb.past_participle || '',
         romanization: verb.romanization || {},
-        conjugations,
+        conjugations: realConjugations,
         aspect: verb.aspect || ''
       })
     }
@@ -166,12 +178,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Add related forms
+    // Add related forms with frequency data
     if (relatedFormsResult.data && relatedFormsResult.data.length > 0) {
-      analysis.related_forms = relatedFormsResult.data
+      // Get frequency data for related forms
+      const relatedFormWords = relatedFormsResult.data
         .map(r => r.word_form)
         .filter(Boolean)
         .slice(0, 15)
+
+      if (relatedFormWords.length > 0) {
+        const { data: frequencyData } = await supabase
+          .from('word_frequencies')
+          .select('*')
+          .in('pashto_word', relatedFormWords)
+
+        analysis.related_forms = relatedFormWords.map(form => {
+          const freq = frequencyData?.find(f => f.pashto_word === form)
+          return {
+            form,
+            count: freq?.frequency_count || 0
+          }
+        })
+      }
     }
 
     // Add frequency data
@@ -204,28 +232,13 @@ function generateConjugations(verbData: any, isCompound = false, compoundNoun = 
   const perfStem = verbData.stems?.perfective || ''
   const imperfRoot = verbData.roots?.imperfective || ''
   const perfRoot = verbData.roots?.perfective || ''
-  
+
   if (!imperfStem && !perfStem) return {}
 
   const conjugations: any = {}
   const prefix = isCompound && compoundNoun ? `${compoundNoun} ` : ''
-  
-  // Imperative forms
-  if (imperfStem) {
-    conjugations.imperfective_imperative = {
-      second_person_singular: `${prefix}${imperfStem}ه`,
-      second_person_plural: `${prefix}${imperfStem}ئ`
-    }
-  }
-  
-  if (perfStem) {
-    conjugations.perfective_imperative = {
-      second_person_singular: `${prefix}${perfStem}ه`, 
-      second_person_plural: `${prefix}${perfStem}ئ`
-    }
-  }
 
-  // Present tense (imperfective stem + present endings)
+  // Present tense (imperfective stem + present endings) - most common
   if (imperfStem) {
     conjugations.present = {
       first_person_singular: `${prefix}${imperfStem}م`,
@@ -249,43 +262,66 @@ function generateConjugations(verbData: any, isCompound = false, compoundNoun = 
     }
   }
 
-  // Future tenses (با + present/subjunctive)
+  // Future tenses (به + present/subjunctive)
   if (imperfStem) {
     conjugations.imperfective_future = {
-      first_person_singular: `... به ... ${prefix}${imperfStem}م`,
-      second_person_singular: `... به ... ${prefix}${imperfStem}ې`,
-      third_person_singular: `... به ... ${prefix}${imperfStem}ي`,
-      first_person_plural: `... به ... ${prefix}${imperfStem}و`,
-      second_person_plural: `... به ... ${prefix}${imperfStem}ئ`,
-      third_person_plural: `... به ... ${prefix}${imperfStem}ي`
+      first_person_singular: `به ${prefix}${imperfStem}م`,
+      second_person_singular: `به ${prefix}${imperfStem}ې`,
+      third_person_singular: `به ${prefix}${imperfStem}ي`,
+      first_person_plural: `به ${prefix}${imperfStem}و`,
+      second_person_plural: `به ${prefix}${imperfStem}ئ`,
+      third_person_plural: `به ${prefix}${imperfStem}ي`
     }
   }
 
   if (perfStem) {
     conjugations.perfective_future = {
-      first_person_singular: `... به ... ${prefix}${perfStem}م`,
-      second_person_singular: `... به ... ${prefix}${perfStem}ې`,
-      third_person_singular: `... به ... ${prefix}${perfStem}ي`,
-      first_person_plural: `... به ... ${prefix}${perfStem}و`,
-      second_person_plural: `... به ... ${prefix}${perfStem}ئ`,
-      third_person_plural: `... به ... ${prefix}${perfStem}ي`
+      first_person_singular: `به ${prefix}${perfStem}م`,
+      second_person_singular: `به ${prefix}${perfStem}ې`,
+      third_person_singular: `به ${prefix}${perfStem}ي`,
+      first_person_plural: `به ${prefix}${perfStem}و`,
+      second_person_plural: `به ${prefix}${perfStem}ئ`,
+      third_person_plural: `به ${prefix}${perfStem}ي`
     }
   }
 
-  // Past tenses (agree with object for transitive verbs)
+  // Past tenses (continuous and simple past)
   if (imperfRoot) {
-    const pastForm = isCompound ? `${prefix}${imperfRoot.replace(/ل$/, 'له')}` : `${imperfRoot.replace(/ل$/, 'له')}`
+    // Continuous past (imperfective root + past endings)
     conjugations.continuous_past = {
-      form: pastForm,
-      note: isCompound ? `agrees w/ object noun (${compoundNoun})` : 'agrees w/ subject/object'
+      first_person_singular: `${prefix}${imperfRoot.replace(/ل$/, 'لم')}`,
+      second_person_singular: `${prefix}${imperfRoot.replace(/ل$/, 'لې')}`,
+      third_person_singular: `${prefix}${imperfRoot.replace(/ل$/, 'لو')}`,
+      first_person_plural: `${prefix}${imperfRoot.replace(/ل$/, 'لو')}`,
+      second_person_plural: `${prefix}${imperfRoot.replace(/ل$/, 'لئ')}`,
+      third_person_plural: `${prefix}${imperfRoot.replace(/ل$/, 'ل')}`
     }
   }
 
   if (perfRoot) {
-    const pastForm = isCompound ? `${prefix}${perfRoot.replace(/ل$/, 'له')}` : `${perfRoot.replace(/ل$/, 'له')}`
+    // Simple past (perfective root + past endings)
     conjugations.simple_past = {
-      form: pastForm,
-      note: isCompound ? `agrees w/ object noun (${compoundNoun})` : 'agrees w/ subject/object'
+      first_person_singular: `${prefix}${perfRoot.replace(/ل$/, 'لم')}`,
+      second_person_singular: `${prefix}${perfRoot.replace(/ل$/, 'لې')}`,
+      third_person_singular: `${prefix}${perfRoot.replace(/ل$/, 'لو')}`,
+      first_person_plural: `${prefix}${perfRoot.replace(/ل$/, 'لو')}`,
+      second_person_plural: `${prefix}${perfRoot.replace(/ل$/, 'لئ')}`,
+      third_person_plural: `${prefix}${perfRoot.replace(/ل$/, 'ل')}`
+    }
+  }
+
+  // Imperative forms
+  if (imperfStem) {
+    conjugations.imperfective_imperative = {
+      second_person_singular: `${prefix}${imperfStem}ه`,
+      second_person_plural: `${prefix}${imperfStem}ئ`
+    }
+  }
+
+  if (perfStem) {
+    conjugations.perfective_imperative = {
+      second_person_singular: `${prefix}${perfStem}ه`,
+      second_person_plural: `${prefix}${perfStem}ئ`
     }
   }
 
