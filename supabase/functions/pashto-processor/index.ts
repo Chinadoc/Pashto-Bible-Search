@@ -24,6 +24,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Simple in-memory cache for common words (Deno edge functions have memory across requests)
+const cache = new Map<string, Result>()
+const CACHE_TTL = 3600000 // 1 hour in milliseconds
+
 type Payload = {
   formPs?: string
   includeRelated?: boolean
@@ -40,6 +44,7 @@ type Result = {
   frequency?: number
   fuzzyResults?: any[]
   variantDetails?: any[]
+  _cacheTime?: number  // Internal cache timestamp
 }
 
 function normalizePashto(input: string): string {
@@ -132,77 +137,59 @@ async function determinePOS(supabase: any, word: string): Promise<string> {
   }
 }
 
-// Tier 3: Noun inflection script (based on LingDocs patterns)
+// Tier 3: Optimized Noun inflection (generates only most common variants)
 async function generateNounVariants(supabase: any, word: string): Promise<string[]> {
   const variants = new Set<string>([word])
 
   try {
-    // Basic inflection patterns from LingDocs
-    const stem = word
-
-    // Pattern 1: Basic (برګ, کور, ښځه, etc.)
-    // Masculine: consonant or ـه, Feminine: ـه
     const lastChar = word.slice(-1)
 
+    // Only generate the most common/useful variants based on word pattern
+    // Focus on religious text patterns (masculine/feminine, singular/plural)
+
     if (lastChar === 'ه' || lastChar === 'ې' || lastChar === 'و') {
-      // Feminine basic pattern
-      variants.add(stem + 'ه')  // Plain feminine
-      variants.add(stem + 'ې')  // 1st inflection
-      variants.add(stem + 'و')  // 2nd inflection
+      // Feminine words ending in ه/ې/و - add plural forms
+      variants.add(word + 'ي')     // Plural (most common in religious text)
+      variants.add(word + 'و')     // Alternative plural
+      variants.add(word + 'ې')     // Feminine oblique
+    } else if (lastChar === 'ی' || lastChar === 'ي') {
+      // Words ending in ی/ي - handle stressed/unstressed patterns
+      variants.add(word + 'و')     // Plural form
+      variants.add(word + 'ي')     // Alternative form
+      if (word.length > 3) {
+        variants.add(word + 'ې')   // Feminine form
+      }
+    } else if (lastChar === 'ۍ') {
+      // Abstract nouns ending in ۍ
+      variants.add(word + 'ي')     // Plural
+      variants.add(word + 'و')     // Alternative plural
+    } else {
+      // Masculine words ending in consonant - add feminine and plural
+      variants.add(word + 'ه')     // Feminine form
+      variants.add(word + 'ي')     // Plural form
+      if (word.length <= 4) {
+        variants.add(word + 'و')   // Short word plural
+      }
     }
 
-    // Add feminine forms for masculine words ending in consonants
-    if (!['ه', 'ې', 'و', 'ی', 'ي', 'ۍ'].includes(lastChar)) {
-      variants.add(word + 'ه')  // Feminine plain
-      variants.add(word + 'ې')  // Feminine 1st
-      variants.add(word + 'و')  // Feminine 2nd
-    }
-
-    // Pattern 2: Unstressed ی - ay (ستړی)
-    if (lastChar === 'ی') {
-      variants.add(stem + 'ی')   // Masculine plain
-      variants.add(stem + 'ي')   // Masculine 1st
-      variants.add(stem + 'یو')  // Masculine 2nd
-      variants.add(stem + 'ې')   // Feminine plain/1st
-    }
-
-    // Pattern 3: Stressed ی - áy (ځلمی, لومړی)
-    if (lastChar === 'ي') {
-      variants.add(stem + 'ی')   // Base form
-      variants.add(stem + 'ي')   // Current form
-      variants.add(stem + 'یو')  // 2nd inflection
-      variants.add(stem + 'ې')   // Feminine (pattern 2)
-      variants.add(stem + 'ۍ')   // Feminine (pattern 3)
-    }
-
-    // Pattern 5: Shorter words that squish (غل -> غله)
-    if (word.length <= 3 && !['ه', 'ې', 'و', 'ی', 'ي'].includes(lastChar)) {
-      variants.add(word + 'ه')    // 1st masculine/Plain feminine
-      variants.add(word + 'و')    // 2nd masculine/feminine
-      variants.add(word + 'ې')    // 1st feminine
-    }
-
-    // Pattern with ۍ ending
-    if (lastChar === 'ۍ') {
-      variants.add(stem + 'ۍ')   // Current form
-      variants.add(stem + 'ې')   // Alternative
-      variants.add(stem + 'ي')   // Base
-      variants.add(stem + 'یو')  // 2nd inflection
+    // Add some common case/oblique forms for religious text
+    if (word.length > 2 && !['ه', 'ې', 'و', 'ی', 'ي', 'ۍ'].includes(lastChar)) {
+      variants.add(word + 'ي')     // Oblique case (common in Pashto)
     }
 
   } catch (error) {
-    console.error('Error in noun variant generation:', error)
+    console.error('Error in optimized noun variant generation:', error)
   }
 
   return Array.from(variants).filter(Boolean)
 }
 
-// Tier 3: Comprehensive Verb conjugation script (based on LingDocs patterns)
+// Tier 3: Optimized Verb conjugation (generates only most useful variants)
 async function generateVerbVariants(supabase: any, word: string): Promise<string[]> {
   const variants = new Set<string>([word])
 
   try {
-    // Check if it's an irregular verb first
+    // Check if it's an irregular verb first (single DB query)
     const { data: irregData } = await supabase
       .from('irregular_verbs')
       .select('verb_root, roots, stems, past_participle')
@@ -216,7 +203,6 @@ async function generateVerbVariants(supabase: any, word: string): Promise<string
     let pastParticiple: string
 
     if (irregData && irregData.length > 0) {
-      // Handle irregular verbs
       const irregVerb = irregData[0]
       imperfectiveRoot = irregVerb.roots?.imperfective || word
       perfectiveRoot = irregVerb.roots?.perfective || `و${word}`
@@ -224,7 +210,6 @@ async function generateVerbVariants(supabase: any, word: string): Promise<string
       perfectiveStem = irregVerb.stems?.perfective || `و${word.slice(0, -1)}`
       pastParticiple = irregVerb.past_participle || `${word.slice(0, -1)}لی`
     } else {
-      // Regular verb patterns
       imperfectiveRoot = word
       perfectiveRoot = `و${word}`
       imperfectiveStem = word.slice(0, -1)
@@ -232,135 +217,48 @@ async function generateVerbVariants(supabase: any, word: string): Promise<string
       pastParticiple = `${word.slice(0, -1)}لی`
     }
 
-    // LingDocs conjugation patterns
-    const presentEndings = ['م', 'و', 'ې', 'ې', 'ي', 'ي']  // 1st sing, 1st plur, 2nd sing masc/fem, 3rd sing/plur
-    const pastEndings = ['لم', 'لو', 'لې', 'لې', 'ل', 'له']  // Same person order but past endings
-    const imperativeEndings = ['ه', 'ئ']  // 2nd sing, 2nd plur
+    // Generate only the most common/useful variants (not all 100+ forms)
+    const presentEndings = ['م', 'و', 'ې', 'ي']  // 1st sing, 1st plur, 2nd sing, 3rd sing
+    const pastEndings = ['لم', 'لو', 'لې', 'ل']  // 1st sing, 1st plur, 2nd sing, 3rd sing
 
-    // Present tense (imperfective stem + present endings)
+    // Present tense (most common forms)
     for (const ending of presentEndings) {
-      variants.add(imperfectiveStem + ending)
+      variants.add(imperfectiveStem + ending)  // Present indicative
     }
 
-    // Subjunctive (perfective stem + present endings)
+    // Subjunctive (second most common)
     for (const ending of presentEndings) {
-      variants.add(perfectiveStem + ending)
+      variants.add(perfectiveStem + ending)   // Present subjunctive
     }
 
-    // Future (ba + present/subjunctive)
+    // Future (ba + present)
     const baParticle = 'به'
     for (const ending of presentEndings) {
       variants.add(`${baParticle} ${imperfectiveStem}${ending}`)  // Imperfective future
-      variants.add(`${baParticle} ${perfectiveStem}${ending}`)   // Perfective future
     }
 
-    // Continuous past (imperfective root + past endings)
+    // Past tense (continuous and simple)
     for (const ending of pastEndings) {
-      variants.add(imperfectiveRoot.slice(0, -1) + ending)
+      variants.add(imperfectiveRoot.slice(0, -1) + ending)  // Continuous past
+      variants.add(perfectiveRoot.slice(0, -1) + ending)   // Simple past
     }
 
-    // Simple past (perfective root + past endings)
-    for (const ending of pastEndings) {
-      variants.add(perfectiveRoot.slice(0, -1) + ending)
-    }
+    // Imperative forms (common in religious text)
+    variants.add(imperfectiveStem + 'ه')  // 2nd sing imperative
+    variants.add(perfectiveStem + 'ه')    // 2nd sing subjunctive imperative
 
-    // Imperative forms
-    for (const ending of imperativeEndings) {
-      variants.add(imperfectiveStem + ending)  // Imperfective imperative
-      variants.add(perfectiveStem + ending)   // Perfective imperative
-    }
-
-    // Perfect tenses (past participle + equative endings)
-    const equativeEndings = {
-      present: ['یم', 'یو', 'یې', 'یې', 'دی', 'ده'],  // Present equative
-      habitual: ['یم', 'یو', 'یې', 'یې', 'وي', 'وي'],  // Habitual equative
-      subjunctive: ['وم', 'وو', 'وې', 'وې', 'وي', 'وي'], // Subjunctive equative
-      past: ['وم', 'وو', 'وې', 'وې', 'و', 'وه'],  // Past equative
-      future: ['یم', 'یو', 'یې', 'یې', 'وي', 'وي']  // Future equative
-    }
-
-    // Generate all perfect forms
-    for (const [type, endings] of Object.entries(equativeEndings)) {
-      for (const ending of endings) {
-        // Masculine singular
-        variants.add(`${pastParticiple} ${ending}`)
-        // Feminine singular (add ې)
-        variants.add(`${pastParticiple.slice(0, -1)}ې ${ending}`)
-        // Plural (add ي)
-        variants.add(`${pastParticiple.slice(0, -1)}ي ${ending}`)
-      }
-    }
-
-    // Ability forms (وهلی شم، وهلی شوم)
-    const abilityRoot = `${pastParticiple} شـ`
-    const abilityImperfectiveRoot = `${pastParticiple} شول`
-
-    // Present ability
-    for (const ending of presentEndings) {
-      variants.add(`${abilityRoot.slice(0, -1)}${ending}`)
-    }
-
-    // Past ability
-    for (const ending of pastEndings) {
-      variants.add(`${abilityImperfectiveRoot.slice(0, -1)}${ending}`)
-    }
-
-    // Subjunctive ability
-    const abilityPerfectiveStem = `${pastParticiple} شـ`
-    for (const ending of presentEndings) {
-      variants.add(`${abilityPerfectiveStem.slice(0, -1)}${ending}`)
-    }
-
-    // Future ability
-    for (const ending of presentEndings) {
-      variants.add(`به ${abilityRoot.slice(0, -1)}${ending}`)
-      variants.add(`به ${abilityPerfectiveStem.slice(0, -1)}${ending}`)
-    }
-
-    // Habitual forms (ba + past)
-    for (const ending of pastEndings) {
-      variants.add(`به ${imperfectiveRoot.slice(0, -1)}${ending}`)  // Habitual continuous past
-      variants.add(`به ${perfectiveRoot.slice(0, -1)}${ending}`)   // Habitual simple past
-    }
+    // Perfect participle (very common in religious text)
+    variants.add(pastParticiple)          // Past participle
+    variants.add(`${pastParticiple.slice(0, -1)}ی`)  // Plural participle
 
     // Add stems and roots for completeness
     variants.add(imperfectiveStem)
     variants.add(perfectiveStem)
-    variants.add(imperfectiveRoot)
-    variants.add(perfectiveRoot)
-    variants.add(pastParticiple)
 
-    // Compound verb handling (if it contains spaces)
-    if (word.includes(' ')) {
-      const parts = word.split(' ')
-      if (parts.length === 2) {
-        const [main, aux] = parts
-
-        // Dynamic compound verbs
-        if (aux === 'کول' || aux === 'وهل' || aux === 'کېدل') {
-          for (const ending of presentEndings) {
-            variants.add(`${main} ${aux.slice(0, -1)}${ending}`)
-          }
-
-          // Past forms
-          for (const ending of pastEndings) {
-            variants.add(`${main} ${aux.slice(0, -1)}${ending}`)
-          }
-
-          // Perfect forms with compound
-          for (const [type, endings] of Object.entries(equativeEndings)) {
-            for (const ending of endings) {
-              variants.add(`${main} ${aux.slice(0, -1)}ی ${ending}`)
-            }
-          }
-        }
-      }
-    }
-
-    console.log(`DEBUG: Generated ${variants.size} verb variants for "${word}"`)
+    console.log(`DEBUG: Generated ${variants.size} optimized verb variants for "${word}"`)
 
   } catch (error) {
-    console.error('Error in comprehensive verb variant generation:', error)
+    console.error('Error in optimized verb variant generation:', error)
   }
 
   return Array.from(variants).filter(Boolean)
@@ -510,6 +408,14 @@ export const handler = async (req: Request): Promise<Response> => {
       } satisfies Result), { headers: { 'Content-Type': 'application/json' } })
     }
 
+    // Check cache first (simple in-memory cache for common words)
+    const cacheKey = `${raw}:${payload.includeRelated}:${enableFuzzy}`
+    const cached = cache.get(cacheKey)
+    if (cached && (Date.now() - (cached as any)._cacheTime) < CACHE_TTL) {
+      console.log(`DEBUG: Cache hit for "${raw}"`)
+      return new Response(JSON.stringify(cached), { headers: { 'Content-Type': 'application/json' } })
+    }
+
     const supabase = await getSupabaseClient()
     if (!supabase) {
       return new Response(JSON.stringify({ error: 'Database not available' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
@@ -528,52 +434,62 @@ export const handler = async (req: Request): Promise<Response> => {
     const normalized = normalizePashto(base)
     let variants = new Set<string>([normalized])
 
-    // Tier 1: Word frequency correlation
-    const frequencyData = await getWordFrequency(supabase, normalized)
-    console.log(`DEBUG: Word frequency for "${normalized}":`, frequencyData)
-
-    // Tier 2: POS determination from dictionary
-    const pos = await determinePOS(supabase, normalized)
-    console.log(`DEBUG: Determined POS for "${normalized}": ${pos}`)
-
-    // Add orthographic variants
+    // Add orthographic variants early (fast, no DB calls)
     yehKafVariants(normalized).forEach((v) => variants.add(v))
     orthoVariants(normalized).forEach((v) => variants.add(v))
 
-    let fuzzyResults: any[] = []
-    let variantDetails: any[] = []
+    // Parallel execution: Run all database queries concurrently
+    const [
+      frequencyData,
+      pos,
+      fuzzyResults,
+      nounVariants,
+      verbVariants
+    ] = await Promise.all([
+      // Tier 1: Word frequency correlation
+      getWordFrequency(supabase, normalized),
 
-    // Tier 2: Fuzzy search (especially useful for romanized input)
-    if (enableFuzzy || !isPashto(raw)) {
-      console.log(`DEBUG: Performing fuzzy search for "${raw}"`)
-      fuzzyResults = await fuzzyVerseSearch(supabase, raw, 'all', 10)
+      // Tier 2: POS determination from dictionary
+      determinePOS(supabase, normalized),
+
+      // Tier 2: Fuzzy search (especially useful for romanized input)
+      (enableFuzzy || !isPashto(raw)) ? fuzzyVerseSearch(supabase, raw, 'all', 10) : Promise.resolve([]),
+
+      // Tier 3: Generate noun variants (if needed)
+      payload.includeRelated ? generateNounVariants(supabase, normalized) : Promise.resolve([]),
+
+      // Tier 3: Generate verb variants (if needed)
+      payload.includeRelated ? generateVerbVariants(supabase, normalized) : Promise.resolve([])
+    ])
+
+    // Add generated variants to main set
+    if (payload.includeRelated) {
+      nounVariants.forEach((v: string) => variants.add(v))
+      verbVariants.forEach((v: string) => variants.add(v))
+    }
+
+    console.log(`DEBUG: Word frequency for "${normalized}":`, frequencyData)
+    console.log(`DEBUG: Determined POS for "${normalized}": ${pos}`)
+    if (fuzzyResults.length > 0) {
       console.log(`DEBUG: Fuzzy search found ${fuzzyResults.length} results`)
     }
 
-    // Tier 3: Generate variants based on POS
+    // Generate variant details
+    const variantDetails: any[] = []
     if (payload.includeRelated) {
-      console.log(`DEBUG: Generating variants for "${normalized}" (POS: ${pos})`)
-
-      if (pos === 'noun') {
-        const nounVariants = await generateNounVariants(supabase, normalized)
-        nounVariants.forEach((v) => variants.add(v))
+      if (pos === 'noun' && nounVariants.length > 1) {
         variantDetails.push({
           type: 'noun_inflection',
           description: 'Noun inflection patterns from LingDocs',
           count: nounVariants.length
         })
-        console.log(`DEBUG: Generated ${nounVariants.length} noun variants`)
-      } else if (pos === 'verb') {
-        const verbVariants = await generateVerbVariants(supabase, normalized)
-        verbVariants.forEach((v) => variants.add(v))
+      } else if (pos === 'verb' && verbVariants.length > 1) {
         variantDetails.push({
           type: 'verb_conjugation',
           description: 'Verb conjugation patterns from LingDocs',
           count: verbVariants.length
         })
-        console.log(`DEBUG: Generated ${verbVariants.length} verb variants`)
       } else {
-        // For other POS, just add basic variants
         variantDetails.push({
           type: 'basic_variants',
           description: 'Basic orthographic variants',
@@ -588,16 +504,25 @@ export const handler = async (req: Request): Promise<Response> => {
       root = normalized // Use the word that exists in frequency table
     }
 
-    // Prepare comprehensive response
+    // Prepare optimized response (limit variants to 30 for performance)
     const out: Result = {
       normalized,
-      variants: Array.from(variants).filter(Boolean).slice(0, 200), // Increased limit for more comprehensive results
+      variants: Array.from(variants).filter(Boolean).slice(0, 30), // Optimized limit for performance
       romanization,
       root,
       pos,
       frequency: frequencyData.frequency,
       fuzzyResults: fuzzyResults.slice(0, 5), // Limit to top 5 fuzzy results
       variantDetails
+    }
+
+    // Cache the result for future requests (add timestamp for TTL)
+    out._cacheTime = Date.now()
+    cache.set(cacheKey, out)
+    // Limit cache size to prevent memory issues
+    if (cache.size > 1000) {
+      const firstKey = cache.keys().next().value
+      cache.delete(firstKey)
     }
 
     console.log(`DEBUG: Final response - variants: ${out.variants.length}, pos: ${out.pos}, frequency: ${out.frequency}`)
