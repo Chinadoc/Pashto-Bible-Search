@@ -60,27 +60,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
     }
 
-    // Try to create a signed URL for candidate filenames that match our storage scheme
-    const bucketName = 'audio'
+    // Use only the primary candidate (most common pattern) for performance
     const candidates = candidatePathsFromRef(ref)
+    const primaryCandidate = candidates[0] // Take first candidate only
 
-    for (const file of candidates) {
-      const { data, error } = await supabase.storage
-        .from(bucketName)
-        .createSignedUrl(file, 60 * 60)
-      if (!error && data?.signedUrl) {
-        // Force download when used in links by adding download=1
-        const hasQuery = data.signedUrl.includes('?')
-        const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
-        return NextResponse.json({
-          url: withDl,
-          ref,
-          filename: file,
-          isSigned: true,
-          ms: Date.now() - started,
-        })
-      }
+    const { data, error } = await supabase.storage
+      .from('audio')
+      .createSignedUrl(primaryCandidate, 60 * 60)
+
+    if (error || !data?.signedUrl) {
+      return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
     }
+
+    // Force download when used in links by adding download=1
+    const hasQuery = data.signedUrl.includes('?')
+    const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+
+    return NextResponse.json({
+      url: withDl,
+      ref,
+      filename: primaryCandidate,
+      isSigned: true,
+      ms: Date.now() - started,
+    })
 
     // No match in storage — return empty (client will hide audio controls)
     return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
@@ -119,28 +121,25 @@ export async function POST(request: NextRequest) {
 
     const results: Record<string, { url: string; filename: string; isSigned: boolean }> = {}
 
-    // Process each ref
+    // Process each ref with optimized candidate selection
     for (const ref of refs) {
       try {
         const candidates = candidatePathsFromRef(ref)
-        let done = false
-        for (const file of candidates) {
-          const { data, error } = await supabase.storage
-            .from('audio')
-            .createSignedUrl(file, 60 * 60)
-          if (!error && data?.signedUrl) {
-            const hasQuery = data.signedUrl.includes('?')
-            const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
-            results[ref] = { url: withDl, filename: file, isSigned: true }
-            done = true
-            break
-          }
-        }
-        if (!done) {
+        const primaryCandidate = candidates[0] // Use first candidate only for performance
+
+        const { data, error } = await supabase.storage
+          .from('audio')
+          .createSignedUrl(primaryCandidate, 60 * 60)
+
+        if (!error && data?.signedUrl) {
+          const hasQuery = data.signedUrl.includes('?')
+          const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+          results[ref] = { url: withDl, filename: primaryCandidate, isSigned: true }
+        } else {
           results[ref] = { url: '', filename: '', isSigned: false }
         }
       } catch {
-        continue
+        results[ref] = { url: '', filename: '', isSigned: false }
       }
     }
 

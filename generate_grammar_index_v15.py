@@ -196,8 +196,6 @@ for word, data in word_data.items():
             
         identity['forms'][details['form_description']].append({
             'form': word,
-            'count': data['count'],
-            'verses': data['verses'],
             'translit': transliterate(word) # Transliterate each form
         })
 
