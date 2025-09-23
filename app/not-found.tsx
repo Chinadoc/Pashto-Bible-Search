@@ -1,7 +1,4 @@
-"use client";
-
-export const dynamic = 'force-dynamic';
-
+// app/not-found.tsx (Server Component - no "use client" needed)
 export default function NotFound() {
   return (
     <div style={{
@@ -44,8 +41,6 @@ export default function NotFound() {
             textDecoration: 'none',
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#1d4ed8'}
-          onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#2563eb'}
         >
           Go Home
         </a>
