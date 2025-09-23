@@ -2,18 +2,48 @@
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-4">404</h1>
-        <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f9fafb',
+      color: '#111827'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{
+          fontSize: '6rem',
+          fontWeight: 'bold',
+          marginBottom: '1rem',
+          color: '#111827'
+        }}>404</h1>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '1rem',
+          color: '#374151'
+        }}>
           Page Not Found
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
+        <p style={{
+          marginBottom: '2rem',
+          color: '#6b7280'
+        }}>
           The page you're looking for doesn't exist.
         </p>
         <a
           href="/"
-          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          style={{
+            display: 'inline-block',
+            padding: '12px 24px',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
         >
           Go Home
         </a>
