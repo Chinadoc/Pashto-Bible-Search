@@ -130,9 +130,12 @@ export default function Home() {
 
 
 
-  // hydrate persisted UI state
+  // hydrate persisted UI state and clear any problematic initial values
   useEffect(() => {
-    setQuery(loadPersisted<string>("pbs_query", ""));
+    const savedQuery = loadPersisted<string>("pbs_query", "");
+    // Clear any problematic initial values (like "ldsoc" or similar)
+    const cleanQuery = savedQuery && savedQuery.trim() && !savedQuery.includes('ldsoc') ? savedQuery : "";
+    setQuery(cleanQuery);
     setScope(loadPersisted<Scope>("pbs_scope", "all"));
     setBookFilter(loadPersisted<string | null>("pbs_book", null));
   }, []);
@@ -363,7 +366,7 @@ export default function Home() {
                                   }
                                 }}
                                 disabled={loading}
-                                className="w-full max-w-lg"
+                                className="w-full max-w-2xl"
                                 InputProps={{
                                   startAdornment: (
                                     <IconButton disabled>
@@ -375,6 +378,11 @@ export default function Home() {
                                       variant="contained"
                                       onClick={() => handleSearch()}
                                       disabled={loading || !query.trim()}
+                                      sx={{
+                                        whiteSpace: 'nowrap',
+                                        minWidth: '80px',
+                                        height: '100%',
+                                      }}
                                     >
                                       {loading ? '...' : 'Search'}
                                     </Button>
