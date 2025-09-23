@@ -1,77 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Verse } from '../../../types'
+import { createClient } from '@supabase/supabase-js'
 
-// Create Supabase client for Node.js runtime
-const createClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
+// Use the real Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nkombdutnjvaasxrbmdn.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rb21iZHV0bmp2YWFzeHJibWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzMxNDMsImV4cCI6MjA3MjA0OTE0M30.dBdCCD8hJAWV4Y8sRNVi2uUSnDrZbUM4TxR6vl8-ENg'
 
-  // Create a basic fetch-based client for Node.js runtime
-  const baseUrl = supabaseUrl.replace('/rest/v1', '')
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-  return {
-    from: (table: string) => ({
-      select: (columns: string) => ({
-        eq: (column: string, value: any) => ({
-          limit: (limit: number) => ({
-            then: async (callback: (data: any) => any) => {
-              try {
-                const response = await fetch(
-                  `${baseUrl}/rest/v1/${table}?${column}=eq.${encodeURIComponent(value)}&limit=${limit}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${supabaseKey}`,
-                      'apikey': supabaseKey,
-                      'Content-Type': 'application/json'
-                    }
-                  }
-                )
-                const data = await response.json()
-                return callback({ data, error: null })
-              } catch (error) {
-                return callback({ data: null, error })
-              }
-            }
-          })
-        }),
-        ilike: (column: string, pattern: string) => ({
-          limit: (limit: number) => ({
-            then: async (callback: (data: any) => any) => {
-              try {
-                const response = await fetch(
-                  `${baseUrl}/rest/v1/${table}?${column}=ilike.${encodeURIComponent(pattern)}&limit=${limit}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${supabaseKey}`,
-                      'apikey': supabaseKey,
-                      'Content-Type': 'application/json'
-                    }
-                  }
-                )
-                const data = await response.json()
-                return callback({ data, error: null })
-              } catch (error) {
-                return callback({ data: null, error })
-              }
-            }
-          })
-        })
-      })
-    })
-  }
-}
-
-const supabase = createClient()
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
-
-// Simple direct search - works immediately with debugging
+// Simple direct search using real Supabase client
 async function searchVersesDirect(searchTerm: string, scope: string = 'all', maxResults: number = 50) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
-  const baseUrl = supabaseUrl.replace('/rest/v1', '')
-
   console.log(`DEBUG: Starting search for "${searchTerm}" with scope "${scope}"`);
 
   const processed = await processSearchTerm(searchTerm);
@@ -87,36 +25,28 @@ async function searchVersesDirect(searchTerm: string, scope: string = 'all', max
 
     try {
       const searchPattern = `%${variant}%`;
-      let url = `${baseUrl}/rest/v1/bible_verses?text=ilike.${encodeURIComponent(searchPattern)}&limit=15`;
+
+      // Use real Supabase client
+      let query = supabase
+        .from('verses')
+        .select('book, chapter, verse, text, testament')
+        .ilike('text', searchPattern)
+        .limit(15);
 
       if (scope === 'ot') {
-        url += '&testament=eq.OT';
+        query = query.eq('testament', 'OT');
       } else if (scope === 'nt') {
-        url += '&testament=eq.NT';
+        query = query.eq('testament', 'NT');
       }
 
-      console.log(`DEBUG: Making request to: ${url}`);
+      const { data, error } = await query;
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey,
-          'Content-Type': 'application/json'
-        },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(15000) // 15 second timeout
-      });
+      console.log(`DEBUG: Query returned ${data?.length || 0} results for variant "${variant}"`);
 
-      console.log(`DEBUG: Response status: ${response.status}`);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.warn(`Search failed for variant "${variant}": ${response.status} - ${errorText}`);
+      if (error) {
+        console.warn(`Search error for variant "${variant}":`, error);
         continue;
       }
-
-      const data = await response.json();
-      console.log(`DEBUG: Found ${data?.length || 0} results for variant "${variant}"`);
 
       if (data && data.length > 0) {
         for (const row of data) {
