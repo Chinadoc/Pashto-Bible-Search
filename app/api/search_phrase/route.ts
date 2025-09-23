@@ -66,28 +66,36 @@ const supabase = createClient()
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
 
-// Simple direct search - works immediately
+// Simple direct search - works immediately with debugging
 async function searchVersesDirect(searchTerm: string, scope: string = 'all', maxResults: number = 50) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
   const baseUrl = supabaseUrl.replace('/rest/v1', '')
 
+  console.log(`DEBUG: Starting search for "${searchTerm}" with scope "${scope}"`);
+
   const processed = await processSearchTerm(searchTerm);
   const allResults: Verse[] = [];
 
+  console.log(`DEBUG: Processed variants:`, processed.variants);
+
   // Try each variant but limit to avoid timeout
-  for (const variant of processed.variants.slice(0, 3)) {
+  for (const variant of processed.variants.slice(0, 5)) {
     if (!variant || variant.trim() === '') continue;
+
+    console.log(`DEBUG: Searching for variant "${variant}"`);
 
     try {
       const searchPattern = `%${variant}%`;
-      let url = `${baseUrl}/rest/v1/bible_verses?text=ilike.${encodeURIComponent(searchPattern)}&limit=10`;
+      let url = `${baseUrl}/rest/v1/bible_verses?text=ilike.${encodeURIComponent(searchPattern)}&limit=15`;
 
       if (scope === 'ot') {
         url += '&testament=eq.OT';
       } else if (scope === 'nt') {
         url += '&testament=eq.NT';
       }
+
+      console.log(`DEBUG: Making request to: ${url}`);
 
       const response = await fetch(url, {
         headers: {
@@ -96,15 +104,19 @@ async function searchVersesDirect(searchTerm: string, scope: string = 'all', max
           'Content-Type': 'application/json'
         },
         // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(15000) // 15 second timeout
       });
 
+      console.log(`DEBUG: Response status: ${response.status}`);
+
       if (!response.ok) {
-        console.warn(`Search failed for variant "${variant}": ${response.status}`);
+        const errorText = await response.text();
+        console.warn(`Search failed for variant "${variant}": ${response.status} - ${errorText}`);
         continue;
       }
 
       const data = await response.json();
+      console.log(`DEBUG: Found ${data?.length || 0} results for variant "${variant}"`);
 
       if (data && data.length > 0) {
         for (const row of data) {
@@ -117,6 +129,7 @@ async function searchVersesDirect(searchTerm: string, scope: string = 'all', max
               text: row.text || '',
               testament: row.testament
             });
+            console.log(`DEBUG: Added result: ${fullRef}`);
           }
         }
       }
@@ -127,7 +140,7 @@ async function searchVersesDirect(searchTerm: string, scope: string = 'all', max
     if (allResults.length >= maxResults) break;
   }
 
-  console.log(`DEBUG: Direct search found ${allResults.length} results for "${searchTerm}"`);
+  console.log(`DEBUG: Final search found ${allResults.length} total results for "${searchTerm}"`);
   return allResults.slice(0, maxResults);
 }
 
