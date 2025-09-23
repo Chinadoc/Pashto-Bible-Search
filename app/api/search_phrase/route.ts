@@ -1,6 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
 import type { Verse } from '../../../types'
+
+// Create Supabase client for Node.js runtime
+const createClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
+
+  // Create a basic fetch-based client for Node.js runtime
+  const baseUrl = supabaseUrl.replace('/rest/v1', '')
+
+  return {
+    from: (table: string) => ({
+      select: (columns: string) => ({
+        eq: (column: string, value: any) => ({
+          limit: (limit: number) => ({
+            then: async (callback: (data: any) => any) => {
+              try {
+                const response = await fetch(
+                  `${baseUrl}/rest/v1/${table}?${column}=eq.${encodeURIComponent(value)}&limit=${limit}`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${supabaseKey}`,
+                      'apikey': supabaseKey,
+                      'Content-Type': 'application/json'
+                    }
+                  }
+                )
+                const data = await response.json()
+                return callback({ data, error: null })
+              } catch (error) {
+                return callback({ data: null, error })
+              }
+            }
+          })
+        }),
+        ilike: (column: string, pattern: string) => ({
+          limit: (limit: number) => ({
+            then: async (callback: (data: any) => any) => {
+              try {
+                const response = await fetch(
+                  `${baseUrl}/rest/v1/${table}?${column}=ilike.${encodeURIComponent(pattern)}&limit=${limit}`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${supabaseKey}`,
+                      'apikey': supabaseKey,
+                      'Content-Type': 'application/json'
+                    }
+                  }
+                )
+                const data = await response.json()
+                return callback({ data, error: null })
+              } catch (error) {
+                return callback({ data: null, error })
+              }
+            }
+          })
+        })
+      })
+    })
+  }
+}
+
+const supabase = createClient()
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
+
+// Simple direct search - works immediately
+async function searchVersesDirect(searchTerm: string, scope: string = 'all', maxResults: number = 50) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
+  const baseUrl = supabaseUrl.replace('/rest/v1', '')
+
+  const processed = await processSearchTerm(searchTerm);
+  const allResults: Verse[] = [];
+
+  // Try each variant but limit to avoid timeout
+  for (const variant of processed.variants.slice(0, 3)) {
+    if (!variant || variant.trim() === '') continue;
+
+    try {
+      const searchPattern = `%${variant}%`;
+      let url = `${baseUrl}/rest/v1/bible_verses?text=ilike.${encodeURIComponent(searchPattern)}&limit=10`;
+
+      if (scope === 'ot') {
+        url += '&testament=eq.OT';
+      } else if (scope === 'nt') {
+        url += '&testament=eq.NT';
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json'
+        },
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      if (!response.ok) {
+        console.warn(`Search failed for variant "${variant}": ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const ref = `${row.book} ${row.chapter}:${row.verse}`;
+          const fullRef = `${row.book} ${row.chapter}:${row.verse}`;
+
+          if (!allResults.find(r => r.ref === fullRef)) {
+            allResults.push({
+              ref: fullRef,
+              text: row.text || '',
+              testament: row.testament
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Error searching variant "${variant}":`, error);
+    }
+
+    if (allResults.length >= maxResults) break;
+  }
+
+  console.log(`DEBUG: Direct search found ${allResults.length} results for "${searchTerm}"`);
+  return allResults.slice(0, maxResults);
+}
 
 // Book name constants for testament determination
 const OT_BOOKS = [
@@ -1704,204 +1833,43 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create cache key from search parameters
-    const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
-    const bookFilterKey = bookFilter === null ? 'null' : (bookFilter || 'all')
-    const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
-
-    // Debug logging for book filtering and scope
-    if (bookFilter) {
-      console.log(`DEBUG: Book filter applied: ${bookFilter}`)
-    }
-    console.log(`DEBUG: Scope: ${scope}, Book filter: ${bookFilter}`)
-
-    // Check cache first
-    const cached = SEARCH_CACHE.get(cacheKey)
-    if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
-      return NextResponse.json({
-        ...cached.data,
-        cached: true,
-        ms: Date.now() - startTime
-      })
-    }
-
-    // Check if we have valid Supabase credentials
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      return NextResponse.json({
-        results: [],
-        coverage: [],
-        error: 'Database not configured',
-        ms: Date.now() - startTime
-      })
-    }
-
     const originalTerm = query.trim()
+    console.log(`DEBUG: Searching for "${originalTerm}" with scope "${scope}"`)
 
-    // Step 1: Check if Edge Function is available
-    const edgeFunctionAvailable = await checkEdgeFunctionAvailability(supabaseUrl, supabaseKey)
+    // Use simple direct search (no edge functions)
+    const results = await searchVersesDirect(originalTerm, scope, 50)
 
-    console.log(`DEBUG: Edge function available: ${edgeFunctionAvailable}`)
-
-    let processedQuery: any = null
-
-    if (edgeFunctionAvailable) {
-      // Step 2: Call pashto-processor Edge Function
-      try {
-        processedQuery = await callPashtoProcessor(supabaseUrl, supabaseKey, originalTerm, !!includeRelated)
-        console.log(`DEBUG: Edge function processed: ${JSON.stringify(processedQuery)}`)
-      } catch (error) {
-        console.warn('Edge function failed, falling back to local processing:', error)
-      }
-    }
-
-    // Step 3: If Edge Function not available or failed, use local normalization
-    if (!processedQuery) {
-      processedQuery = await localPashtoProcessing(originalTerm, !!includeRelated)
-      console.log(`DEBUG: Local processing result: ${JSON.stringify(processedQuery)}`)
-    }
-
-    // Step 4: Enhanced search using Edge Function results
-    const allResults: Verse[] = []
+    // Calculate coverage
     const coverageMap = new Map<string, number>()
+    results.forEach(result => {
+      coverageMap.set(result.ref.split(' ')[0], (coverageMap.get(result.ref.split(' ')[0]) || 0) + 1)
+    })
 
-    // Use fuzzy results from Edge Function if available
-    if (processedQuery?.fuzzyResults && processedQuery.fuzzyResults.length > 0) {
-      console.log(`DEBUG: Using ${processedQuery.fuzzyResults.length} fuzzy results from Edge Function`)
-      for (const row of processedQuery.fuzzyResults) {
-        const ref = `${row.book} ${row.chapter}:${row.verse}`
-        const fullRef = `${row.book} ${row.chapter}:${row.verse}`
-
-        if (!allResults.find(r => r.ref === fullRef)) {
-          allResults.push({
-            ref: fullRef,
-            text: row.text || '',
-            testament: row.testament
-          })
-          coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
-        }
-      }
-    }
-
-    // Fallback: Search using variants from processed query
-    if (allResults.length === 0) {
-      const searchVariants = processedQuery?.variants || [processedQuery?.normalized || originalTerm]
-      const maxResultsPerVariant = 25
-
-      console.log(`DEBUG: Fallback search using ${searchVariants.length} variants`)
-
-      for (const variant of searchVariants.slice(0, 20)) {
-        if (!variant || variant.trim() === '') continue
-
-        try {
-          const rpcResults = await searchVersesSimilar(supabase, variant, scope, maxResultsPerVariant)
-
-          if (rpcResults.length > 0) {
-            for (const row of rpcResults) {
-              const ref = `${row.book} ${row.chapter}:${row.verse}`
-              const fullRef = `${row.book} ${row.chapter}:${row.verse}`
-
-              if (!allResults.find(r => r.ref === fullRef)) {
-                allResults.push({
-                  ref: fullRef,
-                  text: row.text || '',
-                  testament: row.testament
-                })
-                coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`Search failed for variant "${variant}":`, error)
-        }
-
-        // Prevent too many results
-        if (allResults.length >= 100) break
-      }
-    }
-
-    // Convert coverage map to array and sort by count
-    const coverage: CoverageItem[] = Array.from(coverageMap.entries())
+    const coverage = Array.from(coverageMap.entries())
       .map(([book, count]) => ({ book, count }))
       .sort((a, b) => b.count - a.count)
 
-    // Build related forms categorization if requested
-    let relatedForms: any = null
-    if (includeRelated && processedQuery?.root) {
-      try {
-        // Use the Edge Function result for related forms if available
-        const rootTerm = processedQuery.root
+    console.log(`DEBUG: Found ${results.length} results in ${Date.now() - startTime}ms`)
 
-        // For now, use a simplified approach - we can enhance this later
-        // The Edge Function already provides some related forms in the variants
-        const relatedVariants = processedQuery.variants.slice(1, 10) // Skip the first (normalized) form
-
-        relatedForms = {
-          verbs: relatedVariants.filter((f: string) => f.includes('ل') || f.includes('نم') || f.includes('م') || f.includes('ې')).map((f: string) => ({ form: f, count: 0 })),
-          nouns: relatedVariants.filter((f: string) => !f.includes('ل') && !f.includes('نم') && !f.includes('م') && !f.includes('ې')).map((f: string) => ({ form: f, count: 0 })),
-          other: [],
-          total: relatedVariants.length
-        }
-      } catch (error) {
-        console.log('DEBUG: Error in related forms:', error)
-      }
-    }
-
-    const payload = {
-      results: allResults,
+    return NextResponse.json({
+      results,
       coverage,
-      relatedForms,
       processed: {
-        original: originalTerm,
-        normalized: processedQuery?.normalized || originalTerm,
-        primaryVariant: processedQuery?.normalized || originalTerm,
-        variants: processedQuery?.variants || [originalTerm],
-        variantsSearched: processedQuery?.variants || [originalTerm],
-        variantDetails: processedQuery?.variantDetails?.map((detail: any) => ({
-          ...detail,
-          sources: ['edge-function'],
-          romanization: processedQuery.romanization,
-          pos: processedQuery.pos,
-          frequency: processedQuery.frequency
-        })) || [],
-        variantGroups: processedQuery?.variantDetails?.map((detail: any) => ({
-          label: detail.type,
-          forms: processedQuery.variants?.slice(0, 10) || []
-        })) || [],
-        romanization: processedQuery?.romanization || ""
+        normalized: originalTerm,
+        variants: [originalTerm],
+        romanization: ''
       },
-      ms: Date.now() - startTime,
-      debug: {
-        textSearchHit: allResults.length > 0,
-        variantsTried: processedQuery?.variants?.length || 1,
-        resultsCount: allResults.length,
-        edgeFunctionUsed: !!processedQuery,
-        rpcUsed: true,
-        posDetermined: processedQuery?.pos,
-        wordFrequency: processedQuery?.frequency,
-        fuzzySearchUsed: (processedQuery?.fuzzyResults?.length || 0) > 0
-      }
-    }
-
-    // Cache the result
-    SEARCH_CACHE.set(cacheKey, { data: payload, ts: Date.now() })
-
-    return NextResponse.json(payload)
+      ms: Date.now() - startTime
+    })
 
   } catch (error) {
-    console.error('Search phrase error:', error)
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        results: [],
-        coverage: [],
-        ms: Date.now() - startTime
-      },
-      { status: 500 }
-    )
+    console.error('Search error:', error)
+    return NextResponse.json({
+      results: [],
+      coverage: [],
+      error: 'Search failed',
+      ms: Date.now() - startTime
+    })
   }
 }
 
