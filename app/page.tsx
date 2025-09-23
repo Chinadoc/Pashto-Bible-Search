@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useMemo, ChangeEvent } from "react";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
