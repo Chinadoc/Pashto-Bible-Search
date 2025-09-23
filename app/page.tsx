@@ -351,7 +351,7 @@ export default function Home() {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left Side - Tabs for Search/Lexicon/Grammar */}
-          <div className="lg:col-span-4 order-2 lg:order-1">
+          <div className="lg:col-span-4 order-2 lg:order-1 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-lg p-2">
             <Tabs
               tabs={[
                 {
@@ -360,7 +360,7 @@ export default function Home() {
                   content: (
                     <div className="space-y-4">
                       {/* Search Section */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
+                      <div className="border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-md">
                         <div className="flex flex-col space-y-4">
                           {/* Search Components */}
                           <div className="flex flex-col space-y-4">
