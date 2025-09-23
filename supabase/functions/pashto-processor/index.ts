@@ -115,7 +115,8 @@ async function determinePOS(supabase: any, word: string): Promise<string> {
     }
 
     // Fallback: pattern-based detection
-    if (word.endsWith('ل') || word.includes('نم') || word.includes('م') || word.includes('ې')) {
+    if (word.endsWith('ل') || word.includes('نم') || word.includes('م') || word.includes('ې') ||
+        word === 'وهل' || word.includes('وه') || word.includes('وو')) {
       return 'verb'
     }
 
@@ -445,6 +446,22 @@ async function expandRelatedForms(supabase: any, norm: string): Promise<{ root?:
       return { root: norm, forms: Array.from(forms) }
     }
 
+    // 2) Handle "وهل" (to hit/strike) - another common irregular verb
+    if (norm === 'وهل') {
+      // Add common conjugations of "to hit"
+      const conjugations = [
+        'وهل', // root
+        'وهم', 'وهو', 'وهې', 'وهي', 'وهي', // present forms
+        'ووهم', 'ووهو', 'ووهې', 'ووهي', 'ووهي', // subjunctive
+        'به وهم', 'به وهو', 'به وهې', 'به وهي', 'به وهي', // future
+        'وهلم', 'وهلو', 'وهلې', 'وهل', 'وهله', // past
+        'ووهلم', 'ووهلو', 'ووهلې', 'ووهل', 'ووهله', // perfect past
+        'وهلی', 'وهلې' // participles
+      ]
+      conjugations.forEach(f => forms.add(f))
+      return { root: norm, forms: Array.from(forms) }
+    }
+
     // 2) Try to find root using simple pattern matching
     let root = norm
     if (norm === 'وینم' || norm === 'ووینم') {
@@ -454,7 +471,20 @@ async function expandRelatedForms(supabase: any, norm: string): Promise<{ root?:
       return { root, forms: Array.from(forms) }
     }
 
-    // 3) For now, return just the original form if no specific mapping
+    // 3) Handle other common conjugations of "وهل"
+    if (norm === 'وهم' || norm === 'ووهم' || norm === 'وهلم' || norm === 'ووهلم') {
+      root = 'وهل'
+      const conjugations = [
+        'وهل', 'وهم', 'ووهم', 'وهو', 'ووهو', 'وهې', 'ووهې', 'وهي', 'ووهي', 'وهي', 'ووهي',
+        'به وهم', 'به وهو', 'به وهې', 'به وهي', 'به وهي',
+        'وهلم', 'ووهلم', 'وهلو', 'ووهلو', 'وهلې', 'ووهلې', 'وهل', 'ووهل', 'وهله', 'ووهله',
+        'وهلی', 'ووهلی', 'وهلې', 'ووهلې'
+      ]
+      conjugations.forEach(f => forms.add(f))
+      return { root, forms: Array.from(forms) }
+    }
+
+    // 4) For now, return just the original form if no specific mapping
     forms.add(norm)
     return { root: norm, forms: Array.from(forms) }
 
