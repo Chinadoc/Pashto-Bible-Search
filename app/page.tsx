@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo, ChangeEvent } from "react";
-import SearchBar from "../components/SearchBar";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -12,6 +11,7 @@ import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
+import { TextField, Button, IconButton } from '@mui/material';
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -40,45 +40,6 @@ function savePersisted<T>(key: string, value: T): void {
   } catch {}
 }
 
-// Search input component
-function SearchInput({ query, setQuery, onSearch, loading }: {
-  query: string;
-  setQuery: (query: string) => void;
-  onSearch: () => void;
-  loading: boolean;
-}) {
-  const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !loading) {
-      onSearch();
-    }
-  };
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={query}
-        onChange={handleQueryChange}
-        onKeyPress={handleKeyPress}
-        placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
-        className="w-full p-3 pr-12 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        dir="rtl"
-        disabled={loading}
-      />
-      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-        🔍
-      </div>
-      <button
-        onClick={() => onSearch()}
-        disabled={loading || !query.trim()}
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {loading ? '...' : 'Search'}
-      </button>
-    </div>
-  );
-}
 
 // Search controls component
 function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount }: {
@@ -389,12 +350,80 @@ export default function Home() {
                         <div className="flex flex-col space-y-4">
                           {/* Search Components */}
                           <div className="flex flex-col space-y-4">
-                            <SearchInput
-                              query={query}
-                              setQuery={setQuery}
-                              onSearch={handleSearch}
-                              loading={loading}
-                            />
+                            {/* MUI Search Input with proper z-index and positioning */}
+                            <div className="relative z-10">
+                              <TextField
+                                variant="outlined"
+                                placeholder="Search Pashto Bible (e.g., لیدل, خدا, موسى)"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && !loading) {
+                                    handleSearch();
+                                  }
+                                }}
+                                disabled={loading}
+                                className="w-full max-w-lg"
+                                InputProps={{
+                                  startAdornment: (
+                                    <IconButton disabled>
+                                      🔍
+                                    </IconButton>
+                                  ),
+                                  endAdornment: (
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => handleSearch()}
+                                      disabled={loading || !query.trim()}
+                                    >
+                                      {loading ? '...' : 'Search'}
+                                    </Button>
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiInputBase-root': {
+                                    backgroundColor: '#2A2F3A',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#60A5FA',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#3B82F6',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#2563EB',
+                                      borderWidth: '2px',
+                                    },
+                                  },
+                                  '& input': {
+                                    color: 'white',
+                                    '&::placeholder': {
+                                      color: '#9CA3AF',
+                                      opacity: 1,
+                                    },
+                                  },
+                                  '& .MuiIconButton-root': {
+                                    color: '#9CA3AF',
+                                  },
+                                  '& .MuiButton-root': {
+                                    backgroundColor: '#3B82F6',
+                                    '&:hover': {
+                                      backgroundColor: '#2563EB',
+                                    },
+                                    '&.Mui-disabled': {
+                                      backgroundColor: '#6B7280',
+                                      color: '#D1D5DB',
+                                    },
+                                  },
+                                }}
+                                inputProps={{
+                                  dir: 'rtl',
+                                  style: {
+                                    textAlign: 'right',
+                                    padding: '12px 16px',
+                                  }
+                                }}
+                              />
+                            </div>
 
                             <SearchControls
                               scope={scope}
