@@ -163,7 +163,9 @@ export default function Home() {
   // Verb understanding features
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('1st');
   const [showFirstPerson, setShowFirstPerson] = useState<boolean>(false);
-  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect'>('present');
+  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual'>('present');
+  const [verbAspect, setVerbAspect] = useState<'imperfective' | 'perfective'>('imperfective');
+  const [verbMood, setVerbMood] = useState<'indicative' | 'subjunctive' | 'imperative' | 'ability'>('indicative');
 
 
 
@@ -347,9 +349,9 @@ export default function Home() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left Side - Tabs for Search/Lexicon/Grammar */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          <div className="lg:col-span-4 order-2 lg:order-1">
             <Tabs
               tabs={[
                 {
@@ -455,10 +457,12 @@ export default function Home() {
                           <RelatedForms
                             relatedForms={relatedForms}
                             onPick={(f) => { setQuery(f); handleSearch(); }}
-                            verbState={{person: verbPerson, tense: verbTense}}
+                            verbState={{person: verbPerson, tense: verbTense, aspect: verbAspect, mood: verbMood}}
                             setVerbState={(state) => {
                               setVerbPerson(state.person)
                               setVerbTense(state.tense)
+                              setVerbAspect(state.aspect)
+                              setVerbMood(state.mood)
                             }}
                           />
                         </div>
