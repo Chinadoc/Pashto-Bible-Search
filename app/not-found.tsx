@@ -42,8 +42,8 @@ export default function NotFound() {
             textDecoration: 'none',
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
+          onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#1d4ed8'}
+          onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#2563eb'}
         >
           Go Home
         </a>
