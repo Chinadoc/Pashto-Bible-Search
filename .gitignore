@@ -67,3 +67,29 @@ MANIFEST
 *.db
 *.sqlite
 *.sqlite3
+
+# Audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+audio/
+**/audio/
+*audio*/
+
+# Generated files
+*_frequencies_from_db*.json
+*word_frequency_list*.json
+*full_dictionary*.json
+*extract_ot_nt_frequencies_from_db*.py
+*fix_lexicon_tables*.py
+*ingest_ot_nt_frequencies*.py
+*test-layout.html
+
+# Backup files
+*.backup
+
+# Split audio directory
+yousafzai_split_audio/
