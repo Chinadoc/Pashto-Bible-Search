@@ -1,4 +1,5 @@
-// app/not-found.tsx (Server Component - no "use client" needed)
+export const dynamic = 'force-dynamic';
+
 export default function NotFound() {
   return (
     <div style={{
