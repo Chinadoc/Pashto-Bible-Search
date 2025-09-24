@@ -164,6 +164,7 @@ serve(async (req) => {
     // POS resolution (from dictionary first, fall back heuristics)
     if (dictRes.data?.[0]?.pos) {
       const posLower = String(dictRes.data[0].pos).toLowerCase();
+      console.log(`DEBUG: Found "${normalized}" in dictionary with POS "${dictRes.data[0].pos}"`);
       if (posLower.startsWith("verb")) posGuess = "verb";
       else if (posLower.startsWith("noun")) posGuess = "noun";
       else if (posLower.startsWith("adj")) posGuess = "adjective";
@@ -172,13 +173,18 @@ serve(async (req) => {
       romanization = romanization ?? dictRes.data[0].romanized ?? undefined;
     } else {
       // If not in dictionary, attempt to detect via lexicons
+      console.log(`DEBUG: "${normalized}" not found in dictionary, checking lexicons`);
       const [vlex, nlex] = await Promise.all([
         db.from("verbs_lexicon").select("lemma").ilike("lemma", normalized).limit(1),
         db.from("nouns_lexicon").select("lemma").ilike("lemma", normalized).limit(1),
       ]);
+      console.log(`DEBUG: Found ${vlex.data?.length || 0} verb lexicon entries and ${nlex.data?.length || 0} noun lexicon entries`);
       if (vlex.data?.length) posGuess = "verb";
       else if (nlex.data?.length) posGuess = "noun";
-      else posGuess = "other";
+      else {
+        posGuess = "other";
+        console.log(`DEBUG: "${normalized}" not found in either lexicon, defaulting to "other"`);
+      }
     }
 
     const frequency = freqRes.data?.[0]?.frequency_count ?? undefined;
@@ -189,11 +195,17 @@ serve(async (req) => {
 
     if (includeRelated) {
       const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
+
+      // Debug logging
+      console.log(`DEBUG: POS guess for "${normalized}": "${posGuess}"`);
+
       if (posGuess === "noun") {
         const nouns = await generateNounVariants(normalized, db, { cap: 30 });
+        console.log(`DEBUG: Generated ${nouns.length} noun variants`);
         groups.nouns = nouns;
       } else if (posGuess === "verb") {
         const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: true });
+        console.log(`DEBUG: Generated ${verbs.length} verb variants`);
         groups.verbs = verbs;
       } else {
         // Unknown POS → try both conservatively; keep whichever yields more signal
@@ -201,8 +213,17 @@ serve(async (req) => {
           generateNounVariants(normalized, db, { cap: 20 }),
           generateVerbVariants(normalized, db, { cap: 20, includeCompound: true }),
         ]);
+        console.log(`DEBUG: Generated ${nouns.length} noun variants and ${verbs.length} verb variants for unknown POS`);
         if (nouns.length) groups.nouns = nouns;
         if (verbs.length) groups.verbs = verbs;
+      }
+
+      // If no variants were generated, force generate verb variants as fallback
+      if (!groups.nouns?.length && !groups.verbs?.length) {
+        console.log(`DEBUG: No variants generated, forcing verb variant generation for "${normalized}"`);
+        const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: true });
+        console.log(`DEBUG: Forced generation resulted in ${verbs.length} verb variants`);
+        groups.verbs = verbs;
       }
 
       // Build variantDetails (grouped + counts)

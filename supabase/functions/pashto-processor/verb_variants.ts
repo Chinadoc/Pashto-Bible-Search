@@ -94,9 +94,12 @@ export async function generateVerbVariants(
     if (/compound|comp\./i.test(info)) flags.push("compound");
     if (/irreg/i.test(info)) flags.push("irregular");
 
+    const label = labelFromInfo(info);
+    console.log(`DEBUG: Adding verb form "${row.inflected_form}" with label "${label}" from grammatical_info "${info}"`);
+
     out.push({
       form: row.inflected_form,
-      label: labelFromInfo(info),
+      label: label,
       pos: "verb",
       flags: flags.length ? flags : undefined,
     });
@@ -104,14 +107,17 @@ export async function generateVerbVariants(
 
   // 3) Fallback to verbs_lexicon (minimal seed if inflections absent)
   if (!out.length) {
+    console.log(`DEBUG: No inflection data found for "${base}", checking verbs_lexicon`);
     const vlex = await db.from("verbs_lexicon")
       .select("*")
       .or(`lemma.eq.${base},root.eq.${base}`)
       .limit(1);
     if (vlex.data?.length) {
+      console.log(`DEBUG: Found "${base}" in verbs_lexicon, adding as infinitive`);
       // Seed some generic labels with lemma/root itself
       out.push({ form: base, label: "Infinitive", pos: "verb" });
     } else {
+      console.log(`DEBUG: "${base}" not found in verbs_lexicon, generating basic forms`);
       // If not in verbs_lexicon either, create some basic forms based on common patterns
       // This ensures we always return some verb forms for debugging
       const basicForms = [
@@ -119,6 +125,7 @@ export async function generateVerbVariants(
         { form: `${base} کول`, label: "Compound Form" },
         { form: `${base} کېدل`, label: "Stative Form" }
       ];
+      console.log(`DEBUG: Generated ${basicForms.length} basic forms:`, basicForms.map(f => f.form));
       basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
     }
   }
