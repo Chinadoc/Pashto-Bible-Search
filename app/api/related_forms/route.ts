@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         .select("pashto_form, frequency")
         .in("pashto_form", uniqueForms);
       const occMap = new Map<string, number>();
-      for (const r of occ ?? []) occMap.set(r.pashto_form, r.frequency ?? 0);
+      for (const r of occ ?? []) occMap.set((r as any).pashto_form, (r as any).frequency ?? 0);
 
       forms = forms.map(f => ({ ...f, count: occMap.get(f.form) ?? f.count }));
       if (variantDetails) {
@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
         db.from("verbs_lexicon").select("lemma").in("lemma", sample),
         db.from("nouns_lexicon").select("lemma").in("lemma", sample),
       ]);
-      const verbs = new Set((vlex.data ?? []).map(r => r.lemma));
-      const nouns = new Set((nlex.data ?? []).map(r => r.lemma));
+      const verbs = new Set((vlex.data ?? []).map((r: any) => r.lemma));
+      const nouns = new Set((nlex.data ?? []).map((r: any) => r.lemma));
       forms = forms.map(f => f.pos ? f : {
         ...f,
         pos: verbs.has(f.form) ? "verb" : (nouns.has(f.form) ? "noun" : undefined)
