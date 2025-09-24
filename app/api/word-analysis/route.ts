@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     const normalizedWord = word.trim()
 
     // Check if this is a compound verb (contains space and multiple parts)
-    const isCompoundPhrase = normalizedWord.includes(' ')
-    const wordParts = isCompoundPhrase ? normalizedWord.split(' ').filter(Boolean) : [normalizedWord]
-    const auxiliaryVerb = isCompoundPhrase ? wordParts[wordParts.length - 1] : null // Last word is typically the auxiliary verb
+    const isCompoundPhrase = normalizedWord && normalizedWord.includes(' ')
+    const wordParts = isCompoundPhrase && normalizedWord ? normalizedWord.split(' ').filter(Boolean) : [normalizedWord || '']
+    const auxiliaryVerb = isCompoundPhrase && wordParts.length > 0 ? wordParts[wordParts.length - 1] : null // Last word is typically the auxiliary verb
     const compoundNoun = isCompoundPhrase && wordParts.length >= 2 ? wordParts.slice(0, -1).join(' ') : null
 
     // Parallel queries for comprehensive linguistic data

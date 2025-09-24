@@ -217,7 +217,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           : (query && query.trim()) ? [query.trim()] : [];
         
         // Check if this verse matches the highlighted book
-        const verseBook = verse.ref.split(' ')[0]; // "Hebrews 12:1" -> "Hebrews"
+        let verseBook = '';
+        if (verse.ref && typeof verse.ref === 'string') {
+          const parts = verse.ref.trim().split(' ');
+          verseBook = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0] || '';
+        }
         const isHighlighted = highlightBook && verseBook === highlightBook;
 
         return (
