@@ -303,9 +303,9 @@ export default function ClientHome() {
   // Determine active tab based on state
   const activeTab = useMemo(() => {
     if (results.length > 0) return 0; // Search results
-    if (relatedForms && relatedForms.total > 0) return 1; // Analysis
+    if (relatedForms && relatedForms.total && relatedForms.total > 0) return 1; // Analysis
     return 0;
-  }, [results.length, relatedForms?.total]);
+  }, [results.length, relatedForms]);
 
   return (
     <div className="w-full max-w-6xl mx-auto">
