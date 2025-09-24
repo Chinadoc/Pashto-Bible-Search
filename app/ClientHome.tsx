@@ -72,6 +72,14 @@ function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, re
           />
           Include Related Forms
         </label>
+        <button
+          onClick={refreshAudioMap}
+          disabled={isLoading}
+          className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded border disabled:opacity-50"
+          title="Refresh audio URLs (get latest Supabase Storage URLs)"
+        >
+          🔄 Audio
+        </button>
       </div>
       <div className="text-sm text-gray-600 dark:text-gray-400">
         {resultsCount} results
@@ -219,12 +227,20 @@ export default function ClientHome() {
   useEffect(() => {
     const loadAudioMap = async () => {
       try {
-        const response = await fetch('/api/get_audio_map');
+        // Always force refresh to get latest URLs without Drive links
+        const response = await fetch('/api/get_audio_map?clear_cache=1');
         if (response.ok) {
           const data = await response.json();
           const audioMap = data || {};
-          console.log('Audio map loaded with', Object.keys(audioMap).length, 'entries');
+          const driveUrls = Object.values(audioMap).filter((url: string) => url.includes('drive.google.com')).length;
+          const storageUrls = Object.values(audioMap).filter((url: string) => url.includes('supabase.co/storage')).length;
+
+          console.log(`Audio map loaded: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
           setAudioMap(audioMap);
+
+          if (driveUrls > 0) {
+            console.warn(`⚠️ Audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
+          }
         } else {
           console.warn('Audio map API returned error:', response.status, response.statusText);
           setAudioMap({});
@@ -237,6 +253,56 @@ export default function ClientHome() {
     };
     loadAudioMap();
   }, []);
+
+  // Refresh audio map when results change to ensure we have latest URLs
+  useEffect(() => {
+    if (results.length > 0 && Object.keys(audioMap).length === 0) {
+      const refreshAudioMap = async () => {
+        try {
+          const response = await fetch('/api/get_audio_map?clear_cache=1');
+          if (response.ok) {
+            const data = await response.json();
+            const newAudioMap = data || {};
+            console.log(`Refreshed audio map: ${Object.keys(newAudioMap).length} entries`);
+            setAudioMap(newAudioMap);
+          }
+        } catch (error) {
+          console.error('Failed to refresh audio map:', error);
+        }
+      };
+      refreshAudioMap();
+    }
+  }, [results, audioMap]);
+
+  // Manual audio map refresh function
+  const refreshAudioMap = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/get_audio_map?clear_cache=1');
+      if (response.ok) {
+        const data = await response.json();
+        const newAudioMap = data || {};
+        const driveUrls = Object.values(newAudioMap).filter((url: string) => url.includes('drive.google.com')).length;
+        const storageUrls = Object.values(newAudioMap).filter((url: string) => url.includes('supabase.co/storage')).length;
+
+        console.log(`Audio map refreshed: ${Object.keys(newAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+        setAudioMap(newAudioMap);
+
+        if (driveUrls > 0) {
+          alert(`Audio map refreshed with ${driveUrls} Google Drive URLs still present. Try refreshing again.`);
+        } else {
+          alert(`Audio map refreshed with ${storageUrls} Supabase Storage URLs!`);
+        }
+      } else {
+        alert('Failed to refresh audio map');
+      }
+    } catch (error) {
+      console.error('Failed to refresh audio map:', error);
+      alert('Failed to refresh audio map');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Group results by book for coverage calculation
   const coverageData = useMemo(() => {

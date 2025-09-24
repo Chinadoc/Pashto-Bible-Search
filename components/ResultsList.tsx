@@ -238,6 +238,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           }
         }
 
+        // Debug: Check if conditions for UI are met
+        console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}`);
+
         const terms = termsProp && termsProp.length > 0
           ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
           : (query && query.trim()) ? [query.trim()] : [];
