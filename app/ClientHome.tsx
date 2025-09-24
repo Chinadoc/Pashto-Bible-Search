@@ -279,7 +279,15 @@ export default function ClientHome() {
 
   // Handle search
   const handleSearch = async () => {
-    if (!query.trim()) return;
+    console.log('DEBUG: ========================================');
+    console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
+    console.log('DEBUG: ========================================');
+    console.log('DEBUG: Search parameters:', { query, scope, includeRelated });
+
+    if (!query.trim()) {
+      console.log('DEBUG: Empty query, not searching');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -289,6 +297,7 @@ export default function ClientHome() {
     setRelatedForms(null);
 
     try {
+      console.log('DEBUG: Making fetch request to /api/search_phrase');
       const response = await fetch('/api/search_phrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,13 +309,19 @@ export default function ClientHome() {
         }),
       });
 
+      console.log('DEBUG: Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('DEBUG: Search failed with status:', response.status, errorText);
         throw new Error(`Search failed: ${response.status}`);
       }
 
       let data: PhraseResponse;
       try {
-        data = await response.json();
+        const responseText = await response.text();
+        console.log('DEBUG: Raw response:', responseText);
+        data = JSON.parse(responseText);
       } catch (parseErr) {
         console.error('Failed to parse search response:', parseErr);
         throw new Error('Invalid response format from search API');

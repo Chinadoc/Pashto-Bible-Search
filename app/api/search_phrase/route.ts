@@ -90,6 +90,10 @@ async function localDirectSearch(
 
 export async function POST(req: NextRequest) {
   const t0 = Date.now();
+  console.log(`DEBUG: ========================================`);
+  console.log(`DEBUG: SEARCH REQUEST RECEIVED at ${new Date().toISOString()}`);
+  console.log(`DEBUG: ========================================`);
+
   try {
     const body = (await req.json()) as SearchPhraseRequest;
     const query = (body.query ?? "").trim();
@@ -115,42 +119,8 @@ export async function POST(req: NextRequest) {
       enableFuzzy
     });
 
-    // Try Edge Function first, but only if it works - otherwise fall back to local search
-    let edgeProcessed: Processed | null = null;
-    console.log(`DEBUG: Attempting Edge Function call...`);
-
-    // Always try Edge Function first for now
-    try {
-      const efRes = await fetch(
-        `${SUPABASE_URL}/functions/v1/pashto-processor`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            formPs: query,
-            includeRelated: false,  // Disable for basic search test
-            enableFuzzy: latin,     // Enable for romanized input
-          }),
-        }
-      );
-
-      console.log(`DEBUG: Edge Function response status:`, efRes.status);
-
-      if (efRes.ok) {
-        edgeProcessed = await efRes.json() as Processed;
-        console.log(`DEBUG: Edge Function success:`, { normalized: edgeProcessed.normalized, variants: edgeProcessed.variants.length });
-      } else {
-        const errorText = await efRes.text();
-        console.log(`DEBUG: Edge Function failed:`, { status: efRes.status, error: errorText });
-      }
-    } catch (error) {
-      console.log(`DEBUG: Edge Function error:`, error);
-      // Fall through to local search
-    }
+    // TEMPORARY: Bypass Edge Function entirely and go straight to local search
+    console.log(`DEBUG: Using direct database search only (no Edge Function)`);
 
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
