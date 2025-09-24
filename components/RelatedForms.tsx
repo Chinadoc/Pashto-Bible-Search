@@ -234,7 +234,14 @@ export default function RelatedForms({
       };
 
   // Compute categorized buckets first (TDZ fix)
-  const cats = useMemo(() => categorizeVerbForms(verbs), [verbs]);
+  const cats = useMemo(() => {
+    // If we have structured data, use it directly since it's already categorized
+    if (hasStructuredData) {
+      return verbGroups;
+    }
+    // Otherwise, categorize the legacy verbs array
+    return categorizeVerbForms(relatedForms.verbs || []);
+  }, [verbGroups, hasStructuredData, relatedForms.verbs]);
 
   // Filter verbs based on current tense/aspect/mood/person selection
   const filteredVerbs = useMemo(() => {
