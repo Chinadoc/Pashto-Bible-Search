@@ -413,6 +413,7 @@ export default function ClientHome() {
             onChange={handleTabsChange}
             tabs={[
               {
+                id: 'search',
                 label: `Results (${resultsCount})`,
                 content: results.length > 0 ? (
                   <ResultsList
@@ -427,6 +428,7 @@ export default function ClientHome() {
                 )
               },
               {
+                id: 'analysis',
                 label: 'Analysis',
                 content: (
                   <div className="space-y-6">
