@@ -12,6 +12,7 @@ import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, RelatedFormsData, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 import { TextField, Button, IconButton } from '@mui/material';
+import { dedupByRef } from "../utils/highlight";
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -378,7 +379,7 @@ export default function ClientHome() {
       const transformedResults = searchResults.map((result, index) => ({
         ref: result.ref,
         text: result.text,
-        testament: 'NT', // Default, could be enhanced later
+        testament: result.testament || 'NT', // Default, could be enhanced later
         translation: 'Yousafzai 2019', // Default
         dialect: 'Yousafzai', // Default
         tags: [], // Default
@@ -388,8 +389,12 @@ export default function ClientHome() {
 
       console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
 
-      // Set the results directly
-      setResults(transformedResults);
+      // Deduplicate results by ref to avoid duplicates from variant searches
+      const dedupedResults = dedupByRef(transformedResults);
+      console.log(`DEBUG: Deduplicated from ${transformedResults.length} to ${dedupedResults.length} results`);
+
+      // Set the results directly (use deduplicated results)
+      setResults(dedupedResults);
       setCoverage(Array.isArray(coverageData) ? coverageData : []);
       setProcessed(null);
 
@@ -436,7 +441,7 @@ export default function ClientHome() {
       }
 
       // Update results count
-      const resultsCount = transformedResults.length;
+      const resultsCount = dedupedResults.length;
       setResultsCount(resultsCount);
 
       console.log(`DEBUG: Search completed. Found ${resultsCount} results.`);

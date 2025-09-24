@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
-import { buildHighlightRegex, renderHighlighted } from '../utils/highlight';
+import { buildHighlightRegex, renderHighlighted, parseRef, dedupByRef } from '../utils/highlight';
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
@@ -269,25 +269,32 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           return () => { cancelled = true; };
         }, [verse.ref, audioMap]);
 
-        // Debug: Check if conditions for UI are met
-        console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}`);
-
-        const terms = termsProp && termsProp.length > 0
-          ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
-          : (query && query.trim()) ? [query.trim()] : [];
+        // Parse verse number from ref only (never from text)
+        const refParts = parseRef(verse.ref);
+        const verseNo = refParts?.verse ?? null;
 
         // Safely extract book name for highlighting
         let verseBook = '';
-        if (verse.ref && typeof verse.ref === 'string' && verse.ref.trim()) {
-          const parts = verse.ref.trim().split(' ');
-          verseBook = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0] || '';
+        if (refParts?.book) {
+          verseBook = refParts.book;
         }
         const isHighlighted = highlightBook && verseBook === highlightBook;
+
+        // Build highlight regex from processed data
+        const tokens = processed ? [
+          processed.normalized,
+          ...(processed.variants ?? []),
+        ].filter(Boolean) as string[] : [];
+
+        const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
+
+        // Debug: Check if conditions for UI are met
+        console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
 
         return (
           <div
             key={verse.ref || `verse-${globalIndex}`}
-            className={`p-4 mb-2 border rounded-md ${
+            className={`relative p-4 mb-2 border rounded-md ${
               isHighlighted
                 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
                 : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
@@ -326,10 +333,20 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </div>
             </div>
 
-            {/* only the Pashto text needs RTL */}
-            <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl">
-              {highlight(verse.text || '', terms, processed)}
+            {/* Verse text with absolute-positioned verse number chip */}
+            <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
+              {rx ? renderHighlighted(verse.text || '', rx) : verse.text || ''}
             </p>
+
+            {/* Absolute-positioned verse number chip */}
+            {verseNo != null && (
+              <span
+                dir="ltr"
+                className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
+              >
+                {verseNo}
+              </span>
+            )}
 
             {/* Compact audio controls */}
             {audioUrl && (
