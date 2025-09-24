@@ -101,6 +101,48 @@ function groupVerbsByDetailedLabels(variantDetails?: VariantDetails) {
   return groups;
 }
 
+// Categorize verbs by their grammatical labels
+function categorizeVerbForms(verbs: Array<{form: string, count: number, label?: string}>) {
+  const groups: Record<string, Array<{form: string, count: number, label?: string}>> = {
+    presentTense: [],
+    subjunctiveTense: [],
+    futureTense: [],
+    pastTense: [],
+    imperativeForms: [],
+    abilityForms: [],
+    perfectForms: [],
+    habitualForms: [],
+    otherVerbs: []
+  };
+
+  verbs.forEach(verb => {
+    const category = mapGrammaticalLabel(verb.label || '');
+
+    // Map to appropriate category
+    if (category === 'Present') {
+      groups.presentTense.push(verb);
+    } else if (category === 'Subjunctive') {
+      groups.subjunctiveTense.push(verb);
+    } else if (category === 'Future') {
+      groups.futureTense.push(verb);
+    } else if (category === 'Past') {
+      groups.pastTense.push(verb);
+    } else if (category === 'Imperative') {
+      groups.imperativeForms.push(verb);
+    } else if (category === 'Ability') {
+      groups.abilityForms.push(verb);
+    } else if (category === 'Perfect') {
+      groups.perfectForms.push(verb);
+    } else if (category === 'Habitual') {
+      groups.habitualForms.push(verb);
+    } else {
+      groups.otherVerbs.push(verb);
+    }
+  });
+
+  return groups;
+}
+
 // Group verbs by LingDocs categories using structured data from Edge function
 function groupVerbsFromStructuredData(variantDetails?: VariantDetails) {
   const verbVariants = variantDetails?.find(block => block.type === 'verb')?.groups?.[0]?.items || [];
