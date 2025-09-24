@@ -84,8 +84,27 @@ export const calculateCoverage = (results: Array<{ ref: string }>) => {
   const coverageMap = new Map<string, number>();
 
   results.forEach((result) => {
-    const book = result.ref.split(' ')[0]; // Extract book name
-    coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
+    try {
+      // Safely extract book name from ref
+      if (!result.ref || typeof result.ref !== 'string') {
+        console.warn('Skipping result with invalid ref in calculateCoverage:', result);
+        return;
+      }
+
+      const parts = result.ref.trim().split(' ');
+      if (parts.length === 0) {
+        console.warn('Skipping result with empty ref in calculateCoverage:', result);
+        return;
+      }
+
+      // Handle multi-word book names like "1 Corinthians"
+      const book = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0];
+      if (book) {
+        coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
+      }
+    } catch (err) {
+      console.warn('Error processing result for coverage:', result, err);
+    }
   });
 
   return Array.from(coverageMap.entries())

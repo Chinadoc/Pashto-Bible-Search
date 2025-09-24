@@ -239,8 +239,23 @@ export default function ClientHome() {
       const bookCounts: Record<string, number> = {};
       results.forEach((verse) => {
         try {
-          const book = verse.ref.split(' ')[0];
-          bookCounts[book] = (bookCounts[book] || 0) + 1;
+          // Safely extract book name from ref
+          if (!verse.ref || typeof verse.ref !== 'string') {
+            console.warn('Skipping verse with invalid ref:', verse);
+            return;
+          }
+
+          const parts = verse.ref.trim().split(' ');
+          if (parts.length === 0) {
+            console.warn('Skipping verse with empty ref:', verse);
+            return;
+          }
+
+          // Handle multi-word book names like "1 Corinthians"
+          const book = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0];
+          if (book) {
+            bookCounts[book] = (bookCounts[book] || 0) + 1;
+          }
         } catch (err) {
           console.warn('Error processing verse for coverage:', verse, err);
         }

@@ -1753,7 +1753,7 @@ async function fastSearch(supabase: any, searchTerm: string, scope: string = 'al
     try {
       const searchPattern = `%${variant}%`
       let query = supabase
-        .from('verses')
+                  .from('verses')
         .select('book, chapter, verse, text, testament')
         .ilike('text', searchPattern)
         .limit(10) // Limit per variant
@@ -1768,13 +1768,13 @@ async function fastSearch(supabase: any, searchTerm: string, scope: string = 'al
       if (error) continue
 
       allResults.push(...(data || []))
-    } catch (error) {
+      } catch (error) {
       console.warn(`Fast search error for variant "${variant}":`, error)
+      }
     }
-  }
 
   // Remove duplicates and limit total results
-  const uniqueResults = allResults.filter((verse, index, self) =>
+    const uniqueResults = allResults.filter((verse, index, self) =>
     index === self.findIndex(v => v.book === verse.book && v.chapter === verse.chapter && v.verse === verse.verse)
   ).slice(0, maxResults)
 
@@ -1873,8 +1873,27 @@ export async function POST(request: NextRequest) {
     // Calculate coverage
     const coverageMap = new Map<string, number>()
     results.forEach(result => {
-      const book = result.book || result.ref?.split(' ')[0] || 'Unknown'
-      coverageMap.set(book, (coverageMap.get(book) || 0) + 1)
+      try {
+        let book = 'Unknown';
+
+        // Try to get book from result.book first (if available)
+        if (result.book && typeof result.book === 'string') {
+          book = result.book;
+        } else if (result.ref && typeof result.ref === 'string' && result.ref.trim()) {
+          // Safely extract book from ref
+          const parts = result.ref.trim().split(' ');
+          if (parts.length > 1) {
+            book = parts.slice(0, -1).join(' '); // Handle multi-word books like "1 Corinthians"
+          } else if (parts.length === 1) {
+            book = parts[0]; // Single word book name
+          }
+        }
+
+        coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
+      } catch (err) {
+        console.warn('Error processing result for coverage in search_phrase:', result, err);
+        coverageMap.set('Unknown', (coverageMap.get('Unknown') || 0) + 1);
+      }
     })
 
     const coverage = Array.from(coverageMap.entries())
@@ -1890,13 +1909,13 @@ export async function POST(request: NextRequest) {
       ms: Date.now() - startTime
     })
 
-  } catch (error) {
+      } catch (error) {
     console.error('Search error:', error)
     return NextResponse.json({
-      results: [],
-      coverage: [],
+        results: [],
+        coverage: [],
       error: 'Search failed',
-      ms: Date.now() - startTime
+        ms: Date.now() - startTime
     })
   }
 }
