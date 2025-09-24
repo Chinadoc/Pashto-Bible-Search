@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
-import { audioUrlFromRef } from '../utils/audio';
+import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
@@ -227,16 +227,28 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           console.warn('Verse missing ref:', verse);
         }
 
-        // Safely get audio URL
-        const audioUrl = (verse.ref && audioMap[verse.ref]) || '';
-        if (verse.ref && audioUrl) {
-          console.log('Found audio for:', verse.ref);
-          if (audioUrl.includes('drive.google.com')) {
-            console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
-          } else if (audioUrl.includes('supabase.co/storage')) {
-            console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
-          }
-        }
+        // Use the new resolver that prioritizes Supabase signed URLs
+        const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+        useEffect(() => {
+          let cancelled = false;
+          (async () => {
+            const entry = audioMap[verse.ref];
+            const url = await resolveAudioUrl(verse.ref, entry);
+            if (!cancelled) {
+              setAudioUrl(url);
+              if (url) {
+                console.log('Resolved audio for:', verse.ref);
+                if (url.includes('drive.google.com')) {
+                  console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
+                } else if (url.includes('supabase.co/storage')) {
+                  console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
+                }
+              }
+            }
+          })();
+          return () => { cancelled = true; };
+        }, [verse.ref, audioMap]);
 
         // Debug: Check if conditions for UI are met
         console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}`);

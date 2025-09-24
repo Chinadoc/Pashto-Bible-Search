@@ -47,10 +47,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const ref = searchParams.get('ref')
-
-    if (!ref) {
-      return NextResponse.json({ error: 'Reference parameter required' }, { status: 400 })
-    }
+    const bucket = searchParams.get('bucket')
+    const object = searchParams.get('object')
+    const path = searchParams.get('path')
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -60,16 +59,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
     }
 
-    // Use only the primary candidate (most common pattern) for performance
-    const candidates = candidatePathsFromRef(ref)
-    const primaryCandidate = candidates[0] // Take first candidate only
+    let targetBucket = bucket || 'audio'
+    let targetObject = object || path
 
-    // Try Supabase Storage first - this should work for files uploaded to the 'audio' bucket
+    // If we have a ref but no bucket/object, look up in audio_map table/view
+    if (ref && !targetObject) {
+      try {
+        const { data } = await supabase
+          .from('audio_map')
+          .select('bucket,object,direct,storage_path')
+          .eq('ref', ref)
+          .limit(1)
+
+        if (data?.[0]) {
+          const entry = data[0]
+          // Use bucket/object if available, otherwise try storage_path
+          if (entry.bucket && entry.object) {
+            targetBucket = entry.bucket
+            targetObject = entry.object
+          } else if (entry.storage_path) {
+            targetObject = entry.storage_path
+          }
+          console.log(`Found audio entry for ${ref}:`, entry)
+        }
+      } catch (dbError) {
+        console.warn(`Failed to lookup ${ref} in audio_map:`, dbError)
+      }
+    }
+
+    // If we still don't have a target object, generate from ref
+    if (!targetObject && ref) {
+      const candidates = candidatePathsFromRef(ref)
+      targetObject = candidates[0] // Take first candidate only
+    }
+
+    if (!targetObject) {
+      return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
+    }
+
+    // Try Supabase Storage first - this should work for files uploaded to the bucket
     const { data, error } = await supabase.storage
-      .from('audio')
-      .createSignedUrl(primaryCandidate, 60 * 60)
+      .from(targetBucket)
+      .createSignedUrl(targetObject, 60 * 60)
 
     if (error || !data?.signedUrl) {
+      console.warn(`Failed to create signed URL for ${targetBucket}/${targetObject}:`, error)
       return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
     }
 
@@ -80,13 +114,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       url: withDl,
       ref,
-      filename: primaryCandidate,
+      filename: targetObject,
       isSigned: true,
       ms: Date.now() - started,
     })
-
-    // No match in storage — return empty (client will hide audio controls)
-    return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
 
   } catch (error) {
     console.error('Audio URL generation error:', error)
