@@ -413,8 +413,8 @@ export default function ClientHome() {
                 content: results.length > 0 ? (
                   <ResultsList
                     results={results}
-                    coverage={coverage}
-                    isLoading={isLoading}
+                    audioMap={audioMap}
+                    loading={isLoading}
                   />
                 ) : (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
