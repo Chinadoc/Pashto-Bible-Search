@@ -1,12 +1,11 @@
 import React from "react";
 
 // Arabic combining marks (remove or make optional)
-const AR_DIA = "\u064B-\u065F\u0670\u06D6-\u06ED";
+const DIA = "\u064B-\u065F\u0670\u06D6-\u06ED";
 
-function esc(s: string) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function esc(s: string){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
-// Map common Pashto/Arabic alternates to a char class that matches either
-function pashtoEquiv(ch: string) {
+function equiv(ch: string){
   switch (ch) {
     case "ی": case "ي": return "[یي]";
     case "ک": case "ك": return "[کك]";
@@ -15,30 +14,50 @@ function pashtoEquiv(ch: string) {
   }
 }
 
-// Allow optional diacritics after each Arabic-script char
-function withOptionalDia(pattern: string) {
-  return pattern.replace(/\p{Script=Arabic}/gu, (m) => `${pashtoEquiv(m)}[${AR_DIA}]*`);
+// Allow optional diacritics after each Arabic char
+function withDia(s: string){
+  return s.replace(/\p{Script=Arabic}/gu, (m) => `${equiv(m)}[${DIA}]*`);
 }
 
-export function buildHighlightRegex(tokens: string[]) {
-  const pashtoOnly = tokens
-    .map(t => (t ?? "").trim())
-    .filter(Boolean)
-    .filter(t => /[\p{Script=Arabic}]/u.test(t)); // only Pashto/Arabic tokens are highlightable in RTL text
-
-  const uniq = Array.from(new Set(pashtoOnly));
-  if (!uniq.length) return null;
-
-  const parts = uniq.map(t => withOptionalDia(t.normalize("NFC")));
+export function buildHighlightRegex(tokens: string[]){
+  const pashto = Array.from(new Set(
+    tokens.filter(Boolean).filter(t => /[\p{Script=Arabic}]/u.test(t))
+  ));
+  if (!pashto.length) return null;
+  const parts = pashto.map(t => withDia(t.normalize("NFC")));
   return new RegExp(`(${parts.join("|")})`, "giu");
 }
 
-export function renderHighlighted(text: string, rx: RegExp) {
-  // Note: keep dir="rtl" on parent container
-  const pieces = text.split(rx);
-  return pieces.map((p, i) =>
-    i % 2 === 1
-      ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{p}</mark>
-      : <React.Fragment key={i}>{p}</React.Fragment>
+export function renderHighlighted(text: string, rx: RegExp){
+  const chunks = text.split(rx);
+  return chunks.map((c, i) =>
+    i % 2
+      ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
+      : <React.Fragment key={i}>{c}</React.Fragment>
   );
+}
+
+// Utility to parse verse reference
+export function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
+  if (!ref || typeof ref !== 'string') return null;
+
+  const m = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
+  if (!m) return null;
+
+  const book = m[1].trim();
+  const chapter = Number(m[2]);
+  const verse = Number(m[3]);
+
+  if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return null;
+  return { book, chapter, verse };
+}
+
+// Deduplication utility
+export function dedupByRef(list: {ref: string; text: string; testament?: string}[]) {
+  const seen = new Set<string>();
+  const out: typeof list = [];
+  for (const r of list) {
+    if (!seen.has(r.ref)) { seen.add(r.ref); out.push(r); }
+  }
+  return out;
 }
