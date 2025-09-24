@@ -35,6 +35,38 @@ export function renderHighlightedText(text: string, rx: RegExp): string {
   ).join('');
 }
 
+// Safe highlighter that returns flat arrays of ReactNodes (no objects, no nested arrays)
+import React from "react";
+
+function escapeRx(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function highlightPsText(text: string, needles: string[]): React.ReactNode[] {
+  const terms = Array.from(new Set(needles.filter(Boolean).map(s => s.trim()))); // uniq
+  if (!terms.length) return [text];
+
+  // longest-first so longer forms win tokenization
+  terms.sort((a, b) => b.length - a.length);
+  const rx = new RegExp(`(${terms.map(escapeRx).join("|")})`, "gi");
+
+  // Split returns a flat array of strings; matched parts are kept via capturing group
+  const parts = text.split(rx);
+
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const chunk = parts[i];
+    if (!chunk) continue;
+    // If this chunk equals a match for the regex, wrap it
+    if (terms.some(t => chunk.toLowerCase() === t.toLowerCase())) {
+      out.push(<mark key={`h-${i}`}>{chunk}</mark>);
+    } else {
+      out.push(<span key={`t-${i}`}>{chunk}</span>);
+    }
+  }
+  return out;
+}
+
 // Utility to parse verse reference
 export function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
   if (!ref || typeof ref !== 'string') return null;
@@ -83,4 +115,12 @@ export function extractVerseNumber(ref: string): string {
   }
 
   return '';
+}
+
+// Clean verse text to remove duplicate verse numbers and other artifacts
+export function cleanVerseText(raw: string): string {
+  return raw
+    .replace(/^\s*\d+\s*/, "")   // leading "4 "
+    .replace(/\s*\d+\s*$/, "")   // trailing isolated number if present
+    .trim();
 }
