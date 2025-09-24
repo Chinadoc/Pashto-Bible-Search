@@ -55,6 +55,8 @@ async function localDirectSearch(
   bookFilter?: string[],
   limit = 50
 ): Promise<VerseResult[]> {
+  console.log(`DEBUG: localDirectSearch called with:`, { needle, scope, bookFilter, limit });
+
   // Minimal direct search (ILIKE), preserving existing contract
   // Assumes verses table has: ref (e.g., "John 3:16"), text, testament ('ot'|'nt'), book (optional)
   let q = db.from("verses")
@@ -66,7 +68,19 @@ async function localDirectSearch(
   if (scope === "nt") q = q.eq("testament", "nt");
   if (bookFilter?.length) q = q.in("book", bookFilter);
 
-  const { data } = await q;
+  console.log(`DEBUG: Executing query...`);
+  const { data, error } = await q;
+
+  console.log(`DEBUG: Query result:`, {
+    dataCount: data?.length ?? 0,
+    error: error?.message,
+    firstFewResults: data?.slice(0, 3)
+  });
+
+  if (error) {
+    console.error(`DEBUG: Database error:`, error);
+  }
+
   return (data ?? []).map((r: any) => ({
     ref: r.ref,
     text: r.text,
