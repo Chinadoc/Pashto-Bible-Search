@@ -6,6 +6,8 @@ function normalizeBookNameToSlug(bookName: string): string {
 
 function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
   // Example ref: "1 Chronicles 1:1" or "John 3:16"
+  if (!ref || typeof ref !== 'string') return null;
+
   const lastSpaceIndex = ref.lastIndexOf(" ");
   if (lastSpaceIndex === -1) return null;
   const book = ref.slice(0, lastSpaceIndex).trim();

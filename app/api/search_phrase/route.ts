@@ -50,16 +50,26 @@ async function searchVersesDirect(searchTerm: string, scope: string = 'all', max
 
       if (data && data.length > 0) {
         for (const row of data) {
-          const ref = `${row.book} ${row.chapter}:${row.verse}`;
-          const fullRef = `${row.book} ${row.chapter}:${row.verse}`;
+          try {
+            // Validate that we have all required fields
+            if (!row.book || !row.chapter || !row.verse) {
+              console.warn('Skipping row with missing required fields:', row);
+              continue;
+            }
 
-          if (!allResults.find(r => r.ref === fullRef)) {
-            allResults.push({
-              ref: fullRef,
-              text: row.text || '',
-              testament: row.testament
-            });
-            console.log(`DEBUG: Added result: ${fullRef}`);
+            const ref = `${row.book} ${row.chapter}:${row.verse}`;
+            const fullRef = `${row.book} ${row.chapter}:${row.verse}`;
+
+            if (!allResults.find(r => r.ref === fullRef)) {
+              allResults.push({
+                ref: fullRef,
+                text: row.text || '',
+                testament: row.testament
+              });
+              console.log(`DEBUG: Added result: ${fullRef}`);
+            }
+          } catch (err) {
+            console.warn('Error processing row:', row, err);
           }
         }
       }
