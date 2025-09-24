@@ -26,10 +26,10 @@ type Processed = {
   fuzzyResults?: VerseResult[];
 };
 
-type VerseResult = { ref: string; text: string; testament?: 'ot'|'nt' };
+type VerseResult = { ref: string; text: string; testament?: 'OT'|'NT' | string };
 type SearchPhraseRequest = {
   query: string;
-  scope?: 'all'|'ot'|'nt';
+  scope?: 'all'|'ot'|'nt'|'OT'|'NT';
   includeRelated?: boolean;
   enableFuzzy?: boolean;
   bookFilter?: string[];
@@ -52,7 +52,7 @@ function isLatinOnly(s: string): boolean {
 async function localMultiSearch(
   db: any,
   needles: string[],
-  scope: 'all'|'ot'|'nt' = 'all',
+  scope: 'all'|'ot'|'nt'|'OT'|'NT' = 'all',
   bookFilter?: string[],
   limit = 50
 ) {
@@ -70,14 +70,14 @@ async function localMultiSearch(
 async function localDirectSearch(
   db: any,
   needle: string,
-  scope: 'all'|'ot'|'nt' = 'all',
+  scope: 'all'|'ot'|'nt'|'OT'|'NT' = 'all',
   bookFilter?: string[],
   limit = 50
 ): Promise<VerseResult[]> {
   console.log(`DEBUG: localDirectSearch called with:`, { needle, scope, bookFilter, limit });
 
   // Minimal direct search (ILIKE), preserving existing contract
-  // Assumes verses table has: ref (e.g., "John 3:16"), text, testament ('ot'|'nt'), book (optional)
+  // Assumes verses table has: ref (e.g., "John 3:16"), text, testament ('OT'|'NT'), book (optional)
   let q = db.from("verses")
     .select("ref,text,testament")
     .ilike("text", `%${needle}%`)
