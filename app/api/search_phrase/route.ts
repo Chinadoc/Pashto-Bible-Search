@@ -195,6 +195,18 @@ export async function POST(req: NextRequest) {
 
     const ms = Date.now() - t0;
     const payload: SearchPhraseResponse = { processed, results, ms };
+
+    // Log final results for debugging
+    console.log(`DEBUG: Final search results:`, {
+      query,
+      includeRelated,
+      processedType: processed.searchType,
+      variantsCount: processed.variants.length,
+      resultsCount: results.length,
+      ms,
+      hasResults: results.length > 0
+    });
+
     return NextResponse.json(payload, { status: 200 });
   } catch (e) {
     const ms = Date.now() - t0;
