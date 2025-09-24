@@ -447,8 +447,8 @@ export default function ClientHome() {
                   <div className="space-y-6">
                     {processed && (
                       <LinguisticAnalysis
-                        processed={processed}
-                        onPickForm={handlePickForm}
+                        word={processed.original}
+                        onRelatedWordClick={handlePickForm}
                       />
                     )}
 
