@@ -52,10 +52,20 @@ export const searchVerses = async (query: string, scope: 'all' | 'nt' | 'ot' = '
     return [] as Array<{ ref: string; text: string }>;
   }
 
-  return data.map((v: VerseRow) => ({
-    ref: `${v.book} ${v.chapter}:${v.verse}`,
-    text: v.text || '',
-  }));
+  // Deduplicate results by verse reference and remove empty results
+  const uniqueResults = new Map();
+  data.forEach((v: VerseRow) => {
+    const ref = `${v.book} ${v.chapter}:${v.verse}`;
+    if (v.text && v.text.trim() && !uniqueResults.has(ref)) {
+      uniqueResults.set(ref, {
+        ref,
+        text: v.text.trim(),
+        testament: v.testament || 'NT' // Default to NT if not specified
+      });
+    }
+  });
+
+  return Array.from(uniqueResults.values());
 };
 
 // Helper function to get word frequencies
