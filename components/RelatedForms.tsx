@@ -221,7 +221,7 @@ export default function RelatedForms({
 
     const patterns = personPatterns[verbState.person] || [];
     filtered = filtered.filter(f =>
-      f.label && patterns.some(pattern => f.label.toLowerCase().includes(pattern.toLowerCase()))
+      f.label && patterns.some(pattern => f.label!.toLowerCase().includes(pattern.toLowerCase()))
     );
 
     return filtered;
