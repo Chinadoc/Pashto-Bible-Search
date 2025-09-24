@@ -144,3 +144,4 @@ def run_benchmark(test_queries: List[Dict], rounds: int = 3) -> None:
 
 if __name__ == "__main__":
     run_benchmark(TEST_QUERIES, rounds=2)
+
