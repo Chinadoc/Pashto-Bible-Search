@@ -222,11 +222,12 @@ export default function ClientHome() {
         const response = await fetch('/api/get_audio_map');
         if (response.ok) {
           const data = await response.json();
-          setAudioMap(data);
+          setAudioMap(data || {});
         }
       } catch (error) {
         console.error('Failed to load audio map:', error);
         // Audio map is optional, so we can continue without it
+        setAudioMap({});
       }
     };
     loadAudioMap();
@@ -234,17 +235,26 @@ export default function ClientHome() {
 
   // Group results by book for coverage calculation
   const coverageData = useMemo(() => {
-    const bookCounts: Record<string, number> = {};
-    results.forEach((verse) => {
-      const book = verse.ref.split(' ')[0];
-      bookCounts[book] = (bookCounts[book] || 0) + 1;
-    });
+    try {
+      const bookCounts: Record<string, number> = {};
+      results.forEach((verse) => {
+        try {
+          const book = verse.ref.split(' ')[0];
+          bookCounts[book] = (bookCounts[book] || 0) + 1;
+        } catch (err) {
+          console.warn('Error processing verse for coverage:', verse, err);
+        }
+      });
 
-    return Object.entries(bookCounts).map(([book, count]) => ({
-      book,
-      count,
-      translation: OT_BOOKS_SET.has(book) || NT_BOOKS_SET.has(book) ? 'KJV' : undefined
-    }));
+      return Object.entries(bookCounts).map(([book, count]) => ({
+        book,
+        count,
+        translation: OT_BOOKS_SET.has(book) || NT_BOOKS_SET.has(book) ? 'KJV' : undefined
+      }));
+    } catch (err) {
+      console.error('Error calculating coverage data:', err);
+      return [];
+    }
   }, [results]);
 
   // Handle search
@@ -274,25 +284,37 @@ export default function ClientHome() {
         throw new Error(`Search failed: ${response.status}`);
       }
 
-      const data: PhraseResponse = await response.json();
+      let data: PhraseResponse;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        console.error('Failed to parse search response:', parseErr);
+        throw new Error('Invalid response format from search API');
+      }
 
-      setResults(data.results || []);
-      setCoverage(data.coverage || coverageData);
-      setProcessed(data.processed || null);
+      // Safely handle the response data
+      setResults(Array.isArray(data.results) ? data.results : []);
+      setCoverage(Array.isArray(data.coverage) ? data.coverage : coverageData);
+      setProcessed(data.processed && typeof data.processed === 'object' ? data.processed : null);
 
       if (includeRelated && data.relatedForms) {
-        // Transform the related forms data to match our expected format
-        const verbs = Array.isArray(data.relatedForms.verbs) ? data.relatedForms.verbs : undefined;
-        const nouns = Array.isArray(data.relatedForms.nouns) ? data.relatedForms.nouns : undefined;
-        const other = Array.isArray(data.relatedForms.other) ? data.relatedForms.other : undefined;
+        try {
+          // Transform the related forms data to match our expected format
+          const verbs = Array.isArray(data.relatedForms.verbs) ? data.relatedForms.verbs : undefined;
+          const nouns = Array.isArray(data.relatedForms.nouns) ? data.relatedForms.nouns : undefined;
+          const other = Array.isArray(data.relatedForms.other) ? data.relatedForms.other : undefined;
 
-        const transformedForms: RelatedFormsData = {
-          verbs,
-          nouns,
-          other,
-          total: (verbs?.length || 0) + (nouns?.length || 0) + (other?.length || 0)
-        };
-        setRelatedForms(transformedForms);
+          const transformedForms: RelatedFormsData = {
+            verbs,
+            nouns,
+            other,
+            total: (verbs?.length || 0) + (nouns?.length || 0) + (other?.length || 0)
+          };
+          setRelatedForms(transformedForms);
+        } catch (err) {
+          console.error('Error processing related forms:', err);
+          setRelatedForms(null);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -481,9 +503,7 @@ export default function ClientHome() {
         <div className="lg:col-span-1">
           <CoverageSidebar
             coverage={coverage}
-            scope={scope}
-            coverageLevel={ComplexityLevel.Basic}
-            onPickBook={(book) => console.log(book)}
+            resultsCount={resultsCount}
           />
         </div>
       </div>
