@@ -159,6 +159,7 @@ export default function ClientHome() {
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
+  const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
@@ -212,6 +213,23 @@ export default function ClientHome() {
     if (query === 'ldsoc') {
       setQuery('');
     }
+  }, []);
+
+  // Load audio map data
+  useEffect(() => {
+    const loadAudioMap = async () => {
+      try {
+        const response = await fetch('/api/get_audio_map');
+        if (response.ok) {
+          const data = await response.json();
+          setAudioMap(data);
+        }
+      } catch (error) {
+        console.error('Failed to load audio map:', error);
+        // Audio map is optional, so we can continue without it
+      }
+    };
+    loadAudioMap();
   }, []);
 
   // Group results by book for coverage calculation
