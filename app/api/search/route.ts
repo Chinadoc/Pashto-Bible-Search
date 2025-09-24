@@ -21,11 +21,14 @@ export async function POST(request: NextRequest) {
     // If variants provided, do OR search with multiple terms
     if (Array.isArray(variants) && variants.length > 0) {
       const needles = Array.from(new Set(variants.filter(Boolean))).slice(0, 30); // Max 30 variants
+      console.log('DEBUG: Search API received variants:', needles);
 
       // Perform multi-term search (OR logic)
       let allResults: Array<{ref: string; text: string; testament?: string}> = [];
       for (const term of needles) {
+        console.log(`DEBUG: Searching for term: "${term}"`);
         const termResults = await searchVerses(term, scope || 'all');
+        console.log(`DEBUG: Found ${termResults.length} results for "${term}"`);
         allResults = [...allResults, ...termResults];
       }
 

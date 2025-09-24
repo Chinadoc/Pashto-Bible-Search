@@ -212,15 +212,16 @@ export default function RelatedForms({
       return filtered; // Show all if no specific person filter
     }
 
-    const personEndings: Record<string, string[]> = {
-      '1st': ['م', 'و'], // 1st person endings
-      '2nd': ['ې', 'ئ'], // 2nd person endings
-      '3rd': ['ي'] // 3rd person endings
+    // Filter based on the grammatical labels (e.g., "1sg Present", "2pl Present")
+    const personPatterns: Record<string, string[]> = {
+      '1st': ['1sg', '1pl'],
+      '2nd': ['2sg', '2pl'],
+      '3rd': ['3sg', '3pl']
     };
 
-    const endings = personEndings[verbState.person] || [];
+    const patterns = personPatterns[verbState.person] || [];
     filtered = filtered.filter(f =>
-      endings.some(ending => f.form.endsWith(ending))
+      f.label && patterns.some(pattern => f.label.toLowerCase().includes(pattern.toLowerCase()))
     );
 
     return filtered;
@@ -284,8 +285,10 @@ export default function RelatedForms({
           {onApplyFilter && filteredVerbs.length > 0 && (
             <button
               onClick={() => {
-                console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', filteredVerbs.map(v => v.form));
-                onApplyFilter(filteredVerbs.map(v => v.form));
+                const formsToSearch = filteredVerbs.map(v => v.form);
+                console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', formsToSearch);
+                console.log('DEBUG: Filtered verb details:', filteredVerbs);
+                onApplyFilter(formsToSearch);
               }}
               className="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
