@@ -210,33 +210,35 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
       {paginatedResults.map((verse, index) => {
         const globalIndex = (page - 1) * itemsPerPage + index;
-        const direct = audioMap[verse.ref];
-        const audioUrl = resolvedUrls[verse.ref] || (direct && /^https?:\/\//i.test(direct) ? direct : '');
+
+        // Safely get audio URL
+        const audioUrl = (verse.ref && audioMap[verse.ref]) || '';
+
         const terms = termsProp && termsProp.length > 0
           ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
           : (query && query.trim()) ? [query.trim()] : [];
-        
-        // Check if this verse matches the highlighted book
+
+        // Safely extract book name for highlighting
         let verseBook = '';
-        if (verse.ref && typeof verse.ref === 'string') {
+        if (verse.ref && typeof verse.ref === 'string' && verse.ref.trim()) {
           const parts = verse.ref.trim().split(' ');
           verseBook = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0] || '';
         }
         const isHighlighted = highlightBook && verseBook === highlightBook;
 
         return (
-          <div 
-            key={verse.ref} 
+          <div
+            key={verse.ref || `verse-${globalIndex}`}
             className={`p-4 mb-2 border rounded-md ${
-              isHighlighted 
-                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700' 
+              isHighlighted
+                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
                 : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
-            }`} 
+            }`}
             dir="rtl"
           >
             <div className="flex justify-between items-start mb-2">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref}</h3>
+                <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
                 {getTranslationBadge(verse.translation, verse.dialect)}
               </div>
               <div className="flex items-center gap-2">
@@ -244,7 +246,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 <button
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(`${verse.ref}\n${verse.text}`);
+                      await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
                     } catch {}
                   }}
                   className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -253,7 +255,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                   Copy
                 </button>
                 {/* Download audio */}
-                {audioUrl && (
+                {audioUrl && verse.ref && (
                   <button
                     type="button"
                     onClick={() => handleDownload(verse.ref, audioUrl)}
