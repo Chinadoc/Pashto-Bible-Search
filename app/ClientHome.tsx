@@ -574,9 +574,9 @@ export default function ClientHome() {
 
     // Filter by mood if selected
     if (selectedMood && selectedMood !== 'all') {
-      filteredForms = filteredForms.filter(form => {
+      filteredForms = filteredForms.filter(verbForm => {
         // Basic mood filtering based on form patterns
-        const lowerForm = form.toLowerCase();
+        const lowerForm = verbForm.toLowerCase();
         switch (selectedMood) {
           case 'present':
             return lowerForm.includes('م') || lowerForm.includes('و') || lowerForm.includes('ي') || lowerForm.includes('ې');
@@ -602,8 +602,8 @@ export default function ClientHome() {
 
     // Filter by person if selected
     if (selectedPerson && selectedPerson !== 'any') {
-      filteredForms = filteredForms.filter(form => {
-        const lowerForm = form.toLowerCase();
+      filteredForms = filteredForms.filter(verbForm => {
+        const lowerForm = verbForm.toLowerCase();
         switch (selectedPerson) {
           case '1':
             return lowerForm.endsWith('م') || lowerForm.endsWith('و') || lowerForm.includes(' به ') && (lowerForm.includes('م') || lowerForm.includes('و'));
@@ -656,6 +656,8 @@ export default function ClientHome() {
       setProcessed(searchData.processed || null);
 
       console.log(`DEBUG: Filtered search completed. Found ${dedupedResults.length} results for ${needles.length} terms.`);
+      console.log('DEBUG: Processed data:', searchData.processed);
+      console.log('DEBUG: First few results:', dedupedResults.slice(0, 3));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Filtered search failed');
     } finally {
@@ -873,6 +875,8 @@ export default function ClientHome() {
                     audioMap={audioMap}
                     loading={isLoading}
                     processed={processed}
+                    terms={processed?.variants || [query]}
+                    query={query}
                   />
                 ) : (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
