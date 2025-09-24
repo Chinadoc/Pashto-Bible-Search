@@ -84,7 +84,7 @@ export default function RelatedForms({
   if (!relatedForms) return null
 
   // Show the interface even if no forms found yet, to allow user to see the controls
-  const hasAnyForms = relatedForms.total > 0
+  const hasAnyForms = (relatedForms.total ?? 0) > 0
 
   const verbs = relatedForms.verbs || []
   const nouns = relatedForms.nouns || []
