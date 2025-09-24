@@ -376,10 +376,19 @@ export default function ClientHome() {
       console.log('DEBUG: Direct search returned', searchResults.length, 'results');
 
       // Transform results to match expected format
-      const transformedResults = searchResults.map((result, index) => ({
+      const transformedResults: Array<{
+        ref: string;
+        text: string;
+        testament?: 'NT' | 'OT';
+        translation?: string;
+        dialect?: string;
+        tags?: any[][];
+        audio_verse_url?: string | null;
+        id: number;
+      }> = searchResults.map((result, index) => ({
         ref: result.ref,
         text: result.text,
-        testament: result.testament || 'NT', // Default, could be enhanced later
+        testament: 'NT' as const, // Default, could be enhanced later
         translation: 'Yousafzai 2019', // Default
         dialect: 'Yousafzai', // Default
         tags: [], // Default
@@ -440,18 +449,13 @@ export default function ClientHome() {
         setRelatedForms(null);
       }
 
-      // Update results count
-      const resultsCount = dedupedResults.length;
-      setResultsCount(resultsCount);
-
-      console.log(`DEBUG: Search completed. Found ${resultsCount} results.`);
+      console.log(`DEBUG: Search completed. Found ${dedupedResults.length} results.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setResults([]);
       setCoverage([]);
       setProcessed(null);
       setRelatedForms(null);
-      setResultsCount(0);
     } finally {
       setIsLoading(false);
     }
