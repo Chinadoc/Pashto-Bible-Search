@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
     const candidates = candidatePathsFromRef(ref)
     const primaryCandidate = candidates[0] // Take first candidate only
 
+    // Try Supabase Storage first - this should work for files uploaded to the 'audio' bucket
     const { data, error } = await supabase.storage
       .from('audio')
       .createSignedUrl(primaryCandidate, 60 * 60)

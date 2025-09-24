@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
-        // Avoid inserting Drive URLs here; we'll rely on Storage listing or table mappings
+        // Strongly prefer non-Drive URLs; only use Drive as absolute last resort
         if (!isDrive) audioMap[row.verse_ref] = row.url
       }
     }
@@ -95,11 +95,14 @@ export async function GET(request: NextRequest) {
         }
 
         if (url) {
-          // Prefer Storage URL over Drive URL if both encountered
+          // Strongly prefer Supabase Storage URLs over Drive URLs
           const existing = audioMap[verse_reference]
           const isStorage = url.includes('/storage/v1/object/public/')
+          const isDrive = /drive\.google|docs\.google/i.test(url)
           const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
-          if (!existing || (isStorage && existingIsDrive)) {
+
+          // Always prefer Storage over Drive, and replace existing Drive URLs with Storage
+          if (!existing || isStorage || (!isDrive && existingIsDrive)) {
             audioMap[verse_reference] = url
           }
           // Also add alternate keys for numeric-leading vs trailing
@@ -133,12 +136,15 @@ export async function GET(request: NextRequest) {
     if (versesData) {
       for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
         const ref = `${v.book} ${v.chapter}:${v.verse}`
-        // Prefer Drive ID when provided, else fall back to storage filename
+        // Prefer Supabase Storage, fall back to Drive only if no storage alternative
         let url = ''
-        if (v.audio_drive_id) {
+        if (v.audio_filename && /\.mp3$/i.test(v.audio_filename)) {
+          // Use Supabase Storage public URL for mp3 filenames
+          const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
+          url = storageBase + encodeURIComponent(v.audio_filename)
+        } else if (v.audio_drive_id) {
+          // Only use Drive as last resort
           url = `https://drive.google.com/uc?export=download&id=${v.audio_drive_id}`
-        } else if (v.audio_filename) {
-          url = `https://storage.googleapis.com/pashto-bible-audio/${v.audio_filename}`
         }
         if (url) {
           // Do not overwrite explicit path from audio_mappings if it exists
@@ -193,7 +199,7 @@ export async function GET(request: NextRequest) {
           if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
           const file = item.name
           const url = storageBase + encodeURIComponent(file)
-          // insert filename key
+          // Strongly prefer Supabase Storage URLs
           const existing = audioMap[file]
           const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
           if (!existing || existingIsDrive) audioMap[file] = url
