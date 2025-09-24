@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     let forms: { form: string; count?: number; label?: string; pos?: string }[] = [];
 
     if (efRes.ok) {
-      const processed = await efRes.json();
+      const processed = await efRes.json() as any;
       root = processed?.root || processed?.normalized || root;
       // Prefer grouped variants from the Edge function (already deduped/scored)
       const merged: Variant[] = [

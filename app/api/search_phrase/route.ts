@@ -67,7 +67,11 @@ async function localDirectSearch(
   if (bookFilter?.length) q = q.in("book", bookFilter);
 
   const { data } = await q;
-  return (data ?? []).map(r => ({ ref: r.ref, text: r.text, testament: r.testament }));
+  return (data ?? []).map((r: any) => ({
+    ref: r.ref,
+    text: r.text,
+    testament: r.testament
+  }));
 }
 
 export async function POST(req: NextRequest) {
@@ -106,7 +110,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (efRes.ok) {
-        edgeProcessed = await efRes.json();
+        edgeProcessed = await efRes.json() as Processed;
       }
           } catch {
       // function unavailable — fall through to local
@@ -122,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     if (edgeProcessed) {
       processed = edgeProcessed;
-      if (Array.isArray(edgeProcessed.fuzzyResults) && edgeProcessed.fuzzyResults.length) {
+      if (Array.isArray(edgeProcessed.fuzzyResults) && edgeProcessed.fuzzyResults?.length) {
         results = edgeProcessed.fuzzyResults;
     } else {
         const needle = processed.normalized || query;
