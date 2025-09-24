@@ -15,16 +15,33 @@ export async function POST(request: NextRequest) {
     const searchResults = await searchVerses(query.trim(), scope || 'all');
 
     // Transform results to match expected format
-    const transformedResults = searchResults.map((result, index) => ({
-      ref: result.ref,
-      text: result.text,
-      testament: 'NT', // Default, could be enhanced later
-      translation: 'Yousafzai 2019',
-      dialect: 'Yousafzai',
-      tags: [],
-      audio_verse_url: null,
-      id: index + 1
-    }));
+    const transformedResults = searchResults.map((result, index) => {
+      // Determine translation based on book
+      const book = result.ref.split(' ')[0];
+      const isPsalms = book === 'Psalms';
+      const isProverbs = book === 'Proverbs';
+      const isSongOfSolomon = book === 'Song of Solomon';
+
+      let translation = null;
+      let dialect = null;
+
+      // Show Yousafzai for Psalms, Proverbs, and Song of Solomon
+      if (isPsalms || isProverbs || isSongOfSolomon) {
+        translation = 'Yousafzai 2019';
+        dialect = 'Yousafzai';
+      }
+
+      return {
+        ref: result.ref,
+        text: result.text,
+        testament: result.testament || 'NT',
+        translation,
+        dialect,
+        tags: [],
+        audio_verse_url: null,
+        id: index + 1
+      };
+    });
 
     // Get related forms if requested
     let relatedForms = null;

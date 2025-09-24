@@ -102,10 +102,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         const ref = verse?.ref?.trim();
         if (!ref) continue; // Guard against missing ref
         if (resolvedUrls[ref]) continue;
-        // Skip OT books for now (no audio)
+        // Skip OT books that don't have Yousafzai translation (no audio available)
         const lastSpaceIndex = ref.lastIndexOf(' ');
         const book = lastSpaceIndex > 0 ? ref.slice(0, lastSpaceIndex) : '';
         const isYousafzai = verse.translation === 'Yousafzai 2019';
+        // Allow OT books that have Yousafzai translation (Psalms, Proverbs, Song of Solomon)
         if (OT_BOOKS.has(book) && !isYousafzai) continue;
 
         // For Yousafzai verses, prefer individual verse clip over chapter MP3
