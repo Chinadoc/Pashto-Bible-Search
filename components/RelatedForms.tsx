@@ -40,6 +40,7 @@ type VerbUnderstandingState = {
 function mapGrammaticalLabel(label: string): string {
   const l = label.toLowerCase();
 
+  // Handle detailed grammatical labels from Edge function
   if (l.includes('present') || l.includes('pres')) return 'Present';
   if (l.includes('subj') || l.includes('subjunctive')) return 'Subjunctive';
   if (l.includes('future') || l.includes('fut')) return 'Future';
@@ -50,7 +51,54 @@ function mapGrammaticalLabel(label: string): string {
   if (l.includes('habitual') || l.includes('hab')) return 'Habitual';
   if (l.includes('perfect')) return 'Perfect';
 
-  return label; // Return original if no match
+  // Return the original label if it doesn't match any category
+  // This preserves detailed labels like "1sg Present", "2sg Present", etc.
+  return label;
+}
+
+// Group verb forms by their detailed grammatical labels for display
+function groupVerbsByDetailedLabels(variantDetails?: VariantDetails) {
+  const verbVariants = variantDetails?.find(block => block.type === 'verb')?.groups?.[0]?.items || [];
+  const groups: Record<string, Array<{form: string, count: number, label: string}>> = {
+    presentTense: [],
+    subjunctiveTense: [],
+    futureTense: [],
+    pastTense: [],
+    imperativeForms: [],
+    abilityForms: [],
+    perfectForms: [],
+    habitualForms: [],
+    otherVerbs: []
+  };
+
+  verbVariants.forEach(variant => {
+    const category = mapGrammaticalLabel(variant.label);
+
+    // Keep the detailed label for display but group by category
+    const formWithLabel = { form: variant.form, count: variant.count || 0, label: variant.label };
+
+    if (category === 'Present') {
+      groups.presentTense.push(formWithLabel);
+    } else if (category === 'Subjunctive') {
+      groups.subjunctiveTense.push(formWithLabel);
+    } else if (category === 'Future') {
+      groups.futureTense.push(formWithLabel);
+    } else if (category === 'Past') {
+      groups.pastTense.push(formWithLabel);
+    } else if (category === 'Imperative') {
+      groups.imperativeForms.push(formWithLabel);
+    } else if (category === 'Ability') {
+      groups.abilityForms.push(formWithLabel);
+    } else if (category === 'Perfect') {
+      groups.perfectForms.push(formWithLabel);
+    } else if (category === 'Habitual') {
+      groups.habitualForms.push(formWithLabel);
+    } else {
+      groups.otherVerbs.push(formWithLabel);
+    }
+  });
+
+  return groups;
 }
 
 // Group verbs by LingDocs categories using structured data from Edge function
@@ -119,7 +167,7 @@ export default function RelatedForms({
   // Use structured data from Edge function if available, otherwise fall back to legacy data
   const hasStructuredData = relatedForms.variantDetails && relatedForms.variantDetails.length > 0;
   const verbGroups = hasStructuredData
-    ? groupVerbsFromStructuredData(relatedForms.variantDetails)
+    ? groupVerbsByDetailedLabels(relatedForms.variantDetails)
     : {
         presentTense: relatedForms.verbs || [],
         subjunctiveTense: [],
@@ -136,7 +184,7 @@ export default function RelatedForms({
   const filteredVerbs = useMemo(() => {
     if (!verbState) return Object.values(verbGroups).flat();
 
-    let filtered: Array<{form: string, count: number}> = [];
+    let filtered: Array<{form: string, count: number, label?: string}> = [];
 
     switch (verbState.tense) {
       case 'present': filtered = verbGroups.presentTense; break;
@@ -150,7 +198,11 @@ export default function RelatedForms({
       default: filtered = verbGroups.otherVerbs;
     }
 
-    // Filter by person
+    // Filter by person if specified
+    if (verbState.person !== '1st' && verbState.person !== '2nd' && verbState.person !== '3rd') {
+      return filtered; // Show all if no specific person filter
+    }
+
     const personEndings: Record<string, string[]> = {
       '1st': ['م', 'و'], // 1st person endings
       '2nd': ['ې', 'ئ'], // 2nd person endings
@@ -190,19 +242,22 @@ export default function RelatedForms({
     otherVerbs
   } = verbGroups;
 
-  const Section = ({ title, list }: { title: string; list: {form: string, count: number}[] }) => (
+  const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => (
     <div className="mt-2">
       <div className="text-xs text-gray-500 mb-1">{title} ({list.length})</div>
       <div className="flex flex-wrap gap-2">
-        {list.map(({ form, count }, idx) => (
+        {list.map(({ form, count, label }, idx) => (
           <button
             key={`${title}-${form}-${idx}`}
             onClick={() => onPick(form)}
             className="px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
-            title={`Click to search for: ${form}`}
+            title={`Click to search for: ${form}${label ? ` (${label})` : ''}`}
           >
             <span className="font-medium">{form}</span>
             {count > 0 && <span className="ml-1 text-xs opacity-70">({count})</span>}
+            {label && label !== 'Form' && (
+              <span className="ml-1 text-xs opacity-60">({label})</span>
+            )}
           </button>
         ))}
         {list.length === 0 && <span className="text-gray-400">—</span>}

@@ -334,7 +334,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             </p>
 
             {/* Absolute-positioned verse number chip */}
-            {verseNo != null && (
+            {verseNo != null && verseNo !== '' && (
               <span
                 dir="ltr"
                 className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
