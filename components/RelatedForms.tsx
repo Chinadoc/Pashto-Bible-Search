@@ -191,6 +191,9 @@ export default function RelatedForms({
         otherVerbs: []
       };
 
+  // Compute categorized buckets first (TDZ fix)
+  const cats = useMemo(() => categorizeVerbForms(verbs), [verbs]);
+
   // Filter verbs based on current tense/aspect/mood/person selection
   const filteredVerbs = useMemo(() => {
     if (!verbState) return Object.values(cats).flat();
@@ -241,9 +244,6 @@ export default function RelatedForms({
     habitual: cats.habitualForms.length,
     other: cats.otherVerbs.length
   };
-
-  // Compute categorized buckets first (TDZ fix)
-  const cats = useMemo(() => categorizeVerbForms(verbs), [verbs]);
 
   const {
     presentTense,
