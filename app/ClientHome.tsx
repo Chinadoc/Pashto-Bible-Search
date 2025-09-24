@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, ChangeEvent, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, ChangeEvent } from "react";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import RelatedForms from "../components/RelatedForms";
-import { matchesVerb, normalizeLabel, type VerbFeatures } from "../utils/variants";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import LinguisticAnalysis from "../components/LinguisticAnalysis";
@@ -187,11 +186,6 @@ export default function ClientHome() {
     variantGroups?: VariantGroupMeta[];
     romanization?: string;
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('search');
-  const [selectedBook, setSelectedBook] = useState<string | null>(null);
-  const [showRelatedForms, setShowRelatedForms] = useState<boolean>(false);
-  const [selectedMood, setSelectedMood] = useState<VerbFeatures['mood']>('all');
-  const [selectedPerson, setSelectedPerson] = useState<'1'|'2'|'3'|'any'>('1');
 
   // Verb understanding state
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('3rd');
@@ -266,20 +260,20 @@ export default function ClientHome() {
   // Refresh audio map when results change to ensure we have latest URLs
   useEffect(() => {
     if (results.length > 0 && Object.keys(audioMap).length === 0) {
-      const loadInitialAudioMap = async () => {
+      const refreshAudioMap = async () => {
         try {
           const response = await fetch('/api/get_audio_map?clear_cache=1');
           if (response.ok) {
             const data = await response.json();
             const newAudioMap = data || {};
-            console.log(`Initial audio map loaded: ${Object.keys(newAudioMap).length} entries`);
+            console.log(`Refreshed audio map: ${Object.keys(newAudioMap).length} entries`);
             setAudioMap(newAudioMap);
           }
         } catch (error) {
-          console.error('Failed to load initial audio map:', error);
+          console.error('Failed to refresh audio map:', error);
         }
       };
-      loadInitialAudioMap();
+      refreshAudioMap();
     }
   }, [results, audioMap]);
 
@@ -352,8 +346,8 @@ export default function ClientHome() {
     }
   }, [results]);
 
-  // Handle search using current state
-  const handleSearchWithState = async () => {
+  // Handle search
+  const handleSearch = async () => {
     console.log('DEBUG: ========================================');
     console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
     console.log('DEBUG: ========================================');
@@ -374,24 +368,33 @@ export default function ClientHome() {
     try {
       console.log('DEBUG: Starting direct database search for:', query.trim());
 
-      // Perform the search using server-side API
-      const searchResponse = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: query.trim(),
-          scope,
-          includeRelated
-        }),
-      });
+      // Import the search function
+      const { searchVerses } = await import('../utils/supabase');
 
-      if (!searchResponse.ok) {
-        throw new Error(`Search failed: ${searchResponse.statusText}`);
-      }
+      // Perform the search using the direct database function
+      const searchResults = await searchVerses(query.trim(), scope);
+      console.log('DEBUG: Direct search returned', searchResults.length, 'results');
 
-      const searchData = await searchResponse.json();
-      const transformedResults = searchData.results || [];
-      console.log('DEBUG: Server search returned', transformedResults.length, 'results');
+      // Transform results to match expected format
+      const transformedResults: Array<{
+        ref: string;
+        text: string;
+        testament?: 'NT' | 'OT';
+        translation?: string;
+        dialect?: string;
+        tags?: any[][];
+        audio_verse_url?: string | null;
+        id: number;
+      }> = searchResults.map((result, index) => ({
+        ref: result.ref,
+        text: result.text,
+        testament: 'NT' as const, // Default, could be enhanced later
+        translation: 'Yousafzai 2019', // Default
+        dialect: 'Yousafzai', // Default
+        tags: [], // Default
+        audio_verse_url: null, // Default
+        id: index + 1
+      }));
 
       console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
 
@@ -401,15 +404,48 @@ export default function ClientHome() {
 
       // Set the results directly (use deduplicated results)
       setResults(dedupedResults);
-      setCoverage(Array.isArray(displayCoverageData) ? displayCoverageData : []);
+      setCoverage(Array.isArray(coverageData) ? coverageData : []);
       setProcessed(null);
 
-      // Set related forms from server response
-      if (includeRelated && query.trim() && searchData.relatedForms) {
-        console.log('DEBUG: Setting related forms data:', searchData.relatedForms);
-        setRelatedForms(searchData.relatedForms);
+      // Fetch related forms if requested
+      if (includeRelated && query.trim()) {
+        try {
+          const relatedResponse = await fetch('/api/related_forms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ form: query.trim() }),
+          });
+
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            console.log('DEBUG: Related forms data:', relatedData);
+
+            if (relatedData && (relatedData.forms || relatedData.total > 0)) {
+              const verbs = (relatedData.forms || []).filter((f: any) => f.pos === 'verb');
+              const nouns = (relatedData.forms || []).filter((f: any) => f.pos === 'noun');
+              const other = (relatedData.forms || []).filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
+
+              const transformedForms: RelatedFormsData = {
+                verbs,
+                nouns,
+                other,
+                total: relatedData.total || (verbs.length + nouns.length + other.length)
+              };
+
+              setRelatedForms(transformedForms);
+              console.log('DEBUG: Set related forms:', transformedForms);
+            } else {
+              setRelatedForms(null);
+            }
+          } else {
+            console.warn('Failed to fetch related forms:', relatedResponse.status);
+            setRelatedForms(null);
+          }
+        } catch (error) {
+          console.warn('Error fetching related forms:', error);
+          setRelatedForms(null);
+        }
       } else {
-        console.log('DEBUG: No related forms data received or includeRelated not checked');
         setRelatedForms(null);
       }
 
@@ -424,280 +460,10 @@ export default function ClientHome() {
       setIsLoading(false);
     }
   };
-
-  // Calculate results count
-  const resultsCount = results.length;
-
-  // Determine default tab based on state
-  const getDefaultTab = () => {
-    if (results.length > 0) return 'search';
-    if (relatedForms) return 'related';
-    return 'search';
-  };
-
-  // Get book name from ref for highlighting
-  const getBookFromRef = (ref: string) => {
-    if (!ref) return null;
-    const parts = ref.split(' ');
-    return parts.length > 0 ? parts[0] : null;
-  };
-
-  // Filter results by testament
-  const filteredResults = useMemo(() => {
-    if (scope === 'all') return results;
-    return results.filter(r => {
-      const book = getBookFromRef(r.ref);
-      if (!book) return scope === 'nt'; // Default to NT if no book found
-
-      const isOT = OT_BOOKS_SET.has(book);
-      const isNT = NT_BOOKS_SET.has(book);
-
-      if (scope === 'ot') return isOT;
-      if (scope === 'nt') return isNT;
-      return false;
-    });
-  }, [results, scope]);
-
-  // Group results by book for coverage display
-  const displayCoverageData = useMemo(() => {
-    const coverageMap = new Map();
-    results.forEach(verse => {
-      const book = getBookFromRef(verse.ref);
-      if (book) {
-        coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
-      }
-    });
-
-    return Array.from(coverageMap.entries()).map(([book, count]) => ({
-      book,
-      count,
-      translation: 'Yousafzai 2019',
-      dialect: 'Yousafzai'
-    }));
-  }, [results]);
-
-  // Manual audio map refresh function
-  const manualRefreshAudioMap = async () => {
-    try {
-      const response = await fetch('/api/get_audio_map?clear_cache=1');
-      if (response.ok) {
-        const data = await response.json();
-        const audioMap = data || {};
-        const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const storageUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-        console.log(`Audio map refreshed: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
-      }
-    } catch (error) {
-      console.error('Error refreshing audio map:', error);
-    }
-  };
-
-  // Handle tab change
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-  };
-
-  // Handle book selection from coverage sidebar
-  const handleBookSelect = (book: string | null) => {
-    setSelectedBook(book);
-  };
-
-  // Handle search
-  const handleSearch = async (query: string, scope: Scope, includeRelated: boolean) => {
-    try {
-      console.log('DEBUG: Starting direct database search for:', query.trim());
-
-      // Perform the search using server-side API
-      const searchResponse = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: query.trim(),
-          scope,
-          includeRelated
-        }),
-      });
-
-      if (!searchResponse.ok) {
-        throw new Error(`Search failed: ${searchResponse.statusText}`);
-      }
-
-      const searchData = await searchResponse.json();
-      const transformedResults = searchData.results || [];
-      console.log('DEBUG: Server search returned', transformedResults.length, 'results');
-
-      console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
-
-      // Deduplicate results by ref to avoid duplicates from variant searches
-      const dedupedResults = dedupByRef(transformedResults);
-      console.log(`DEBUG: Deduplicated from ${transformedResults.length} to ${dedupedResults.length} results`);
-
-      // Set the results directly (use deduplicated results)
-      setResults(dedupedResults);
-      setCoverage(Array.isArray(displayCoverageData) ? displayCoverageData : []);
-      setProcessed(null);
-
-      // Set related forms from server response
-      if (includeRelated && query.trim() && searchData.relatedForms) {
-        console.log('DEBUG: Setting related forms data:', searchData.relatedForms);
-        setRelatedForms(searchData.relatedForms);
-      } else {
-        console.log('DEBUG: No related forms data received or includeRelated not checked');
-        setRelatedForms(null);
-      }
-
-      console.log(`DEBUG: Search completed. Found ${dedupedResults.length} results.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Search failed');
-      setResults([]);
-      setCoverage([]);
-      setProcessed(null);
-      setRelatedForms(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Get filtered verb variants based on current filter selections
-  const filteredVerbVariants = useMemo(() => {
-    if (!processed?.variantGroups) return [];
-
-    // Find verb groups (groups with "verb" in the label)
-    const verbGroups = processed.variantGroups.filter(group =>
-      group.label?.toLowerCase().includes('verb')
-    );
-
-    if (verbGroups.length === 0) return [];
-
-    // Combine all forms from verb groups
-    const allVerbForms = verbGroups.flatMap(group => group.forms || []);
-
-    // Filter verb forms based on selected mood and person
-    let filteredForms = allVerbForms;
-
-    // Filter by mood if selected
-    if (selectedMood && selectedMood !== 'all') {
-      filteredForms = filteredForms.filter(verbForm => {
-        // Basic mood filtering based on form patterns
-        const lowerForm = verbForm.toLowerCase();
-        switch (selectedMood) {
-          case 'present':
-            return lowerForm.includes('م') || lowerForm.includes('و') || lowerForm.includes('ي') || lowerForm.includes('ې');
-          case 'subjunctive':
-            return lowerForm.includes('وو') || lowerForm.includes('ووه');
-          case 'future':
-            return lowerForm.includes('به ') || lowerForm.includes('به');
-          case 'past':
-            return lowerForm.includes('لم') || lowerForm.includes('لو') || lowerForm.includes('ل') || lowerForm.includes('له');
-          case 'perfect':
-            return lowerForm.includes('لی') || lowerForm.includes('کړی') || lowerForm.includes('شوی');
-          case 'imperative':
-            return lowerForm.includes('ه') && !lowerForm.includes(' ');
-          case 'ability':
-            return lowerForm.includes('ش') && (lowerForm.includes('م') || lowerForm.includes('و') || lowerForm.includes('ي'));
-          case 'habitual':
-            return lowerForm.includes('به ') && (lowerForm.includes('لم') || lowerForm.includes('لو'));
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Filter by person if selected
-    if (selectedPerson && selectedPerson !== 'any') {
-      filteredForms = filteredForms.filter(verbForm => {
-        const lowerForm = verbForm.toLowerCase();
-        switch (selectedPerson) {
-          case '1':
-            return lowerForm.endsWith('م') || lowerForm.endsWith('و') || lowerForm.includes(' به ') && (lowerForm.includes('م') || lowerForm.includes('و'));
-          case '2':
-            return lowerForm.endsWith('ې') || lowerForm.endsWith('ئ') || lowerForm.includes(' به ') && (lowerForm.includes('ې') || lowerForm.includes('ئ'));
-          case '3':
-            return lowerForm.endsWith('ي') || lowerForm.includes(' به ') && lowerForm.includes('ي');
-          default:
-            return true;
-        }
-      });
-    }
-
-    return filteredForms.map(form => ({ form }));
-  }, [processed, selectedMood, selectedPerson]);
-
-  // Run filtered search with selected variants
-  const runFilteredSearch = async (forms?: string[]) => {
-    // If forms are provided (from RelatedForms), use those
-    // Otherwise use the existing filteredVerbVariants (for auto-apply)
-    const needles = forms || filteredVerbVariants.map(v => v.form).filter(Boolean);
-    if (needles.length === 0) return;
-
-    try {
-      setIsLoading(true);
-      setError('');
-
-      const searchResponse = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: processed?.normalized || query,
-          scope,
-          variants: needles, // Pass filtered forms as OR search terms
-        }),
-      });
-
-      if (!searchResponse.ok) {
-        throw new Error(`Filtered search failed: ${searchResponse.statusText}`);
-      }
-
-      const searchData = await searchResponse.json();
-      const transformedResults = searchData.results || [];
-
-      // Deduplicate results
-      const dedupedResults = dedupByRef(transformedResults);
-
-      // Set the results with highlighting for all search terms
-      setResults(dedupedResults);
-      setProcessed(searchData.processed || null);
-
-      console.log(`DEBUG: Filtered search completed. Found ${dedupedResults.length} results for ${needles.length} terms:`, needles);
-      console.log('DEBUG: Processed data:', searchData.processed);
-      console.log('DEBUG: First few results:', dedupedResults.slice(0, 3));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Filtered search failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Clear form filter and return to original search
-  const clearFormFilter = async () => {
-    setProcessed(null);
-    setRelatedForms(null);
-    if (query.trim()) {
-      await handleSearch(query, scope, includeRelated);
-    }
-  };
-
-  // Auto-apply filter when verb state changes (debounced)
-  useEffect(() => {
-    if (!processed?.variantGroups || filteredVerbVariants.length === 0) {
-      console.log('DEBUG: Auto-apply skipped - no processed data or no filtered variants');
-      return;
-    }
-
-    console.log('DEBUG: Auto-applying filter with', filteredVerbVariants.length, 'terms:', filteredVerbVariants.map(v => v.form));
-
-    const timeoutId = setTimeout(() => {
-      console.log('DEBUG: Auto-apply timeout triggered');
-      runFilteredSearch();
-    }, 300); // Debounce for 300ms
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedMood, selectedPerson, processed?.normalized]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearchWithState();
+      handleSearch();
     }
   };
 
@@ -706,7 +472,7 @@ export default function ClientHome() {
   };
 
   // Calculate results count
-  const currentResultsCount = results.length;
+  const resultsCount = results.length;
 
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
@@ -760,7 +526,7 @@ export default function ClientHome() {
           InputProps={{
             startAdornment: (
               <IconButton
-                onClick={handleSearchWithState}
+                onClick={handleSearch}
                 disabled={isLoading}
                 sx={{
                   color: '#F9FAFB',
@@ -772,7 +538,7 @@ export default function ClientHome() {
             ),
             endAdornment: (
               <Button
-                onClick={handleSearchWithState}
+                onClick={handleSearch}
                 disabled={isLoading}
                 variant="contained"
                 sx={{
@@ -802,8 +568,8 @@ export default function ClientHome() {
         setScope={setScope}
         includeRelated={includeRelated}
         setIncludeRelated={setIncludeRelated}
-        resultsCount={currentResultsCount}
-        refreshAudioMap={manualRefreshAudioMap}
+        resultsCount={resultsCount}
+        refreshAudioMap={refreshAudioMap}
         isLoading={isLoading}
       />
 
@@ -811,61 +577,6 @@ export default function ClientHome() {
       {error && (
         <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
           {error}
-        </div>
-      )}
-
-      {/* Related Forms Section */}
-      {relatedForms && (relatedForms.total ?? 0) > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Related Forms
-            </h3>
-            <button
-              onClick={() => setShowRelatedForms(!showRelatedForms)}
-              className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
-            >
-              {showRelatedForms ? 'Hide' : 'Show'} ({relatedForms.total})
-            </button>
-          </div>
-
-          {showRelatedForms && (
-            <RelatedForms
-              relatedForms={relatedForms}
-              onPick={(form) => {
-                setQuery(form);
-                setShowRelatedForms(false);
-              }}
-              onApplyFilter={runFilteredSearch}
-              verbState={{
-                person: verbPerson,
-                tense: verbTense,
-                aspect: verbAspect,
-                mood: verbMood
-              }}
-              setVerbState={(state) => {
-                setVerbPerson(state.person);
-                setVerbTense(state.tense);
-                setVerbAspect(state.aspect);
-                setVerbMood(state.mood);
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Form Filter Chips */}
-      {processed?.variants && processed.variants.length > 1 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Filtering by {processed.variants.length} related forms</span>
-            <button
-              className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
-              onClick={clearFormFilter}
-            >
-              Clear filter
-            </button>
-          </div>
         </div>
       )}
 
@@ -885,8 +596,6 @@ export default function ClientHome() {
                     audioMap={audioMap}
                     loading={isLoading}
                     processed={processed}
-                    terms={processed?.variants || [query]}
-                    query={query}
                   />
                 ) : (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -942,7 +651,7 @@ export default function ClientHome() {
               console.log('Book selected:', book);
             }}
             selectedBook={null}
-            resultsCount={currentResultsCount}
+            resultsCount={resultsCount}
           />
         </div>
       </div>

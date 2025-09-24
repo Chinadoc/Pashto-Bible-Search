@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchVerses } from '../../../utils/supabase';
+import { searchVerses, supabase } from '../../../utils/supabase';
 
 type SearchRequest = {
   query: string;
@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Single query search (original logic)
     const searchResults = await searchVerses(query.trim(), scope || 'all');
+    console.log(`DEBUG: Direct search for "${query.trim()}" returned ${searchResults.length} results`);
 
     // Additional deduplication to ensure no duplicates even if database returns them
     const uniqueSearchResults = new Map();
@@ -155,9 +156,84 @@ export async function POST(request: NextRequest) {
 
         if (relatedResponse.ok) {
           relatedForms = await relatedResponse.json();
+          console.log('DEBUG: Related forms data:', {
+            root: relatedForms?.root,
+            total: relatedForms?.total,
+            variantDetailsCount: relatedForms?.variantDetails?.length || 0,
+            sampleVariants: relatedForms?.variantDetails?.[0]?.groups?.[0]?.items?.slice(0, 3) || []
+          });
         }
       } catch (error) {
         console.error('Error fetching related forms:', error);
+      }
+    }
+
+    // Fallback: If no results and we have related forms data with variants, search using variants
+    let finalResults = transformedResults;
+    if (transformedResults.length === 0 && relatedForms && relatedForms.variantDetails) {
+      console.log('DEBUG: No results from direct search, trying variant fallback');
+
+      // Extract variants from related forms data
+      const variantForms: string[] = [];
+      if (relatedForms.variantDetails) {
+        for (const block of relatedForms.variantDetails) {
+          for (const group of (block.groups || [])) {
+            for (const item of group.items) {
+              variantForms.push(item.form);
+            }
+          }
+        }
+      }
+
+      if (variantForms.length > 0) {
+        const needles = Array.from(new Set(variantForms.filter(Boolean))).slice(0, 20);
+        console.log(`DEBUG: Variant fallback searching with ${needles.length} terms:`, needles.slice(0, 5));
+
+        // Perform OR search with variants
+        let allVariantResults: Array<{ref: string; text: string; testament?: string}> = [];
+        for (const term of needles) {
+          const termResults = await searchVerses(term, scope || 'all');
+          allVariantResults = [...allVariantResults, ...termResults];
+        }
+
+        // Deduplicate results
+        const uniqueVariantResults = new Map();
+        allVariantResults.forEach((result) => {
+          if (!uniqueVariantResults.has(result.ref)) {
+            uniqueVariantResults.set(result.ref, result);
+          }
+        });
+
+        const deduplicatedVariantResults = Array.from(uniqueVariantResults.values());
+        console.log(`DEBUG: Variant fallback found ${deduplicatedVariantResults.length} results`);
+
+        if (deduplicatedVariantResults.length > 0) {
+          finalResults = deduplicatedVariantResults.map((result, index) => {
+            const book = result.ref.split(' ')[0];
+            const isPsalms = book === 'Psalms';
+            const isProverbs = book === 'Proverbs';
+            const isSongOfSolomon = book === 'Song of Solomon';
+
+            let translation = null;
+            let dialect = null;
+
+            if (isPsalms || isProverbs || isSongOfSolomon) {
+              translation = 'Yousafzai 2019';
+              dialect = 'Yousafzai';
+            }
+
+            return {
+              ref: result.ref,
+              text: result.text,
+              testament: result.testament || 'NT',
+              translation,
+              dialect,
+              tags: [],
+              audio_verse_url: null,
+              id: index + 1
+            };
+          });
+        }
       }
     }
 
@@ -168,11 +244,13 @@ export async function POST(request: NextRequest) {
       variants: includeRelated ? [] : [], // Could be populated with variant data if available
     };
 
+    console.log(`DEBUG: Final search results: ${finalResults.length} (after variant fallback if applicable)`);
+
     return NextResponse.json({
-      results: transformedResults,
+      results: finalResults,
       relatedForms,
       processed: processedData,
-      count: transformedResults.length
+      count: finalResults.length
     });
 
   } catch (error) {
