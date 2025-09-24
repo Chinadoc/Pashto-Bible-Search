@@ -31,13 +31,29 @@ export async function POST(request: NextRequest) {
 
       // Deduplicate results
       const uniqueResults = new Map();
+      const duplicates = new Map();
       allResults.forEach((result) => {
-        if (!uniqueResults.has(result.ref)) {
+        if (uniqueResults.has(result.ref)) {
+          // Track duplicates for debugging
+          if (!duplicates.has(result.ref)) {
+            duplicates.set(result.ref, [uniqueResults.get(result.ref)]);
+          }
+          duplicates.get(result.ref).push(result);
+        } else {
           uniqueResults.set(result.ref, result);
         }
       });
 
       const deduplicatedResults = Array.from(uniqueResults.values());
+
+      // Log duplicates for debugging
+      if (duplicates.size > 0) {
+        console.log('Found duplicates:', Array.from(duplicates.entries()).map(([ref, results]) => ({
+          ref,
+          count: results.length,
+          firstText: results[0].text?.substring(0, 50)
+        })));
+      }
 
       // Transform results to match expected format
       const transformedResults = deduplicatedResults.map((result, index) => {
