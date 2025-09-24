@@ -50,10 +50,10 @@ export function parseRef(ref: string): { book: string; chapter: number; verse: n
   return { book, chapter, verse };
 }
 
-// Deduplication utility
-export function dedupByRef(list: {ref: string; text: string; testament?: string}[]) {
+// Deduplication utility for Verse arrays
+export function dedupByRef<T extends {ref: string; text: string; testament?: 'NT' | 'OT'}>(list: T[]): T[] {
   const seen = new Set<string>();
-  const out: typeof list = [];
+  const out: T[] = [];
   for (const r of list) {
     if (!seen.has(r.ref)) { seen.add(r.ref); out.push(r); }
   }
