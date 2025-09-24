@@ -1806,7 +1806,7 @@ async function searchVersesSimilar(supabase: any, query: string, scope: string, 
     }
 
     return data || []
-  } catch (error) {
+        } catch (error) {
     console.error('RPC search error:', error)
     return []
   }
@@ -1832,33 +1832,19 @@ export async function POST(request: NextRequest) {
     let results: any[]
     let processed: any
 
-    // Progressive Enhancement: Try fast search first, then enhanced if needed
+    // Enhanced search with linguistic processing - always call Edge Function when includeRelated is true
     try {
-      // Step 1: Fast search (no edge function overhead)
-      console.log(`DEBUG: Trying fast search first...`)
-      results = await fastSearch(supabase, originalTerm, scope, 50)
-
-      // If we get good results with fast search, use them
-      if (results.length > 0) {
-        console.log(`DEBUG: Fast search found ${results.length} results in ${Date.now() - startTime}ms`)
-
-        processed = {
-          normalized: originalTerm,
-          variants: [originalTerm],
-          romanization: '',
-          searchType: 'fast'
-        }
-      } else {
-        // Step 2: Enhanced search with edge function (only if fast search fails)
-        console.log(`DEBUG: Fast search found no results, trying enhanced search...`)
+      if (includeRelated) {
+        // Always use enhanced search when Include Related Forms is enabled
+        console.log(`DEBUG: Include Related Forms enabled, using enhanced search for "${originalTerm}"...`)
         const startEnhanced = Date.now()
 
         try {
           processed = await callPashtoProcessor(supabaseUrl, supabaseKey, originalTerm, includeRelated)
-          console.log(`DEBUG: Enhanced search processed in ${Date.now() - startEnhanced}ms`)
+          console.log(`DEBUG: Enhanced search processed in ${Date.now() - startEnhanced}ms with ${processed.variants?.length || 0} variants`)
 
-          // Use enhanced search results
-          results = await searchVersesDirect(originalTerm, scope, 50)
+          // Use enhanced search results with expanded variants
+          results = await searchVersesDirect(originalTerm, scope, 100) // Allow more results for expanded search
         } catch (enhancedError) {
           console.warn('Enhanced search failed, falling back to fast search:', enhancedError)
           processed = {
@@ -1867,10 +1853,23 @@ export async function POST(request: NextRequest) {
             romanization: '',
             searchType: 'fallback'
           }
+          results = await fastSearch(supabase, originalTerm, scope, 50)
         }
+      } else {
+        // Use fast search when Include Related Forms is disabled
+        console.log(`DEBUG: Include Related Forms disabled, using fast search for "${originalTerm}"...`)
+        results = await fastSearch(supabase, originalTerm, scope, 50)
+
+        processed = {
+          normalized: originalTerm,
+          variants: [originalTerm],
+          romanization: '',
+          searchType: 'fast'
+        }
+        console.log(`DEBUG: Fast search found ${results.length} results in ${Date.now() - startTime}ms`)
       }
-    } catch (fastError) {
-      console.warn('Fast search failed, trying direct search:', fastError)
+    } catch (error) {
+      console.warn('Search failed, trying direct search:', error)
       results = await searchVersesDirect(originalTerm, scope, 50)
       processed = {
         normalized: originalTerm,
@@ -1911,6 +1910,8 @@ export async function POST(request: NextRequest) {
       .sort((a, b) => b.count - a.count)
 
     console.log(`DEBUG: Found ${results.length} results in ${Date.now() - startTime}ms (type: ${processed.searchType})`)
+    console.log(`DEBUG: Processed ${processed.variants?.length || 0} variants:`, processed.variants)
+    console.log(`DEBUG: Related forms data:`, processed.relatedForms)
 
     return NextResponse.json({
       results,
