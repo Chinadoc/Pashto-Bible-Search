@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import type { RelatedFormsData } from '../types';
 
 type VerbUnderstandingState = {
   person: '1st' | '2nd' | '3rd';
@@ -8,13 +9,6 @@ type VerbUnderstandingState = {
   aspect: 'imperfective' | 'perfective';
   mood: 'indicative' | 'subjunctive' | 'imperative' | 'ability';
 }
-
-type RelatedFormsData = {
-  verbs: Array<{form: string, count: number}>
-  nouns: Array<{form: string, count: number}>
-  other: Array<{form: string, count: number}>
-  total: number
-} | null
 
 // Verb form categorization based on LingDocs structure
 function categorizeVerbForms(forms: {form: string, count: number}[]) {
