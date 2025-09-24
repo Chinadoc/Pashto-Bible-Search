@@ -186,6 +186,8 @@ export default function ClientHome() {
     variantGroups?: VariantGroupMeta[];
     romanization?: string;
   } | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('search');
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
 
   // Verb understanding state
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('3rd');
@@ -260,20 +262,20 @@ export default function ClientHome() {
   // Refresh audio map when results change to ensure we have latest URLs
   useEffect(() => {
     if (results.length > 0 && Object.keys(audioMap).length === 0) {
-      const refreshAudioMap = async () => {
+      const loadInitialAudioMap = async () => {
         try {
           const response = await fetch('/api/get_audio_map?clear_cache=1');
           if (response.ok) {
             const data = await response.json();
             const newAudioMap = data || {};
-            console.log(`Refreshed audio map: ${Object.keys(newAudioMap).length} entries`);
+            console.log(`Initial audio map loaded: ${Object.keys(newAudioMap).length} entries`);
             setAudioMap(newAudioMap);
           }
         } catch (error) {
-          console.error('Failed to refresh audio map:', error);
+          console.error('Failed to load initial audio map:', error);
         }
       };
-      refreshAudioMap();
+      loadInitialAudioMap();
     }
   }, [results, audioMap]);
 
@@ -346,8 +348,8 @@ export default function ClientHome() {
     }
   }, [results]);
 
-  // Handle search
-  const handleSearch = async () => {
+  // Handle search using current state
+  const handleSearchWithState = async () => {
     console.log('DEBUG: ========================================');
     console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
     console.log('DEBUG: ========================================');
@@ -368,33 +370,24 @@ export default function ClientHome() {
     try {
       console.log('DEBUG: Starting direct database search for:', query.trim());
 
-      // Import the search function
-      const { searchVerses } = await import('../utils/supabase');
+      // Perform the search using server-side API
+      const searchResponse = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: query.trim(),
+          scope,
+          includeRelated
+        }),
+      });
 
-      // Perform the search using the direct database function
-      const searchResults = await searchVerses(query.trim(), scope);
-      console.log('DEBUG: Direct search returned', searchResults.length, 'results');
+      if (!searchResponse.ok) {
+        throw new Error(`Search failed: ${searchResponse.statusText}`);
+      }
 
-      // Transform results to match expected format
-      const transformedResults: Array<{
-        ref: string;
-        text: string;
-        testament?: 'NT' | 'OT';
-        translation?: string;
-        dialect?: string;
-        tags?: any[][];
-        audio_verse_url?: string | null;
-        id: number;
-      }> = searchResults.map((result, index) => ({
-        ref: result.ref,
-        text: result.text,
-        testament: 'NT' as const, // Default, could be enhanced later
-        translation: 'Yousafzai 2019', // Default
-        dialect: 'Yousafzai', // Default
-        tags: [], // Default
-        audio_verse_url: null, // Default
-        id: index + 1
-      }));
+      const searchData = await searchResponse.json();
+      const transformedResults = searchData.results || [];
+      console.log('DEBUG: Server search returned', transformedResults.length, 'results');
 
       console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
 
@@ -404,47 +397,144 @@ export default function ClientHome() {
 
       // Set the results directly (use deduplicated results)
       setResults(dedupedResults);
-      setCoverage(Array.isArray(coverageData) ? coverageData : []);
+      setCoverage(Array.isArray(displayCoverageData) ? displayCoverageData : []);
       setProcessed(null);
 
-      // Fetch related forms if requested
-      if (includeRelated && query.trim()) {
-        try {
-          const relatedResponse = await fetch('/api/related_forms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ form: query.trim() }),
-          });
+      // Set related forms from server response
+      if (includeRelated && query.trim() && searchData.relatedForms) {
+        setRelatedForms(searchData.relatedForms);
+      } else {
+        setRelatedForms(null);
+      }
 
-          if (relatedResponse.ok) {
-            const relatedData = await relatedResponse.json();
-            console.log('DEBUG: Related forms data:', relatedData);
+      console.log(`DEBUG: Search completed. Found ${dedupedResults.length} results.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Search failed');
+      setResults([]);
+      setCoverage([]);
+      setProcessed(null);
+      setRelatedForms(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            if (relatedData && (relatedData.forms || relatedData.total > 0)) {
-              const verbs = (relatedData.forms || []).filter((f: any) => f.pos === 'verb');
-              const nouns = (relatedData.forms || []).filter((f: any) => f.pos === 'noun');
-              const other = (relatedData.forms || []).filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
+  // Calculate results count
+  const resultsCount = results.length;
 
-              const transformedForms: RelatedFormsData = {
-                verbs,
-                nouns,
-                other,
-                total: relatedData.total || (verbs.length + nouns.length + other.length)
-              };
+  // Determine default tab based on state
+  const getDefaultTab = () => {
+    if (results.length > 0) return 'search';
+    if (relatedForms) return 'related';
+    return 'search';
+  };
 
-              setRelatedForms(transformedForms);
-              console.log('DEBUG: Set related forms:', transformedForms);
-            } else {
-              setRelatedForms(null);
-            }
-          } else {
-            console.warn('Failed to fetch related forms:', relatedResponse.status);
-            setRelatedForms(null);
-          }
-        } catch (error) {
-          console.warn('Error fetching related forms:', error);
-          setRelatedForms(null);
-        }
+  // Get book name from ref for highlighting
+  const getBookFromRef = (ref: string) => {
+    if (!ref) return null;
+    const parts = ref.split(' ');
+    return parts.length > 0 ? parts[0] : null;
+  };
+
+  // Filter results by testament
+  const filteredResults = useMemo(() => {
+    if (scope === 'all') return results;
+    return results.filter(r => {
+      const book = getBookFromRef(r.ref);
+      if (!book) return scope === 'nt'; // Default to NT if no book found
+
+      const isOT = OT_BOOKS_SET.has(book);
+      const isNT = NT_BOOKS_SET.has(book);
+
+      if (scope === 'ot') return isOT;
+      if (scope === 'nt') return isNT;
+      return false;
+    });
+  }, [results, scope]);
+
+  // Group results by book for coverage display
+  const displayCoverageData = useMemo(() => {
+    const coverageMap = new Map();
+    filteredResults.forEach(verse => {
+      const book = getBookFromRef(verse.ref);
+      if (book) {
+        coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
+      }
+    });
+
+    return Array.from(coverageMap.entries()).map(([book, count]) => ({
+      book,
+      count,
+      translation: 'Yousafzai 2019',
+      dialect: 'Yousafzai'
+    }));
+  }, [filteredResults]);
+
+  // Manual audio map refresh function
+  const manualRefreshAudioMap = async () => {
+    try {
+      const response = await fetch('/api/get_audio_map?clear_cache=1');
+      if (response.ok) {
+        const data = await response.json();
+        const audioMap = data || {};
+        const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+        const storageUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+
+        console.log(`Audio map refreshed: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+      }
+    } catch (error) {
+      console.error('Error refreshing audio map:', error);
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+  };
+
+  // Handle book selection from coverage sidebar
+  const handleBookSelect = (book: string | null) => {
+    setSelectedBook(book);
+  };
+
+  // Handle search
+  const handleSearch = async (query: string, scope: Scope, includeRelated: boolean) => {
+    try {
+      console.log('DEBUG: Starting direct database search for:', query.trim());
+
+      // Perform the search using server-side API
+      const searchResponse = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: query.trim(),
+          scope,
+          includeRelated
+        }),
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error(`Search failed: ${searchResponse.statusText}`);
+      }
+
+      const searchData = await searchResponse.json();
+      const transformedResults = searchData.results || [];
+      console.log('DEBUG: Server search returned', transformedResults.length, 'results');
+
+      console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
+
+      // Deduplicate results by ref to avoid duplicates from variant searches
+      const dedupedResults = dedupByRef(transformedResults);
+      console.log(`DEBUG: Deduplicated from ${transformedResults.length} to ${dedupedResults.length} results`);
+
+      // Set the results directly (use deduplicated results)
+      setResults(dedupedResults);
+      setCoverage(Array.isArray(displayCoverageData) ? displayCoverageData : []);
+      setProcessed(null);
+
+      // Set related forms from server response
+      if (includeRelated && query.trim() && searchData.relatedForms) {
+        setRelatedForms(searchData.relatedForms);
       } else {
         setRelatedForms(null);
       }
@@ -463,7 +553,7 @@ export default function ClientHome() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      handleSearchWithState();
     }
   };
 
@@ -472,7 +562,7 @@ export default function ClientHome() {
   };
 
   // Calculate results count
-  const resultsCount = results.length;
+  const currentResultsCount = results.length;
 
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
@@ -526,7 +616,7 @@ export default function ClientHome() {
           InputProps={{
             startAdornment: (
               <IconButton
-                onClick={handleSearch}
+                onClick={handleSearchWithState}
                 disabled={isLoading}
                 sx={{
                   color: '#F9FAFB',
@@ -538,7 +628,7 @@ export default function ClientHome() {
             ),
             endAdornment: (
               <Button
-                onClick={handleSearch}
+                onClick={handleSearchWithState}
                 disabled={isLoading}
                 variant="contained"
                 sx={{
@@ -568,8 +658,8 @@ export default function ClientHome() {
         setScope={setScope}
         includeRelated={includeRelated}
         setIncludeRelated={setIncludeRelated}
-        resultsCount={resultsCount}
-        refreshAudioMap={refreshAudioMap}
+        resultsCount={currentResultsCount}
+        refreshAudioMap={manualRefreshAudioMap}
         isLoading={isLoading}
       />
 
@@ -651,7 +741,7 @@ export default function ClientHome() {
               console.log('Book selected:', book);
             }}
             selectedBook={null}
-            resultsCount={resultsCount}
+            resultsCount={currentResultsCount}
           />
         </div>
       </div>
