@@ -30,8 +30,8 @@ type RelatedFormsData = {
 };
 
 type VerbUnderstandingState = {
-  person: '1st' | '2nd' | '3rd' | 'any';
-  tense: 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual' | 'all';
+  person: '1st' | '2nd' | '3rd';
+  tense: 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
   aspect: 'imperfective' | 'perfective';
   mood: 'indicative' | 'subjunctive' | 'imperative' | 'ability';
 }
@@ -107,7 +107,7 @@ export default function RelatedForms({
   onPick: (form: string) => void;
   verbState?: VerbUnderstandingState;
   setVerbState?: (state: VerbUnderstandingState) => void;
-  onApplyFilter?: (forms: string[]) => void; // Fixed: pass actual forms to filter
+  onApplyFilter?: (forms: string[]) => void;
 }) {
   const [open, setOpen] = useState<boolean>(false)
 
@@ -134,7 +134,7 @@ export default function RelatedForms({
 
   // Filter verbs based on current tense/aspect/mood/person selection
   const filteredVerbs = useMemo(() => {
-    if (!verbState || verbState.tense === 'all') return Object.values(verbGroups).flat();
+    if (!verbState) return Object.values(verbGroups).flat();
 
     let filtered: Array<{form: string, count: number}> = [];
 
@@ -151,18 +151,16 @@ export default function RelatedForms({
     }
 
     // Filter by person
-    if (verbState.person !== 'any') {
-      const personEndings: Record<string, string[]> = {
-        '1st': ['م', 'و'], // 1st person endings
-        '2nd': ['ې', 'ئ'], // 2nd person endings
-        '3rd': ['ي'] // 3rd person endings
-      };
+    const personEndings: Record<string, string[]> = {
+      '1st': ['م', 'و'], // 1st person endings
+      '2nd': ['ې', 'ئ'], // 2nd person endings
+      '3rd': ['ي'] // 3rd person endings
+    };
 
-      const endings = personEndings[verbState.person] || [];
-      filtered = filtered.filter(f =>
-        endings.some(ending => f.form.endsWith(ending))
-      );
-    }
+    const endings = personEndings[verbState.person] || [];
+    filtered = filtered.filter(f =>
+      endings.some(ending => f.form.endsWith(ending))
+    );
 
     return filtered;
   }, [verbState, verbGroups]);
@@ -263,10 +261,9 @@ export default function RelatedForms({
               <span className="text-gray-600 dark:text-gray-400">Person:</span>
               <select
                 value={verbState.person}
-                onChange={(e) => setVerbState({...verbState, person: e.target.value as '1st' | '2nd' | '3rd' | 'any'})}
+                onChange={(e) => setVerbState({...verbState, person: e.target.value as '1st' | '2nd' | '3rd'})}
                 className="p-1 border border-gray-300 rounded text-xs dark:border-gray-600 dark:bg-gray-800"
               >
-                <option value="any">Any person</option>
                 <option value="1st">1st Person (م)</option>
                 <option value="2nd">2nd Person (ې)</option>
                 <option value="3rd">3rd Person (ي)</option>
