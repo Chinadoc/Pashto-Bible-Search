@@ -59,9 +59,9 @@ export function highlightPsText(text: string, needles: string[]): React.ReactNod
     if (!chunk) continue;
     // If this chunk equals a match for the regex, wrap it
     if (terms.some(t => chunk.toLowerCase() === t.toLowerCase())) {
-      out.push(<mark key={`h-${i}`}>{chunk}</mark>);
+      out.push(React.createElement('mark', { key: `h-${i}` }, chunk));
     } else {
-      out.push(<span key={`t-${i}`}>{chunk}</span>);
+      out.push(React.createElement('span', { key: `t-${i}` }, chunk));
     }
   }
   return out;
