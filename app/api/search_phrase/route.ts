@@ -79,7 +79,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as SearchPhraseRequest;
     const query = (body.query ?? "").trim();
+    console.log(`DEBUG: Search request received:`, { query, includeRelated: body.includeRelated, scope: body.scope });
+
     if (!query) {
+      console.log(`DEBUG: Empty query received`);
       return NextResponse.json({ error: "Missing query" }, { status: 400 });
     }
 
@@ -89,8 +92,19 @@ export async function POST(req: NextRequest) {
     const latin = isLatinOnly(query);
     const enableFuzzy = !!(body.enableFuzzy || latin);
 
+    console.log(`DEBUG: Search parameters:`, {
+      query,
+      includeRelated,
+      scope,
+      limit,
+      latin,
+      enableFuzzy
+    });
+
     // Edge-first
     let edgeProcessed: Processed | null = null;
+    console.log(`DEBUG: Attempting to call Edge Function...`);
+
     try {
       const efRes = await fetch(
         `${SUPABASE_URL}/functions/v1/pashto-processor`,
@@ -109,10 +123,17 @@ export async function POST(req: NextRequest) {
         }
       );
 
+      console.log(`DEBUG: Edge Function response status:`, efRes.status);
+
       if (efRes.ok) {
         edgeProcessed = await efRes.json() as Processed;
+        console.log(`DEBUG: Edge Function success:`, { normalized: edgeProcessed.normalized, variants: edgeProcessed.variants.length });
+      } else {
+        const errorText = await efRes.text();
+        console.log(`DEBUG: Edge Function failed:`, { status: efRes.status, error: errorText });
       }
-          } catch {
+    } catch (error) {
+      console.log(`DEBUG: Edge Function error:`, error);
       // function unavailable — fall through to local
     }
 
@@ -126,16 +147,29 @@ export async function POST(req: NextRequest) {
 
     if (edgeProcessed) {
       processed = edgeProcessed;
+      console.log(`DEBUG: Using Edge Function results:`, {
+        searchType: processed.searchType,
+        normalized: processed.normalized,
+        variantsCount: processed.variants.length,
+        hasFuzzyResults: !!(processed.fuzzyResults?.length)
+      });
+
       if (Array.isArray(edgeProcessed.fuzzyResults) && edgeProcessed.fuzzyResults?.length) {
         results = edgeProcessed.fuzzyResults;
-    } else {
+        console.log(`DEBUG: Using fuzzy results:`, results.length);
+      } else {
         const needle = processed.normalized || query;
+        console.log(`DEBUG: Searching with needle:`, needle);
         results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
+        console.log(`DEBUG: Local search returned:`, results.length, 'results');
       }
-          } else {
-      // Fallback entirely local
+    } else {
+      // Fallback entirely local - this is the original working implementation
+      console.log(`DEBUG: Edge Function failed, using local fallback`);
       const needle = query;
+      console.log(`DEBUG: Local fallback searching with:`, needle);
       results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
+      console.log(`DEBUG: Local fallback returned:`, results.length, 'results');
       processed = {
         normalized: needle,
         searchType: enableFuzzy ? "fuzzy" : "fast",
