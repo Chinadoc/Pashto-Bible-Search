@@ -193,20 +193,20 @@ export default function RelatedForms({
 
   // Filter verbs based on current tense/aspect/mood/person selection
   const filteredVerbs = useMemo(() => {
-    if (!verbState) return Object.values(verbGroups).flat();
+    if (!verbState) return Object.values(cats).flat();
 
     let filtered: Array<{form: string, count: number, label?: string}> = [];
 
     switch (verbState.tense) {
-      case 'present': filtered = verbGroups.presentTense; break;
-      case 'subjunctive': filtered = verbGroups.subjunctiveTense; break;
-      case 'future': filtered = verbGroups.futureTense; break;
-      case 'past': filtered = verbGroups.pastTense; break;
-      case 'imperative': filtered = verbGroups.imperativeForms; break;
-      case 'ability': filtered = verbGroups.abilityForms; break;
-      case 'perfect': filtered = verbGroups.perfectForms; break;
-      case 'habitual': filtered = verbGroups.habitualForms; break;
-      default: filtered = verbGroups.otherVerbs;
+      case 'present': filtered = cats.presentTense; break;
+      case 'subjunctive': filtered = cats.subjunctiveTense; break;
+      case 'future': filtered = cats.futureTense; break;
+      case 'past': filtered = cats.pastTense; break;
+      case 'imperative': filtered = cats.imperativeForms; break;
+      case 'ability': filtered = cats.abilityForms; break;
+      case 'perfect': filtered = cats.perfectForms; break;
+      case 'habitual': filtered = cats.habitualForms; break;
+      default: filtered = cats.otherVerbs;
     }
 
     // Filter by person if specified
@@ -227,20 +227,23 @@ export default function RelatedForms({
     );
 
     return filtered;
-  }, [verbState, verbGroups]);
+  }, [verbState, cats]);
 
   // Get all form counts for display
   const formCounts = {
-    present: verbGroups.presentTense.length,
-    subjunctive: verbGroups.subjunctiveTense.length,
-    future: verbGroups.futureTense.length,
-    past: verbGroups.pastTense.length,
-    imperative: verbGroups.imperativeForms.length,
-    ability: verbGroups.abilityForms.length,
-    perfect: verbGroups.perfectForms.length,
-    habitual: verbGroups.habitualForms.length,
-    other: verbGroups.otherVerbs.length
+    present: cats.presentTense.length,
+    subjunctive: cats.subjunctiveTense.length,
+    future: cats.futureTense.length,
+    past: cats.pastTense.length,
+    imperative: cats.imperativeForms.length,
+    ability: cats.abilityForms.length,
+    perfect: cats.perfectForms.length,
+    habitual: cats.habitualForms.length,
+    other: cats.otherVerbs.length
   };
+
+  // Compute categorized buckets first (TDZ fix)
+  const cats = useMemo(() => categorizeVerbForms(verbs), [verbs]);
 
   const {
     presentTense,
@@ -252,7 +255,7 @@ export default function RelatedForms({
     perfectForms,
     habitualForms,
     otherVerbs
-  } = verbGroups;
+  } = cats;
 
   const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => (
     <div className="mt-2">
