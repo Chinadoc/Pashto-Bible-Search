@@ -234,8 +234,8 @@ export default function ClientHome() {
         if (response.ok) {
           const data = await response.json();
           const audioMap = data || {};
-          const driveUrls = Object.values(audioMap).filter((url: string) => url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(audioMap).filter((url: string) => url.includes('supabase.co/storage')).length;
+          const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const storageUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
 
           console.log(`Audio map loaded: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
           setAudioMap(audioMap);
@@ -284,8 +284,8 @@ export default function ClientHome() {
       if (response.ok) {
         const data = await response.json();
         const newAudioMap = data || {};
-        const driveUrls = Object.values(newAudioMap).filter((url: string) => url.includes('drive.google.com')).length;
-        const storageUrls = Object.values(newAudioMap).filter((url: string) => url.includes('supabase.co/storage')).length;
+        const driveUrls = Object.values(newAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+        const storageUrls = Object.values(newAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
 
         console.log(`Audio map refreshed: ${Object.keys(newAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
         setAudioMap(newAudioMap);
