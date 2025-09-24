@@ -10,6 +10,7 @@ interface Props {
   coverageLevel: ComplexityLevel;
   onPickBook: (book: string) => void;
   selectedBook?: string | null;
+  resultsCount?: number;
 }
 
 export default function CoverageSidebar({
@@ -17,7 +18,8 @@ export default function CoverageSidebar({
   scope,
   coverageLevel,
   onPickBook,
-  selectedBook
+  selectedBook,
+  resultsCount
 }: Props) {
   const sidebarCoverage = useSidebarCoverage(coverage);
 
