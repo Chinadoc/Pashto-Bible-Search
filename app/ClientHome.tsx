@@ -503,6 +503,13 @@ export default function ClientHome() {
         <div className="lg:col-span-1">
           <CoverageSidebar
             coverage={coverage}
+            scope={scope}
+            coverageLevel={ComplexityLevel.Basic}
+            onPickBook={(book: string) => {
+              // Handle book selection if needed
+              console.log('Book selected:', book);
+            }}
+            selectedBook={null}
             resultsCount={resultsCount}
           />
         </div>
