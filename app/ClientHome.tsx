@@ -293,18 +293,14 @@ export default function ClientHome() {
     setQuery(form);
   };
 
-  const handleTabsChange = (tabIndex: number) => {
-    // Handle tab changes if needed
-  };
-
   // Calculate results count
   const resultsCount = results.length;
 
-  // Determine active tab based on state
-  const activeTab = useMemo(() => {
-    if (results.length > 0) return 0; // Search results
-    if (relatedForms && relatedForms.total && relatedForms.total > 0) return 1; // Analysis
-    return 0;
+  // Determine default tab based on state
+  const defaultTab = useMemo(() => {
+    if (results.length > 0) return 'search'; // Search results
+    if (relatedForms && relatedForms.total && relatedForms.total > 0) return 'analysis'; // Analysis
+    return 'search';
   }, [results.length, relatedForms]);
 
   return (
@@ -409,8 +405,7 @@ export default function ClientHome() {
         {/* Results and Analysis */}
         <div className="lg:col-span-3">
           <Tabs
-            activeTab={activeTab}
-            onChange={handleTabsChange}
+            defaultTab={defaultTab}
             tabs={[
               {
                 id: 'search',
