@@ -49,7 +49,7 @@ function isLatinOnly(s: string): boolean {
 }
 
 async function localDirectSearch(
-  db: ReturnType<typeof createClient>,
+  db: any,
   needle: string,
   scope: 'all'|'ot'|'nt' = 'all',
   bookFilter?: string[],
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       // function unavailable — fall through to local
     }
 
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
     // Decide results:
     // 1) If Edge returned fuzzyResults (and gated fuzzy), prefer those.
