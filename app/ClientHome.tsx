@@ -392,7 +392,48 @@ export default function ClientHome() {
       setResults(transformedResults);
       setCoverage(Array.isArray(coverageData) ? coverageData : []);
       setProcessed(null);
-      setRelatedForms(null); // Not implemented in direct search yet
+
+      // Fetch related forms if requested
+      if (includeRelated && query.trim()) {
+        try {
+          const relatedResponse = await fetch('/api/related_forms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ form: query.trim() }),
+          });
+
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            console.log('DEBUG: Related forms data:', relatedData);
+
+            if (relatedData && (relatedData.forms || relatedData.total > 0)) {
+              const verbs = (relatedData.forms || []).filter((f: any) => f.pos === 'verb');
+              const nouns = (relatedData.forms || []).filter((f: any) => f.pos === 'noun');
+              const other = (relatedData.forms || []).filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
+
+              const transformedForms: RelatedFormsData = {
+                verbs,
+                nouns,
+                other,
+                total: relatedData.total || (verbs.length + nouns.length + other.length)
+              };
+
+              setRelatedForms(transformedForms);
+              console.log('DEBUG: Set related forms:', transformedForms);
+            } else {
+              setRelatedForms(null);
+            }
+          } else {
+            console.warn('Failed to fetch related forms:', relatedResponse.status);
+            setRelatedForms(null);
+          }
+        } catch (error) {
+          console.warn('Error fetching related forms:', error);
+          setRelatedForms(null);
+        }
+      } else {
+        setRelatedForms(null);
+      }
 
       // Update results count
       const resultsCount = transformedResults.length;
