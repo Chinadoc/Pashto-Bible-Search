@@ -14,8 +14,17 @@ export async function POST(request: NextRequest) {
     // Perform the search on the server side
     const searchResults = await searchVerses(query.trim(), scope || 'all');
 
+    // Additional deduplication to ensure no duplicates even if database returns them
+    const uniqueSearchResults = new Map();
+    searchResults.forEach((result, index) => {
+      if (!uniqueSearchResults.has(result.ref)) {
+        uniqueSearchResults.set(result.ref, result);
+      }
+    });
+    const deduplicatedResults = Array.from(uniqueSearchResults.values());
+
     // Transform results to match expected format
-    const transformedResults = searchResults.map((result, index) => {
+    const transformedResults = deduplicatedResults.map((result, index) => {
       // Determine translation based on book
       const book = result.ref.split(' ')[0];
       const isPsalms = book === 'Psalms';
@@ -61,9 +70,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create processed data for highlighting
+    const processedData = {
+      original: query.trim(),
+      normalized: query.trim(),
+      variants: includeRelated ? [] : [], // Could be populated with variant data if available
+    };
+
     return NextResponse.json({
       results: transformedResults,
       relatedForms,
+      processed: processedData,
       count: transformedResults.length
     });
 

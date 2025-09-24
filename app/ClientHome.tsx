@@ -188,6 +188,7 @@ export default function ClientHome() {
   } | null>(null);
   const [activeTab, setActiveTab] = useState<string>('search');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [showRelatedForms, setShowRelatedForms] = useState<boolean>(false);
 
   // Verb understanding state
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('3rd');
@@ -667,6 +668,45 @@ export default function ClientHome() {
       {error && (
         <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
           {error}
+        </div>
+      )}
+
+      {/* Related Forms Section */}
+      {relatedForms && (relatedForms.total ?? 0) > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Related Forms
+            </h3>
+            <button
+              onClick={() => setShowRelatedForms(!showRelatedForms)}
+              className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+            >
+              {showRelatedForms ? 'Hide' : 'Show'} ({relatedForms.total})
+            </button>
+          </div>
+
+          {showRelatedForms && (
+            <RelatedForms
+              relatedForms={relatedForms}
+              onPick={(form) => {
+                setQuery(form);
+                setShowRelatedForms(false);
+              }}
+              verbState={{
+                person: verbPerson,
+                tense: verbTense,
+                aspect: verbAspect,
+                mood: verbMood
+              }}
+              setVerbState={(state) => {
+                setVerbPerson(state.person);
+                setVerbTense(state.tense);
+                setVerbAspect(state.aspect);
+                setVerbMood(state.mood);
+              }}
+            />
+          )}
         </div>
       )}
 
