@@ -283,8 +283,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
         const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
 
-        // Debug: Check if conditions for UI are met
-        console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
+        // Debug: Check if conditions for UI are met (moved to useEffect to avoid render issues)
+        React.useEffect(() => {
+          console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
+        }, [verse.ref, audioUrl]);
 
         return (
           <div

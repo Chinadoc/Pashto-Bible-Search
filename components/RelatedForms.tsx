@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 // Types for the structured data from Edge function
 type Variant = {
@@ -161,14 +161,16 @@ export default function RelatedForms({
 
   if (!relatedForms) return null
 
-  // Debug logging to see what data we're receiving
-  console.log('RelatedForms received data:', {
-    total: relatedForms.total,
-    verbsCount: relatedForms.verbs?.length || 0,
-    hasVariantDetails: !!relatedForms.variantDetails,
-    variantDetailsLength: relatedForms.variantDetails?.length || 0,
-    variantDetails: relatedForms.variantDetails
-  });
+  // Debug logging to see what data we're receiving (moved to useEffect to avoid render issues)
+  useEffect(() => {
+    console.log('RelatedForms received data:', {
+      total: relatedForms.total,
+      verbsCount: relatedForms.verbs?.length || 0,
+      hasVariantDetails: !!relatedForms.variantDetails,
+      variantDetailsLength: relatedForms.variantDetails?.length || 0,
+      variantDetails: relatedForms.variantDetails
+    });
+  }, [relatedForms]);
 
   // Show the interface even if no forms found yet, to allow user to see the controls
   const hasAnyForms = (relatedForms.total ?? 0) > 0
