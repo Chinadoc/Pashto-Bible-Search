@@ -111,6 +111,15 @@ export async function generateVerbVariants(
     if (vlex.data?.length) {
       // Seed some generic labels with lemma/root itself
       out.push({ form: base, label: "Infinitive", pos: "verb" });
+    } else {
+      // If not in verbs_lexicon either, create some basic forms based on common patterns
+      // This ensures we always return some verb forms for debugging
+      const basicForms = [
+        { form: base, label: "Infinitive" },
+        { form: `${base} کول`, label: "Compound Form" },
+        { form: `${base} کېدل`, label: "Stative Form" }
+      ];
+      basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
     }
   }
 
