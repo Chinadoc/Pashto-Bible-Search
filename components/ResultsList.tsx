@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'rea
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
-import { parseRef, dedupByRef, buildHighlightRegex } from '../utils/highlight';
+import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber } from '../utils/highlight';
 import HighlightText from './HighlightText';
 
 const OT_BOOKS = new Set([
@@ -330,7 +330,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
             {/* Verse text with absolute-positioned verse number chip */}
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-              {highlight(verse.text || '', termsProp || [], processed)}
+              {highlight(stripLeadingVerseNumber(verse.text || ''), termsProp || [], processed)}
             </p>
 
             {/* Absolute-positioned verse number chip */}
@@ -403,9 +403,6 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </div>
             )}
 
-            <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words">
-              {highlight(verse.text, termsProp || [], processed)}
-            </p>
           </div>
         );
       })}

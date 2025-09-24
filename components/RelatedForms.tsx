@@ -1,71 +1,99 @@
 "use client";
 
-import { useState } from 'react';
-import type { RelatedFormsData } from '../types';
+import { useState, useMemo } from 'react';
+
+// Types for the structured data from Edge function
+type Variant = {
+  form: string;
+  label: string;
+  pos: 'noun'|'verb'|'adjective'|'other';
+  score?: number;
+  count?: number;
+  romanized?: string;
+  flags?: string[];
+};
+
+type VariantDetails = Array<{
+  type: string;
+  description?: string;
+  count: number;
+  groups?: Array<{ key: string; label: string; items: Variant[] }>;
+}>;
+
+// Extended type that includes both legacy and new structured data
+type RelatedFormsData = {
+  verbs?: Array<{form: string, count: number}>;
+  nouns?: Array<{form: string, count: number}>;
+  other?: Array<{form: string, count: number}>;
+  total?: number;
+  variantDetails?: VariantDetails; // New structured data from Edge function
+};
 
 type VerbUnderstandingState = {
-  person: '1st' | '2nd' | '3rd';
-  tense: 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
+  person: '1st' | '2nd' | '3rd' | 'any';
+  tense: 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual' | 'all';
   aspect: 'imperfective' | 'perfective';
   mood: 'indicative' | 'subjunctive' | 'imperative' | 'ability';
 }
 
-// Verb form categorization based on LingDocs structure
-function categorizeVerbForms(forms: {form: string, count: number}[]) {
-  const presentTense = forms.filter(f =>
-    f.form.endsWith('م') || f.form.endsWith('و') || f.form.endsWith('ې') || f.form.endsWith('ئ') || f.form.endsWith('ي')
-  )
+// Map Edge function grammatical labels to LingDocs categories
+function mapGrammaticalLabel(label: string): string {
+  const l = label.toLowerCase();
 
-  const subjunctiveTense = forms.filter(f =>
-    f.form.includes('وو') || f.form.includes('ووه') || f.form.includes('و') || f.form.includes('وو')
-  ).filter(f => f.form.endsWith('م') || f.form.endsWith('و') || f.form.endsWith('ې') || f.form.endsWith('ئ') || f.form.endsWith('ي'))
+  if (l.includes('present') || l.includes('pres')) return 'Present';
+  if (l.includes('subj') || l.includes('subjunctive')) return 'Subjunctive';
+  if (l.includes('future') || l.includes('fut')) return 'Future';
+  if (l.includes('past_participle') || l.includes('participle')) return 'Perfect';
+  if (l.includes('past') && !l.includes('participle')) return 'Past';
+  if (l.includes('imperative') || l.includes('imp')) return 'Imperative';
+  if (l.includes('ability') || l.includes('abil')) return 'Ability';
+  if (l.includes('habitual') || l.includes('hab')) return 'Habitual';
+  if (l.includes('perfect')) return 'Perfect';
 
-  const futureTense = forms.filter(f =>
-    f.form.includes('به ') && (f.form.endsWith('م') || f.form.endsWith('و') || f.form.endsWith('ې') || f.form.endsWith('ئ') || f.form.endsWith('ي'))
-  )
+  return label; // Return original if no match
+}
 
-  const pastTense = forms.filter(f =>
-    f.form.endsWith('لم') || f.form.endsWith('لو') || f.form.endsWith('لې') || f.form.endsWith('ل') || f.form.endsWith('له')
-  )
+// Group verbs by LingDocs categories using structured data from Edge function
+function groupVerbsFromStructuredData(variantDetails?: VariantDetails) {
+  const verbVariants = variantDetails?.find(block => block.type === 'verb')?.groups?.[0]?.items || [];
+  const groups: Record<string, Array<{form: string, count: number}>> = {
+    presentTense: [],
+    subjunctiveTense: [],
+    futureTense: [],
+    pastTense: [],
+    imperativeForms: [],
+    abilityForms: [],
+    perfectForms: [],
+    habitualForms: [],
+    otherVerbs: []
+  };
 
-  const imperativeForms = forms.filter(f =>
-    f.form.includes('ه') && !f.form.includes(' ') && !f.form.includes('ش') &&
-    (f.form.endsWith('ه') || f.form.endsWith('ئ'))
-  )
+  verbVariants.forEach(variant => {
+    const category = mapGrammaticalLabel(variant.label);
 
-  const abilityForms = forms.filter(f =>
-    f.form.includes('ش') && (f.form.endsWith('م') || f.form.endsWith('و') || f.form.endsWith('ې') || f.form.endsWith('ئ') || f.form.endsWith('ي'))
-  )
+    // Map to appropriate category
+    if (category === 'Present') {
+      groups.presentTense.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Subjunctive') {
+      groups.subjunctiveTense.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Future') {
+      groups.futureTense.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Past') {
+      groups.pastTense.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Imperative') {
+      groups.imperativeForms.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Ability') {
+      groups.abilityForms.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Perfect') {
+      groups.perfectForms.push({ form: variant.form, count: variant.count || 0 });
+    } else if (category === 'Habitual') {
+      groups.habitualForms.push({ form: variant.form, count: variant.count || 0 });
+    } else {
+      groups.otherVerbs.push({ form: variant.form, count: variant.count || 0 });
+    }
+  });
 
-  const perfectForms = forms.filter(f =>
-    f.form.includes('لی') || f.form.includes('کړی') || f.form.includes('شوی') ||
-    f.form.includes('یم') || f.form.includes('یو') || f.form.includes('یې') ||
-    f.form.includes('وم') || f.form.includes('وو') || f.form.includes('وې') ||
-    f.form.includes('و') || f.form.includes('وه')
-  ).filter(f => f.form.includes(' ')) // Perfect forms have space
-
-  const habitualForms = forms.filter(f =>
-    f.form.includes('به ') && (f.form.endsWith('لم') || f.form.endsWith('لو') || f.form.endsWith('لې') || f.form.endsWith('ل') || f.form.endsWith('له'))
-  )
-
-  const otherVerbs = forms.filter(f =>
-    !presentTense.includes(f) && !subjunctiveTense.includes(f) &&
-    !futureTense.includes(f) && !pastTense.includes(f) &&
-    !imperativeForms.includes(f) && !abilityForms.includes(f) &&
-    !perfectForms.includes(f) && !habitualForms.includes(f)
-  )
-
-  return {
-    presentTense,
-    subjunctiveTense,
-    futureTense,
-    pastTense,
-    imperativeForms,
-    abilityForms,
-    perfectForms,
-    habitualForms,
-    otherVerbs
-  }
+  return groups;
 }
 
 export default function RelatedForms({
@@ -79,7 +107,7 @@ export default function RelatedForms({
   onPick: (form: string) => void;
   verbState?: VerbUnderstandingState;
   setVerbState?: (state: VerbUnderstandingState) => void;
-  onApplyFilter?: () => void; // NEW: function to apply filtered search
+  onApplyFilter?: (forms: string[]) => void; // Fixed: pass actual forms to filter
 }) {
   const [open, setOpen] = useState<boolean>(false)
 
@@ -88,60 +116,69 @@ export default function RelatedForms({
   // Show the interface even if no forms found yet, to allow user to see the controls
   const hasAnyForms = (relatedForms.total ?? 0) > 0
 
-  const verbs = relatedForms.verbs || []
-  const nouns = relatedForms.nouns || []
-  const others = relatedForms.other || []
+  // Use structured data from Edge function if available, otherwise fall back to legacy data
+  const hasStructuredData = relatedForms.variantDetails && relatedForms.variantDetails.length > 0;
+  const verbGroups = hasStructuredData
+    ? groupVerbsFromStructuredData(relatedForms.variantDetails)
+    : {
+        presentTense: relatedForms.verbs || [],
+        subjunctiveTense: [],
+        futureTense: [],
+        pastTense: [],
+        imperativeForms: [],
+        abilityForms: [],
+        perfectForms: [],
+        habitualForms: [],
+        otherVerbs: []
+      };
 
   // Filter verbs based on current tense/aspect/mood/person selection
-  const getFilteredVerbs = () => {
-    if (!verbState) return verbs
+  const filteredVerbs = useMemo(() => {
+    if (!verbState || verbState.tense === 'all') return Object.values(verbGroups).flat();
 
-    const { person, tense, aspect, mood } = verbState
-    let filtered = verbs
+    let filtered: Array<{form: string, count: number}> = [];
 
-    // Filter by tense
-    if (tense === 'present') {
-      filtered = presentTense
-    } else if (tense === 'subjunctive') {
-      filtered = subjunctiveTense
-    } else if (tense === 'future') {
-      filtered = futureTense
-    } else if (tense === 'past') {
-      filtered = pastTense
-    } else if (tense === 'imperative') {
-      filtered = imperativeForms
-    } else if (tense === 'ability') {
-      filtered = abilityForms
-    } else if (tense === 'perfect') {
-      filtered = perfectForms
-    } else if (tense === 'habitual') {
-      filtered = habitualForms
-    } else {
-      filtered = otherVerbs
+    switch (verbState.tense) {
+      case 'present': filtered = verbGroups.presentTense; break;
+      case 'subjunctive': filtered = verbGroups.subjunctiveTense; break;
+      case 'future': filtered = verbGroups.futureTense; break;
+      case 'past': filtered = verbGroups.pastTense; break;
+      case 'imperative': filtered = verbGroups.imperativeForms; break;
+      case 'ability': filtered = verbGroups.abilityForms; break;
+      case 'perfect': filtered = verbGroups.perfectForms; break;
+      case 'habitual': filtered = verbGroups.habitualForms; break;
+      default: filtered = verbGroups.otherVerbs;
     }
 
-    // Filter by person (enhanced heuristic)
-    if (person === '1st') {
+    // Filter by person
+    if (verbState.person !== 'any') {
+      const personEndings: Record<string, string[]> = {
+        '1st': ['م', 'و'], // 1st person endings
+        '2nd': ['ې', 'ئ'], // 2nd person endings
+        '3rd': ['ي'] // 3rd person endings
+      };
+
+      const endings = personEndings[verbState.person] || [];
       filtered = filtered.filter(f =>
-        f.form.endsWith('م') || f.form.endsWith('و') ||
-        f.form.includes(' به ') && (f.form.includes('م') || f.form.includes('و'))
-      )
-    } else if (person === '2nd') {
-      filtered = filtered.filter(f =>
-        f.form.endsWith('ې') || f.form.endsWith('ئ') ||
-        (f.form.includes(' به ') && (f.form.includes('ې') || f.form.includes('ئ')))
-      )
-    } else if (person === '3rd') {
-      filtered = filtered.filter(f =>
-        f.form.endsWith('ي') ||
-        (f.form.includes(' به ') && f.form.includes('ي'))
-      )
+        endings.some(ending => f.form.endsWith(ending))
+      );
     }
 
-    return filtered
-  }
+    return filtered;
+  }, [verbState, verbGroups]);
 
-  const filteredVerbs = getFilteredVerbs()
+  // Get all form counts for display
+  const formCounts = {
+    present: verbGroups.presentTense.length,
+    subjunctive: verbGroups.subjunctiveTense.length,
+    future: verbGroups.futureTense.length,
+    past: verbGroups.pastTense.length,
+    imperative: verbGroups.imperativeForms.length,
+    ability: verbGroups.abilityForms.length,
+    perfect: verbGroups.perfectForms.length,
+    habitual: verbGroups.habitualForms.length,
+    other: verbGroups.otherVerbs.length
+  };
 
   const {
     presentTense,
@@ -153,7 +190,7 @@ export default function RelatedForms({
     perfectForms,
     habitualForms,
     otherVerbs
-  } = categorizeVerbForms(verbs)
+  } = verbGroups;
 
   const Section = ({ title, list }: { title: string; list: {form: string, count: number}[] }) => (
     <div className="mt-2">
@@ -186,7 +223,7 @@ export default function RelatedForms({
             <button
               onClick={() => {
                 console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', filteredVerbs.map(v => v.form));
-                onApplyFilter();
+                onApplyFilter(filteredVerbs.map(v => v.form));
               }}
               className="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
@@ -210,6 +247,7 @@ export default function RelatedForms({
                 onChange={(e) => setVerbState({...verbState, tense: e.target.value as any})}
                 className="p-1 border border-gray-300 rounded text-xs dark:border-gray-600 dark:bg-gray-800"
               >
+                <option value="all">All tenses</option>
                 <option value="present">Present (م)</option>
                 <option value="subjunctive">Subjunctive (ووهم)</option>
                 <option value="future">Future (به وهم)</option>
@@ -225,9 +263,10 @@ export default function RelatedForms({
               <span className="text-gray-600 dark:text-gray-400">Person:</span>
               <select
                 value={verbState.person}
-                onChange={(e) => setVerbState({...verbState, person: e.target.value as '1st' | '2nd' | '3rd'})}
+                onChange={(e) => setVerbState({...verbState, person: e.target.value as '1st' | '2nd' | '3rd' | 'any'})}
                 className="p-1 border border-gray-300 rounded text-xs dark:border-gray-600 dark:bg-gray-800"
               >
+                <option value="any">Any person</option>
                 <option value="1st">1st Person (م)</option>
                 <option value="2nd">2nd Person (ې)</option>
                 <option value="3rd">3rd Person (ي)</option>
@@ -248,7 +287,7 @@ export default function RelatedForms({
               {filteredVerbs.length > 0 && (
                 <div className="mb-3">
                   <div className="text-xs text-gray-500 mb-2 font-medium">
-                    Verbs ({verbState ? `Filtered: ${filteredVerbs.length}` : verbs.length})
+                    Verbs ({verbState ? `Filtered: ${filteredVerbs.length}` : 'All forms'})
                   </div>
                   {verbState ? (
                     // Show filtered results when controls are active
@@ -271,8 +310,8 @@ export default function RelatedForms({
               )}
 
               {/* Other forms */}
-              {nouns.length > 0 && <Section title="Nouns" list={nouns} />}
-              {others.length > 0 && <Section title="Other" list={others} />}
+              {relatedForms.nouns?.length && <Section title="Nouns" list={relatedForms.nouns} />}
+              {relatedForms.other?.length && <Section title="Other" list={relatedForms.other} />}
             </>
           ) : (
             // Show placeholder when no forms found
