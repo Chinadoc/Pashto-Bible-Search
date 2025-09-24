@@ -101,41 +101,11 @@ export async function POST(req: NextRequest) {
       enableFuzzy
     });
 
-    // Edge-first
+    // TEMPORARY: Skip Edge Function and go directly to local search to test basic functionality
     let edgeProcessed: Processed | null = null;
-    console.log(`DEBUG: Attempting to call Edge Function...`);
+    console.log(`DEBUG: Skipping Edge Function, using local search only...`);
 
-    try {
-      const efRes = await fetch(
-        `${SUPABASE_URL}/functions/v1/pashto-processor`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            formPs: query,                // edge will normalize if romanized
-            includeRelated,
-            enableFuzzy,                  // auto-on when Latin-only
-          }),
-        }
-      );
-
-      console.log(`DEBUG: Edge Function response status:`, efRes.status);
-
-      if (efRes.ok) {
-        edgeProcessed = await efRes.json() as Processed;
-        console.log(`DEBUG: Edge Function success:`, { normalized: edgeProcessed.normalized, variants: edgeProcessed.variants.length });
-      } else {
-        const errorText = await efRes.text();
-        console.log(`DEBUG: Edge Function failed:`, { status: efRes.status, error: errorText });
-      }
-    } catch (error) {
-      console.log(`DEBUG: Edge Function error:`, error);
-      // function unavailable — fall through to local
-    }
+    // Force local search for now - no Edge Function call
 
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
