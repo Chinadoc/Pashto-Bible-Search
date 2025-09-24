@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
+import { buildHighlightRegex, renderHighlighted } from '../utils/highlight';
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
@@ -16,15 +17,33 @@ interface Props {
   query?: string; // legacy single-term highlight (fallback)
   terms?: string[]; // preferred: multiple variants to highlight
   highlightBook?: string | null; // book to visually highlight
+  processed?: any; // processed data from search for highlighting
 }
 
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(text: string, terms: string[]): ReactNode[] {
+function highlight(text: string, terms: string[], processed?: any): ReactNode[] {
+  // Use new Pashto-aware highlighting if we have processed data with variants
+  if (processed) {
+    const tokens = [
+      processed.normalized,
+      ...(processed.variants ?? []),
+      ...(processed.variantGroups?.nouns ?? []).map((v: any) => v.form),
+      ...(processed.variantGroups?.verbs ?? []).map((v: any) => v.form),
+    ].filter(Boolean) as string[];
+
+    const rx = buildHighlightRegex(tokens);
+    if (rx) {
+      return renderHighlighted(text, rx);
+    }
+  }
+
+  // Fallback to simple highlighting
   const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
   if (cleanTerms.length === 0) return [text];
+
   try {
     const pattern = cleanTerms.map(escapeRegExp).join('|');
     const re = new RegExp(`(${pattern})`, 'gi');
@@ -62,7 +81,7 @@ function getTranslationBadge(translation?: string, dialect?: string): ReactNode 
   );
 }
 
-export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook }: Props) {
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed }: Props) {
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -309,7 +328,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
             {/* only the Pashto text needs RTL */}
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl">
-              {highlight(verse.text || '', terms)}
+              {highlight(verse.text || '', terms, processed)}
             </p>
 
             {/* Compact audio controls */}
@@ -373,7 +392,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             )}
 
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words">
-              {highlight(verse.text, terms)}
+              {highlight(verse.text, terms, processed)}
             </p>
           </div>
         );

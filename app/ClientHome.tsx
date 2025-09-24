@@ -545,6 +545,7 @@ export default function ClientHome() {
                     results={results}
                     audioMap={audioMap}
                     loading={isLoading}
+                    processed={processed}
                   />
                 ) : (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
