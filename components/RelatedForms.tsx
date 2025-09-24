@@ -161,6 +161,15 @@ export default function RelatedForms({
 
   if (!relatedForms) return null
 
+  // Debug logging to see what data we're receiving
+  console.log('RelatedForms received data:', {
+    total: relatedForms.total,
+    verbsCount: relatedForms.verbs?.length || 0,
+    hasVariantDetails: !!relatedForms.variantDetails,
+    variantDetailsLength: relatedForms.variantDetails?.length || 0,
+    variantDetails: relatedForms.variantDetails
+  });
+
   // Show the interface even if no forms found yet, to allow user to see the controls
   const hasAnyForms = (relatedForms.total ?? 0) > 0
 
