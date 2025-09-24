@@ -106,13 +106,23 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             url = derived;
           }
         }
-        
+
+        // If no URL in audio map, try API (this will use Supabase Storage)
         if (!url) {
           try {
+            // Force refresh audio map to get updated URLs without Drive links
             const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
             const js = await r.json().catch(() => ({}));
             url = js?.url || '';
-          } catch { /* ignore */ }
+            console.log(`Generated audio URL for ${ref}:`, url ? 'SUCCESS' : 'FAILED');
+            if (url && !url.includes('drive.google.com')) {
+              console.log(`✅ Supabase Storage URL: ${url.substring(0, 80)}...`);
+            } else if (url.includes('drive.google.com')) {
+              console.warn(`⚠️ Google Drive URL still being used: ${ref}`);
+            }
+          } catch (error) {
+            console.log(`Failed to generate audio URL for ${ref}:`, error);
+          }
         }
 
         if (url) setResolvedUrls(prev => ({ ...prev, [ref]: url }));
@@ -221,6 +231,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         const audioUrl = (verse.ref && audioMap[verse.ref]) || '';
         if (verse.ref && audioUrl) {
           console.log('Found audio for:', verse.ref);
+          if (audioUrl.includes('drive.google.com')) {
+            console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
+          } else if (audioUrl.includes('supabase.co/storage')) {
+            console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
+          }
         }
 
         const terms = termsProp && termsProp.length > 0
