@@ -1,17 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchVerses } from '../../../utils/supabase';
 
+type SearchRequest = {
+  query: string;
+  scope?: 'all'|'ot'|'nt';
+  includeRelated?: boolean;
+  variants?: string[]; // NEW: multiple search terms for OR search
+};
+
 // Server-side search API route
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { query, scope, includeRelated } = body;
+    const body = await request.json() as SearchRequest;
+    const { query, scope, includeRelated, variants } = body;
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    // Perform the search on the server side
+    // If variants provided, do OR search with multiple terms
+    if (Array.isArray(variants) && variants.length > 0) {
+      const needles = Array.from(new Set(variants.filter(Boolean))).slice(0, 30); // Max 30 variants
+
+      // Perform multi-term search (OR logic)
+      let allResults: Array<{ref: string; text: string; testament?: string}> = [];
+      for (const term of needles) {
+        const termResults = await searchVerses(term, scope || 'all');
+        allResults = [...allResults, ...termResults];
+      }
+
+      // Deduplicate results
+      const uniqueResults = new Map();
+      allResults.forEach((result) => {
+        if (!uniqueResults.has(result.ref)) {
+          uniqueResults.set(result.ref, result);
+        }
+      });
+
+      const deduplicatedResults = Array.from(uniqueResults.values());
+
+      // Transform results to match expected format
+      const transformedResults = deduplicatedResults.map((result, index) => {
+        // Determine translation based on book
+        const book = result.ref.split(' ')[0];
+        const isPsalms = book === 'Psalms';
+        const isProverbs = book === 'Proverbs';
+        const isSongOfSolomon = book === 'Song of Solomon';
+
+        let translation = null;
+        let dialect = null;
+
+        // Show Yousafzai for Psalms, Proverbs, and Song of Solomon
+        if (isPsalms || isProverbs || isSongOfSolomon) {
+          translation = 'Yousafzai 2019';
+          dialect = 'Yousafzai';
+        }
+
+        return {
+          ref: result.ref,
+          text: result.text,
+          testament: result.testament || 'NT',
+          translation,
+          dialect,
+          tags: [],
+          audio_verse_url: null,
+          id: index + 1
+        };
+      });
+
+      // Create processed data for highlighting
+      const processedData = {
+        original: query,
+        normalized: query,
+        variants: needles, // Include all search terms for highlighting
+      };
+
+      return NextResponse.json({
+        results: transformedResults,
+        relatedForms: null, // No related forms for filtered searches
+        processed: processedData,
+        count: transformedResults.length
+      });
+    }
+
+    // Single query search (original logic)
     const searchResults = await searchVerses(query.trim(), scope || 'all');
 
     // Additional deduplication to ensure no duplicates even if database returns them

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, ChangeEvent } from "react";
+import { useEffect, useState, useMemo, useCallback, ChangeEvent, useRef } from "react";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import RelatedForms from "../components/RelatedForms";
+import { matchesVerb, normalizeLabel, type VerbFeatures } from "../utils/variants";
 import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import LinguisticAnalysis from "../components/LinguisticAnalysis";
@@ -189,6 +190,8 @@ export default function ClientHome() {
   const [activeTab, setActiveTab] = useState<string>('search');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [showRelatedForms, setShowRelatedForms] = useState<boolean>(false);
+  const [selectedMood, setSelectedMood] = useState<VerbFeatures['mood']>('subjunctive');
+  const [selectedPerson, setSelectedPerson] = useState<'1'|'2'|'3'|'any'>('1');
 
   // Verb understanding state
   const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('3rd');
@@ -552,6 +555,88 @@ export default function ClientHome() {
     }
   };
 
+  // Get filtered verb variants based on current filter selections
+  const filteredVerbVariants = useMemo(() => {
+    if (!processed?.variantGroups) return [];
+
+    // Find verb groups (groups with "verb" in the label)
+    const verbGroups = processed.variantGroups.filter(group =>
+      group.label?.toLowerCase().includes('verb')
+    );
+
+    if (verbGroups.length === 0) return [];
+
+    // Combine all forms from verb groups
+    const allVerbForms = verbGroups.flatMap(group => group.forms || []);
+
+    // For now, return all verb forms since the filtering logic needs to be adapted
+    // to work with the actual data structure
+    return allVerbForms.map(form => ({ form }));
+  }, [processed, selectedMood, selectedPerson]);
+
+  // Run filtered search with selected variants
+  const runFilteredSearch = async () => {
+    if (!processed?.variantGroups || filteredVerbVariants.length === 0) return;
+
+    const needles = filteredVerbVariants.map(v => v.form).filter(Boolean);
+    if (needles.length === 0) return;
+
+    try {
+      setIsLoading(true);
+      setError('');
+
+      const searchResponse = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: processed.normalized || query,
+          scope,
+          variants: needles, // Pass filtered forms as OR search terms
+        }),
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error(`Filtered search failed: ${searchResponse.statusText}`);
+      }
+
+      const searchData = await searchResponse.json();
+      const transformedResults = searchData.results || [];
+
+      // Deduplicate results
+      const dedupedResults = dedupByRef(transformedResults);
+
+      // Set the results with highlighting for all search terms
+      setResults(dedupedResults);
+      setProcessed(searchData.processed || null);
+
+      console.log(`DEBUG: Filtered search completed. Found ${dedupedResults.length} results for ${needles.length} terms.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Filtered search failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear form filter and return to original search
+  const clearFormFilter = async () => {
+    setProcessed(null);
+    setRelatedForms(null);
+    if (query.trim()) {
+      await handleSearch(query, scope, includeRelated);
+    }
+  };
+
+  // Auto-apply filter when verb state changes (debounced)
+  useEffect(() => {
+    if (!processed?.variantGroups || filteredVerbVariants.length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      runFilteredSearch();
+    }, 300); // Debounce for 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedMood, selectedPerson, processed?.normalized]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearchWithState();
@@ -693,6 +778,7 @@ export default function ClientHome() {
                 setQuery(form);
                 setShowRelatedForms(false);
               }}
+              onApplyFilter={runFilteredSearch}
               verbState={{
                 person: verbPerson,
                 tense: verbTense,
@@ -707,6 +793,21 @@ export default function ClientHome() {
               }}
             />
           )}
+        </div>
+      )}
+
+      {/* Form Filter Chips */}
+      {processed?.variants && processed.variants.length > 1 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600 dark:text-gray-400">Filtering by {processed.variants.length} related forms</span>
+            <button
+              className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
+              onClick={clearFormFilter}
+            >
+              Clear filter
+            </button>
+          </div>
         </div>
       )}
 
