@@ -365,62 +365,47 @@ export default function ClientHome() {
     setRelatedForms(null);
 
     try {
-      console.log('DEBUG: Making fetch request to /api/search_phrase');
-      const response = await fetch('/api/search_phrase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: query.trim(),
-          scope,
-          includeRelated,
-          limit: 100
-        }),
-      });
+      console.log('DEBUG: Starting direct database search for:', query.trim());
 
-      console.log('DEBUG: Response status:', response.status);
+      // Import the search function
+      const { searchVerses } = await import('../utils/supabase');
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('DEBUG: Search failed with status:', response.status, errorText);
-        throw new Error(`Search failed: ${response.status}`);
-      }
+      // Perform the search using the direct database function
+      const searchResults = await searchVerses(query.trim(), scope);
+      console.log('DEBUG: Direct search returned', searchResults.length, 'results');
 
-      let data: PhraseResponse;
-      try {
-        const responseText = await response.text();
-        console.log('DEBUG: Raw response:', responseText);
-        data = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error('Failed to parse search response:', parseErr);
-        throw new Error('Invalid response format from search API');
-      }
+      // Transform results to match expected format
+      const transformedResults = searchResults.map((result, index) => ({
+        ref: result.ref,
+        text: result.text,
+        testament: 'NT', // Default, could be enhanced later
+        translation: 'Yousafzai 2019', // Default
+        dialect: 'Yousafzai', // Default
+        tags: [], // Default
+        audio_verse_url: null, // Default
+        id: index + 1
+      }));
 
-      // Safely handle the response data
-      setResults(Array.isArray(data.results) ? data.results : []);
-      setCoverage(Array.isArray(data.coverage) ? data.coverage : coverageData);
-      setProcessed(data.processed && typeof data.processed === 'object' ? data.processed : null);
+      console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
 
-      if (includeRelated && data.relatedForms) {
-        try {
-          // Transform the related forms data to match our expected format
-          const verbs = Array.isArray(data.relatedForms.verbs) ? data.relatedForms.verbs : undefined;
-          const nouns = Array.isArray(data.relatedForms.nouns) ? data.relatedForms.nouns : undefined;
-          const other = Array.isArray(data.relatedForms.other) ? data.relatedForms.other : undefined;
+      // Set the results directly
+      setResults(transformedResults);
+      setCoverage(Array.isArray(coverageData) ? coverageData : []);
+      setProcessed(null);
+      setRelatedForms(null); // Not implemented in direct search yet
 
-          const transformedForms: RelatedFormsData = {
-            verbs,
-            nouns,
-            other,
-            total: (verbs?.length || 0) + (nouns?.length || 0) + (other?.length || 0)
-          };
-          setRelatedForms(transformedForms);
-        } catch (err) {
-          console.error('Error processing related forms:', err);
-          setRelatedForms(null);
-        }
-      }
+      // Update results count
+      const resultsCount = transformedResults.length;
+      setResultsCount(resultsCount);
+
+      console.log(`DEBUG: Search completed. Found ${resultsCount} results.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
+      setResults([]);
+      setCoverage([]);
+      setProcessed(null);
+      setRelatedForms(null);
+      setResultsCount(0);
     } finally {
       setIsLoading(false);
     }
