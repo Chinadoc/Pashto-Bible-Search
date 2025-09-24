@@ -406,8 +406,10 @@ export default function ClientHome() {
 
       // Set related forms from server response
       if (includeRelated && query.trim() && searchData.relatedForms) {
+        console.log('DEBUG: Setting related forms data:', searchData.relatedForms);
         setRelatedForms(searchData.relatedForms);
       } else {
+        console.log('DEBUG: No related forms data received or includeRelated not checked');
         setRelatedForms(null);
       }
 
@@ -538,8 +540,10 @@ export default function ClientHome() {
 
       // Set related forms from server response
       if (includeRelated && query.trim() && searchData.relatedForms) {
+        console.log('DEBUG: Setting related forms data:', searchData.relatedForms);
         setRelatedForms(searchData.relatedForms);
       } else {
+        console.log('DEBUG: No related forms data received or includeRelated not checked');
         setRelatedForms(null);
       }
 
