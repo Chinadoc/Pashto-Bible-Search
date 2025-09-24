@@ -9,7 +9,7 @@ import CoverageSidebar from "../components/CoverageSidebar";
 import Tabs from "../components/Tabs";
 import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
+import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, RelatedFormsData, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 import { TextField, Button, IconButton } from '@mui/material';
 
@@ -161,12 +161,7 @@ export default function ClientHome() {
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
-  const [relatedForms, setRelatedForms] = useState<{
-    verbs: Array<{form: string, count: number}>;
-    nouns: Array<{form: string, count: number}>;
-    other: Array<{form: string, count: number}>;
-    total: number;
-  } | null>(null);
+  const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [processed, setProcessed] = useState<{
@@ -269,11 +264,15 @@ export default function ClientHome() {
 
       if (includeRelated && data.relatedForms) {
         // Transform the related forms data to match our expected format
-        const transformedForms = {
-          verbs: data.relatedForms.verbs || [],
-          nouns: data.relatedForms.nouns || [],
-          other: data.relatedForms.other || [],
-          total: (data.relatedForms.verbs?.length || 0) + (data.relatedForms.nouns?.length || 0) + (data.relatedForms.other?.length || 0)
+        const verbs = Array.isArray(data.relatedForms.verbs) ? data.relatedForms.verbs : undefined;
+        const nouns = Array.isArray(data.relatedForms.nouns) ? data.relatedForms.nouns : undefined;
+        const other = Array.isArray(data.relatedForms.other) ? data.relatedForms.other : undefined;
+
+        const transformedForms: RelatedFormsData = {
+          verbs,
+          nouns,
+          other,
+          total: (verbs?.length || 0) + (nouns?.length || 0) + (other?.length || 0)
         };
         setRelatedForms(transformedForms);
       }

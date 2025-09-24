@@ -20,12 +20,19 @@ export interface CoverageItem {
 export type AudioMap = Record<string, string>;
 
 // API response types
+export interface RelatedFormsData {
+  verbs?: Array<{form: string, count: number}>;
+  nouns?: Array<{form: string, count: number}>;
+  other?: Array<{form: string, count: number}>;
+  total?: number;
+}
+
 export interface PhraseResponse {
   results: Verse[];
   coverage: CoverageItem[];
   ms: number;
   processed?: ProcessedSearchMetadata;
-  relatedForms?: Record<string, unknown>;
+  relatedForms?: RelatedFormsData;
 }
 
 export interface VariantDetailMeta {
