@@ -1,5 +1,3 @@
-import React from "react";
-
 // Arabic combining marks (remove or make optional)
 const DIA = "\u064B-\u065F\u0670\u06D6-\u06ED";
 
@@ -28,13 +26,13 @@ export function buildHighlightRegex(tokens: string[]){
   return new RegExp(`(${parts.join("|")})`, "giu");
 }
 
-export function renderHighlighted(text: string, rx: RegExp){
+export function renderHighlightedText(text: string, rx: RegExp): string {
   const chunks = text.split(rx);
   return chunks.map((c, i) =>
-    i % 2
-      ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
-      : <React.Fragment key={i}>{c}</React.Fragment>
-  );
+    i % 2 === 1
+      ? `<mark class="bg-yellow-400/40 rounded px-0.5">${c}</mark>`
+      : c
+  ).join('');
 }
 
 // Utility to parse verse reference

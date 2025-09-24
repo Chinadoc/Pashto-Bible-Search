@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
-import { buildHighlightRegex, renderHighlighted, parseRef, dedupByRef } from '../utils/highlight';
+import { parseRef, dedupByRef } from '../utils/highlight';
+import HighlightText from './HighlightText';
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
@@ -24,7 +25,7 @@ function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(text: string, terms: string[], processed?: any): ReactNode[] {
+function highlight(text: string, terms: string[], processed?: any): ReactNode {
   // Use new Pashto-aware highlighting if we have processed data with variants
   if (processed) {
     const tokens = [
@@ -34,35 +35,28 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode[] 
       ...(processed.variantGroups?.verbs ?? []).map((v: any) => v.form),
     ].filter(Boolean) as string[];
 
-    const rx = buildHighlightRegex(tokens);
-    if (rx) {
-      return renderHighlighted(text, rx);
-    }
+    return <HighlightText text={text} tokens={tokens} />;
   }
 
   // Fallback to simple highlighting
   const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
-  if (cleanTerms.length === 0) return [text];
+  if (cleanTerms.length === 0) return <span>{text}</span>;
 
   try {
     const pattern = cleanTerms.map(escapeRegExp).join('|');
     const re = new RegExp(`(${pattern})`, 'gi');
     const parts = text.split(re);
-    const out: ReactNode[] = [];
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (part === undefined) continue;
-      // split with a capturing group produces: even indexes = non-match, odd indexes = matched terms
-      const isMatch = i % 2 === 1;
-      out.push(
-        isMatch
-          ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>
-          : part
-      );
-    }
-    return out;
+    return (
+      <span>
+        {parts.map((part, i) =>
+          i % 2 === 1
+            ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>
+            : <React.Fragment key={i}>{part}</React.Fragment>
+        )}
+      </span>
+    );
   } catch {
-    return [text];
+    return <span>{text}</span>;
   }
 }
 
@@ -335,7 +329,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
             {/* Verse text with absolute-positioned verse number chip */}
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-              {rx ? renderHighlighted(verse.text || '', rx) : verse.text || ''}
+              {highlight(verse.text || '', terms, processed)}
             </p>
 
             {/* Absolute-positioned verse number chip */}
