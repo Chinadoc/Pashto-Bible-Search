@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(hit.value, { status: 200 });
     }
 
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
     // Ask the Edge function for structured variants (keeps parity with search flow)
     const efRes = await fetch(`${SUPABASE_URL}/functions/v1/pashto-processor`, {
