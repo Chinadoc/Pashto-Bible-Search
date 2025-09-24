@@ -48,6 +48,25 @@ function isLatinOnly(s: string): boolean {
   return /^[\p{Script=Latin}\s'\-]+$/u.test(s);
 }
 
+// Multi-variant search using OR clause
+async function localMultiSearch(
+  db: any,
+  needles: string[],
+  scope: 'all'|'ot'|'nt' = 'all',
+  bookFilter?: string[],
+  limit = 50
+) {
+  const terms = Array.from(new Set(needles.filter(Boolean))).slice(0, 30);
+  if (!terms.length) return [];
+  const orExpr = terms.map(t => `text.ilike.%${t}%`).join(',');
+  let q = db.from("verses").select("ref,text,testament").or(orExpr).limit(limit);
+  if (scope === "ot") q = q.eq("testament", "OT");
+  if (scope === "nt") q = q.eq("testament", "NT");
+  if (bookFilter?.length) q = q.in("book", bookFilter);
+  const { data } = await q;
+  return (data ?? []).map((r: any) => ({ ref: r.ref, text: r.text, testament: r.testament }));
+}
+
 async function localDirectSearch(
   db: any,
   needle: string,
@@ -64,8 +83,8 @@ async function localDirectSearch(
     .ilike("text", `%${needle}%`)
     .limit(limit);
 
-  if (scope === "ot") q = q.eq("testament", "ot");
-  if (scope === "nt") q = q.eq("testament", "nt");
+  if (scope === "ot") q = q.eq("testament", "OT");
+  if (scope === "nt") q = q.eq("testament", "NT");
   if (bookFilter?.length) q = q.in("book", bookFilter);
 
   console.log(`DEBUG: Executing query...`);
@@ -119,21 +138,112 @@ export async function POST(req: NextRequest) {
       enableFuzzy
     });
 
-    // Go directly to local search - simplest approach for now
-    console.log(`DEBUG: Using direct database search only`);
+    // Progressive search: Edge-first, then fallback to variant expansion
+    let edgeProcessed: Processed | null = null;
+    console.log(`DEBUG: Attempting Edge Function call...`);
+
+    try {
+      const efRes = await fetch(
+        `${SUPABASE_URL}/functions/v1/pashto-processor`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            formPs: query,
+            includeRelated: false,  // Start without variants for performance
+            enableFuzzy: latin,     // Enable for romanized input
+          }),
+        }
+      );
+
+      console.log(`DEBUG: Edge Function response status:`, efRes.status);
+
+      if (efRes.ok) {
+        edgeProcessed = await efRes.json() as Processed;
+        console.log(`DEBUG: Edge Function success:`, { normalized: edgeProcessed.normalized, variants: edgeProcessed.variants.length });
+      } else {
+        const errorText = await efRes.text();
+        console.log(`DEBUG: Edge Function failed:`, { status: efRes.status, error: errorText });
+      }
+    } catch (error) {
+      console.log(`DEBUG: Edge Function error:`, error);
+    }
 
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
-    // Perform local search with the original query
-    console.log(`DEBUG: Searching database with query:`, query);
-    const results = await localDirectSearch(db, query, scope, body.bookFilter, limit);
-    console.log(`DEBUG: Database search returned:`, results.length, 'results');
+    let results: VerseResult[] = [];
+    let processed: Processed;
 
-    const processed: Processed = {
-      normalized: query,
-      searchType: enableFuzzy ? "fuzzy" : "fast",
-      variants: [query],
-    };
+    if (edgeProcessed) {
+      processed = edgeProcessed;
+
+      // Prefer Edge fuzzy results when present
+      if (Array.isArray(edgeProcessed.fuzzyResults) && edgeProcessed.fuzzyResults.length) {
+        results = edgeProcessed.fuzzyResults;
+        console.log(`DEBUG: Using fuzzy results:`, results.length);
+      } else {
+        const needle = processed.normalized || query;
+        console.log(`DEBUG: Searching with Edge Function normalized term:`, needle);
+        results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
+        console.log(`DEBUG: Direct search returned:`, results.length, 'results');
+
+        // Progressive fallback: no direct hits → expand to variants
+        if (!results.length) {
+          // If we didn't ask Edge for variants, do it now
+          const needVariants = !processed.variantDetails && !processed.variantGroups;
+          let variants: string[] = processed.variants ?? [needle];
+
+          if (needVariants) {
+            try {
+              const ef2 = await fetch(`${SUPABASE_URL}/functions/v1/pashto-processor`, {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  "apikey": SUPABASE_ANON_KEY,
+                  "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({ formPs: needle, includeRelated: true, enableFuzzy: false }),
+              });
+              if (ef2.ok) {
+                const proc2 = await ef2.json();
+                const pool = [
+                  proc2.normalized,
+                  ...(proc2.variants ?? []),
+                  ...((proc2.variantGroups?.nouns ?? []).map((v: any) => v.form)),
+                  ...((proc2.variantGroups?.verbs ?? []).map((v: any) => v.form)),
+                ];
+                variants = Array.from(new Set(pool.filter(Boolean)));
+                // carry over richer processed info when we had none
+                if (!processed.variantGroups && proc2.variantGroups) processed.variantGroups = proc2.variantGroups;
+                if (!processed.variantDetails && proc2.variantDetails) processed.variantDetails = proc2.variantDetails;
+              }
+            } catch {}
+          }
+
+          if (variants?.length) {
+            console.log(`DEBUG: Expanding search to variants:`, variants);
+            results = await localMultiSearch(db, variants, scope, body.bookFilter, limit);
+            console.log(`DEBUG: Multi-variant search returned:`, results.length, 'results');
+          }
+        }
+      }
+    } else {
+      // Edge not available → try direct, then multi-variant using just the query
+      const needle = query;
+      console.log(`DEBUG: Edge unavailable, searching with:`, needle);
+      results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
+      console.log(`DEBUG: Direct search returned:`, results.length, 'results');
+      if (!results.length) {
+        console.log(`DEBUG: Trying multi-variant search with:`, [needle]);
+        results = await localMultiSearch(db, [needle], scope, body.bookFilter, limit);
+        console.log(`DEBUG: Multi-variant search returned:`, results.length, 'results');
+      }
+      processed = { normalized: needle, searchType: enableFuzzy ? "fuzzy" : "fast", variants: [needle] };
+    }
 
     const ms = Date.now() - t0;
     const payload: SearchPhraseResponse = { processed, results, ms };
