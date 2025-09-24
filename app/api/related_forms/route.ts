@@ -1,234 +1,152 @@
-import { NextRequest, NextResponse } from 'next/server'
+// app/api/related_forms/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-type RelatedForm = { form: string; count?: number; pos?: string; relation?: 'root' | 'inflection' | 'mapped'; info?: any }
-type RelatedFormsResponse = { root: string; forms: RelatedForm[]; total?: number; ms: number; cached?: boolean }
+type Variant = {
+  form: string;
+  label: string;
+  pos: 'noun'|'verb'|'adjective'|'other';
+  score?: number;
+  count?: number;
+  romanized?: string;
+  flags?: string[];
+};
 
-// Simple in-memory cache for related forms
-const RELATED_FORMS_CACHE = new Map<string, { data: RelatedFormsResponse; ts: number }>()
-const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
+type VariantDetailGroup = { key: string; label: string; items: Variant[] };
+type VariantDetails = Array<{ type: string; description?: string; count: number; groups?: VariantDetailGroup[] }>;
 
-// Attempt to fetch related forms/inflections for a given term using Supabase REST.
-// This implementation is resilient: if tables/views are missing, it returns an empty list.
-export async function POST(request: NextRequest) {
-  const started = Date.now()
+type RelatedFormsResponse = {
+  // legacy (back-compat)
+  root: string;
+  forms: { form: string; count?: number; label?: string; pos?: string }[];
+  total: number;
+  ms: number;
+  // new — mirrors Edge function
+  variantDetails?: VariantDetails;
+};
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// 15-minute naive cache
+const TTL = 15 * 60 * 1000;
+const CACHE = new Map<string, { value: RelatedFormsResponse; until: number }>();
+
+function isLatinOnly(s: string): boolean {
+  return /^[\p{Script=Latin}\s'\-]+$/u.test(s);
+}
+
+export async function POST(req: NextRequest) {
+  const t0 = Date.now();
   try {
-    const body = await request.json().catch(() => ({})) as { term?: string; limit?: number }
-    const term = (body.term || '').trim()
-    const limit = Math.max(1, Math.min(1000, Number(body.limit) || 200))
+    const body = await req.json().catch(() => ({}));
+    // Keep contract tolerant: accept common aliases without breaking the existing caller
+    const input =
+      body?.form ?? body?.word ?? body?.lemma ?? body?.root ?? body?.query ?? "";
 
-    if (!term) {
-      return NextResponse.json({ root: '', forms: [], ms: Date.now() - started })
+    const key = JSON.stringify({ k: input });
+    const hit = CACHE.get(key);
+    if (hit && Date.now() < hit.until) {
+      return NextResponse.json(hit.value, { status: 200 });
     }
 
-    // Check cache first
-    const cacheKey = `${term}-${limit}`
-    const cached = RELATED_FORMS_CACHE.get(cacheKey)
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      return NextResponse.json({
-        ...cached.data,
-        cached: true,
-        ms: Date.now() - started
-      })
-    }
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      return NextResponse.json({ root: term, forms: [], ms: Date.now() - started })
-    }
-
-    // 1) Determine root for the term
-    let root = term
-    try {
-      // Query form_roots table (relational format)
-      const url = new URL(`${supabaseUrl}/rest/v1/form_roots`)
-      url.searchParams.set('select', 'root_form')
-      url.searchParams.set('word_form', `eq.${term}`)
-      url.searchParams.set('limit', '1')
-      const res = await fetch(url.toString(), {
+    // Ask the Edge function for structured variants (keeps parity with search flow)
+    const efRes = await fetch(`${SUPABASE_URL}/functions/v1/pashto-processor`, {
+      method: "POST",
         headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      })
-      if (res.ok) {
-        const rows = await res.json()
-        if (Array.isArray(rows) && rows.length > 0 && rows[0]?.root_form) {
-          root = rows[0].root_form
-        }
-      }
+        "content-type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        formPs: String(input || "").trim(),
+        includeRelated: true,
+        enableFuzzy: isLatinOnly(String(input || "")), // harmless here
+      }),
+    });
 
-      // Also try root_form if word_form didn't work
-      if (root === term) {
-        const url2 = new URL(`${supabaseUrl}/rest/v1/form_roots`)
-        url2.searchParams.set('select', 'root_form')
-        url2.searchParams.set('root_form', `eq.${term}`)
-        url2.searchParams.set('limit', '1')
-        const res2 = await fetch(url2.toString(), {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store',
-        })
-        if (res2.ok) {
-          const rows2 = await res2.json()
-          if (Array.isArray(rows2) && rows2.length > 0 && rows2[0]?.root_form) {
-            root = rows2[0].root_form
+    let variantDetails: VariantDetails | undefined;
+    let root = String(input || "").trim();
+    let forms: { form: string; count?: number; label?: string; pos?: string }[] = [];
+
+    if (efRes.ok) {
+      const processed = await efRes.json();
+      root = processed?.root || processed?.normalized || root;
+      // Prefer grouped variants from the Edge function (already deduped/scored)
+      const merged: Variant[] = [
+        ...(processed?.variantGroups?.nouns ?? []),
+        ...(processed?.variantGroups?.verbs ?? []),
+        ...(processed?.variantGroups?.other ?? []),
+      ];
+      forms = merged.map(v => ({ form: v.form, count: v.count, label: v.label, pos: v.pos }));
+
+      // Align to the mirrored structure so the UI can render either source
+      if (processed?.variantDetails) {
+        variantDetails = processed.variantDetails;
+      } else if (merged.length) {
+        // Synthesize a minimal structure if not present
+        const nouns = merged.filter(v => v.pos === "noun");
+        const verbs = merged.filter(v => v.pos === "verb");
+        const groups: VariantDetails = [];
+        if (nouns.length) groups.push({ type: "noun", count: nouns.length, groups: [{ key: "n-core", label: "Noun Paradigm", items: nouns }] });
+        if (verbs.length) groups.push({ type: "verb", count: verbs.length, groups: [{ key: "v-core", label: "Verb Surfaces", items: verbs }] });
+        variantDetails = groups.length ? groups : undefined;
+      }
+    } else {
+      // Edge unavailable → degrade gracefully (return minimal legacy structure)
+      forms = [{ form: root, label: "Form" }];
+    }
+
+    // Enrich with form_occurrences (PR #9: pashto_form + frequency)
+    const uniqueForms = Array.from(new Set(forms.map(f => f.form))).slice(0, 200);
+    if (uniqueForms.length) {
+      const { data: occ } = await db.from("form_occurrences")
+        .select("pashto_form, frequency")
+        .in("pashto_form", uniqueForms);
+      const occMap = new Map<string, number>();
+      for (const r of occ ?? []) occMap.set(r.pashto_form, r.frequency ?? 0);
+
+      forms = forms.map(f => ({ ...f, count: occMap.get(f.form) ?? f.count }));
+      if (variantDetails) {
+        for (const block of variantDetails) {
+          for (const g of (block.groups ?? [])) {
+            g.items = g.items.map(v => ({
+              ...v,
+              count: occMap.get(v.form) ?? v.count,
+              score: (occMap.get(v.form) ?? v.count ?? 0),
+            }));
           }
         }
       }
-    } catch {
-      // ignore and keep root=term
     }
 
-    // 2) Get related forms from inflections table
-    const formSet = new Set<string>()
-    if (formSet.size === 0) {
-      try {
-        const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
-        // assume columns: root, form
-        url.searchParams.set('select', 'inflected_form')
-        url.searchParams.set('base_word', `eq.${root}`)
-        url.searchParams.set('limit', String(limit))
-        const res = await fetch(url.toString(), {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store',
-        })
-        if (res.ok) {
-          const rows = await res.json()
-          if (Array.isArray(rows)) {
-            rows.forEach((r: any) => {
-              if (r?.inflected_form) {
-                try {
-                  // inflected_form could be a JSON array or a JSON string
-                  let forms;
-                  if (Array.isArray(r.inflected_form)) {
-                    forms = r.inflected_form;
-                  } else {
-                    forms = JSON.parse(r.inflected_form);
-                  }
-
-                  if (Array.isArray(forms)) {
-                    forms.forEach((formObj: any) => {
-                      if (formObj?.form) {
-                        formSet.add(String(formObj.form))
-                      }
-                    })
-                  } else {
-                    // If forms is not an array, add it as a single form
-                    formSet.add(String(forms))
-                  }
-                } catch (e) {
-                  // If parsing fails, try to extract forms using regex
-                  const formStr = String(r.inflected_form);
-                  const formMatches = formStr.match(/'form':\s*'([^']+)'/g)
-                  if (formMatches) {
-                    formMatches.forEach((match) => {
-                      const formMatch = match.match(/'form':\s*'([^']+)'/)
-                      if (formMatch && formMatch[1]) {
-                        formSet.add(formMatch[1])
-                      }
-                    })
-                  }
-                }
-              }
-            })
-          }
-        }
-      } catch {
-        // ignore
-      }
+    // Enrich with POS if missing (verbs_lexicon / nouns_lexicon)
+    const missingPos = forms.filter(f => !f.pos);
+    if (missingPos.length) {
+      const sample = missingPos.map(f => f.form).slice(0, 200);
+      const [vlex, nlex] = await Promise.all([
+        db.from("verbs_lexicon").select("lemma").in("lemma", sample),
+        db.from("nouns_lexicon").select("lemma").in("lemma", sample),
+      ]);
+      const verbs = new Set((vlex.data ?? []).map(r => r.lemma));
+      const nouns = new Set((nlex.data ?? []).map(r => r.lemma));
+      forms = forms.map(f => f.pos ? f : {
+        ...f,
+        pos: verbs.has(f.form) ? "verb" : (nouns.has(f.form) ? "noun" : undefined)
+      });
     }
 
-    // 4) Enrich counts using word_frequencies and add POS grouping
-    const formsArr = Array.from(formSet).filter(f => f && f !== term)
-    const enriched: Array<RelatedForm> = formsArr.map(f => ({ form: f }))
-    // Counts via word_frequencies
-    try {
-      if (formsArr.length > 0) {
-        const url = new URL(`${supabaseUrl}/rest/v1/word_frequencies`)
-        url.searchParams.set('select', 'pashto_word,frequency_count')
-        const inList = formsArr.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
-        url.searchParams.set('pashto_word', `in.(${inList})`)
-        url.searchParams.set('limit', String(formsArr.length))
-        const r = await fetch(url.toString(), {
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-          cache: 'no-store',
-        })
-        if (r.ok) {
-          const rows = await r.json()
-          const freqMap = new Map<string, number>()
-          for (const row of rows) if (row?.pashto_word) freqMap.set(String(row.pashto_word), Number(row.frequency_count || 0))
-          enriched.forEach(item => { if (freqMap.has(item.form)) item.count = freqMap.get(item.form) })
-        }
-      }
-    } catch {}
-    // POS grouping from lexicons based on root
-    try {
-      let rootPos: string | undefined
-      let url = new URL(`${supabaseUrl}/rest/v1/verbs_lexicon`)
-      url.searchParams.set('select', 'verb_root')
-      url.searchParams.set('verb_root', `eq.${root}`)
-      url.searchParams.set('limit', '1')
-      let r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
-      if (r.ok) {
-        const rows = await r.json()
-        if (Array.isArray(rows) && rows.length > 0) rootPos = 'verb'
-      }
-      if (!rootPos) {
-        // Query nouns_lexicon (relational format)
-        url = new URL(`${supabaseUrl}/rest/v1/nouns_lexicon`)
-        url.searchParams.set('select', 'noun_root')
-        url.searchParams.set('noun_root', `eq.${root}`)
-        url.searchParams.set('limit', '1')
-        r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
-        if (r.ok) {
-          const rows = await r.json()
-          if (Array.isArray(rows) && rows.length > 0) rootPos = 'noun'
-        }
-      }
-      if (rootPos) enriched.forEach(item => { item.pos = rootPos })
-    } catch {}
+    const total = forms.length;
+    const ms = Date.now() - t0;
+    const payload: RelatedFormsResponse = { root, forms, total, ms, variantDetails };
 
-    // Morphology info from inflections
-    try {
-      const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
-      url.searchParams.set('select', 'inflected_form,grammatical_info')
-      url.searchParams.set('base_word', `eq.${root}`)
-      url.searchParams.set('limit', String(limit))
-      const r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
-      if (r.ok) {
-        const rows: Array<{ inflected_form: string; grammatical_info: any }> = await r.json()
-        const infoMap = new Map<string, any>()
-        rows.forEach(row => { if (row?.inflected_form) infoMap.set(row.inflected_form, row.grammatical_info) })
-        enriched.forEach(item => {
-          if (item.form === root) item.relation = 'root'
-          else if (infoMap.has(item.form)) { item.relation = 'inflection'; item.info = infoMap.get(item.form) }
-          else item.relation = 'mapped'
-        })
-      }
-    } catch {}
-    // Sort by count desc then form asc
-    enriched.sort((a, b) => (b.count || 0) - (a.count || 0) || a.form.localeCompare(b.form))
+    CACHE.set(key, { value: payload, until: Date.now() + TTL });
 
-    const response: RelatedFormsResponse = { root, forms: enriched, total: enriched.length, ms: Date.now() - started }
-
-    // Cache the result
-    RELATED_FORMS_CACHE.set(cacheKey, { data: response, ts: Date.now() })
-
-    return NextResponse.json(response)
+    return NextResponse.json(payload, { status: 200 });
   } catch (e) {
-    console.error('related_forms error:', e)
-    return NextResponse.json({ root: '', forms: [], ms: Date.now() - started }, { status: 500 })
+    const ms = Date.now() - t0;
+    return NextResponse.json({ error: String(e), ms }, { status: 500 });
   }
 }
