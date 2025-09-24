@@ -40,6 +40,18 @@ function isLatinOnly(s: string): boolean {
   return /^[\p{Script=Latin}\s'\-]+$/u.test(s);
 }
 
+function stripDiacritics(s: string) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function normRom(s: string) {
+  return stripDiacritics(s).toLowerCase().replace(/[^a-z'\- ]/g, '').trim();
+}
+
+function tokenCountPashto(s: string) {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
 function ok<T>(data: T, init?: ResponseInit) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -96,27 +108,62 @@ serve(async (req) => {
     let romanization: string | undefined;
 
     if (latinOnly) {
-      const rawRom = raw.toLowerCase();
-      const pat = `%${rawRom}%`;
+      const rawNorm = normRom(raw);
+      const pat = `%${rawNorm}%`;
 
+      // Pull several candidates from both tables so we can rank
       const [romRes, dictRes] = await Promise.all([
         db.from("romanized_dictionary")
           .select("romanized,pashto")
           .ilike("romanized", pat)
-          .limit(1),
+          .limit(15),
         db.from("dictionary")
-          .select("romanized,pashto")
+          .select("romanized,pashto,pos")
           .ilike("romanized", pat)
-          .limit(1),
+          .limit(15),
       ]);
 
-      const pick = romRes.data?.[0] ?? dictRes.data?.[0];
-      if (pick?.pashto) {
-        normalized = pick.pashto;
-        romanization = pick.romanized;
-        console.log(`DEBUG: Romanized lookup hit: "${raw}" → "${normalized}" (via "${pick.romanized}")`);
+      const candidates = [
+        ...(romRes.data ?? []),
+        ...(dictRes.data ?? []),
+      ].filter(r => r?.pashto);
+
+      if (candidates.length) {
+        // Optionally pull frequencies to help tie-break
+        const forms = Array.from(new Set(candidates.map(c => c.pashto)));
+        const { data: freqRows } = await db
+          .from("word_frequencies")
+          .select("pashto_word, frequency_count")
+          .in("pashto_word", forms);
+        const freq = new Map<string, number>();
+        for (const r of freqRows ?? []) freq.set(r.pashto_word, r.frequency_count ?? 0);
+
+        // Score: prefer exact roman match, then single-token pashto, then وهل, then higher frequency
+        const scored = candidates.map(c => {
+          const cRom = normRom(c.romanized ?? '');
+          const pashto = c.pashto as string;
+          const single = tokenCountPashto(pashto) === 1;
+          const exact = cRom === rawNorm;
+          const endsEq = cRom.split(/\s+/).pop() === rawNorm;
+          const isWahal = pashto === "وهل"; // bare helper verb
+          const f = freq.get(pashto) ?? 0;
+
+          let score = 0;
+          if (exact) score += 100;
+          if (endsEq) score += 60;
+          if (single) score += 40;
+          if (isWahal) score += 80;
+          score += Math.min(30, Math.log10(1 + f) * 10); // light freq bonus
+
+          return { c, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const best = scored[0].c;
+        normalized = best.pashto;
+        romanization = best.romanized ?? raw; // keep what matched
+        console.log(`DEBUG: Romanized lookup ranked hit: "${raw}" → "${normalized}" (via "${best.romanized}", score: ${scored[0].score})`);
       } else {
-        console.log(`DEBUG: Romanized lookup missed for "${raw}" with pattern "${pat}"`);
+        console.log(`DEBUG: Romanized lookup found no candidates for "${raw}" with pattern "${pat}"`);
       }
     }
 
@@ -206,14 +253,14 @@ serve(async (req) => {
         console.log(`DEBUG: Generated ${nouns.length} noun variants`);
         groups.nouns = nouns;
       } else if (posGuess === "verb") {
-        const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: true });
+        const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: false });
         console.log(`DEBUG: Generated ${verbs.length} verb variants`);
         groups.verbs = verbs;
       } else {
         // Unknown POS → try both conservatively; keep whichever yields more signal
         const [nouns, verbs] = await Promise.all([
           generateNounVariants(normalized, db, { cap: 20 }),
-          generateVerbVariants(normalized, db, { cap: 20, includeCompound: true }),
+          generateVerbVariants(normalized, db, { cap: 20, includeCompound: false }),
         ]);
         console.log(`DEBUG: Generated ${nouns.length} noun variants and ${verbs.length} verb variants for unknown POS`);
         if (nouns.length) groups.nouns = nouns;
@@ -223,7 +270,7 @@ serve(async (req) => {
       // If no variants were generated, force generate verb variants as fallback
       if (!groups.nouns?.length && !groups.verbs?.length) {
         console.log(`DEBUG: No variants generated, forcing verb variant generation for "${normalized}"`);
-        const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: true });
+        const verbs = await generateVerbVariants(normalized, db, { cap: 30, includeCompound: false });
         console.log(`DEBUG: Forced generation resulted in ${verbs.length} verb variants`);
         groups.verbs = verbs;
       }

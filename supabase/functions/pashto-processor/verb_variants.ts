@@ -18,6 +18,9 @@ export type Variant = {
 
 type DB = ReturnType<typeof createClient>;
 
+// Helper verbs that should not get compound expansions
+const HELPER_VERBS = new Set(["کول", "کېدل", "وهل", "خوړل", "ساتل"]);
+
 function uniqBy<T>(arr: T[], key: (t: T) => string): T[] {
   const seen = new Set<string>();
   const out: T[] = [];
@@ -153,8 +156,9 @@ export async function generateVerbVariants(
     });
   }
 
-  // 5) Optional compound expansions (safe heuristics; de-duping will keep it tidy)
-  if (includeCompound) {
+  // 5) Optional compound expansions: only when the base is *not* a helper verb.
+  // We also rely primarily on inflections to surface real compound forms when they exist.
+  if (includeCompound && !HELPER_VERBS.has(base)) {
     // Very conservative additions; these will be removed if inflections already include them
     // These flags help the UI distinguish
     const compoundForms: Variant[] = [
