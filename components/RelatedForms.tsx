@@ -184,10 +184,13 @@ export default function RelatedForms({
         <div className="flex gap-2">
           {onApplyFilter && filteredVerbs.length > 0 && (
             <button
-              onClick={onApplyFilter}
+              onClick={() => {
+                console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', filteredVerbs.map(v => v.form));
+                onApplyFilter();
+              }}
               className="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Apply Filter
+              Apply Filter ({filteredVerbs.length})
             </button>
           )}
           <button onClick={() => setOpen(!open)} className="text-xs px-2 py-0.5 border rounded">

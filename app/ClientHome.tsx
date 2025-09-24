@@ -676,9 +676,15 @@ export default function ClientHome() {
 
   // Auto-apply filter when verb state changes (debounced)
   useEffect(() => {
-    if (!processed?.variantGroups || filteredVerbVariants.length === 0) return;
+    if (!processed?.variantGroups || filteredVerbVariants.length === 0) {
+      console.log('DEBUG: Auto-apply skipped - no processed data or no filtered variants');
+      return;
+    }
+
+    console.log('DEBUG: Auto-applying filter with', filteredVerbVariants.length, 'terms:', filteredVerbVariants.map(v => v.form));
 
     const timeoutId = setTimeout(() => {
+      console.log('DEBUG: Auto-apply timeout triggered');
       runFilteredSearch();
     }, 300); // Debounce for 300ms
 
