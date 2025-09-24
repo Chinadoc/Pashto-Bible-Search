@@ -129,6 +129,12 @@ serve(async (req) => {
       ].filter(r => r?.pashto);
 
       if (candidates.length) {
+        // Debug: log all candidates found
+        console.log(`DEBUG: Romanized lookup found ${candidates.length} candidates for "${raw}" with pattern "${pat}":`);
+        candidates.forEach((c, i) => {
+          console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}"`);
+        });
+
         // Optionally pull frequencies to help tie-break
         const forms = Array.from(new Set(candidates.map(c => c.pashto)));
         const { data: freqRows } = await db
@@ -155,6 +161,8 @@ serve(async (req) => {
           if (isWahal) score += 80;
           score += Math.min(30, Math.log10(1 + f) * 10); // light freq bonus
 
+          console.log(`DEBUG: Scoring "${pashto}": exact=${exact} endsEq=${endsEq} single=${single} isWahal=${isWahal} freq=${f} → score=${score}`);
+
           return { c, score };
         }).sort((a, b) => b.score - a.score);
 
@@ -162,6 +170,7 @@ serve(async (req) => {
         normalized = best.pashto;
         romanization = best.romanized ?? raw; // keep what matched
         console.log(`DEBUG: Romanized lookup ranked hit: "${raw}" → "${normalized}" (via "${best.romanized}", score: ${scored[0].score})`);
+        console.log(`DEBUG: Top 3 candidates: ${scored.slice(0, 3).map(s => `${s.c.pashto}(${s.score})`).join(', ')}`);
       } else {
         console.log(`DEBUG: Romanized lookup found no candidates for "${raw}" with pattern "${pat}"`);
       }
