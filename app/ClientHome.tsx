@@ -190,7 +190,7 @@ export default function ClientHome() {
   const [activeTab, setActiveTab] = useState<string>('search');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [showRelatedForms, setShowRelatedForms] = useState<boolean>(false);
-  const [selectedMood, setSelectedMood] = useState<VerbFeatures['mood']>('subjunctive');
+  const [selectedMood, setSelectedMood] = useState<VerbFeatures['mood']>('all');
   const [selectedPerson, setSelectedPerson] = useState<'1'|'2'|'3'|'any'>('1');
 
   // Verb understanding state
@@ -459,7 +459,7 @@ export default function ClientHome() {
   // Group results by book for coverage display
   const displayCoverageData = useMemo(() => {
     const coverageMap = new Map();
-    filteredResults.forEach(verse => {
+    results.forEach(verse => {
       const book = getBookFromRef(verse.ref);
       if (book) {
         coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
@@ -472,7 +472,7 @@ export default function ClientHome() {
       translation: 'Yousafzai 2019',
       dialect: 'Yousafzai'
     }));
-  }, [filteredResults]);
+  }, [results]);
 
   // Manual audio map refresh function
   const manualRefreshAudioMap = async () => {
@@ -569,9 +569,55 @@ export default function ClientHome() {
     // Combine all forms from verb groups
     const allVerbForms = verbGroups.flatMap(group => group.forms || []);
 
-    // For now, return all verb forms since the filtering logic needs to be adapted
-    // to work with the actual data structure
-    return allVerbForms.map(form => ({ form }));
+    // Filter verb forms based on selected mood and person
+    let filteredForms = allVerbForms;
+
+    // Filter by mood if selected
+    if (selectedMood && selectedMood !== 'all') {
+      filteredForms = filteredForms.filter(form => {
+        // Basic mood filtering based on form patterns
+        const lowerForm = form.toLowerCase();
+        switch (selectedMood) {
+          case 'present':
+            return lowerForm.includes('م') || lowerForm.includes('و') || lowerForm.includes('ي') || lowerForm.includes('ې');
+          case 'subjunctive':
+            return lowerForm.includes('وو') || lowerForm.includes('ووه');
+          case 'future':
+            return lowerForm.includes('به ') || lowerForm.includes('به');
+          case 'past':
+            return lowerForm.includes('لم') || lowerForm.includes('لو') || lowerForm.includes('ل') || lowerForm.includes('له');
+          case 'perfect':
+            return lowerForm.includes('لی') || lowerForm.includes('کړی') || lowerForm.includes('شوی');
+          case 'imperative':
+            return lowerForm.includes('ه') && !lowerForm.includes(' ');
+          case 'ability':
+            return lowerForm.includes('ش') && (lowerForm.includes('م') || lowerForm.includes('و') || lowerForm.includes('ي'));
+          case 'habitual':
+            return lowerForm.includes('به ') && (lowerForm.includes('لم') || lowerForm.includes('لو'));
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filter by person if selected
+    if (selectedPerson && selectedPerson !== 'any') {
+      filteredForms = filteredForms.filter(form => {
+        const lowerForm = form.toLowerCase();
+        switch (selectedPerson) {
+          case '1':
+            return lowerForm.endsWith('م') || lowerForm.endsWith('و') || lowerForm.includes(' به ') && (lowerForm.includes('م') || lowerForm.includes('و'));
+          case '2':
+            return lowerForm.endsWith('ې') || lowerForm.endsWith('ئ') || lowerForm.includes(' به ') && (lowerForm.includes('ې') || lowerForm.includes('ئ'));
+          case '3':
+            return lowerForm.endsWith('ي') || lowerForm.includes(' به ') && lowerForm.includes('ي');
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filteredForms.map(form => ({ form }));
   }, [processed, selectedMood, selectedPerson]);
 
   // Run filtered search with selected variants

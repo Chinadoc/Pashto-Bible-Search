@@ -1,6 +1,6 @@
 export type VerbFeatures = {
-  mood?: 'present'|'subjunctive'|'future'|'past'|'perfect'|'imperative'|'ability'|'habitual';
-  person?: '1'|'2'|'3';
+  mood?: 'all'|'present'|'subjunctive'|'future'|'past'|'perfect'|'imperative'|'ability'|'habitual';
+  person?: '1'|'2'|'3'|'any';
   number?: 'sg'|'pl'|'any';
 };
 
