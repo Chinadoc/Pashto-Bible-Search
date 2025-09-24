@@ -80,6 +80,14 @@ export const getWordFrequencies = async (scope: 'all' | 'nt' | 'ot' = 'all') => 
 };
 
 // Helper function to calculate coverage
+// Normalize book names to handle hyphens vs spaces
+function canonicalBookNameFromRef(ref: string): string {
+  if (!ref) return "";
+  const parts = ref.trim().split(" ");
+  const rawBook = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+  return rawBook.replace(/-/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export const calculateCoverage = (results: Array<{ ref: string }>) => {
   const coverageMap = new Map<string, number>();
 
@@ -91,14 +99,7 @@ export const calculateCoverage = (results: Array<{ ref: string }>) => {
         return;
       }
 
-      const parts = result.ref.trim().split(' ');
-      if (parts.length === 0) {
-        console.warn('Skipping result with empty ref in calculateCoverage:', result);
-        return;
-      }
-
-      // Handle multi-word book names like "1 Corinthians"
-      const book = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0];
+      const book = canonicalBookNameFromRef(result.ref);
       if (book) {
         coverageMap.set(book, (coverageMap.get(book) || 0) + 1);
       }
