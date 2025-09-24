@@ -119,49 +119,21 @@ export async function POST(req: NextRequest) {
       enableFuzzy
     });
 
-    // TEMPORARY: Bypass Edge Function entirely and go straight to local search
-    console.log(`DEBUG: Using direct database search only (no Edge Function)`);
+    // Go directly to local search - simplest approach for now
+    console.log(`DEBUG: Using direct database search only`);
 
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
-    // Decide results:
-    // 1) If Edge returned fuzzyResults (and gated fuzzy), prefer those.
-    // 2) Otherwise, do direct/ILIKE with the best normalized token we have.
-    let results: VerseResult[] = [];
-    let processed: Processed;
+    // Perform local search with the original query
+    console.log(`DEBUG: Searching database with query:`, query);
+    const results = await localDirectSearch(db, query, scope, body.bookFilter, limit);
+    console.log(`DEBUG: Database search returned:`, results.length, 'results');
 
-    // Use Edge Function results if available, otherwise fall back to local search
-    if (edgeProcessed && edgeProcessed.variants && edgeProcessed.variants.length > 0) {
-      processed = edgeProcessed;
-      console.log(`DEBUG: Using Edge Function results:`, {
-        searchType: processed.searchType,
-        normalized: processed.normalized,
-        variantsCount: processed.variants.length,
-        hasFuzzyResults: !!(processed.fuzzyResults?.length)
-      });
-
-      if (Array.isArray(edgeProcessed.fuzzyResults) && edgeProcessed.fuzzyResults?.length) {
-        results = edgeProcessed.fuzzyResults;
-        console.log(`DEBUG: Using fuzzy results:`, results.length);
-      } else {
-        const needle = processed.normalized || query;
-        console.log(`DEBUG: Searching with Edge Function normalized term:`, needle);
-        results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
-        console.log(`DEBUG: Local search with Edge Function term returned:`, results.length, 'results');
-      }
-    } else {
-      // Fallback to local search with original query
-      console.log(`DEBUG: Edge Function failed or returned no variants, using local fallback`);
-      const needle = query;
-      console.log(`DEBUG: Local fallback searching with:`, needle);
-      results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
-      console.log(`DEBUG: Local fallback returned:`, results.length, 'results');
-      processed = {
-        normalized: needle,
-        searchType: enableFuzzy ? "fuzzy" : "fast",
-        variants: [needle],
-      };
-    }
+    const processed: Processed = {
+      normalized: query,
+      searchType: enableFuzzy ? "fuzzy" : "fast",
+      variants: [query],
+    };
 
     const ms = Date.now() - t0;
     const payload: SearchPhraseResponse = { processed, results, ms };
