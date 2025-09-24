@@ -115,11 +115,42 @@ export async function POST(req: NextRequest) {
       enableFuzzy
     });
 
-    // TEMPORARY: Skip Edge Function and go directly to local search to test basic functionality
+    // Try Edge Function first, but only if it works - otherwise fall back to local search
     let edgeProcessed: Processed | null = null;
-    console.log(`DEBUG: Skipping Edge Function, using local search only...`);
+    console.log(`DEBUG: Attempting Edge Function call...`);
 
-    // Force local search for now - no Edge Function call
+    // Always try Edge Function first for now
+    try {
+      const efRes = await fetch(
+        `${SUPABASE_URL}/functions/v1/pashto-processor`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            formPs: query,
+            includeRelated: false,  // Disable for basic search test
+            enableFuzzy: latin,     // Enable for romanized input
+          }),
+        }
+      );
+
+      console.log(`DEBUG: Edge Function response status:`, efRes.status);
+
+      if (efRes.ok) {
+        edgeProcessed = await efRes.json() as Processed;
+        console.log(`DEBUG: Edge Function success:`, { normalized: edgeProcessed.normalized, variants: edgeProcessed.variants.length });
+      } else {
+        const errorText = await efRes.text();
+        console.log(`DEBUG: Edge Function failed:`, { status: efRes.status, error: errorText });
+      }
+    } catch (error) {
+      console.log(`DEBUG: Edge Function error:`, error);
+      // Fall through to local search
+    }
 
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY) as any;
 
@@ -129,7 +160,8 @@ export async function POST(req: NextRequest) {
     let results: VerseResult[] = [];
     let processed: Processed;
 
-    if (edgeProcessed) {
+    // Use Edge Function results if available, otherwise fall back to local search
+    if (edgeProcessed && edgeProcessed.variants && edgeProcessed.variants.length > 0) {
       processed = edgeProcessed;
       console.log(`DEBUG: Using Edge Function results:`, {
         searchType: processed.searchType,
@@ -143,13 +175,13 @@ export async function POST(req: NextRequest) {
         console.log(`DEBUG: Using fuzzy results:`, results.length);
       } else {
         const needle = processed.normalized || query;
-        console.log(`DEBUG: Searching with needle:`, needle);
+        console.log(`DEBUG: Searching with Edge Function normalized term:`, needle);
         results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
-        console.log(`DEBUG: Local search returned:`, results.length, 'results');
+        console.log(`DEBUG: Local search with Edge Function term returned:`, results.length, 'results');
       }
     } else {
-      // Fallback entirely local - this is the original working implementation
-      console.log(`DEBUG: Edge Function failed, using local fallback`);
+      // Fallback to local search with original query
+      console.log(`DEBUG: Edge Function failed or returned no variants, using local fallback`);
       const needle = query;
       console.log(`DEBUG: Local fallback searching with:`, needle);
       results = await localDirectSearch(db, needle, scope, body.bookFilter, limit);
