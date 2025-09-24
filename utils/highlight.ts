@@ -59,3 +59,28 @@ export function dedupByRef<T extends {ref: string; text: string; testament?: 'NT
   }
   return out;
 }
+
+// Strip leading verse numbers from verse text to avoid duplication
+// Handles both Latin digits (0-9) and Arabic-Indic digits (۰-۹)
+export function stripLeadingVerseNumber(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+
+  // Match patterns like "4 /", "۱۱ /", "24 /" at the start of text
+  // This handles both Latin and Arabic-Indic digits
+  const verseNumberPattern = /^\s*([0-9۰-۹]+)\s*[\/:،,\-]\s*/;
+
+  return text.replace(verseNumberPattern, '');
+}
+
+// Extract verse number from reference for display in badge
+export function extractVerseNumber(ref: string): string {
+  if (!ref || typeof ref !== 'string') return '';
+
+  // Extract the last part after the colon (e.g., "13:4" -> "4")
+  const parts = ref.split(':');
+  if (parts.length >= 2) {
+    return parts[parts.length - 1];
+  }
+
+  return '';
+}

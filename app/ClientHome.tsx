@@ -621,10 +621,10 @@ export default function ClientHome() {
   }, [processed, selectedMood, selectedPerson]);
 
   // Run filtered search with selected variants
-  const runFilteredSearch = async () => {
-    if (!processed?.variantGroups || filteredVerbVariants.length === 0) return;
-
-    const needles = filteredVerbVariants.map(v => v.form).filter(Boolean);
+  const runFilteredSearch = async (forms?: string[]) => {
+    // If forms are provided (from RelatedForms), use those
+    // Otherwise use the existing filteredVerbVariants (for auto-apply)
+    const needles = forms || filteredVerbVariants.map(v => v.form).filter(Boolean);
     if (needles.length === 0) return;
 
     try {
@@ -635,7 +635,7 @@ export default function ClientHome() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: processed.normalized || query,
+          query: processed?.normalized || query,
           scope,
           variants: needles, // Pass filtered forms as OR search terms
         }),
@@ -655,7 +655,7 @@ export default function ClientHome() {
       setResults(dedupedResults);
       setProcessed(searchData.processed || null);
 
-      console.log(`DEBUG: Filtered search completed. Found ${dedupedResults.length} results for ${needles.length} terms.`);
+      console.log(`DEBUG: Filtered search completed. Found ${dedupedResults.length} results for ${needles.length} terms:`, needles);
       console.log('DEBUG: Processed data:', searchData.processed);
       console.log('DEBUG: First few results:', dedupedResults.slice(0, 3));
     } catch (err) {
