@@ -96,25 +96,27 @@ serve(async (req) => {
     let romanization: string | undefined;
 
     if (latinOnly) {
-      const probes = [`${raw}%`, `%${raw}%`];
-      let pick;
-      for (const p of probes) {
-        const [romRes, dictRes] = await Promise.all([
-          db.from("romanized_dictionary")
-            .select("romanized,pashto")
-            .ilike("romanized", p)
-            .limit(1),
-          db.from("dictionary")
-            .select("romanized,pashto")
-            .ilike("romanized", p)
-            .limit(1),
-        ]);
-        pick = romRes.data?.[0] ?? dictRes.data?.[0];
-        if (pick?.pashto) break;
-      }
+      const rawRom = raw.toLowerCase();
+      const pat = `%${rawRom}%`;
+
+      const [romRes, dictRes] = await Promise.all([
+        db.from("romanized_dictionary")
+          .select("romanized,pashto")
+          .ilike("romanized", pat)
+          .limit(1),
+        db.from("dictionary")
+          .select("romanized,pashto")
+          .ilike("romanized", pat)
+          .limit(1),
+      ]);
+
+      const pick = romRes.data?.[0] ?? dictRes.data?.[0];
       if (pick?.pashto) {
         normalized = pick.pashto;
         romanization = pick.romanized;
+        console.log(`DEBUG: Romanized lookup hit: "${raw}" → "${normalized}" (via "${pick.romanized}")`);
+      } else {
+        console.log(`DEBUG: Romanized lookup missed for "${raw}" with pattern "${pat}"`);
       }
     }
 
