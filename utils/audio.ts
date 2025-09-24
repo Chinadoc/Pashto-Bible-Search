@@ -27,6 +27,32 @@ export function refToFilename(ref: string): string | null {
   return `${slug}${chapter}_verse_${verse}.mp3`;
 }
 
+export async function resolveAudioUrl(ref: string, entry?: any): Promise<string | null> {
+  if (!ref) return null;
+
+  // 1) Prefer Supabase storage via signer API FIRST
+  try {
+    const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
+    if (r.ok) {
+      const { url } = await r.json();
+      if (url && /^https?:\/\//i.test(url)) {
+        return url; // short-lived signed URL from Supabase
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed to get signed URL for ${ref}:`, error);
+  }
+
+  // 2) If signer couldn't find it, fall back to audio map "direct" URL as last resort
+  // (these are often old Google Drive links that may fail)
+  if (entry?.direct && /^https?:\/\//i.test(entry.direct)) {
+    console.warn(`Using fallback direct URL for ${ref}:`, entry.direct);
+    return entry.direct;
+  }
+
+  return null;
+}
+
 export function audioUrlFromRef(ref: string, map: AudioMap): string {
   const filename = refToFilename(ref);
   if (!filename) return "";

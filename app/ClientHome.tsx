@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, ChangeEvent } from "react";
+import { useEffect, useState, useMemo, useCallback, ChangeEvent } from "react";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -41,12 +41,14 @@ function savePersisted<T>(key: string, value: T): void {
 }
 
 // Search controls component
-function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount }: {
+function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount, refreshAudioMap, isLoading }: {
   scope: Scope;
   setScope: (scope: Scope) => void;
   includeRelated: boolean;
   setIncludeRelated: (include: boolean) => void;
   resultsCount: number;
+  refreshAudioMap: () => Promise<void>;
+  isLoading: boolean;
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -275,7 +277,7 @@ export default function ClientHome() {
   }, [results, audioMap]);
 
   // Manual audio map refresh function
-  const refreshAudioMap = async () => {
+  const refreshAudioMap = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch('/api/get_audio_map?clear_cache=1');
@@ -302,7 +304,7 @@ export default function ClientHome() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setAudioMap, setIsLoading]);
 
   // Group results by book for coverage calculation
   const coverageData = useMemo(() => {
@@ -532,6 +534,8 @@ export default function ClientHome() {
         includeRelated={includeRelated}
         setIncludeRelated={setIncludeRelated}
         resultsCount={resultsCount}
+        refreshAudioMap={refreshAudioMap}
+        isLoading={isLoading}
       />
 
       {/* Error Message */}
