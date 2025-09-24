@@ -72,12 +72,14 @@ export default function RelatedForms({
   relatedForms,
   onPick,
   verbState,
-  setVerbState
+  setVerbState,
+  onApplyFilter
 }: {
   relatedForms: RelatedFormsData;
   onPick: (form: string) => void;
   verbState?: VerbUnderstandingState;
   setVerbState?: (state: VerbUnderstandingState) => void;
+  onApplyFilter?: () => void; // NEW: function to apply filtered search
 }) {
   const [open, setOpen] = useState<boolean>(false)
 
@@ -89,18 +91,6 @@ export default function RelatedForms({
   const verbs = relatedForms.verbs || []
   const nouns = relatedForms.nouns || []
   const others = relatedForms.other || []
-
-  const {
-    presentTense,
-    subjunctiveTense,
-    futureTense,
-    pastTense,
-    imperativeForms,
-    abilityForms,
-    perfectForms,
-    habitualForms,
-    otherVerbs
-  } = categorizeVerbForms(verbs)
 
   // Filter verbs based on current tense/aspect/mood/person selection
   const getFilteredVerbs = () => {
@@ -153,6 +143,18 @@ export default function RelatedForms({
 
   const filteredVerbs = getFilteredVerbs()
 
+  const {
+    presentTense,
+    subjunctiveTense,
+    futureTense,
+    pastTense,
+    imperativeForms,
+    abilityForms,
+    perfectForms,
+    habitualForms,
+    otherVerbs
+  } = categorizeVerbForms(verbs)
+
   const Section = ({ title, list }: { title: string; list: {form: string, count: number}[] }) => (
     <div className="mt-2">
       <div className="text-xs text-gray-500 mb-1">{title} ({list.length})</div>
@@ -176,8 +178,22 @@ export default function RelatedForms({
   return (
     <div className="mt-2 rounded border border-gray-200 dark:border-gray-700 p-2 text-sm">
       <div className="flex items-center justify-between">
-        <div className="text-gray-700 dark:text-gray-300">Related forms</div>
-        <button onClick={() => setOpen(!open)} className="text-xs px-2 py-0.5 border rounded">{open ? 'Hide' : 'Show'}</button>
+        <div className="text-gray-700 dark:text-gray-300">
+          Related forms ({filteredVerbs.length} forms)
+        </div>
+        <div className="flex gap-2">
+          {onApplyFilter && filteredVerbs.length > 0 && (
+            <button
+              onClick={onApplyFilter}
+              className="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Apply Filter
+            </button>
+          )}
+          <button onClick={() => setOpen(!open)} className="text-xs px-2 py-0.5 border rounded">
+            {open ? 'Hide' : 'Show'}
+          </button>
+        </div>
       </div>
 
       {/* Verb understanding controls */}
