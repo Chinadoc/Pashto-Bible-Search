@@ -130,7 +130,30 @@ export async function generateVerbVariants(
     }
   }
 
-  // 4) Optional compound expansions (safe heuristics; de-duping will keep it tidy)
+  // 4) Generate some basic present tense forms if we have very few forms
+  // This is a simple heuristic to ensure we always have some present tense forms
+  if (out.length < 5) {
+    console.log(`DEBUG: Only ${out.length} forms generated, adding basic present tense forms`);
+    const basicPresentForms = [
+      { form: `${base}م`, label: "1sg Present" },
+      { form: `${base}و`, label: "1pl Present" },
+      { form: `${base}ې`, label: "2sg Present" },
+      { form: `${base}ئ`, label: "2pl Present" },
+      { form: `${base}ي`, label: "3sg Present" },
+      { form: `${base}ي`, label: "3pl Present" }
+    ];
+
+    // Only add forms that don't already exist
+    basicPresentForms.forEach(f => {
+      const exists = out.some(existing => existing.form === f.form);
+      if (!exists) {
+        console.log(`DEBUG: Adding basic form "${f.form}" with label "${f.label}"`);
+        out.push({ ...f, pos: "verb" });
+      }
+    });
+  }
+
+  // 5) Optional compound expansions (safe heuristics; de-duping will keep it tidy)
   if (includeCompound) {
     // Very conservative additions; these will be removed if inflections already include them
     // These flags help the UI distinguish
