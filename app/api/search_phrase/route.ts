@@ -59,12 +59,16 @@ async function localMultiSearch(
   const terms = Array.from(new Set(needles.filter(Boolean))).slice(0, 30);
   if (!terms.length) return [];
   const orExpr = terms.map(t => `text.ilike.%${t}%`).join(',');
-  let q = db.from("verses").select("ref,text,testament").or(orExpr).limit(limit);
+  let q = db.from("verses").select("book,chapter,verse,text,testament").or(orExpr).limit(limit);
   if (scope === "ot") q = q.eq("testament", "OT");
   if (scope === "nt") q = q.eq("testament", "NT");
   if (bookFilter?.length) q = q.in("book", bookFilter);
   const { data } = await q;
-  return (data ?? []).map((r: any) => ({ ref: r.ref, text: r.text, testament: r.testament }));
+  return (data ?? []).map((r: any) => ({
+    ref: `${r.book} ${r.chapter}:${r.verse}`,
+    text: r.text,
+    testament: r.testament
+  }));
 }
 
 async function localDirectSearch(
@@ -76,10 +80,10 @@ async function localDirectSearch(
 ): Promise<VerseResult[]> {
   console.log(`DEBUG: localDirectSearch called with:`, { needle, scope, bookFilter, limit });
 
-  // Minimal direct search (ILIKE), preserving existing contract
-  // Assumes verses table has: ref (e.g., "John 3:16"), text, testament ('OT'|'NT'), book (optional)
+  // Search verses table and compose ref from book/chapter/verse
+  // Assumes verses table has: book, chapter, verse, text, testament
   let q = db.from("verses")
-    .select("ref,text,testament")
+    .select("book,chapter,verse,text,testament")
     .ilike("text", `%${needle}%`)
     .limit(limit);
 
@@ -101,7 +105,7 @@ async function localDirectSearch(
   }
 
   return (data ?? []).map((r: any) => ({
-    ref: r.ref,
+    ref: `${r.book} ${r.chapter}:${r.verse}`,
     text: r.text,
     testament: r.testament
   }));
@@ -154,7 +158,7 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             formPs: query,
-            includeRelated: false,  // Start without variants for performance
+            includeRelated: includeRelated,  // Pass the toggle state - generate variants if requested
             enableFuzzy: latin,     // Enable for romanized input
           }),
         }
@@ -193,12 +197,15 @@ export async function POST(req: NextRequest) {
 
         // Progressive fallback: no direct hits → expand to variants
         if (!results.length) {
-          // If we didn't ask Edge for variants, do it now
-          const needVariants = !processed.variantDetails && !processed.variantGroups;
+          console.log(`DEBUG: Direct search failed, attempting variant expansion...`);
+
+          // If we don't have variants from Edge Function, generate them now
           let variants: string[] = processed.variants ?? [needle];
+          const needVariants = !processed.variantDetails && !processed.variantGroups;
 
           if (needVariants) {
             try {
+              console.log(`DEBUG: Calling Edge Function for variants...`);
               const ef2 = await fetch(`${SUPABASE_URL}/functions/v1/pashto-processor`, {
                 method: "POST",
                 headers: {
@@ -217,14 +224,17 @@ export async function POST(req: NextRequest) {
                   ...((proc2.variantGroups?.verbs ?? []).map((v: any) => v.form)),
                 ];
                 variants = Array.from(new Set(pool.filter(Boolean)));
-                // carry over richer processed info when we had none
+                // carry over richer processed info
                 if (!processed.variantGroups && proc2.variantGroups) processed.variantGroups = proc2.variantGroups;
                 if (!processed.variantDetails && proc2.variantDetails) processed.variantDetails = proc2.variantDetails;
+                console.log(`DEBUG: Generated variants:`, variants);
               }
-            } catch {}
+            } catch (error) {
+              console.log(`DEBUG: Failed to generate variants:`, error);
+            }
           }
 
-          if (variants?.length) {
+          if (variants?.length && variants.length > 1) {
             console.log(`DEBUG: Expanding search to variants:`, variants);
             results = await localMultiSearch(db, variants, scope, body.bookFilter, limit);
             console.log(`DEBUG: Multi-variant search returned:`, results.length, 'results');
