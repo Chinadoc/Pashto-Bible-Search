@@ -9,8 +9,9 @@ const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
 export async function GET(request: NextRequest) {
   try {
     const forceRefresh = request.nextUrl?.searchParams?.get('refresh') === '1'
-    // Serve cached if fresh
-    if (!forceRefresh && AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
+    // Force refresh to get updated URLs without Drive links
+    const shouldRefresh = forceRefresh || request.nextUrl?.searchParams?.get('clear_cache') === '1'
+    if (!shouldRefresh && AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
       return NextResponse.json(AUDIO_MAP_CACHE.data)
     }
     // Check if we have valid Supabase credentials
