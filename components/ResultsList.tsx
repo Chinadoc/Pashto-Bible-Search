@@ -86,7 +86,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   useEffect(() => {
     (async () => {
       for (const verse of paginatedResults) {
-        const ref = verse.ref;
+        const ref = verse?.ref?.trim();
+        if (!ref) continue; // Guard against missing ref
         if (resolvedUrls[ref]) continue;
         // Skip OT books for now (no audio)
         const lastSpaceIndex = ref.lastIndexOf(' ');
@@ -211,8 +212,16 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       {paginatedResults.map((verse, index) => {
         const globalIndex = (page - 1) * itemsPerPage + index;
 
+        // Debug logging for troubleshooting
+        if (!verse.ref) {
+          console.warn('Verse missing ref:', verse);
+        }
+
         // Safely get audio URL
         const audioUrl = (verse.ref && audioMap[verse.ref]) || '';
+        if (verse.ref && audioUrl) {
+          console.log('Found audio for:', verse.ref);
+        }
 
         const terms = termsProp && termsProp.length > 0
           ? Array.from(new Set(termsProp.map((t) => t.trim()).filter(Boolean)))
@@ -234,9 +243,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
                 : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
             }`}
-            dir="rtl"
           >
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-2" dir="ltr">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
                 {getTranslationBadge(verse.translation, verse.dialect)}
@@ -268,6 +276,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 )}
               </div>
             </div>
+
+            {/* only the Pashto text needs RTL */}
+            <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl">
+              {highlight(verse.text || '', terms)}
+            </p>
 
             {/* Compact audio controls */}
             {audioUrl && (

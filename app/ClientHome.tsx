@@ -222,7 +222,12 @@ export default function ClientHome() {
         const response = await fetch('/api/get_audio_map');
         if (response.ok) {
           const data = await response.json();
-          setAudioMap(data || {});
+          const audioMap = data || {};
+          console.log('Audio map loaded with', Object.keys(audioMap).length, 'entries');
+          setAudioMap(audioMap);
+        } else {
+          console.warn('Audio map API returned error:', response.status, response.statusText);
+          setAudioMap({});
         }
       } catch (error) {
         console.error('Failed to load audio map:', error);
