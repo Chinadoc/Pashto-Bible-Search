@@ -108,19 +108,18 @@ serve(async (req) => {
     let romanization: string | undefined;
 
     if (latinOnly) {
-      const rawNorm = normRom(raw);
-      const pat = `%${rawNorm}%`;
+      const rawRom = raw.toLowerCase();
+      const pat = `%${rawRom}%`;
 
-      // Pull several candidates from both tables so we can rank
       const [romRes, dictRes] = await Promise.all([
         db.from("romanized_dictionary")
           .select("romanized,pashto")
           .ilike("romanized", pat)
-          .limit(15),
+          .limit(5),
         db.from("dictionary")
-          .select("romanized,pashto,pos")
+          .select("romanized,pashto")
           .ilike("romanized", pat)
-          .limit(15),
+          .limit(5),
       ]);
 
       const candidates = [
@@ -129,34 +128,17 @@ serve(async (req) => {
       ].filter(r => r?.pashto);
 
       if (candidates.length) {
-        // Debug: log all candidates found
         console.log(`DEBUG: Romanized lookup found ${candidates.length} candidates for "${raw}" with pattern "${pat}":`);
         candidates.forEach((c, i) => {
           console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}"`);
         });
 
-        // Score: prefer exact roman match, then single-token pashto, then وهل, then higher frequency
-        const scored = candidates.map(c => {
-          const cRom = c.romanized ? normRom(c.romanized) : '';
-          const pashto = c.pashto as string;
-          const single = tokenCountPashto(pashto) === 1;
-          const exact = cRom === rawNorm;
-          const endsEq = cRom && cRom.split(/\s+/).pop() === rawNorm;
-          const isWahal = pashto === "وهل"; // bare helper verb
-
-          let score = 0;
-          if (exact) score += 100;
-          if (endsEq) score += 60;
-          if (single) score += 40;
-          if (isWahal) score += 80;
-
-          return { c, score };
-        }).sort((a, b) => b.score - a.score);
-
-        const best = scored[0].c;
+        const best = candidates[0]; // Just pick first for now
         normalized = best.pashto;
-        romanization = best.romanized ?? raw; // keep what matched
-        console.log(`DEBUG: Romanized lookup ranked hit: "${raw}" → "${normalized}" (via "${best.romanized}", score: ${scored[0].score})`);
+        romanization = best.romanized ?? raw;
+        console.log(`DEBUG: Romanized lookup hit: "${raw}" → "${normalized}" (via "${best.romanized}")`);
+      } else {
+        console.log(`DEBUG: Romanized lookup found no candidates for "${raw}" with pattern "${pat}"`);
       }
     }
 
