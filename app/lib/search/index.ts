@@ -88,3 +88,4 @@ export async function multiTermSearch(terms: string[], scope: Scope, limit = 100
 
   return Array.from(resultsMap.values());
 }
+
