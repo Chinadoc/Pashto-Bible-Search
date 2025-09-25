@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         let translation = null;
         let dialect = null;
 
-        // Show Yousafzai for Psalms, Proverbs, and Song of Solomon
+        // Only show Yousafzai for Psalms, Proverbs, and Song of Solomon (which have Yousafzai audio)
         if (isPsalms || isProverbs || isSongOfSolomon) {
           translation = 'Yousafzai 2019';
           dialect = 'Yousafzai';
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       let translation = null;
       let dialect = null;
 
-      // Show Yousafzai for Psalms, Proverbs, and Song of Solomon
+      // Only show Yousafzai for Psalms, Proverbs, and Song of Solomon (which have Yousafzai audio)
       if (isPsalms || isProverbs || isSongOfSolomon) {
         translation = 'Yousafzai 2019';
         dialect = 'Yousafzai';
@@ -217,6 +217,7 @@ export async function POST(request: NextRequest) {
             let translation = null;
             let dialect = null;
 
+            // Only show Yousafzai for Psalms, Proverbs, and Song of Solomon (which have Yousafzai audio)
             if (isPsalms || isProverbs || isSongOfSolomon) {
               translation = 'Yousafzai 2019';
               dialect = 'Yousafzai';
@@ -243,62 +244,6 @@ export async function POST(request: NextRequest) {
       normalized: query.trim(),
       variants: includeRelated ? [] : [], // Could be populated with variant data if available
     };
-
-    // Fallback: If no results and we have related forms data with variants, search using variants
-    if (transformedResults.length === 0 && relatedForms && relatedForms.variantDetails) {
-      console.log('DEBUG: No results from direct search, trying variant fallback');
-      const variantForms: string[] = [];
-      if (relatedForms.variantDetails) {
-        for (const block of relatedForms.variantDetails) {
-          for (const group of (block.groups || [])) {
-            for (const item of group.items) {
-              variantForms.push(item.form);
-            }
-          }
-        }
-      }
-      if (variantForms.length > 0) {
-        const needles = Array.from(new Set(variantForms.filter(Boolean))).slice(0, 20);
-        console.log(`DEBUG: Variant fallback searching with ${needles.length} terms:`, needles.slice(0, 5));
-        let allVariantResults: Array<{ref: string; text: string; testament?: string}> = [];
-        for (const term of needles) {
-          const termResults = await searchVerses(term, scope || 'all');
-          allVariantResults = [...allVariantResults, ...termResults];
-        }
-        const uniqueVariantResults = new Map();
-        allVariantResults.forEach((result) => {
-          if (!uniqueVariantResults.has(result.ref)) {
-            uniqueVariantResults.set(result.ref, result);
-          }
-        });
-        const deduplicatedVariantResults = Array.from(uniqueVariantResults.values());
-        console.log(`DEBUG: Variant fallback found ${deduplicatedVariantResults.length} results`);
-        if (deduplicatedVariantResults.length > 0) {
-          finalResults = deduplicatedVariantResults.map((result, index) => {
-            const book = result.ref.split(' ')[0];
-            const isPsalms = book === 'Psalms';
-            const isProverbs = book === 'Proverbs';
-            const isSongOfSolomon = book === 'Song of Solomon';
-            let translation = null;
-            let dialect = null;
-            if (isPsalms || isProverbs || isSongOfSolomon) {
-              translation = 'Yousafzai 2019';
-              dialect = 'Yousafzai';
-            }
-            return {
-              ref: result.ref,
-              text: result.text,
-              testament: result.testament || 'NT',
-              translation,
-              dialect,
-              tags: [],
-              audio_verse_url: null,
-              id: index + 1
-            };
-          });
-        }
-      }
-    }
 
     console.log(`DEBUG: Final search results: ${finalResults.length} (after variant fallback if applicable)`);
 
