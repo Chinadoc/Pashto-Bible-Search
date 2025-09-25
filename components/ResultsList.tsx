@@ -75,84 +75,95 @@ function getTranslationBadge(translation?: string, dialect?: string): ReactNode 
   );
 }
 
-export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed }: Props) {
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
-  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
-  const [playingKey, setPlayingKey] = useState<string | null>(null);
-  const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
+// Separate component for individual verse items to avoid hooks in map
+function VerseItem({
+  verse,
+  index,
+  page,
+  itemsPerPage,
+  audioMap,
+  resolvedUrls,
+  setResolvedUrls,
+  downloadingMap,
+  setDownloadingMap,
+  playingKey,
+  setPlayingKey,
+  audioRefs,
+  termsProp,
+  highlightBook,
+  processed
+}: {
+  verse: Verse;
+  index: number;
+  page: number;
+  itemsPerPage: number;
+  audioMap: AudioMap;
+  resolvedUrls: Record<string, string>;
+  setResolvedUrls: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  downloadingMap: Record<string, boolean>;
+  setDownloadingMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  playingKey: string | null;
+  setPlayingKey: React.Dispatch<React.SetStateAction<string | null>>;
+  audioRefs: React.MutableRefObject<Map<string, HTMLAudioElement>>;
+  termsProp?: string[];
+  highlightBook?: string | null;
+  processed?: any;
+}) {
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
-  // Reset to page 1 when results change
-  useEffect(() => { setPage(1); }, [results]);
+  // Parse verse number from ref only (never from text)
+  const refParts = parseRef(verse.ref);
+  const verseNo = refParts?.verse ?? null;
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
-  };
+  // Safely extract book name for highlighting
+  let verseBook = '';
+  if (refParts?.book) {
+    verseBook = refParts.book;
+  }
+  const isHighlighted = highlightBook && verseBook === highlightBook;
 
-  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
-  if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
+  // Build highlight regex from processed data
+  const tokens = processed ? [
+    processed.normalized,
+    ...(processed.variants ?? []),
+  ].filter(Boolean) as string[] : [];
 
-  const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
 
-  // Resolve audio URLs (prefer Supabase Storage signed URLs)
+  // Resolve audio URLs
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      for (const verse of paginatedResults) {
-        const ref = verse?.ref?.trim();
-        if (!ref) continue; // Guard against missing ref
-        if (resolvedUrls[ref]) continue;
-        // Skip OT books that don't have Yousafzai translation (no audio available)
-        const lastSpaceIndex = ref.lastIndexOf(' ');
-        const book = lastSpaceIndex > 0 ? ref.slice(0, lastSpaceIndex) : '';
-        const isYousafzai = verse.translation === 'Yousafzai 2019';
-        // Allow OT books that have Yousafzai translation (Psalms, Proverbs, Song of Solomon)
-        if (OT_BOOKS.has(book) && !isYousafzai) continue;
-
-        // For Yousafzai verses, prefer individual verse clip over chapter MP3
-        let url = '';
-        if (isYousafzai && verse.audio_verse_url) {
-          url = verse.audio_verse_url;
-        } else {
-          const direct = audioMap[ref];
-          const derived = direct || audioUrlFromRef(ref, audioMap);
-          if (derived && /^https?:\/\//i.test(derived)) {
-            url = derived;
+      const entry = audioMap[verse.ref];
+      const url = await resolveAudioUrl(verse.ref, entry);
+      if (!cancelled) {
+        setAudioUrl(url);
+        if (url) {
+          console.log('Resolved audio for:', verse.ref);
+          if (url.includes('drive.google.com')) {
+            console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
+          } else if (url.includes('supabase.co/storage')) {
+            console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
           }
         }
-
-        // If no URL in audio map, try API (this will use Supabase Storage)
-        if (!url) {
-          try {
-            // Force refresh audio map to get updated URLs without Drive links
-            const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
-            const js = await r.json().catch(() => ({}));
-            url = js?.url || '';
-            console.log(`Generated audio URL for ${ref}:`, url ? 'SUCCESS' : 'FAILED');
-            if (url && !url.includes('drive.google.com')) {
-              console.log(`✅ Supabase Storage URL: ${url.substring(0, 80)}...`);
-            } else if (url.includes('drive.google.com')) {
-              console.warn(`⚠️ Google Drive URL still being used: ${ref}`);
-            }
-          } catch (error) {
-            console.log(`Failed to generate audio URL for ${ref}:`, error);
-          }
-        }
-
-        if (url) setResolvedUrls(prev => ({ ...prev, [ref]: url }));
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginatedResults, audioMap]);
+    return () => { cancelled = true; };
+  }, [verse.ref]); // Remove audioMap dependency to prevent excessive re-runs
 
-  const handleDownload = async (ref: string, url: string) => {
-    if (!url) return;
-    setDownloadingMap((prev) => ({ ...prev, [ref]: true }));
+  // Debug: Check if conditions for UI are met
+  React.useEffect(() => {
+    console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
+  }, [verse.ref, audioUrl]);
+
+  const handleDownload = async () => {
+    if (!audioUrl || !verse.ref) return;
+    setDownloadingMap((prev) => ({ ...prev, [verse.ref]: true }));
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to download ${ref}`);
+      const response = await fetch(audioUrl);
+      if (!response.ok) throw new Error(`Failed to download ${verse.ref}`);
       const blob = await response.blob();
-      const sanitizedRef = ref.replace(/[^0-9A-Za-z]+/g, '_') || 'audio';
+      const sanitizedRef = verse.ref.replace(/[^0-9A-Za-z]+/g, '_') || 'audio';
       const filename = `${sanitizedRef}.mp3`;
       const link = document.createElement('a');
       const objectUrl = URL.createObjectURL(blob);
@@ -167,11 +178,160 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     } finally {
       setDownloadingMap((prev) => {
         const next = { ...prev };
-        delete next[ref];
+        delete next[verse.ref];
         return next;
       });
     }
   };
+
+  const handlePlayPause = () => {
+    const el = audioRefs.current.get(verse.ref);
+    if (!el) return;
+
+    // pause others
+    audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
+
+    if (el.paused) {
+      // For Yousafzai verses with individual verse clips, no seeking needed
+      const hasIndividualClip = verse.translation === 'Yousafzai 2019' && verse.audio_verse_url;
+
+      if (hasIndividualClip) {
+        // Individual verse clip - play from beginning
+        el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+      } else {
+        // Chapter MP3 - seek to verse start time if timing data is available
+        const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
+          ? (() => {
+              const firstSegment = verse.tags[0];
+              return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
+                ? firstSegment[0] // Start time from jktags
+                : null;
+            })()
+          : null;
+
+        if (seekTime !== null) {
+          // Seek after play starts to ensure audio is ready
+          el.play().then(() => {
+            el.currentTime = seekTime;
+            setPlayingKey(verse.ref);
+          }).catch(() => {});
+        } else {
+          el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
+        }
+      }
+    } else {
+      el.pause();
+      setPlayingKey(null);
+    }
+  };
+
+  // Debug logging for troubleshooting
+  if (!verse.ref) {
+    console.warn('Verse missing ref:', verse);
+  }
+
+  return (
+    <div
+      key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
+      className={`relative p-4 mb-2 border rounded-md ${
+        isHighlighted
+          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
+          : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-2" dir="ltr">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
+          {getTranslationBadge(verse.translation, verse.dialect)}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Copy verse */}
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
+              } catch {}
+            }}
+            className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            title="Copy verse"
+          >
+            Copy
+          </button>
+          {/* Download audio */}
+          {audioUrl && verse.ref && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+              title="Download audio"
+              disabled={!!downloadingMap[verse.ref]}
+            >
+              {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Verse text with absolute-positioned verse number chip */}
+      <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
+        {highlightPsText(cleanVerseText(verse.text || ''), termsProp || [])}
+      </p>
+
+      {/* Absolute-positioned verse number chip */}
+      {verseNo != null && verseNo > 0 && (
+        <span
+          dir="ltr"
+          className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
+        >
+          {verseNo}
+        </span>
+      )}
+
+      {/* Compact audio controls */}
+      {audioUrl && (
+        <div className="flex items-center gap-2 mb-2">
+          <audio
+            ref={(el) => {
+              if (el) audioRefs.current.set(verse.ref, el);
+            }}
+            src={audioUrl}
+            preload="metadata"
+            className="hidden"
+            onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
+          />
+          <button
+            className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={handlePlayPause}
+            title={playingKey === verse.ref ? 'Pause' : 'Play'}
+          >
+            {playingKey === verse.ref ? 'Pause' : 'Play'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed }: Props) {
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
+
+  // Reset to page 1 when results change
+  useEffect(() => { setPage(1); }, [results.length]);
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  // Early returns only after all hooks are declared
+  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
+  if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
+
+  const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   const showPagination = results.length > itemsPerPage
 
@@ -233,181 +393,26 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         {showPagination && paginationControl('top')}
       </div>
 
-      {paginatedResults.map((verse, index) => {
-        const globalIndex = (page - 1) * itemsPerPage + index;
-
-        // Debug logging for troubleshooting
-        if (!verse.ref) {
-          console.warn('Verse missing ref:', verse);
-        }
-
-        // Use the new resolver that prioritizes Supabase signed URLs
-        const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-        useEffect(() => {
-          let cancelled = false;
-          (async () => {
-            const entry = audioMap[verse.ref];
-            const url = await resolveAudioUrl(verse.ref, entry);
-            if (!cancelled) {
-              setAudioUrl(url);
-              if (url) {
-                console.log('Resolved audio for:', verse.ref);
-                if (url.includes('drive.google.com')) {
-                  console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
-                } else if (url.includes('supabase.co/storage')) {
-                  console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
-                }
-              }
-            }
-          })();
-          return () => { cancelled = true; };
-        }, [verse.ref, audioMap]);
-
-        // Parse verse number from ref only (never from text)
-        const refParts = parseRef(verse.ref);
-        const verseNo = refParts?.verse ?? null;
-
-        // Safely extract book name for highlighting
-        let verseBook = '';
-        if (refParts?.book) {
-          verseBook = refParts.book;
-        }
-        const isHighlighted = highlightBook && verseBook === highlightBook;
-
-        // Build highlight regex from processed data
-        const tokens = processed ? [
-          processed.normalized,
-          ...(processed.variants ?? []),
-        ].filter(Boolean) as string[] : [];
-
-        const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
-
-        // Debug: Check if conditions for UI are met (moved to useEffect to avoid render issues)
-        React.useEffect(() => {
-          console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
-        }, [verse.ref, audioUrl]);
-
-        return (
-          <div
-            key={verse.ref || `verse-${globalIndex}`}
-            className={`relative p-4 mb-2 border rounded-md ${
-              isHighlighted
-                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
-                : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
-            }`}
-          >
-            <div className="flex justify-between items-start mb-2" dir="ltr">
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
-                {getTranslationBadge(verse.translation, verse.dialect)}
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Copy verse */}
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
-                    } catch {}
-                  }}
-                  className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="Copy verse"
-                >
-                  Copy
-                </button>
-                {/* Download audio */}
-                {audioUrl && verse.ref && (
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(verse.ref, audioUrl)}
-                    className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
-                    title="Download audio"
-                    disabled={!!downloadingMap[verse.ref]}
-                  >
-                    {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Verse text with absolute-positioned verse number chip */}
-            <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-              {highlightPsText(cleanVerseText(verse.text || ''), termsProp || [])}
-            </p>
-
-            {/* Absolute-positioned verse number chip */}
-            {verseNo != null && verseNo > 0 && (
-              <span
-                dir="ltr"
-                className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
-              >
-                {verseNo}
-              </span>
-            )}
-
-            {/* Compact audio controls */}
-            {audioUrl && (
-              <div className="flex items-center gap-2 mb-2">
-                <audio
-                  ref={(el) => {
-                    if (el) audioRefs.current.set(verse.ref, el);
-                  }}
-                  src={audioUrl}
-                  preload="metadata"
-                  className="hidden"
-                  onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
-                />
-                <button
-                  className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => {
-                    const el = audioRefs.current.get(verse.ref);
-                    if (!el) return;
-                    // pause others
-                    audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
-                    if (el.paused) {
-                      // For Yousafzai verses with individual verse clips, no seeking needed
-                      const hasIndividualClip = verse.translation === 'Yousafzai 2019' && verse.audio_verse_url;
-                      
-                      if (hasIndividualClip) {
-                        // Individual verse clip - play from beginning
-                        el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
-                      } else {
-                        // Chapter MP3 - seek to verse start time if timing data is available
-                        const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
-                          ? (() => {
-                              const firstSegment = verse.tags[0];
-                              return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
-                                ? firstSegment[0] // Start time from jktags
-                                : null;
-                            })()
-                          : null;
-
-                        if (seekTime !== null) {
-                          // Seek after play starts to ensure audio is ready
-                          el.play().then(() => {
-                            el.currentTime = seekTime;
-                            setPlayingKey(verse.ref);
-                          }).catch(() => {});
-                        } else {
-                          el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
-                        }
-                      }
-                    } else {
-                      el.pause();
-                      setPlayingKey(null);
-                    }
-                  }}
-                  title={playingKey === verse.ref ? 'Pause' : 'Play'}
-                >
-                  {playingKey === verse.ref ? 'Pause' : 'Play'}
-                </button>
-                {/* no label */}
-              </div>
-            )}
-
-          </div>
-        );
-      })}
+      {paginatedResults.map((verse, index) => (
+        <VerseItem
+          key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
+          verse={verse}
+          index={index}
+          page={page}
+          itemsPerPage={itemsPerPage}
+          audioMap={audioMap}
+          resolvedUrls={resolvedUrls}
+          setResolvedUrls={setResolvedUrls}
+          downloadingMap={downloadingMap}
+          setDownloadingMap={setDownloadingMap}
+          playingKey={playingKey}
+          setPlayingKey={setPlayingKey}
+          audioRefs={audioRefs}
+          termsProp={termsProp}
+          highlightBook={highlightBook}
+          processed={processed}
+        />
+      ))}
 
       {showPagination && paginationControl('bottom')}
     </div>

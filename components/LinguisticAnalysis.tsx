@@ -79,7 +79,7 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word: searchWord })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setAnalysis(data.analysis);
@@ -101,6 +101,7 @@ export default function LinguisticAnalysis({ word, onRelatedWordClick }: Linguis
     setExpandedSections(newExpanded);
   };
 
+  // ✅ Early returns only after all hooks are declared
   if (!word) return null;
   if (loading) return <div className="p-4 text-center">Loading linguistic analysis...</div>;
   if (!analysis) return null;

@@ -108,37 +108,66 @@ serve(async (req) => {
     let romanization: string | undefined;
 
     if (latinOnly) {
-      const rawRom = raw.toLowerCase();
-      const pat = `%${rawRom}%`;
+      const rawLower = raw.toLowerCase();
 
-      const [romRes, dictRes] = await Promise.all([
-        db.from("romanized_dictionary")
-          .select("romanized,pashto")
-          .ilike("romanized", pat)
-          .limit(5),
-        db.from("dictionary")
-          .select("romanized,pashto")
-          .ilike("romanized", pat)
-          .limit(5),
-      ]);
+      // First try exact match in dictionary (highest priority)
+      const dictExactRes = await db.from("dictionary")
+        .select("romanized,pashto,pos")
+        .ilike("romanized", rawLower)
+        .limit(1);
 
-      const candidates = [
-        ...(romRes.data ?? []),
-        ...(dictRes.data ?? []),
-      ].filter(r => r?.pashto);
-
-      if (candidates.length) {
-        console.log(`DEBUG: Romanized lookup found ${candidates.length} candidates for "${raw}" with pattern "${pat}":`);
-        candidates.forEach((c, i) => {
-          console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}"`);
-        });
-
-        const best = candidates[0]; // Just pick first for now
-        normalized = best.pashto;
-        romanization = best.romanized ?? raw;
-        console.log(`DEBUG: Romanized lookup hit: "${raw}" → "${normalized}" (via "${best.romanized}")`);
+      if (dictExactRes.data?.length) {
+        const match = dictExactRes.data[0];
+        normalized = match.pashto;
+        romanization = match.romanized ?? raw;
+        console.log(`DEBUG: Dictionary exact match: "${raw}" → "${normalized}" (via "${romanization}")`);
       } else {
-        console.log(`DEBUG: Romanized lookup found no candidates for "${raw}" with pattern "${pat}"`);
+        // Fallback to pattern match in dictionary, preferring exact romanized matches
+        const dictPatternRes = await db.from("dictionary")
+          .select("romanized,pashto,pos")
+          .ilike("romanized", `%${rawLower}%`)
+          .limit(10);
+
+        if (dictPatternRes.data?.length) {
+          // Sort by: exact match first, then single token, then وهل, then shortest
+          const candidates = dictPatternRes.data.filter(r => r?.pashto);
+          const scored = candidates.map(c => {
+            const cRom = (c.romanized ?? '').toLowerCase();
+            const pashto = c.pashto as string;
+            const single = tokenCountPashto(pashto) === 1;
+            const exact = cRom === rawLower;
+            const isWahal = pashto === "وهل"; // bare helper verb
+
+            let score = 0;
+            if (exact) score += 100;
+            if (single) score += 40;
+            if (isWahal) score += 80;
+            score += 100 - cRom.length; // prefer shorter matches
+
+            return { c, score };
+          }).sort((a, b) => b.score - a.score);
+
+          const best = scored[0].c;
+          normalized = best.pashto;
+          romanization = best.romanized ?? raw;
+          console.log(`DEBUG: Dictionary pattern match: "${raw}" → "${normalized}" (via "${romanization}", score: ${scored[0].score})`);
+        } else {
+          // Final fallback to romanized_dictionary table
+          const romRes = await db.from("romanized_dictionary")
+            .select("romanized,pashto")
+            .ilike("romanized", `%${rawLower}%`)
+            .limit(5);
+
+          if (romRes.data?.length) {
+            const candidates = romRes.data.filter(r => r?.pashto);
+            const best = candidates[0]; // Just take first
+            normalized = best.pashto;
+            romanization = best.romanized ?? raw;
+            console.log(`DEBUG: Romanized dictionary fallback: "${raw}" → "${normalized}" (via "${romanization}")`);
+          } else {
+            console.log(`DEBUG: No romanized matches found for "${raw}"`);
+          }
+        }
       }
     }
 

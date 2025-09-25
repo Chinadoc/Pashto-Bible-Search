@@ -259,6 +259,7 @@ export default function ClientHome() {
 
   // Refresh audio map when results change to ensure we have latest URLs
   useEffect(() => {
+    // Only refresh if we have results but no audio map
     if (results.length > 0 && Object.keys(audioMap).length === 0) {
       const refreshAudioMap = async () => {
         try {
@@ -275,7 +276,7 @@ export default function ClientHome() {
       };
       refreshAudioMap();
     }
-  }, [results, audioMap]);
+  }, [results.length]); // Remove audioMap dependency to prevent excessive re-runs
 
   // Manual audio map refresh function
   const refreshAudioMap = useCallback(async () => {
@@ -590,17 +591,13 @@ export default function ClientHome() {
               {
                 id: 'search',
                 label: `Results (${resultsCount})`,
-                content: results.length > 0 ? (
+                content: (
                   <ResultsList
                     results={results}
                     audioMap={audioMap}
                     loading={isLoading}
                     processed={processed}
                   />
-                ) : (
-                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    {isLoading ? 'Searching...' : 'No results found. Try searching for a Pashto word.'}
-                  </div>
                 )
               },
               {
@@ -608,18 +605,18 @@ export default function ClientHome() {
                 label: 'Analysis',
                 content: (
                   <div className="space-y-6">
-                    {processed && (
-                      <LinguisticAnalysis
-                        word={processed.original}
-                        onRelatedWordClick={handlePickForm}
-                      />
-                    )}
+                    {/* Always render LinguisticAnalysis to avoid hooks ordering issues */}
+                    <LinguisticAnalysis
+                      word={processed?.original || ''}
+                      onRelatedWordClick={handlePickForm}
+                    />
 
-                    {includeRelated && relatedForms && typeof relatedForms.total === 'number' && relatedForms.total > 0 && (
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                          Related Forms
-                        </h3>
+                    {/* Always render RelatedForms container to avoid hooks ordering issues */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                        Related Forms
+                      </h3>
+                      {includeRelated && relatedForms && typeof relatedForms.total === 'number' && relatedForms.total > 0 ? (
                         <RelatedForms
                           relatedForms={relatedForms}
                           onPick={handlePickForm}
@@ -631,8 +628,12 @@ export default function ClientHome() {
                             setVerbMood(state.mood);
                           }}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          {includeRelated ? 'No related forms found for this search.' : 'Enable "Include Related Forms" to see related word forms.'}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               }
