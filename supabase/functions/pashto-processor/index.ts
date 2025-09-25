@@ -116,6 +116,8 @@ serve(async (req) => {
         .ilike("romanized", rawLower)
         .limit(1);
 
+      console.log(`DEBUG: Dictionary exact search for "${rawLower}" returned ${dictExactRes.data?.length || 0} results`);
+
       if (dictExactRes.data?.length) {
         const match = dictExactRes.data[0];
         normalized = match.pashto;
@@ -128,7 +130,15 @@ serve(async (req) => {
           .ilike("romanized", `%${rawLower}%`)
           .limit(10);
 
+        console.log(`DEBUG: Dictionary pattern search for "%${rawLower}%" returned ${dictPatternRes.data?.length || 0} results`);
+
         if (dictPatternRes.data?.length) {
+          // Debug: log all dictionary matches
+          console.log(`DEBUG: Dictionary candidates for "${raw}":`);
+          dictPatternRes.data.forEach((c, i) => {
+            console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}" (pos: ${c.pos})`);
+          });
+
           // Sort by: exact match first, then single token, then وهل, then shortest
           const candidates = dictPatternRes.data.filter(r => r?.pashto);
           const scored = candidates.map(c => {
@@ -144,6 +154,8 @@ serve(async (req) => {
             if (isWahal) score += 80;
             score += 100 - cRom.length; // prefer shorter matches
 
+            console.log(`DEBUG: Scoring "${pashto}": exact=${exact} single=${single} isWahal=${isWahal} score=${score}`);
+
             return { c, score };
           }).sort((a, b) => b.score - a.score);
 
@@ -151,6 +163,7 @@ serve(async (req) => {
           normalized = best.pashto;
           romanization = best.romanized ?? raw;
           console.log(`DEBUG: Dictionary pattern match: "${raw}" → "${normalized}" (via "${romanization}", score: ${scored[0].score})`);
+          console.log(`DEBUG: Top 3 dictionary candidates: ${scored.slice(0, 3).map(s => `${s.c.pashto}(${s.score})`).join(', ')}`);
         } else {
           // Final fallback to romanized_dictionary table
           const romRes = await db.from("romanized_dictionary")
@@ -158,7 +171,15 @@ serve(async (req) => {
             .ilike("romanized", `%${rawLower}%`)
             .limit(5);
 
+          console.log(`DEBUG: Romanized dictionary search for "%${rawLower}%" returned ${romRes.data?.length || 0} results`);
+
           if (romRes.data?.length) {
+            // Debug: log all romanized dictionary matches
+            console.log(`DEBUG: Romanized dictionary candidates for "${raw}":`);
+            romRes.data.forEach((c, i) => {
+              console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}"`);
+            });
+
             const candidates = romRes.data.filter(r => r?.pashto);
             const best = candidates[0]; // Just take first
             normalized = best.pashto;
