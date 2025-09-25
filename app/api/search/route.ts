@@ -245,7 +245,6 @@ export async function POST(request: NextRequest) {
     };
 
     // Fallback: If no results and we have related forms data with variants, search using variants
-    let finalResults = transformedResults;
     if (transformedResults.length === 0 && relatedForms && relatedForms.variantDetails) {
       console.log('DEBUG: No results from direct search, trying variant fallback');
       const variantForms: string[] = [];
