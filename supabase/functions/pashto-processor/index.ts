@@ -49,7 +49,7 @@ function normRom(s: string) {
 }
 
 function tokenCountPashto(s: string) {
-  return s.trim().split(/\s+/).filter(Boolean).length;
+  return s ? s.trim().split(/\s+/).filter(Boolean).length : 0;
 }
 
 function ok<T>(data: T, init?: ResponseInit) {
@@ -137,11 +137,11 @@ serve(async (req) => {
 
         // Score: prefer exact roman match, then single-token pashto, then وهل, then higher frequency
         const scored = candidates.map(c => {
-          const cRom = normRom(c.romanized ?? '');
+          const cRom = c.romanized ? normRom(c.romanized) : '';
           const pashto = c.pashto as string;
           const single = tokenCountPashto(pashto) === 1;
           const exact = cRom === rawNorm;
-          const endsEq = cRom.split(/\s+/).pop() === rawNorm;
+          const endsEq = cRom && cRom.split(/\s+/).pop() === rawNorm;
           const isWahal = pashto === "وهل"; // bare helper verb
 
           let score = 0;
