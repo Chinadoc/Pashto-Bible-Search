@@ -124,10 +124,17 @@ export async function generateVerbVariants(
       // If not in verbs_lexicon either, create some basic forms based on common patterns
       // This ensures we always return some verb forms for debugging
       const basicForms = [
-        { form: base, label: "Infinitive" },
-        { form: `${base} کول`, label: "Compound Form" },
-        { form: `${base} کېدل`, label: "Stative Form" }
+        { form: base, label: "Infinitive" }
       ];
+
+      // Only add compound forms if base is not a helper verb
+      if (!HELPER_VERBS.has(base)) {
+        basicForms.push(
+          { form: `${base} کول`, label: "Compound Form" },
+          { form: `${base} کېدل`, label: "Stative Form" }
+        );
+      }
+
       console.log(`DEBUG: Generated ${basicForms.length} basic forms:`, basicForms.map(f => f.form));
       basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
     }

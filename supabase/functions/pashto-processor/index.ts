@@ -51,6 +51,9 @@ function normRom(s: string) {
 function tokenCountPashto(s: string) {
   return s ? s.trim().split(/\s+/).filter(Boolean).length : 0;
 }
+function tokenCount(s: string) {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
 
 // Hardcoded mappings for known romanized forms that should map to specific Pashto words
 // These override the database lookup to ensure correct mapping
@@ -119,34 +122,62 @@ serve(async (req) => {
     let romanization: string | undefined;
 
     if (latinOnly) {
-      const rawLower = raw.toLowerCase();
+      const rawNorm = normRom(raw);
+      const pat = `%${rawNorm}%`;
 
-      // Check hardcoded mappings first (highest priority)
-      const hardcodedMatch = HARDCODED_ROMANIZED_MAPPINGS[rawLower];
-      if (hardcodedMatch) {
-        normalized = hardcodedMatch;
-        romanization = raw;
-        console.log(`DEBUG: Hardcoded mapping: "${raw}" → "${normalized}"`);
+      // 👉 Dictionary is the only source of truth
+      const { data: dictRows } = await db.from("dictionary")
+        .select("pashto, romanized, pos")
+        .ilike("romanized", pat)
+        .limit(30);
+
+      if (dictRows?.length) {
+        // optional tie-breaker by frequency
+        const forms = Array.from(new Set(dictRows.map(r => r.pashto)));
+        const { data: freqRows } = await db.from("word_frequencies")
+          .select("pashto_word, frequency_count")
+          .in("pashto_word", forms);
+
+        const freq = new Map<string, number>();
+        for (const r of freqRows ?? []) freq.set(r.pashto_word, r.frequency_count ?? 0);
+
+        // score so "وهل – wahúl (v. trans.)" wins for "wahul"
+        const scored = dictRows.map(r => {
+          const rNorm = normRom(r.romanized ?? "");
+          const pashto = r.pashto ?? "";
+          const pos = String(r.pos ?? "").toLowerCase();
+          const isExact = rNorm === rawNorm;
+          const isSingleRom = tokenCount(rNorm) === 1;
+          const isSinglePs = tokenCountPashto(pashto) === 1;
+          const isBareWahal = pashto === "وهل";
+          const isVerb = pos.startsWith("v");
+          const isVTrans = pos.startsWith("v") && pos.includes("trans");
+
+          let score = 0;
+          if (isExact) score += 120;
+          if (isSingleRom) score += 50;
+          if (isSinglePs) score += 50;
+          if (isBareWahal) score += 200;          // 🔑 prefer وهل when matching "wahul"
+          if (isVTrans) score += 40;
+          else if (isVerb) score += 20;
+          // penalize compounds (romanized with space)
+          if (rNorm.includes(" ")) score -= 60;
+
+          score += Math.min(40, Math.log10(1 + (freq.get(pashto) ?? 0)) * 10);
+          return { r, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const best = scored[0].r;
+        normalized = best.pashto;
+        romanization = best.romanized ?? raw;
+        console.log(`DEBUG: Dictionary lookup: "${raw}" → "${normalized}" (via "${romanization}", score: ${scored[0].score})`);
       } else {
-        // Fallback to simple romanized dictionary lookup
-        const romRes = await db.from("romanized_dictionary")
-          .select("romanized,pashto")
-          .ilike("romanized", `%${rawLower}%`)
-          .limit(1);
-
-        if (romRes.data?.length) {
-          const match = romRes.data[0];
-          normalized = match.pashto;
-          romanization = match.romanized ?? raw;
-          console.log(`DEBUG: Romanized dictionary match: "${raw}" → "${normalized}" (via "${romanization}")`);
-        } else {
-          console.log(`DEBUG: No romanized matches found for "${raw}"`);
-        }
+        console.log(`DEBUG: No dictionary matches found for "${raw}" with pattern "${pat}"`);
       }
     }
 
     const cacheKey = JSON.stringify({
-      v: 2, // bump if payload shape changes
+      v: 3, // bump if payload shape changes
       normalized,
       includeRelated: !!includeRelated,
       fuzzyGate: !!(enableFuzzy || latinOnly),
