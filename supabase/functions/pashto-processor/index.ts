@@ -51,20 +51,9 @@ function normRom(s: string) {
 function tokenCountPashto(s: string) {
   return s ? s.trim().split(/\s+/).filter(Boolean).length : 0;
 }
-function tokenCount(s: string) {
-  return s.trim().split(/\s+/).filter(Boolean).length;
+function tokenCountRomanized(s: string) {
+  return s ? s.trim().split(/\s+/).filter(Boolean).length : 0;
 }
-
-// Hardcoded mappings for known romanized forms that should map to specific Pashto words
-// These override the database lookup to ensure correct mapping
-const HARDCODED_ROMANIZED_MAPPINGS: Record<string, string> = {
-  'wahul': 'وهل',      // to hit, strike
-  'wahúlv': 'وهل',     // to hit, strike
-  'leedŭl': 'لیدل',    // to see
-  'leedul': 'لیدل',    // to see
-  'khabara': 'خبره',   // news, information
-  'iman': 'ایمان',     // faith, belief
-};
 
 function ok<T>(data: T, init?: ResponseInit) {
   return new Response(JSON.stringify(data), {
@@ -116,7 +105,7 @@ serve(async (req) => {
       global: { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
     });
 
-    // Normalize: detect latin-only and, if so, try romanized_dictionary/dictionary. Otherwise pass through.
+    // Normalize: detect latin-only input and resolve it via the dictionary. Otherwise pass through.
     const latinOnly = isLatinOnly(raw);
     let normalized = raw;
     let romanization: string | undefined;
@@ -147,7 +136,7 @@ serve(async (req) => {
           const pashto = r.pashto ?? "";
           const pos = String(r.pos ?? "").toLowerCase();
           const isExact = rNorm === rawNorm;
-          const isSingleRom = tokenCount(rNorm) === 1;
+          const isSingleRom = tokenCountRomanized(rNorm) === 1;
           const isSinglePs = tokenCountPashto(pashto) === 1;
           const isBareWahal = pashto === "وهل";
           const isVerb = pos.startsWith("v");

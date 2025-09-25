@@ -43,8 +43,6 @@ function savePersisted<T>(key: string, value: T): void {
 
 // Enhanced search controls component with all filters
 function SearchControls({
-  query,
-  setQuery,
   scope,
   setScope,
   includeRelated,
@@ -55,11 +53,8 @@ function SearchControls({
   setBookFilter,
   resultsCount,
   refreshAudioMap,
-  isLoading,
-  onSearch
+  isLoading
 }: {
-  query: string;
-  setQuery: (query: string) => void;
   scope: Scope;
   setScope: (scope: Scope) => void;
   includeRelated: boolean;
@@ -71,36 +66,9 @@ function SearchControls({
   resultsCount: number;
   refreshAudioMap: () => Promise<void>;
   isLoading: boolean;
-  onSearch: () => void;
 }) {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch();
-  };
-
   return (
     <div className="space-y-4">
-      {/* Search form */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSubmit(e)}
-          placeholder="Enter Pashto text to search..."
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isLoading}
-        />
-
-        <button
-          type="submit"
-          disabled={isLoading || !query.trim()}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Searching...' : 'Search'}
-        </button>
-      </form>
-
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
         <div className="flex items-center gap-2">
@@ -587,8 +555,6 @@ export default function ClientHome() {
 
       {/* Enhanced Search Controls */}
       <SearchControls
-        query={query}
-        setQuery={setQuery}
         scope={scope}
         setScope={setScope}
         includeRelated={includeRelated}
@@ -600,7 +566,6 @@ export default function ClientHome() {
         resultsCount={resultsCount}
         refreshAudioMap={refreshAudioMap}
         isLoading={isLoading}
-        onSearch={handleSearch}
       />
 
       {/* Error Message */}
