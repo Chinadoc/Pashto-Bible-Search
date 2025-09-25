@@ -225,6 +225,14 @@ function VerseItem({
     }
   };
 
+  const handleSeek = (seconds: number) => {
+    const el = audioRefs.current.get(verse.ref);
+    if (!el) return;
+
+    const newTime = Math.max(0, Math.min(el.duration, el.currentTime + seconds));
+    el.currentTime = newTime;
+  };
+
   // Debug logging for troubleshooting
   if (!verse.ref) {
     console.warn('Verse missing ref:', verse);
@@ -238,6 +246,7 @@ function VerseItem({
           ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
           : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
       }`}
+      style={{ minHeight: '120px' }} // Ensure enough space for audio player
     >
       <div className="flex justify-between items-start mb-2" dir="ltr">
         <div className="flex items-center gap-2">
@@ -277,35 +286,92 @@ function VerseItem({
         {highlightPsText(cleanVerseText(verse.text || ''), termsProp || [])}
       </p>
 
-      {/* Absolute-positioned verse number chip */}
+      {/* Absolute-positioned verse number chip - positioned to avoid audio player */}
       {verseNo != null && verseNo > 0 && (
         <span
           dir="ltr"
-          className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
+          className="absolute top-2 left-2 text-xs px-2 py-0.5 rounded-full bg-blue-500 text-white font-medium shadow-sm z-10"
+          title={`Verse ${verseNo}`}
         >
           {verseNo}
         </span>
       )}
 
-      {/* Compact audio controls */}
+      {/* Inline audio player */}
       {audioUrl && (
-        <div className="flex items-center gap-2 mb-2">
-          <audio
-            ref={(el) => {
-              if (el) audioRefs.current.set(verse.ref, el);
-            }}
-            src={audioUrl}
-            preload="metadata"
-            className="hidden"
-            onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
-          />
-          <button
-            className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={handlePlayPause}
-            title={playingKey === verse.ref ? 'Pause' : 'Play'}
-          >
-            {playingKey === verse.ref ? 'Pause' : 'Play'}
-          </button>
+        <div className="mb-2 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              {/* Seek backward 10s */}
+              <button
+                className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => handleSeek(-10)}
+                title="Rewind 10 seconds"
+              >
+                ⏪
+              </button>
+
+              {/* Play/Pause */}
+              <button
+                className="px-3 py-1 text-sm rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={handlePlayPause}
+                title={playingKey === verse.ref ? 'Pause' : 'Play'}
+              >
+                {playingKey === verse.ref ? '⏸️' : '▶️'}
+              </button>
+
+              {/* Seek forward 10s */}
+              <button
+                className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => handleSeek(10)}
+                title="Forward 10 seconds"
+              >
+                ⏩
+              </button>
+
+              <span className="text-xs text-gray-600 dark:text-gray-400 flex-1">
+                {verse.ref}
+              </span>
+
+              {/* Download button */}
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-60"
+                title="Download audio"
+                disabled={!!downloadingMap[verse.ref]}
+              >
+                {downloadingMap[verse.ref] ? '⬇️' : '📥'}
+              </button>
+            </div>
+
+            {/* Inline audio player */}
+            <audio
+              ref={(el) => {
+                if (el) audioRefs.current.set(verse.ref, el);
+              }}
+              src={audioUrl}
+              preload="metadata"
+              controls
+              className="w-full"
+              onTimeUpdate={(e) => {
+                // Update progress bar as audio plays
+                const audio = e.currentTarget;
+                const progress = (audio.currentTime / audio.duration) * 100;
+                // You could add a progress bar here if desired
+              }}
+              onLoadedMetadata={(e) => {
+                const audio = e.currentTarget;
+                console.log(`Audio loaded for ${verse.ref}: ${audio.duration.toFixed(1)}s`);
+              }}
+              onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
+              onError={(e) => {
+                console.error('Audio error for', verse.ref, e);
+              }}
+              onPlay={() => setPlayingKey(verse.ref)}
+              onPause={() => setPlayingKey(null)}
+            />
+          </div>
         </div>
       )}
     </div>

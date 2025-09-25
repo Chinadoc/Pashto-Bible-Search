@@ -41,31 +41,83 @@ function savePersisted<T>(key: string, value: T): void {
   } catch {}
 }
 
-// Search controls component
-function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, resultsCount, refreshAudioMap, isLoading }: {
+// Enhanced search controls component with all filters
+function SearchControls({
+  query,
+  setQuery,
+  scope,
+  setScope,
+  includeRelated,
+  setIncludeRelated,
+  enableFuzzy,
+  setEnableFuzzy,
+  bookFilter,
+  setBookFilter,
+  resultsCount,
+  refreshAudioMap,
+  isLoading,
+  onSearch
+}: {
+  query: string;
+  setQuery: (query: string) => void;
   scope: Scope;
   setScope: (scope: Scope) => void;
   includeRelated: boolean;
   setIncludeRelated: (include: boolean) => void;
+  enableFuzzy: boolean;
+  setEnableFuzzy: (enable: boolean) => void;
+  bookFilter: string[];
+  setBookFilter: (books: string[]) => void;
   resultsCount: number;
   refreshAudioMap: () => Promise<void>;
   isLoading: boolean;
+  onSearch: () => void;
 }) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch();
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Scope:
-        </label>
-        <select
-          value={scope}
-          onChange={(e) => setScope(e.target.value as Scope)}
-          className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="space-y-4">
+      {/* Search form */}
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSubmit(e)}
+          placeholder="Enter Pashto text to search..."
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isLoading}
+        />
+
+        <button
+          type="submit"
+          disabled={isLoading || !query.trim()}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <option value="all">All Bible</option>
-          <option value="ot">Old Testament</option>
-          <option value="nt">New Testament</option>
-        </select>
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+      </form>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Scope:
+          </label>
+          <select
+            value={scope}
+            onChange={(e) => setScope(e.target.value as Scope)}
+            className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Bible</option>
+            <option value="ot">Old Testament</option>
+            <option value="nt">New Testament</option>
+          </select>
+        </div>
+
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <input
             type="checkbox"
@@ -73,8 +125,19 @@ function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, re
             onChange={(e) => setIncludeRelated(e.target.checked)}
             className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
           />
-          Include Related Forms
+          Include Related Forms (Verb Variants)
         </label>
+
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <input
+            type="checkbox"
+            checked={enableFuzzy}
+            onChange={(e) => setEnableFuzzy(e.target.checked)}
+            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+          />
+          Fuzzy Search
+        </label>
+
         <button
           onClick={refreshAudioMap}
           disabled={isLoading}
@@ -83,9 +146,10 @@ function SearchControls({ scope, setScope, includeRelated, setIncludeRelated, re
         >
           🔄 Audio
         </button>
-      </div>
-      <div className="text-sm text-gray-600 dark:text-gray-400">
-        {resultsCount} results
+
+        <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
+          {resultsCount} results
+        </div>
       </div>
     </div>
   );
@@ -172,7 +236,9 @@ export default function ClientHome() {
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [scope, setScope] = useState<Scope>('all');
-  const [includeRelated, setIncludeRelated] = useState<boolean>(false);
+  const [includeRelated, setIncludeRelated] = useState<boolean>(true);
+  const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
+  const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -352,7 +418,13 @@ export default function ClientHome() {
     console.log('DEBUG: ========================================');
     console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
     console.log('DEBUG: ========================================');
-    console.log('DEBUG: Search parameters:', { query, scope, includeRelated });
+    console.log('DEBUG: Search parameters:', {
+      query,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      bookFilter
+    });
 
     if (!query.trim()) {
       console.log('DEBUG: Empty query, not searching');
@@ -367,91 +439,41 @@ export default function ClientHome() {
     setRelatedForms(null);
 
     try {
-      console.log('DEBUG: Starting direct database search for:', query.trim());
+      console.log('DEBUG: Starting enhanced search with filters and variants');
 
-      // Import the search function
-      const { searchVerses } = await import('../utils/supabase');
+      // Use the enhanced search API with all filters
+      const searchParams = {
+        query: query.trim(),
+        scope,
+        includeRelated,
+        enableFuzzy,
+        bookFilter
+      };
 
-      // Perform the search using the direct database function
-      const searchResults = await searchVerses(query.trim(), scope);
-      console.log('DEBUG: Direct search returned', searchResults.length, 'results');
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchParams),
+      });
 
-      // Transform results to match expected format
-      const transformedResults: Array<{
-        ref: string;
-        text: string;
-        testament?: 'NT' | 'OT';
-        translation?: string;
-        dialect?: string;
-        tags?: any[][];
-        audio_verse_url?: string | null;
-        id: number;
-      }> = searchResults.map((result, index) => ({
-        ref: result.ref,
-        text: result.text,
-        testament: 'NT' as const, // Default, could be enhanced later
-        translation: 'Yousafzai 2019', // Default
-        dialect: 'Yousafzai', // Default
-        tags: [], // Default
-        audio_verse_url: null, // Default
-        id: index + 1
-      }));
-
-      console.log('DEBUG: Transformed results:', transformedResults.slice(0, 5));
-
-      // Deduplicate results by ref to avoid duplicates from variant searches
-      const dedupedResults = dedupByRef(transformedResults);
-      console.log(`DEBUG: Deduplicated from ${transformedResults.length} to ${dedupedResults.length} results`);
-
-      // Set the results directly (use deduplicated results)
-      setResults(dedupedResults);
-      setCoverage(Array.isArray(coverageData) ? coverageData : []);
-      setProcessed(null);
-
-      // Fetch related forms if requested
-      if (includeRelated && query.trim()) {
-        try {
-          const relatedResponse = await fetch('/api/related_forms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ form: query.trim() }),
-          });
-
-          if (relatedResponse.ok) {
-            const relatedData = await relatedResponse.json();
-            console.log('DEBUG: Related forms data:', relatedData);
-
-            if (relatedData && (relatedData.forms || relatedData.total > 0)) {
-              const verbs = (relatedData.forms || []).filter((f: any) => f.pos === 'verb');
-              const nouns = (relatedData.forms || []).filter((f: any) => f.pos === 'noun');
-              const other = (relatedData.forms || []).filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
-
-              const transformedForms: RelatedFormsData = {
-                verbs,
-                nouns,
-                other,
-                total: relatedData.total || (verbs.length + nouns.length + other.length)
-              };
-
-              setRelatedForms(transformedForms);
-              console.log('DEBUG: Set related forms:', transformedForms);
-            } else {
-              setRelatedForms(null);
-            }
-          } else {
-            console.warn('Failed to fetch related forms:', relatedResponse.status);
-            setRelatedForms(null);
-          }
-        } catch (error) {
-          console.warn('Error fetching related forms:', error);
-          setRelatedForms(null);
-        }
-      } else {
-        setRelatedForms(null);
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
       }
 
-      console.log(`DEBUG: Search completed. Found ${dedupedResults.length} results.`);
+      const searchData = await response.json();
+      console.log('DEBUG: Search API returned:', {
+        resultsCount: searchData.results?.length || 0,
+        relatedFormsCount: searchData.relatedForms?.total || 0,
+        processedVariants: searchData.processed?.variants?.length || 0
+      });
+
+      setResults(searchData.results || []);
+      setRelatedForms(searchData.relatedForms || null);
+      setProcessed(searchData.processed || null);
+
+      console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
     } catch (err) {
+      console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
       setResults([]);
       setCoverage([]);
@@ -563,15 +585,22 @@ export default function ClientHome() {
         />
       </div>
 
-      {/* Search Controls */}
+      {/* Enhanced Search Controls */}
       <SearchControls
+        query={query}
+        setQuery={setQuery}
         scope={scope}
         setScope={setScope}
         includeRelated={includeRelated}
         setIncludeRelated={setIncludeRelated}
+        enableFuzzy={enableFuzzy}
+        setEnableFuzzy={setEnableFuzzy}
+        bookFilter={bookFilter}
+        setBookFilter={setBookFilter}
         resultsCount={resultsCount}
         refreshAudioMap={refreshAudioMap}
         isLoading={isLoading}
+        onSearch={handleSearch}
       />
 
       {/* Error Message */}
