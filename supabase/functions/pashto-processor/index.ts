@@ -135,15 +135,6 @@ serve(async (req) => {
           console.log(`  ${i + 1}. "${c.romanized}" → "${c.pashto}"`);
         });
 
-        // Optionally pull frequencies to help tie-break
-        const forms = Array.from(new Set(candidates.map(c => c.pashto)));
-        const { data: freqRows } = await db
-          .from("word_frequencies")
-          .select("pashto_word, frequency_count")
-          .in("pashto_word", forms);
-        const freq = new Map<string, number>();
-        for (const r of freqRows ?? []) freq.set(r.pashto_word, r.frequency_count ?? 0);
-
         // Score: prefer exact roman match, then single-token pashto, then وهل, then higher frequency
         const scored = candidates.map(c => {
           const cRom = normRom(c.romanized ?? '');
@@ -152,16 +143,12 @@ serve(async (req) => {
           const exact = cRom === rawNorm;
           const endsEq = cRom.split(/\s+/).pop() === rawNorm;
           const isWahal = pashto === "وهل"; // bare helper verb
-          const f = freq.get(pashto) ?? 0;
 
           let score = 0;
           if (exact) score += 100;
           if (endsEq) score += 60;
           if (single) score += 40;
           if (isWahal) score += 80;
-          score += Math.min(30, Math.log10(1 + f) * 10); // light freq bonus
-
-          console.log(`DEBUG: Scoring "${pashto}": exact=${exact} endsEq=${endsEq} single=${single} isWahal=${isWahal} freq=${f} → score=${score}`);
 
           return { c, score };
         }).sort((a, b) => b.score - a.score);
@@ -170,9 +157,6 @@ serve(async (req) => {
         normalized = best.pashto;
         romanization = best.romanized ?? raw; // keep what matched
         console.log(`DEBUG: Romanized lookup ranked hit: "${raw}" → "${normalized}" (via "${best.romanized}", score: ${scored[0].score})`);
-        console.log(`DEBUG: Top 3 candidates: ${scored.slice(0, 3).map(s => `${s.c.pashto}(${s.score})`).join(', ')}`);
-      } else {
-        console.log(`DEBUG: Romanized lookup found no candidates for "${raw}" with pattern "${pat}"`);
       }
     }
 
