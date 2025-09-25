@@ -199,9 +199,8 @@ export default function RelatedForms({
   setVerbState?: (state: VerbUnderstandingState) => void;
   onApplyFilter?: (forms: string[]) => void;
 }) {
+  // ✅ Always call hooks first, before any conditional returns
   const [open, setOpen] = useState<boolean>(false)
-
-  if (!relatedForms) return null
 
   // Debug logging to see what data we're receiving (moved to useEffect to avoid render issues)
   useEffect(() => {
@@ -305,6 +304,9 @@ export default function RelatedForms({
     habitualForms,
     otherVerbs
   } = cats;
+
+  // ✅ Early return only after all hooks are declared
+  if (!relatedForms) return null
 
   const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => (
     <div className="mt-2">
