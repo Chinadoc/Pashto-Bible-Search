@@ -30,7 +30,12 @@ export function refToFilename(ref: string): string | null {
 export async function resolveAudioUrl(ref: string, entry?: any): Promise<string | null> {
   if (!ref) return null;
 
-  // 1) Prefer Supabase storage via signer API FIRST
+  // 1) If entry is already a string URL (from audio map), return it directly
+  if (typeof entry === 'string' && /^https?:\/\//i.test(entry)) {
+    return entry;
+  }
+
+  // 2) Prefer Supabase storage via signer API FIRST
   try {
     const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
     if (r.ok) {
@@ -43,7 +48,7 @@ export async function resolveAudioUrl(ref: string, entry?: any): Promise<string 
     console.warn(`Failed to get signed URL for ${ref}:`, error);
   }
 
-  // 2) If signer couldn't find it, fall back to audio map "direct" URL as last resort
+  // 3) If signer couldn't find it, fall back to audio map "direct" URL as last resort
   // (these are often old Google Drive links that may fail)
   if (entry?.direct && /^https?:\/\//i.test(entry.direct)) {
     console.warn(`Using fallback direct URL for ${ref}:`, entry.direct);
