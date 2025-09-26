@@ -4,5 +4,18 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rb21iZHV0bmp2YWFzeHJibWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzMxNDMsImV4cCI6MjA3MjA0OTE0M30.dBdCCD8hJAWV4Y8sRNVi2uUSnDrZbUM4TxR6vl8-ENg"
   },
   "installCommand": "npm ci --no-audit --no-fund",
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "functions": {
+    "app/api/**/*.ts": {
+      "includeFiles": [
+        "public/full_dictionary_enriched.json",
+        "public/word_frequency_list.json",
+        "public/inflections_cache.json",
+        "public/form_to_root_map.json",
+        "public/form_occurrence_index.json",
+        "public/verses.json.gz"
+      ]
+    }
+  },
+  "regions": ["iad1"]
 }
