@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "mkdir -p public && cp cache/verses.json.gz public/ 2>/dev/null || true && cp full_dictionary_enriched.json word_frequency_list.json form_to_root_map.json form_occurrence_index.json public/ 2>/dev/null || true && cp inflections_cache.json public/ 2>/dev/null || true",
     "start": "next start",
     "lint": "next lint",
     "upload:audio": "node scripts/upload_audio.js \"../Pashto new testament with audio\""
