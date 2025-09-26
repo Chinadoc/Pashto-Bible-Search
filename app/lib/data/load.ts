@@ -86,7 +86,7 @@ function splitRef(ref: string): { book: string; chapter?: number; verse?: number
 async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf8'): Promise<T> {
   // In production, files are in public directory
   const isProduction = process.env.NODE_ENV === 'production';
-  const basePath = isProduction ? 'public' : '.';
+  const basePath = isProduction ? 'public' : 'app/data';
   const filePath = path.join(process.cwd(), basePath, relativePath);
   const raw = await fs.readFile(filePath, { encoding });
   return JSON.parse(raw) as T;
@@ -104,16 +104,22 @@ async function loadVerses(): Promise<VerseRecord[]> {
   const isProduction = process.env.NODE_ENV === 'production';
   const filePath = isProduction
     ? path.join(process.cwd(), 'public', 'verses.json.gz')
-    : path.join(process.cwd(), 'cache', 'verses.json.gz');
+    : path.join(process.cwd(), 'app', 'data', 'verses.json');
 
-  const compressed = await fs.readFile(filePath);
-  const jsonText = gunzipSync(compressed).toString('utf8');
-  const raw = JSON.parse(jsonText) as Record<string, any>;
+  let raw: Record<string, any>;
+  if (isProduction) {
+    const compressed = await fs.readFile(filePath);
+    const jsonText = gunzipSync(compressed).toString('utf8');
+    raw = JSON.parse(jsonText) as Record<string, any>;
+  } else {
+    // In development, load from app/data/verses.json (not compressed)
+    const rawText = await fs.readFile(filePath, 'utf8');
+    raw = JSON.parse(rawText) as Record<string, any>;
+  }
   const verses: VerseRecord[] = [];
 
-  for (const value of Object.values(raw)) {
+  for (const [ref, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue;
-    const ref: string | undefined = value.ref;
     const text: string | undefined = value.text;
     if (!ref || !text) continue;
 
