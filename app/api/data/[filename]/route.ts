@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
+interface RouteParams {
+  filename: string;
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<RouteParams> }
 ) {
   try {
-    const { filename } = params;
+    const resolvedParams = await params;
+    const { filename } = resolvedParams;
 
     // Validate filename to prevent directory traversal
     const allowedFiles = [
