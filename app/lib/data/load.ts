@@ -38,6 +38,13 @@ export type VerseRecord = {
   source?: string;
 };
 
+// Create a search index for faster lookups
+export type SearchIndex = {
+  verses: VerseRecord[];
+  byTextLower: Map<string, VerseRecord[]>;
+  byTextNormalizedLower: Map<string, VerseRecord[]>;
+};
+
 type DataCache = {
   dictionary: DictionaryEntry[];
   dictionaryByPashto: Map<string, DictionaryEntry>;
@@ -47,10 +54,11 @@ type DataCache = {
   formsByRoot: Map<string, string[]>;
   occurrenceMap: Map<string, OccurrenceRow>;
   verses: VerseRecord[];
+  searchIndex: SearchIndex;
   unaccent: (input: string) => string;
 };
 
-const globalForLoader = globalThis as unknown as { __PBS_DATA__?: Promise<DataCache> };
+const globalForLoader = globalThis as unknown as { __PBS_DATA__?: Promise<DataCache>; __PBS_DATA_CACHE__?: DataCache };
 
 const PASHTO_BOOKS_OT = new Set<string>([
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
@@ -84,7 +92,14 @@ async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf
   return JSON.parse(raw) as T;
 }
 
+// Pre-compute verses data to avoid repeated decompression
+let versesCache: VerseRecord[] | null = null;
+
 async function loadVerses(): Promise<VerseRecord[]> {
+  if (versesCache) {
+    return versesCache;
+  }
+
   // In production, load from public directory
   const isProduction = process.env.NODE_ENV === 'production';
   const filePath = isProduction
@@ -127,6 +142,7 @@ async function loadVerses(): Promise<VerseRecord[]> {
     });
   }
 
+  versesCache = verses;
   return verses;
 }
 
@@ -186,12 +202,13 @@ function normaliseRomanized(value: string): string {
 }
 
 async function loadData(): Promise<DataCache> {
-  const [dictionaryRaw, frequencies, inflections, formToRoot, occurrences] = await Promise.all([
-    readJson<any>('full_dictionary_enriched.json'),
+  // Load smaller files first for faster parallel processing
+  const [frequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
     readJson<FrequencyRow[]>('word_frequency_list.json'),
     readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
     readJson<Record<string, string[]>>('form_to_root_map.json'),
     readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
+    readJson<any>('full_dictionary_enriched.json'),
   ]);
 
   const dictionary = buildDictionaryEntries(dictionaryRaw);
@@ -249,6 +266,40 @@ async function loadData(): Promise<DataCache> {
   const verses = await loadVerses();
   const formsByRoot = buildFormsByRoot(formToRoot);
 
+  // Create search index for faster lookups
+  const byTextLower = new Map<string, VerseRecord[]>();
+  const byTextNormalizedLower = new Map<string, VerseRecord[]>();
+
+  for (const verse of verses) {
+    // Index by original text (lowercased)
+    const words = verse.textLower.split(/\s+/);
+    for (const word of words) {
+      if (word.length > 0) {
+        const bucket = byTextLower.get(word) ?? [];
+        bucket.push(verse);
+        byTextLower.set(word, bucket);
+      }
+    }
+
+    // Index by normalized text (if available)
+    if (verse.textNormalizedLower) {
+      const normWords = verse.textNormalizedLower.split(/\s+/);
+      for (const normWord of normWords) {
+        if (normWord.length > 0) {
+          const bucket = byTextNormalizedLower.get(normWord) ?? [];
+          bucket.push(verse);
+          byTextNormalizedLower.set(normWord, bucket);
+        }
+      }
+    }
+  }
+
+  const searchIndex: SearchIndex = {
+    verses,
+    byTextLower,
+    byTextNormalizedLower,
+  };
+
   const unaccent = (input: string): string => input
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -264,13 +315,36 @@ async function loadData(): Promise<DataCache> {
     formsByRoot,
     occurrenceMap,
     verses,
+    searchIndex,
     unaccent,
   };
 }
 
 export async function getData(): Promise<DataCache> {
-  if (!globalForLoader.__PBS_DATA__) {
-    globalForLoader.__PBS_DATA__ = loadData();
+  // Use resolved cache if available
+  if (globalForLoader.__PBS_DATA_CACHE__) {
+    return globalForLoader.__PBS_DATA_CACHE__;
   }
-  return globalForLoader.__PBS_DATA__;
+
+  // If loading is in progress, wait for it
+  if (globalForLoader.__PBS_DATA__) {
+    return globalForLoader.__PBS_DATA__;
+  }
+
+  // Start loading and cache the promise
+  const loadingPromise = loadData();
+  globalForLoader.__PBS_DATA__ = loadingPromise;
+
+  try {
+    const data = await loadingPromise;
+    // Cache the resolved data for future requests
+    globalForLoader.__PBS_DATA_CACHE__ = data;
+    // Clear the loading promise
+    globalForLoader.__PBS_DATA__ = undefined;
+    return data;
+  } catch (error) {
+    // Clear the failed promise
+    globalForLoader.__PBS_DATA__ = undefined;
+    throw error;
+  }
 }
