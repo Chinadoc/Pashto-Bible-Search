@@ -76,13 +76,21 @@ function splitRef(ref: string): { book: string; chapter?: number; verse?: number
 }
 
 async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf8'): Promise<T> {
-  const filePath = path.join(process.cwd(), relativePath);
+  // In production, files are in public directory
+  const isProduction = process.env.NODE_ENV === 'production';
+  const basePath = isProduction ? 'public' : '.';
+  const filePath = path.join(process.cwd(), basePath, relativePath);
   const raw = await fs.readFile(filePath, { encoding });
   return JSON.parse(raw) as T;
 }
 
 async function loadVerses(): Promise<VerseRecord[]> {
-  const filePath = path.join(process.cwd(), 'cache', 'verses.json.gz');
+  // In production, load from public directory
+  const isProduction = process.env.NODE_ENV === 'production';
+  const filePath = isProduction
+    ? path.join(process.cwd(), 'public', 'verses.json.gz')
+    : path.join(process.cwd(), 'cache', 'verses.json.gz');
+
   const compressed = await fs.readFile(filePath);
   const jsonText = gunzipSync(compressed).toString('utf8');
   const raw = JSON.parse(jsonText) as Record<string, any>;
