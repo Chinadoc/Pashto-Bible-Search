@@ -283,7 +283,7 @@ function VerseItem({
 
       {/* Verse text with absolute-positioned verse number chip */}
       <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-        {highlightPsText(cleanVerseText(verse.text || ''), termsProp || [])}
+        {highlight(cleanVerseText(verse.text || ''), termsProp || [], processed)}
       </p>
 
       {/* Absolute-positioned verse number chip - positioned to avoid audio player */}

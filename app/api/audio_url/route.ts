@@ -32,13 +32,21 @@ function candidatePathsFromRef(ref: string): string[] {
   const verse = Number(m[3]);
   if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return [];
   const slug = normalizeBookNameToSlug(book);
+
+  // Standard patterns (existing)
   const base = `${chapter}_verse_${verse}.mp3`;
   const primary = `${slug}${base}`;
   const alts = altNumericBookSlugBothWays(slug).map(s => `${s}${base}`);
   const hy = hyphenSlug(book);
-  // Also support nested paths like: 1-corinthians/chapter-1-verses/verse-1.mp3
   const nested = [`${hy}/chapter-${chapter}-verses/verse-${verse}.mp3`];
-  return Array.from(new Set([primary, ...alts, ...nested]));
+
+  // Yousafzai patterns (new - zero-padded, yousafzai prefix)
+  const chapPad = String(chapter).padStart(3, '0');
+  const verPad = String(verse).padStart(3, '0');
+  const yousafzaiBase = `yousafzai_${slug}${chapPad}_verse_${verPad}.mp3`;
+  const yousafzaiPath = `yousafzai/${yousafzaiBase}`;
+
+  return Array.from(new Set([primary, ...alts, ...nested, yousafzaiPath]));
 }
 
 export async function GET(request: NextRequest) {
