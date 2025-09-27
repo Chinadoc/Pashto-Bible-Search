@@ -318,7 +318,6 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
             # Use provided romanization or look it up from dictionary fast index
             looked_up_rom = get_romanization_for_forms(ps)
             final_rom = rom_val or looked_up_rom
-            print(f"DEBUG: {ps}: rom_val='{rom_val}', looked_up='{looked_up_rom}', final='{final_rom}' (len={len(final_rom) if final_rom else 0})")
             forms_map[ps] = final_rom
 
     return {
