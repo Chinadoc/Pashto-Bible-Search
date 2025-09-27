@@ -99,6 +99,43 @@ def test_wahul_inflection():
         print("❌ وهل inflection failed")
         return False
 
+def test_garmawul_inflection():
+    """Test that گرمول generates the correct stative compound conjugations"""
+
+    # Test basic inflection
+    result = conjugate_verb('ګرمول')
+
+    if result:
+        print("✅ گرمول inflection successful")
+        print(f"Root: {result['meta']['root']}")
+        print(f"Imperfective stem: {result['meta']['imperfective_stem']}")
+        print(f"Perfective stem: {result['meta']['perfective_stem']}")
+        print(f"Past participle: {result['meta']['past_participle']}")
+
+        # Check some specific forms
+        forms_map = result['forms_map']
+
+        # Expected forms for fused stative compound
+        expected_forms = {
+            'ګرموم': 'garmawum',  # 1sg present
+            'ګرموي': 'garmaway',  # 3sg present
+            'ګرم کړم': 'garm kRum',  # 1sg subjunctive
+            'ګرم کړل': 'garm kRul',  # perfective root
+            'ګرم کړی': 'garm kRay',  # past participle
+        }
+
+        print("\n--- Expected Forms ---")
+        for form, expected_rom in expected_forms.items():
+            actual_rom = forms_map.get(form, 'NOT FOUND')
+            status = "✅" if actual_rom == expected_rom else "❌"
+            print(f"{status} {form}: {actual_rom} (expected: {expected_rom})")
+
+        return True
+    else:
+        print("❌ گرمول inflection failed")
+        return False
+
 if __name__ == '__main__':
-    success = test_wahul_inflection()
-    sys.exit(0 if success else 1)
+    success1 = test_wahul_inflection()
+    success2 = test_garmawul_inflection()
+    sys.exit(0 if (success1 and success2) else 1)
