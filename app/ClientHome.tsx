@@ -381,6 +381,18 @@ export default function ClientHome() {
     }
   }, [results]);
 
+  // Filter results by selected books
+  const filteredResults = useMemo(() => {
+    if (bookFilter.length === 0) return results;
+    return results.filter(verse => {
+      if (!verse.ref) return false;
+      const book = verse.ref.split(' ')[0];
+      // Handle multi-word book names like "1 Corinthians"
+      const bookName = verse.ref.includes(' ') ? verse.ref.split(' ').slice(0, -1).join(' ') : book;
+      return bookFilter.includes(bookName);
+    });
+  }, [results, bookFilter]);
+
   // Handle search
   const handleSearch = async () => {
     console.log('DEBUG: ========================================');
@@ -584,10 +596,10 @@ export default function ClientHome() {
             tabs={[
               {
                 id: 'search',
-                label: `Results (${resultsCount})`,
+                label: `Results (${filteredResults.length}${results.length !== filteredResults.length ? ` of ${results.length}` : ''})`,
                 content: (
                   <ResultsList
-                    results={results}
+                    results={filteredResults}
                     audioMap={audioMap}
                     loading={isLoading}
                     processed={processed}
@@ -642,10 +654,14 @@ export default function ClientHome() {
             scope={scope}
             coverageLevel={ComplexityLevel.Basic}
             onPickBook={(book: string) => {
-              // Handle book selection if needed
-              console.log('Book selected:', book);
+              // Toggle book filter - if already selected, clear it, otherwise select it
+              if (bookFilter.includes(book)) {
+                setBookFilter(bookFilter.filter(b => b !== book));
+              } else {
+                setBookFilter([...bookFilter, book]);
+              }
             }}
-            selectedBook={null}
+            selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
             resultsCount={resultsCount}
           />
         </div>
