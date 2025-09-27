@@ -442,7 +442,7 @@ async function loadLightweightData(): Promise<LightweightData> {
   };
 }
 
-async function loadLazySearchData(): Promise<LazySearchData> {
+async function loadLazyLoadedVerses(): Promise<LazySearchData> {
   const verses = await loadVerses();
 
   return {
@@ -565,7 +565,7 @@ export async function getLazyLoadedSearchData(): Promise<LazySearchData> {
   }
 
   // Start loading and cache the promise
-  const loadingPromise = loadLazySearchData();
+  const loadingPromise = loadLazyLoadedVerses();
   lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = loadingPromise;
 
   try {
