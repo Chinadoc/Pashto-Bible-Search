@@ -342,11 +342,11 @@ export default function ClientHome() {
     }
   }, [setAudioMap, setIsLoading]);
 
-  // Group results by book for coverage calculation
+  // Group results by book for coverage calculation (use filtered results)
   const coverageData = useMemo(() => {
     try {
       const bookCounts: Record<string, number> = {};
-      results.forEach((verse) => {
+      filteredResults.forEach((verse) => {
         try {
           // Safely extract book name from ref
           if (!verse.ref || typeof verse.ref !== 'string') {
@@ -370,16 +370,24 @@ export default function ClientHome() {
         }
       });
 
-      return Object.entries(bookCounts).map(([book, count]) => ({
+      const coverageItems = Object.entries(bookCounts).map(([book, count]) => ({
         book,
         count,
         translation: OT_BOOKS_SET.has(book) || NT_BOOKS_SET.has(book) ? 'KJV' : undefined
       }));
+
+      console.log('Coverage data calculated:', coverageItems);
+      return coverageItems;
     } catch (err) {
       console.error('Error calculating coverage data:', err);
       return [];
     }
-  }, [results]);
+  }, [filteredResults]);
+
+  // Update coverage state when coverageData changes
+  useEffect(() => {
+    setCoverage(coverageData);
+  }, [coverageData]);
 
   // Filter results by selected books
   const filteredResults = useMemo(() => {
