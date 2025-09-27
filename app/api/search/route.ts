@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
 import { getData } from '@/app/lib/data/load';
-import { generateNounVariants, generateVerbVariants } from '@/app/utils/noun_variants';
+import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 
 export const runtime = 'nodejs';
