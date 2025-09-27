@@ -176,7 +176,7 @@ export async function generateVerbVariants(
   // 5) Frequency scoring using local freqMap
   if (freqMap) {
     deduped = deduped.map(v => {
-      const count = freqMap.get(v.form) ?? 0;
+      const count = freqMap!.get(v.form) ?? 0;
       return { ...v, count, score: count };
     }).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   }
