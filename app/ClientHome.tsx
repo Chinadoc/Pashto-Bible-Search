@@ -496,6 +496,7 @@ export default function ClientHome() {
         relatedFormsCount: searchData.relatedForms?.total || 0,
         processedVariants: searchData.processed?.variants?.length || 0,
         searchType: searchData.processed?.searchType || 'unknown',
+        hasRelatedForms: !!searchData.relatedForms,
         relatedFormsData: searchData.relatedForms
       });
 
