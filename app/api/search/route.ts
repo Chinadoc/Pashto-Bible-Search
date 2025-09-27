@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
-import { getData } from '@/app/lib/data/load';
+import { getData, hybridSearch } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 
@@ -174,69 +174,93 @@ export async function POST(request: NextRequest) {
 
     const effectiveLimit = Math.max(10, Math.min(limit, 200));
 
-    // Search using local data
-    const data = await getData();
-    const { searchIndex, verses } = data;
     let results: Array<{ ref: string; text: string; testament?: string; book: string }> = [];
-    let searchType: 'fast' | 'fuzzy' | 'enhanced' = 'fast';
+    let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
 
-    console.log('Search debug:', {
-      searchIndexExists: !!searchIndex,
-      versesCount: verses.length,
-      searchTerm: normalized
-    });
-
-    // Fast search using index
-    if (searchIndex?.byTextLower) {
-      const candidateVerses = new Set<any>();
-
-      // Use root form for searching if we found one from a form
-      const searchTerms = rootFromForm ? [normalized, rootFromForm] : [normalized];
-
-      for (const searchTerm of searchTerms) {
-        // Check original text index
-        const originalMatches = searchIndex.byTextLower.get(searchTerm.toLowerCase()) || [];
-        console.log(`Original matches found for ${searchTerm}:`, originalMatches.length);
-        for (const verse of originalMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-
-        // Check normalized text index
-        const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm.toLowerCase()) || [];
-        console.log(`Normalized matches found for ${searchTerm}:`, normalizedMatches.length);
-        for (const verse of normalizedMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-      }
-
-      results = Array.from(candidateVerses).slice(0, effectiveLimit);
-      console.log('Total results found:', results.length);
-    }
-
-    // Fallback to fuzzy search if no results and enabled
-    const shouldFuzzy = enableFuzzy ?? !isPashtoQuery;
-    if (!results.length && shouldFuzzy) {
-      // Create Fuse instance with verses
-      const fuse = new Fuse(verses, {
-        keys: ['text', 'textNormalized'],
-        includeScore: true,
-        threshold: 0.35,
-        minMatchCharLength: 2,
+    // Try hybrid search first (fast JSON + database fallback)
+    try {
+      const hybridResult = await hybridSearch(normalized, {
+        scope,
+        includeRelated: false,
+        limit: effectiveLimit,
+        enableFuzzy: enableFuzzy ?? !isPashtoQuery,
       });
 
-      const hits = fuse.search(normalized, { limit: effectiveLimit * 3 });
-      const scoped = hits
-        .map((hit) => hit.item)
-        .filter((verse) => matchesScope(verse, scope))
-        .slice(0, effectiveLimit);
+      if (hybridResult.results.length > 0) {
+        results = hybridResult.results;
+        searchType = hybridResult.processed.searchType === 'hybrid' ? 'hybrid' : 'fast';
+        console.log('Hybrid search found results:', results.length);
+      }
+    } catch (error) {
+      console.warn('Hybrid search failed, falling back to traditional search:', error);
+    }
 
-      if (scoped.length) {
-        results = scoped;
-        searchType = 'fuzzy';
+    // Fallback to traditional search if hybrid didn't work
+    if (!results.length) {
+      console.log('Falling back to traditional search');
+
+      // Search using local data
+      const data = await getData();
+      const { searchIndex, verses } = data;
+
+      console.log('Search debug:', {
+        searchIndexExists: !!searchIndex,
+        versesCount: verses.length,
+        searchTerm: normalized
+      });
+
+      // Fast search using index
+      if (searchIndex?.byTextLower) {
+        const candidateVerses = new Set<any>();
+
+        // Use root form for searching if we found one from a form
+        const searchTerms = rootFromForm ? [normalized, rootFromForm] : [normalized];
+
+        for (const searchTerm of searchTerms) {
+          // Check original text index
+          const originalMatches = searchIndex.byTextLower.get(searchTerm.toLowerCase()) || [];
+          console.log(`Original matches found for ${searchTerm}:`, originalMatches.length);
+          for (const verse of originalMatches) {
+            if (matchesScope(verse, scope)) {
+              candidateVerses.add(verse);
+            }
+          }
+
+          // Check normalized text index
+          const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm.toLowerCase()) || [];
+          console.log(`Normalized matches found for ${searchTerm}:`, normalizedMatches.length);
+          for (const verse of normalizedMatches) {
+            if (matchesScope(verse, scope)) {
+              candidateVerses.add(verse);
+            }
+          }
+        }
+
+        results = Array.from(candidateVerses).slice(0, effectiveLimit);
+        console.log('Total results found:', results.length);
+      }
+
+      // Fallback to fuzzy search if no results and enabled
+      const shouldFuzzy = enableFuzzy ?? !isPashtoQuery;
+      if (!results.length && shouldFuzzy) {
+        // Create Fuse instance with verses
+        const fuse = new Fuse(verses, {
+          keys: ['text', 'textNormalized'],
+          includeScore: true,
+          threshold: 0.35,
+          minMatchCharLength: 2,
+        });
+
+        const hits = fuse.search(normalized, { limit: effectiveLimit * 3 });
+        const scoped = hits
+          .map((hit) => hit.item)
+          .filter((verse) => matchesScope(verse, scope))
+          .slice(0, effectiveLimit);
+
+        if (scoped.length) {
+          results = scoped;
+          searchType = 'fuzzy';
+        }
       }
     }
 

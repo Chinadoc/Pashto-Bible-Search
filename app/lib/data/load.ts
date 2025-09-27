@@ -2,6 +2,7 @@ import 'server-only';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import { createClient } from '@supabase/supabase-js';
 
 type DictionaryEntry = {
   pashto: string;
@@ -346,9 +347,19 @@ const lightweightCache = globalThis as unknown as { __PBS_LIGHTWEIGHT_CACHE__?: 
 type SearchData = {
   verses: VerseRecord[];
   searchIndex: SearchIndex;
+  indexesLoaded: boolean;
 };
 
 const searchCache = globalThis as unknown as { __PBS_SEARCH_CACHE__?: Promise<SearchData>; __PBS_SEARCH_DATA__?: SearchData };
+
+// Lazy-loaded search data that builds indexes only when needed
+type LazySearchData = {
+  verses: VerseRecord[];
+  searchIndex?: SearchIndex;
+  indexesLoaded: boolean;
+};
+
+const lazySearchCache = globalThis as unknown as { __PBS_LAZY_SEARCH_CACHE__?: Promise<LazySearchData>; __PBS_LAZY_SEARCH_DATA__?: LazySearchData };
 
 async function loadLightweightData(): Promise<LightweightData> {
   const [frequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
@@ -431,6 +442,15 @@ async function loadLightweightData(): Promise<LightweightData> {
   };
 }
 
+async function loadLazySearchData(): Promise<LazySearchData> {
+  const verses = await loadVerses();
+
+  return {
+    verses,
+    indexesLoaded: false,
+  };
+}
+
 async function loadSearchData(): Promise<SearchData> {
   const verses = await loadVerses();
 
@@ -471,7 +491,37 @@ async function loadSearchData(): Promise<SearchData> {
   return {
     verses,
     searchIndex,
+    indexesLoaded: true,
   };
+}
+
+async function getLazySearchData(): Promise<LazySearchData> {
+  // Use resolved cache if available
+  if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__) {
+    return lazySearchCache.__PBS_LAZY_SEARCH_DATA__;
+  }
+
+  // If loading is in progress, wait for it
+  if (lazySearchCache.__PBS_LAZY_SEARCH_CACHE__) {
+    return lazySearchCache.__PBS_LAZY_SEARCH_CACHE__;
+  }
+
+  // Start loading and cache the promise
+  const loadingPromise = loadLazySearchData();
+  lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = loadingPromise;
+
+  try {
+    const data = await loadingPromise;
+    // Cache the resolved data for future requests
+    lazySearchCache.__PBS_LAZY_SEARCH_DATA__ = data;
+    // Clear the loading promise
+    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
+    return data;
+  } catch (error) {
+    // Clear the failed promise
+    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
+    throw error;
+  }
 }
 
 export async function getLightweightData(): Promise<LightweightData> {
@@ -530,6 +580,236 @@ export async function getSearchData(): Promise<SearchData> {
     searchCache.__PBS_SEARCH_CACHE__ = undefined;
     throw error;
   }
+}
+
+export async function getLazySearchData(): Promise<LazySearchData> {
+  // Use resolved cache if available
+  if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__) {
+    return lazySearchCache.__PBS_LAZY_SEARCH_DATA__;
+  }
+
+  // If loading is in progress, wait for it
+  if (lazySearchCache.__PBS_LAZY_SEARCH_CACHE__) {
+    return lazySearchCache.__PBS_LAZY_SEARCH_CACHE__;
+  }
+
+  // Start loading and cache the promise
+  const loadingPromise = loadLazySearchData();
+  lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = loadingPromise;
+
+  try {
+    const data = await loadingPromise;
+    // Cache the resolved data for future requests
+    lazySearchCache.__PBS_LAZY_SEARCH_DATA__ = data;
+    // Clear the loading promise
+    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
+    return data;
+  } catch (error) {
+    // Clear the failed promise
+    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
+    throw error;
+  }
+}
+
+// Build search indexes on demand from lazy-loaded data
+export async function buildSearchIndexes(lazyData: LazySearchData): Promise<SearchData> {
+  if (lazyData.indexesLoaded && lazyData.searchIndex) {
+    return {
+      verses: lazyData.verses,
+      searchIndex: lazyData.searchIndex,
+      indexesLoaded: true,
+    };
+  }
+
+  // Create search index for faster lookups
+  const byTextLower = new Map<string, VerseRecord[]>();
+  const byTextNormalizedLower = new Map<string, VerseRecord[]>();
+
+  for (const verse of lazyData.verses) {
+    // Index by original text (lowercased)
+    const words = verse.textLower.split(/\s+/);
+    for (const word of words) {
+      if (word.length > 0) {
+        const bucket = byTextLower.get(word) ?? [];
+        bucket.push(verse);
+        byTextLower.set(word, bucket);
+      }
+    }
+
+    // Index by normalized text (if available)
+    if (verse.textNormalizedLower) {
+      const normWords = verse.textNormalizedLower.split(/\s+/);
+      for (const normWord of normWords) {
+        if (normWord.length > 0) {
+          const bucket = byTextNormalizedLower.get(normWord) ?? [];
+          bucket.push(verse);
+          byTextNormalizedLower.set(normWord, bucket);
+        }
+      }
+    }
+  }
+
+  const searchIndex: SearchIndex = {
+    verses: lazyData.verses,
+    byTextLower,
+    byTextNormalizedLower,
+  };
+
+  return {
+    verses: lazyData.verses,
+    searchIndex,
+    indexesLoaded: true,
+  };
+}
+
+// Hybrid search function that uses JSON for fast results and database for complex queries
+export async function hybridSearch(
+  query: string,
+  options: {
+    scope?: 'all' | 'ot' | 'nt';
+    includeRelated?: boolean;
+    limit?: number;
+    enableFuzzy?: boolean;
+  } = {}
+): Promise<{
+  results: any[];
+  relatedForms?: any;
+  processed: any;
+  count: number;
+  ms: number;
+}> {
+  const startTime = Date.now();
+  const { scope = 'all', includeRelated = false, limit = 100, enableFuzzy = false } = options;
+
+  try {
+    // First, try fast JSON-based search
+    const { searchIndex, verses } = await getSearchData();
+    let results: any[] = [];
+
+    // Fast exact match search using JSON index
+    if (searchIndex?.byTextLower) {
+      const searchTerms = [query.toLowerCase()];
+      const candidateVerses = new Set();
+
+      for (const searchTerm of searchTerms) {
+        // Check original text index
+        const originalMatches = searchIndex.byTextLower.get(searchTerm) || [];
+        for (const verse of originalMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+
+        // Check normalized text index
+        const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm) || [];
+        for (const verse of normalizedMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+      }
+
+      results = Array.from(candidateVerses).slice(0, limit);
+
+      // If no exact matches and fuzzy search is enabled, try database
+      if (!results.length && enableFuzzy) {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
+        // Try fuzzy search in database
+        const { data: dbResults } = await supabase
+          .from('verses')
+          .select('*')
+          .textSearch('text', query)
+          .limit(limit);
+
+        if (dbResults) {
+          results = dbResults.map((verse, index) => ({
+            ref: verse.ref,
+            text: verse.text,
+            testament: verse.testament,
+            book: verse.book || '',
+          }));
+        }
+      }
+    }
+
+    // If still no results, fall back to database for complex queries
+    if (!results.length) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const queryBuilder = supabase
+        .from('verses')
+        .select('*')
+        .or(`text.ilike.%${query}%,text_normalized.ilike.%${query}%`)
+        .limit(limit);
+
+      const { data: dbResults } = await queryBuilder;
+      if (dbResults) {
+        results = dbResults.map((verse, index) => ({
+          ref: verse.ref,
+          text: verse.text,
+          testament: verse.testament,
+          book: verse.book || '',
+        }));
+      }
+    }
+
+    // Generate related forms if requested
+    let relatedForms = null;
+    if (includeRelated) {
+      relatedForms = await generateRelatedForms(query);
+    }
+
+    return {
+      results,
+      relatedForms,
+      processed: {
+        original: query,
+        normalized: query,
+        searchType: results.length > 0 ? 'hybrid' : 'database',
+      },
+      count: results.length,
+      ms: Date.now() - startTime,
+    };
+  } catch (error) {
+    console.error('Hybrid search error:', error);
+    throw error;
+  }
+}
+
+// Helper function to check scope
+function matchesScope(verse: any, scope: string): boolean {
+  if (scope === 'all') return true;
+  const testament = verse.testament?.toLowerCase();
+  return testament === scope;
+}
+
+async function generateRelatedForms(word: string): Promise<any> {
+  const { dictionaryByPashto, frequencyMap } = await getLightweightData();
+
+  const dictEntry = dictionaryByPashto.get(word);
+  let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
+
+  if (dictEntry?.pos) {
+    const posLower = dictEntry.pos.toLowerCase();
+    if (posLower.startsWith("verb")) posGuess = "verb";
+    else if (posLower.startsWith("noun")) posGuess = "noun";
+    else if (posLower.startsWith("adj")) posGuess = "adjective";
+    else posGuess = "other";
+  }
+
+  return {
+    root: word,
+    forms: {},
+    total: 0,
+    ms: 0,
+  };
 }
 
 export async function getData(): Promise<DataCache> {
