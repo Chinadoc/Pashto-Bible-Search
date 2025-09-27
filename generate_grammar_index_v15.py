@@ -111,8 +111,10 @@ def find_all_possible_roots(word, all_words_set):
         # A. Direct infinitive match
         if word == root:
             interpretations.append((root, {'type': 'Verb', 'pattern_info': details['pattern_info'], 'form_description': 'Infinitive Root'}))
-        # B. Stem-based derivation
-        for stem_type, stem_form in details['stems'].items():
+        # B. Stem-based derivation - sort by length (longest first) to handle ambiguity
+        stems = list(details['stems'].items())
+        stems.sort(key=lambda x: len(x[1]), reverse=True)  # Sort by stem length, longest first
+        for stem_type, stem_form in stems:
             if word.startswith(stem_form):
                 # This is where detailed conjugation labels would be generated.
                 # For now, we keep it simple.
