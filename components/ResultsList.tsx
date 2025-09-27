@@ -241,12 +241,12 @@ function VerseItem({
   return (
     <div
       key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
-      className={`relative p-4 mb-2 border rounded-md ${
+      className={`relative p-3 mb-2 border rounded-md ${
         isHighlighted
           ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
           : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
       }`}
-      style={{ minHeight: '120px' }} // Ensure enough space for audio player
+      style={{ minHeight: '80px' }} // Reduced space for smaller audio player
     >
       <div className="flex justify-between items-start mb-2" dir="ltr">
         <div className="flex items-center gap-2">
@@ -297,55 +297,20 @@ function VerseItem({
         </span>
       )}
 
-      {/* Inline audio player */}
+      {/* Compact audio player */}
       {audioUrl && (
-        <div className="mb-2 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {/* Seek backward 10s */}
-              <button
-                className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => handleSeek(-10)}
-                title="Rewind 10 seconds"
-              >
-                ⏪
-              </button>
+        <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+          <div className="flex items-center gap-1">
+            {/* Play/Pause */}
+            <button
+              className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={handlePlayPause}
+              title={playingKey === verse.ref ? 'Pause' : 'Play'}
+            >
+              {playingKey === verse.ref ? '⏸️' : '▶️'}
+            </button>
 
-              {/* Play/Pause */}
-              <button
-                className="px-3 py-1 text-sm rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={handlePlayPause}
-                title={playingKey === verse.ref ? 'Pause' : 'Play'}
-              >
-                {playingKey === verse.ref ? '⏸️' : '▶️'}
-              </button>
-
-              {/* Seek forward 10s */}
-              <button
-                className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => handleSeek(10)}
-                title="Forward 10 seconds"
-              >
-                ⏩
-              </button>
-
-              <span className="text-xs text-gray-600 dark:text-gray-400 flex-1">
-                {verse.ref}
-              </span>
-
-              {/* Download button */}
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-60"
-                title="Download audio"
-                disabled={!!downloadingMap[verse.ref]}
-              >
-                {downloadingMap[verse.ref] ? '⬇️' : '📥'}
-              </button>
-            </div>
-
-            {/* Inline audio player */}
+            {/* Compact audio element */}
             <audio
               ref={(el) => {
                 if (el) audioRefs.current.set(verse.ref, el);
@@ -353,7 +318,7 @@ function VerseItem({
               src={audioUrl}
               preload="metadata"
               controls
-              className="w-full"
+              className="flex-1 h-6"
               onTimeUpdate={(e) => {
                 // Update progress bar as audio plays
                 const audio = e.currentTarget;
@@ -371,6 +336,17 @@ function VerseItem({
               onPlay={() => setPlayingKey(verse.ref)}
               onPause={() => setPlayingKey(null)}
             />
+
+            {/* Download button */}
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="text-xs px-1.5 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-60"
+              title="Download audio"
+              disabled={!!downloadingMap[verse.ref]}
+            >
+              {downloadingMap[verse.ref] ? '⬇️' : '📥'}
+            </button>
           </div>
         </div>
       )}
