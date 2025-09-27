@@ -286,16 +286,7 @@ function VerseItem({
         {highlight(cleanVerseText(verse.text || ''), termsProp || [], processed)}
       </p>
 
-      {/* Absolute-positioned verse number chip - positioned to avoid audio player */}
-      {verseNo != null && verseNo > 0 && (
-        <span
-          dir="ltr"
-          className="absolute top-2 left-2 text-xs px-2 py-0.5 rounded-full bg-blue-500 text-white font-medium shadow-sm z-10"
-          title={`Verse ${verseNo}`}
-        >
-          {verseNo}
-        </span>
-      )}
+      {/* Verse number chip removed as requested */}
 
       {/* Compact audio player */}
       {audioUrl && (

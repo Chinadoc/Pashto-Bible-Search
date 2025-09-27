@@ -52,6 +52,7 @@ type DataCache = {
   frequencyMap: Map<string, number>;
   inflectionsByBase: Map<string, InflectionRow[]>;
   formsByRoot: Map<string, string[]>;
+  formToRoot: Record<string, string[]>;
   occurrenceMap: Map<string, OccurrenceRow>;
   verses: VerseRecord[];
   searchIndex: SearchIndex;
@@ -319,6 +320,7 @@ async function loadData(): Promise<DataCache> {
     frequencyMap,
     inflectionsByBase,
     formsByRoot,
+    formToRoot,
     occurrenceMap,
     verses,
     searchIndex,

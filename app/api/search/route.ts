@@ -149,6 +149,7 @@ export async function POST(request: NextRequest) {
     let normalized = trimmedQuery;
     let romanization: string | undefined;
     let posGuess: Processed["pos"] = undefined;
+    let rootFromForm: string | undefined;
 
     if (isLatin) {
       const { dictionaryByRomanized } = await getData();
@@ -156,6 +157,18 @@ export async function POST(request: NextRequest) {
       if (pick?.pashto) {
         normalized = pick.pashto;
         romanization = pick.romanized;
+      }
+    } else {
+      // Check if this is a form that maps to a root
+      const { formToRoot } = await getData();
+      const roots = formToRoot[normalized];
+      if (roots && roots.length > 0) {
+        // Use the first root found
+        const root = roots[0];
+        if (root && root !== normalized) {
+          rootFromForm = root;
+          console.log(`Found root for form ${normalized}: ${root}`);
+        }
       }
     }
 
@@ -177,21 +190,26 @@ export async function POST(request: NextRequest) {
     if (searchIndex?.byTextLower) {
       const candidateVerses = new Set<any>();
 
-      // Check original text index
-      const originalMatches = searchIndex.byTextLower.get(normalized.toLowerCase()) || [];
-      console.log('Original matches found:', originalMatches.length);
-      for (const verse of originalMatches) {
-        if (matchesScope(verse, scope)) {
-          candidateVerses.add(verse);
-        }
-      }
+      // Use root form for searching if we found one from a form
+      const searchTerms = rootFromForm ? [normalized, rootFromForm] : [normalized];
 
-      // Check normalized text index
-      const normalizedMatches = searchIndex.byTextNormalizedLower.get(normalized.toLowerCase()) || [];
-      console.log('Normalized matches found:', normalizedMatches.length);
-      for (const verse of normalizedMatches) {
-        if (matchesScope(verse, scope)) {
-          candidateVerses.add(verse);
+      for (const searchTerm of searchTerms) {
+        // Check original text index
+        const originalMatches = searchIndex.byTextLower.get(searchTerm.toLowerCase()) || [];
+        console.log(`Original matches found for ${searchTerm}:`, originalMatches.length);
+        for (const verse of originalMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+
+        // Check normalized text index
+        const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm.toLowerCase()) || [];
+        console.log(`Normalized matches found for ${searchTerm}:`, normalizedMatches.length);
+        for (const verse of normalizedMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
         }
       }
 
@@ -246,18 +264,19 @@ export async function POST(request: NextRequest) {
 
       const frequency = frequencyMap.get(normalized) ?? undefined;
 
-      // Generate variants based on POS
+      // Generate variants based on POS (use root form if available)
+      const variantInput = rootFromForm || normalized;
       const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
 
       if (posGuess === "noun") {
-        groups.nouns = await generateNounVariants(normalized, { cap: 30 });
+        groups.nouns = await generateNounVariants(variantInput, { cap: 30 });
       } else if (posGuess === "verb") {
-        groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 30, includeCompound: true });
+        groups.verbs = await generateVerbVariantsUtil(variantInput, { cap: 30, includeCompound: true });
       } else {
         // Try both for ambiguous terms
         const [nouns, verbs] = await Promise.all([
-          generateNounVariants(normalized, { cap: 20 }),
-          generateVerbVariantsUtil(normalized, { cap: 20, includeCompound: true }),
+          generateNounVariants(variantInput, { cap: 20 }),
+          generateVerbVariantsUtil(variantInput, { cap: 20, includeCompound: true }),
         ]);
         if (nouns.length) groups.nouns = nouns;
         if (verbs.length) groups.verbs = verbs;
@@ -290,6 +309,24 @@ export async function POST(request: NextRequest) {
       if (!results.length && variantForms.length) {
         const candidateVerses = new Set<any>();
 
+        // Prioritize the original search term if it's a form
+        if (rootFromForm) {
+          const originalLower = normalized.toLowerCase();
+          const originalMatches = searchIndex.byTextLower.get(originalLower) || [];
+          for (const verse of originalMatches) {
+            if (matchesScope(verse, scope)) {
+              candidateVerses.add(verse);
+            }
+          }
+          const normalizedMatches = searchIndex.byTextNormalizedLower.get(originalLower) || [];
+          for (const verse of normalizedMatches) {
+            if (matchesScope(verse, scope)) {
+              candidateVerses.add(verse);
+            }
+          }
+        }
+
+        // Also search with other variants
         for (const variant of variantForms.slice(0, 25)) {
           const lower = variant.toLowerCase();
 
