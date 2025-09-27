@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getData } from '@/app/lib/data/load';
+import { getLightweightData } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(cached);
     }
 
-    const { dictionaryByRomanized, dictionaryByPashto, frequencyMap } = await getData();
+    const { dictionaryByRomanized, dictionaryByPashto, frequencyMap } = await getLightweightData();
 
     // Normalization (local)
     let normalized = root;
