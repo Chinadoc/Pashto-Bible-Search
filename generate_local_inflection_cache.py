@@ -1,13 +1,13 @@
 import json
 import os
 from typing import Dict, List
-from verb_inflector import conjugate_verb
+from functions.verb_inflector import conjugate_verb
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FORM_TO_LEMMA = os.path.join(APP_ROOT, 'form_to_lemma.json')
 OUT_INFL = os.path.join(APP_ROOT, 'inflections_cache.json')
 
-SAMPLE_VERBS = ['کول', 'بوتلل', 'تلل', 'کېدل', 'لیدل']
+SAMPLE_VERBS = ['کول', 'بوتلل', 'تلل', 'کېدل', 'لیدل', 'منډه وهل', 'ګرمول']
 
 
 def build_payloads(lemmas: List[str]):
@@ -20,14 +20,15 @@ def build_payloads(lemmas: List[str]):
             continue
         items: List[Dict[str, str]] = []
         # collect forms from all paradigms we expose in UI
-        for section in ['present', 'subjunctive', 'continuous_past', 'simple_past']:
-            for ps, rom in conj[section].values():
-                items.append({
-                    'form': ps,
-                    'romanization': rom,
-                    'category': 'verb'
-                })
-                form_to_lemma[ps] = lemma
+        for section in ['present', 'subjunctive', 'continuous_past', 'simple_past', 'perfect_present', 'perfect_past', 'perfect_subjunctive', 'perfect_future', 'perfect_habitual']:
+            if section in conj:
+                for ps, rom in conj[section].values():
+                    items.append({
+                        'form': ps,
+                        'romanization': rom,
+                        'category': 'verb'
+                    })
+                    form_to_lemma[ps] = lemma
         # also include roots/participle shown in UI
         meta = conj['meta']
         for ps in [meta['imperfective_root'], meta['perfective_root'], meta['past_participle']]:

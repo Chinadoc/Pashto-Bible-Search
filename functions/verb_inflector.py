@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any, List, Optional
 
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up one level to project root
 LEXICON_PATH = os.path.join(APP_ROOT, 'verbs_lexicon.json')
 EXTRA_IRREGULARS_PATH = os.path.join(APP_ROOT, 'irregular_verbs.json')
 IRREGULARS_URL = os.environ.get('IRREGULAR_VERBS_URL', '')
@@ -235,17 +235,63 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
     ability_impf_future = {k: (f"... به ... {ps}", f"... ba ... {rom}") for k, (ps, rom) in ability_present.items()}
     ability_perf_future = {k: (f"... به ... {ps}", f"... ba ... {rom}") for k, (ps, rom) in ability_subjunctive.items()}
 
+    # Generate perfect forms (past participle + equative endings)
+    def build_perfect(base_ps, base_rom):
+        result = {}
+        for k in ['1sg','2sg','1pl','2pl','3pl']:
+            if k in EQUATIVE_PRESENT:
+                result[k] = (f"{base_ps} {EQUATIVE_PRESENT[k][0]}", f"{base_rom} {EQUATIVE_PRESENT[k][1]}")
+        # Add 3rd person forms
+        result['3sg_m'] = (f"{base_ps} {EQUATIVE_PRESENT['3sg_m'][0]}", f"{base_rom} {EQUATIVE_PRESENT['3sg_m'][1]}")
+        result['3sg_f'] = (f"{base_ps} {EQUATIVE_PRESENT['3sg_f'][0]}", f"{base_rom} {EQUATIVE_PRESENT['3sg_f'][1]}")
+        return result
+
+    perfect_present = build_perfect(past_participle, part_rom)
+
+    def build_perfect_past(base_ps, base_rom):
+        return {k: (f"{base_ps} {EQUATIVE_PAST[k][0]}", f"{base_rom} {EQUATIVE_PAST[k][1]}") for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']}
+
+    perfect_past = build_perfect_past(past_participle, part_rom)  # Past perfect
+    perfect_subjunctive = build_perfect(past_participle, part_rom)  # Same as present perfect for subjunctive
+    perfect_future = {k: (f"... به ... {ps}", f"... ba ... {rom}") for k, (ps, rom) in perfect_present.items()}  # Future perfect
+    perfect_habitual = perfect_future  # Habitual perfect same as future perfect
+
+    def get_romanization(ps_form):
+        """Get romanization for a Pashto form, preferring dictionary fast index."""
+        try:
+            if _FAST_DIDX:
+                by_p = _FAST_DIDX.get('by_pashto', {})
+                if ps_form in by_p:
+                    rom = by_p[ps_form].get('rom', '')
+                    print(f"DEBUG: Found {ps_form} in by_pashto: '{rom}' (len={len(rom)}) -> returning")
+                    return rom
+                by_pn = _FAST_DIDX.get('by_pashto_norm', {})
+                if ps_form in by_pn:
+                    rom = by_pn[ps_form].get('rom', '')
+                    print(f"DEBUG: Found {ps_form} in by_pashto_norm: '{rom}' (len={len(rom)}) -> returning")
+                    return rom
+        except Exception as e:
+            print(f"DEBUG: Exception in get_romanization for {ps_form}: {e}")
+            pass
+        print(f"DEBUG: No romanization found for {ps_form} -> returning empty")
+        return ''
+
     forms_map = {
-        imperfective_root: impf_root_rom,
-        perfective_root: perf_root_rom,
-        past_participle: part_rom,
+        imperfective_root: impf_root_rom or get_romanization(imperfective_root),
+        perfective_root: perf_root_rom or get_romanization(perfective_root),
+        past_participle: part_rom or get_romanization(past_participle),
     }
     for d in (present, subjunctive, cont_past, simple_past, imperfective_imperative, perfective_imperative,
               impf_future, perf_future, habitual_cont_past, habitual_simple_past,
               ability_present, ability_subjunctive, ability_cont_past, ability_simple_past,
-              ability_impf_future, ability_perf_future):
-        for _, (ps, rom_val) in d.items():
-            forms_map[ps] = rom_val
+              ability_impf_future, ability_perf_future,
+              perfect_present, perfect_past, perfect_subjunctive, perfect_future, perfect_habitual):
+        for person, (ps, rom_val) in d.items():
+            # Use provided romanization or look it up from dictionary fast index
+            looked_up_rom = get_romanization(ps)
+            final_rom = rom_val or looked_up_rom
+            print(f"DEBUG: {ps}: rom_val='{rom_val}', looked_up='{looked_up_rom}', final='{final_rom}' (len={len(final_rom) if final_rom else 0})")
+            forms_map[ps] = final_rom
 
     return {
         'meta': {
@@ -274,6 +320,11 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
         'ability_simple_past': ability_simple_past,
         'ability_imperfective_future': ability_impf_future,
         'ability_perfective_future': ability_perf_future,
+        'perfect_present': perfect_present,
+        'perfect_past': perfect_past,
+        'perfect_subjunctive': perfect_subjunctive,
+        'perfect_future': perfect_future,
+        'perfect_habitual': perfect_habitual,
         'forms_map': forms_map,
     }
 
@@ -325,6 +376,40 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
                     'stems': {'imperfective': dyn_impf_stem, 'perfective': dyn_perf_stem},
                     'roots': {'imperfective': dyn_impf_root, 'perfective': dyn_perf_root},
                     'past_participle': dyn_part,
+                    'romanization': {},
+                }
+
+        # Pattern: "<complement> وهل" (dynamic-hit)
+        if r.endswith(' وهل') and len(r) > 4:
+            comp = r[:-4].strip()
+            if comp:
+                impf_stem = comp + ' وه'     # e.g., منډه وهـ-
+                perf_stem = comp + ' ووه'    # e.g., منډه ووهـ-
+                impf_root = comp + ' وهل'
+                perf_root = comp + ' ووهل'
+                past_part = comp + ' وهلی'
+                return {
+                    'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+                    'roots': {'imperfective': impf_root, 'perfective': perf_root},
+                    'past_participle': past_part,
+                    'romanization': {},
+                }
+
+        # Pattern: "<complement> ول" (stative-make, fused spelling of X + کول)
+        if (r.endswith(' ول') or r.endswith('ول')):
+            comp = r[:-2].strip() if r.endswith('ول') else r[:-3].strip()
+            if comp:
+                # Imperfective: comp + 'و'  → ګرمو- (ګرمو+endings → ګرموم/ګرموې/ګرموي)
+                impf_stem = comp + 'و'
+                # Perfective stem should already include 'و' before کړ for subjunctive forms
+                perf_stem = comp + ' وکړ'
+                impf_root = comp + ' ول'
+                perf_root = comp + ' وکړل'
+                past_part = comp + ' کړی'
+                return {
+                    'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+                    'roots': {'imperfective': impf_root, 'perfective': perf_root},
+                    'past_participle': past_part,
                     'romanization': {},
                 }
     except Exception:
@@ -548,9 +633,10 @@ def build_forms_root_index() -> Dict[str, str]:
         if not conj:
             continue
         # Collect tables with romanization
-        for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past']:
-            for ps, rom in conj[dname].values():
-                _add(ps, rom, root)
+        for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past', 'perfect_present', 'perfect_past', 'perfect_subjunctive', 'perfect_future', 'perfect_habitual']:
+            if dname in conj:
+                for ps, rom in conj[dname].values():
+                    _add(ps, rom, root)
         meta = conj['meta']
         for ps, rom in [
             (meta['imperfective_root'], conj['meta']['romanization'].get('imperfective_root', '')),
@@ -561,14 +647,29 @@ def build_forms_root_index() -> Dict[str, str]:
 
         # Add object clitic split-head variants for perfective-leading forms
         def _index_obj_clitic_variants(ps: str, rom_val: str) -> None:
-            if not ps or not ps.startswith('و'):
+            if not ps:
                 return
-            rest = ps[1:]
-            for oc in ['و یې', 'وېې', 'ویې']:
-                v1 = f"{oc} {rest}"
-                v2 = f"{oc}{rest}"
-                _add(v1, rom_val, root)
-                _add(v2, rom_val, root)
+            # Find the first token boundary " و" inside the form and inject clitics right before that و
+            # This handles cases like "منډه ووهه" → "منډه وېې ووهه"
+            parts = ps.split(' و', 1)
+            if len(parts) == 2:
+                before_w = parts[0]
+                after_w = ' و' + parts[1]
+                for oc in ['و یې', 'وېې', 'ویې']:
+                    # Both spaced and unspaced variants
+                    v1 = f"{before_w} {oc} {after_w}"
+                    v2 = f"{before_w}{oc}{after_w}"
+                    _add(v1, rom_val, root)
+                    _add(v2, rom_val, root)
+            else:
+                # Fallback to original logic for forms that start with و
+                if ps.startswith('و'):
+                    rest = ps[1:]
+                    for oc in ['و یې', 'وېې', 'ویې']:
+                        v1 = f"{oc} {rest}"
+                        v2 = f"{oc}{rest}"
+                        _add(v1, rom_val, root)
+                        _add(v2, rom_val, root)
 
         for dname in ['subjunctive', 'simple_past']:
             for ps, rom in conj[dname].values():
