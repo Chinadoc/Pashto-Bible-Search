@@ -344,3 +344,4 @@ COMMENT ON TABLE variant_relationships IS 'Links between root forms and their va
 COMMENT ON FUNCTION generate_morphological_analysis IS 'Analyzes a word form and returns possible morphological interpretations';
 COMMENT ON FUNCTION find_related_forms IS 'Finds related forms (conjugations, declensions) for a given word';
 COMMENT ON FUNCTION search_verses_morphological IS 'Searches verses using morphological criteria';
+

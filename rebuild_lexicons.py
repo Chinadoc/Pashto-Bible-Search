@@ -67,7 +67,7 @@ def _is_probable_verb_lemma(p: str) -> bool:
 
 
 def rebuild_verbs_lexicon(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
-    from verb_inflector import conjugate_verb_dynamic  # local import to avoid side effects at module import
+    from functions.verb_inflector import conjugate_verb_dynamic  # local import to avoid side effects at module import
 
     # Candidate verb lemmas from dictionary
     cand_roots: List[str] = []
@@ -131,7 +131,7 @@ def guess_noun_pattern(lemma: str, rom_hint: str, pos_norm: str) -> str:
     """Infer a noun/adjective inflection pattern label compatible with noun_inflector.
     Conservative: fall back to 'masc_basic_consonant' when unsure.
     """
-    from noun_inflector import _infer_noun_pattern_from_dict
+    from functions.noun_inflector import _infer_noun_pattern_from_dict
 
     lemma = (lemma or '').strip()
     if not lemma:

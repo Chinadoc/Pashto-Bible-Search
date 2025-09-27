@@ -780,7 +780,7 @@
     "pattern_info": ""
   },
   "اخلی پخلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اخور": {
@@ -888,7 +888,7 @@
     "pattern_info": ""
   },
   "اډرقی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اډک": {
@@ -928,7 +928,7 @@
     "pattern_info": ""
   },
   "اربکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اربه": {
@@ -984,7 +984,7 @@
     "pattern_info": ""
   },
   "اردلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اردو": {
@@ -1004,7 +1004,7 @@
     "pattern_info": ""
   },
   "ارږمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ارشاد": {
@@ -1200,7 +1200,7 @@
     "pattern_info": ""
   },
   "ازغکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ازغن تار": {
@@ -1208,7 +1208,7 @@
     "pattern_info": ""
   },
   "ازغی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ازل": {
@@ -1228,7 +1228,7 @@
     "pattern_info": ""
   },
   "ازمری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ازموینه": {
@@ -1500,7 +1500,7 @@
     "pattern_info": ""
   },
   "استوګنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "استوګنه": {
@@ -1592,7 +1592,7 @@
     "pattern_info": ""
   },
   "اسوېلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اسیا": {
@@ -1884,7 +1884,7 @@
     "pattern_info": ""
   },
   "اغزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اغوا": {
@@ -1944,7 +1944,7 @@
     "pattern_info": ""
   },
   "افریقانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "افریقه": {
@@ -1988,7 +1988,7 @@
     "pattern_info": ""
   },
   "افغانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "افغانۍ": {
@@ -2444,7 +2444,7 @@
     "pattern_info": ""
   },
   "امریکنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "امریکه": {
@@ -2452,7 +2452,7 @@
     "pattern_info": ""
   },
   "امزری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "امسا": {
@@ -2740,7 +2740,7 @@
     "pattern_info": ""
   },
   "انډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "انډیوال": {
@@ -2924,7 +2924,7 @@
     "pattern_info": ""
   },
   "انګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "انګۍ": {
@@ -2932,7 +2932,7 @@
     "pattern_info": ""
   },
   "انګیتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "انګېرنه": {
@@ -2952,7 +2952,7 @@
     "pattern_info": ""
   },
   "اننګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اننګۍ": {
@@ -3016,7 +3016,7 @@
     "pattern_info": ""
   },
   "اوبسپی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اوبڼه": {
@@ -3128,7 +3128,7 @@
     "pattern_info": ""
   },
   "اورشیندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اورښت": {
@@ -3220,7 +3220,7 @@
     "pattern_info": ""
   },
   "اوښ غویی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "اوښتون": {
@@ -3348,7 +3348,7 @@
     "pattern_info": ""
   },
   "ایرانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ایرلنډ": {
@@ -3356,7 +3356,7 @@
     "pattern_info": ""
   },
   "ایرلنډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ایره": {
@@ -3636,7 +3636,7 @@
     "pattern_info": ""
   },
   "باریکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "باړ": {
@@ -3676,7 +3676,7 @@
     "pattern_info": ""
   },
   "باسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "باښه": {
@@ -3816,7 +3816,7 @@
     "pattern_info": ""
   },
   "بانګیټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بانی": {
@@ -3860,7 +3860,7 @@
     "pattern_info": ""
   },
   "ببوتنکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ببوزی": {
@@ -3956,7 +3956,7 @@
     "pattern_info": ""
   },
   "بچوړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بچوکی": {
@@ -3964,7 +3964,7 @@
     "pattern_info": ""
   },
   "بچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بچۍ": {
@@ -4212,7 +4212,7 @@
     "pattern_info": ""
   },
   "بډوکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بډوګی": {
@@ -4428,7 +4428,7 @@
     "pattern_info": ""
   },
   "برقی پوړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "برقی جارو": {
@@ -4456,11 +4456,11 @@
     "pattern_info": ""
   },
   "برګټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "برګړندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "برګشت": {
@@ -4508,7 +4508,7 @@
     "pattern_info": ""
   },
   "بری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بریا": {
@@ -4628,7 +4628,7 @@
     "pattern_info": ""
   },
   "بږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بسپنه": {
@@ -4736,7 +4736,7 @@
     "pattern_info": ""
   },
   "بغری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بغرۍ": {
@@ -4772,7 +4772,7 @@
     "pattern_info": ""
   },
   "بک بکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بکا": {
@@ -4924,7 +4924,7 @@
     "pattern_info": ""
   },
   "بنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بنځۍ": {
@@ -5004,7 +5004,7 @@
     "pattern_info": ""
   },
   "بنزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بنسټ": {
@@ -5148,7 +5148,7 @@
     "pattern_info": ""
   },
   "بوتلګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بوټ": {
@@ -5572,7 +5572,7 @@
     "pattern_info": ""
   },
   "بېخبندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بېخوابی": {
@@ -5656,11 +5656,11 @@
     "pattern_info": ""
   },
   "بیزوګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بېزوګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بېسدی": {
@@ -5732,7 +5732,7 @@
     "pattern_info": ""
   },
   "بېلنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "بېله": {
@@ -5888,7 +5888,7 @@
     "pattern_info": ""
   },
   "پارچنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پارک": {
@@ -5944,7 +5944,7 @@
     "pattern_info": ""
   },
   "پاستی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پاسره ګر": {
@@ -5968,7 +5968,7 @@
     "pattern_info": ""
   },
   "پاکستانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پاکنفسی": {
@@ -6004,7 +6004,7 @@
     "pattern_info": ""
   },
   "پالنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پالنګ": {
@@ -6100,7 +6100,7 @@
     "pattern_info": ""
   },
   "پاوتلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پای": {
@@ -6176,11 +6176,11 @@
     "pattern_info": ""
   },
   "پترکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پتری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پتک": {
@@ -6240,7 +6240,7 @@
     "pattern_info": ""
   },
   "پټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پټلۍ": {
@@ -6248,7 +6248,7 @@
     "pattern_info": ""
   },
   "پټنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پټه": {
@@ -6260,7 +6260,7 @@
     "pattern_info": ""
   },
   "پټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پټۍ": {
@@ -6292,11 +6292,11 @@
     "pattern_info": ""
   },
   "پخلنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پخلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پخن": {
@@ -6340,7 +6340,7 @@
     "pattern_info": ""
   },
   "پرپرکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پرتاو": {
@@ -6424,7 +6424,7 @@
     "pattern_info": ""
   },
   "پرکټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پرکټۍ": {
@@ -6436,7 +6436,7 @@
     "pattern_info": ""
   },
   "پرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پرلت": {
@@ -6476,7 +6476,7 @@
     "pattern_info": ""
   },
   "پرنجی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پرنډ": {
@@ -6652,7 +6652,7 @@
     "pattern_info": ""
   },
   "پړنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پړه": {
@@ -6688,7 +6688,7 @@
     "pattern_info": ""
   },
   "پس پسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پس خورده": {
@@ -6712,7 +6712,7 @@
     "pattern_info": ""
   },
   "پسرلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پسکۍ": {
@@ -6732,7 +6732,7 @@
     "pattern_info": ""
   },
   "پسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پسیکولوژی": {
@@ -6800,7 +6800,7 @@
     "pattern_info": ""
   },
   "پښندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پښه": {
@@ -6832,11 +6832,11 @@
     "pattern_info": ""
   },
   "پکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پګړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پګړۍ": {
@@ -6972,7 +6972,7 @@
     "pattern_info": ""
   },
   "پلورنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پلورنه": {
@@ -6984,7 +6984,7 @@
     "pattern_info": ""
   },
   "پلوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پلی پوځ": {
@@ -7120,7 +7120,7 @@
     "pattern_info": ""
   },
   "پنډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پنډۍ": {
@@ -7136,7 +7136,7 @@
     "pattern_info": ""
   },
   "پنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پنیر": {
@@ -7308,7 +7308,7 @@
     "pattern_info": ""
   },
   "پوزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پوست": {
@@ -7368,7 +7368,7 @@
     "pattern_info": ""
   },
   "پوکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پول": {
@@ -7424,7 +7424,7 @@
     "pattern_info": ""
   },
   "پوهاوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پوهنتون": {
@@ -7432,7 +7432,7 @@
     "pattern_info": ""
   },
   "پوهنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پوهنلیک": {
@@ -7608,7 +7608,7 @@
     "pattern_info": ""
   },
   "پیرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پېرند": {
@@ -7668,7 +7668,7 @@
     "pattern_info": ""
   },
   "پېری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پېرۍ": {
@@ -7784,7 +7784,7 @@
     "pattern_info": ""
   },
   "پېشکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پېشګویی": {
@@ -7796,11 +7796,11 @@
     "pattern_info": ""
   },
   "پېشلمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پېشمنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پېشنګویی": {
@@ -7884,7 +7884,7 @@
     "pattern_info": ""
   },
   "پیکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "پیل": {
@@ -8180,7 +8180,7 @@
     "pattern_info": ""
   },
   "تاوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تاویتک": {
@@ -8220,7 +8220,7 @@
     "pattern_info": ""
   },
   "تبخی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تبدیل": {
@@ -8240,7 +8240,7 @@
     "pattern_info": ""
   },
   "تبرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تبریک": {
@@ -8472,7 +8472,7 @@
     "pattern_info": ""
   },
   "تخرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تخریب": {
@@ -8796,7 +8796,7 @@
     "pattern_info": ""
   },
   "ترڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تره": {
@@ -8828,7 +8828,7 @@
     "pattern_info": ""
   },
   "ترورزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ترورزۍ": {
@@ -8880,11 +8880,11 @@
     "pattern_info": ""
   },
   "تریلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ترېلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ترېنداره": {
@@ -9420,7 +9420,7 @@
     "pattern_info": ""
   },
   "تقاعدی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تقالید": {
@@ -9644,7 +9644,7 @@
     "pattern_info": ""
   },
   "تلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تلېسېمیا": {
@@ -9920,7 +9920,7 @@
     "pattern_info": ""
   },
   "تنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تنه": {
@@ -9952,7 +9952,7 @@
     "pattern_info": ""
   },
   "تڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تڼۍ": {
@@ -10116,7 +10116,7 @@
     "pattern_info": ""
   },
   "توری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "توړۍ": {
@@ -10176,7 +10176,7 @@
     "pattern_info": ""
   },
   "توغندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "توغه": {
@@ -10304,7 +10304,7 @@
     "pattern_info": ""
   },
   "تونګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تونل": {
@@ -10348,7 +10348,7 @@
     "pattern_info": ""
   },
   "تیاری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تیتانوس": {
@@ -10436,7 +10436,7 @@
     "pattern_info": ""
   },
   "تېکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تېکیر": {
@@ -10464,7 +10464,7 @@
     "pattern_info": ""
   },
   "تیلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "تیمم": {
@@ -10612,7 +10612,7 @@
     "pattern_info": ""
   },
   "ټپټپی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټپکه": {
@@ -10756,7 +10756,7 @@
     "pattern_info": ""
   },
   "ټکری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټکسره": {
@@ -10892,7 +10892,7 @@
     "pattern_info": ""
   },
   "ټوپ ټپانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټوپک": {
@@ -10952,7 +10952,7 @@
     "pattern_info": ""
   },
   "ټوخی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټوسان": {
@@ -10992,7 +10992,7 @@
     "pattern_info": ""
   },
   "ټوکری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټوکرۍ": {
@@ -11032,7 +11032,7 @@
     "pattern_info": ""
   },
   "ټولګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټولګیخونه": {
@@ -11148,7 +11148,7 @@
     "pattern_info": ""
   },
   "ټیکری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ټیکس": {
@@ -11280,7 +11280,7 @@
     "pattern_info": ""
   },
   "جاپانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جاج": {
@@ -11360,7 +11360,7 @@
     "pattern_info": ""
   },
   "جاګنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جاګیرداری": {
@@ -11408,7 +11408,7 @@
     "pattern_info": ""
   },
   "جانګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جایداد": {
@@ -11576,7 +11576,7 @@
     "pattern_info": ""
   },
   "جرمنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جره توب": {
@@ -11944,7 +11944,7 @@
     "pattern_info": ""
   },
   "جنغوزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جنګ": {
@@ -11968,7 +11968,7 @@
     "pattern_info": ""
   },
   "جنګیالی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جنوب": {
@@ -12108,7 +12108,7 @@
     "pattern_info": ""
   },
   "جوړجاړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جوړښت": {
@@ -12160,7 +12160,7 @@
     "pattern_info": ""
   },
   "جولاګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "جوله": {
@@ -12308,7 +12308,7 @@
     "pattern_info": ""
   },
   "ځایګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ځږه": {
@@ -12344,7 +12344,7 @@
     "pattern_info": ""
   },
   "ځلمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ځلمیتوب": {
@@ -12472,7 +12472,7 @@
     "pattern_info": ""
   },
   "ځونډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ځیر": {
@@ -12764,7 +12764,7 @@
     "pattern_info": ""
   },
   "چټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چټلی": {
@@ -12932,7 +12932,7 @@
     "pattern_info": ""
   },
   "چړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چړیاګر": {
@@ -13020,7 +13020,7 @@
     "pattern_info": ""
   },
   "چکچکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چکر": {
@@ -13192,7 +13192,7 @@
     "pattern_info": ""
   },
   "چنجی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چنچڼه": {
@@ -13252,7 +13252,7 @@
     "pattern_info": ""
   },
   "چنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چڼاسکې": {
@@ -13320,7 +13320,7 @@
     "pattern_info": ""
   },
   "چوتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چوټه": {
@@ -13360,7 +13360,7 @@
     "pattern_info": ""
   },
   "چورلکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چوره": {
@@ -13380,7 +13380,7 @@
     "pattern_info": ""
   },
   "چوړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چوشک": {
@@ -13432,7 +13432,7 @@
     "pattern_info": ""
   },
   "چومبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چونا": {
@@ -13456,7 +13456,7 @@
     "pattern_info": ""
   },
   "چونګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چونه": {
@@ -13476,7 +13476,7 @@
     "pattern_info": ""
   },
   "چیچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چیرړه": {
@@ -13516,11 +13516,11 @@
     "pattern_info": ""
   },
   "چیلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چېلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چېلۍ": {
@@ -13532,7 +13532,7 @@
     "pattern_info": ""
   },
   "چینجی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "چیندخ": {
@@ -13768,7 +13768,7 @@
     "pattern_info": ""
   },
   "څرمښکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "څرمښکۍ": {
@@ -13828,7 +13828,7 @@
     "pattern_info": ""
   },
   "څکالی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "څکل پکل": {
@@ -13880,7 +13880,7 @@
     "pattern_info": ""
   },
   "څمڅی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "څمیار": {
@@ -13976,7 +13976,7 @@
     "pattern_info": ""
   },
   "څونی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "څوهره": {
@@ -14656,7 +14656,7 @@
     "pattern_info": ""
   },
   "خانکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خانمه": {
@@ -14704,7 +14704,7 @@
     "pattern_info": ""
   },
   "خبرداری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خبره": {
@@ -14804,7 +14804,7 @@
     "pattern_info": ""
   },
   "خټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خټګر": {
@@ -14900,7 +14900,7 @@
     "pattern_info": ""
   },
   "خراشکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خرافه": {
@@ -14944,7 +14944,7 @@
     "pattern_info": ""
   },
   "خرڅی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خرڅېده": {
@@ -14972,7 +14972,7 @@
     "pattern_info": ""
   },
   "خرکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خرګوش": {
@@ -15040,7 +15040,7 @@
     "pattern_info": ""
   },
   "خړوبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خړې متیازې": {
@@ -15092,7 +15092,7 @@
     "pattern_info": ""
   },
   "خسڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خسوف": {
@@ -15212,7 +15212,7 @@
     "pattern_info": ""
   },
   "خلاصی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خلاف ورزی": {
@@ -15380,7 +15380,7 @@
     "pattern_info": ""
   },
   "خواګرځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خواله": {
@@ -15412,7 +15412,7 @@
     "pattern_info": ""
   },
   "خوټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خوځښت": {
@@ -15512,7 +15512,7 @@
     "pattern_info": ""
   },
   "خوریی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خوړ": {
@@ -15520,7 +15520,7 @@
     "pattern_info": ""
   },
   "خوړنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خوړه": {
@@ -15540,11 +15540,11 @@
     "pattern_info": ""
   },
   "خوسکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خوسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خوش آمد": {
@@ -15740,7 +15740,7 @@
     "pattern_info": ""
   },
   "خیرن شی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "خیره": {
@@ -15800,7 +15800,7 @@
     "pattern_info": ""
   },
   "د اور لرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "د اورلګیت خلی": {
@@ -15812,7 +15812,7 @@
     "pattern_info": ""
   },
   "د بجلۍ پوړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "د بجلۍ نیول": {
@@ -16076,7 +16076,7 @@
     "pattern_info": ""
   },
   "د غاښونو چخچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "د غره لمن": {
@@ -16284,7 +16284,7 @@
     "pattern_info": ""
   },
   "د واده زلمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "د واورو ډېرۍ": {
@@ -16312,7 +16312,7 @@
     "pattern_info": ""
   },
   "د وینې کمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "د یخی غر": {
@@ -16464,7 +16464,7 @@
     "pattern_info": ""
   },
   "دباندنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "دباو": {
@@ -16476,7 +16476,7 @@
     "pattern_info": ""
   },
   "دبلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "دجال": {
@@ -16528,7 +16528,7 @@
     "pattern_info": ""
   },
   "دربی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درجن": {
@@ -16592,7 +16592,7 @@
     "pattern_info": ""
   },
   "درستی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درشل": {
@@ -16604,7 +16604,7 @@
     "pattern_info": ""
   },
   "درغلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درک": {
@@ -16632,7 +16632,7 @@
     "pattern_info": ""
   },
   "درګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درمان": {
@@ -16660,7 +16660,7 @@
     "pattern_info": ""
   },
   "درملنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درملنه": {
@@ -16676,7 +16676,7 @@
     "pattern_info": ""
   },
   "درناوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "درنده": {
@@ -17172,7 +17172,7 @@
     "pattern_info": ""
   },
   "دوبنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "دوبی": {
@@ -17188,7 +17188,7 @@
     "pattern_info": ""
   },
   "دوپړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "دوپړیمار": {
@@ -17400,7 +17400,7 @@
     "pattern_info": ""
   },
   "دیګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "دېموکراسی": {
@@ -17528,7 +17528,7 @@
     "pattern_info": ""
   },
   "ډانګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډایټینګ": {
@@ -17564,7 +17564,7 @@
     "pattern_info": ""
   },
   "ډبلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډبه": {
@@ -17572,7 +17572,7 @@
     "pattern_info": ""
   },
   "ډبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډبۍ": {
@@ -17700,7 +17700,7 @@
     "pattern_info": ""
   },
   "ډګډګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډګر": {
@@ -17728,7 +17728,7 @@
     "pattern_info": ""
   },
   "ډلګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډلمشر": {
@@ -17792,7 +17792,7 @@
     "pattern_info": ""
   },
   "ډنډوکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډنډۍ": {
@@ -17844,7 +17844,7 @@
     "pattern_info": ""
   },
   "ډول ډبلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډولچه": {
@@ -17852,7 +17852,7 @@
     "pattern_info": ""
   },
   "ډولکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډولکیمار": {
@@ -17896,7 +17896,7 @@
     "pattern_info": ""
   },
   "ډېری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ډېرۍ": {
@@ -18388,7 +18388,7 @@
     "pattern_info": ""
   },
   "رشته داری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "رشخندی": {
@@ -18540,7 +18540,7 @@
     "pattern_info": ""
   },
   "رمبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "رمز": {
@@ -18708,7 +18708,7 @@
     "pattern_info": ""
   },
   "روړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "روزګار": {
@@ -18764,7 +18764,7 @@
     "pattern_info": ""
   },
   "روسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "روسیه": {
@@ -18932,7 +18932,7 @@
     "pattern_info": ""
   },
   "ریکبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "رېکشا": {
@@ -18992,7 +18992,7 @@
     "pattern_info": ""
   },
   "ړنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ړنګۍ": {
@@ -19004,7 +19004,7 @@
     "pattern_info": ""
   },
   "ړینګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زا": {
@@ -19080,7 +19080,7 @@
     "pattern_info": ""
   },
   "زبېرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زبېښاک": {
@@ -19212,7 +19212,7 @@
     "pattern_info": ""
   },
   "زړګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زړه": {
@@ -19228,7 +19228,7 @@
     "pattern_info": ""
   },
   "زړه ټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زړه خوږی": {
@@ -19240,7 +19240,7 @@
     "pattern_info": ""
   },
   "زړه سوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زړه ورتوب": {
@@ -19308,7 +19308,7 @@
     "pattern_info": ""
   },
   "زګېروی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زلپۍ": {
@@ -19328,7 +19328,7 @@
     "pattern_info": ""
   },
   "زلمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زلمیتوب": {
@@ -19360,7 +19360,7 @@
     "pattern_info": ""
   },
   "زمری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زمرین": {
@@ -19552,7 +19552,7 @@
     "pattern_info": ""
   },
   "زومبکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زونبه": {
@@ -19576,7 +19576,7 @@
     "pattern_info": ""
   },
   "زیاتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زیاتی خور": {
@@ -19652,15 +19652,15 @@
     "pattern_info": ""
   },
   "زېړوبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زیړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زېړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زېږ": {
@@ -19672,7 +19672,7 @@
     "pattern_info": ""
   },
   "زېږنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "زیږوالی": {
@@ -19912,7 +19912,7 @@
     "pattern_info": ""
   },
   "ږیری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سا": {
@@ -19952,7 +19952,7 @@
     "pattern_info": ""
   },
   "ساتېری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ساچمه": {
@@ -20036,7 +20036,7 @@
     "pattern_info": ""
   },
   "ساعت تېری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ساقی": {
@@ -20252,7 +20252,7 @@
     "pattern_info": ""
   },
   "سپرخی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپرغه": {
@@ -20268,11 +20268,11 @@
     "pattern_info": ""
   },
   "سپرلنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپرلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپرنګ": {
@@ -20316,7 +20316,7 @@
     "pattern_info": ""
   },
   "سپکاوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپکوالی": {
@@ -20352,7 +20352,7 @@
     "pattern_info": ""
   },
   "سپڼسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپوږمکۍ": {
@@ -20364,7 +20364,7 @@
     "pattern_info": ""
   },
   "سپی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپۍ": {
@@ -20408,7 +20408,7 @@
     "pattern_info": ""
   },
   "سپین ږیری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپین سترګی": {
@@ -20420,7 +20420,7 @@
     "pattern_info": ""
   },
   "سپیناوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سپینه": {
@@ -20552,7 +20552,7 @@
     "pattern_info": ""
   },
   "ستمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ستن": {
@@ -20596,7 +20596,7 @@
     "pattern_info": ""
   },
   "ستونزاواری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ستونزه": {
@@ -20756,7 +20756,7 @@
     "pattern_info": ""
   },
   "سخی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سخۍ": {
@@ -20788,7 +20788,7 @@
     "pattern_info": ""
   },
   "سر خوږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سر ښندنه": {
@@ -20900,7 +20900,7 @@
     "pattern_info": ""
   },
   "سرخوږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سرخی پوډر": {
@@ -20960,7 +20960,7 @@
     "pattern_info": ""
   },
   "سرغړاوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سرغړنه": {
@@ -21000,7 +21000,7 @@
     "pattern_info": ""
   },
   "سرکنډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سرکه": {
@@ -21072,7 +21072,7 @@
     "pattern_info": ""
   },
   "سرنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سرنیکه": {
@@ -21132,7 +21132,7 @@
     "pattern_info": ""
   },
   "سړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سړیتوب": {
@@ -21236,7 +21236,7 @@
     "pattern_info": ""
   },
   "سکاروی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سکالو": {
@@ -21712,7 +21712,7 @@
     "pattern_info": ""
   },
   "سوال ګونډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سوالګر": {
@@ -21764,7 +21764,7 @@
     "pattern_info": ""
   },
   "سوټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سوځېدنه": {
@@ -21820,7 +21820,7 @@
     "pattern_info": ""
   },
   "سوری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سوریته": {
@@ -21896,7 +21896,7 @@
     "pattern_info": ""
   },
   "سوکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سوکۍ": {
@@ -22084,7 +22084,7 @@
     "pattern_info": ""
   },
   "سیرلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سیرنج": {
@@ -22176,7 +22176,7 @@
     "pattern_info": ""
   },
   "سیلانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "سېلاو": {
@@ -22288,7 +22288,7 @@
     "pattern_info": ""
   },
   "شاباشی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شاپر": {
@@ -22304,7 +22304,7 @@
     "pattern_info": ""
   },
   "شاپېټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شات": {
@@ -22408,7 +22408,7 @@
     "pattern_info": ""
   },
   "شاه ځلمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شاهباز": {
@@ -22528,7 +22528,7 @@
     "pattern_info": ""
   },
   "شپونکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شپېته": {
@@ -22540,7 +22540,7 @@
     "pattern_info": ""
   },
   "شپېلکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شپېلۍ": {
@@ -22748,7 +22748,7 @@
     "pattern_info": ""
   },
   "شرنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شرهار": {
@@ -22772,7 +22772,7 @@
     "pattern_info": ""
   },
   "شریف سړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شریک": {
@@ -22932,11 +22932,11 @@
     "pattern_info": ""
   },
   "شکرګنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شکرنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شکره": {
@@ -23036,7 +23036,7 @@
     "pattern_info": ""
   },
   "شلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شمار": {
@@ -23076,7 +23076,7 @@
     "pattern_info": ""
   },
   "شمشتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "شمشتۍ": {
@@ -23496,7 +23496,7 @@
     "pattern_info": ""
   },
   "ښارګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښارو": {
@@ -23536,11 +23536,11 @@
     "pattern_info": ""
   },
   "ښتکری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښتګری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښځمنه": {
@@ -23576,7 +23576,7 @@
     "pattern_info": ""
   },
   "ښکری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښکل": {
@@ -23664,7 +23664,7 @@
     "pattern_info": ""
   },
   "ښوونځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښوونکی": {
@@ -23680,7 +23680,7 @@
     "pattern_info": ""
   },
   "ښویکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ښیالمې": {
@@ -24300,7 +24300,7 @@
     "pattern_info": ""
   },
   "عبادتځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "عبرت": {
@@ -24400,7 +24400,7 @@
     "pattern_info": ""
   },
   "عراقی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "عربستان": {
@@ -24828,7 +24828,7 @@
     "pattern_info": ""
   },
   "غاښ چیچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غاښ ولۍ": {
@@ -24888,7 +24888,7 @@
     "pattern_info": ""
   },
   "غټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غټه غوښه": {
@@ -24980,7 +24980,7 @@
     "pattern_info": ""
   },
   "غرسکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غرغره": {
@@ -25036,7 +25036,7 @@
     "pattern_info": ""
   },
   "غړڅکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غړغړه": {
@@ -25260,7 +25260,7 @@
     "pattern_info": ""
   },
   "غمانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غمجن": {
@@ -25272,7 +25272,7 @@
     "pattern_info": ""
   },
   "غمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غمیزه": {
@@ -25280,7 +25280,7 @@
     "pattern_info": ""
   },
   "غنځاښی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غنچک": {
@@ -25348,7 +25348,7 @@
     "pattern_info": ""
   },
   "غوبری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غوبل": {
@@ -25360,7 +25360,7 @@
     "pattern_info": ""
   },
   "غوټندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غوټه": {
@@ -25396,7 +25396,7 @@
     "pattern_info": ""
   },
   "غوراوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غورځنګ": {
@@ -25408,7 +25408,7 @@
     "pattern_info": ""
   },
   "غورځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غورله انا": {
@@ -25428,7 +25428,7 @@
     "pattern_info": ""
   },
   "غوری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غوړپ": {
@@ -25464,7 +25464,7 @@
     "pattern_info": ""
   },
   "غوزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غوږ": {
@@ -25472,7 +25472,7 @@
     "pattern_info": ""
   },
   "غوږوالی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غوږۍ": {
@@ -25576,11 +25576,11 @@
     "pattern_info": ""
   },
   "غونډوسکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غونډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غونډۍ": {
@@ -25596,7 +25596,7 @@
     "pattern_info": ""
   },
   "غویی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "غیب": {
@@ -26108,7 +26108,7 @@
     "pattern_info": ""
   },
   "فوجی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "فوځ": {
@@ -26116,7 +26116,7 @@
     "pattern_info": ""
   },
   "فوځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "فورم": {
@@ -26152,7 +26152,7 @@
     "pattern_info": ""
   },
   "فیرنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "فیروزه": {
@@ -26892,7 +26892,7 @@
     "pattern_info": ""
   },
   "کابلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کابوس": {
@@ -26916,7 +26916,7 @@
     "pattern_info": ""
   },
   "کاټلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کاجو": {
@@ -27136,7 +27136,7 @@
     "pattern_info": ""
   },
   "کافی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کافیت": {
@@ -27328,7 +27328,7 @@
     "pattern_info": ""
   },
   "کبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کپ": {
@@ -27380,7 +27380,7 @@
     "pattern_info": ""
   },
   "کتابپلورنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کتابتون": {
@@ -27420,7 +27420,7 @@
     "pattern_info": ""
   },
   "کتنځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کتنه": {
@@ -27456,7 +27456,7 @@
     "pattern_info": ""
   },
   "کټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کټمل": {
@@ -27544,7 +27544,7 @@
     "pattern_info": ""
   },
   "کچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کڅوړه": {
@@ -27680,7 +27680,7 @@
     "pattern_info": ""
   },
   "کرښی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کرک": {
@@ -27792,7 +27792,7 @@
     "pattern_info": ""
   },
   "کرېړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کریږه": {
@@ -27848,7 +27848,7 @@
     "pattern_info": ""
   },
   "کړپی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کړټه": {
@@ -27868,7 +27868,7 @@
     "pattern_info": ""
   },
   "کړکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کړکۍ": {
@@ -27884,7 +27884,7 @@
     "pattern_info": ""
   },
   "کړمچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کړمېزی": {
@@ -27936,7 +27936,7 @@
     "pattern_info": ""
   },
   "کړوسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کړۍ": {
@@ -28052,7 +28052,7 @@
     "pattern_info": ""
   },
   "کشمالی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کشمش": {
@@ -28156,7 +28156,7 @@
     "pattern_info": ""
   },
   "ککی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کل جهان": {
@@ -28204,7 +28204,7 @@
     "pattern_info": ""
   },
   "کلپکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کلتور": {
@@ -28428,7 +28428,7 @@
     "pattern_info": ""
   },
   "کمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کمیت": {
@@ -28620,7 +28620,7 @@
     "pattern_info": ""
   },
   "کڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کهانی": {
@@ -28680,7 +28680,7 @@
     "pattern_info": ""
   },
   "کوتری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوتک": {
@@ -28696,7 +28696,7 @@
     "pattern_info": ""
   },
   "کوتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوتۍ": {
@@ -28776,7 +28776,7 @@
     "pattern_info": ""
   },
   "کودی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوډ": {
@@ -28804,7 +28804,7 @@
     "pattern_info": ""
   },
   "کور ودانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوربتوب": {
@@ -28972,7 +28972,7 @@
     "pattern_info": ""
   },
   "کوغاتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوغالی": {
@@ -29016,7 +29016,7 @@
     "pattern_info": ""
   },
   "کوکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوکۍ": {
@@ -29088,11 +29088,11 @@
     "pattern_info": ""
   },
   "کومی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوناټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کونتینر": {
@@ -29164,7 +29164,7 @@
     "pattern_info": ""
   },
   "کونګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کونه": {
@@ -29172,7 +29172,7 @@
     "pattern_info": ""
   },
   "کونوبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کونی": {
@@ -29196,7 +29196,7 @@
     "pattern_info": ""
   },
   "کوهی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "کوی": {
@@ -29340,7 +29340,7 @@
     "pattern_info": ""
   },
   "ګاټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګاجره": {
@@ -29504,7 +29504,7 @@
     "pattern_info": ""
   },
   "ګډوډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګډوری": {
@@ -29532,7 +29532,7 @@
     "pattern_info": ""
   },
   "ګډوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګډېکه": {
@@ -29652,7 +29652,7 @@
     "pattern_info": ""
   },
   "ګرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګرمانه": {
@@ -29776,7 +29776,7 @@
     "pattern_info": ""
   },
   "ګړوبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګړی": {
@@ -29856,7 +29856,7 @@
     "pattern_info": ""
   },
   "ګلګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګله": {
@@ -29868,7 +29868,7 @@
     "pattern_info": ""
   },
   "ګلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګمان": {
@@ -29976,7 +29976,7 @@
     "pattern_info": ""
   },
   "ګنډیری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګنګوسه": {
@@ -29984,11 +29984,11 @@
     "pattern_info": ""
   },
   "ګنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګڼ بوټی": {
@@ -30016,7 +30016,7 @@
     "pattern_info": ""
   },
   "ګڼوالی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګڼون": {
@@ -30108,7 +30108,7 @@
     "pattern_info": ""
   },
   "ګوڅی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګودال": {
@@ -30128,7 +30128,7 @@
     "pattern_info": ""
   },
   "ګوډاګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګوډی": {
@@ -30312,7 +30312,7 @@
     "pattern_info": ""
   },
   "ګونجکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګونجه": {
@@ -30336,7 +30336,7 @@
     "pattern_info": ""
   },
   "ګونډی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګونز": {
@@ -30352,7 +30352,7 @@
     "pattern_info": ""
   },
   "ګونګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګوڼۍ": {
@@ -30436,7 +30436,7 @@
     "pattern_info": ""
   },
   "ګیلیګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ګیم": {
@@ -30532,7 +30532,7 @@
     "pattern_info": ""
   },
   "لاروی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاری": {
@@ -30608,7 +30608,7 @@
     "pattern_info": ""
   },
   "لاسپوچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاسپوچی حکومت": {
@@ -30616,7 +30616,7 @@
     "pattern_info": ""
   },
   "لاسپوڅی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاسته راوړنه": {
@@ -30624,11 +30624,11 @@
     "pattern_info": ""
   },
   "لاستی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاسرسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاسلیک": {
@@ -30636,7 +30636,7 @@
     "pattern_info": ""
   },
   "لاسنیوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاسوند": {
@@ -30740,7 +30740,7 @@
     "pattern_info": ""
   },
   "لاڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لاهور": {
@@ -30792,11 +30792,11 @@
     "pattern_info": ""
   },
   "لپړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لپکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لپه": {
@@ -30872,7 +30872,7 @@
     "pattern_info": ""
   },
   "لرګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لرلید": {
@@ -31004,7 +31004,7 @@
     "pattern_info": ""
   },
   "لښتی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لښتۍ": {
@@ -31160,7 +31160,7 @@
     "pattern_info": ""
   },
   "لمبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لمبېده": {
@@ -31216,7 +31216,7 @@
     "pattern_info": ""
   },
   "لمسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لمسۍ": {
@@ -31380,7 +31380,7 @@
     "pattern_info": ""
   },
   "لوټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لوټه": {
@@ -31512,7 +31512,7 @@
     "pattern_info": ""
   },
   "لوګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لولانه": {
@@ -31520,7 +31520,7 @@
     "pattern_info": ""
   },
   "لولکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لولۍ": {
@@ -31728,7 +31728,7 @@
     "pattern_info": ""
   },
   "لیمڅی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لیمو": {
@@ -31756,7 +31756,7 @@
     "pattern_info": ""
   },
   "لېنګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "لېو": {
@@ -31800,7 +31800,7 @@
     "pattern_info": ""
   },
   "ماتمی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ماته": {
@@ -31956,7 +31956,7 @@
     "pattern_info": ""
   },
   "ماښامی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ماضی": {
@@ -32124,7 +32124,7 @@
     "pattern_info": ""
   },
   "ماڼکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ماڼه": {
@@ -32140,7 +32140,7 @@
     "pattern_info": ""
   },
   "ماڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ماڼۍ": {
@@ -32152,7 +32152,7 @@
     "pattern_info": ""
   },
   "ماهی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ماهی نیوونکی": {
@@ -32284,7 +32284,7 @@
     "pattern_info": ""
   },
   "مټکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مټه": {
@@ -32312,7 +32312,7 @@
     "pattern_info": ""
   },
   "مثبت ګری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مثلث": {
@@ -32412,7 +32412,7 @@
     "pattern_info": ""
   },
   "مچچکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مچرۍ": {
@@ -32448,7 +32448,7 @@
     "pattern_info": ""
   },
   "مچوژی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مچۍ": {
@@ -32636,7 +32636,7 @@
     "pattern_info": ""
   },
   "مختیاری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مخدره توکی": {
@@ -32680,7 +32680,7 @@
     "pattern_info": ""
   },
   "مخنیوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مخه": {
@@ -32884,7 +32884,7 @@
     "pattern_info": ""
   },
   "مرچکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مرحله": {
@@ -32984,7 +32984,7 @@
     "pattern_info": ""
   },
   "مرغی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مرغۍ": {
@@ -33128,7 +33128,7 @@
     "pattern_info": ""
   },
   "مریی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مریی توب": {
@@ -33192,7 +33192,7 @@
     "pattern_info": ""
   },
   "مړی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مړۍ": {
@@ -33620,7 +33620,7 @@
     "pattern_info": ""
   },
   "مشکڼی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مشهورتیا": {
@@ -33676,7 +33676,7 @@
     "pattern_info": ""
   },
   "مصری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مصلحت": {
@@ -33968,7 +33968,7 @@
     "pattern_info": ""
   },
   "مغزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مغزی سکته": {
@@ -34240,7 +34240,7 @@
     "pattern_info": ""
   },
   "ملخی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ملزم": {
@@ -34400,7 +34400,7 @@
     "pattern_info": ""
   },
   "منجغی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "منجله": {
@@ -34460,7 +34460,7 @@
     "pattern_info": ""
   },
   "منځوی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مندته": {
@@ -34572,7 +34572,7 @@
     "pattern_info": ""
   },
   "منفی ګری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "منقار": {
@@ -34596,7 +34596,7 @@
     "pattern_info": ""
   },
   "منګوټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "منګور": {
@@ -34616,7 +34616,7 @@
     "pattern_info": ""
   },
   "منګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مننه": {
@@ -34800,7 +34800,7 @@
     "pattern_info": ""
   },
   "موچی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "موخه": {
@@ -34892,7 +34892,7 @@
     "pattern_info": ""
   },
   "موږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "موسسه": {
@@ -34988,7 +34988,7 @@
     "pattern_info": ""
   },
   "مولی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مولۍ": {
@@ -35000,7 +35000,7 @@
     "pattern_info": ""
   },
   "مومپلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مومن": {
@@ -35184,7 +35184,7 @@
     "pattern_info": ""
   },
   "مېرېزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مېرېنۍ خور": {
@@ -35228,7 +35228,7 @@
     "pattern_info": ""
   },
   "مېږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مېښ": {
@@ -35236,7 +35236,7 @@
     "pattern_info": ""
   },
   "مېښ کټی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "میک اپ": {
@@ -35268,7 +35268,7 @@
     "pattern_info": ""
   },
   "مېلمستځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "مېلمستون": {
@@ -35512,7 +35512,7 @@
     "pattern_info": ""
   },
   "ناری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ناریال": {
@@ -35648,7 +35648,7 @@
     "pattern_info": ""
   },
   "نالبکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نالت": {
@@ -35664,7 +35664,7 @@
     "pattern_info": ""
   },
   "نالګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ناله": {
@@ -35944,7 +35944,7 @@
     "pattern_info": ""
   },
   "نرښځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نرغون": {
@@ -36288,7 +36288,7 @@
     "pattern_info": ""
   },
   "نغری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نغم": {
@@ -36536,7 +36536,7 @@
     "pattern_info": ""
   },
   "نمسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نمسۍ": {
@@ -36724,7 +36724,7 @@
     "pattern_info": ""
   },
   "نوږی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نوسه": {
@@ -36732,7 +36732,7 @@
     "pattern_info": ""
   },
   "نوسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نوسۍ": {
@@ -36768,7 +36768,7 @@
     "pattern_info": ""
   },
   "نوغی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نوک": {
@@ -36800,7 +36800,7 @@
     "pattern_info": ""
   },
   "نولی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نوم": {
@@ -36864,7 +36864,7 @@
     "pattern_info": ""
   },
   "نیالګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "نیالی": {
@@ -37160,7 +37160,7 @@
     "pattern_info": ""
   },
   "هټوځی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هټۍ": {
@@ -37284,11 +37284,11 @@
     "pattern_info": ""
   },
   "هرکلی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هرکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هرم": {
@@ -37388,7 +37388,7 @@
     "pattern_info": ""
   },
   "هلکانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هلکت": {
@@ -37520,7 +37520,7 @@
     "pattern_info": ""
   },
   "هندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هنډه": {
@@ -37632,7 +37632,7 @@
     "pattern_info": ""
   },
   "هوسی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "هوسۍ": {
@@ -37860,7 +37860,7 @@
     "pattern_info": ""
   },
   "واښکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "واښه": {
@@ -37916,7 +37916,7 @@
     "pattern_info": ""
   },
   "والګی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "والی": {
@@ -38084,7 +38084,7 @@
     "pattern_info": ""
   },
   "ورانی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "وربشه": {
@@ -38220,7 +38220,7 @@
     "pattern_info": ""
   },
   "وروستوندی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ورون": {
@@ -38228,7 +38228,7 @@
     "pattern_info": ""
   },
   "وری": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "وریجې": {
@@ -38308,7 +38308,7 @@
     "pattern_info": ""
   },
   "وړومبی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "وړۍ": {
@@ -38372,7 +38372,7 @@
     "pattern_info": ""
   },
   "وژی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "وږسترګی": {
@@ -38680,7 +38680,7 @@
     "pattern_info": ""
   },
   "ووړګنی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "ووړنګوری": {
@@ -38872,7 +38872,7 @@
     "pattern_info": ""
   },
   "ویی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "یابو": {
@@ -39056,7 +39056,7 @@
     "pattern_info": ""
   },
   "یوسفزی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "یوګا": {
@@ -39068,7 +39068,7 @@
     "pattern_info": ""
   },
   "یومکی": {
-    "pattern": "stressed_ay",
+    "pattern": "unstressed_y",
     "pattern_info": ""
   },
   "یون": {
