@@ -443,6 +443,26 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
         # fall through to other patterns
         pass
 
+    # Pattern: fused stative "<complement>ول"  ≈  "<complement> کول"
+    # Only apply when it looks like an adjective/noun-based complement.
+    if root.endswith('ول') and ' ' not in root:
+        comp = root[:-2].strip()  # drop "ول"
+        if comp:
+            # For stative compounds like گرمول, the imperfective stem is comp + "و"
+            # and perfective stem is comp + " کړ"
+            impf_stem = comp + 'و'
+            perf_stem = comp + ' کړ'
+            # Roots and PP per LingDocs pattern
+            impf_root = root              # ګرمول
+            perf_root = comp + ' کړل'    # ګرم کړل
+            past_part = comp + ' کړی'    # ګرم کړی
+            return {
+                'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+                'roots': {'imperfective': impf_root, 'perfective': perf_root},
+                'past_participle': past_part,
+                'romanization': {},
+            }
+
     # Category 0: Helper verb family — ...کېدل (to become).
     # Default to the "become" pattern (no perfective و-). The "to happen" variant
     # with perfective وشـ/وشول can be provided via irregulars in the lexicon.
@@ -501,7 +521,8 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
         }
 
     # Category 2: default .*ل → drop final ل, with y-prefix fixups for certain irregular classes
-    if len(root) > 1:
+    # Exclude fused stative compounds ending in ول (handled by previous rule)
+    if len(root) > 1 and not root.endswith('ول'):
         base = root[:-1]
         impf_stem = base
         # For some irregular transport verbs (e.g., وړل) the perfective stem can surface with یـ
@@ -660,7 +681,7 @@ def build_forms_root_index() -> Dict[str, str]:
         if not conj:
             continue
         # Collect tables with romanization
-        for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past', 'perfect_present', 'perfect_past', 'perfect_subjunctive', 'perfect_future', 'perfect_habitual']:
+        for dname in ['present', 'subjunctive', 'continuous_past', 'simple_past', 'imperfective_future', 'perfective_future', 'perfect_present', 'perfect_past', 'perfect_subjunctive', 'perfect_future', 'perfect_habitual']:
             if dname in conj:
                 for ps, rom in conj[dname].values():
                     _add(ps, rom, root)

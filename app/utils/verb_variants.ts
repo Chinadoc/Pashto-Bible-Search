@@ -173,6 +173,23 @@ export async function generateVerbVariants(
   // De-dupe
   let deduped = uniqBy(out, v => v.form);
 
+  // Fallback for fused stative compounds ending in ول (e.g., ګرمول)
+  // This provides basic coverage until inflections DB is refreshed
+  if (deduped.length < 3 && /[^ ]ول$/.test(base)) {
+    const comp = base.slice(0, -2).trim();
+    const impfStem = `${comp}و`;    // ګرمو-
+    const perfStem = `${comp} کړ`;  // ګرم کړ-
+    const seed = [
+      { form: `${impfStem}م`, label: "1sg Present", pos: "verb" as const, flags: ["compound","stative"] },
+      { form: `${impfStem}ي`, label: "3sg Present", pos: "verb" as const, flags: ["compound","stative"] },
+      { form: `${perfStem}م`, label: "1sg Subjunctive", pos: "verb" as const, flags: ["compound","stative"] },
+      { form: `${comp} کړل`, label: "Perfective Root", pos: "verb" as const, flags: ["compound","stative"] },
+      { form: `${comp} کړی`, label: "Past Participle", pos: "verb" as const, flags: ["compound","stative"] },
+    ];
+    deduped.push(...seed);
+    deduped = uniqBy(deduped, v => v.form);
+  }
+
   // 5) Frequency scoring using local freqMap
   if (freqMap) {
     deduped = deduped.map(v => {
