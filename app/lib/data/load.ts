@@ -495,35 +495,6 @@ async function loadSearchData(): Promise<SearchData> {
   };
 }
 
-async function getLazySearchData(): Promise<LazySearchData> {
-  // Use resolved cache if available
-  if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__) {
-    return lazySearchCache.__PBS_LAZY_SEARCH_DATA__;
-  }
-
-  // If loading is in progress, wait for it
-  if (lazySearchCache.__PBS_LAZY_SEARCH_CACHE__) {
-    return lazySearchCache.__PBS_LAZY_SEARCH_CACHE__;
-  }
-
-  // Start loading and cache the promise
-  const loadingPromise = loadLazySearchData();
-  lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = loadingPromise;
-
-  try {
-    const data = await loadingPromise;
-    // Cache the resolved data for future requests
-    lazySearchCache.__PBS_LAZY_SEARCH_DATA__ = data;
-    // Clear the loading promise
-    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
-    return data;
-  } catch (error) {
-    // Clear the failed promise
-    lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
-    throw error;
-  }
-}
-
 export async function getLightweightData(): Promise<LightweightData> {
   // Use resolved cache if available
   if (lightweightCache.__PBS_LIGHTWEIGHT_DATA__) {
@@ -582,7 +553,7 @@ export async function getSearchData(): Promise<SearchData> {
   }
 }
 
-export async function getLazySearchData(): Promise<LazySearchData> {
+export async function getLazyLoadedSearchData(): Promise<LazySearchData> {
   // Use resolved cache if available
   if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__) {
     return lazySearchCache.__PBS_LAZY_SEARCH_DATA__;
