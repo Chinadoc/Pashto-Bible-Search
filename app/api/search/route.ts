@@ -4,6 +4,7 @@ import Fuse from 'fuse.js';
 import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
+import { refToFilename, audioUrlFromRef } from '@/utils/audio';
 
 export const runtime = 'nodejs';
 
@@ -68,10 +69,19 @@ function containsPashto(s: string): boolean {
   return /[ا-ی]/u.test(s);
 }
 
-function transformResults(results: Array<{ ref: string; text: string; testament?: string; book: string }>): ApiResult[] {
+function transformResults(results: Array<{ ref: string; text: string; testament?: string; book: string }>, audioMap: Record<string, string> = {}): ApiResult[] {
   return results.map((result, index) => {
     const book = result.book;
     const usesYousafzai = YOUSAFZAI_BOOKS.has(book);
+
+    // Get audio URL for this verse
+    let audioUrl = null;
+    try {
+      audioUrl = audioUrlFromRef(result.ref, audioMap);
+    } catch (error) {
+      console.warn(`Failed to get audio URL for ${result.ref}:`, error);
+    }
+
     return {
       ref: result.ref,
       text: result.text,
@@ -79,7 +89,7 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
       translation: usesYousafzai ? 'Yousafzai 2019' : null,
       dialect: usesYousafzai ? 'Yousafzai' : null,
       tags: [],
-      audio_verse_url: null,
+      audio_verse_url: audioUrl,
       id: index + 1,
     };
   });
@@ -92,6 +102,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as SearchRequest;
     const { query, includeRelated = false, variants = [], enableFuzzy, limit = 100 } = body;
     const scope = normaliseScope(body.scope);
+
+    // Load audio map for assigning audio URLs
+    let audioMap: Record<string, string> = {};
+    try {
+      const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
+        headers: {
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      if (audioResponse.ok) {
+        const audioData = await audioResponse.json();
+        if (Array.isArray(audioData)) {
+          for (const row of audioData) {
+            if (row.verse_ref && row.url && !/drive\.google|docs\.google/i.test(row.url)) {
+              audioMap[row.verse_ref] = row.url;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load audio map:', error);
+    }
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -125,7 +160,7 @@ export async function POST(request: NextRequest) {
       }
 
       const results = Array.from(candidateVerses).slice(0, limit);
-      const transformed = transformResults(results);
+      const transformed = transformResults(results, audioMap);
       const processed: Processed = {
         original: trimmedQuery,
         normalized: trimmedQuery,
@@ -189,13 +224,86 @@ export async function POST(request: NextRequest) {
       searchTerm: normalized
     });
 
-    // Try hybrid search first (fast JSON + database fallback)
+    // Generate variants first if needed for enhanced search
+    if (includeRelated) {
+      try {
+        const { frequencyMap, dictionaryByPashto } = await getLightweightData();
+        const relatedStarted = Date.now();
+
+        // POS guess from dictionary
+        const dictEntry = dictionaryByPashto.get(normalized);
+        if (dictEntry?.pos) {
+          const posLower = dictEntry.pos.toLowerCase();
+          if (posLower.startsWith("verb")) posGuess = "verb";
+          else if (posLower.startsWith("noun")) posGuess = "noun";
+          else if (posLower.startsWith("adj")) posGuess = "adjective";
+          else posGuess = "other";
+          romanization = romanization ?? dictEntry.romanized;
+        } else {
+          // Fallback POS guess based on common patterns
+          posGuess = "other";
+        }
+
+        const frequency = frequencyMap.get(normalized) ?? undefined;
+
+        // Generate variants based on POS (use root form if available)
+        const variantInput = rootFromForm || normalized;
+        const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
+
+        if (posGuess === "noun") {
+          groups.nouns = await generateNounVariants(variantInput, { cap: 30 });
+        } else if (posGuess === "verb") {
+          groups.verbs = await generateVerbVariantsUtil(variantInput, { cap: 30, includeCompound: true });
+        } else {
+          // Try both for ambiguous terms
+          const [nouns, verbs] = await Promise.all([
+            generateNounVariants(variantInput, { cap: 20 }),
+            generateVerbVariantsUtil(variantInput, { cap: 20, includeCompound: true }),
+          ]);
+          if (nouns.length) groups.nouns = nouns;
+          if (verbs.length) groups.verbs = verbs;
+        }
+
+        // Build variant forms
+        variantForms = [];
+        for (const group of Object.values(groups)) {
+          if (group) {
+            variantForms.push(...group.map(v => v.form));
+          }
+        }
+
+        // Build variant details
+        const variantDetails = {
+          root: normalized,
+          forms: groups,
+          total: variantForms.length,
+        };
+
+        relatedForms = {
+          root: normalized,
+          forms: groups,
+          total: variantForms.length,
+          variantDetails,
+          verbs: groups.verbs?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
+          nouns: groups.nouns?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
+          other: groups.other?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
+          ms: Date.now() - relatedStarted,
+        };
+      } catch (error) {
+        console.warn('Related forms generation failed:', error);
+        relatedForms = null;
+        variantForms = [];
+      }
+    }
+
+    // Try hybrid search with variants
     try {
       const hybridResult = await hybridSearch(normalized, {
         scope,
         includeRelated: false,
         limit: effectiveLimit,
         enableFuzzy: enableFuzzy ?? !isPashtoQuery,
+        variants: variantForms,
       });
 
       if (hybridResult.results.length > 0) {
@@ -266,124 +374,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let relatedForms: any = null;
-    let variantForms: string[] = [];
 
-    // Generate variants locally if requested
-    if (includeRelated) {
-      const { frequencyMap, dictionaryByPashto } = await getLightweightData();
-      const relatedStarted = Date.now();
 
-      // POS guess from dictionary
-      const dictEntry = dictionaryByPashto.get(normalized);
-      if (dictEntry?.pos) {
-        const posLower = dictEntry.pos.toLowerCase();
-        if (posLower.startsWith("verb")) posGuess = "verb";
-        else if (posLower.startsWith("noun")) posGuess = "noun";
-        else if (posLower.startsWith("adj")) posGuess = "adjective";
-        else posGuess = "other";
-        romanization = romanization ?? dictEntry.romanized;
-      } else {
-        // Fallback POS guess based on common patterns
-        posGuess = "other";
-      }
-
-      const frequency = frequencyMap.get(normalized) ?? undefined;
-
-      // Generate variants based on POS (use root form if available)
-      const variantInput = rootFromForm || normalized;
-      const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
-
-      if (posGuess === "noun") {
-        groups.nouns = await generateNounVariants(variantInput, { cap: 30 });
-      } else if (posGuess === "verb") {
-        groups.verbs = await generateVerbVariantsUtil(variantInput, { cap: 30, includeCompound: true });
-      } else {
-        // Try both for ambiguous terms
-        const [nouns, verbs] = await Promise.all([
-          generateNounVariants(variantInput, { cap: 20 }),
-          generateVerbVariantsUtil(variantInput, { cap: 20, includeCompound: true }),
-        ]);
-        if (nouns.length) groups.nouns = nouns;
-        if (verbs.length) groups.verbs = verbs;
-      }
-
-      // Build variant forms
-      variantForms = [];
-      for (const group of Object.values(groups)) {
-        if (group) {
-          variantForms.push(...group.map(v => v.form));
-        }
-      }
-
-      // Build variant details
-      const variantDetails = {
-        root: normalized,
-        forms: groups,
-        total: variantForms.length,
-      };
-
-      relatedForms = {
-        root: normalized,
-        forms: groups,
-        total: variantForms.length,
-        variantDetails,
-        verbs: groups.verbs?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-        nouns: groups.nouns?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-        other: groups.other?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-        ms: Date.now() - relatedStarted,
-      };
-
-      // If no direct results but we have variants, try searching with variants
-      if (!results.length && variantForms.length) {
-        const candidateVerses = new Set<any>();
-
-        // Prioritize the original search term if it's a form
-        if (rootFromForm && searchIndex) {
-          const originalLower = normalized.toLowerCase();
-          const originalMatches = searchIndex.byTextLower.get(originalLower) || [];
-          for (const verse of originalMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
-            }
-          }
-          const normalizedMatches = searchIndex.byTextNormalizedLower.get(originalLower) || [];
-          for (const verse of normalizedMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
-            }
-          }
-        }
-
-        // Also search with other variants
-        if (searchIndex) {
-          for (const variant of variantForms.slice(0, 25)) {
-            const lower = variant.toLowerCase();
-
-            const originalMatches = searchIndex.byTextLower.get(lower) || [];
-            for (const verse of originalMatches) {
-              if (matchesScope(verse, scope)) {
-                candidateVerses.add(verse);
-              }
-            }
-
-            const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
-            for (const verse of normalizedMatches) {
-              if (matchesScope(verse, scope)) {
-                candidateVerses.add(verse);
-              }
-            }
-          }
-        }
-
-        if (candidateVerses.size > 0) {
-          results = Array.from(candidateVerses).slice(0, effectiveLimit);
-          searchType = 'enhanced';
-        }
-      }
-    }
-
-    const transformed = transformResults(results);
+    const transformed = transformResults(results, audioMap);
 
     const processed: Processed = {
       original: trimmedQuery,

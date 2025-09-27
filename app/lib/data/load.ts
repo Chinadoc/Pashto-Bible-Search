@@ -641,6 +641,7 @@ export async function hybridSearch(
     includeRelated?: boolean;
     limit?: number;
     enableFuzzy?: boolean;
+    variants?: string[];
   } = {}
 ): Promise<{
   results: any[];
@@ -650,16 +651,21 @@ export async function hybridSearch(
   ms: number;
 }> {
   const startTime = Date.now();
-  const { scope = 'all', includeRelated = false, limit = 100, enableFuzzy = false } = options;
+  const { scope = 'all', includeRelated = false, limit = 100, enableFuzzy = false, variants = [] } = options;
 
   try {
     // First, try fast JSON-based search
     const { searchIndex, verses } = await getSearchData();
     let results: any[] = [];
 
+    // Generate search terms including variants if available
+    let searchTerms = [query.toLowerCase()];
+    if (includeRelated && variants.length > 0) {
+      searchTerms.push(...variants.map(v => v.toLowerCase()));
+    }
+
     // Fast exact match search using JSON index
     if (searchIndex?.byTextLower) {
-      const searchTerms = [query.toLowerCase()];
       const candidateVerses = new Set();
 
       for (const searchTerm of searchTerms) {
