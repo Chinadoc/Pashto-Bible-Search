@@ -342,6 +342,18 @@ export default function ClientHome() {
     }
   }, [setAudioMap, setIsLoading]);
 
+  // Filter results by selected books
+  const filteredResults = useMemo(() => {
+    if (bookFilter.length === 0) return results;
+    return results.filter(verse => {
+      if (!verse.ref) return false;
+      const book = verse.ref.split(' ')[0];
+      // Handle multi-word book names like "1 Corinthians"
+      const bookName = verse.ref.includes(' ') ? verse.ref.split(' ').slice(0, -1).join(' ') : book;
+      return bookFilter.includes(bookName);
+    });
+  }, [results, bookFilter]);
+
   // Group results by book for coverage calculation (use filtered results)
   const coverageData = useMemo(() => {
     try {
@@ -388,18 +400,6 @@ export default function ClientHome() {
   useEffect(() => {
     setCoverage(coverageData);
   }, [coverageData]);
-
-  // Filter results by selected books
-  const filteredResults = useMemo(() => {
-    if (bookFilter.length === 0) return results;
-    return results.filter(verse => {
-      if (!verse.ref) return false;
-      const book = verse.ref.split(' ')[0];
-      // Handle multi-word book names like "1 Corinthians"
-      const bookName = verse.ref.includes(' ') ? verse.ref.split(' ').slice(0, -1).join(' ') : book;
-      return bookFilter.includes(bookName);
-    });
-  }, [results, bookFilter]);
 
   // Handle search
   const handleSearch = async () => {

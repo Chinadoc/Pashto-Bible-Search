@@ -32,7 +32,7 @@ type Processed = {
   original: string;
   normalized: string;
   variants: string[];
-  searchType: 'fast' | 'fuzzy' | 'enhanced';
+  searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid';
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   variantGroups?: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   variantDetails?: any;
@@ -176,6 +176,18 @@ export async function POST(request: NextRequest) {
 
     let results: Array<{ ref: string; text: string; testament?: string; book: string }> = [];
     let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
+    let searchIndex: any = null;
+
+    // Get search data for potential use throughout the function
+    const data = await getData();
+    const { verses } = data;
+    searchIndex = data.searchIndex;
+
+    console.log('Search debug:', {
+      searchIndexExists: !!searchIndex,
+      versesCount: verses.length,
+      searchTerm: normalized
+    });
 
     // Try hybrid search first (fast JSON + database fallback)
     try {
@@ -199,18 +211,8 @@ export async function POST(request: NextRequest) {
     if (!results.length) {
       console.log('Falling back to traditional search');
 
-      // Search using local data
-      const data = await getData();
-      const { searchIndex, verses } = data;
-
-      console.log('Search debug:', {
-        searchIndexExists: !!searchIndex,
-        versesCount: verses.length,
-        searchTerm: normalized
-      });
-
-      // Fast search using index
-      if (searchIndex?.byTextLower) {
+    // Fast search using index
+    if (searchIndex?.byTextLower) {
         const candidateVerses = new Set<any>();
 
         // Use root form for searching if we found one from a form
@@ -334,7 +336,7 @@ export async function POST(request: NextRequest) {
         const candidateVerses = new Set<any>();
 
         // Prioritize the original search term if it's a form
-        if (rootFromForm) {
+        if (rootFromForm && searchIndex) {
           const originalLower = normalized.toLowerCase();
           const originalMatches = searchIndex.byTextLower.get(originalLower) || [];
           for (const verse of originalMatches) {
@@ -351,20 +353,22 @@ export async function POST(request: NextRequest) {
         }
 
         // Also search with other variants
-        for (const variant of variantForms.slice(0, 25)) {
-          const lower = variant.toLowerCase();
+        if (searchIndex) {
+          for (const variant of variantForms.slice(0, 25)) {
+            const lower = variant.toLowerCase();
 
-          const originalMatches = searchIndex.byTextLower.get(lower) || [];
-          for (const verse of originalMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
+            const originalMatches = searchIndex.byTextLower.get(lower) || [];
+            for (const verse of originalMatches) {
+              if (matchesScope(verse, scope)) {
+                candidateVerses.add(verse);
+              }
             }
-          }
 
-          const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
-          for (const verse of normalizedMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
+            const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
+            for (const verse of normalizedMatches) {
+              if (matchesScope(verse, scope)) {
+                candidateVerses.add(verse);
+              }
             }
           }
         }
