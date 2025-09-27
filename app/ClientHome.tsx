@@ -641,21 +641,27 @@ export default function ClientHome() {
                       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
                         Related Forms
                       </h3>
-                      {relatedForms && relatedForms.total && relatedForms.total > 0 ? (
-                        <RelatedForms
-                          relatedForms={relatedForms}
-                          onPick={handlePickForm}
-                          verbState={verbState}
-                          setVerbState={(state) => {
-                            setVerbPerson(state.person);
-                            setVerbTense(state.tense);
-                            setVerbAspect(state.aspect);
-                            setVerbMood(state.mood);
-                          }}
-                        />
+                      {includeRelated ? (
+                        relatedForms ? (
+                          <RelatedForms
+                            relatedForms={relatedForms}
+                            onPick={handlePickForm}
+                            verbState={verbState}
+                            setVerbState={(state) => {
+                              setVerbPerson(state.person);
+                              setVerbTense(state.tense);
+                              setVerbAspect(state.aspect);
+                              setVerbMood(state.mood);
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                            Generating related forms...
+                          </div>
+                        )
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          {includeRelated ? 'No related forms found for this search.' : 'Enable "Include Related Forms" to see related word forms.'}
+                          Enable "Include Related Forms" to see related word forms.
                         </div>
                       )}
                     </div>

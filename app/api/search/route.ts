@@ -298,28 +298,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Try hybrid search with variants
-    try {
-      const hybridResult = await hybridSearch(normalized, {
-        scope,
-        includeRelated: false,
-        limit: effectiveLimit,
-        enableFuzzy: enableFuzzy ?? !isPashtoQuery,
-        variants: variantForms,
-      });
+    // Enhanced search with variants when includeRelated is enabled
+    if (searchIndex?.byTextLower) {
+      const candidateVerses = new Set<any>();
 
-      if (hybridResult.results.length > 0) {
-        results = hybridResult.results;
-        searchType = hybridResult.processed.searchType === 'hybrid' ? 'hybrid' : 'fast';
-        console.log('Hybrid search found results:', results.length);
+      // Build comprehensive search terms list
+      const searchTerms = [normalized];
+      if (rootFromForm) searchTerms.push(rootFromForm);
+      if (includeRelated && variantForms.length > 0) {
+        searchTerms.push(...variantForms);
       }
-    } catch (error) {
-      console.warn('Hybrid search failed, falling back to traditional search:', error);
+
+      console.log('DEBUG: Searching with terms:', searchTerms.length, 'terms');
+
+      for (const searchTerm of searchTerms) {
+        const lower = searchTerm.toLowerCase();
+
+        // Check original text index
+        const originalMatches = searchIndex.byTextLower.get(lower) || [];
+        console.log(`DEBUG: Found ${originalMatches.length} matches for "${searchTerm}" in original text`);
+        for (const verse of originalMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+
+        // Check normalized text index
+        const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
+        console.log(`DEBUG: Found ${normalizedMatches.length} matches for "${searchTerm}" in normalized text`);
+        for (const verse of normalizedMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+      }
+
+      results = Array.from(candidateVerses).slice(0, effectiveLimit);
+      searchType = includeRelated && variantForms.length > 0 ? 'enhanced' : 'fast';
+      console.log('DEBUG: Enhanced search found results:', results.length);
     }
 
-    // Fallback to traditional search if hybrid didn't work
-    if (!results.length) {
-      console.log('Falling back to traditional search');
+    // Fallback to fuzzy search if no results and enabled
+    if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
+      console.log('Falling back to fuzzy search');
 
     // Fast search using index
     if (searchIndex?.byTextLower) {
@@ -353,8 +374,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Fallback to fuzzy search if no results and enabled
-      const shouldFuzzy = enableFuzzy ?? !isPashtoQuery;
-      if (!results.length && shouldFuzzy) {
+      if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
+        console.log('Falling back to fuzzy search');
+
         // Create Fuse instance with verses
         const fuse = new Fuse(verses, {
           keys: ['text', 'textNormalized'],
