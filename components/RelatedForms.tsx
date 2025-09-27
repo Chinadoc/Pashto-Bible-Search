@@ -308,65 +308,97 @@ export default function RelatedForms({
   // ✅ Early return only after all hooks are declared
   if (!relatedForms) return null
 
-  const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => (
-    <div className="mt-2">
-      <div className="text-xs text-gray-500 mb-1">{title} ({list.length})</div>
-      <div className="flex flex-wrap gap-2">
-        {list.map(({ form, count, label }, idx) => (
-          <button
-            key={`${title}-${form}-${idx}`}
-            onClick={() => onPick(form)}
-            className="px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
-            title={`Click to search for: ${form}${label ? ` (${label})` : ''}`}
-          >
-            <span className="font-medium">{form}</span>
-            {count > 0 && <span className="ml-1 text-xs opacity-70">({count})</span>}
-            {label && label !== 'Form' && (
-              <span className="ml-1 text-xs opacity-60">({label})</span>
-            )}
-          </button>
-        ))}
-        {list.length === 0 && <span className="text-gray-400">—</span>}
+  const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => {
+    // Group by person for better organization
+    const groupedByPerson = list.reduce((acc, item) => {
+      const personMatch = item.label?.match(/(\d+)\s*(sg|pl|SG|PL)/i);
+      const person = personMatch ? (personMatch[2].toLowerCase() === 'pl' ? 'plural' : 'singular') : 'other';
+      if (!acc[person]) acc[person] = [];
+      acc[person].push(item);
+      return acc;
+    }, {} as Record<string, typeof list>);
+
+    return (
+      <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+          {title} ({list.length})
+        </div>
+        <div className="space-y-2">
+          {Object.entries(groupedByPerson).map(([person, items]) => (
+            <div key={person}>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 capitalize font-medium">
+                {person} ({items.length})
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {items.map(({ form, count, label }, idx) => (
+                  <button
+                    key={`${title}-${form}-${idx}`}
+                    onClick={() => onPick(form)}
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs transition-colors"
+                    title={`Click to search for: ${form}${label ? ` (${label})` : ''}`}
+                  >
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{form}</span>
+                    {count > 0 && <span className="ml-1 text-xs opacity-70 text-gray-600 dark:text-gray-400">({count})</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {list.length === 0 && <span className="text-gray-400 italic">—</span>}
       </div>
-    </div>
-  )
+    );
+  }
 
   return (
-    <div className="mt-2 rounded border border-gray-200 dark:border-gray-700 p-2 text-sm">
-      <div className="flex items-center justify-between">
-        <div className="text-gray-700 dark:text-gray-300">
-          Related forms ({filteredVerbs.length} forms)
-        </div>
-        <div className="flex gap-2">
-          {onApplyFilter && filteredVerbs.length > 0 && (
+    <div className="mt-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Verb Conjugations ({filteredVerbs.length} forms)
+            </span>
+            {verbState && (
+              <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
+                {verbState.tense} • {verbState.person}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {onApplyFilter && filteredVerbs.length > 0 && (
+              <button
+                onClick={() => {
+                  const formsToSearch = filteredVerbs.map(v => v.form);
+                  console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', formsToSearch);
+                  console.log('DEBUG: Filtered verb details:', filteredVerbs);
+                  onApplyFilter(formsToSearch);
+                }}
+                className="text-xs px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+              >
+                Apply Filter ({filteredVerbs.length})
+              </button>
+            )}
             <button
-              onClick={() => {
-                const formsToSearch = filteredVerbs.map(v => v.form);
-                console.log('DEBUG: Applying filter with', filteredVerbs.length, 'terms:', formsToSearch);
-                console.log('DEBUG: Filtered verb details:', filteredVerbs);
-                onApplyFilter(formsToSearch);
-              }}
-              className="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={() => setOpen(!open)}
+              className="text-xs px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Apply Filter ({filteredVerbs.length})
+              {open ? 'Hide' : 'Show'}
             </button>
-          )}
-          <button onClick={() => setOpen(!open)} className="text-xs px-2 py-0.5 border rounded">
-            {open ? 'Hide' : 'Show'}
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Verb understanding controls */}
       {verbState && setVerbState && (
-        <div className="mt-2 space-y-2 text-xs">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex flex-wrap items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Tense:</span>
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Tense:</span>
               <select
                 value={verbState.tense}
                 onChange={(e) => setVerbState({...verbState, tense: e.target.value as any})}
-                className="p-1 border border-gray-300 rounded text-xs dark:border-gray-600 dark:bg-gray-800"
+                className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All tenses</option>
                 <option value="present">Present (م)</option>
@@ -381,11 +413,11 @@ export default function RelatedForms({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Person:</span>
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Person:</span>
               <select
                 value={verbState.person}
                 onChange={(e) => setVerbState({...verbState, person: e.target.value as '1st' | '2nd' | '3rd'})}
-                className="p-1 border border-gray-300 rounded text-xs dark:border-gray-600 dark:bg-gray-800"
+                className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="1st">1st Person (م)</option>
                 <option value="2nd">2nd Person (ې)</option>
@@ -393,21 +425,26 @@ export default function RelatedForms({
               </select>
             </div>
 
-            <div className="text-gray-500 dark:text-gray-400">
-              {filteredVerbs.length} forms
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium">
+              <span>{filteredVerbs.length} forms</span>
+              {filteredVerbs.length > 0 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  • Click any form to search
+                </span>
+              )}
             </div>
           </div>
         </div>
       )}
       {open && (
-        <div className="mt-2">
+        <div className="p-4">
           {/* Verb forms - filtered or unfiltered based on controls */}
           {hasAnyForms ? (
             <>
               {filteredVerbs.length > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs text-gray-500 mb-2 font-medium">
-                    Verbs ({verbState ? `Filtered: ${filteredVerbs.length}` : 'All forms'})
+                <div className="mb-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">
+                    {verbState ? `Filtered Results: ${filteredVerbs.length} forms` : 'All Verb Forms'}
                   </div>
                   {verbState ? (
                     // Show filtered results when controls are active
@@ -435,8 +472,12 @@ export default function RelatedForms({
             </>
           ) : (
             // Show placeholder when no forms found
-            <div className="text-xs text-gray-500 italic">
-              No related forms found. Try searching for a different term.
+            <div className="text-center py-8">
+              <div className="text-gray-400 dark:text-gray-500 text-sm">
+                <div className="mb-2">🔍</div>
+                <div>No verb conjugations found</div>
+                <div className="text-xs mt-1">Try searching for a different verb</div>
+              </div>
             </div>
           )}
         </div>
