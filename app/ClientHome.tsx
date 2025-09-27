@@ -354,11 +354,11 @@ export default function ClientHome() {
     });
   }, [results, bookFilter]);
 
-  // Group results by book for coverage calculation (use filtered results)
-  const coverageData = useMemo(() => {
+  // Group ALL results by book for coverage calculation (always show full coverage)
+  const fullCoverageData = useMemo(() => {
     try {
       const bookCounts: Record<string, number> = {};
-      filteredResults.forEach((verse) => {
+      results.forEach((verse) => {
         try {
           // Safely extract book name from ref
           if (!verse.ref || typeof verse.ref !== 'string') {
@@ -388,13 +388,24 @@ export default function ClientHome() {
         translation: OT_BOOKS_SET.has(book) || NT_BOOKS_SET.has(book) ? 'KJV' : undefined
       }));
 
-      console.log('Coverage data calculated:', coverageItems);
+      console.log('Full coverage data calculated:', coverageItems);
       return coverageItems;
     } catch (err) {
       console.error('Error calculating coverage data:', err);
       return [];
     }
-  }, [filteredResults]);
+  }, [results]);
+
+  // Current search coverage (filtered results) for display in coverage map
+  const coverageData = useMemo(() => {
+    if (bookFilter.length === 0) {
+      // No filtering - show all books
+      return fullCoverageData;
+    } else {
+      // Show only selected books with their counts from all results
+      return fullCoverageData.filter(item => bookFilter.includes(item.book));
+    }
+  }, [fullCoverageData, bookFilter]);
 
   // Update coverage state when coverageData changes
   useEffect(() => {
