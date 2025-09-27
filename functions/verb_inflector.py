@@ -430,7 +430,7 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
                 impf_stem = comp + 'و'
                 # Perfective stem should already include 'و' before کړ for subjunctive forms
                 perf_stem = comp + ' وکړ'
-                impf_root = comp + ' ول'
+                impf_root = root  # Use original root for imperfective
                 perf_root = comp + ' وکړل'
                 past_part = comp + ' کړی'
                 return {
@@ -449,13 +449,13 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
         comp = root[:-2].strip()  # drop "ول"
         if comp:
             # For stative compounds like گرمول, the imperfective stem is comp + "و"
-            # and perfective stem is comp + " کړ"
+            # and perfective stem is comp + " وکړ" (following کول pattern)
             impf_stem = comp + 'و'
-            perf_stem = comp + ' کړ'
+            perf_stem = comp + ' وکړ'
             # Roots and PP per LingDocs pattern
             impf_root = root              # ګرمول
-            perf_root = comp + ' کړل'    # ګرم کړل
-            past_part = comp + ' کړی'    # ګرم کړی
+            perf_root = comp + ' وکړل'   # ګرم وکړل
+            past_part = comp + ' کړی'     # ګرم کړی
             return {
                 'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
                 'roots': {'imperfective': impf_root, 'perfective': perf_root},

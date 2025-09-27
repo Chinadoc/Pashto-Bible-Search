@@ -27854,13 +27854,13 @@
   "ګرمول": {
     "stems": {
       "imperfective": "ګرمو",
-      "perfective": "وګرمو"
+      "perfective": "ګرم وکړ"
     },
     "roots": {
       "imperfective": "ګرمول",
-      "perfective": "وګرمول"
+      "perfective": "ګرم وکړل"
     },
-    "past_participle": "ګرمولی",
+    "past_participle": "ګرم کړی",
     "romanization": {}
   },
   "ګرمېدل": {
@@ -36532,5 +36532,23 @@
     },
     "past_participle": "یېرېدلی",
     "romanization": {}
+  },
+  "واهل": {
+    "stems": {
+      "imperfective": "واه",
+      "perfective": "واه"
+    },
+    "roots": {
+      "imperfective": "واهل",
+      "perfective": "واهل"
+    },
+    "past_participle": "واهلی",
+    "romanization": {
+      "imperfective_stem": "waah",
+      "perfective_stem": "waah",
+      "imperfective_root": "waahul",
+      "perfective_root": "waahul",
+      "past_participle": "waahulay"
+    }
   }
 }
