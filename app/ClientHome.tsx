@@ -86,25 +86,55 @@ function SearchControls({
           </select>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input
-            type="checkbox"
-            checked={includeRelated}
-            onChange={(e) => setIncludeRelated(e.target.checked)}
-            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-          />
-          Include Related Forms (Verb Variants)
-        </label>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mode:</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIncludeRelated(false)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                !includeRelated
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              Standard Search
+            </button>
+            <button
+              onClick={() => setIncludeRelated(true)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                includeRelated
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              Related Forms Mode
+            </button>
+          </div>
+        </div>
 
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input
-            type="checkbox"
-            checked={enableFuzzy}
-            onChange={(e) => setEnableFuzzy(e.target.checked)}
-            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-          />
-          Fuzzy Search
-        </label>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search:</span>
+          <button
+            onClick={() => setEnableFuzzy(false)}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              !enableFuzzy
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Exact
+          </button>
+          <button
+            onClick={() => setEnableFuzzy(true)}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              enableFuzzy
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Fuzzy
+          </button>
+        </div>
 
         <button
           onClick={refreshAudioMap}
@@ -252,6 +282,7 @@ export default function ClientHome() {
     savePersisted('verbAspect', verbAspect);
     savePersisted('verbMood', verbMood);
   }, [scope, includeRelated, verbPerson, verbTense, verbAspect, verbMood]);
+
 
   // Clear any problematic initial values on mount
   useEffect(() => {
@@ -464,6 +495,7 @@ export default function ClientHome() {
         resultsCount: searchData.results?.length || 0,
         relatedFormsCount: searchData.relatedForms?.total || 0,
         processedVariants: searchData.processed?.variants?.length || 0,
+        searchType: searchData.processed?.searchType || 'unknown',
         relatedFormsData: searchData.relatedForms
       });
 
@@ -484,6 +516,14 @@ export default function ClientHome() {
     }
   };
 
+  // Trigger new search when Related Forms Mode is toggled
+  useEffect(() => {
+    if (query.trim() && (results.length > 0 || includeRelated)) {
+      console.log('DEBUG: Related Forms Mode changed, triggering new search');
+      handleSearch();
+    }
+  }, [includeRelated, query, results.length]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -499,8 +539,8 @@ export default function ClientHome() {
 
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
+    if (includeRelated) return 'analysis'; // Always show analysis tab in Related Forms Mode
     if (results.length > 0) return 'search'; // Search results
-    if (includeRelated) return 'analysis'; // Show analysis tab when related forms is enabled
     return 'search';
   }, [results.length, includeRelated]);
 

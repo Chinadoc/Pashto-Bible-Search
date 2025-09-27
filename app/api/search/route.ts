@@ -345,7 +345,7 @@ export async function POST(request: NextRequest) {
 
       results = Array.from(candidateVerses).slice(0, effectiveLimit);
       searchType = includeRelated && variantForms.length > 0 ? 'enhanced' : 'fast';
-      console.log('DEBUG: Enhanced search found results:', results.length);
+      console.log('DEBUG: Enhanced search found results:', results.length, 'with search type:', searchType);
     }
 
     // Fallback to fuzzy search if no results and enabled
