@@ -328,6 +328,210 @@ async function loadData(): Promise<DataCache> {
   };
 }
 
+// Lightweight data for endpoints that only need dictionary and frequency
+type LightweightData = {
+  dictionaryByPashto: Map<string, DictionaryEntry>;
+  dictionaryByRomanized: Map<string, DictionaryEntry[]>;
+  frequencyMap: Map<string, number>;
+  formToRoot: Record<string, string[]>;
+  formsByRoot: Map<string, string[]>;
+  occurrenceMap: Map<string, OccurrenceRow>;
+  inflectionsByBase: Map<string, InflectionRow[]>;
+  unaccent: (input: string) => string;
+};
+
+const lightweightCache = globalThis as unknown as { __PBS_LIGHTWEIGHT_CACHE__?: Promise<LightweightData>; __PBS_LIGHTWEIGHT_DATA__?: LightweightData };
+
+// Search data for endpoints that need full search capability
+type SearchData = {
+  verses: VerseRecord[];
+  searchIndex: SearchIndex;
+};
+
+const searchCache = globalThis as unknown as { __PBS_SEARCH_CACHE__?: Promise<SearchData>; __PBS_SEARCH_DATA__?: SearchData };
+
+async function loadLightweightData(): Promise<LightweightData> {
+  const [frequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
+    readJson<FrequencyRow[]>('word_frequency_list.json'),
+    readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
+    readJson<Record<string, string[]>>('form_to_root_map.json'),
+    readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
+    readJson<any>('full_dictionary_enriched.json'),
+  ]);
+
+  const dictionary = buildDictionaryEntries(dictionaryRaw);
+  const dictionaryByPashto = new Map<string, DictionaryEntry>();
+  const dictionaryByRomanized = new Map<string, DictionaryEntry[]>();
+
+  for (const entry of dictionary) {
+    if (!dictionaryByPashto.has(entry.pashto)) {
+      dictionaryByPashto.set(entry.pashto, entry);
+    }
+
+    const romanKey = normaliseRomanized(entry.romanized);
+    if (!romanKey) continue;
+
+    const bucket = dictionaryByRomanized.get(romanKey) ?? [];
+    bucket.push(entry);
+    dictionaryByRomanized.set(romanKey, bucket);
+  }
+
+  const frequencyMap = new Map<string, number>();
+  for (const row of frequencies) {
+    if (!row?.pashto) continue;
+    const value = typeof row.frequency === 'number' ? row.frequency : Number.parseInt(String(row.frequency ?? 0), 10) || 0;
+    frequencyMap.set(row.pashto, value);
+  }
+
+  const inflectionsByBase = new Map<string, InflectionRow[]>();
+  for (const [base, rows] of Object.entries(inflections)) {
+    if (!Array.isArray(rows)) continue;
+    const cleaned = rows
+      .filter((row) => row && typeof row.form === 'string' && row.form.trim().length > 0)
+      .map((row) => ({
+        form: row.form.trim(),
+        romanization: row.romanization,
+        category: row.category,
+      }));
+
+    if (cleaned.length) {
+      inflectionsByBase.set(base.trim(), cleaned);
+    }
+  }
+
+  const occurrenceMap = new Map<string, OccurrenceRow>();
+  for (const [form, payload] of Object.entries(occurrences)) {
+    if (!payload) continue;
+    const count = typeof payload.count === 'number'
+      ? payload.count
+      : typeof (payload as any).frequency === 'number'
+        ? (payload as any).frequency
+        : 0;
+
+    occurrenceMap.set(form, { count, verses: Array.isArray(payload.verses) ? payload.verses : undefined });
+  }
+
+  const formsByRoot = buildFormsByRoot(formToRoot);
+
+  const unaccent = (input: string): string => input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  return {
+    dictionaryByPashto,
+    dictionaryByRomanized,
+    frequencyMap,
+    formToRoot,
+    formsByRoot,
+    occurrenceMap,
+    inflectionsByBase,
+    unaccent,
+  };
+}
+
+async function loadSearchData(): Promise<SearchData> {
+  const verses = await loadVerses();
+
+  // Create search index for faster lookups
+  const byTextLower = new Map<string, VerseRecord[]>();
+  const byTextNormalizedLower = new Map<string, VerseRecord[]>();
+
+  for (const verse of verses) {
+    // Index by original text (lowercased)
+    const words = verse.textLower.split(/\s+/);
+    for (const word of words) {
+      if (word.length > 0) {
+        const bucket = byTextLower.get(word) ?? [];
+        bucket.push(verse);
+        byTextLower.set(word, bucket);
+      }
+    }
+
+    // Index by normalized text (if available)
+    if (verse.textNormalizedLower) {
+      const normWords = verse.textNormalizedLower.split(/\s+/);
+      for (const normWord of normWords) {
+        if (normWord.length > 0) {
+          const bucket = byTextNormalizedLower.get(normWord) ?? [];
+          bucket.push(verse);
+          byTextNormalizedLower.set(normWord, bucket);
+        }
+      }
+    }
+  }
+
+  const searchIndex: SearchIndex = {
+    verses,
+    byTextLower,
+    byTextNormalizedLower,
+  };
+
+  return {
+    verses,
+    searchIndex,
+  };
+}
+
+export async function getLightweightData(): Promise<LightweightData> {
+  // Use resolved cache if available
+  if (lightweightCache.__PBS_LIGHTWEIGHT_DATA__) {
+    return lightweightCache.__PBS_LIGHTWEIGHT_DATA__;
+  }
+
+  // If loading is in progress, wait for it
+  if (lightweightCache.__PBS_LIGHTWEIGHT_CACHE__) {
+    return lightweightCache.__PBS_LIGHTWEIGHT_CACHE__;
+  }
+
+  // Start loading and cache the promise
+  const loadingPromise = loadLightweightData();
+  lightweightCache.__PBS_LIGHTWEIGHT_CACHE__ = loadingPromise;
+
+  try {
+    const data = await loadingPromise;
+    // Cache the resolved data for future requests
+    lightweightCache.__PBS_LIGHTWEIGHT_DATA__ = data;
+    // Clear the loading promise
+    lightweightCache.__PBS_LIGHTWEIGHT_CACHE__ = undefined;
+    return data;
+  } catch (error) {
+    // Clear the failed promise
+    lightweightCache.__PBS_LIGHTWEIGHT_CACHE__ = undefined;
+    throw error;
+  }
+}
+
+export async function getSearchData(): Promise<SearchData> {
+  // Use resolved cache if available
+  if (searchCache.__PBS_SEARCH_DATA__) {
+    return searchCache.__PBS_SEARCH_DATA__;
+  }
+
+  // If loading is in progress, wait for it
+  if (searchCache.__PBS_SEARCH_CACHE__) {
+    return searchCache.__PBS_SEARCH_CACHE__;
+  }
+
+  // Start loading and cache the promise
+  const loadingPromise = loadSearchData();
+  searchCache.__PBS_SEARCH_CACHE__ = loadingPromise;
+
+  try {
+    const data = await loadingPromise;
+    // Cache the resolved data for future requests
+    searchCache.__PBS_SEARCH_DATA__ = data;
+    // Clear the loading promise
+    searchCache.__PBS_SEARCH_CACHE__ = undefined;
+    return data;
+  } catch (error) {
+    // Clear the failed promise
+    searchCache.__PBS_SEARCH_CACHE__ = undefined;
+    throw error;
+  }
+}
+
 export async function getData(): Promise<DataCache> {
   // Use resolved cache if available
   if (globalForLoader.__PBS_DATA_CACHE__) {
