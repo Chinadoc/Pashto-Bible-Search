@@ -160,6 +160,21 @@ EQUATIVE_PAST = {
 }
 
 
+def get_romanization_for_forms(ps_form: str) -> str:
+    """Get romanization for a Pashto form, preferring dictionary fast index."""
+    try:
+        if _FAST_DIDX:
+            by_p = _FAST_DIDX.get('by_pashto', {})
+            if ps_form in by_p:
+                return by_p[ps_form].get('rom', '')
+            by_pn = _FAST_DIDX.get('by_pashto_norm', {})
+            if ps_form in by_pn:
+                return by_pn[ps_form].get('rom', '')
+    except Exception:
+        pass
+    return ''
+
+
 def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
     """Given a minimal verb spec, build full tables using standard endings."""
     imperfective_stem = spec['stems']['imperfective']
@@ -177,25 +192,28 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
     part_rom = rom.get('past_participle', '')
 
     def build_present(stem_ps, stem_rom):
-        return {
-            '1sg': (stem_ps + PRESENT_ENDINGS['1sg'][0], stem_rom + PRESENT_ENDINGS['1sg'][1]),
-            '1pl': (stem_ps + PRESENT_ENDINGS['1pl'][0], stem_rom + PRESENT_ENDINGS['1pl'][1]),
-            '2sg': (stem_ps + PRESENT_ENDINGS['2sg'][0], stem_rom + PRESENT_ENDINGS['2sg'][1]),
-            '2pl': (stem_ps + PRESENT_ENDINGS['2pl'][0], stem_rom + PRESENT_ENDINGS['2pl'][1]),
-            '3sg': (stem_ps + PRESENT_ENDINGS['3sg'][0], stem_rom + PRESENT_ENDINGS['3sg'][1]),
-            '3pl': (stem_ps + PRESENT_ENDINGS['3pl'][0], stem_rom + PRESENT_ENDINGS['3pl'][1]),
-        }
+        result = {}
+        for person, (ending_ps, ending_rom) in PRESENT_ENDINGS.items():
+            full_ps = stem_ps + ending_ps
+            # Try to get full form romanization first, fall back to stem + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, stem_rom + ending_rom)
+        return result
 
     def build_past(stem_ps, stem_rom):
-        return {
-            '1sg': (stem_ps + PAST_ENDINGS['1sg'][0], stem_rom + PAST_ENDINGS['1sg'][1]),
-            '1pl': (stem_ps + PAST_ENDINGS['1pl'][0], stem_rom + PAST_ENDINGS['1pl'][1]),
-            '2sg': (stem_ps + PAST_ENDINGS['2sg'][0], stem_rom + PAST_ENDINGS['2sg'][1]),
-            '2pl': (stem_ps + PAST_ENDINGS['2pl'][0], stem_rom + PAST_ENDINGS['2pl'][1]),
-            '3sg_m': (stem_ps + PAST_ENDINGS['3sg_m'][0], stem_rom + PAST_ENDINGS['3sg_m'][1]),
-            '3sg_f': (stem_ps + PAST_ENDINGS['3sg_f'][0], stem_rom + PAST_ENDINGS['3sg_f'][1]),
-            '3pl': (stem_ps + PAST_ENDINGS['3pl'][0], stem_rom + PAST_ENDINGS['3pl'][1]),
-        }
+        result = {}
+        for person, (ending_ps, ending_rom) in PAST_ENDINGS.items():
+            full_ps = stem_ps + ending_ps
+            # Try to get full form romanization first, fall back to stem + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, stem_rom + ending_rom)
+        return result
 
     present = build_present(imperfective_stem, impf_stem_rom)
     # Normalize perfective stem for split-head subjunctive where نا/نه/وا prefixes may split tokens
@@ -223,10 +241,28 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
 
     # Ability forms based on past participle + شـ auxiliary
     def build_ability_present(base_ps, base_rom):
-        return {k: (f"{base_ps} {ABILITY_PRESENT[k][0]}", f"{base_rom} {ABILITY_PRESENT[k][1]}") for k in ['1sg','2sg','3sg','1pl','2pl','3pl']}
+        result = {}
+        for person, (ending_ps, ending_rom) in ABILITY_PRESENT.items():
+            full_ps = f"{base_ps} {ending_ps}"
+            # Try to get full form romanization first, fall back to base + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, f"{base_rom} {ending_rom}")
+        return result
 
     def build_ability_past(base_ps, base_rom):
-        return {k: (f"{base_ps} {ABILITY_PAST[k][0]}", f"{base_rom} {ABILITY_PAST[k][1]}") for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']}
+        result = {}
+        for person, (ending_ps, ending_rom) in ABILITY_PAST.items():
+            full_ps = f"{base_ps} {ending_ps}"
+            # Try to get full form romanization first, fall back to base + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, f"{base_rom} {ending_rom}")
+        return result
 
     ability_present = build_ability_present(past_participle, part_rom)
     ability_subjunctive = build_ability_present(('و' + past_participle) if not past_participle.startswith('و') else past_participle, part_rom)
@@ -238,48 +274,40 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
     # Generate perfect forms (past participle + equative endings)
     def build_perfect(base_ps, base_rom):
         result = {}
-        for k in ['1sg','2sg','1pl','2pl','3pl']:
-            if k in EQUATIVE_PRESENT:
-                result[k] = (f"{base_ps} {EQUATIVE_PRESENT[k][0]}", f"{base_rom} {EQUATIVE_PRESENT[k][1]}")
-        # Add 3rd person forms
-        result['3sg_m'] = (f"{base_ps} {EQUATIVE_PRESENT['3sg_m'][0]}", f"{base_rom} {EQUATIVE_PRESENT['3sg_m'][1]}")
-        result['3sg_f'] = (f"{base_ps} {EQUATIVE_PRESENT['3sg_f'][0]}", f"{base_rom} {EQUATIVE_PRESENT['3sg_f'][1]}")
+        for person, (ending_ps, ending_rom) in EQUATIVE_PRESENT.items():
+            full_ps = f"{base_ps} {ending_ps}"
+            # Try to get full form romanization first, fall back to base + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, f"{base_rom} {ending_rom}")
         return result
 
     perfect_present = build_perfect(past_participle, part_rom)
 
     def build_perfect_past(base_ps, base_rom):
-        return {k: (f"{base_ps} {EQUATIVE_PAST[k][0]}", f"{base_rom} {EQUATIVE_PAST[k][1]}") for k in ['1sg','2sg','3sg_m','3sg_f','1pl','2pl','3pl']}
+        result = {}
+        for person, (ending_ps, ending_rom) in EQUATIVE_PAST.items():
+            full_ps = f"{base_ps} {ending_ps}"
+            # Try to get full form romanization first, fall back to base + ending
+            full_rom = get_romanization_for_forms(full_ps)
+            if full_rom:
+                result[person] = (full_ps, full_rom)
+            else:
+                result[person] = (full_ps, f"{base_rom} {ending_rom}")
+        return result
 
     perfect_past = build_perfect_past(past_participle, part_rom)  # Past perfect
     perfect_subjunctive = build_perfect(past_participle, part_rom)  # Same as present perfect for subjunctive
     perfect_future = {k: (f"... به ... {ps}", f"... ba ... {rom}") for k, (ps, rom) in perfect_present.items()}  # Future perfect
     perfect_habitual = perfect_future  # Habitual perfect same as future perfect
 
-    def get_romanization(ps_form):
-        """Get romanization for a Pashto form, preferring dictionary fast index."""
-        try:
-            if _FAST_DIDX:
-                by_p = _FAST_DIDX.get('by_pashto', {})
-                if ps_form in by_p:
-                    rom = by_p[ps_form].get('rom', '')
-                    print(f"DEBUG: Found {ps_form} in by_pashto: '{rom}' (len={len(rom)}) -> returning")
-                    return rom
-                by_pn = _FAST_DIDX.get('by_pashto_norm', {})
-                if ps_form in by_pn:
-                    rom = by_pn[ps_form].get('rom', '')
-                    print(f"DEBUG: Found {ps_form} in by_pashto_norm: '{rom}' (len={len(rom)}) -> returning")
-                    return rom
-        except Exception as e:
-            print(f"DEBUG: Exception in get_romanization for {ps_form}: {e}")
-            pass
-        print(f"DEBUG: No romanization found for {ps_form} -> returning empty")
-        return ''
 
     forms_map = {
-        imperfective_root: impf_root_rom or get_romanization(imperfective_root),
-        perfective_root: perf_root_rom or get_romanization(perfective_root),
-        past_participle: part_rom or get_romanization(past_participle),
+        imperfective_root: impf_root_rom or get_romanization_for_forms(imperfective_root),
+        perfective_root: perf_root_rom or get_romanization_for_forms(perfective_root),
+        past_participle: part_rom or get_romanization_for_forms(past_participle),
     }
     for d in (present, subjunctive, cont_past, simple_past, imperfective_imperative, perfective_imperative,
               impf_future, perf_future, habitual_cont_past, habitual_simple_past,
@@ -288,7 +316,7 @@ def _build_tables_from_spec(root: str, spec: Dict[str, Any]) -> Dict[str, Any]:
               perfect_present, perfect_past, perfect_subjunctive, perfect_future, perfect_habitual):
         for person, (ps, rom_val) in d.items():
             # Use provided romanization or look it up from dictionary fast index
-            looked_up_rom = get_romanization(ps)
+            looked_up_rom = get_romanization_for_forms(ps)
             final_rom = rom_val or looked_up_rom
             print(f"DEBUG: {ps}: rom_val='{rom_val}', looked_up='{looked_up_rom}', final='{final_rom}' (len={len(final_rom) if final_rom else 0})")
             forms_map[ps] = final_rom

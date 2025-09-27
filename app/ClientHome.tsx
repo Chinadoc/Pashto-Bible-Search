@@ -641,7 +641,7 @@ export default function ClientHome() {
                       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
                         Related Forms
                       </h3>
-                      {includeRelated && relatedForms && typeof relatedForms.total === 'number' && relatedForms.total > 0 ? (
+                      {relatedForms && relatedForms.total && relatedForms.total > 0 ? (
                         <RelatedForms
                           relatedForms={relatedForms}
                           onPick={handlePickForm}

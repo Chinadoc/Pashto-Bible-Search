@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
-import { getData, hybridSearch } from '@/app/lib/data/load';
+import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
 
     // Generate variants locally if requested
     if (includeRelated) {
-      const { frequencyMap, dictionaryByPashto } = await getData();
+      const { frequencyMap, dictionaryByPashto } = await getLightweightData();
       const relatedStarted = Date.now();
 
       // POS guess from dictionary
@@ -328,6 +328,9 @@ export async function POST(request: NextRequest) {
         forms: groups,
         total: variantForms.length,
         variantDetails,
+        verbs: groups.verbs?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
+        nouns: groups.nouns?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
+        other: groups.other?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
         ms: Date.now() - relatedStarted,
       };
 
