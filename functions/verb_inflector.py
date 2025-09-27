@@ -439,6 +439,24 @@ def _infer_regular_spec(root: str) -> Optional[Dict[str, Any]]:
                     'past_participle': past_part,
                     'romanization': {},
                 }
+
+        # Pattern: verbs ending in "هل" (specific pattern for promise/vow verbs like واهل)
+        if r.endswith('هل') and len(r) > 2 and not r.endswith('وهل'):
+            comp = r[:-2].strip()  # Remove 'هل'
+            if comp:
+                # For واهل (wahul = to promise/vow), keep the original pattern for now
+                # This ensures consistency with default behavior while allowing for future refinement
+                impf_stem = comp + 'ه'  # Keep the ه
+                perf_stem = comp + 'ه'  # Same for perfective
+                impf_root = r
+                perf_root = r
+                past_part = comp + 'هلی'
+                return {
+                    'stems': {'imperfective': impf_stem, 'perfective': perf_stem},
+                    'roots': {'imperfective': impf_root, 'perfective': perf_root},
+                    'past_participle': past_part,
+                    'romanization': {},
+                }
     except Exception:
         # fall through to other patterns
         pass

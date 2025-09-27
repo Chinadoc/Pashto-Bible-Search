@@ -421,6 +421,14 @@ export async function POST(request: NextRequest) {
       romanization,
     };
 
+    console.log('DEBUG: Returning search results:', {
+      resultsCount: transformed.length,
+      hasRelatedForms: !!relatedForms,
+      relatedFormsTotal: relatedForms?.total || 0,
+      searchType: processed?.searchType || 'unknown',
+      query: trimmedQuery,
+    });
+
     return NextResponse.json({
       results: transformed,
       relatedForms,
