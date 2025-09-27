@@ -228,6 +228,7 @@ export async function POST(request: NextRequest) {
 
     // Generate variants first if needed for enhanced search
     if (includeRelated) {
+      console.log('DEBUG: Generating related forms for:', normalized);
       try {
         const { frequencyMap, dictionaryByPashto } = await getLightweightData();
         const relatedStarted = Date.now();
@@ -274,6 +275,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        console.log('DEBUG: Generated variant forms:', variantForms.length, 'forms');
+
         // Build variant details
         const variantDetails = {
           root: normalized,
@@ -291,6 +294,13 @@ export async function POST(request: NextRequest) {
           other: groups.other?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
           ms: Date.now() - relatedStarted,
         };
+
+        console.log('DEBUG: Related forms generated:', {
+          total: relatedForms.total,
+          verbsCount: relatedForms.verbs.length,
+          nounsCount: relatedForms.nouns.length,
+          otherCount: relatedForms.other.length
+        });
       } catch (error) {
         console.warn('Related forms generation failed:', error);
         relatedForms = null;

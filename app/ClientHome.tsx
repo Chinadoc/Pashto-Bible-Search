@@ -463,7 +463,8 @@ export default function ClientHome() {
       console.log('DEBUG: Search API returned:', {
         resultsCount: searchData.results?.length || 0,
         relatedFormsCount: searchData.relatedForms?.total || 0,
-        processedVariants: searchData.processed?.variants?.length || 0
+        processedVariants: searchData.processed?.variants?.length || 0,
+        relatedFormsData: searchData.relatedForms
       });
 
       setResults(searchData.results || []);
@@ -499,9 +500,9 @@ export default function ClientHome() {
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
     if (results.length > 0) return 'search'; // Search results
-    if (relatedForms && relatedForms.total && relatedForms.total > 0) return 'analysis'; // Analysis
+    if (includeRelated) return 'analysis'; // Show analysis tab when related forms is enabled
     return 'search';
-  }, [results.length, relatedForms]);
+  }, [results.length, includeRelated]);
 
   return (
     <div className="w-full max-w-6xl mx-auto">
