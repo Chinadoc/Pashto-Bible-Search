@@ -95,3 +95,23 @@ audio/
 
 # Split audio directory
 yousafzai_split_audio/
+
+# Large directories that shouldn't be in git
+Pashto-Bible-Search/
+_pages_tmp/
+pashto-bible-mvp/
+pashto-bible-react/
+Pashto new testament with audio/
+
+# Large cache/generated directories
+cache/
+node_modules/
+.next/
+.vercel/
+
+# Large data files
+*.json.gz
+*index*.json
+*cache*.json
+*forms*.json
+*verses*.json
