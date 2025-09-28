@@ -151,7 +151,7 @@ SELECT
   pf.ot_occurrences,
   pf.nt_occurrences,
   pf.phrase_type,
-  pf.category
+  pf.phrase_type as category
 FROM phrase_forms pf;
 
 -- 6. COMPREHENSIVE SEARCH FUNCTIONS
@@ -170,7 +170,7 @@ RETURNS TABLE (
   is_phrase boolean,
   morphology jsonb
 ) AS $$
-SELECT
+(SELECT
   wfm.form_pashto,
   wfm.form_romanized,
   wfm.total_frequency,
@@ -185,11 +185,11 @@ WHERE wfm.search_vector @@ plainto_tsquery('simple', query)
 ORDER BY
   wfm.total_frequency DESC,
   wfs.total_occurrences DESC
-LIMIT limit_count
+LIMIT limit_count)
 
 UNION ALL
 
-SELECT
+(SELECT
   pf.phrase_pashto,
   pf.phrase_romanized,
   pf.total_occurrences as total_frequency,
@@ -203,7 +203,7 @@ JOIN phrase_form_stats pfs ON pfs.id = pf.id
 WHERE include_phrases = true
   AND pf.search_vector @@ plainto_tsquery('simple', query)
 ORDER BY pfs.total_occurrences DESC
-LIMIT limit_count;
+LIMIT limit_count);
 $$ LANGUAGE sql;
 
 -- 7. FUZZY SEARCH WITH MORPHOLOGICAL AWARENESS
@@ -221,7 +221,7 @@ RETURNS TABLE (
   pos text,
   is_phrase boolean
 ) AS $$
-SELECT
+(SELECT
   wfm.form_pashto,
   wfm.form_romanized,
   similarity(wfm.form_pashto, query) as similarity_score,
@@ -235,11 +235,11 @@ WHERE similarity(wfm.form_pashto, query) > 0.1
    OR (include_roman = true AND wfm.form_romanized IS NOT NULL
        AND similarity(wfm.form_romanized, query) > 0.1)
 ORDER BY similarity_score DESC, wfm.total_frequency DESC
-LIMIT limit_count
+LIMIT limit_count)
 
 UNION ALL
 
-SELECT
+(SELECT
   pf.phrase_pashto,
   pf.phrase_romanized,
   similarity(pf.phrase_pashto, query) as similarity_score,
@@ -251,7 +251,7 @@ FROM phrase_forms pf
 JOIN phrase_form_stats pfs ON pfs.id = pf.id
 WHERE similarity(pf.phrase_pashto, query) > 0.1
 ORDER BY similarity_score DESC, pfs.total_occurrences DESC
-LIMIT limit_count;
+LIMIT limit_count);
 $$ LANGUAGE sql;
 
 -- 8. MORPHOLOGICAL SEARCH
@@ -405,16 +405,14 @@ RETURNS TABLE (
   form_romanized text,
   total_frequency integer,
   total_occurrences integer,
-  pos text,
-  english_translation text
+  pos text
 ) AS $$
 SELECT
   wfm.form_pashto,
   wfm.form_romanized,
   wfm.total_frequency,
   wfs.total_occurrences,
-  wfm.pos,
-  wfm.english_translation
+  wfm.pos
 FROM word_forms_master wfm
 JOIN word_form_stats wfs ON wfs.id = wfm.id
 WHERE wfm.pos = pos_filter
