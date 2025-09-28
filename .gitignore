@@ -115,3 +115,29 @@ node_modules/
 *cache*.json
 *forms*.json
 *verses*.json
+
+# Large directories (already in Supabase)
+_pages_tmp/
+cache/
+node_modules/
+.next/
+.vercel/
+Pashto-Bible-Search/
+pashto-bible-mvp/
+pashto-bible-react/
+Pashto new testament with audio/
+yousafzai_split_audio/
+audio/
+
+# Large individual files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+# Generated frequency files
+*frequencies*.json
+*consolidated*.json
+*enhanced*.json
