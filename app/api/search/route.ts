@@ -5,6 +5,7 @@ import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 import { refToFilename, audioUrlFromRef } from '@/utils/audio';
+import { searchVersesEnhanced, searchVersesFast, getSearchSuggestions } from '@/utils/supabase';
 
 export const runtime = 'nodejs';
 
@@ -133,6 +134,59 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedQuery = query.trim();
+
+    // Try enhanced search first (if SQL functions are available)
+    console.log('🔍 Attempting enhanced search for:', trimmedQuery);
+    try {
+      const enhancedResults = await searchVersesEnhanced(trimmedQuery, scope, 'auto');
+      if (enhancedResults && enhancedResults.length > 0) {
+        console.log('✅ Enhanced search successful, found', enhancedResults.length, 'results');
+
+        // Transform results to match expected format
+        const transformed = enhancedResults.map((result, index) => ({
+          ref: result.ref,
+          text: result.text,
+          testament: result.testament || 'NT',
+          translation: null, // Will be filled by audio mapping
+          dialect: null,
+          tags: [],
+          audio_verse_url: audioMap[result.ref] || null,
+          id: index + 1,
+        }));
+
+        // Get related forms if needed
+        let relatedForms = null;
+        if (includeRelated) {
+          try {
+            const suggestions = await getSearchSuggestions(trimmedQuery, 10, true);
+            if (suggestions && suggestions.length > 0) {
+              relatedForms = {
+                total: suggestions.length,
+                forms: suggestions.slice(0, 20) // Limit to prevent large responses
+              };
+            }
+          } catch (error) {
+            console.warn('Failed to get related forms:', error);
+          }
+        }
+
+        return NextResponse.json({
+          results: transformed,
+          relatedForms,
+          processed: {
+            original: trimmedQuery,
+            normalized: trimmedQuery,
+            variants: [trimmedQuery],
+            searchType: 'enhanced',
+            pos: 'unknown',
+          },
+          count: transformed.length,
+          ms: Date.now() - startedAt,
+        });
+      }
+    } catch (error) {
+      console.warn('Enhanced search failed, falling back to legacy search:', error);
+    }
 
     // Handle variant OR searches explicitly
     if (Array.isArray(variants) && variants.length > 0) {
