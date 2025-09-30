@@ -98,6 +98,19 @@ export async function generateVerbVariants(
   const includeCompound = !!opts?.includeCompound;
   const base = rootOrInfinitive.trim();
 
+  // Try enhanced LingDocs-compatible generation first
+  try {
+    const { generateEnhancedVerbVariants } = await import('./lingdocs_adapter');
+    const enhanced = await generateEnhancedVerbVariants(base, opts);
+    if (enhanced && enhanced.length > 0) {
+      console.log(`✅ Enhanced generation for "${base}": ${enhanced.length} forms`);
+      return enhanced;
+    }
+  } catch (error) {
+    console.warn('Enhanced generation failed, using legacy:', error);
+  }
+
+  // Fallback to original implementation
   // Initialize maps if needed
   await initializeMaps();
 
