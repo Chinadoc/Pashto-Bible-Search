@@ -122,3 +122,94 @@ export const calculateCoverage = (results: Array<{ ref: string }>) => {
     .map(([book, count]) => ({ book, count }))
     .sort((a, b) => b.count - a.count);
 };
+
+// Enhanced search using intelligent multi-strategy approach with fallback
+export const searchVersesEnhanced = async (
+  query: string,
+  scope: 'all' | 'nt' | 'ot' = 'all',
+  strategy: 'auto' | 'trigram' | 'fulltext' | 'hybrid' = 'auto'
+) => {
+  try {
+    const { data, error } = await supabase.rpc('search_verses_intelligent', {
+      search_term: query,
+      testament_filter: scope === 'all' ? null : scope.toUpperCase(),
+      max_results: 100,
+      search_strategy: strategy
+    });
+
+    if (error) {
+      console.error('Enhanced search error, falling back to ILIKE:', error);
+      return searchVerses(query, scope);
+    }
+
+    if (!data || !Array.isArray(data)) {
+      console.warn('Enhanced search returned invalid data, falling back');
+      return searchVerses(query, scope);
+    }
+
+    return data.map((v: any) => ({
+      ref: `${v.book} ${v.chapter}:${v.verse}`,
+      text: v.text,
+      testament: v.testament || 'NT',
+      relevance: v.relevance_score,
+      method: v.search_method
+    }));
+  } catch (err) {
+    console.error('Enhanced search exception, falling back:', err);
+    return searchVerses(query, scope);
+  }
+};
+
+// Fast search using trigram similarity
+export const searchVersesFast = async (
+  query: string,
+  scope: 'all' | 'nt' | 'ot' = 'all'
+) => {
+  try {
+    const { data, error } = await supabase.rpc('search_verses_enhanced_fast', {
+      search_term: query,
+      testament_filter: scope === 'all' ? null : scope.toUpperCase(),
+      max_results: 100
+    });
+
+    if (error) {
+      console.error('Fast search error, falling back:', error);
+      return searchVerses(query, scope);
+    }
+
+    return data.map((v: any) => ({
+      ref: `${v.book} ${v.chapter}:${v.verse}`,
+      text: v.text,
+      testament: v.testament || 'NT',
+      relevance: v.relevance_score
+    }));
+  } catch (err) {
+    console.error('Fast search exception:', err);
+    return searchVerses(query, scope);
+  }
+};
+
+// Get search suggestions for autocomplete
+export const getSearchSuggestions = async (
+  partialTerm: string,
+  maxSuggestions: number = 10,
+  includeVerses: boolean = false
+) => {
+  try {
+    const { data, error } = await supabase.rpc('get_search_suggestions_enhanced', {
+      partial_term: partialTerm,
+      max_suggestions: maxSuggestions,
+      include_verses: includeVerses
+    });
+
+    if (error) {
+      console.error('Suggestions error:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('Suggestions exception:', err);
+    return [];
+  }
+};
