@@ -63,11 +63,9 @@ async function initializeMaps() {
     freqMap = frequencyMap;
   }
   if (!inflectMap) {
-    const { verses } = await getData();
-    // Build inflections map from verses data
-    inflectMap = new Map<string, InflectionRow[]>();
-    // For now, we'll use a simple approach - you may need to adjust this
-    // based on your actual inflections data structure
+    // Load the actual inflections data that was pre-computed!
+    const { inflectionsByBase } = await getData();
+    inflectMap = inflectionsByBase;
   }
   if (!dictionaryData) {
     const { dictionary } = await getData();
