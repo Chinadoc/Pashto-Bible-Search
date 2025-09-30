@@ -1,0 +1,97 @@
+import { semigroupInflectionSet } from "./fp-ps";
+import { concatAll as concatAllSemigroup, } from "fp-ts/lib/Semigroup";
+export function joinInflectorOutputs(outs) {
+    const [a, b] = outs;
+    if (a === undefined || b === undefined) {
+        throw new Error("bad input for joining inflector outputs");
+    }
+    if (a.inflected && b.inflected) {
+        const inflections = joinInflections(a.inflected.inflections, b.inflected.inflections);
+        // NOT GOING TO TRY TO JOIN ALL THE PLURALS AND VOCATIVE CAUSE IT GETS
+        // TOO COMPLICATED - STARTS TO BECOME ALMOST LIKE A PHRASE BUILDER
+        // const plural = joinPlural(
+        //   "plural" in a.inflected ? a.inflected.plural : undefined,
+        //   "plural" in b.inflected ? b.inflected.plural : undefined,
+        //   false
+        // );
+        // const arabicPlural = joinPlural(
+        //   "arabicPlural" in a.inflected ? a.inflected.arabicPlural : undefined,
+        //   "arabicPlural" in b.inflected ? b.inflected.arabicPlural : undefined,
+        //   false
+        // );
+        // const bundledPlural = joinPlural(
+        //   "bundledPlural" in a.inflected ? a.inflected.bundledPlural : undefined,
+        //   "bundledPlural" in b.inflected ? b.inflected.bundledPlural : undefined,
+        //   true
+        // );
+        // const vocative = joinPlural(
+        //   "vocative" in a.inflected ? a.inflected.vocative : undefined,
+        //   "vocative" in b.inflected ? b.inflected.vocative : undefined,
+        //   true
+        // );
+        // if (a.orig.p === "وچ") {
+        //   console.log(JSON.stringify(a.inflected.vocative), null, "  ");
+        // }
+        return {
+            inflections,
+            plural: undefined,
+            arabicPlural: undefined,
+            bundledPlural: undefined,
+            vocative: undefined,
+        };
+    }
+    // TODO!!
+    return a.inflected;
+}
+function joinInflections(a, b) {
+    if (!a && !b) {
+        return undefined;
+    }
+    if (a && b) {
+        return concatGenderSet(joinFromSemigroup(semigroupInflectionSet))(a, b);
+    }
+    return undefined;
+}
+// function joinPlural(
+//   a: T.PluralInflections | undefined,
+//   b: T.PluralInflections | undefined,
+//   canJoin: boolean
+// ): T.PluralInflections | undefined {
+//   if (!a && !b) {
+//     return undefined;
+//   }
+//   if (a && b && canJoin) {
+//     return concatGenderSet(joinFromSemigroup(semigroupPluralInflectionSet))(
+//       a,
+//       b
+//     );
+//   }
+//   return undefined;
+// }
+function concatGenderSet(cf) {
+    return function (a, b) {
+        if ("masc" in a && "masc" in b && "fem" in a && "fem" in b) {
+            return {
+                masc: cf(a.masc, b.masc),
+                fem: cf(a.fem, b.fem),
+            };
+        }
+        if ("masc" in a && "masc" in b) {
+            return {
+                masc: cf(a.masc, b.masc),
+            };
+        }
+        if ("fem" in a && "fem" in b) {
+            return {
+                fem: cf(a.fem, b.fem),
+            };
+        }
+        // TODO !!
+        return a;
+    };
+}
+function joinFromSemigroup(semi) {
+    return function (a, b) {
+        return concatAllSemigroup(semi)(a)([b]);
+    };
+}
