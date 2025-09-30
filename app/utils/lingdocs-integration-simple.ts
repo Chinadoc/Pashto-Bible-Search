@@ -1,8 +1,7 @@
 // Simple LingDocs integration that works around build issues
-// Uses copied source files directly
+// Uses runtime approach with simplified implementation
 
-import { conjugateVerb } from './lingdocs/verb-conjugation';
-import { inflectWord } from './lingdocs/pashto-inflector';
+import { lingdocsRuntime } from './lingdocs-runtime.js';
 
 export interface LingDocsResult {
     success: boolean;
@@ -11,12 +10,12 @@ export interface LingDocsResult {
 }
 
 // Simple wrapper for verb conjugation using LingDocs
-export async function conjugateVerbLingDocs(verb: string): Promise<LingDocsResult> {
+export function conjugateVerbLingDocs(verb: string): LingDocsResult {
     try {
         console.log(`🔍 LingDocs conjugating: ${verb}`);
 
-        // This will use the copied LingDocs source files
-        const result = conjugateVerb(verb);
+        // Use the runtime implementation
+        const result = lingdocsRuntime.conjugateVerb(verb);
 
         if (result && result.forms_map) {
             const forms = Object.keys(result.forms_map);
@@ -41,19 +40,18 @@ export async function conjugateVerbLingDocs(verb: string): Promise<LingDocsResul
 }
 
 // Simple wrapper for word inflection using LingDocs
-export async function inflectWordLingDocs(word: string): Promise<LingDocsResult> {
+export function inflectWordLingDocs(word: string): LingDocsResult {
     try {
         console.log(`🔍 LingDocs inflecting: ${word}`);
 
-        // This will use the copied LingDocs source files
-        const result = inflectWord(word);
+        // Use the runtime implementation
+        const result = lingdocsRuntime.inflectWord(word);
 
-        if (result) {
-            const forms = Array.isArray(result) ? result : [result];
-            console.log(`✅ LingDocs generated ${forms.length} inflections for ${word}`);
+        if (result && result.length > 0) {
+            console.log(`✅ LingDocs generated ${result.length} inflections for ${word}`);
             return {
                 success: true,
-                forms: forms
+                forms: result
             };
         } else {
             return {
@@ -71,13 +69,13 @@ export async function inflectWordLingDocs(word: string): Promise<LingDocsResult>
 }
 
 // Test function to verify LingDocs integration
-export async function testLingDocsIntegration(): Promise<boolean> {
+export function testLingDocsIntegration(): boolean {
     console.log('🧪 Testing LingDocs integration...');
 
     const testVerbs = ['کول', 'وهل', 'ليدل'];
 
     for (const verb of testVerbs) {
-        const result = await conjugateVerbLingDocs(verb);
+        const result = conjugateVerbLingDocs(verb);
         if (result.success) {
             console.log(`✅ ${verb}: ${result.forms?.length || 0} forms`);
         } else {

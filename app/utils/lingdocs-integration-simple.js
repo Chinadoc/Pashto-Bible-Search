@@ -1,13 +1,17 @@
+"use strict";
 // Simple LingDocs integration that works around build issues
-// Uses copied source files directly
-import { conjugateVerb } from './lingdocs/verb-conjugation';
-import { inflectWord } from './lingdocs/pashto-inflector';
+// Uses runtime approach with simplified implementation
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.conjugateVerbLingDocs = conjugateVerbLingDocs;
+exports.inflectWordLingDocs = inflectWordLingDocs;
+exports.testLingDocsIntegration = testLingDocsIntegration;
+const lingdocs_runtime_js_1 = require("./lingdocs-runtime.js");
 // Simple wrapper for verb conjugation using LingDocs
-export async function conjugateVerbLingDocs(verb) {
+function conjugateVerbLingDocs(verb) {
     try {
         console.log(`🔍 LingDocs conjugating: ${verb}`);
-        // This will use the copied LingDocs source files
-        const result = conjugateVerb(verb);
+        // Use the runtime implementation
+        const result = lingdocs_runtime_js_1.lingdocsRuntime.conjugateVerb(verb);
         if (result && result.forms_map) {
             const forms = Object.keys(result.forms_map);
             console.log(`✅ LingDocs generated ${forms.length} forms for ${verb}`);
@@ -32,17 +36,16 @@ export async function conjugateVerbLingDocs(verb) {
     }
 }
 // Simple wrapper for word inflection using LingDocs
-export async function inflectWordLingDocs(word) {
+function inflectWordLingDocs(word) {
     try {
         console.log(`🔍 LingDocs inflecting: ${word}`);
-        // This will use the copied LingDocs source files
-        const result = inflectWord(word);
-        if (result) {
-            const forms = Array.isArray(result) ? result : [result];
-            console.log(`✅ LingDocs generated ${forms.length} inflections for ${word}`);
+        // Use the runtime implementation
+        const result = lingdocs_runtime_js_1.lingdocsRuntime.inflectWord(word);
+        if (result && result.length > 0) {
+            console.log(`✅ LingDocs generated ${result.length} inflections for ${word}`);
             return {
                 success: true,
-                forms: forms
+                forms: result
             };
         }
         else {
@@ -61,11 +64,11 @@ export async function inflectWordLingDocs(word) {
     }
 }
 // Test function to verify LingDocs integration
-export async function testLingDocsIntegration() {
+function testLingDocsIntegration() {
     console.log('🧪 Testing LingDocs integration...');
     const testVerbs = ['کول', 'وهل', 'ليدل'];
     for (const verb of testVerbs) {
-        const result = await conjugateVerbLingDocs(verb);
+        const result = conjugateVerbLingDocs(verb);
         if (result.success) {
             console.log(`✅ ${verb}: ${result.forms?.length || 0} forms`);
         }
