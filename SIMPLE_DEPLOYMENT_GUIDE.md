@@ -119,3 +119,4 @@ git push origin enhanced-search-lightweight --force-with-lease
 ```
 
 But for now, **direct Supabase deployment is fastest**! 🚀
+

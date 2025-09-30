@@ -88,21 +88,27 @@ export async function POST(req: NextRequest) {
       else posGuess = "other";
     }
 
-    // Generate variants based on POS
+    // Generate variants based on POS (using enhanced LingDocs adapter)
     const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
+
+    console.log(`🔍 Generating variants for "${normalized}" (POS: ${posGuess})`);
 
     if (posGuess === "noun") {
       groups.nouns = await generateNounVariants(normalized, { cap: 30 });
+      console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
     } else if (posGuess === "verb") {
-      groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 30, includeCompound: true });
+      // Use enhanced generation with higher cap for verbs
+      groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 60, includeCompound: true });
+      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms`);
     } else {
       // Try both for ambiguous terms
       const [nouns, verbs] = await Promise.all([
         generateNounVariants(normalized, { cap: 20 }),
-        generateVerbVariantsUtil(normalized, { cap: 20, includeCompound: true }),
+        generateVerbVariantsUtil(normalized, { cap: 40, includeCompound: true }),
       ]);
       if (nouns.length) groups.nouns = nouns;
       if (verbs.length) groups.verbs = verbs;
+      console.log(`✅ Generated ${nouns.length} nouns, ${verbs.length} verbs`);
     }
 
     // Build forms array and enrich with frequency data

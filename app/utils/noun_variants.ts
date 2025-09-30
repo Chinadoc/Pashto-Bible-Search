@@ -80,6 +80,19 @@ export async function generateNounVariants(
   const cap = Math.max(1, Math.min(opts?.cap ?? 30, 50)); // sensible upper bound
   const base = rootOrLemma.trim();
 
+  // Try enhanced LingDocs-compatible generation first
+  try {
+    const { generateEnhancedNounVariants } = await import('./lingdocs_adapter');
+    const enhanced = await generateEnhancedNounVariants(base, opts);
+    if (enhanced && enhanced.length > 0) {
+      console.log(`✅ Enhanced noun generation for "${base}": ${enhanced.length} forms`);
+      return enhanced;
+    }
+  } catch (error) {
+    console.warn('Enhanced noun generation failed, using legacy:', error);
+  }
+
+  // Fallback to original implementation
   // Initialize maps if needed
   await initializeMaps();
 
