@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
@@ -130,26 +130,22 @@ function VerseItem({
 
   const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
 
-  // Resolve audio URLs
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const entry = audioMap[verse.ref];
-      const url = await resolveAudioUrl(verse.ref, entry);
-      if (!cancelled) {
-        setAudioUrl(url);
-        if (url) {
-          console.log('Resolved audio for:', verse.ref);
-          if (url.includes('drive.google.com')) {
-            console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
-          } else if (url.includes('supabase.co/storage')) {
-            console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
-          }
-        }
+  // Resolve audio URLs lazily - only when user interacts with audio controls
+  // This prevents making 1000+ API calls on page load!
+  const loadAudioUrl = useCallback(async () => {
+    if (audioUrl) return; // Already loaded
+    const entry = audioMap[verse.ref];
+    const url = await resolveAudioUrl(verse.ref, entry);
+    if (url) {
+      setAudioUrl(url);
+      console.log('Resolved audio for:', verse.ref);
+      if (url.includes('drive.google.com')) {
+        console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
+      } else if (url.includes('supabase.co/storage')) {
+        console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
       }
-    })();
-    return () => { cancelled = true; };
-  }, [verse.ref]); // Remove audioMap dependency to prevent excessive re-runs
+    }
+  }, [audioUrl, verse.ref, audioMap]);
 
   // Debug: Check if conditions for UI are met
   React.useEffect(() => {
@@ -157,7 +153,10 @@ function VerseItem({
   }, [verse.ref, audioUrl]);
 
   const handleDownload = async () => {
-    if (!audioUrl || !verse.ref) return;
+    if (!verse.ref) return;
+    // Load audio URL if not already loaded
+    if (!audioUrl) await loadAudioUrl();
+    if (!audioUrl) return; // Still no URL after loading
     setDownloadingMap((prev) => ({ ...prev, [verse.ref]: true }));
     try {
       const response = await fetch(audioUrl);
@@ -184,7 +183,11 @@ function VerseItem({
     }
   };
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
+    // Load audio URL if not already loaded
+    if (!audioUrl) await loadAudioUrl();
+    if (!audioUrl) return; // No URL available
+    
     const el = audioRefs.current.get(verse.ref);
     if (!el) return;
 
@@ -288,8 +291,18 @@ function VerseItem({
 
       {/* Verse number chip removed as requested */}
 
-      {/* Compact audio player */}
-      {audioUrl && (
+      {/* Compact audio player - show load button if not loaded yet */}
+      {!audioUrl ? (
+        <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+          <button
+            className="px-3 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={loadAudioUrl}
+            title="Load audio for this verse"
+          >
+            🔊 Load Audio
+          </button>
+        </div>
+      ) : (
         <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
           <div className="flex items-center gap-1">
             {/* Play/Pause */}

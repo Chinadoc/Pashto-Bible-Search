@@ -519,11 +519,13 @@ export default function ClientHome() {
 
   // Trigger new search when Related Forms Mode is toggled
   useEffect(() => {
-    if (query.trim() && (results.length > 0 || includeRelated)) {
+    if (query.trim() && includeRelated) {
       console.log('DEBUG: Related Forms Mode changed, triggering new search');
       handleSearch();
     }
-  }, [includeRelated, query, results.length]);
+    // NOTE: Intentionally NOT including results.length to prevent infinite loop!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeRelated]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
