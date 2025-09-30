@@ -158,15 +158,81 @@ export async function POST(request: NextRequest) {
         let relatedForms = null;
         if (includeRelated) {
           try {
-            const suggestions = await getSearchSuggestions(trimmedQuery, 10, true);
-            if (suggestions && suggestions.length > 0) {
+            // Try to determine if it's a verb or noun and generate appropriate forms
+            const { dictionary } = await getData();
+            const dictEntry = dictionary.find((entry: any) => 
+              entry.pashto === trimmedQuery || entry.romanized?.toLowerCase() === trimmedQuery.toLowerCase()
+            );
+            
+            let allVariants: any[] = [];
+            
+            // Generate verb variants (transitive verbs are most common)
+            const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
+            if (verbVariants.length > 0) {
+              allVariants.push(...verbVariants);
+            }
+            
+            // Also try noun variants
+            const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+            if (nounVariants.length > 0) {
+              allVariants.push(...nounVariants);
+            }
+            
+            // De-duplicate based on form
+            const uniqueForms = new Map();
+            allVariants.forEach(v => {
+              if (!uniqueForms.has(v.form)) {
+                uniqueForms.set(v.form, v);
+              }
+            });
+            
+            const forms = Array.from(uniqueForms.values());
+            
+            if (forms.length > 0) {
+              // Separate verbs and nouns for the component
+              const verbs = forms.filter((f: any) => f.pos === 'verb');
+              const nouns = forms.filter((f: any) => f.pos === 'noun');
+              const other = forms.filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
+              
+              // Create structured variantDetails format
+              const variantDetails = [];
+              
+              if (verbs.length > 0) {
+                variantDetails.push({
+                  type: 'verb',
+                  count: verbs.length,
+                  groups: [{
+                    key: 'verb-conjugations',
+                    label: 'Verb Conjugations',
+                    items: verbs
+                  }]
+                });
+              }
+              
+              if (nouns.length > 0) {
+                variantDetails.push({
+                  type: 'noun',
+                  count: nouns.length,
+                  groups: [{
+                    key: 'noun-inflections',
+                    label: 'Noun Inflections',
+                    items: nouns
+                  }]
+                });
+              }
+              
               relatedForms = {
-                total: suggestions.length,
-                forms: suggestions.slice(0, 20) // Limit to prevent large responses
+                root: trimmedQuery,
+                total: forms.length,
+                verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+                nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+                other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+                variantDetails,
+                posGuess: dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
               };
             }
           } catch (error) {
-            console.warn('Failed to get related forms:', error);
+            console.warn('Failed to generate related forms:', error);
           }
         }
 
