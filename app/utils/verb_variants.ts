@@ -52,6 +52,10 @@ function labelFromInfo(info?: string): string {
 // Import data from the global data cache
 import { getData } from '../lib/data/load';
 
+// Import LingDocs conjugation engine and types
+import { conjugateVerb } from '../lib/lingdocs/library';
+import * as LingdocsTypes from '../lib/lingdocs/types';
+
 // We'll get the data from the global data cache instead of importing directly
 let freqMap: Map<string, number> | null = null;
 let inflectMap: Map<string, any[]> | null = null;
@@ -75,6 +79,17 @@ async function initializeMaps() {
   }
 }
 
+// Convert LingDocs DictionaryEntry to our Variant format
+function lingdocsToVariant(lingdocsForm: LingdocsTypes.PsString, label: string): Variant {
+  return {
+    form: lingdocsForm.p,
+    label,
+    pos: 'verb',
+    romanized: lingdocsForm.f,
+    count: freqMap?.get(lingdocsForm.p) || 0,
+  };
+}
+
 export async function generateVerbVariants(
   rootOrInfinitive: string,
   opts?: { cap?: number; includeCompound?: boolean }
@@ -88,108 +103,160 @@ export async function generateVerbVariants(
 
   const out: Variant[] = [];
 
-  // 2) Use inflections (preferred) for full surfaces - adapted from database
-  const inflRows = inflectMap?.get(base) || [];
+  try {
+    // 1) Try LingDocs professional conjugation engine first
+    console.log('Attempting LingDocs conjugation for:', base);
 
-  for (const row of inflRows) {
-    if (!row.form) continue;
-    const info = (row.category ?? "") as string;
-    const flags: string[] = [];
-    if (/stative/i.test(info)) flags.push("stative");
-    if (/dynamic/i.test(info)) flags.push("dynamic");
-    if (/compound|comp\./i.test(info)) flags.push("compound");
-    if (/irreg/i.test(info)) flags.push("irregular");
-
-    const label = labelFromInfo(info);
-
-    out.push({
-      form: row.form,
-      label: label,
-      pos: "verb",
-      flags: flags.length ? flags : undefined,
+    // Find the verb in our dictionary
+    const dictEntry = dictionaryData?.find((entry: any) => {
+      const pashtoMatch = entry.pashto?.toLowerCase() === base.toLowerCase();
+      const romanizedMatch = entry.romanized?.toLowerCase().includes(base.toLowerCase());
+      return pashtoMatch || romanizedMatch;
     });
+
+    if (dictEntry) {
+      // Create LingDocs DictionaryEntry format
+      const lingdocsEntry: LingdocsTypes.DictionaryEntry = {
+        ts: Date.now(),
+        i: dictEntry.id || 0,
+        p: dictEntry.pashto || base,
+        f: dictEntry.romanized || base,
+        g: dictEntry.romanized || base,
+        e: dictEntry.english || '',
+        c: dictEntry.pos === 'verb' ? 'v.' : 'v.t.',
+        // Add other required fields with defaults
+        r: dictEntry.frequency || 4,
+      };
+
+      // Use LingDocs conjugation engine
+      const conjugation: LingdocsTypes.VerbOutput = conjugateVerb(lingdocsEntry);
+
+      // Extract all forms from the conjugation
+      if (conjugation && typeof conjugation === 'object') {
+        // Handle different conjugation types (simple, compound, transitive)
+        const forms: Array<{form: LingdocsTypes.PsString, label: string}> = [];
+
+        if ('imperfective' in conjugation && conjugation.imperfective) {
+          // Extract forms from imperfective aspect - just get the string form
+          const impf = conjugation.imperfective;
+          if (impf.nonImperative) {
+            const formStr = typeof impf.nonImperative === 'string' ? impf.nonImperative :
+                           (impf.nonImperative as any)?.p || String(impf.nonImperative);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Present' });
+          }
+          if (impf.past) {
+            const formStr = typeof impf.past === 'string' ? impf.past :
+                           (impf.past as any)?.p || String(impf.past);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Past' });
+          }
+          if (impf.future) {
+            const formStr = typeof impf.future === 'string' ? impf.future :
+                           (impf.future as any)?.p || String(impf.future);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Future' });
+          }
+          if (impf.habitualPast) {
+            const formStr = typeof impf.habitualPast === 'string' ? impf.habitualPast :
+                           (impf.habitualPast as any)?.p || String(impf.habitualPast);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Habitual Past' });
+          }
+          if (impf.imperative) {
+            const formStr = typeof impf.imperative === 'string' ? impf.imperative :
+                           (impf.imperative as any)?.p || String(impf.imperative);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Imperative' });
+          }
+        }
+
+        if ('perfective' in conjugation && conjugation.perfective) {
+          // Extract forms from perfective aspect
+          const perf = conjugation.perfective;
+          if (perf.nonImperative) {
+            const formStr = typeof perf.nonImperative === 'string' ? perf.nonImperative :
+                           (perf.nonImperative as any)?.p || String(perf.nonImperative);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Perfective Present' });
+          }
+          if (perf.past) {
+            const formStr = typeof perf.past === 'string' ? perf.past :
+                           (perf.past as any)?.p || String(perf.past);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Perfective Past' });
+          }
+          if (perf.future) {
+            const formStr = typeof perf.future === 'string' ? perf.future :
+                           (perf.future as any)?.p || String(perf.future);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Perfective Future' });
+          }
+          if (perf.habitualPast) {
+            const formStr = typeof perf.habitualPast === 'string' ? perf.habitualPast :
+                           (perf.habitualPast as any)?.p || String(perf.habitualPast);
+            forms.push({ form: { p: formStr, f: formStr }, label: 'Perfective Habitual Past' });
+          }
+        }
+
+        // Convert to our format
+        forms.forEach(({ form, label }) => {
+          if (form && typeof form === 'object' && form.p) {
+            out.push(lingdocsToVariant(form, label));
+          }
+        });
+
+        console.log(`Generated ${forms.length} LingDocs conjugations for ${base}`);
+      }
+    }
+
+  } catch (error) {
+    console.warn('LingDocs conjugation failed, falling back to legacy method:', error);
   }
 
-  // 3) Fallback to dictionary (minimal seed if inflections absent)
-  if (!out.length) {
-    // Check if base exists in dictionary as verb
+  // 2) Fallback to our current inflection system if LingDocs failed
+  if (out.length === 0) {
+    console.log('Using fallback inflection system for:', base);
+    const inflRows = inflectMap?.get(base) || [];
+
+    for (const row of inflRows) {
+      if (!row.form) continue;
+      const info = (row.category ?? "") as string;
+      const flags: string[] = [];
+      if (/stative/i.test(info)) flags.push("stative");
+      if (/dynamic/i.test(info)) flags.push("dynamic");
+      if (/compound|comp\./i.test(info)) flags.push("compound");
+      if (/irreg/i.test(info)) flags.push("irregular");
+
+      const label = labelFromInfo(info);
+
+      out.push({
+        form: row.form,
+        label: label,
+        pos: "verb",
+        flags: flags.length ? flags : undefined,
+      });
+    }
+  }
+
+  // 3) Final fallback to dictionary lookup
+  if (out.length === 0) {
     const dictEntry = dictionaryData?.find((entry: any) =>
       entry.pashto?.toLowerCase() === base.toLowerCase() ||
       entry.romanized?.toLowerCase().includes(base.toLowerCase())
     );
 
     if (dictEntry) {
-      // Seed some generic labels with lemma/root itself
       out.push({ form: base, label: "Infinitive", pos: "verb" });
     } else {
-      // If not in dictionary either, create some basic forms based on common patterns
+      // Basic pattern-based fallback for unknown verbs
       const basicForms = [
-        { form: base, label: "Infinitive" }
+        { form: base, label: "Infinitive" },
+        { form: `${base}م`, label: "1sg Present" },
+        { form: `${base}ي`, label: "3sg Present" },
+        { form: `${base}ل`, label: "Past" }
       ];
-
-      // Only add compound forms if base is not a helper verb
-      if (!HELPER_VERBS.has(base)) {
-        basicForms.push(
-          { form: `${base} کول`, label: "Compound Form" },
-          { form: `${base} کېدل`, label: "Stative Form" }
-        );
-      }
 
       basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
     }
   }
 
-  // 4) Generate some basic present tense forms if we have very few forms
-  if (out.length < 5) {
-    const basicPresentForms = [
-      { form: `${base}م`, label: "1sg Present" },
-      { form: `${base}و`, label: "1pl Present" },
-      { form: `${base}ې`, label: "2sg Present" },
-      { form: `${base}ئ`, label: "2pl Present" },
-      { form: `${base}ي`, label: "3sg Present" },
-      { form: `${base}ي`, label: "3pl Present" }
-    ];
-
-    // Only add forms that don't already exist
-    basicPresentForms.forEach(f => {
-      const exists = out.some(existing => existing.form === f.form);
-      if (!exists) {
-        out.push({ ...f, pos: "verb" });
-      }
-    });
-  }
-
-  // 5) Optional compound expansions: only when the base is *not* a helper verb.
-  if (includeCompound && !HELPER_VERBS.has(base)) {
-    // Very conservative additions; these will be removed if inflections already include them
-    const compoundForms: Variant[] = [
-      { form: `${base} کول`, label: "Dynamic Compound", pos: "verb", flags: ["compound", "dynamic"] },
-      { form: `${base} کېدل`, label: "Stative Compound", pos: "verb", flags: ["compound", "stative"] },
-    ];
-    out.push(...compoundForms);
-  }
-
-  // De-dupe
+  // De-dupe and score
   let deduped = uniqBy(out, v => v.form);
 
-  // Fallback for fused stative compounds ending in ول (e.g., ګرمول)
-  // This provides basic coverage until inflections DB is refreshed
-  if (deduped.length < 3 && /[^ ]ول$/.test(base)) {
-    const comp = base.slice(0, -2).trim();
-    const impfStem = `${comp}و`;    // ګرمو-
-    const perfStem = `${comp} کړ`;  // ګرم کړ-
-    const seed = [
-      { form: `${impfStem}م`, label: "1sg Present", pos: "verb" as const, flags: ["compound","stative"] },
-      { form: `${impfStem}ي`, label: "3sg Present", pos: "verb" as const, flags: ["compound","stative"] },
-      { form: `${perfStem}م`, label: "1sg Subjunctive", pos: "verb" as const, flags: ["compound","stative"] },
-      { form: `${comp} کړل`, label: "Perfective Root", pos: "verb" as const, flags: ["compound","stative"] },
-      { form: `${comp} کړی`, label: "Past Participle", pos: "verb" as const, flags: ["compound","stative"] },
-    ];
-    deduped.push(...seed);
-    deduped = uniqBy(deduped, v => v.form);
-  }
-
-  // 5) Frequency scoring using local freqMap
+  // Frequency scoring
   if (freqMap) {
     deduped = deduped.map(v => {
       const count = freqMap!.get(v.form) ?? 0;
