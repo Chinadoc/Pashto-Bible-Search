@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Tab {
   id: string;
@@ -16,6 +16,13 @@ interface TabsProps {
 
 export default function Tabs({ tabs, defaultTab, className = '' }: TabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id || '');
+
+  // Update active tab when defaultTab changes (e.g., when Related Forms Mode is toggled)
+  useEffect(() => {
+    if (defaultTab && defaultTab !== activeTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
 
   const activeContent = tabs.find(tab => tab.id === activeTab)?.content;
 
