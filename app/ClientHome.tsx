@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, ChangeEvent } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -103,14 +103,23 @@ function SearchControls({
               onClick={() => setIncludeRelated(true)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 includeRelated
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-green-500 text-white shadow-md'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
-              Related Forms Mode
+              🔍 Related Forms Mode
             </button>
           </div>
         </div>
+
+        {/* Show indicator when Related Forms Mode is active */}
+        {includeRelated && (
+          <div className="w-full px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-md">
+            <p className="text-xs text-green-700 dark:text-green-300">
+              ✅ Related Forms Mode Active - Search will include grammatical variants
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search:</span>
@@ -517,12 +526,15 @@ export default function ClientHome() {
     }
   };
 
-  // Trigger new search when Related Forms Mode is toggled
+  // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
+  const previousIncludeRelated = useRef(includeRelated);
   useEffect(() => {
-    if (query.trim() && includeRelated) {
-      console.log('DEBUG: Related Forms Mode changed, triggering new search');
+    // Only trigger if includeRelated actually changed (not on initial mount)
+    if (previousIncludeRelated.current !== includeRelated && query.trim()) {
+      console.log('DEBUG: Related Forms Mode toggled, triggering new search');
       handleSearch();
     }
+    previousIncludeRelated.current = includeRelated;
     // NOTE: Intentionally NOT including results.length to prevent infinite loop!
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeRelated]);
@@ -542,10 +554,10 @@ export default function ClientHome() {
 
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
-    if (includeRelated) return 'analysis'; // Always show analysis tab in Related Forms Mode
+    if (includeRelated && relatedForms) return 'analysis'; // Switch to analysis tab when related forms are loaded
     if (results.length > 0) return 'search'; // Search results
     return 'search';
-  }, [results.length, includeRelated]);
+  }, [results.length, includeRelated, relatedForms]);
 
   return (
     <div className="w-full max-w-6xl mx-auto">
