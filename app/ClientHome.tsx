@@ -554,9 +554,10 @@ export default function ClientHome() {
 
   // Determine default tab based on state
   const defaultTab = useMemo(() => {
-    if (includeRelated && relatedForms) return 'analysis'; // Switch to analysis tab when related forms are loaded
-    if (results.length > 0) return 'search'; // Search results
-    return 'search';
+    // Always prioritize search results - user wants to see results first
+    if (results.length > 0) return 'search'; // Search results first
+    if (includeRelated && relatedForms) return 'analysis'; // Then analysis if no results but forms loaded
+    return 'search'; // Default to search tab
   }, [results.length, includeRelated, relatedForms]);
 
   return (
