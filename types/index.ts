@@ -23,6 +23,15 @@ export interface NounFilterState {
   gender: NounGender;
 }
 
+// Adjective inflection filters (same as nouns)
+export type AdjectiveInflectionType = NounInflectionType;
+export type AdjectiveGender = NounGender;
+
+export interface AdjectiveFilterState {
+  inflectionType: AdjectiveInflectionType;
+  gender: AdjectiveGender;
+}
+
 export interface Verse {
   ref: string;
   text: string;

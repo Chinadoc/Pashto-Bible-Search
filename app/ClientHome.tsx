@@ -22,6 +22,12 @@ import type {
   VerbFilterTense,
   VerbFilterAspect,
   VerbFilterMood,
+  NounFilterState,
+  NounInflectionType,
+  NounGender,
+  AdjectiveFilterState,
+  AdjectiveInflectionType,
+  AdjectiveGender,
   SearchLanguage,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
@@ -47,10 +53,23 @@ const DEFAULT_VERB_FILTER: VerbFilterState = {
   mood: 'all',
 };
 
+const DEFAULT_NOUN_FILTER: NounFilterState = {
+  inflectionType: 'all',
+  gender: 'all',
+};
+
+const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
+  inflectionType: 'all',
+  gender: 'all',
+};
+
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
 const TENSE_VALUES: VerbFilterTense[] = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'];
 const ASPECT_VALUES: VerbFilterAspect[] = ['all', 'imperfective', 'perfective'];
 const MOOD_VALUES: VerbFilterMood[] = ['all', 'indicative', 'subjunctive', 'imperative', 'ability'];
+
+const NOUN_INFLECTION_VALUES: NounInflectionType[] = ['all', 'plain', '1st', '2nd', 'plural', 'vocative', 'bundled'];
+const GENDER_VALUES: NounGender[] = ['all', 'masculine', 'feminine'];
 
 function sanitizeVerbFilter(candidate: any): VerbFilterState {
   if (!candidate || typeof candidate !== 'object') {
@@ -184,6 +203,73 @@ function isDefaultVerbFilter(filters: VerbFilterState): boolean {
     filters.aspect === 'all' &&
     filters.mood === 'all'
   );
+}
+
+// Noun/Adjective filter matching
+function matchesNounInflectionType(label: string, inflectionType: NounInflectionType): boolean {
+  if (inflectionType === 'all') return true;
+  const lower = label.toLowerCase();
+  
+  if (inflectionType === 'plain') return lower.includes('plain');
+  if (inflectionType === '1st') return lower.includes('1st');
+  if (inflectionType === '2nd') return lower.includes('2nd');
+  if (inflectionType === 'plural') return lower.includes('plural') || lower.includes('plur');
+  if (inflectionType === 'vocative') return lower.includes('voc');
+  if (inflectionType === 'bundled') return lower.includes('bundled');
+  
+  return true;
+}
+
+function matchesGender(label: string, gender: NounGender): boolean {
+  if (gender === 'all') return true;
+  const lower = label.toLowerCase();
+  
+  if (gender === 'masculine') return lower.includes('masc') || lower.includes('m.');
+  if (gender === 'feminine') return lower.includes('fem') || lower.includes('f.');
+  
+  return true;
+}
+
+function filterNounVariants(
+  nouns: RelatedFormVariant[] | undefined,
+  filters: NounFilterState
+): RelatedFormVariant[] {
+  if (!nouns?.length) return [];
+  
+  const filtered = nouns.filter((variant) => {
+    const label = normalizeLabel(variant.label);
+    return (
+      matchesNounInflectionType(label, filters.inflectionType) &&
+      matchesGender(label, filters.gender)
+    );
+  });
+  
+  return filtered.length > 0 ? filtered : nouns;
+}
+
+function filterAdjectiveVariants(
+  adjectives: RelatedFormVariant[] | undefined,
+  filters: AdjectiveFilterState
+): RelatedFormVariant[] {
+  if (!adjectives?.length) return [];
+  
+  const filtered = adjectives.filter((variant) => {
+    const label = normalizeLabel(variant.label);
+    return (
+      matchesNounInflectionType(label, filters.inflectionType) &&
+      matchesGender(label, filters.gender)
+    );
+  });
+  
+  return filtered.length > 0 ? filtered : adjectives;
+}
+
+function isDefaultNounFilter(filters: NounFilterState): boolean {
+  return filters.inflectionType === 'all' && filters.gender === 'all';
+}
+
+function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
+  return filters.inflectionType === 'all' && filters.gender === 'all';
 }
 
 // Enhanced search controls component with all filters
@@ -439,6 +525,8 @@ export default function ClientHome() {
 
   // Verb understanding state
   const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER });
+  const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
+  const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
@@ -768,6 +856,68 @@ export default function ClientHome() {
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
     executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'verb-filter' });
+  }, [includeRelated, relatedForms, executeSearch]);
+
+  const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
+    setNounFilters(nextFilters);
+
+    if (!includeRelated || !relatedForms?.nouns?.length) {
+      console.log('Noun filters updated, awaiting related forms to refetch results');
+      return;
+    }
+
+    if (isDefaultNounFilter(nextFilters)) {
+      variantKeyRef.current = '__all__';
+      const allForms = formsFromVariants(relatedForms.nouns || []);
+      setVariantsOverride(null);
+      setActiveVariantForms(allForms);
+      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'noun-filter-reset' });
+      return;
+    }
+
+    const filteredVariants = filterNounVariants(relatedForms.nouns, nextFilters);
+    const forms = formsFromVariants(filteredVariants);
+    const key = forms.join('|');
+
+    if (key === variantKeyRef.current) {
+      return;
+    }
+
+    variantKeyRef.current = key;
+    setVariantsOverride(forms);
+    setActiveVariantForms(forms);
+    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'noun-filter' });
+  }, [includeRelated, relatedForms, executeSearch]);
+
+  const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
+    setAdjectiveFilters(nextFilters);
+
+    if (!includeRelated || !relatedForms?.other?.length) {
+      console.log('Adjective filters updated, awaiting related forms to refetch results');
+      return;
+    }
+
+    if (isDefaultAdjectiveFilter(nextFilters)) {
+      variantKeyRef.current = '__all__';
+      const allForms = formsFromVariants(relatedForms.other || []);
+      setVariantsOverride(null);
+      setActiveVariantForms(allForms);
+      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'adjective-filter-reset' });
+      return;
+    }
+
+    const filteredVariants = filterAdjectiveVariants(relatedForms.other, nextFilters);
+    const forms = formsFromVariants(filteredVariants);
+    const key = forms.join('|');
+
+    if (key === variantKeyRef.current) {
+      return;
+    }
+
+    variantKeyRef.current = key;
+    setVariantsOverride(forms);
+    setActiveVariantForms(forms);
+    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'adjective-filter' });
   }, [includeRelated, relatedForms, executeSearch]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
