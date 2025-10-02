@@ -165,6 +165,39 @@ function extractRomanized(entry: any): string | undefined {
   return candidate.split(',')[0]?.trim();
 }
 
+function extractEnglish(entry: any): string | undefined {
+  if (!entry) return undefined;
+
+  // Try direct 'e' field (most common in LingDocs format)
+  if (typeof entry.e === 'string') {
+    const trimmed = entry.e.trim();
+    if (trimmed.length) return trimmed;
+  }
+
+  // Try 'english' field (could be string or array)
+  if (typeof entry.english === 'string') {
+    const trimmed = entry.english.trim();
+    if (trimmed.length) return trimmed;
+  }
+
+  if (Array.isArray(entry.english)) {
+    const parts = entry.english
+      .map((value: any) => (typeof value === 'string' ? value.trim() : ''))
+      .filter(Boolean);
+    if (parts.length) {
+      return parts.join(', ');
+    }
+  }
+
+  // Try 'definition' field as fallback
+  if (typeof entry.definition === 'string') {
+    const trimmed = entry.definition.trim();
+    if (trimmed.length) return trimmed;
+  }
+
+  return undefined;
+}
+
 function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
   const entries = Array.isArray(dictionaryRaw?.entries) ? dictionaryRaw.entries : [];
   const output: DictionaryEntry[] = [];
@@ -176,7 +209,13 @@ function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
     if (!pashto || !romanized) continue;
 
     const pos: string | undefined = entry.c || entry.c_norm || entry.pos_family;
-    output.push({ pashto: pashto.trim(), romanized, pos: pos?.trim() });
+    const english = extractEnglish(entry);
+    output.push({ 
+      pashto: pashto.trim(), 
+      romanized, 
+      pos: pos?.trim(),
+      english: english?.trim()
+    });
   }
 
   return output;
