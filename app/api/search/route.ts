@@ -259,9 +259,10 @@ export async function POST(request: NextRequest) {
     // Try enhanced search first (if SQL functions are available)
     console.log('🔍 Attempting enhanced search for:', trimmedQuery, 'with', searchTerms.length, 'terms');
     console.log('🔍 Search terms being used:', searchTerms);
+    
+    let enhancedResults: any = null;
     try {
       // Use the expanded search terms if we have related forms
-      let enhancedResults;
       if (searchTerms.length > 1) {
         // Multiple terms - use our helper function
         console.log('🔍 Using multiple terms search for:', searchTerms);
@@ -291,7 +292,7 @@ export async function POST(request: NextRequest) {
 
         console.log('🔄 Returning enhanced search results:', {
           resultCount: transformed.length,
-          firstFewRefs: transformed.slice(0, 3).map(r => r.ref),
+          firstFewRefs: transformed.slice(0, 3).map((r: any) => r.ref),
           hasRelatedForms: !!relatedForms,
           relatedFormsCount: relatedForms?.total || 0
         });
@@ -348,7 +349,7 @@ export async function POST(request: NextRequest) {
         original: trimmedQuery,
         normalized: trimmedQuery,
         variants: Array.from(new Set(variants.filter(Boolean))),
-        searchType: 'variant-fallback',
+        searchType: 'hybrid',
       };
 
       console.log('🔄 Variant fallback search found', transformed.length, 'results');
