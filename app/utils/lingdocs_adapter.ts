@@ -50,23 +50,23 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
   
   // Convert to LingDocs format
   return {
-    ts: entry.id || Date.now(),
-    i: entry.alphabetical_index || 0,
-    p: entry.pashto || pashtoWord,
-    f: entry.romanized || entry.phonetics || '',
-    g: entry.simplified_phonetics || entry.romanized || '',
-    e: entry.english || entry.meaning || entry.definition || '',
-    c: entry.part_of_speech || entry.pos || detectPOS(entry),
+    ts: (entry as any).id || Date.now(),
+    i: (entry as any).alphabetical_index || 0,
+    p: (entry as any).pashto || pashtoWord,
+    f: (entry as any).romanized || (entry as any).phonetics || '',
+    g: (entry as any).simplified_phonetics || (entry as any).romanized || '',
+    e: (entry as any).english || (entry as any).meaning || (entry as any).definition || '',
+    c: (entry as any).part_of_speech || (entry as any).pos || detectPOS(entry),
     
     // Verb-specific (if available in your dictionary)
-    psp: entry.present_stem,
-    psf: entry.present_stem_phonetics,
-    ssp: entry.subjunctive_stem,
-    ssf: entry.subjunctive_stem_phonetics,
-    prp: entry.perfective_root,
-    prf: entry.perfective_root_phonetics,
-    pprtp: entry.past_participle,
-    pprtf: entry.past_participle_phonetics,
+    psp: (entry as any).present_stem,
+    psf: (entry as any).present_stem_phonetics,
+    ssp: (entry as any).subjunctive_stem,
+    ssf: (entry as any).subjunctive_stem_phonetics,
+    prp: (entry as any).perfective_root,
+    prf: (entry as any).perfective_root_phonetics,
+    pprtp: (entry as any).past_participle,
+    pprtf: (entry as any).past_participle_phonetics,
   };
 }
 
