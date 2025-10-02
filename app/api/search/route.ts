@@ -65,6 +65,9 @@ type Processed = {
   romanization?: string;
   root?: string;
   fuzzyResults?: any;
+  language?: 'pashto' | 'english';
+  englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string }>;
+  variantsSearched?: string[];
 };
 
 type ApiResult = {
@@ -156,54 +159,94 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    let trimmedQuery = query.trim();
+    const originalQuery = query.trim();
+    let trimmedQuery = originalQuery;
+    let englishSearchTerms: string[] = [];
+    let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
+    const searchLanguage: 'pashto' | 'english' = englishSearchMode ? 'english' : 'pashto';
 
-    // English search mode: translate English to Pashto first
+    // English search mode: find ALL Pashto words with this English term
     if (englishSearchMode) {
-      console.log('🇬🇧 English search mode enabled for query:', trimmedQuery);
+      console.log('🇬🇧 English search mode enabled for query:', originalQuery);
       
       try {
         const { dictionary } = await getData();
-        const englishLower = trimmedQuery.toLowerCase();
+        const englishLower = originalQuery.toLowerCase();
         
-        // Find dictionary entries where English definition matches
-        const matchingEntries = dictionary.filter((entry: any) => {
-          const definition = (entry.definition || entry.english || '').toLowerCase();
-          // Match if English term appears in definition
-          return definition.includes(englishLower) || 
-                 (entry.pos && entry.pos.toLowerCase().includes(englishLower));
-        });
+        // Find ALL dictionary entries where English definition matches
+        const matchingEntries = dictionary
+          .filter((entry: any) => typeof entry.english === 'string' && entry.english.toLowerCase().includes(englishLower))
+          .slice(0, 8);
 
-        if (matchingEntries.length > 0) {
-          // Use the first match's Pashto word as the search term
-          trimmedQuery = matchingEntries[0].pashto;
-          console.log(`✅ English "${query}" → Pashto "${trimmedQuery}" (${matchingEntries.length} dictionary matches)`);
-        } else {
-          console.warn(`❌ No dictionary match found for English "${query}"`);
+        if (!matchingEntries.length) {
+          console.warn(`❌ No dictionary match found for English "${originalQuery}"`);
           return NextResponse.json({
             results: [],
             relatedForms: null,
             processed: {
-              original: query,
-              normalized: query,
+              original: originalQuery,
+              normalized: originalQuery,
               variants: [],
+              variantsSearched: [],
               searchType: 'fast',
+              language: 'english',
+              englishMatches: [],
             },
-            error: `No Pashto translation found for "${query}"`,
             count: 0,
             ms: Date.now() - startedAt,
           });
         }
+
+        englishMatches = matchingEntries.map((entry: any) => ({
+          english: entry.english as string,
+          pashto: entry.pashto,
+          romanized: entry.romanized,
+          pos: entry.pos,
+        }));
+
+        englishSearchTerms = Array.from(new Set(matchingEntries.map((entry: any) => entry.pashto).filter(Boolean)));
+
+        if (englishSearchTerms.length > 0) {
+          trimmedQuery = englishSearchTerms[0];
+        }
+
+        console.log('✅ English matches resolved to Pashto terms:', englishSearchTerms);
       } catch (error) {
         console.error('English search translation failed:', error);
       }
     }
 
+    // Combine search terms from query + English matches
+    let searchTerms = Array.from(new Set([trimmedQuery, ...englishSearchTerms])) as string[];
+
     // Generate related forms first if needed (for expanding search)
-    let searchTerms = [trimmedQuery];
     let relatedForms = null;
 
-    if (includeRelated) {
+    // If English search mode, create a special relatedForms object to show all matches
+    if (englishSearchMode && englishMatches.length > 0) {
+      const matchForms = englishMatches.map(m => ({
+        form: m.pashto,
+        label: m.english,
+        pos: m.pos || 'unknown',
+        romanized: m.romanized,
+        count: 0
+      }));
+
+      relatedForms = {
+        root: originalQuery, // Original English query
+        total: matchForms.length,
+        verbs: matchForms.filter(f => f.pos?.toLowerCase().includes('verb')),
+        nouns: matchForms.filter(f => f.pos?.toLowerCase().includes('noun')),
+        other: matchForms.filter(f => !f.pos?.toLowerCase().includes('verb') && !f.pos?.toLowerCase().includes('noun')),
+        forms: {
+          verbs: matchForms.filter(f => f.pos?.toLowerCase().includes('verb')),
+          nouns: matchForms.filter(f => f.pos?.toLowerCase().includes('noun')),
+          other: matchForms.filter(f => !f.pos?.toLowerCase().includes('verb') && !f.pos?.toLowerCase().includes('noun'))
+        },
+        variantDetails: [],
+        posGuess: 'english-search'
+      };
+    } else if (includeRelated) {
       try {
         console.log('🔍 Generating related forms for expanded search:', trimmedQuery);
 
@@ -427,10 +470,13 @@ export async function POST(request: NextRequest) {
       const results = Array.from(candidateVerses).slice(0, limit);
       const transformed = transformResults(results, audioMap);
       const processed: Processed = {
-        original: trimmedQuery,
+        original: originalQuery,
         normalized: trimmedQuery,
         variants: Array.from(new Set(variants.filter(Boolean))),
         searchType: 'hybrid',
+        language: searchLanguage,
+        englishMatches: englishMatches.length ? englishMatches : undefined,
+        variantsSearched: searchTerms,
       };
 
       console.log('🔄 Variant fallback search found', transformed.length, 'results');
@@ -472,10 +518,13 @@ export async function POST(request: NextRequest) {
       const results = Array.from(candidateVerses).slice(0, limit);
       const transformed = transformResults(results, audioMap);
       const processed: Processed = {
-        original: trimmedQuery,
+        original: originalQuery,
         normalized: trimmedQuery,
         variants: Array.from(new Set(variants.filter(Boolean))),
         searchType: 'fast',
+        language: searchLanguage,
+        englishMatches: englishMatches.length ? englishMatches : undefined,
+        variantsSearched: searchTerms,
       };
 
       return NextResponse.json({
@@ -556,7 +605,7 @@ export async function POST(request: NextRequest) {
           variantForms.push(...relatedForms.forms.other.map((v: any) => v.form));
         }
         if (variantForms.length > 0) {
-          searchTerms.push(...variantForms);
+        searchTerms.push(...variantForms);
         }
       }
 
@@ -593,8 +642,8 @@ export async function POST(request: NextRequest) {
     if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
       console.log('Falling back to fuzzy search');
 
-      // Fast search using index
-      if (searchIndex?.byTextLower) {
+    // Fast search using index
+    if (searchIndex?.byTextLower) {
         const candidateVerses = new Set<any>();
 
         // Use root form for searching if we found one from a form
@@ -667,13 +716,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!variantForms.length) {
+      variantForms = Array.from(new Set(searchTerms));
+    }
+
     const processed: Processed = {
-      original: trimmedQuery,
+      original: originalQuery,
       normalized,
       variants: variantForms.slice(0, 40),
       searchType,
       pos: posGuess,
       romanization,
+      language: searchLanguage,
+      englishMatches: englishMatches.length ? englishMatches : undefined,
+      variantsSearched: searchTerms,
     };
 
     console.log('DEBUG: Returning search results:', {
@@ -681,7 +737,7 @@ export async function POST(request: NextRequest) {
       hasRelatedForms: !!relatedForms,
       relatedFormsTotal: relatedForms?.total || 0,
       searchType: processed?.searchType || 'unknown',
-      query: trimmedQuery,
+      query: originalQuery,
     });
 
     return NextResponse.json({
