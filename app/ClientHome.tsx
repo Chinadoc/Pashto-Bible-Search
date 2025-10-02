@@ -7,7 +7,24 @@ import InlineFrequency from "../components/InlineFrequency";
 import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
-import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, RelatedFormsData, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
+import type {
+  Verse,
+  Scope,
+  CoverageItem,
+  AudioMap,
+  PhraseResponse,
+  RelatedFormsData,
+  RelatedFormVariant,
+  Conjugations,
+  VariantGroupMeta,
+  VariantDetailMeta,
+  VerbFilterState,
+  VerbFilterPerson,
+  VerbFilterTense,
+  VerbFilterAspect,
+  VerbFilterMood,
+  SearchLanguage,
+} from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 import { TextField, Button, IconButton } from '@mui/material';
 import { dedupByRef } from "../utils/highlight";
@@ -24,6 +41,31 @@ const NT_BOOKS = [
 const OT_BOOKS_SET = new Set(OT_BOOKS);
 const NT_BOOKS_SET = new Set(NT_BOOKS);
 
+const DEFAULT_VERB_FILTER: VerbFilterState = {
+  person: 'all',
+  tense: 'all',
+  aspect: 'all',
+  mood: 'all',
+};
+
+const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
+const TENSE_VALUES: VerbFilterTense[] = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'];
+const ASPECT_VALUES: VerbFilterAspect[] = ['all', 'imperfective', 'perfective'];
+const MOOD_VALUES: VerbFilterMood[] = ['all', 'indicative', 'subjunctive', 'imperative', 'ability'];
+
+function sanitizeVerbFilter(candidate: any): VerbFilterState {
+  if (!candidate || typeof candidate !== 'object') {
+    return { ...DEFAULT_VERB_FILTER };
+  }
+
+  const person = PERSON_VALUES.includes(candidate.person) ? candidate.person : 'all';
+  const tense = TENSE_VALUES.includes(candidate.tense) ? candidate.tense : 'all';
+  const aspect = ASPECT_VALUES.includes(candidate.aspect) ? candidate.aspect : 'all';
+  const mood = MOOD_VALUES.includes(candidate.mood) ? candidate.mood : 'all';
+
+  return { person, tense, aspect, mood } as VerbFilterState;
+}
+
 function loadPersisted<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -37,6 +79,112 @@ function savePersisted<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {}
+}
+
+const PERSON_PATTERNS: Record<VerbFilterPerson, string[]> = {
+  all: [],
+  '1st': ['1sg', '1 pl', '1pl'],
+  '2nd': ['2sg', '2 pl', '2pl'],
+  '3rd': ['3sg', '3 pl', '3pl'],
+};
+
+const TENSE_MATCHERS: Record<VerbFilterTense, (label: string) => boolean> = {
+  all: () => true,
+  present: (l) => l.includes('present'),
+  past: (l) => l.includes('past') && !l.includes('participle') && !l.includes('perfect'),
+  future: (l) => l.includes('future'),
+  perfect: (l) => l.includes('perfect') || l.includes('participle'),
+  subjunctive: (l) => l.includes('subj'),
+  imperative: (l) => l.includes('imperativ'),
+  ability: (l) => l.includes('ability') || l.includes('able') || l.includes('can'),
+  habitual: (l) => l.includes('habit'),
+};
+
+const MOOD_MATCHERS: Record<VerbFilterMood, (label: string) => boolean> = {
+  all: () => true,
+  indicative: (l) => !l.includes('subj') && !l.includes('imperativ'),
+  subjunctive: (l) => l.includes('subj'),
+  imperative: (l) => l.includes('imperativ'),
+  ability: (l) => l.includes('ability') || l.includes('able') || l.includes('can'),
+};
+
+const ASPECT_MATCHERS: Record<VerbFilterAspect, (label: string) => boolean> = {
+  all: () => true,
+  imperfective: (l) =>
+    l.includes('present') ||
+    l.includes('future') ||
+    l.includes('progressive') ||
+    l.includes('habit') ||
+    l.includes('subj') ||
+    l.includes('ability'),
+  perfective: (l) => l.includes('past') || l.includes('perfect') || l.includes('participle') || l.includes('subj'),
+};
+
+function normalizeLabel(label?: string): string {
+  return (label || '').toLowerCase();
+}
+
+function matchesPerson(label: string, person: VerbFilterPerson): boolean {
+  if (person === 'all') return true;
+  const patterns = PERSON_PATTERNS[person];
+  if (!patterns?.length) return true;
+  return patterns.some((pattern) => label.includes(pattern));
+}
+
+function matchesTense(label: string, tense: VerbFilterTense): boolean {
+  const matcher = TENSE_MATCHERS[tense];
+  return matcher ? matcher(label) : true;
+}
+
+function matchesMood(label: string, mood: VerbFilterMood): boolean {
+  const matcher = MOOD_MATCHERS[mood];
+  return matcher ? matcher(label) : true;
+}
+
+function matchesAspect(label: string, aspect: VerbFilterAspect): boolean {
+  const matcher = ASPECT_MATCHERS[aspect];
+  return matcher ? matcher(label) : true;
+}
+
+function filterVerbVariants(
+  verbs: RelatedFormVariant[] | undefined,
+  filters: VerbFilterState
+): RelatedFormVariant[] {
+  if (!verbs?.length) return [];
+  const labelFilter = (variant: RelatedFormVariant) => {
+    const label = normalizeLabel(variant.label);
+    return (
+      matchesPerson(label, filters.person) &&
+      matchesTense(label, filters.tense) &&
+      matchesMood(label, filters.mood) &&
+      matchesAspect(label, filters.aspect)
+    );
+  };
+
+  const filtered = verbs.filter(labelFilter);
+  return filtered.length > 0 ? filtered : verbs;
+}
+
+function formsFromVariants(variants: RelatedFormVariant[]): string[] {
+  const seen = new Set<string>();
+  const forms: string[] = [];
+  for (const variant of variants) {
+    if (!variant.form) continue;
+    if (!seen.has(variant.form)) {
+      seen.add(variant.form);
+      forms.push(variant.form);
+    }
+  }
+  return forms;
+}
+
+function isDefaultVerbFilter(filters: VerbFilterState): boolean {
+  return (
+    filters.person === 'all' &&
+    filters.tense === 'all' &&
+    filters.aspect === 'all' &&
+    filters.mood === 'all'
+  );
 }
 
 // Enhanced search controls component with all filters
@@ -272,7 +420,6 @@ export default function ClientHome() {
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
-  const [englishSearchMode, setEnglishSearchMode] = useState<boolean>(false);
   const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -289,56 +436,31 @@ export default function ClientHome() {
   } | null>(null);
 
   // Verb understanding state
-  const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('3rd');
-  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual'>('present');
-  const [verbAspect, setVerbAspect] = useState<'imperfective' | 'perfective'>('imperfective');
-  const [verbMood, setVerbMood] = useState<'indicative' | 'subjunctive' | 'imperative' | 'ability'>('indicative');
-
-  const verbState = {
-    person: verbPerson,
-    tense: verbTense,
-    aspect: verbAspect,
-    mood: verbMood
-  };
+  const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER });
+  const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
+  const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
+  const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
 
   // Trigger search when verb filters change (real-time filtering)
-  const previousVerbState = useRef(verbState);
-  useEffect(() => {
-    // Only trigger if verb state actually changed and we have related forms
-    if (includeRelated && relatedForms && query.trim()) {
-      const stateChanged = 
-        previousVerbState.current.person !== verbPerson ||
-        previousVerbState.current.tense !== verbTense ||
-        previousVerbState.current.aspect !== verbAspect ||
-        previousVerbState.current.mood !== verbMood;
-      
-      if (stateChanged) {
-        console.log('🔄 Verb filter changed, triggering new search');
-        handleSearch();
-      }
-    }
-    previousVerbState.current = verbState;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verbPerson, verbTense, verbAspect, verbMood]);
+  const previousVerbState = useRef<VerbFilterState>(verbFilters);
 
-  // Persist state
+  // Load persisted preferences on mount
   useEffect(() => {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
-    setVerbPerson(loadPersisted('verbPerson', '3rd'));
-    setVerbTense(loadPersisted('verbTense', 'present'));
-    setVerbAspect(loadPersisted('verbAspect', 'imperfective'));
-    setVerbMood(loadPersisted('verbMood', 'indicative'));
+    const savedFilters = sanitizeVerbFilter(loadPersisted('verbFilters', DEFAULT_VERB_FILTER));
+    setVerbFilters(savedFilters);
+    const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
+    setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
   }, []);
 
+  // Persist preferences when they change
   useEffect(() => {
     savePersisted('scope', scope);
     savePersisted('includeRelated', includeRelated);
-    savePersisted('verbPerson', verbPerson);
-    savePersisted('verbTense', verbTense);
-    savePersisted('verbAspect', verbAspect);
-    savePersisted('verbMood', verbMood);
-  }, [scope, includeRelated, verbPerson, verbTense, verbAspect, verbMood]);
+    savePersisted('verbFilters', verbFilters);
+    savePersisted('searchLanguage', searchLanguage);
+  }, [scope, includeRelated, verbFilters, searchLanguage]);
 
 
   // Clear any problematic initial values on mount
@@ -530,7 +652,7 @@ export default function ClientHome() {
         scope,
         includeRelated,
         enableFuzzy,
-        englishSearchMode,
+        englishSearchMode: searchLanguage === 'english',
         bookFilter
       };
 
@@ -688,8 +810,8 @@ export default function ClientHome() {
         setIncludeRelated={setIncludeRelated}
         enableFuzzy={enableFuzzy}
         setEnableFuzzy={setEnableFuzzy}
-        englishSearchMode={englishSearchMode}
-        setEnglishSearchMode={setEnglishSearchMode}
+        englishSearchMode={searchLanguage === 'english'}
+        setEnglishSearchMode={(mode) => setSearchLanguage(mode ? 'english' : 'pashto')}
         bookFilter={bookFilter}
         setBookFilter={setBookFilter}
         resultsCount={resultsCount}
@@ -725,10 +847,7 @@ export default function ClientHome() {
                   </span>
                   <button
                     onClick={() => {
-                      setVerbPerson('3rd');
-                      setVerbTense('present');
-                      setVerbAspect('imperfective');
-                      setVerbMood('indicative');
+                      setVerbFilters({ ...DEFAULT_VERB_FILTER });
                     }}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
@@ -736,74 +855,109 @@ export default function ClientHome() {
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Person Filter */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                       Person:
                     </label>
-                    <select
-                      value={verbPerson}
-                      onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="1st">1st (I/we)</option>
-                      <option value="2nd">2nd (you)</option>
-                      <option value="3rd">3rd (he/she/they)</option>
-                    </select>
+                    <div className="space-y-1">
+                      {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
+                        <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={verbFilters.person === 'all' || verbFilters.person === option.value}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setVerbFilters({ ...verbFilters, person: option.value as VerbFilterPerson });
+                              } else {
+                                setVerbFilters({ ...verbFilters, person: 'all' });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Tense Filter */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                       Tense:
                     </label>
-                    <select
-                      value={verbTense}
-                      onChange={(e) => setVerbTense(e.target.value as any)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="present">Present</option>
-                      <option value="past">Past</option>
-                      <option value="future">Future</option>
-                      <option value="perfect">Perfect</option>
-                      <option value="subjunctive">Subjunctive</option>
-                      <option value="imperative">Imperative</option>
-                      <option value="ability">Ability</option>
-                      <option value="habitual">Habitual</option>
-                    </select>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
+                        <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={verbFilters.tense === 'all' || verbFilters.tense === tense}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setVerbFilters({ ...verbFilters, tense: tense as VerbFilterTense });
+                              } else {
+                                setVerbFilters({ ...verbFilters, tense: 'all' });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{tense}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Aspect Filter */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                       Aspect:
                     </label>
-                    <select
-                      value={verbAspect}
-                      onChange={(e) => setVerbAspect(e.target.value as 'imperfective' | 'perfective')}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="imperfective">Imperfective</option>
-                      <option value="perfective">Perfective</option>
-                    </select>
+                    <div className="space-y-1">
+                      {['imperfective', 'perfective'].map((aspect) => (
+                        <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={verbFilters.aspect === 'all' || verbFilters.aspect === aspect}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setVerbFilters({ ...verbFilters, aspect: aspect as VerbFilterAspect });
+                              } else {
+                                setVerbFilters({ ...verbFilters, aspect: 'all' });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{aspect}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Mood Filter */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                       Mood:
                     </label>
-                    <select
-                      value={verbMood}
-                      onChange={(e) => setVerbMood(e.target.value as any)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="indicative">Indicative</option>
-                      <option value="subjunctive">Subjunctive</option>
-                      <option value="imperative">Imperative</option>
-                      <option value="ability">Ability</option>
-                    </select>
+                    <div className="space-y-1">
+                      {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
+                        <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={verbFilters.mood === 'all' || verbFilters.mood === mood}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setVerbFilters({ ...verbFilters, mood: mood as VerbFilterMood });
+                              } else {
+                                setVerbFilters({ ...verbFilters, mood: 'all' });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{mood}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
