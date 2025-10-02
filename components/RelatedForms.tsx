@@ -56,10 +56,10 @@ function groupVerbsByDetailedLabels(variantDetails?: VariantDetails) {
   };
 
   verbVariants.forEach(variant => {
-    const category = mapGrammaticalLabel(variant.label);
+    const category = mapGrammaticalLabel(variant.label || '');
 
     // Keep the detailed label for display but group by category
-    const formWithLabel = { form: variant.form, count: variant.count || 0, label: variant.label };
+    const formWithLabel = { form: variant.form, count: variant.count || 0, label: variant.label || '' };
 
     if (category === 'Present') {
       groups.presentTense.push(formWithLabel);
@@ -143,7 +143,7 @@ function groupVerbsFromStructuredData(variantDetails?: VariantDetails) {
   };
 
   verbVariants.forEach(variant => {
-    const category = mapGrammaticalLabel(variant.label);
+    const category = mapGrammaticalLabel(variant.label || '');
 
     // Map to appropriate category
     if (category === 'Present') {
@@ -323,7 +323,7 @@ export default function RelatedForms({
                     title={`Click to search for: ${form}${label ? ` (${label})` : ''}`}
                   >
                     <span className="font-medium text-gray-800 dark:text-gray-200">{form}</span>
-                    {count > 0 && <span className="ml-1 text-xs opacity-70 text-gray-600 dark:text-gray-400">({count})</span>}
+                    {(count || 0) > 0 && <span className="ml-1 text-xs opacity-70 text-gray-600 dark:text-gray-400">({count})</span>}
                   </button>
                 ))}
               </div>
