@@ -108,16 +108,18 @@ export async function generateNounVariants(
         form: row.form,
         label: labelFromInfo(row.category),
         pos: "noun",
+        count: 0, // Will be updated with frequency data later
+        score: 0,
       });
     }
   }
 
   // Optionally seed base form(s) (ensures at least one direct/lemma form)
   if (!items.length) {
-    items.push({ form: base, label: "Direct", pos: "noun" });
+    items.push({ form: base, label: "Direct", pos: "noun", count: 0, score: 0 });
   } else {
     // Also ensure lemma present
-    items.unshift({ form: base, label: "Lemma", pos: "noun" });
+    items.unshift({ form: base, label: "Lemma", pos: "noun", count: 0, score: 0 });
   }
 
   // De-duplicate early

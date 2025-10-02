@@ -367,6 +367,8 @@ export async function generateEnhancedNounVariants(
     label: 'Direct',
     pos: 'noun',
     romanized: entry.f,
+    count: freqMap?.get(entry.p) ?? 0,
+    score: freqMap?.get(entry.p) ?? 0,
   });
   
   // Add inflections
@@ -379,6 +381,7 @@ export async function generateEnhancedNounVariants(
       pos: 'noun',
       romanized: row.romanization,
       count: freqMap?.get(row.form) ?? 0,
+      score: freqMap?.get(row.form) ?? 0,
     });
   }
   
