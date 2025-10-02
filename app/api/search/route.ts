@@ -235,9 +235,9 @@ export async function POST(request: NextRequest) {
           }
 
           const groupedForms = {
-            verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0 })),
-            nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0 })),
-            other: other.map((f: any) => ({ form: f.form, count: f.count || 0 })),
+            verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
           };
 
           relatedForms = {
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
         console.log('✅ Enhanced search successful, found', enhancedResults.length, 'results');
 
         // Transform results to match expected format
-        const transformed = enhancedResults.map((result, index) => ({
+        const transformed = enhancedResults.map((result: any, index: number) => ({
           ref: result.ref,
           text: result.text,
           testament: result.testament || 'NT',
