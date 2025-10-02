@@ -11,6 +11,7 @@ interface Props {
   onPickBook: (book: string) => void;
   selectedBook?: string | null;
   resultsCount?: number;
+  filteredCount?: number;
 }
 
 export default function CoverageSidebar({
@@ -19,12 +20,15 @@ export default function CoverageSidebar({
   coverageLevel,
   onPickBook,
   selectedBook,
-  resultsCount
+  resultsCount,
+  filteredCount
 }: Props) {
   const sidebarCoverage = useSidebarCoverage(coverage);
 
   const title = coverage.length > 0 ? "Search Results" : "Bible Books";
-  const subtitle = undefined;
+  const subtitle = filteredCount !== undefined && selectedBook 
+    ? `Showing ${filteredCount} results from ${selectedBook}`
+    : undefined;
 
   return (
     <div className="w-full lg:w-auto">
