@@ -6,8 +6,6 @@ import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
-import Tabs from "../components/Tabs";
-import LinguisticAnalysis from "../components/LinguisticAnalysis";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type { Verse, Scope, CoverageItem, AudioMap, PhraseResponse, RelatedFormsData, Conjugations, VariantGroupMeta, VariantDetailMeta } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
@@ -552,14 +550,6 @@ export default function ClientHome() {
   // Calculate results count
   const resultsCount = results.length;
 
-  // Determine default tab based on state
-  const defaultTab = useMemo(() => {
-    // Always prioritize search results - user wants to see results first
-    if (results.length > 0) return 'search'; // Search results first
-    if (includeRelated && relatedForms) return 'analysis'; // Then analysis if no results but forms loaded
-    return 'search'; // Default to search tab
-  }, [results.length, includeRelated, relatedForms]);
-
   return (
     <div className="w-full max-w-6xl mx-auto">
       {/* Header */}
@@ -665,67 +655,139 @@ export default function ClientHome() {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Results and Analysis */}
+        {/* Results with Inline Filtering */}
         <div className="lg:col-span-3">
-          <Tabs
-            defaultTab={defaultTab}
-            tabs={[
-              {
-                id: 'search',
-                label: `Results (${filteredResults.length}${results.length !== filteredResults.length ? ` of ${results.length}` : ''})`,
-                content: (
-                  <ResultsList
-                    results={filteredResults}
-                    audioMap={audioMap}
-                    loading={isLoading}
-                    processed={processed}
-                  />
-                )
-              },
-              {
-                id: 'analysis',
-                label: 'Analysis',
-                content: (
-                  <div className="space-y-6">
-                    {/* Always render LinguisticAnalysis to avoid hooks ordering issues */}
-                    <LinguisticAnalysis
-                      word={processed?.original || ''}
-                      onRelatedWordClick={handlePickForm}
-                    />
+          {/* Results Header */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
+              </h2>
+            </div>
 
-                    {/* Always render RelatedForms container to avoid hooks ordering issues */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                        Related Forms
-                      </h3>
-                      {includeRelated ? (
-                        relatedForms ? (
-                          <RelatedForms
-                            relatedForms={relatedForms}
-                            onPick={handlePickForm}
-                            verbState={verbState}
-                            setVerbState={(state) => {
-                              setVerbPerson(state.person);
-                              setVerbTense(state.tense);
-                              setVerbAspect(state.aspect);
-                              setVerbMood(state.mood);
-                            }}
-                          />
-                        ) : (
-                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                            Generating related forms...
-                          </div>
-                        )
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          Enable "Include Related Forms" to see related word forms.
-                        </div>
-                      )}
-                    </div>
+            {/* Verb Form Filters (shown when Related Forms Mode is active and we have forms) */}
+            {includeRelated && relatedForms && relatedForms.verbs && relatedForms.verbs.length > 0 && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter by verb form:
+                  </span>
+                  <button
+                    onClick={() => {
+                      setVerbPerson('3rd');
+                      setVerbTense('present');
+                      setVerbAspect('imperfective');
+                      setVerbMood('indicative');
+                    }}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  {/* Person Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Person:
+                    </label>
+                    <select
+                      value={verbPerson}
+                      onChange={(e) => setVerbPerson(e.target.value as '1st' | '2nd' | '3rd')}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="1st">1st (I/we)</option>
+                      <option value="2nd">2nd (you)</option>
+                      <option value="3rd">3rd (he/she/they)</option>
+                    </select>
                   </div>
-                )
-              }
-            ]}
+
+                  {/* Tense Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Tense:
+                    </label>
+                    <select
+                      value={verbTense}
+                      onChange={(e) => setVerbTense(e.target.value as any)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="present">Present</option>
+                      <option value="past">Past</option>
+                      <option value="future">Future</option>
+                      <option value="perfect">Perfect</option>
+                      <option value="subjunctive">Subjunctive</option>
+                      <option value="imperative">Imperative</option>
+                      <option value="ability">Ability</option>
+                      <option value="habitual">Habitual</option>
+                    </select>
+                  </div>
+
+                  {/* Aspect Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Aspect:
+                    </label>
+                    <select
+                      value={verbAspect}
+                      onChange={(e) => setVerbAspect(e.target.value as 'imperfective' | 'perfective')}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="imperfective">Imperfective</option>
+                      <option value="perfective">Perfective</option>
+                    </select>
+                  </div>
+
+                  {/* Mood Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Mood:
+                    </label>
+                    <select
+                      value={verbMood}
+                      onChange={(e) => setVerbMood(e.target.value as any)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="indicative">Indicative</option>
+                      <option value="subjunctive">Subjunctive</option>
+                      <option value="imperative">Imperative</option>
+                      <option value="ability">Ability</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Show which forms are being searched */}
+                {relatedForms.verbs && relatedForms.verbs.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {relatedForms.verbs.length} verb forms
+                      {relatedForms.verbs.slice(0, 5).map(v => (
+                        <button
+                          key={v.form}
+                          onClick={() => handlePickForm(v.form)}
+                          className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
+                        >
+                          {v.form} {v.count ? `(${v.count})` : ''}
+                        </button>
+                      ))}
+                      {relatedForms.verbs.length > 5 && (
+                        <span className="ml-2 text-gray-500">
+                          +{relatedForms.verbs.length - 5} more
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Results List */}
+          <ResultsList
+            results={filteredResults}
+            audioMap={audioMap}
+            loading={isLoading}
+            processed={processed}
           />
         </div>
 
