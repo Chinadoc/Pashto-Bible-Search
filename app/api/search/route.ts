@@ -39,7 +39,6 @@ type SearchRequest = {
   includeRelated?: boolean;
   variants?: string[];
   enableFuzzy?: boolean;
-  englishSearchMode?: boolean;
   language?: 'pashto' | 'english';
   bookFilter?: string[];
   limit?: number;
