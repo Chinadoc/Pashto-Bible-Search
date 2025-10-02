@@ -440,6 +440,7 @@ export default function ClientHome() {
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
+  const variantKeyRef = useRef<string>('');
 
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
@@ -618,43 +619,69 @@ export default function ClientHome() {
     setCoverage(coverageData);
   }, [coverageData]);
 
-  // Handle search
-  const handleSearch = async () => {
-    console.log('DEBUG: ========================================');
-    console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
-    console.log('DEBUG: ========================================');
-    console.log('DEBUG: Search parameters:', {
-      query,
-      scope,
-      includeRelated,
-      enableFuzzy,
-      bookFilter
-    });
-
-    if (!query.trim()) {
+  const executeSearch = useCallback(async (
+    opts: {
+      overrideVariants?: string[] | null;
+      languageOverride?: SearchLanguage;
+      preserveResults?: boolean;
+      reason?: string;
+    } = {}
+  ) => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) {
       console.log('DEBUG: Empty query, not searching');
       return;
     }
 
+    const {
+      overrideVariants,
+      languageOverride,
+      preserveResults = false,
+      reason = 'manual',
+    } = opts;
+
+    const effectiveVariants =
+      overrideVariants !== undefined ? overrideVariants : variantsOverride;
+    const variantsPayload = Array.isArray(effectiveVariants) && effectiveVariants.length > 0
+      ? effectiveVariants
+      : undefined;
+
+    console.log('DEBUG: ========================================');
+    console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
+    console.log('DEBUG: Reason:', reason);
+    console.log('DEBUG: ========================================');
+    console.log('DEBUG: Search parameters:', {
+      query: normalizedQuery,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      bookFilter,
+      language: languageOverride ?? searchLanguage,
+      variants: variantsPayload,
+    });
+
     setIsLoading(true);
     setError('');
-    setResults([]);
-    setCoverage([]);
+    if (!preserveResults) {
+      setResults([]);
+      setCoverage([]);
+      setRelatedForms(null);
+    }
     setProcessed(null);
-    setRelatedForms(null);
 
     try {
-      console.log('DEBUG: Starting enhanced search with filters and variants');
-
-      // Use the enhanced search API with all filters
-      const searchParams = {
-        query: query.trim(),
+      const searchParams: any = {
+        query: normalizedQuery,
         scope,
         includeRelated,
         enableFuzzy,
-        englishSearchMode: searchLanguage === 'english',
-        bookFilter
+        bookFilter,
+        language: languageOverride ?? searchLanguage,
       };
+
+      if (variantsPayload) {
+        searchParams.variants = variantsPayload;
+      }
 
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -671,27 +698,74 @@ export default function ClientHome() {
         resultsCount: searchData.results?.length || 0,
         relatedFormsCount: searchData.relatedForms?.total || 0,
         processedVariants: searchData.processed?.variants?.length || 0,
+        variantsSearched: searchData.processed?.variantsSearched || [],
         searchType: searchData.processed?.searchType || 'unknown',
         hasRelatedForms: !!searchData.relatedForms,
-        relatedFormsData: searchData.relatedForms
       });
 
       setResults(searchData.results || []);
       setRelatedForms(searchData.relatedForms || null);
       setProcessed(searchData.processed || null);
 
+      const processedVariants: string[] = searchData.processed?.variantsSearched
+        || searchData.processed?.variants
+        || variantsPayload
+        || [];
+
+      setActiveVariantForms(processedVariants);
+      setVariantsOverride(variantsPayload ?? null);
+
       console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
     } catch (err) {
       console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
-      setResults([]);
-      setCoverage([]);
+      if (!preserveResults) {
+        setResults([]);
+        setCoverage([]);
+        setRelatedForms(null);
+      }
       setProcessed(null);
-      setRelatedForms(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
+
+  const handleSearch = useCallback(
+    (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
+    [executeSearch]
+  );
+
+  const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
+    const sanitized = sanitizeVerbFilter(nextFilters);
+    setVerbFilters(sanitized);
+
+    if (!includeRelated || !relatedForms?.verbs?.length) {
+      console.log('Verb filters updated, awaiting related forms to refetch results');
+      return;
+    }
+
+    if (isDefaultVerbFilter(sanitized)) {
+      variantKeyRef.current = '__all__';
+      const allForms = formsFromVariants(relatedForms.verbs || []);
+      setVariantsOverride(null);
+      setActiveVariantForms(allForms);
+      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'verb-filter-reset' });
+      return;
+    }
+
+    const filteredVariants = filterVerbVariants(relatedForms.verbs, sanitized);
+    const forms = formsFromVariants(filteredVariants);
+    const key = forms.join('|');
+
+    if (key === variantKeyRef.current) {
+      return; // no change in concrete forms
+    }
+
+    variantKeyRef.current = key;
+    setVariantsOverride(forms);
+    setActiveVariantForms(forms);
+    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'verb-filter' });
+  }, [includeRelated, relatedForms, executeSearch]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
@@ -721,15 +795,31 @@ export default function ClientHome() {
   // Calculate results count
   const resultsCount = results.length;
 
+  const isEnglishMode = searchLanguage === 'english';
+
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className={`w-full max-w-6xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
+      {/* English Mode Banner */}
+      {isEnglishMode && (
+        <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl">🇬🇧</span>
+            <div className="text-center">
+              <p className="font-bold text-lg">English Search Mode Active</p>
+              <p className="text-sm opacity-90">Searching dictionary for English → Pashto matches</p>
+            </div>
+            <span className="text-2xl">🇬🇧</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Search the Bible in Pashto with linguistic analysis
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -739,46 +829,46 @@ export default function ClientHome() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Enter Pashto text to search..."
+          placeholder={isEnglishMode ? "Enter English word (e.g., 'baptize', 'love', 'peace')..." : "Enter Pashto text to search..."}
           variant="outlined"
           fullWidth
           inputProps={{
-            dir: 'rtl',
-            style: { textAlign: 'right', padding: '12px 16px' }
+            dir: isEnglishMode ? 'ltr' : 'rtl',
+            style: { textAlign: isEnglishMode ? 'left' : 'right', padding: '12px 16px' }
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              backgroundColor: '#374151',
-              borderColor: '#4B5563',
-              color: '#F9FAFB',
+              backgroundColor: isEnglishMode ? '#FFF7ED' : '#374151',
+              borderColor: isEnglishMode ? '#F97316' : '#4B5563',
+              color: isEnglishMode ? '#9A3412' : '#F9FAFB',
               '&:hover': {
-                borderColor: '#6B7280'
+                borderColor: isEnglishMode ? '#EA580C' : '#6B7280'
               },
               '&.Mui-focused': {
-                borderColor: '#3B82F6',
-                boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                borderColor: isEnglishMode ? '#F97316' : '#3B82F6',
+                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
               }
             },
             '& .MuiInputBase-input::placeholder': {
-              color: '#9CA3AF'
+              color: isEnglishMode ? '#C2410C' : '#9CA3AF'
             }
           }}
           InputProps={{
             startAdornment: (
               <IconButton
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={isLoading}
                 sx={{
-                  color: '#F9FAFB',
+                  color: isEnglishMode ? '#9A3412' : '#F9FAFB',
                   '&:disabled': { color: '#6B7280' }
                 }}
               >
-                🔍
+                {isEnglishMode ? '🇬🇧' : '🔍'}
               </IconButton>
             ),
             endAdornment: (
               <Button
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={isLoading}
                 variant="contained"
                 sx={{
@@ -846,15 +936,13 @@ export default function ClientHome() {
                     Filter by verb form:
                   </span>
                   <button
-                    onClick={() => {
-                      setVerbFilters({ ...DEFAULT_VERB_FILTER });
-                    }}
+                    onClick={() => applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER })}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Reset filters
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Person Filter */}
                   <div>
@@ -868,11 +956,9 @@ export default function ClientHome() {
                             type="checkbox"
                             checked={verbFilters.person === 'all' || verbFilters.person === option.value}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setVerbFilters({ ...verbFilters, person: option.value as VerbFilterPerson });
-                              } else {
-                                setVerbFilters({ ...verbFilters, person: 'all' });
-                              }
+                              const value = e.target.checked ? option.value as VerbFilterPerson : 'all';
+                              if (value === verbFilters.person) return;
+                              applyVerbFiltersAndSearch({ ...verbFilters, person: value });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -894,11 +980,9 @@ export default function ClientHome() {
                             type="checkbox"
                             checked={verbFilters.tense === 'all' || verbFilters.tense === tense}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setVerbFilters({ ...verbFilters, tense: tense as VerbFilterTense });
-                              } else {
-                                setVerbFilters({ ...verbFilters, tense: 'all' });
-                              }
+                              const value = e.target.checked ? (tense as VerbFilterTense) : 'all';
+                              if (value === verbFilters.tense) return;
+                              applyVerbFiltersAndSearch({ ...verbFilters, tense: value });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -920,11 +1004,9 @@ export default function ClientHome() {
                             type="checkbox"
                             checked={verbFilters.aspect === 'all' || verbFilters.aspect === aspect}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setVerbFilters({ ...verbFilters, aspect: aspect as VerbFilterAspect });
-                              } else {
-                                setVerbFilters({ ...verbFilters, aspect: 'all' });
-                              }
+                              const value = e.target.checked ? (aspect as VerbFilterAspect) : 'all';
+                              if (value === verbFilters.aspect) return;
+                              applyVerbFiltersAndSearch({ ...verbFilters, aspect: value });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -946,11 +1028,9 @@ export default function ClientHome() {
                             type="checkbox"
                             checked={verbFilters.mood === 'all' || verbFilters.mood === mood}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setVerbFilters({ ...verbFilters, mood: mood as VerbFilterMood });
-                              } else {
-                                setVerbFilters({ ...verbFilters, mood: 'all' });
-                              }
+                              const value = e.target.checked ? (mood as VerbFilterMood) : 'all';
+                              if (value === verbFilters.mood) return;
+                              applyVerbFiltersAndSearch({ ...verbFilters, mood: value });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -962,22 +1042,22 @@ export default function ClientHome() {
                 </div>
 
                 {/* Show which forms are being searched */}
-                {relatedForms.verbs && relatedForms.verbs.length > 0 && (
+                {activeVariantForms.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Searching with {relatedForms.verbs.length} verb forms
-                      {relatedForms.verbs.slice(0, 5).map(v => (
+                      Searching with {activeVariantForms.length} verb forms
+                      {activeVariantForms.slice(0, 5).map((form) => (
                         <button
-                          key={v.form}
-                          onClick={() => handlePickForm(v.form)}
+                          key={form}
+                          onClick={() => handlePickForm(form)}
                           className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
                         >
-                          {v.form} {v.count ? `(${v.count})` : ''}
+                          {form}
                         </button>
                       ))}
-                      {relatedForms.verbs.length > 5 && (
+                      {activeVariantForms.length > 5 && (
                         <span className="ml-2 text-gray-500">
-                          +{relatedForms.verbs.length - 5} more
+                          +{activeVariantForms.length - 5} more
                         </span>
                       )}
                     </p>
