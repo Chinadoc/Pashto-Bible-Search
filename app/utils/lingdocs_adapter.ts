@@ -185,11 +185,16 @@ export async function generateEnhancedVerbVariants(
   }
   
   // 4. FALLBACK: If we have very few forms, generate using patterns
-  if (variants.length < 10) {
-    console.log(`⚠️ Only ${variants.length} forms found for "${rootOrInfinitive}", generating pattern-based forms...`);
+  // ALWAYS generate if we have less than 20 forms (to ensure comprehensive coverage)
+  console.log(`📊 Found ${variants.length} forms for "${rootOrInfinitive}" from database`);
+  
+  if (variants.length < 20) {
+    console.log(`⚠️ Only ${variants.length} forms found, generating pattern-based forms...`);
     const patternForms = generatePatternBasedVerbForms(entry.p);
     variants.push(...patternForms);
     console.log(`✅ Added ${patternForms.length} pattern-based forms, total now: ${variants.length}`);
+  } else {
+    console.log(`✅ Database has sufficient forms (${variants.length}), skipping pattern generation`);
   }
   
   // 5. De-duplicate and sort by frequency
