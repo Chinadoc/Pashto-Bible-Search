@@ -1117,20 +1117,24 @@ export default function ClientHome() {
               </div>
             )}
 
-            {/* Verb Form Filters (shown when Related Forms Mode is active and we have forms) */}
-            {includeRelated && relatedForms && relatedForms.verbs && relatedForms.verbs.length > 0 && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Filter by verb form:
-                  </span>
-                  <button
-                    onClick={() => applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER })}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Reset filters
-                  </button>
-                </div>
+            {/* Form Filters (shown when Related Forms Mode is active) */}
+            {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
+            {includeRelated && relatedForms && (
+              <>
+                {/* VERB FILTERS */}
+                {(relatedForms.posGuess === 'verb' || (!relatedForms.posGuess && relatedForms.verbs && relatedForms.verbs.length > 0)) && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Filter by verb form:
+                      </span>
+                      <button
+                        onClick={() => applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER })}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Reset filters
+                      </button>
+                    </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Person Filter */}
@@ -1313,6 +1317,162 @@ export default function ClientHome() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* NOUN FILTERS */}
+            {relatedForms.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0 && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter by noun inflection:
+                  </span>
+                  <button
+                    onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Inflection Type Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Inflection Type:
+                    </label>
+                    <div className="space-y-1">
+                      {NOUN_INFLECTION_VALUES.map((inflType) => (
+                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="noun-inflection"
+                            checked={nounFilters.inflectionType === inflType}
+                            onChange={() => {
+                              if (nounFilters.inflectionType !== inflType) {
+                                applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{inflType}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gender Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Gender:
+                    </label>
+                    <div className="space-y-1">
+                      {GENDER_VALUES.map((gender) => (
+                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="noun-gender"
+                            checked={nounFilters.gender === gender}
+                            onChange={() => {
+                              if (nounFilters.gender !== gender) {
+                                applyNounFiltersAndSearch({ ...nounFilters, gender });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{gender}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {activeVariantForms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {activeVariantForms.length} noun forms
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ADJECTIVE FILTERS */}
+            {(relatedForms.posGuess === 'adjective' || relatedForms.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0 && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter by adjective inflection:
+                  </span>
+                  <button
+                    onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Inflection Type Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Inflection Type:
+                    </label>
+                    <div className="space-y-1">
+                      {NOUN_INFLECTION_VALUES.map((inflType) => (
+                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="adj-inflection"
+                            checked={adjectiveFilters.inflectionType === inflType}
+                            onChange={() => {
+                              if (adjectiveFilters.inflectionType !== inflType) {
+                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{inflType}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gender Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Gender:
+                    </label>
+                    <div className="space-y-1">
+                      {GENDER_VALUES.map((gender) => (
+                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="adj-gender"
+                            checked={adjectiveFilters.gender === gender}
+                            onChange={() => {
+                              if (adjectiveFilters.gender !== gender) {
+                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{gender}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {activeVariantForms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {activeVariantForms.length} adjective forms
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
             )}
           </div>
 
