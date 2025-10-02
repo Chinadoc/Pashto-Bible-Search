@@ -258,16 +258,21 @@ export async function POST(request: NextRequest) {
 
     // Try enhanced search first (if SQL functions are available)
     console.log('🔍 Attempting enhanced search for:', trimmedQuery, 'with', searchTerms.length, 'terms');
+    console.log('🔍 Search terms being used:', searchTerms);
     try {
       // Use the expanded search terms if we have related forms
       let enhancedResults;
       if (searchTerms.length > 1) {
         // Multiple terms - use our helper function
+        console.log('🔍 Using multiple terms search for:', searchTerms);
         enhancedResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
       } else {
         // Single term - use direct search
+        console.log('🔍 Using single term search for:', trimmedQuery);
         enhancedResults = await searchVersesEnhanced(trimmedQuery, scope, 'auto');
       }
+
+      console.log('🔍 Enhanced search raw results:', enhancedResults);
 
       if (enhancedResults && enhancedResults.length > 0) {
         console.log('✅ Enhanced search successful, found', enhancedResults.length, 'results');
