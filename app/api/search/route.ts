@@ -39,6 +39,7 @@ type SearchRequest = {
   includeRelated?: boolean;
   variants?: string[];
   enableFuzzy?: boolean;
+  englishSearchMode?: boolean;
   limit?: number;
 };
 
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json() as SearchRequest;
-    const { query, includeRelated = false, variants = [], enableFuzzy, limit = 100 } = body;
+    const { query, includeRelated = false, variants = [], enableFuzzy, englishSearchMode = false, limit = 100 } = body;
     const scope = normaliseScope(body.scope);
 
     // Load audio map for assigning audio URLs
@@ -155,7 +156,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const trimmedQuery = query.trim();
+    let trimmedQuery = query.trim();
+
+    // English search mode: translate English to Pashto first
+    if (englishSearchMode) {
+      console.log('🇬🇧 English search mode enabled for query:', trimmedQuery);
+      
+      try {
+        const { dictionary } = await getData();
+        const englishLower = trimmedQuery.toLowerCase();
+        
+        // Find dictionary entries where English definition matches
+        const matchingEntries = dictionary.filter((entry: any) => {
+          const definition = (entry.definition || entry.english || '').toLowerCase();
+          // Match if English term appears in definition
+          return definition.includes(englishLower) || 
+                 (entry.pos && entry.pos.toLowerCase().includes(englishLower));
+        });
+
+        if (matchingEntries.length > 0) {
+          // Use the first match's Pashto word as the search term
+          trimmedQuery = matchingEntries[0].pashto;
+          console.log(`✅ English "${query}" → Pashto "${trimmedQuery}" (${matchingEntries.length} dictionary matches)`);
+        } else {
+          console.warn(`❌ No dictionary match found for English "${query}"`);
+          return NextResponse.json({
+            results: [],
+            relatedForms: null,
+            processed: {
+              original: query,
+              normalized: query,
+              variants: [],
+              searchType: 'fast',
+            },
+            error: `No Pashto translation found for "${query}"`,
+            count: 0,
+            ms: Date.now() - startedAt,
+          });
+        }
+      } catch (error) {
+        console.error('English search translation failed:', error);
+      }
+    }
 
     // Generate related forms first if needed (for expanding search)
     let searchTerms = [trimmedQuery];

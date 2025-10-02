@@ -47,6 +47,8 @@ function SearchControls({
   setIncludeRelated,
   enableFuzzy,
   setEnableFuzzy,
+  englishSearchMode,
+  setEnglishSearchMode,
   bookFilter,
   setBookFilter,
   resultsCount,
@@ -59,6 +61,8 @@ function SearchControls({
   setIncludeRelated: (include: boolean) => void;
   enableFuzzy: boolean;
   setEnableFuzzy: (enable: boolean) => void;
+  englishSearchMode: boolean;
+  setEnglishSearchMode: (enable: boolean) => void;
   bookFilter: string[];
   setBookFilter: (books: string[]) => void;
   resultsCount: number;
@@ -140,6 +144,31 @@ function SearchControls({
             }`}
           >
             Fuzzy
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</span>
+          <button
+            onClick={() => setEnglishSearchMode(false)}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              !englishSearchMode
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Pashto
+          </button>
+          <button
+            onClick={() => setEnglishSearchMode(true)}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              englishSearchMode
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+            title="Search in English - finds dictionary matches and searches Pashto equivalents"
+          >
+            🇬🇧 English
           </button>
         </div>
 
@@ -243,6 +272,7 @@ export default function ClientHome() {
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
+  const [englishSearchMode, setEnglishSearchMode] = useState<boolean>(false);
   const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -270,6 +300,26 @@ export default function ClientHome() {
     aspect: verbAspect,
     mood: verbMood
   };
+
+  // Trigger search when verb filters change (real-time filtering)
+  const previousVerbState = useRef(verbState);
+  useEffect(() => {
+    // Only trigger if verb state actually changed and we have related forms
+    if (includeRelated && relatedForms && query.trim()) {
+      const stateChanged = 
+        previousVerbState.current.person !== verbPerson ||
+        previousVerbState.current.tense !== verbTense ||
+        previousVerbState.current.aspect !== verbAspect ||
+        previousVerbState.current.mood !== verbMood;
+      
+      if (stateChanged) {
+        console.log('🔄 Verb filter changed, triggering new search');
+        handleSearch();
+      }
+    }
+    previousVerbState.current = verbState;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verbPerson, verbTense, verbAspect, verbMood]);
 
   // Persist state
   useEffect(() => {
@@ -434,16 +484,12 @@ export default function ClientHome() {
     }
   }, [results]);
 
-  // Current search coverage (filtered results) for display in coverage map
+  // Always show full coverage (all books) but highlight the filtered one
+  // This way users see "31 in Luke" even when filtered to Mark
   const coverageData = useMemo(() => {
-    if (bookFilter.length === 0) {
-      // No filtering - show all books
-      return fullCoverageData;
-    } else {
-      // Show only selected books with their counts from all results
-      return fullCoverageData.filter(item => bookFilter.includes(item.book));
-    }
-  }, [fullCoverageData, bookFilter]);
+    // Always show all books, regardless of filter
+    return fullCoverageData;
+  }, [fullCoverageData]);
 
   // Update coverage state when coverageData changes
   useEffect(() => {
@@ -484,6 +530,7 @@ export default function ClientHome() {
         scope,
         includeRelated,
         enableFuzzy,
+        englishSearchMode,
         bookFilter
       };
 
@@ -536,6 +583,8 @@ export default function ClientHome() {
     // NOTE: Intentionally NOT including results.length to prevent infinite loop!
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeRelated]);
+
+  // Trigger new search when verb filters change (already implemented above)
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -639,6 +688,8 @@ export default function ClientHome() {
         setIncludeRelated={setIncludeRelated}
         enableFuzzy={enableFuzzy}
         setEnableFuzzy={setEnableFuzzy}
+        englishSearchMode={englishSearchMode}
+        setEnglishSearchMode={setEnglishSearchMode}
         bookFilter={bookFilter}
         setBookFilter={setBookFilter}
         resultsCount={resultsCount}
@@ -791,7 +842,7 @@ export default function ClientHome() {
           />
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - Always show full coverage, not filtered */}
         <div className="lg:col-span-1">
           <CoverageSidebar
             coverage={coverage}
@@ -806,7 +857,8 @@ export default function ClientHome() {
               }
             }}
             selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
-            resultsCount={resultsCount}
+            resultsCount={results.length}
+            filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
           />
         </div>
       </div>
