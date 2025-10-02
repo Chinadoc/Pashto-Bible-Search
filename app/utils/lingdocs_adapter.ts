@@ -126,7 +126,9 @@ export async function generateEnhancedVerbVariants(
   });
   
   // 2. Use your existing inflections data
-  const { inflectMap, freqMap } = await getData();
+  const data = await getData();
+  const inflectMap = (data as any).inflectionsByBase || new Map();
+  const freqMap = data.frequencyMap;
   const inflRows = inflectMap?.get(entry.p) || [];
   
   for (const row of inflRows) {
@@ -354,7 +356,9 @@ export async function generateEnhancedNounVariants(
   if (!entry) return [];
   
   const variants: Variant[] = [];
-  const { inflectMap, freqMap } = await getData();
+  const data = await getData();
+  const inflectMap = (data as any).inflectionsByBase || new Map();
+  const freqMap = data.frequencyMap;
   const inflRows = inflectMap?.get(entry.p) || [];
   
   // Add base form
