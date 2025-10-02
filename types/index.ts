@@ -22,7 +22,7 @@ export type AudioMap = Record<string, string>;
 // API response types
 export interface RelatedFormVariant {
   form: string;
-  count: number;
+  count?: number;
   label?: string;
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   score?: number;
