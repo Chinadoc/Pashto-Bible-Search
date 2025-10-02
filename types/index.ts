@@ -14,6 +14,15 @@ export interface VerbFilterState {
   mood: VerbFilterMood;
 }
 
+// Noun inflection filters
+export type NounInflectionType = 'all' | 'plain' | '1st' | '2nd' | 'plural' | 'vocative' | 'bundled';
+export type NounGender = 'all' | 'masculine' | 'feminine';
+
+export interface NounFilterState {
+  inflectionType: NounInflectionType;
+  gender: NounGender;
+}
+
 export interface Verse {
   ref: string;
   text: string;

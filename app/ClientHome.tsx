@@ -195,8 +195,8 @@ function SearchControls({
   setIncludeRelated,
   enableFuzzy,
   setEnableFuzzy,
-  englishSearchMode,
-  setEnglishSearchMode,
+  searchLanguage,
+  setSearchLanguage,
   bookFilter,
   setBookFilter,
   resultsCount,
@@ -209,8 +209,8 @@ function SearchControls({
   setIncludeRelated: (include: boolean) => void;
   enableFuzzy: boolean;
   setEnableFuzzy: (enable: boolean) => void;
-  englishSearchMode: boolean;
-  setEnglishSearchMode: (enable: boolean) => void;
+  searchLanguage: SearchLanguage;
+  setSearchLanguage: (language: SearchLanguage) => void;
   bookFilter: string[];
   setBookFilter: (books: string[]) => void;
   resultsCount: number;
@@ -298,19 +298,20 @@ function SearchControls({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</span>
           <button
-            onClick={() => setEnglishSearchMode(false)}
+            onClick={() => setSearchLanguage('pashto')}
             className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              !englishSearchMode
-                ? 'bg-blue-500 text-white'
+              searchLanguage === 'pashto'
+                ? 'bg-sky-500 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
+            title="Search directly in Pashto"
           >
-            Pashto
+            🕌 Pashto
           </button>
           <button
-            onClick={() => setEnglishSearchMode(true)}
+            onClick={() => setSearchLanguage('english')}
             className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              englishSearchMode
+              searchLanguage === 'english'
                 ? 'bg-orange-500 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
@@ -714,6 +715,7 @@ export default function ClientHome() {
 
       setActiveVariantForms(processedVariants);
       setVariantsOverride(variantsPayload ?? null);
+      variantKeyRef.current = processedVariants.length ? processedVariants.join('|') : '__all__';
 
       console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
     } catch (err) {
@@ -779,6 +781,17 @@ export default function ClientHome() {
     // NOTE: Intentionally NOT including results.length to prevent infinite loop!
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeRelated]);
+
+  // Re-run search automatically when language switches (if query present)
+  const previousLanguage = useRef<SearchLanguage>(searchLanguage);
+  useEffect(() => {
+    if (previousLanguage.current !== searchLanguage && query.trim()) {
+      console.log('DEBUG: Search language changed to', searchLanguage, '- refreshing results');
+      variantKeyRef.current = ''; // reset variant key to avoid stale matches
+      executeSearch({ overrideVariants: null, preserveResults: false, reason: 'language-toggle' });
+    }
+    previousLanguage.current = searchLanguage;
+  }, [searchLanguage, query, executeSearch]);
 
   // Trigger new search when verb filters change (already implemented above)
 
@@ -900,8 +913,8 @@ export default function ClientHome() {
         setIncludeRelated={setIncludeRelated}
         enableFuzzy={enableFuzzy}
         setEnableFuzzy={setEnableFuzzy}
-        englishSearchMode={searchLanguage === 'english'}
-        setEnglishSearchMode={(mode) => setSearchLanguage(mode ? 'english' : 'pashto')}
+        searchLanguage={searchLanguage}
+        setSearchLanguage={setSearchLanguage}
         bookFilter={bookFilter}
         setBookFilter={setBookFilter}
         resultsCount={resultsCount}
@@ -950,17 +963,32 @@ export default function ClientHome() {
                       Person:
                     </label>
                     <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="person"
+                          checked={verbFilters.person === 'all'}
+                          onChange={() => {
+                            if (verbFilters.person !== 'all') {
+                              applyVerbFiltersAndSearch({ ...verbFilters, person: 'all' });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
                       {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
                         <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="checkbox"
-                            checked={verbFilters.person === 'all' || verbFilters.person === option.value}
-                            onChange={(e) => {
-                              const value = e.target.checked ? option.value as VerbFilterPerson : 'all';
-                              if (value === verbFilters.person) return;
-                              applyVerbFiltersAndSearch({ ...verbFilters, person: value });
+                            type="radio"
+                            name="person"
+                            checked={verbFilters.person === option.value}
+                            onChange={() => {
+                              if (verbFilters.person !== option.value) {
+                                applyVerbFiltersAndSearch({ ...verbFilters, person: option.value as VerbFilterPerson });
+                              }
                             }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
                           <span>{option.label}</span>
                         </label>
