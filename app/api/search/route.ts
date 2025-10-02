@@ -234,12 +234,19 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          relatedForms = {
-            root: trimmedQuery,
-            total: forms.length,
+          const groupedForms = {
             verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
             nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
             other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+          };
+
+          relatedForms = {
+            root: trimmedQuery,
+            total: forms.length,
+            verbs: groupedForms.verbs,
+            nouns: groupedForms.nouns,
+            other: groupedForms.other,
+            forms: groupedForms,
             variantDetails,
             posGuess: dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
           };
