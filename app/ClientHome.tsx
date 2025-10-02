@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
-import RelatedForms from "../components/RelatedForms";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import type {
@@ -1029,17 +1028,32 @@ export default function ClientHome() {
                       Tense:
                     </label>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="tense"
+                          checked={verbFilters.tense === 'all'}
+                          onChange={() => {
+                            if (verbFilters.tense !== 'all') {
+                              applyVerbFiltersAndSearch({ ...verbFilters, tense: 'all' });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
                       {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
                         <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="checkbox"
-                            checked={verbFilters.tense === 'all' || verbFilters.tense === tense}
-                            onChange={(e) => {
-                              const value = e.target.checked ? (tense as VerbFilterTense) : 'all';
-                              if (value === verbFilters.tense) return;
-                              applyVerbFiltersAndSearch({ ...verbFilters, tense: value });
+                            type="radio"
+                            name="tense"
+                            checked={verbFilters.tense === tense}
+                            onChange={() => {
+                              if (verbFilters.tense !== tense) {
+                                applyVerbFiltersAndSearch({ ...verbFilters, tense: tense as VerbFilterTense });
+                              }
                             }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
                           <span className="capitalize">{tense}</span>
                         </label>
@@ -1053,17 +1067,32 @@ export default function ClientHome() {
                       Aspect:
                     </label>
                     <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="aspect"
+                          checked={verbFilters.aspect === 'all'}
+                          onChange={() => {
+                            if (verbFilters.aspect !== 'all') {
+                              applyVerbFiltersAndSearch({ ...verbFilters, aspect: 'all' });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
                       {['imperfective', 'perfective'].map((aspect) => (
                         <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="checkbox"
-                            checked={verbFilters.aspect === 'all' || verbFilters.aspect === aspect}
-                            onChange={(e) => {
-                              const value = e.target.checked ? (aspect as VerbFilterAspect) : 'all';
-                              if (value === verbFilters.aspect) return;
-                              applyVerbFiltersAndSearch({ ...verbFilters, aspect: value });
+                            type="radio"
+                            name="aspect"
+                            checked={verbFilters.aspect === aspect}
+                            onChange={() => {
+                              if (verbFilters.aspect !== aspect) {
+                                applyVerbFiltersAndSearch({ ...verbFilters, aspect: aspect as VerbFilterAspect });
+                              }
                             }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
                           <span className="capitalize">{aspect}</span>
                         </label>
@@ -1077,17 +1106,32 @@ export default function ClientHome() {
                       Mood:
                     </label>
                     <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="mood"
+                          checked={verbFilters.mood === 'all'}
+                          onChange={() => {
+                            if (verbFilters.mood !== 'all') {
+                              applyVerbFiltersAndSearch({ ...verbFilters, mood: 'all' });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
                       {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
                         <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="checkbox"
-                            checked={verbFilters.mood === 'all' || verbFilters.mood === mood}
-                            onChange={(e) => {
-                              const value = e.target.checked ? (mood as VerbFilterMood) : 'all';
-                              if (value === verbFilters.mood) return;
-                              applyVerbFiltersAndSearch({ ...verbFilters, mood: value });
+                            type="radio"
+                            name="mood"
+                            checked={verbFilters.mood === mood}
+                            onChange={() => {
+                              if (verbFilters.mood !== mood) {
+                                applyVerbFiltersAndSearch({ ...verbFilters, mood: mood as VerbFilterMood });
+                              }
                             }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
                           <span className="capitalize">{mood}</span>
                         </label>
