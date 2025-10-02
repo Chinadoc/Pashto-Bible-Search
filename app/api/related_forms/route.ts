@@ -119,28 +119,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Enrich with frequency counts
-    forms = forms.map(f => ({
-      ...f,
-      count: frequencyMap.get(f.form) ?? f.count,
-      score: frequencyMap.get(f.form) ?? f.score ?? 0
-    }));
+    // Enrich with frequency counts from Bible occurrences
+    console.log(`📊 Enriching ${forms.length} forms with occurrence data...`);
+    forms = forms.map(f => {
+      const occurrenceCount = frequencyMap.get(f.form) ?? 0;
+      if (occurrenceCount > 0) {
+        console.log(`  ✅ ${f.form} found ${occurrenceCount} times in Bible`);
+      }
+      return {
+        ...f,
+        count: occurrenceCount || f.count || 0,
+        score: occurrenceCount || f.score || 0,
+      };
+    });
+
+    // Sort by frequency (most common first)
+    forms = forms.sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
 
     const total = forms.length;
 
+    // Update groups with enriched counts
+    const enrichedGroups: typeof groups = {};
+    if (groups.nouns) enrichedGroups.nouns = forms.filter(f => f.pos === 'noun');
+    if (groups.verbs) enrichedGroups.verbs = forms.filter(f => f.pos === 'verb');
+    if (groups.other) enrichedGroups.other = forms.filter(f => f.pos !== 'noun' && f.pos !== 'verb');
+
     const variantDetails = {
       root: normalized,
-      forms: groups,
+      forms: enrichedGroups,
       total,
     };
 
     const payload: RelatedFormsResponse = {
       root: normalized,
-      forms: groups,
+      forms: enrichedGroups,
       total,
       variantDetails,
       ms: Date.now() - startedAt,
     };
+
+    console.log(`✅ Returning ${total} forms with occurrence counts (${Date.now() - startedAt}ms)`);
 
     // Cache the result
     setCache(cacheKey, payload);
