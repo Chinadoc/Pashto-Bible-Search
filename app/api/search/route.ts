@@ -40,6 +40,8 @@ type SearchRequest = {
   variants?: string[];
   enableFuzzy?: boolean;
   englishSearchMode?: boolean;
+  language?: 'pashto' | 'english';
+  bookFilter?: string[];
   limit?: number;
 };
 
@@ -127,7 +129,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json() as SearchRequest;
-    const { query, includeRelated = false, variants = [], enableFuzzy, englishSearchMode = false, limit = 100 } = body;
+    const {
+      query,
+      includeRelated = false,
+      variants = [],
+      enableFuzzy,
+      language = 'pashto',
+      limit = 100,
+    } = body;
     const scope = normaliseScope(body.scope);
 
     // Load audio map for assigning audio URLs
@@ -163,10 +172,10 @@ export async function POST(request: NextRequest) {
     let trimmedQuery = originalQuery;
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
-    const searchLanguage: 'pashto' | 'english' = englishSearchMode ? 'english' : 'pashto';
+    const searchLanguage: 'pashto' | 'english' = language === 'english' ? 'english' : 'pashto';
 
     // English search mode: find ALL Pashto words with this English term
-    if (englishSearchMode) {
+    if (searchLanguage === 'english') {
       console.log('🇬🇧 English search mode enabled for query:', originalQuery);
       
       try {
@@ -234,7 +243,7 @@ export async function POST(request: NextRequest) {
     let relatedForms = null;
 
     // If English search mode, create a special relatedForms object to show all matches
-    if (englishSearchMode && englishMatches.length > 0) {
+    if (searchLanguage === 'english' && englishMatches.length > 0) {
       const matchForms = englishMatches.map(m => ({
         form: m.pashto,
         label: m.english,
