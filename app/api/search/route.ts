@@ -174,9 +174,20 @@ export async function POST(request: NextRequest) {
         const englishLower = originalQuery.toLowerCase();
         
         // Find ALL dictionary entries where English definition matches
+        // Use fuzzy matching: split English field by spaces/commas and check each word
         const matchingEntries = dictionary
-          .filter((entry: any) => typeof entry.english === 'string' && entry.english.toLowerCase().includes(englishLower))
-          .slice(0, 8);
+          .filter((entry: any) => {
+            if (typeof entry.english !== 'string') return false;
+            const englishField = entry.english.toLowerCase();
+            
+            // Direct substring match (fastest)
+            if (englishField.includes(englishLower)) return true;
+            
+            // Fuzzy match: check if query matches start of any word
+            const words = englishField.split(/[\s,;]+/);
+            return words.some((word: string) => word.startsWith(englishLower));
+          })
+          .slice(0, 12); // Increased from 8 to 12 for better coverage
 
         if (!matchingEntries.length) {
           console.warn(`❌ No dictionary match found for English "${originalQuery}"`);
