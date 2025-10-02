@@ -1,17 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
+import type { RelatedFormsData, RelatedFormVariant } from '../types';
 
 // Types for the structured data from Edge function
-type Variant = {
-  form: string;
-  label: string;
-  pos: 'noun'|'verb'|'adjective'|'other';
-  score?: number;
-  count?: number;
-  romanized?: string;
-  flags?: string[];
-};
+type Variant = RelatedFormVariant;
 
 type VariantDetails = Array<{
   type: string;
@@ -19,15 +12,6 @@ type VariantDetails = Array<{
   count: number;
   groups?: Array<{ key: string; label: string; items: Variant[] }>;
 }>;
-
-// Extended type that includes both legacy and new structured data
-type RelatedFormsData = {
-  verbs?: Array<{form: string, count: number}>;
-  nouns?: Array<{form: string, count: number}>;
-  other?: Array<{form: string, count: number}>;
-  total?: number;
-  variantDetails?: VariantDetails; // New structured data from Edge function
-};
 
 type VerbUnderstandingState = {
   person: '1st' | '2nd' | '3rd';
@@ -59,7 +43,7 @@ function mapGrammaticalLabel(label: string): string {
 // Group verb forms by their detailed grammatical labels for display
 function groupVerbsByDetailedLabels(variantDetails?: VariantDetails) {
   const verbVariants = variantDetails?.find(block => block.type === 'verb')?.groups?.[0]?.items || [];
-  const groups: Record<string, Array<{form: string, count: number, label: string}>> = {
+  const groups: Record<string, Array<RelatedFormVariant>> = {
     presentTense: [],
     subjunctiveTense: [],
     futureTense: [],
@@ -102,8 +86,8 @@ function groupVerbsByDetailedLabels(variantDetails?: VariantDetails) {
 }
 
 // Categorize verbs by their grammatical labels
-function categorizeVerbForms(verbs: Array<{form: string, count: number, label?: string}>) {
-  const groups: Record<string, Array<{form: string, count: number, label?: string}>> = {
+function categorizeVerbForms(verbs: Array<RelatedFormVariant>) {
+  const groups: Record<string, Array<RelatedFormVariant>> = {
     presentTense: [],
     subjunctiveTense: [],
     futureTense: [],
@@ -146,7 +130,7 @@ function categorizeVerbForms(verbs: Array<{form: string, count: number, label?: 
 // Group verbs by LingDocs categories using structured data from Edge function
 function groupVerbsFromStructuredData(variantDetails?: VariantDetails) {
   const verbVariants = variantDetails?.find(block => block.type === 'verb')?.groups?.[0]?.items || [];
-  const groups: Record<string, Array<{form: string, count: number}>> = {
+  const groups: Record<string, Array<RelatedFormVariant>> = {
     presentTense: [],
     subjunctiveTense: [],
     futureTense: [],
@@ -246,7 +230,7 @@ export default function RelatedForms({
   const filteredVerbs = useMemo(() => {
     if (!verbState) return Object.values(cats).flat();
 
-    let filtered: Array<{form: string, count: number, label?: string}> = [];
+    let filtered: Array<RelatedFormVariant> = [];
 
     switch (verbState.tense) {
       case 'present': filtered = cats.presentTense; break;
@@ -308,7 +292,7 @@ export default function RelatedForms({
   // ✅ Early return only after all hooks are declared
   if (!relatedForms) return null
 
-  const Section = ({ title, list }: { title: string; list: Array<{form: string, count: number, label?: string}> }) => {
+  const Section = ({ title, list }: { title: string; list: Array<RelatedFormVariant> }) => {
     // Group by person for better organization
     const groupedByPerson = list.reduce((acc, item) => {
       const personMatch = item.label?.match(/(\d+)\s*(sg|pl|SG|PL)/i);
