@@ -118,14 +118,21 @@ function extractEnrichedInfo(entry: DictEntry): Record<string, any> {
 
 async function enrichDictionary() {
   console.log('📚 Starting dictionary enrichment...');
+  console.log('🔗 Supabase URL:', SUPABASE_URL);
+  console.log('🔑 API Key present:', SUPABASE_KEY ? 'Yes' : 'No');
 
   // Load dictionary
   const dictPath = path.join(process.cwd(), 'full_dictionary_enriched.json');
+  console.log('📂 Loading dictionary from:', dictPath);
+  
   const rawData = fs.readFileSync(dictPath, 'utf-8');
+  console.log('📄 File size:', (rawData.length / 1024 / 1024).toFixed(2), 'MB');
+  
   const dictData = JSON.parse(rawData);
   const entries: DictEntry[] = dictData.entries || [];
 
   console.log(`📖 Loaded ${entries.length} dictionary entries`);
+  console.log('🚀 Starting batch processing...\n');
 
   let enriched = 0;
   let skipped = 0;
@@ -136,9 +143,13 @@ async function enrichDictionary() {
 
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     const batch = entries.slice(i, i + BATCH_SIZE);
-    console.log(`\n🔄 Processing batch ${Math.floor(i / BATCH_SIZE) + 1} (${i + 1}-${Math.min(i + BATCH_SIZE, entries.length)}/${entries.length})...`);
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(entries.length / BATCH_SIZE);
+    
+    console.log(`\n🔄 Batch ${batchNum}/${totalBatches} (entries ${i + 1}-${Math.min(i + BATCH_SIZE, entries.length)}/${entries.length})`);
+    console.log(`   Progress: ${((i / entries.length) * 100).toFixed(1)}%`);
 
-    const promises = batch.map(async (entry) => {
+    const promises = batch.map(async (entry, idx) => {
       try {
         const inflectionPattern = deriveInflectionPattern(entry);
         const enrichedInfo = extractEnrichedInfo(entry);
@@ -165,8 +176,9 @@ async function enrichDictionary() {
           errors++;
         } else {
           enriched++;
-          if (enriched % 100 === 0) {
-            console.log(`  ✅ Enriched ${enriched} entries so far...`);
+          // Log every entry in first batch, then every 50
+          if (i < BATCH_SIZE || enriched % 50 === 0) {
+            console.log(`  ✅ [${enriched}] Enriched: ${entry.p} → ${inflectionPattern}`);
           }
         }
       } catch (err) {
@@ -176,9 +188,13 @@ async function enrichDictionary() {
     });
 
     await Promise.all(promises);
+    
+    console.log(`   ✅ Batch ${batchNum} complete: +${batch.length} processed`);
+    console.log(`   📊 Running totals: ${enriched} enriched, ${skipped} skipped, ${errors} errors`);
 
     // Rate limit: wait 500ms between batches
     if (i + BATCH_SIZE < entries.length) {
+      console.log(`   ⏳ Waiting 500ms before next batch...`);
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   }

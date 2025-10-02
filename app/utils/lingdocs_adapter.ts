@@ -6,7 +6,46 @@
  */
 
 import { getData } from '../lib/data/load';
+import { createClient } from '@supabase/supabase-js';
 import type { Variant } from './verb_variants';
+
+// Initialize Supabase client for metadata queries
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
+
+/**
+ * Fetch enriched metadata from Supabase dictionary table
+ */
+async function getEnrichedMetadata(pashtoWord: string): Promise<{
+  inflectionPattern?: string;
+  linguisticCategory?: string;
+  enrichedInfo?: Record<string, any>;
+} | null> {
+  try {
+    const { data, error } = await supabase
+      .from('dictionary')
+      .select('inflection_pattern, linguistic_category, enriched_info')
+      .eq('pashto', pashtoWord)
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      console.log(`⚠️ No enriched metadata found for "${pashtoWord}"`);
+      return null;
+    }
+
+    return {
+      inflectionPattern: data.inflection_pattern,
+      linguisticCategory: data.linguistic_category,
+      enrichedInfo: data.enriched_info || {}
+    };
+  } catch (err) {
+    console.error(`Error fetching metadata for "${pashtoWord}":`, err);
+    return null;
+  }
+}
 
 // Type definitions matching LingDocs format
 export interface LingDocsEntry {
@@ -109,12 +148,20 @@ export async function generateEnhancedVerbVariants(
   
   // Get the entry in LingDocs format
   const entry = await convertToLingDocsEntry(rootOrInfinitive);
-  
+
   if (!entry) {
     console.warn(`Entry not found for: ${rootOrInfinitive}`);
     return [];
   }
-  
+
+  // 1.5. Check for enriched metadata from Supabase
+  const enrichedMetadata = await getEnrichedMetadata(rootOrInfinitive);
+  console.log(`📊 Enriched metadata for "${rootOrInfinitive}":`, {
+    pattern: enrichedMetadata?.inflectionPattern,
+    category: enrichedMetadata?.linguisticCategory,
+    hasStems: Object.keys(enrichedMetadata?.enrichedInfo || {}).length > 0
+  });
+
   const variants: Variant[] = [];
   
   // 1. Add base infinitive
@@ -153,33 +200,47 @@ export async function generateEnhancedVerbVariants(
     });
   }
   
-  // 3. Add stems if available (from LingDocs-format entry)
-  if (entry.psp) {
+  // 3. Add stems from enriched metadata (Supabase) or fallback to LingDocs format
+  const enrichedInfo = enrichedMetadata?.enrichedInfo || {};
+
+  // Use Supabase enriched stems if available, otherwise fall back to LingDocs format
+  if (enrichedInfo.psp || entry.psp) {
     variants.push({
-      form: entry.psp,
+      form: enrichedInfo.psp || entry.psp,
       label: 'Present Stem',
       pos: 'verb',
-      romanized: entry.psf,
+      romanized: enrichedInfo.psf || entry.psf,
       flags: ['stem'],
     });
   }
-  
-  if (entry.ssp) {
+
+  if (enrichedInfo.ssp || entry.ssp) {
     variants.push({
-      form: entry.ssp,
+      form: enrichedInfo.ssp || entry.ssp,
       label: 'Subjunctive Stem',
       pos: 'verb',
-      romanized: entry.ssf,
+      romanized: enrichedInfo.ssf || entry.ssf,
       flags: ['stem'],
     });
   }
-  
-  if (entry.pprtp) {
+
+  if (enrichedInfo.pprtp || entry.pprtp) {
     variants.push({
-      form: entry.pprtp,
+      form: enrichedInfo.pprtp || entry.pprtp,
       label: 'Past Participle',
       pos: 'verb',
-      romanized: entry.pprtf,
+      romanized: enrichedInfo.pprtf || entry.pprtf,
+      flags: ['participle'],
+    });
+  }
+
+  // Add any additional stems from enriched info that aren't already covered
+  if (enrichedInfo.tppp && !enrichedInfo.pprtp) {
+    variants.push({
+      form: enrichedInfo.tppp,
+      label: 'Past Participle (alt)',
+      pos: 'verb',
+      romanized: enrichedInfo.tppf,
       flags: ['participle'],
     });
   }
@@ -362,15 +423,26 @@ export async function generateEnhancedNounVariants(
 ): Promise<Variant[]> {
   const cap = Math.max(1, Math.min(opts?.cap ?? 30, 50));
   
+  // Check for enriched metadata from Supabase
+  const enrichedMetadata = await getEnrichedMetadata(rootOrLemma);
+  console.log(`📊 Noun enriched metadata for "${rootOrLemma}":`, {
+    pattern: enrichedMetadata?.inflectionPattern,
+    category: enrichedMetadata?.linguisticCategory,
+    hasInflections: Object.keys(enrichedMetadata?.enrichedInfo || {}).length > 0
+  });
+
   const entry = await convertToLingDocsEntry(rootOrLemma);
   if (!entry) return [];
-  
+
   const variants: Variant[] = [];
   const data = await getData();
   const inflectMap = (data as any).inflectionsByBase || new Map();
   const freqMap = data.frequencyMap;
   const inflRows = inflectMap?.get(entry.p) || [];
-  
+
+  // Use enriched inflections if available
+  const enrichedInfo = enrichedMetadata?.enrichedInfo || {};
+
   // Add base form
   variants.push({
     form: entry.p,
@@ -380,11 +452,36 @@ export async function generateEnhancedNounVariants(
     count: freqMap?.get(entry.p) ?? 0,
     score: freqMap?.get(entry.p) ?? 0,
   });
-  
-  // Add inflections
+
+  // Add enriched inflections (from Supabase metadata)
+  if (enrichedInfo.infap) {
+    variants.push({
+      form: enrichedInfo.infap,
+      label: '1st Inflection',
+      pos: 'noun',
+      romanized: enrichedInfo.infaf,
+      count: freqMap?.get(enrichedInfo.infap) ?? 0,
+      score: freqMap?.get(enrichedInfo.infap) ?? 0,
+      flags: ['enriched'],
+    });
+  }
+
+  if (enrichedInfo.infbp) {
+    variants.push({
+      form: enrichedInfo.infbp,
+      label: '2nd Inflection',
+      pos: 'noun',
+      romanized: enrichedInfo.infbf,
+      count: freqMap?.get(enrichedInfo.infbp) ?? 0,
+      score: freqMap?.get(enrichedInfo.infbp) ?? 0,
+      flags: ['enriched'],
+    });
+  }
+
+  // Add database inflections
   for (const row of inflRows) {
     if (!row.form) continue;
-    
+
     variants.push({
       form: row.form,
       label: labelFromNounInfo(row.category),
