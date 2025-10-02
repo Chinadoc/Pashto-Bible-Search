@@ -434,6 +434,8 @@ export default function ClientHome() {
     variantDetails?: VariantDetailMeta[];
     variantGroups?: VariantGroupMeta[];
     romanization?: string;
+    language?: SearchLanguage;
+    englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string }>;
   } | null>(null);
 
   // Verb understanding state
@@ -787,7 +789,10 @@ export default function ClientHome() {
   useEffect(() => {
     if (previousLanguage.current !== searchLanguage && query.trim()) {
       console.log('DEBUG: Search language changed to', searchLanguage, '- refreshing results');
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
       executeSearch({ overrideVariants: null, preserveResults: false, reason: 'language-toggle' });
     }
     previousLanguage.current = searchLanguage;
@@ -940,6 +945,28 @@ export default function ClientHome() {
                 Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
               </h2>
             </div>
+
+            {processed?.language === 'english' && processed?.englishMatches && processed.englishMatches.length > 0 && (
+              <div className="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-700">
+                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mb-1">
+                  Dictionary matches for "{processed.original}":
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {processed.englishMatches.slice(0, 4).map((match, idx) => (
+                    <span
+                      key={`${match.pashto}-${idx}`}
+                      className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-200 border border-orange-300/50"
+                    >
+                      {match.pashto}
+                      {match.romanized ? ` · ${match.romanized}` : ''}
+                    </span>
+                  ))}
+                  {processed.englishMatches.length > 4 && (
+                    <span className="text-orange-600 dark:text-orange-300">+{processed.englishMatches.length - 4} more</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Verb Form Filters (shown when Related Forms Mode is active and we have forms) */}
             {includeRelated && relatedForms && relatedForms.verbs && relatedForms.verbs.length > 0 && (
