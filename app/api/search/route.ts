@@ -289,6 +289,13 @@ export async function POST(request: NextRequest) {
           id: index + 1,
         }));
 
+        console.log('🔄 Returning enhanced search results:', {
+          resultCount: transformed.length,
+          firstFewRefs: transformed.slice(0, 3).map(r => r.ref),
+          hasRelatedForms: !!relatedForms,
+          relatedFormsCount: relatedForms?.total || 0
+        });
+
         return NextResponse.json({
           results: transformed,
           relatedForms,
@@ -302,12 +309,60 @@ export async function POST(request: NextRequest) {
           count: transformed.length,
           ms: Date.now() - startedAt,
         });
+      } else {
+        console.log('⚠️ Enhanced search returned no results, will try fallback');
       }
     } catch (error) {
       console.warn('Enhanced search failed, falling back to legacy search:', error);
     }
 
-    // Handle variant OR searches explicitly
+    // If enhanced search failed or returned no results, but we have variants, use them
+    if ((enhancedResults === null || (enhancedResults && enhancedResults.length === 0)) && Array.isArray(variants) && variants.length > 0) {
+      console.log('🔄 Enhanced search failed/empty, using variant fallback search with', variants.length, 'terms');
+      const { searchIndex } = await getData();
+      const candidateVerses = new Set<any>();
+
+      for (const variant of variants) {
+        const lower = variant.toLowerCase();
+
+        // Check original text index
+        const originalMatches = searchIndex.byTextLower.get(lower) || [];
+        for (const verse of originalMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+
+        // Check normalized text index
+        const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
+        for (const verse of normalizedMatches) {
+          if (matchesScope(verse, scope)) {
+            candidateVerses.add(verse);
+          }
+        }
+      }
+
+      const results = Array.from(candidateVerses).slice(0, limit);
+      const transformed = transformResults(results, audioMap);
+      const processed: Processed = {
+        original: trimmedQuery,
+        normalized: trimmedQuery,
+        variants: Array.from(new Set(variants.filter(Boolean))),
+        searchType: 'variant-fallback',
+      };
+
+      console.log('🔄 Variant fallback search found', transformed.length, 'results');
+
+      return NextResponse.json({
+        results: transformed,
+        relatedForms,
+        processed,
+        count: transformed.length,
+        ms: Date.now() - startedAt,
+      });
+    }
+
+    // Original variant OR search logic (kept for backwards compatibility)
     if (Array.isArray(variants) && variants.length > 0) {
       const { searchIndex } = await getData();
       const candidateVerses = new Set<any>();
