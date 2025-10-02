@@ -213,18 +213,57 @@ export async function POST(request: NextRequest) {
           entry.pashto === trimmedQuery || entry.romanized?.toLowerCase() === trimmedQuery.toLowerCase()
         );
 
+        // Detect part of speech from dictionary
+        const pos = dictEntry?.pos?.toLowerCase() || '';
+        const isNoun = pos.includes('noun') || pos.includes('n.');
+        const isVerb = pos.includes('verb') || pos.includes('v.');
+        const isAdjective = pos.includes('adj');
+
+        console.log(`📖 Dictionary entry for "${trimmedQuery}":`, {
+          pos: dictEntry?.pos,
+          detected: isNoun ? 'noun' : isVerb ? 'verb' : isAdjective ? 'adjective' : 'unknown'
+        });
+
         let allVariants: any[] = [];
+        let posGuess = 'unknown';
 
-        // Generate verb variants (transitive verbs are most common)
-        const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
-        if (verbVariants.length > 0) {
-          allVariants.push(...verbVariants);
-        }
-
-        // Also try noun variants
-        const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
-        if (nounVariants.length > 0) {
+        // Prioritize based on detected POS
+        if (isNoun) {
+          // It's a noun - only generate noun inflections
+          console.log('✅ Detected as NOUN - generating inflections');
+          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 30 });
           allVariants.push(...nounVariants);
+          posGuess = 'noun';
+        } else if (isVerb) {
+          // It's a verb - only generate verb conjugations
+          console.log('✅ Detected as VERB - generating conjugations');
+          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
+          allVariants.push(...verbVariants);
+          posGuess = 'verb';
+        } else if (isAdjective) {
+          // It's an adjective - generate both inflections and possibly compound verbs
+          console.log('✅ Detected as ADJECTIVE - generating inflections and compounds');
+          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+          allVariants.push(...nounVariants);
+          // Also check for stative compounds (adj + کېدل/کول)
+          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 20, includeCompound: true });
+          allVariants.push(...verbVariants);
+          posGuess = 'adjective';
+        } else {
+          // Unknown - try both but prioritize by what generates more results
+          console.log('⚠️ Unknown POS - trying both');
+          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
+          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+          
+          if (verbVariants.length > nounVariants.length) {
+            allVariants.push(...verbVariants);
+            allVariants.push(...nounVariants);
+            posGuess = 'verb';
+          } else {
+            allVariants.push(...nounVariants);
+            allVariants.push(...verbVariants);
+            posGuess = 'noun';
+          }
         }
 
         // De-duplicate based on form
@@ -290,7 +329,7 @@ export async function POST(request: NextRequest) {
             other: groupedForms.other,
             forms: groupedForms,
             variantDetails,
-            posGuess: dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
+            posGuess: posGuess || dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
           };
         }
       } catch (error) {
