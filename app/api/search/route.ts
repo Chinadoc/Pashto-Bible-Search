@@ -7,6 +7,28 @@ import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/ve
 import { refToFilename, audioUrlFromRef } from '@/utils/audio';
 import { searchVersesEnhanced, searchVersesFast, getSearchSuggestions } from '@/utils/supabase';
 
+// Helper function to search with multiple terms
+async function searchWithMultipleTerms(terms: string[], scope: Scope, strategy: 'auto' | 'trigram' | 'fulltext' | 'hybrid' = 'auto') {
+  const allResults = new Map<string, any>();
+
+  for (const term of terms) {
+    try {
+      const results = await searchVersesEnhanced(term, scope, strategy);
+      if (results && Array.isArray(results)) {
+        for (const result of results) {
+          // Use ref as key to deduplicate
+          allResults.set(result.ref, result);
+        }
+      }
+    } catch (error) {
+      console.warn(`Search failed for term "${term}":`, error);
+    }
+  }
+
+  // Convert back to array and sort by relevance (if we had scoring) or just return as-is
+  return Array.from(allResults.values());
+}
+
 export const runtime = 'nodejs';
 
 type Scope = 'all' | 'ot' | 'nt';
@@ -135,10 +157,111 @@ export async function POST(request: NextRequest) {
 
     const trimmedQuery = query.trim();
 
+    // Generate related forms first if needed (for expanding search)
+    let searchTerms = [trimmedQuery];
+    let relatedForms = null;
+
+    if (includeRelated) {
+      try {
+        console.log('🔍 Generating related forms for expanded search:', trimmedQuery);
+
+        // Try to determine if it's a verb or noun and generate appropriate forms
+        const { dictionary } = await getData();
+        const dictEntry = dictionary.find((entry: any) =>
+          entry.pashto === trimmedQuery || entry.romanized?.toLowerCase() === trimmedQuery.toLowerCase()
+        );
+
+        let allVariants: any[] = [];
+
+        // Generate verb variants (transitive verbs are most common)
+        const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
+        if (verbVariants.length > 0) {
+          allVariants.push(...verbVariants);
+        }
+
+        // Also try noun variants
+        const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+        if (nounVariants.length > 0) {
+          allVariants.push(...nounVariants);
+        }
+
+        // De-duplicate based on form
+        const uniqueForms = new Map();
+        allVariants.forEach(v => {
+          if (!uniqueForms.has(v.form)) {
+            uniqueForms.set(v.form, v);
+          }
+        });
+
+        const forms = Array.from(uniqueForms.values());
+
+        if (forms.length > 0) {
+          // Add all forms as search terms (excluding the original query)
+          const additionalTerms = forms.map(f => f.form).filter(f => f !== trimmedQuery);
+          searchTerms = [trimmedQuery, ...additionalTerms];
+
+          console.log(`✅ Generated ${forms.length} related forms, expanding search to ${searchTerms.length} terms`);
+
+          // Separate verbs and nouns for the component display
+          const verbs = forms.filter((f: any) => f.pos === 'verb');
+          const nouns = forms.filter((f: any) => f.pos === 'noun');
+          const other = forms.filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
+
+          // Create structured variantDetails format
+          const variantDetails = [];
+
+          if (verbs.length > 0) {
+            variantDetails.push({
+              type: 'verb',
+              count: verbs.length,
+              groups: [{
+                key: 'verb-conjugations',
+                label: 'Verb Conjugations',
+                items: verbs
+              }]
+            });
+          }
+
+          if (nouns.length > 0) {
+            variantDetails.push({
+              type: 'noun',
+              count: nouns.length,
+              groups: [{
+                key: 'noun-inflections',
+                label: 'Noun Inflections',
+                items: nouns
+              }]
+            });
+          }
+
+          relatedForms = {
+            root: trimmedQuery,
+            total: forms.length,
+            verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            variantDetails,
+            posGuess: dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to generate related forms:', error);
+      }
+    }
+
     // Try enhanced search first (if SQL functions are available)
-    console.log('🔍 Attempting enhanced search for:', trimmedQuery);
+    console.log('🔍 Attempting enhanced search for:', trimmedQuery, 'with', searchTerms.length, 'terms');
     try {
-      const enhancedResults = await searchVersesEnhanced(trimmedQuery, scope, 'auto');
+      // Use the expanded search terms if we have related forms
+      let enhancedResults;
+      if (searchTerms.length > 1) {
+        // Multiple terms - use our helper function
+        enhancedResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
+      } else {
+        // Single term - use direct search
+        enhancedResults = await searchVersesEnhanced(trimmedQuery, scope, 'auto');
+      }
+
       if (enhancedResults && enhancedResults.length > 0) {
         console.log('✅ Enhanced search successful, found', enhancedResults.length, 'results');
 
@@ -154,95 +277,13 @@ export async function POST(request: NextRequest) {
           id: index + 1,
         }));
 
-        // Get related forms if needed
-        let relatedForms = null;
-        if (includeRelated) {
-          try {
-            // Try to determine if it's a verb or noun and generate appropriate forms
-            const { dictionary } = await getData();
-            const dictEntry = dictionary.find((entry: any) => 
-              entry.pashto === trimmedQuery || entry.romanized?.toLowerCase() === trimmedQuery.toLowerCase()
-            );
-            
-            let allVariants: any[] = [];
-            
-            // Generate verb variants (transitive verbs are most common)
-            const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
-            if (verbVariants.length > 0) {
-              allVariants.push(...verbVariants);
-            }
-            
-            // Also try noun variants
-            const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
-            if (nounVariants.length > 0) {
-              allVariants.push(...nounVariants);
-            }
-            
-            // De-duplicate based on form
-            const uniqueForms = new Map();
-            allVariants.forEach(v => {
-              if (!uniqueForms.has(v.form)) {
-                uniqueForms.set(v.form, v);
-              }
-            });
-            
-            const forms = Array.from(uniqueForms.values());
-            
-            if (forms.length > 0) {
-              // Separate verbs and nouns for the component
-              const verbs = forms.filter((f: any) => f.pos === 'verb');
-              const nouns = forms.filter((f: any) => f.pos === 'noun');
-              const other = forms.filter((f: any) => f.pos !== 'verb' && f.pos !== 'noun');
-              
-              // Create structured variantDetails format
-              const variantDetails = [];
-              
-              if (verbs.length > 0) {
-                variantDetails.push({
-                  type: 'verb',
-                  count: verbs.length,
-                  groups: [{
-                    key: 'verb-conjugations',
-                    label: 'Verb Conjugations',
-                    items: verbs
-                  }]
-                });
-              }
-              
-              if (nouns.length > 0) {
-                variantDetails.push({
-                  type: 'noun',
-                  count: nouns.length,
-                  groups: [{
-                    key: 'noun-inflections',
-                    label: 'Noun Inflections',
-                    items: nouns
-                  }]
-                });
-              }
-              
-              relatedForms = {
-                root: trimmedQuery,
-                total: forms.length,
-                verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
-                nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
-                other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
-                variantDetails,
-                posGuess: dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
-              };
-            }
-          } catch (error) {
-            console.warn('Failed to generate related forms:', error);
-          }
-        }
-
         return NextResponse.json({
           results: transformed,
           relatedForms,
           processed: {
             original: trimmedQuery,
             normalized: trimmedQuery,
-            variants: [trimmedQuery],
+            variants: searchTerms,
             searchType: 'enhanced',
             pos: 'unknown',
           },
@@ -332,8 +373,6 @@ export async function POST(request: NextRequest) {
     let results: Array<{ ref: string; text: string; testament?: string; book: string }> = [];
     let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
     let searchIndex: any = null;
-    let relatedForms: any = null;
-    let variantForms: string[] = [];
 
     // Get search data for potential use throughout the function
     const data = await getData();
@@ -346,88 +385,6 @@ export async function POST(request: NextRequest) {
       searchTerm: normalized
     });
 
-    // Generate variants first if needed for enhanced search
-    if (includeRelated) {
-      console.log('DEBUG: Generating related forms for:', normalized);
-      try {
-        const { frequencyMap, dictionaryByPashto } = await getLightweightData();
-        const relatedStarted = Date.now();
-
-        // POS guess from dictionary
-        const dictEntry = dictionaryByPashto.get(normalized);
-        if (dictEntry?.pos) {
-          const posLower = dictEntry.pos.toLowerCase();
-          if (posLower.startsWith("verb")) posGuess = "verb";
-          else if (posLower.startsWith("noun")) posGuess = "noun";
-          else if (posLower.startsWith("adj")) posGuess = "adjective";
-          else posGuess = "other";
-          romanization = romanization ?? dictEntry.romanized;
-        } else {
-          // Fallback POS guess based on common patterns
-          posGuess = "other";
-        }
-
-        const frequency = frequencyMap.get(normalized) ?? undefined;
-
-        // Generate variants based on POS (use root form if available)
-        const variantInput = rootFromForm || normalized;
-        const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
-
-        if (posGuess === "noun") {
-          groups.nouns = await generateNounVariants(variantInput, { cap: 30 });
-        } else if (posGuess === "verb") {
-          groups.verbs = await generateVerbVariantsUtil(variantInput, { cap: 30, includeCompound: true });
-        } else {
-          // Try both for ambiguous terms
-          const [nouns, verbs] = await Promise.all([
-            generateNounVariants(variantInput, { cap: 20 }),
-            generateVerbVariantsUtil(variantInput, { cap: 20, includeCompound: true }),
-          ]);
-          if (nouns.length) groups.nouns = nouns;
-          if (verbs.length) groups.verbs = verbs;
-        }
-
-        // Build variant forms
-        variantForms = [];
-        for (const group of Object.values(groups)) {
-          if (group) {
-            variantForms.push(...group.map(v => v.form));
-          }
-        }
-
-        console.log('DEBUG: Generated variant forms:', variantForms.length, 'forms');
-
-        // Build variant details
-        const variantDetails = {
-          root: normalized,
-          forms: groups,
-          total: variantForms.length,
-        };
-
-        relatedForms = {
-          root: normalized,
-          forms: groups,
-          total: variantForms.length,
-          variantDetails,
-          verbs: groups.verbs?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-          nouns: groups.nouns?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-          other: groups.other?.map(v => ({ form: v.form, count: v.count || 0 })) || [],
-          ms: Date.now() - relatedStarted,
-        };
-
-        console.log('DEBUG: Related forms generated:', {
-          total: relatedForms.total,
-          verbsCount: relatedForms.verbs.length,
-          nounsCount: relatedForms.nouns.length,
-          otherCount: relatedForms.other.length
-        });
-      } catch (error) {
-        console.warn('Related forms generation failed:', error);
-        relatedForms = null;
-        variantForms = [];
-      }
-    }
-
     // Enhanced search with variants when includeRelated is enabled
     if (searchIndex?.byTextLower) {
       const candidateVerses = new Set<any>();
@@ -435,8 +392,23 @@ export async function POST(request: NextRequest) {
       // Build comprehensive search terms list
       const searchTerms = [normalized];
       if (rootFromForm) searchTerms.push(rootFromForm);
-      if (includeRelated && variantForms.length > 0) {
-        searchTerms.push(...variantForms);
+
+      // Add related forms if we generated them earlier
+      if (includeRelated && relatedForms) {
+        // Extract forms from the related forms we generated earlier
+        const variantForms = [];
+        if (relatedForms.forms?.verbs) {
+          variantForms.push(...relatedForms.forms.verbs.map((v: any) => v.form));
+        }
+        if (relatedForms.forms?.nouns) {
+          variantForms.push(...relatedForms.forms.nouns.map((v: any) => v.form));
+        }
+        if (relatedForms.forms?.other) {
+          variantForms.push(...relatedForms.forms.other.map((v: any) => v.form));
+        }
+        if (variantForms.length > 0) {
+          searchTerms.push(...variantForms);
+        }
       }
 
       console.log('DEBUG: Searching with terms:', searchTerms.length, 'terms');
@@ -464,7 +436,7 @@ export async function POST(request: NextRequest) {
       }
 
       results = Array.from(candidateVerses).slice(0, effectiveLimit);
-      searchType = includeRelated && variantForms.length > 0 ? 'enhanced' : 'fast';
+      searchType = includeRelated && relatedForms ? 'enhanced' : 'fast';
       console.log('DEBUG: Enhanced search found results:', results.length, 'with search type:', searchType);
     }
 
@@ -472,8 +444,8 @@ export async function POST(request: NextRequest) {
     if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
       console.log('Falling back to fuzzy search');
 
-    // Fast search using index
-    if (searchIndex?.byTextLower) {
+      // Fast search using index
+      if (searchIndex?.byTextLower) {
         const candidateVerses = new Set<any>();
 
         // Use root form for searching if we found one from a form
@@ -532,10 +504,24 @@ export async function POST(request: NextRequest) {
 
     const transformed = transformResults(results, audioMap);
 
+    // Extract variant forms for the processed object
+    let variantForms: string[] = [];
+    if (includeRelated && relatedForms) {
+      if (relatedForms.forms?.verbs) {
+        variantForms.push(...relatedForms.forms.verbs.map((v: any) => v.form));
+      }
+      if (relatedForms.forms?.nouns) {
+        variantForms.push(...relatedForms.forms.nouns.map((v: any) => v.form));
+      }
+      if (relatedForms.forms?.other) {
+        variantForms.push(...relatedForms.forms.other.map((v: any) => v.form));
+      }
+    }
+
     const processed: Processed = {
       original: trimmedQuery,
       normalized,
-      variants: includeRelated ? variantForms.slice(0, 40) : [],
+      variants: variantForms.slice(0, 40),
       searchType,
       pos: posGuess,
       romanization,
