@@ -77,12 +77,15 @@ async function initializeMaps() {
 
 // Convert LingDocs-style form to our Variant format
 function lingdocsToVariant(lingdocsForm: any, label: string): Variant {
+  const formKey = lingdocsForm.p || lingdocsForm;
+  const formCount = freqMap?.get(formKey) || 0;
   return {
-    form: lingdocsForm.p || lingdocsForm,
+    form: formKey,
     label,
     pos: 'verb',
     romanized: lingdocsForm.f,
-    count: freqMap?.get(lingdocsForm.p || lingdocsForm) || 0,
+    count: formCount,
+    score: formCount,
   };
 }
 

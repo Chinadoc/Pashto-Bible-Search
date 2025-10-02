@@ -235,9 +235,9 @@ export async function POST(request: NextRequest) {
           }
 
           const groupedForms = {
-            verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
-            nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
-            other: other.map((f: any) => ({ form: f.form, count: f.count || 0, label: f.label })),
+            verbs: verbs.map((f: any) => ({ form: f.form, count: f.count || 0 })),
+            nouns: nouns.map((f: any) => ({ form: f.form, count: f.count || 0 })),
+            other: other.map((f: any) => ({ form: f.form, count: f.count || 0 })),
           };
 
           relatedForms = {
