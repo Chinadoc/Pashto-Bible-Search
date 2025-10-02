@@ -1,5 +1,18 @@
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
+export type SearchLanguage = "pashto" | "english";
+
+export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
+export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
+export type VerbFilterAspect = 'all' | 'imperfective' | 'perfective';
+export type VerbFilterMood = 'all' | 'indicative' | 'subjunctive' | 'imperative' | 'ability';
+
+export interface VerbFilterState {
+  person: VerbFilterPerson;
+  tense: VerbFilterTense;
+  aspect: VerbFilterAspect;
+  mood: VerbFilterMood;
+}
 
 export interface Verse {
   ref: string;
@@ -45,6 +58,13 @@ export interface RelatedFormsData {
   posGuess?: string;
 }
 
+export interface EnglishMatchMeta {
+  english: string;
+  pashto: string;
+  romanized?: string;
+  pos?: string;
+}
+
 export interface PhraseResponse {
   results: Verse[];
   coverage: CoverageItem[];
@@ -77,6 +97,8 @@ export interface ProcessedSearchMetadata {
   variantDetails?: VariantDetailMeta[];
   variantGroups?: VariantGroupMeta[];
   romanization?: string;
+  language?: SearchLanguage;
+  englishMatches?: EnglishMatchMeta[];
 }
 
 export interface Conjugations {

@@ -8,6 +8,7 @@ type DictionaryEntry = {
   pashto: string;
   romanized: string;
   pos?: string;
+  english?: string;
 };
 
 type FrequencyRow = {
