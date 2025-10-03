@@ -804,9 +804,17 @@ export default function ClientHome() {
     setIsLoading(true);
     setError('');
     if (!preserveResults) {
-    setResults([]);
-    setCoverage([]);
-    setRelatedForms(null);
+      setResults([]);
+      setCoverage([]);
+      setRelatedForms(null);
+      
+      // Reset filters when starting a new manual search
+      if (reason === 'manual') {
+        console.log('🔄 Resetting filters for new search');
+        setVerbFilters({ ...DEFAULT_VERB_FILTER });
+        setNounFilters({ ...DEFAULT_NOUN_FILTER });
+        setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+      }
     }
     setProcessed(null);
 
@@ -872,6 +880,22 @@ export default function ClientHome() {
     }
   }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
 
+  // Helper to calculate coverage from filtered results
+  const calculateCoverageFromResults = useCallback((verses: VerseRow[]) => {
+    const bookCounts = new Map<string, number>();
+    
+    for (const verse of verses) {
+      const book = verse.ref.split(' ')[0];
+      bookCounts.set(book, (bookCounts.get(book) || 0) + 1);
+    }
+    
+    return Array.from(bookCounts.entries()).map(([book, count]) => ({
+      book,
+      count,
+      testament: OT_BOOKS_SET.has(book) ? 'OT' : NT_BOOKS_SET.has(book) ? 'NT' : 'OT'
+    }));
+  }, []);
+
   const handleSearch = useCallback(
     (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
     [executeSearch]
@@ -891,36 +915,52 @@ export default function ClientHome() {
       return;
     }
 
-    if (isDefaultVerbFilter(sanitized)) {
-      variantKeyRef.current = '__all__';
-      const allForms = formsFromVariants(relatedForms.verbs || []);
-      setVariantsOverride(null);
-      setActiveVariantForms(allForms);
-      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'verb-filter-reset' });
-      return;
-    }
-
     const filteredVariants = filterVerbVariants(relatedForms.verbs, sanitized);
     const forms = formsFromVariants(filteredVariants);
-    const key = forms.join('|');
 
-    if (key === variantKeyRef.current) {
-      return; // no change in concrete forms
-    }
-
-    variantKeyRef.current = key;
-    setVariantsOverride(forms);
-    setActiveVariantForms(forms);
-
-    // If no forms match the filters, search for nothing (show no results)
+    // If no forms match the filters, show no results
     if (forms.length === 0) {
       setResults([]);
       setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
       return;
     }
 
-    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'verb-filter' });
-  }, [includeRelated, relatedForms, executeSearch]);
+    // Client-side filtering: filter existing results by the selected forms
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
+      
+      const formsSet = new Set(forms.map(f => f.toLowerCase().replace(/\s+/g, '')));
+      
+      const filtered = results.filter((verse) => {
+        const text = verse.text ?? '';
+        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+        
+        // Check if verse contains any of the filtered forms
+        return forms.some(form => {
+          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          return collapsedText.includes(collapsedForm);
+        });
+      });
+
+      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
+      setResults(filtered);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      
+      // Update coverage based on filtered results
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    } else {
+      // No existing results, need to search
+      console.log('🔄 No existing results, triggering search for filtered forms');
+      variantKeyRef.current = forms.join('|');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+    }
+  }, [includeRelated, relatedForms, results, executeSearch]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
@@ -935,36 +975,46 @@ export default function ClientHome() {
       return;
     }
 
-    if (isDefaultNounFilter(nextFilters)) {
-      variantKeyRef.current = '__all__';
-      const allForms = formsFromVariants(relatedForms.nouns || []);
-      setVariantsOverride(null);
-      setActiveVariantForms(allForms);
-      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'noun-filter-reset' });
-      return;
-    }
-
     const filteredVariants = filterNounVariants(relatedForms.nouns, nextFilters);
     const forms = formsFromVariants(filteredVariants);
-    const key = forms.join('|');
 
-    if (key === variantKeyRef.current) {
-      return;
-    }
-
-    variantKeyRef.current = key;
-    setVariantsOverride(forms);
-    setActiveVariantForms(forms);
-
-    // If no forms match the filters, search for nothing (show no results)
+    // If no forms match the filters, show no results
     if (forms.length === 0) {
       setResults([]);
       setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
       return;
     }
 
-    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'noun-filter' });
-  }, [includeRelated, relatedForms, executeSearch]);
+    // Client-side filtering
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'noun forms');
+      
+      const filtered = results.filter((verse) => {
+        const text = verse.text ?? '';
+        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+        
+        return forms.some(form => {
+          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          return collapsedText.includes(collapsedForm);
+        });
+      });
+
+      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
+      setResults(filtered);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    } else {
+      console.log('🔄 No existing results, triggering search for filtered forms');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'noun-filter' });
+    }
+  }, [includeRelated, relatedForms, results, executeSearch, calculateCoverageFromResults]);
 
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
     setAdjectiveFilters(nextFilters);
@@ -979,36 +1029,46 @@ export default function ClientHome() {
       return;
     }
 
-    if (isDefaultAdjectiveFilter(nextFilters)) {
-      variantKeyRef.current = '__all__';
-      const allForms = formsFromVariants(relatedForms.other || []);
-      setVariantsOverride(null);
-      setActiveVariantForms(allForms);
-      executeSearch({ overrideVariants: null, preserveResults: true, reason: 'adjective-filter-reset' });
-      return;
-    }
-
     const filteredVariants = filterAdjectiveVariants(relatedForms.other, nextFilters);
     const forms = formsFromVariants(filteredVariants);
-    const key = forms.join('|');
 
-    if (key === variantKeyRef.current) {
-      return;
-    }
-
-    variantKeyRef.current = key;
-    setVariantsOverride(forms);
-    setActiveVariantForms(forms);
-
-    // If no forms match the filters, search for nothing (show no results)
+    // If no forms match the filters, show no results
     if (forms.length === 0) {
       setResults([]);
       setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
       return;
     }
 
-    executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'adjective-filter' });
-  }, [includeRelated, relatedForms, executeSearch]);
+    // Client-side filtering
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'adjective forms');
+      
+      const filtered = results.filter((verse) => {
+        const text = verse.text ?? '';
+        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+        
+        return forms.some(form => {
+          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          return collapsedText.includes(collapsedForm);
+        });
+      });
+
+      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
+      setResults(filtered);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    } else {
+      console.log('🔄 No existing results, triggering search for filtered forms');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'adjective-filter' });
+    }
+  }, [includeRelated, relatedForms, results, executeSearch, calculateCoverageFromResults]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
