@@ -180,7 +180,7 @@ function filterVerbVariants(
   };
 
   const filtered = verbs.filter(labelFilter);
-  return filtered.length > 0 ? filtered : verbs;
+  return filtered;
 }
 
 function formsFromVariants(variants: RelatedFormVariant[]): string[] {
@@ -243,8 +243,8 @@ function filterNounVariants(
       matchesGender(label, filters.gender)
     );
   });
-  
-  return filtered.length > 0 ? filtered : nouns;
+
+  return filtered;
 }
 
 function filterAdjectiveVariants(
@@ -260,8 +260,8 @@ function filterAdjectiveVariants(
       matchesGender(label, filters.gender)
     );
   });
-  
-  return filtered.length > 0 ? filtered : adjectives;
+
+  return filtered;
 }
 
 function isDefaultNounFilter(filters: NounFilterState): boolean {
@@ -752,7 +752,7 @@ export default function ClientHome() {
   // This way users see "31 in Luke" even when filtered to Mark
   const coverageData = useMemo(() => {
     // Always show all books, regardless of filter
-    return fullCoverageData;
+      return fullCoverageData;
   }, [fullCoverageData]);
 
   // Update coverage state when coverageData changes
@@ -804,9 +804,9 @@ export default function ClientHome() {
     setIsLoading(true);
     setError('');
     if (!preserveResults) {
-      setResults([]);
-      setCoverage([]);
-      setRelatedForms(null);
+    setResults([]);
+    setCoverage([]);
+    setRelatedForms(null);
     }
     setProcessed(null);
 
@@ -862,9 +862,9 @@ export default function ClientHome() {
       console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
       if (!preserveResults) {
-        setResults([]);
-        setCoverage([]);
-        setRelatedForms(null);
+      setResults([]);
+      setCoverage([]);
+      setRelatedForms(null);
       }
       setProcessed(null);
     } finally {
@@ -906,6 +906,14 @@ export default function ClientHome() {
     variantKeyRef.current = key;
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
+
+    // If no forms match the filters, search for nothing (show no results)
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      return;
+    }
+
     executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'verb-filter' });
   }, [includeRelated, relatedForms, executeSearch]);
 
@@ -937,6 +945,14 @@ export default function ClientHome() {
     variantKeyRef.current = key;
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
+
+    // If no forms match the filters, search for nothing (show no results)
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      return;
+    }
+
     executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'noun-filter' });
   }, [includeRelated, relatedForms, executeSearch]);
 
@@ -968,6 +984,14 @@ export default function ClientHome() {
     variantKeyRef.current = key;
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
+
+    // If no forms match the filters, search for nothing (show no results)
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      return;
+    }
+
     executeSearch({ overrideVariants: forms, preserveResults: true, reason: 'adjective-filter' });
   }, [includeRelated, relatedForms, executeSearch]);
 
@@ -1263,8 +1287,8 @@ export default function ClientHome() {
                           <span className="capitalize">{tense}</span>
                         </label>
                       ))}
-                    </div>
-                  </div>
+                          </div>
+                        </div>
 
                   {/* Aspect Filter */}
                   <div>
@@ -1365,9 +1389,9 @@ export default function ClientHome() {
                         </span>
                       )}
                     </p>
-                  </div>
+                    </div>
                 )}
-              </div>
+                  </div>
             )}
 
             {/* NOUN FILTERS */}
@@ -1409,7 +1433,7 @@ export default function ClientHome() {
                         </label>
                       ))}
                     </div>
-                  </div>
+        </div>
 
                   {/* Gender Filter */}
                   <div>
