@@ -546,8 +546,8 @@ export default function ClientHome() {
         previousVerbState.current.mood !== verbFilters.mood;
 
       if (stateChanged) {
-        console.log('🔄 Verb filter changed, triggering new search');
-        handleSearch();
+        console.log('🔄 Verb filter changed, applying filter without re-searching');
+        applyVerbFiltersAndSearch(verbFilters);
       }
     }
     previousVerbState.current = verbFilters;
@@ -561,8 +561,8 @@ export default function ClientHome() {
         nounFilters.inflectionType !== 'all' || nounFilters.gender !== 'all';
 
       if (stateChanged) {
-        console.log('🔄 Noun filter changed, triggering new search');
-        handleSearch();
+        console.log('🔄 Noun filter changed, applying filter without re-searching');
+        applyNounFiltersAndSearch(nounFilters);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -575,8 +575,8 @@ export default function ClientHome() {
         adjectiveFilters.inflectionType !== 'all' || adjectiveFilters.gender !== 'all';
 
       if (stateChanged) {
-        console.log('🔄 Adjective filter changed, triggering new search');
-        handleSearch();
+        console.log('🔄 Adjective filter changed, applying filter without re-searching');
+        applyAdjectiveFiltersAndSearch(adjectiveFilters);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
