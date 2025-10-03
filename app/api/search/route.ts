@@ -239,18 +239,18 @@ export async function POST(request: NextRequest) {
     let searchTerms = Array.from(new Set([trimmedQuery, ...englishSearchTerms])) as string[];
 
     // If filtered variants are provided, use only those for search
+    const effectiveIncludeRelated = variants && variants.length > 0 ? false : includeRelated;
+
     if (variants && variants.length > 0) {
       console.log('🔽 Using filtered variants for search:', variants);
       searchTerms = variants;
-      // Don't generate related forms when using filtered variants
-      includeRelated = false;
     }
 
     // Generate related forms first if needed (for expanding search)
     let relatedForms = null;
 
     // If English search mode, create a special relatedForms object to show all matches
-    if (searchLanguage === 'english' && englishMatches.length > 0) {
+    if (effectiveIncludeRelated && searchLanguage === 'english' && englishMatches.length > 0) {
       const matchForms = englishMatches.map(m => ({
         form: m.pashto,
         label: m.english,
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
         variantDetails: [],
         posGuess: 'english-search'
       };
-    } else if (includeRelated) {
+    } else if (effectiveIncludeRelated) {
       try {
         console.log('🔍 Generating related forms for expanded search:', trimmedQuery);
 
@@ -622,7 +622,7 @@ export async function POST(request: NextRequest) {
       if (rootFromForm) searchTerms.push(rootFromForm);
 
       // Add related forms if we generated them earlier
-      if (includeRelated && relatedForms) {
+      if (effectiveIncludeRelated && relatedForms) {
         // Extract forms from the related forms we generated earlier
         const variantForms = [];
         if (relatedForms.forms?.verbs) {
@@ -734,7 +734,7 @@ export async function POST(request: NextRequest) {
 
     // Extract variant forms for the processed object
     let variantForms: string[] = [];
-    if (includeRelated && relatedForms) {
+    if (effectiveIncludeRelated && relatedForms) {
       if (relatedForms.forms?.verbs) {
         variantForms.push(...relatedForms.forms.verbs.map((v: any) => v.form));
       }
