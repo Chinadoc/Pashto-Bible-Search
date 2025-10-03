@@ -800,6 +800,26 @@ export async function POST(request: NextRequest) {
 
 
 
+    const shouldApplyCollapsedFilter = searchLanguage === 'pashto'
+      && (!englishSearchTerms.length)
+      && (!Array.isArray(variants) || variants.length === 0)
+      && searchTerms.length === 1;
+
+    if (shouldApplyCollapsedFilter && results.length > 0) {
+      const collapsedQuery = trimmedQuery.replace(/\s+/g, '');
+      if (collapsedQuery.length > 1) {
+        results = results.filter((verse) => {
+          const text = verse.text ?? '';
+          const normalizedText = (verse as any).textNormalized ?? '';
+          const collapsedText = text.replace(/\s+/g, '');
+          const collapsedNormalized = typeof normalizedText === 'string'
+            ? normalizedText.replace(/\s+/g, '')
+            : '';
+          return collapsedText.includes(collapsedQuery) || collapsedNormalized.includes(collapsedQuery);
+        });
+      }
+    }
+
     const transformed = transformResults(results, audioMap);
 
     // Extract variant forms for the processed object
