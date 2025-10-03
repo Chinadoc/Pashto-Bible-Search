@@ -108,34 +108,34 @@ const PERSON_PATTERNS: Record<VerbFilterPerson, string[]> = {
 
 const TENSE_MATCHERS: Record<VerbFilterTense, (label: string) => boolean> = {
   all: () => true,
-  present: (l) => l.includes('present'),
-  past: (l) => l.includes('past') && !l.includes('participle') && !l.includes('perfect'),
-  future: (l) => l.includes('future'),
-  perfect: (l) => l.includes('perfect') || l.includes('participle'),
-  subjunctive: (l) => l.includes('subj'),
-  imperative: (l) => l.includes('imperativ'),
-  ability: (l) => l.includes('ability') || l.includes('able') || l.includes('can'),
-  habitual: (l) => l.includes('habit'),
+  present: (l) => l.toLowerCase().includes('present'),
+  past: (l) => l.toLowerCase().includes('past') && !l.toLowerCase().includes('participle') && !l.toLowerCase().includes('perfect'),
+  future: (l) => l.toLowerCase().includes('future'),
+  perfect: (l) => l.toLowerCase().includes('perfect') || l.toLowerCase().includes('participle'),
+  subjunctive: (l) => l.toLowerCase().includes('subj'),
+  imperative: (l) => l.toLowerCase().includes('imperativ'),
+  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can'),
+  habitual: (l) => l.toLowerCase().includes('habit'),
 };
 
 const MOOD_MATCHERS: Record<VerbFilterMood, (label: string) => boolean> = {
   all: () => true,
-  indicative: (l) => !l.includes('subj') && !l.includes('imperativ'),
-  subjunctive: (l) => l.includes('subj'),
-  imperative: (l) => l.includes('imperativ'),
-  ability: (l) => l.includes('ability') || l.includes('able') || l.includes('can'),
+  indicative: (l) => !l.toLowerCase().includes('subj') && !l.toLowerCase().includes('imperativ'),
+  subjunctive: (l) => l.toLowerCase().includes('subj'),
+  imperative: (l) => l.toLowerCase().includes('imperativ'),
+  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can'),
 };
 
 const ASPECT_MATCHERS: Record<VerbFilterAspect, (label: string) => boolean> = {
   all: () => true,
   imperfective: (l) =>
-    l.includes('present') ||
-    l.includes('future') ||
-    l.includes('progressive') ||
-    l.includes('habit') ||
-    l.includes('subj') ||
-    l.includes('ability'),
-  perfective: (l) => l.includes('past') || l.includes('perfect') || l.includes('participle') || l.includes('subj'),
+    l.toLowerCase().includes('present') ||
+    l.toLowerCase().includes('future') ||
+    l.toLowerCase().includes('progressive') ||
+    l.toLowerCase().includes('habit') ||
+    l.toLowerCase().includes('subj') ||
+    l.toLowerCase().includes('ability'),
+  perfective: (l) => l.toLowerCase().includes('past') || l.toLowerCase().includes('perfect') || l.toLowerCase().includes('participle') || l.toLowerCase().includes('subj'),
 };
 
 function normalizeLabel(label?: string): string {
@@ -146,7 +146,7 @@ function matchesPerson(label: string, person: VerbFilterPerson): boolean {
   if (person === 'all') return true;
   const patterns = PERSON_PATTERNS[person];
   if (!patterns?.length) return true;
-  return patterns.some((pattern) => label.includes(pattern));
+  return patterns.some((pattern) => label.toLowerCase().includes(pattern.toLowerCase()));
 }
 
 function matchesTense(label: string, tense: VerbFilterTense): boolean {
