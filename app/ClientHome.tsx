@@ -535,12 +535,61 @@ export default function ClientHome() {
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
 
+  // useEffect to trigger search when verb filters change
+  useEffect(() => {
+    // Only trigger if verb state actually changed and we have related forms
+    if (includeRelated && relatedForms && query.trim()) {
+      const stateChanged =
+        previousVerbState.current.person !== verbFilters.person ||
+        previousVerbState.current.tense !== verbFilters.tense ||
+        previousVerbState.current.aspect !== verbFilters.aspect ||
+        previousVerbState.current.mood !== verbFilters.mood;
+
+      if (stateChanged) {
+        console.log('🔄 Verb filter changed, triggering new search');
+        handleSearch();
+      }
+    }
+    previousVerbState.current = verbFilters;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verbFilters.person, verbFilters.tense, verbFilters.aspect, verbFilters.mood]);
+
+  // useEffect to trigger search when noun filters change
+  useEffect(() => {
+    if (includeRelated && relatedForms && query.trim()) {
+      const stateChanged =
+        nounFilters.inflectionType !== 'all' || nounFilters.gender !== 'all';
+
+      if (stateChanged) {
+        console.log('🔄 Noun filter changed, triggering new search');
+        handleSearch();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nounFilters.inflectionType, nounFilters.gender]);
+
+  // useEffect to trigger search when adjective filters change
+  useEffect(() => {
+    if (includeRelated && relatedForms && query.trim()) {
+      const stateChanged =
+        adjectiveFilters.inflectionType !== 'all' || adjectiveFilters.gender !== 'all';
+
+      if (stateChanged) {
+        console.log('🔄 Adjective filter changed, triggering new search');
+        handleSearch();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjectiveFilters.inflectionType, adjectiveFilters.gender]);
+
   // Load persisted preferences on mount
   useEffect(() => {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
     const savedFilters = sanitizeVerbFilter(loadPersisted('verbFilters', DEFAULT_VERB_FILTER));
     setVerbFilters(savedFilters);
+    setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
+    setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
   }, []);
@@ -550,8 +599,10 @@ export default function ClientHome() {
     savePersisted('scope', scope);
     savePersisted('includeRelated', includeRelated);
     savePersisted('verbFilters', verbFilters);
+    savePersisted('nounFilters', nounFilters);
+    savePersisted('adjectiveFilters', adjectiveFilters);
     savePersisted('searchLanguage', searchLanguage);
-  }, [scope, includeRelated, verbFilters, searchLanguage]);
+  }, [scope, includeRelated, verbFilters, nounFilters, adjectiveFilters, searchLanguage]);
 
 
   // Clear any problematic initial values on mount
