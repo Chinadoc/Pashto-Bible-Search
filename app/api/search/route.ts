@@ -84,6 +84,58 @@ type ApiResult = {
 
 const YOUSAFZAI_BOOKS = new Set(['Psalms', 'Proverbs', 'Song of Solomon']);
 
+const COMPOUND_HELPERS = new Set(['وهل', 'کول', 'کېدل', 'کړل', 'اخیستل', 'ساتل']);
+const helperVariantCache = new Map<string, string[]>();
+
+async function getHelperVariants(helper: string): Promise<string[]> {
+  if (!helper || !COMPOUND_HELPERS.has(helper)) return [];
+  if (helperVariantCache.has(helper)) return helperVariantCache.get(helper)!;
+
+  try {
+    const variants = await generateVerbVariantsUtil(helper, { cap: 60, includeCompound: true });
+    const forms = Array.from(new Set(variants.map(v => v.form).filter(Boolean)));
+    helperVariantCache.set(helper, forms);
+    return forms;
+  } catch (error) {
+    console.warn(`Failed to expand helper verb "${helper}":`, error);
+    helperVariantCache.set(helper, []);
+    return [];
+  }
+}
+
+async function expandDictionaryEntryForms(entry: any): Promise<string[]> {
+  const forms: string[] = [];
+  if (!entry || typeof entry.pashto !== 'string') return forms;
+
+  const base = entry.pashto.trim();
+  if (!base) return forms;
+
+  const seen = new Set<string>();
+  const addForm = (text: string) => {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    forms.push(normalized);
+  };
+
+  addForm(base);
+
+  const parts = base.split(/\s+/);
+  if (parts.length > 1) {
+    const helper = parts[parts.length - 1];
+    const prefix = parts.slice(0, -1).join(' ');
+
+    const helperForms = await getHelperVariants(helper);
+    if (helperForms.length > 0) {
+      for (const helperForm of helperForms) {
+        addForm(`${prefix} ${helperForm}`);
+      }
+    }
+  }
+
+  return forms;
+}
+
 function normaliseScope(scope?: string): Scope {
   if (scope === 'ot' || scope === 'nt') return scope;
   return 'all';
@@ -216,14 +268,32 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        englishMatches = matchingEntries.map((entry: any) => ({
-          english: entry.english as string,
-          pashto: entry.pashto,
-          romanized: entry.romanized,
-          pos: entry.pos,
-        }));
+        const orderedTerms: string[] = [];
+        const addTerm = (term: string) => {
+          const normalized = term?.replace(/\s+/g, ' ').trim();
+          if (!normalized) return;
+          if (!orderedTerms.includes(normalized)) {
+            orderedTerms.push(normalized);
+          }
+        };
 
-        englishSearchTerms = Array.from(new Set(matchingEntries.map((entry: any) => entry.pashto).filter(Boolean)));
+        const enrichedMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms: string[] }> = [];
+
+        for (const entry of matchingEntries) {
+          const forms = await expandDictionaryEntryForms(entry);
+          forms.forEach(addTerm);
+
+          enrichedMatches.push({
+            english: entry.english as string,
+            pashto: entry.pashto,
+            romanized: entry.romanized,
+            pos: entry.pos,
+            forms,
+          });
+        }
+
+        englishMatches = enrichedMatches;
+        englishSearchTerms = orderedTerms;
 
         if (englishSearchTerms.length > 0) {
           trimmedQuery = englishSearchTerms[0];

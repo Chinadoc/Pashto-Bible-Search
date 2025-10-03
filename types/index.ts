@@ -81,6 +81,7 @@ export interface EnglishMatchMeta {
   pashto: string;
   romanized?: string;
   pos?: string;
+  forms?: string[];
 }
 
 export interface PhraseResponse {
