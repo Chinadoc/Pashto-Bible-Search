@@ -238,6 +238,14 @@ export async function POST(request: NextRequest) {
     // Combine search terms from query + English matches
     let searchTerms = Array.from(new Set([trimmedQuery, ...englishSearchTerms])) as string[];
 
+    // If filtered variants are provided, use only those for search
+    if (variants && variants.length > 0) {
+      console.log('🔽 Using filtered variants for search:', variants);
+      searchTerms = variants;
+      // Don't generate related forms when using filtered variants
+      includeRelated = false;
+    }
+
     // Generate related forms first if needed (for expanding search)
     let relatedForms = null;
 
