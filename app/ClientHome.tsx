@@ -881,7 +881,12 @@ export default function ClientHome() {
     const sanitized = sanitizeVerbFilter(nextFilters);
     setVerbFilters(sanitized);
 
-    if (!includeRelated || !relatedForms?.verbs?.length) {
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    if (!relatedForms?.verbs?.length) {
       console.log('Verb filters updated, awaiting related forms to refetch results');
       return;
     }
@@ -920,7 +925,12 @@ export default function ClientHome() {
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
 
-    if (!includeRelated || !relatedForms?.nouns?.length) {
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    if (!relatedForms?.nouns?.length) {
       console.log('Noun filters updated, awaiting related forms to refetch results');
       return;
     }
@@ -959,7 +969,12 @@ export default function ClientHome() {
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
     setAdjectiveFilters(nextFilters);
 
-    if (!includeRelated || !relatedForms?.other?.length) {
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    if (!relatedForms?.other?.length) {
       console.log('Adjective filters updated, awaiting related forms to refetch results');
       return;
     }
@@ -1192,16 +1207,18 @@ export default function ClientHome() {
               </div>
             )}
 
-            {/* Form Filters (shown when Related Forms Mode is active) */}
+            {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
             {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
-            {includeRelated && relatedForms && (
+            {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
               <>
                 {/* VERB FILTERS */}
-                {(relatedForms.posGuess === 'verb' || (!relatedForms.posGuess && relatedForms.verbs && relatedForms.verbs.length > 0)) && (
+                {(relatedForms?.posGuess === 'verb' ||
+                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
+                  (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Filter by verb form:
+                        Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
                       </span>
                       <button
                         onClick={() => applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER })}
@@ -1395,11 +1412,12 @@ export default function ClientHome() {
             )}
 
             {/* NOUN FILTERS */}
-            {relatedForms.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0 && (
+            {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
+             (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Filter by noun inflection:
+                    Filter by noun inflection {!isDefaultNounFilter(nounFilters) && '(Active)'}:
                   </span>
                   <button
                     onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
@@ -1472,11 +1490,12 @@ export default function ClientHome() {
             )}
 
             {/* ADJECTIVE FILTERS */}
-            {(relatedForms.posGuess === 'adjective' || relatedForms.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0 && (
+            {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
+             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Filter by adjective inflection:
+                    Filter by adjective inflection {!isDefaultAdjectiveFilter(adjectiveFilters) && '(Active)'}:
                   </span>
                   <button
                     onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
