@@ -252,7 +252,7 @@ export async function generateEnhancedVerbVariants(
   if (variants.length < 20) {
     console.log(`⚠️ Only ${variants.length} forms found, generating pattern-based forms...`);
     try {
-      const patternForms = generatePatternBasedVerbForms(entry.p);
+      const patternForms = generatePatternBasedVerbForms(entry.p, enrichedInfo);
       console.log(`🔧 Pattern generation for "${entry.p}" created ${patternForms.length} forms:`, patternForms.map(f => f.form));
       variants.push(...patternForms);
       console.log(`✅ Added ${patternForms.length} pattern-based forms, total now: ${variants.length}`);
@@ -274,14 +274,17 @@ export async function generateEnhancedVerbVariants(
  * Generate basic verb forms using Pashto conjugation patterns
  * This is a fallback when database inflection data is incomplete
  */
-function generatePatternBasedVerbForms(infinitive: string): Variant[] {
+function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record<string, any>): Variant[] {
   const variants: Variant[] = [];
-  
-  // Strip final ل from infinitive to get base stem
-  const stem = infinitive.replace(/ل$/, '');
-  
-  if (!stem) return [];
-  
+
+  // Use present stem from enriched data if available, otherwise derive from infinitive
+  const presentStem = enrichedInfo?.psp || infinitive.replace(/ل$/, '');
+
+  if (!presentStem) return [];
+
+  // Use past participle stem from enriched data if available, otherwise use infinitive
+  const pastStem = enrichedInfo?.tppp || infinitive;
+
   // Present tense endings
   const presentEndings = [
     { ending: 'م', label: '1sg Present', person: '1st', number: 'sg' },
@@ -291,28 +294,28 @@ function generatePatternBasedVerbForms(infinitive: string): Variant[] {
     { ending: 'ئ', label: '2pl Present', person: '2nd', number: 'pl' },
     { ending: 'ي', label: '3pl Present', person: '3rd', number: 'pl' },
   ];
-  
+
   // Add present tense forms
   for (const { ending, label } of presentEndings) {
     variants.push({
-      form: `${stem}${ending}`,
+      form: `${presentStem}${ending}`,
       label,
       pos: 'verb',
       flags: ['generated', 'present'],
     });
   }
-  
+
   // Subjunctive (prefix و-)
   for (const { ending, label } of presentEndings) {
     variants.push({
-      form: `و${stem}${ending}`,
+      form: `و${presentStem}${ending}`,
       label: label.replace('Present', 'Subjunctive'),
       pos: 'verb',
       flags: ['generated', 'subjunctive'],
     });
   }
-  
-  // Past tense (infinitive + past endings)
+
+  // Past tense (use past participle stem if available, otherwise infinitive)
   const pastEndings = [
     { ending: 'م', label: '1sg Past' },
     { ending: 'ې', label: '2sg Past' },
@@ -321,39 +324,39 @@ function generatePatternBasedVerbForms(infinitive: string): Variant[] {
     { ending: 'ئ', label: '2pl Past' },
     { ending: 'ل', label: '3pl Past' },
   ];
-  
+
   for (const { ending, label } of pastEndings) {
     variants.push({
-      form: `${infinitive}${ending}`,
+      form: `${pastStem}${ending}`,
       label,
       pos: 'verb',
       flags: ['generated', 'past'],
     });
   }
-  
+
   // Imperative (2nd person)
   variants.push({
-    form: `${stem}ه`,
+    form: `${presentStem}ه`,
     label: '2sg Imperative',
     pos: 'verb',
     flags: ['generated', 'imperative'],
   });
-  
+
   variants.push({
-    form: `${stem}ئ`,
+    form: `${presentStem}ئ`,
     label: '2pl Imperative',
     pos: 'verb',
     flags: ['generated', 'imperative'],
   });
-  
+
   // Past participle (common pattern)
   variants.push({
-    form: `${infinitive}ی`,
+    form: `${pastStem}لی`,
     label: 'Past Participle',
     pos: 'verb',
     flags: ['generated', 'participle'],
   });
-  
+
   return variants;
 }
 
