@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSupabaseLexicon } from "../hooks/useSupabaseLexicon";
-import { supabase } from "../utils/supabase";
-import type { Database } from "../types/database";
+import { supabase } from "@/utils/supabase";
+import type { Database } from "@/types/database";
 
 type NounEntry = Database['public']['Tables']['nouns_lexicon']['Row'];
 
@@ -54,7 +54,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
           .select('root')
           .eq('form', q)
           .limit(1)
-        const root = (map && map[0]?.root) ? String(map[0].root) : null
+        const root = (map && map[0]) ? String((map[0] as any).root) : null
         if (cancelled) return
         setRootFromForm(root)
         if (root && !result) {

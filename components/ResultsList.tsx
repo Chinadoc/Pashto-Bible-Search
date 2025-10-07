@@ -61,7 +61,7 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
   }
 }
 
-function getTranslationBadge(translation?: string, dialect?: string): ReactNode {
+function getTranslationBadge(translation?: string | null, dialect?: string | null): ReactNode {
   if (!translation || translation === 'Standard') return null;
 
   const isYousafzai = translation === 'Yousafzai 2019';

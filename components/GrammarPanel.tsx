@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../utils/supabase';
-import type { Database } from '../types/database';
+import { supabase } from '@/utils/supabase';
+import type { Database } from '@/types/database';
 
 type GrammarRule = Database['public']['Tables']['grammar_rules']['Row'];
 

@@ -1,4 +1,16 @@
-import { Verse } from '../lib/types';
+import { Verse } from '@/types';
+
+// Type for API results from search route
+type ApiResult = {
+  ref: string;
+  text: string;
+  testament?: string;
+  translation: string | null;
+  dialect: string | null;
+  tags: any[][];
+  audio_verse_url: string | null;
+  id: number;
+};
 
 /**
  * Normalize search results to ensure consistent formatting
@@ -147,9 +159,25 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
 }
 
 /**
- * Complete normalization pipeline
+ * Convert ApiResult to Verse format
  */
-export function normalizeVerses(verses: Verse[]): Verse[] {
+function convertApiResultToVerse(apiResult: ApiResult): Verse {
+  return {
+    ref: apiResult.ref,
+    text: apiResult.text,
+    translation: apiResult.translation,
+    dialect: apiResult.dialect,
+    tags: apiResult.tags,
+    audio_verse_url: apiResult.audio_verse_url,
+    testament: apiResult.testament as 'OT' | 'NT' | undefined,
+  };
+}
+
+/**
+ * Complete normalization pipeline for ApiResult[]
+ */
+export function normalizeVerses(apiResults: ApiResult[]): Verse[] {
+  const verses = apiResults.map(convertApiResultToVerse);
   return sortVersesByBook(
     deduplicateVerses(
       normalizeSearchResults(

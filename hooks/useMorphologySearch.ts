@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
-import type { Database } from '../types/database';
+import { supabase } from '@/utils/supabase';
+import type { Database } from '@/types/database';
 
 type InflectionRow = Database['public']['Tables']['inflections']['Row'];
 type RootRow = Database['public']['Tables']['form_roots']['Row'];
