@@ -119,6 +119,7 @@ export async function generateVerbVariants(
   // The enhanced adapter in lingdocs_adapter.ts handles pattern generation
   console.log('Using database inflection system for:', base);
   const inflRows = inflectMap?.get(base) || [];
+  console.log(`Found ${inflRows.length} inflection rows for "${base}"`);
 
   for (const row of inflRows) {
     if (!row.form) continue;
@@ -141,14 +142,17 @@ export async function generateVerbVariants(
 
   // Final fallback to dictionary lookup if no inflections found
   if (out.length === 0) {
+    console.log(`No inflections found for "${base}", checking dictionary...`);
     const dictEntry = dictionaryData?.find((entry: any) =>
       entry.pashto?.toLowerCase() === base.toLowerCase() ||
       entry.romanized?.toLowerCase().includes(base.toLowerCase())
     );
 
     if (dictEntry) {
+      console.log(`Found dictionary entry for "${base}":`, dictEntry.pos);
       out.push({ form: base, label: "Infinitive", pos: "verb" });
     } else {
+      console.log(`No dictionary entry found for "${base}", using pattern fallback`);
       // Basic pattern-based fallback for unknown verbs
       const basicForms = [
         { form: base, label: "Infinitive" },
@@ -158,6 +162,7 @@ export async function generateVerbVariants(
       ];
 
       basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
+      console.log(`Generated ${basicForms.length} basic forms for "${base}"`);
     }
   }
 

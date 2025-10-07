@@ -67,7 +67,7 @@ type Processed = {
   root?: string;
   fuzzyResults?: any;
   language?: 'pashto' | 'english';
-  englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string }>;
+  englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   variantsSearched?: string[];
 };
 
@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
+    console.log(`🔍 Search request started at ${new Date().toISOString()}`);
     const body = await request.json() as SearchRequest;
     const {
       query,
@@ -361,7 +362,8 @@ export async function POST(request: NextRequest) {
 
         console.log(`📖 Dictionary entry for "${trimmedQuery}":`, {
           pos: dictEntry?.pos,
-          detected: isNoun ? 'noun' : isVerb ? 'verb' : isAdjective ? 'adjective' : 'unknown'
+          detected: isNoun ? 'noun' : isVerb ? 'verb' : isAdjective ? 'adjective' : 'unknown',
+          entry: dictEntry
         });
 
         let allVariants: any[] = [];
@@ -860,12 +862,15 @@ export async function POST(request: NextRequest) {
       query: originalQuery,
     });
 
+    const totalMs = Date.now() - startedAt;
+    console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${trimmedQuery}"`);
+
     return NextResponse.json({
       results: transformed,
       relatedForms,
       processed,
       count: transformed.length,
-      ms: Date.now() - startedAt,
+      ms: totalMs,
     });
   } catch (error) {
     console.error('Search API error:', error);
