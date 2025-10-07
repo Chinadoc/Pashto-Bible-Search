@@ -93,6 +93,66 @@ let audioMapCache: Record<string, string> | null = null;
 let audioMapCacheTime: number = 0;
 const AUDIO_MAP_CACHE_TTL = 3600000; // 1 hour in milliseconds
 
+// Search result cache
+interface SearchCacheKey {
+  query: string;
+  scope: string;
+  includeRelated: boolean;
+  enableFuzzy: boolean;
+  searchLanguage: string;
+}
+
+interface SearchCacheEntry {
+  results: any[];
+  relatedForms: any;
+  processed: any;
+  timestamp: number;
+  hitCount: number;
+}
+
+const searchResultCache = new Map<string, SearchCacheEntry>();
+const SEARCH_CACHE_TTL = 1800000; // 30 minutes in milliseconds
+const MAX_CACHE_ENTRIES = 100;
+
+function generateCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string): string {
+  return `${query}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}`;
+}
+
+function getCachedSearch(cacheKey: string): SearchCacheEntry | null {
+  const cached = searchResultCache.get(cacheKey);
+  if (!cached) return null;
+
+  const now = Date.now();
+  if ((now - cached.timestamp) > SEARCH_CACHE_TTL) {
+    searchResultCache.delete(cacheKey);
+    return null;
+  }
+
+  // Update hit count
+  cached.hitCount++;
+  return cached;
+}
+
+function setCachedSearch(cacheKey: string, results: any[], relatedForms: any, processed: any): void {
+  // Clean up old entries if cache is full
+  if (searchResultCache.size >= MAX_CACHE_ENTRIES) {
+    // Remove oldest entries (by timestamp)
+    const entries = Array.from(searchResultCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    const toRemove = entries.slice(0, Math.floor(MAX_CACHE_ENTRIES * 0.2)); // Remove 20% oldest
+    toRemove.forEach(([key]) => searchResultCache.delete(key));
+  }
+
+  searchResultCache.set(cacheKey, {
+    results,
+    relatedForms,
+    processed,
+    timestamp: Date.now(),
+    hitCount: 1,
+  });
+}
+
 async function getAudioMap(): Promise<Record<string, string>> {
   const now = Date.now();
   
@@ -251,6 +311,28 @@ export async function POST(request: NextRequest) {
     }
 
     const originalQuery = query.trim();
+
+    // Check cache first
+    const cacheKey = generateCacheKey(
+      originalQuery,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      searchLanguage
+    );
+
+    const cachedResult = getCachedSearch(cacheKey);
+    if (cachedResult) {
+      console.log(`✅ Cache hit for "${originalQuery}" (${cachedResult.hitCount} hits)`);
+      return NextResponse.json({
+        results: normalizeVerses(cachedResult.results),
+        relatedForms: cachedResult.relatedForms,
+        processed: cachedResult.processed,
+        count: cachedResult.results.length,
+        ms: 0, // Cached result
+        cached: true,
+      });
+    }
     let trimmedQuery = originalQuery;
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
@@ -560,6 +642,18 @@ export async function POST(request: NextRequest) {
           relatedFormsCount: relatedForms?.total || 0
         });
 
+        // Cache the results before returning
+        setCachedSearch(cacheKey, transformed, relatedForms, {
+          original: originalQuery,
+          normalized: trimmedQuery,
+          variants: searchTerms,
+          searchType: 'enhanced',
+          pos: 'unknown',
+          language: searchLanguage,
+          englishMatches: englishMatches.length ? englishMatches : undefined,
+          variantsSearched: searchTerms,
+        });
+
         return NextResponse.json({
           results: normalizeVerses(transformed),
           relatedForms,
@@ -575,6 +669,7 @@ export async function POST(request: NextRequest) {
           },
           count: transformed.length,
           ms: Date.now() - startedAt,
+          cached: false,
         });
       } else {
         console.log('⚠️ Enhanced search returned no results, will try fallback');
@@ -623,12 +718,16 @@ export async function POST(request: NextRequest) {
 
       console.log('🔄 Variant fallback search found', transformed.length, 'results');
 
+      // Cache the results before returning
+      setCachedSearch(cacheKey, transformed, relatedForms, processed);
+
       return NextResponse.json({
         results: normalizeVerses(transformed),
         relatedForms,
         processed,
         count: transformed.length,
         ms: Date.now() - startedAt,
+        cached: false,
       });
     }
 
@@ -669,12 +768,16 @@ export async function POST(request: NextRequest) {
         variantsSearched: searchTerms,
       };
 
+      // Cache the results before returning
+      setCachedSearch(cacheKey, transformed, null, processed);
+
       return NextResponse.json({
         results: normalizeVerses(transformed),
         relatedForms: null,
         processed,
         count: transformed.length,
         ms: Date.now() - startedAt,
+        cached: false,
       });
     }
 
@@ -905,12 +1008,16 @@ export async function POST(request: NextRequest) {
     const totalMs = Date.now() - startedAt;
     console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${trimmedQuery}"`);
 
+    // Cache the results before returning
+    setCachedSearch(cacheKey, transformed, relatedForms, processed);
+
     return NextResponse.json({
       results: normalizeVerses(transformed),
       relatedForms,
       processed,
       count: transformed.length,
       ms: totalMs,
+      cached: false,
     });
   } catch (error) {
     console.error('Search API error:', error);
@@ -919,6 +1026,27 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+// Cache status endpoint for monitoring
+export async function GET() {
+  return NextResponse.json({
+    cache: {
+      searchResults: {
+        size: searchResultCache.size,
+        maxSize: MAX_CACHE_ENTRIES,
+        ttl: SEARCH_CACHE_TTL,
+      },
+      audioMap: {
+        cached: audioMapCache !== null,
+        ttl: AUDIO_MAP_CACHE_TTL,
+        age: audioMapCache ? Date.now() - audioMapCacheTime : null,
+      },
+      helperVariants: {
+        size: helperVariantCache.size,
+      },
+    },
+  });
 }
 
 // Helper function to check scope
