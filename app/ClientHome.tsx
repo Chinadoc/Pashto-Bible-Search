@@ -520,7 +520,7 @@ export default function ClientHome() {
     variantGroups?: VariantGroupMeta[];
     romanization?: string;
     language?: SearchLanguage;
-    englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string }>;
+    englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   } | null>(null);
 
   // Verb understanding state
@@ -531,6 +531,7 @@ export default function ClientHome() {
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
   const variantKeyRef = useRef<string>('');
+  const isQueryChangingRef = useRef<boolean>(false);
 
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
@@ -587,6 +588,7 @@ export default function ClientHome() {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
     const savedFilters = sanitizeVerbFilter(loadPersisted('verbFilters', DEFAULT_VERB_FILTER));
+    console.log('Loading verb filters from localStorage:', savedFilters);
     setVerbFilters(savedFilters);
     setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
@@ -596,8 +598,15 @@ export default function ClientHome() {
 
   // Persist preferences when they change
   useEffect(() => {
+    // Don't persist filters during query changes to prevent stale state
+    if (isQueryChangingRef.current) {
+      console.log('Skipping filter persistence during query change');
+      return;
+    }
+    
     savePersisted('scope', scope);
     savePersisted('includeRelated', includeRelated);
+    console.log('Persisting verb filters:', verbFilters);
     savePersisted('verbFilters', verbFilters);
     savePersisted('nounFilters', nounFilters);
     savePersisted('adjectiveFilters', adjectiveFilters);
@@ -808,12 +817,16 @@ export default function ClientHome() {
       setCoverage([]);
       setRelatedForms(null);
       
-      // Reset filters when starting a new manual search
-      if (reason === 'manual') {
+      // Reset filters when starting a new search (manual or query change)
+      if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
         setVerbFilters({ ...DEFAULT_VERB_FILTER });
         setNounFilters({ ...DEFAULT_NOUN_FILTER });
         setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+        // Clear variant override to ensure fresh analysis
+        setVariantsOverride(null);
+        setActiveVariantForms([]);
+        variantKeyRef.current = '';
       }
     }
     setProcessed(null);
@@ -861,6 +874,8 @@ export default function ClientHome() {
         || variantsPayload
         || [];
 
+      console.log('Setting active variant forms:', processedVariants);
+      console.log('Setting variants override:', variantsPayload);
       setActiveVariantForms(processedVariants);
       setVariantsOverride(variantsPayload ?? null);
       variantKeyRef.current = processedVariants.length ? processedVariants.join('|') : '__all__';
@@ -881,14 +896,14 @@ export default function ClientHome() {
   }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
 
   // Helper to calculate coverage from filtered results
-  const calculateCoverageFromResults = useCallback((verses: VerseRow[]) => {
+  const calculateCoverageFromResults = useCallback((verses: Verse[]) => {
     const bookCounts = new Map<string, number>();
-    
+
     for (const verse of verses) {
       const book = verse.ref.split(' ')[0];
       bookCounts.set(book, (bookCounts.get(book) || 0) + 1);
     }
-    
+
     return Array.from(bookCounts.entries()).map(([book, count]) => ({
       book,
       count,
@@ -903,6 +918,7 @@ export default function ClientHome() {
 
   const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
     const sanitized = sanitizeVerbFilter(nextFilters);
+    console.log('Applying verb filters:', { nextFilters, sanitized });
     setVerbFilters(sanitized);
 
     if (!includeRelated) {
@@ -927,19 +943,24 @@ export default function ClientHome() {
       return;
     }
 
-    // Client-side filtering: filter existing results by the selected forms
+    // Always do client-side filtering when we have existing results
+    // This prevents triggering new searches when filters change
     if (results && results.length > 0) {
       console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
-      
-      const formsSet = new Set(forms.map(f => f.toLowerCase().replace(/\s+/g, '')));
-      
       const filtered = results.filter((verse) => {
         const text = verse.text ?? '';
-        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+        const normalizedText = text.toLowerCase();
+        const collapsedText = normalizedText.replace(/\s+/g, '');
         
         // Check if verse contains any of the filtered forms
         return forms.some(form => {
-          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          const normalizedForm = form.toLowerCase();
+          const collapsedForm = normalizedForm.replace(/\s+/g, '');
+
+          if (normalizedForm.includes(' ')) {
+            return normalizedText.includes(normalizedForm) || collapsedText.includes(collapsedForm);
+          }
+
           return collapsedText.includes(collapsedForm);
         });
       });
@@ -953,14 +974,21 @@ export default function ClientHome() {
       const newCoverage = calculateCoverageFromResults(filtered);
       setCoverage(newCoverage);
     } else {
-      // No existing results, need to search
-      console.log('🔄 No existing results, triggering search for filtered forms');
-      variantKeyRef.current = forms.join('|');
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+      // Only trigger new search if we truly have no results AND no query
+      // This prevents unnecessary searches when filters are applied
+      if (!query.trim()) {
+        console.log('🔄 No existing results and no query, triggering search for filtered forms');
+        variantKeyRef.current = forms.join('|');
+        setVariantsOverride(forms);
+        setActiveVariantForms(forms);
+        executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+      } else {
+        console.log('🔄 No existing results but have query, will trigger search on next query change');
+        setVariantsOverride(forms);
+        setActiveVariantForms(forms);
+      }
     }
-  }, [includeRelated, relatedForms, results, executeSearch]);
+  }, [includeRelated, relatedForms, results, executeSearch, query]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
@@ -1096,6 +1124,34 @@ export default function ClientHome() {
     }
     previousLanguage.current = searchLanguage;
   }, [searchLanguage, query, executeSearch]);
+
+  // Trigger search when query changes (with debouncing)
+  const previousQuery = useRef<string>(query);
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    const previousTrimmedQuery = previousQuery.current.trim();
+    
+    // Only trigger if query actually changed and we have a non-empty query
+    if (trimmedQuery !== previousTrimmedQuery && trimmedQuery) {
+      console.log('🔄 Query changed, triggering new search');
+      // Set flag to prevent filter persistence during query change
+      isQueryChangingRef.current = true;
+      // Reset filters and variant forms when query changes to ensure fresh analysis
+      console.log('Clearing variant forms for new query:', trimmedQuery);
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
+      setNounFilters({ ...DEFAULT_NOUN_FILTER });
+      setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+      variantKeyRef.current = ''; // reset variant key to avoid stale matches
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+      executeSearch({ preserveResults: false, reason: 'query' });
+      // Reset flag after a short delay to allow state updates to complete
+      setTimeout(() => {
+        isQueryChangingRef.current = false;
+      }, 100);
+    }
+    previousQuery.current = query;
+  }, [query, executeSearch]);
 
   // Trigger new search when verb filters change (already implemented above)
 
