@@ -974,21 +974,28 @@ export default function ClientHome() {
       const newCoverage = calculateCoverageFromResults(filtered);
       setCoverage(newCoverage);
     } else {
-      // Only trigger new search if we truly have no results AND no query
-      // This prevents unnecessary searches when filters are applied
-      if (!query.trim()) {
-        console.log('🔄 No existing results and no query, triggering search for filtered forms');
+      // No existing results - need to restore original results
+      console.log('🔄 No existing results, restoring original search results');
+      
+      // If filters are reset to "All", restore original results from the last successful search
+      if (isDefaultVerbFilter(sanitized)) {
+        console.log('🔄 Filters reset to "All", restoring original results');
+        // Clear variant override to show all original forms
+        setVariantsOverride(null);
+        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+        
+        // Re-run the original search to restore results
+        executeSearch({ preserveResults: false, reason: 'filter-reset' });
+      } else {
+        // Specific filters applied but no results - trigger search with filtered forms
+        console.log('🔄 Specific filters applied, triggering search with filtered forms');
         variantKeyRef.current = forms.join('|');
         setVariantsOverride(forms);
         setActiveVariantForms(forms);
         executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
-      } else {
-        console.log('🔄 No existing results but have query, will trigger search on next query change');
-        setVariantsOverride(forms);
-        setActiveVariantForms(forms);
       }
     }
-  }, [includeRelated, relatedForms, results, executeSearch, query]);
+  }, [includeRelated, relatedForms, results, executeSearch, query, isDefaultVerbFilter]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
