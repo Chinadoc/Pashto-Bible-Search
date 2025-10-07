@@ -184,3 +184,7 @@ Look for these logs:
 4. **Decide**: Is 25-40 forms enough, or do you want the full LingDocs integration?
 
 If you want the FULL integration (60-80 forms like the screenshot), we'll need to solve the build issues with the pashto-inflector library. For most users, 25-40 forms should be plenty! ✅
+
+
+
+

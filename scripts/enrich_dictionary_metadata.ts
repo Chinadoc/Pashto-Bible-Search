@@ -117,6 +117,7 @@ function extractEnrichedInfo(entry: DictEntry): Record<string, any> {
 }
 
 async function enrichDictionary() {
+  const startTime = Date.now();
   console.log('📚 Starting dictionary enrichment...');
   console.log('🔗 Supabase URL:', SUPABASE_URL);
   console.log('🔑 API Key present:', SUPABASE_KEY ? 'Yes' : 'No');
@@ -124,10 +125,10 @@ async function enrichDictionary() {
   // Load dictionary
   const dictPath = path.join(process.cwd(), 'full_dictionary_enriched.json');
   console.log('📂 Loading dictionary from:', dictPath);
-  
+
   const rawData = fs.readFileSync(dictPath, 'utf-8');
   console.log('📄 File size:', (rawData.length / 1024 / 1024).toFixed(2), 'MB');
-  
+
   const dictData = JSON.parse(rawData);
   const entries: DictEntry[] = dictData.entries || [];
 
@@ -138,16 +139,34 @@ async function enrichDictionary() {
   let skipped = 0;
   let errors = 0;
 
-  // Process in batches to avoid rate limits
+  // Progress tracking
+  const totalEntries = entries.length;
   const BATCH_SIZE = 50;
+  const totalBatches = Math.ceil(totalEntries / BATCH_SIZE);
+
+  // Progress tracking variables
+  let startBatchTime = Date.now();
+  let lastProgressUpdate = Date.now();
 
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     const batch = entries.slice(i, i + BATCH_SIZE);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-    const totalBatches = Math.ceil(entries.length / BATCH_SIZE);
-    
-    console.log(`\n🔄 Batch ${batchNum}/${totalBatches} (entries ${i + 1}-${Math.min(i + BATCH_SIZE, entries.length)}/${entries.length})`);
-    console.log(`   Progress: ${((i / entries.length) * 100).toFixed(1)}%`);
+
+    // Progress calculation
+    const progressPercent = ((i / totalEntries) * 100).toFixed(1);
+    const entriesProcessed = i + batch.length;
+    const entriesRemaining = totalEntries - entriesProcessed;
+
+    // Time estimation
+    const elapsedMs = Date.now() - startTime;
+    const elapsedSeconds = Math.floor(elapsedMs / 1000);
+    const entriesPerSecond = i / (elapsedMs / 1000);
+    const estimatedSecondsRemaining = entriesRemaining / entriesPerSecond;
+    const estimatedMinutesRemaining = Math.ceil(estimatedSecondsRemaining / 60);
+
+    console.log(`\n🔄 Batch ${batchNum}/${totalBatches} (entries ${i + 1}-${Math.min(i + BATCH_SIZE, entries.length)})`);
+    console.log(`   📊 Progress: ${progressPercent}% (${entriesProcessed}/${totalEntries})`);
+    console.log(`   ⏱️  Elapsed: ${elapsedSeconds}s | ETA: ~${estimatedMinutesRemaining}min`);
 
     const promises = batch.map(async (entry, idx) => {
       try {
@@ -192,6 +211,9 @@ async function enrichDictionary() {
     console.log(`   ✅ Batch ${batchNum} complete: +${batch.length} processed`);
     console.log(`   📊 Running totals: ${enriched} enriched, ${skipped} skipped, ${errors} errors`);
 
+    // Update progress timing
+    startBatchTime = Date.now();
+
     // Rate limit: wait 500ms between batches
     if (i + BATCH_SIZE < entries.length) {
       console.log(`   ⏳ Waiting 500ms before next batch...`);
@@ -199,10 +221,16 @@ async function enrichDictionary() {
     }
   }
 
+  const totalTimeSeconds = Math.floor((Date.now() - startTime) / 1000);
+  const totalTimeMinutes = Math.floor(totalTimeSeconds / 60);
+  const remainingSeconds = totalTimeSeconds % 60;
+
   console.log(`\n✨ Enrichment complete!`);
   console.log(`  ✅ Enriched: ${enriched}`);
   console.log(`  ⏭️  Skipped (no metadata): ${skipped}`);
   console.log(`  ❌ Errors: ${errors}`);
+  console.log(`  ⏱️  Total time: ${totalTimeMinutes}m ${remainingSeconds}s`);
+  console.log(`  📈 Rate: ~${Math.round(totalEntries / (totalTimeSeconds / 60))}/min`);
 }
 
 // Run if executed directly

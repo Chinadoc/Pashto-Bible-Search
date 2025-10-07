@@ -202,3 +202,7 @@ export async function generateEnhancedVerbVariants(
 - [Pashto Inflector Repo](https://github.com/lingdocs/pashto-inflector)
 - [Pashto Dictionary Repo](https://github.com/lingdocs/pashto-dictionary)
 
+
+
+
+

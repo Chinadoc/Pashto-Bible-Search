@@ -210,3 +210,5 @@ export function normalizePashtoText(text: string): string {
 
 // Export type for use in other modules
 export type { Variant };
+
+

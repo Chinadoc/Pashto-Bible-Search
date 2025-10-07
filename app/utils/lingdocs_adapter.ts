@@ -6,6 +6,8 @@
  */
 
 import { getData } from '../lib/data/load';
+
+const COMPOUND_HELPERS = new Set(['وهل', 'کول', 'کېدل', 'کړل', 'اخیستل', 'ساتل']);
 import { createClient } from '@supabase/supabase-js';
 import type { Variant } from './verb_variants';
 
@@ -277,13 +279,24 @@ export async function generateEnhancedVerbVariants(
 function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record<string, any>): Variant[] {
   const variants: Variant[] = [];
 
-  // Use present stem from enriched data if available, otherwise derive from infinitive
-  const presentStem = enrichedInfo?.psp || infinitive.replace(/ل$/, '');
+  const raw = infinitive.trim();
+  if (!raw) return variants;
 
-  if (!presentStem) return [];
+  const segments = raw.split(/\s+/);
+  const helperCandidate = segments[segments.length - 1];
+  const hasPrefix = segments.length > 1 && COMPOUND_HELPERS.has(helperCandidate);
+  const prefix = hasPrefix ? `${segments.slice(0, -1).join(' ')} ` : '';
+  const helperInfinitive = hasPrefix ? helperCandidate : raw;
 
-  // Use past participle stem from enriched data if available, otherwise use infinitive
-  const pastStem = enrichedInfo?.tppp || infinitive;
+  // Use present stem from enriched data if the helper matches, otherwise derive from helper infinitive
+  const presentStem = enrichedInfo?.psp && !hasPrefix
+    ? enrichedInfo.psp
+    : helperInfinitive.replace(/ل$/, '');
+
+  if (!presentStem) return variants;
+
+  // Use past participle stem from enriched data if available, otherwise use helper infinitive
+  const pastStem = enrichedInfo?.tppp && !hasPrefix ? enrichedInfo.tppp : helperInfinitive;
 
   // Present tense endings
   const presentEndings = [
@@ -298,20 +311,20 @@ function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record
   // Add present tense forms
   for (const { ending, label } of presentEndings) {
     variants.push({
-      form: `${presentStem}${ending}`,
+      form: `${prefix}${presentStem}${ending}`.trim(),
       label,
       pos: 'verb',
-      flags: ['generated', 'present'],
+      flags: hasPrefix ? ['generated', 'present', 'compound', 'imperfective'] : ['generated', 'present', 'imperfective'],
     });
   }
 
   // Subjunctive (prefix و-)
   for (const { ending, label } of presentEndings) {
     variants.push({
-      form: `و${presentStem}${ending}`,
+      form: `${prefix}و${presentStem}${ending}`.trim(),
       label: label.replace('Present', 'Subjunctive'),
       pos: 'verb',
-      flags: ['generated', 'subjunctive'],
+      flags: hasPrefix ? ['generated', 'subjunctive', 'compound', 'imperfective'] : ['generated', 'subjunctive', 'imperfective'],
     });
   }
 
@@ -327,34 +340,34 @@ function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record
 
   for (const { ending, label } of pastEndings) {
     variants.push({
-      form: `${pastStem}${ending}`,
+      form: `${prefix}${pastStem}${ending}`.trim(),
       label,
       pos: 'verb',
-      flags: ['generated', 'past'],
+      flags: hasPrefix ? ['generated', 'past', 'compound', 'perfective'] : ['generated', 'past', 'perfective'],
     });
   }
 
   // Imperative (2nd person)
   variants.push({
-    form: `${presentStem}ه`,
+    form: `${prefix}${presentStem}ه`.trim(),
     label: '2sg Imperative',
     pos: 'verb',
-    flags: ['generated', 'imperative'],
+    flags: hasPrefix ? ['generated', 'imperative', 'compound'] : ['generated', 'imperative'],
   });
 
   variants.push({
-    form: `${presentStem}ئ`,
+    form: `${prefix}${presentStem}ئ`.trim(),
     label: '2pl Imperative',
     pos: 'verb',
-    flags: ['generated', 'imperative'],
+    flags: hasPrefix ? ['generated', 'imperative', 'compound'] : ['generated', 'imperative'],
   });
 
   // Past participle (common pattern)
   variants.push({
-    form: `${pastStem}لی`,
+    form: `${prefix}${pastStem}لی`.trim(),
     label: 'Past Participle',
     pos: 'verb',
-    flags: ['generated', 'participle'],
+    flags: hasPrefix ? ['generated', 'participle', 'compound', 'perfective'] : ['generated', 'participle', 'perfective'],
   });
 
   return variants;
@@ -384,37 +397,59 @@ function labelFromInfo(info?: string): string {
   if (!info) return 'Form';
   
   const s = info.toLowerCase();
-  
+
+  let baseLabel = '';
+
   // Present tense
   if (s.includes('present')) {
-    if (s.includes('1sg') || s.includes('1st') && s.includes('sg')) return '1sg Present';
-    if (s.includes('2sg') || s.includes('2nd') && s.includes('sg')) return '2sg Present';
-    if (s.includes('3sg') || s.includes('3rd') && s.includes('sg')) return '3sg Present';
-    if (s.includes('1pl') || s.includes('1st') && s.includes('pl')) return '1pl Present';
-    if (s.includes('2pl') || s.includes('2nd') && s.includes('pl')) return '2pl Present';
-    if (s.includes('3pl') || s.includes('3rd') && s.includes('pl')) return '3pl Present';
-    if (s.includes('pl')) return 'Plural Present';
-    return 'Present';
+    if (s.includes('1sg') || (s.includes('1st') && s.includes('sg'))) baseLabel = '1sg Present';
+    else if (s.includes('2sg') || (s.includes('2nd') && s.includes('sg'))) baseLabel = '2sg Present';
+    else if (s.includes('3sg') || (s.includes('3rd') && s.includes('sg'))) baseLabel = '3sg Present';
+    else if (s.includes('1pl') || (s.includes('1st') && s.includes('pl'))) baseLabel = '1pl Present';
+    else if (s.includes('2pl') || (s.includes('2nd') && s.includes('pl'))) baseLabel = '2pl Present';
+    else if (s.includes('3pl') || (s.includes('3rd') && s.includes('pl'))) baseLabel = '3pl Present';
+    else if (s.includes('pl')) baseLabel = 'Plural Present';
+    else baseLabel = 'Present';
   }
   
   // Past tense
-  if (s.includes('past')) {
-    if (s.includes('participle')) return 'Past Participle';
-    if (s.includes('1sg')) return '1sg Past';
-    if (s.includes('2sg')) return '2sg Past';
-    if (s.includes('3sg')) return '3sg Past';
-    if (s.includes('pl')) return 'Plural Past';
-    return 'Past';
+  if (!baseLabel && s.includes('past')) {
+    if (s.includes('participle')) baseLabel = 'Past Participle';
+    else if (s.includes('1sg')) baseLabel = '1sg Past';
+    else if (s.includes('2sg')) baseLabel = '2sg Past';
+    else if (s.includes('3sg')) baseLabel = '3sg Past';
+    else if (s.includes('pl')) baseLabel = 'Plural Past';
+    else baseLabel = 'Past';
   }
   
   // Other tenses
-  if (s.includes('subj')) return 'Subjunctive';
-  if (s.includes('future')) return 'Future';
-  if (s.includes('imperative')) return 'Imperative';
-  if (s.includes('progressive')) return 'Progressive';
-  if (s.includes('perfect')) return 'Perfect';
-  
-  return info;
+  if (!baseLabel) {
+    if (s.includes('subj')) baseLabel = 'Subjunctive';
+    else if (s.includes('future')) baseLabel = 'Future';
+    else if (s.includes('imperative')) baseLabel = 'Imperative';
+    else if (s.includes('progressive')) baseLabel = 'Progressive';
+    else if (s.includes('perfect')) baseLabel = 'Perfect';
+  }
+
+  if (!baseLabel) baseLabel = info;
+
+  // Aspect hints
+  const hasImperfective = /imperfective|imperf|present/i.test(info);
+  const hasPerfective = /perfective|perf|past_participle|past/i.test(info) && !/imperfective|imperf/i.test(info);
+
+  if (hasImperfective && !baseLabel.toLowerCase().includes('imperfective')) {
+    baseLabel = baseLabel.includes('(')
+      ? `${baseLabel}, Imperfective`
+      : `${baseLabel} (Imperfective)`;
+  }
+
+  if (hasPerfective && !baseLabel.toLowerCase().includes('perfective')) {
+    baseLabel = baseLabel.includes('(')
+      ? `${baseLabel}, Perfective`
+      : `${baseLabel} (Perfective)`;
+  }
+
+  return baseLabel;
 }
 
 /**
