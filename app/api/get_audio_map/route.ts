@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, TABLES } from '../../../utils/supabase'
+import { supabase } from '../../../utils/supabase'
 import type { AudioMap } from '../../../types'
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     let from = 0
     while (true) {
       const { data: audioData, error } = await supabase
-        .from(TABLES.AUDIO_MAPPINGS)
+        .from('audio_by_verse')
         .select('verse_reference, audio_filename, audio_path')
         .order('verse_reference')
         .range(from, from + pageSize - 1)
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
 
     // Also pull from verses table if drive IDs or filenames exist
     const { data: versesData, error: versesError } = await supabase
-      .from(TABLES.VERSES)
+      .from('verses')
       .select('book, chapter, verse, audio_filename, audio_drive_id')
       .or('audio_filename.not.is.null,audio_drive_id.not.is.null')
 

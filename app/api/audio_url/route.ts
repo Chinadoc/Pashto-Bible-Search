@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
+import { supabase } from '@/utils/supabase'
 
 /**
  * Generate signed URL for private audio files
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
           .limit(1)
 
         if (data?.[0]) {
-          const entry = data[0]
+          const entry = data[0] as any
           // Use bucket/object if available, otherwise try storage_path
           if (entry.bucket && entry.object) {
             targetBucket = entry.bucket

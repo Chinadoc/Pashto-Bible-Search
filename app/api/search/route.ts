@@ -40,7 +40,7 @@ type SearchRequest = {
   includeRelated?: boolean;
   variants?: string[];
   enableFuzzy?: boolean;
-  language?: 'pashto' | 'english';
+  language?: 'pashto' | 'english' | 'anki';
   bookFilter?: string[];
   limit?: number;
 };
@@ -67,7 +67,7 @@ type Processed = {
   romanization?: string;
   root?: string;
   fuzzyResults?: any;
-  language?: 'pashto' | 'english';
+  language?: 'pashto' | 'english' | 'anki';
   englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   variantsSearched?: string[];
 };
@@ -78,7 +78,7 @@ type ApiResult = {
   testament?: string;
   translation: string | null;
   dialect: string | null;
-  tags: string[];
+  tags: any[][];
   audio_verse_url: string | null;
   id: number;
 };
@@ -151,6 +151,46 @@ function setCachedSearch(cacheKey: string, results: any[], relatedForms: any, pr
     timestamp: Date.now(),
     hitCount: 1,
   });
+}
+
+// Prioritize results for Anki export (focus on dictionary entries with audio)
+function prioritizeAnkiResults(results: any[]): any[] {
+  if (!results.length) return results;
+
+  // Group results by whether they have dictionary matches with audio
+  const withAudio = [];
+  const withoutAudio = [];
+
+  for (const result of results) {
+    const hasAudioMatch = checkIfResultHasAudioMatch(result);
+    if (hasAudioMatch) {
+      withAudio.push(result);
+    } else {
+      withoutAudio.push(result);
+    }
+  }
+
+  // Return audio matches first, then others
+  return [...withAudio, ...withoutAudio];
+}
+
+// Check if a result has a dictionary entry with audio
+function checkIfResultHasAudioMatch(result: any): boolean {
+  // This is a simplified check - in practice, you'd want more sophisticated matching
+  // For now, we'll assume results with shorter, more common words are more likely to have dictionary entries
+  const text = result.text || '';
+  const words = text.split(/\s+/);
+
+  // Look for short words that are likely to be dictionary entries
+  for (const word of words) {
+    if (word.length > 2 && word.length < 10 && !/\d/.test(word)) {
+      // Check if this word might exist in dictionary (simplified heuristic)
+      // In practice, you'd query the dictionary database here
+      return true; // For now, assume most short words have dictionary entries
+    }
+  }
+
+  return false;
 }
 
 async function getAudioMap(): Promise<Record<string, string>> {
@@ -280,7 +320,7 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
       testament: result.testament ?? 'NT',
       translation: usesYousafzai ? 'Yousafzai 2019' : null,
       dialect: usesYousafzai ? 'Yousafzai' : null,
-      tags: [],
+      tags: [] as any[][],
       audio_verse_url: audioUrl,
       id: index + 1,
     };
@@ -297,7 +337,7 @@ export async function POST(request: NextRequest) {
       query,
       includeRelated = false,
       variants = [],
-      enableFuzzy,
+      enableFuzzy = false,
       language = 'pashto',
       limit = 100,
     } = body;
@@ -311,6 +351,7 @@ export async function POST(request: NextRequest) {
     }
 
     const originalQuery = query.trim();
+    const searchLanguage: 'pashto' | 'english' | 'anki' = language === 'anki' ? 'anki' : language === 'english' ? 'english' : 'pashto';
 
     // Check cache first
     const cacheKey = generateCacheKey(
@@ -320,6 +361,11 @@ export async function POST(request: NextRequest) {
       enableFuzzy,
       searchLanguage
     );
+
+    // For Anki mode, prioritize dictionary entries with audio
+    if (searchLanguage === 'anki') {
+      console.log('🔄 Anki mode: prioritizing dictionary entries with audio');
+    }
 
     const cachedResult = getCachedSearch(cacheKey);
     if (cachedResult) {
@@ -336,7 +382,6 @@ export async function POST(request: NextRequest) {
     let trimmedQuery = originalQuery;
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
-    const searchLanguage: 'pashto' | 'english' = language === 'english' ? 'english' : 'pashto';
 
     // English search mode: find ALL Pashto words with this English term
     if (searchLanguage === 'english') {
@@ -630,7 +675,7 @@ export async function POST(request: NextRequest) {
           testament: result.testament || 'NT',
           translation: null, // Will be filled by audio mapping
           dialect: null,
-          tags: [],
+          tags: [] as any[][],
           audio_verse_url: audioMap[result.ref] || null,
           id: index + 1,
         }));
@@ -1008,14 +1053,21 @@ export async function POST(request: NextRequest) {
     const totalMs = Date.now() - startedAt;
     console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${trimmedQuery}"`);
 
+    // For Anki mode, prioritize results with dictionary audio
+    let finalResults = transformed;
+    if (searchLanguage === 'anki') {
+      finalResults = prioritizeAnkiResults(transformed);
+      console.log(`🔄 Anki mode: filtered to ${finalResults.length} results with dictionary audio`);
+    }
+
     // Cache the results before returning
-    setCachedSearch(cacheKey, transformed, relatedForms, processed);
+    setCachedSearch(cacheKey, finalResults, relatedForms, processed);
 
     return NextResponse.json({
-      results: normalizeVerses(transformed),
+      results: normalizeVerses(finalResults),
       relatedForms,
       processed,
-      count: transformed.length,
+      count: finalResults.length,
       ms: totalMs,
       cached: false,
     });

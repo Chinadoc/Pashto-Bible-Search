@@ -626,3 +626,4 @@ echo "   - Use ./deploy_integration.sh for deployments"
 echo "   - Monitor logs regularly for issues"
 echo ""
 print_status "Setup completed successfully!"
+

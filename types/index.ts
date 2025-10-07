@@ -1,6 +1,6 @@
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
-export type SearchLanguage = "pashto" | "english";
+export type SearchLanguage = "pashto" | "english" | "anki";
 
 export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
 export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
@@ -35,8 +35,8 @@ export interface AdjectiveFilterState {
 export interface Verse {
   ref: string;
   text: string;
-  translation?: string;
-  dialect?: string;
+  translation?: string | null;
+  dialect?: string | null;
   tags?: any[][]; // Timing segments for audio playback (jktags data) - added for Yousafzai audio seeking
   audio_verse_url?: string | null; // Individual verse audio clip URL for Yousafzai
   testament?: 'OT' | 'NT'; // Old Testament or New Testament

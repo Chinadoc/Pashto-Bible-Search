@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Verse } from '../app/lib/types';
+import { Verse } from '@/types';
 
 interface VirtualizedResultsProps {
   verses: Verse[];
@@ -189,3 +189,4 @@ export function VerseItem({
     </div>
   );
 }
+

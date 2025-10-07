@@ -172,15 +172,22 @@ function filterVerbVariants(
   if (!verbs?.length) return [];
   const labelFilter = (variant: RelatedFormVariant) => {
     const label = normalizeLabel(variant.label);
-    return (
-      matchesPerson(label, filters.person) &&
-      matchesTense(label, filters.tense) &&
-      matchesMood(label, filters.mood) &&
-      matchesAspect(label, filters.aspect)
-    );
+    const personMatch = matchesPerson(label, filters.person);
+    const tenseMatch = matchesTense(label, filters.tense);
+    const moodMatch = matchesMood(label, filters.mood);
+    const aspectMatch = matchesAspect(label, filters.aspect);
+
+    console.log(`Filtering variant: "${variant.form}" label: "${variant.label}" (${label})`);
+    console.log(`  Person match (${filters.person}): ${personMatch}`);
+    console.log(`  Tense match (${filters.tense}): ${tenseMatch}`);
+    console.log(`  Mood match (${filters.mood}): ${moodMatch}`);
+    console.log(`  Aspect match (${filters.aspect}): ${aspectMatch}`);
+
+    return personMatch && tenseMatch && moodMatch && aspectMatch;
   };
 
   const filtered = verbs.filter(labelFilter);
+  console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for filters:`, filters);
   return filtered;
 }
 
@@ -437,6 +444,17 @@ function SearchControls({
             title="Search in English - finds dictionary matches and searches Pashto equivalents"
           >
             🇬🇧 English
+          </button>
+          <button
+            onClick={() => setSearchLanguage('anki')}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              searchLanguage === 'anki'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+            title="Anki Export Mode - search for words and export to Anki flashcards with audio"
+          >
+            📚 Anki
           </button>
         </div>
 
@@ -1224,9 +1242,81 @@ export default function ClientHome() {
   const resultsCount = results.length;
 
   const isEnglishMode = searchLanguage === 'english';
+  const isAnkiMode = searchLanguage === 'anki';
+
+  // Anki export state
+  const [isExportingAnki, setIsExportingAnki] = useState(false);
+
+  // Anki export function
+  const exportToAnki = useCallback(async () => {
+    if (!results.length || !isAnkiMode) return;
+
+    setIsExportingAnki(true);
+    try {
+      console.log(`🔄 Exporting ${results.length} results to Anki deck...`);
+
+      const response = await fetch('/api/anki-export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          results: results.slice(0, 50), // Limit to 50 cards for performance
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Generate and download Anki deck file
+      await generateAnkiDeckFile(data.deck, data.cards);
+
+      console.log(`✅ Successfully exported ${data.count} cards to Anki`);
+    } catch (error) {
+      console.error('❌ Failed to export to Anki:', error);
+      alert(`Failed to export to Anki: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExportingAnki(false);
+    }
+  }, [results, query, isAnkiMode]);
+
+  // Generate Anki deck file for download
+  const generateAnkiDeckFile = async (deck: any, cards: any[]) => {
+    const deckName = deck.name;
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+
+    // Create CSV content for Anki import with enhanced formatting
+    const csvContent = [
+      'Front,Back,Tags',
+      ...cards.map(card => `"${card.front.replace(/"/g, '""')}","${card.back.replace(/"/g, '""')}","${card.tags?.join(' ') || ''}"`)
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${deckName}_${timestamp}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Show success message with card count
+    alert(`✅ Successfully exported ${cards.length} cards to Anki!\n\nDeck: ${deckName}\nFile: ${deckName}_${timestamp}.csv`);
+  };
 
   return (
-    <div className={`w-full max-w-6xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
+    <div className={`w-full max-w-6xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1241,13 +1331,27 @@ export default function ClientHome() {
         </div>
       )}
 
+      {/* Anki Mode Banner */}
+      {isAnkiMode && (
+        <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl">📚</span>
+            <div className="text-center">
+              <p className="font-bold text-lg">Anki Export Mode Active</p>
+              <p className="text-sm opacity-90">Search for words and create flashcards with audio</p>
+            </div>
+            <span className="text-2xl">📚</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="text-center mb-6">
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isAnkiMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isAnkiMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -1257,28 +1361,34 @@ export default function ClientHome() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={isEnglishMode ? "Enter English word (e.g., 'baptize', 'love', 'peace')..." : "Enter Pashto text to search..."}
+          placeholder={
+            isAnkiMode
+              ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
+              : isEnglishMode
+                ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
+                : "Enter Pashto text to search..."
+          }
           variant="outlined"
           fullWidth
           inputProps={{
-            dir: isEnglishMode ? 'ltr' : 'rtl',
-            style: { textAlign: isEnglishMode ? 'left' : 'right', padding: '12px 16px' }
+            dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
+            style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              backgroundColor: isEnglishMode ? '#FFF7ED' : '#374151',
-              borderColor: isEnglishMode ? '#F97316' : '#4B5563',
+              backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
+              borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
               color: isEnglishMode ? '#9A3412' : '#F9FAFB',
               '&:hover': {
-                borderColor: isEnglishMode ? '#EA580C' : '#6B7280'
+                borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
               },
               '&.Mui-focused': {
-                borderColor: isEnglishMode ? '#F97316' : '#3B82F6',
-                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
+                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
               }
             },
             '& .MuiInputBase-input::placeholder': {
-              color: isEnglishMode ? '#C2410C' : '#9CA3AF'
+              color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
             }
           }}
           InputProps={{
@@ -1740,6 +1850,33 @@ export default function ClientHome() {
           </>
             )}
           </div>
+
+          {/* Anki Export Button */}
+          {isAnkiMode && results.length > 0 && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-green-800 dark:text-green-300">
+                    📚 Export to Anki
+                  </h3>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Create flashcards with audio for {results.length} results
+                  </p>
+                </div>
+                <button
+                  onClick={exportToAnki}
+                  disabled={isExportingAnki || results.length === 0}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    isExportingAnki
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Results List */}
           <ResultsList
