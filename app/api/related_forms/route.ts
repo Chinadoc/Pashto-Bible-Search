@@ -73,7 +73,21 @@ export async function POST(req: NextRequest) {
     // Normalization (local)
     let normalized = root;
     if (isLatinOnly(root)) {
-      const pick = dictionaryByRomanized.get(root.toLowerCase())?.[0];
+      // Try exact match first
+      let pick = dictionaryByRomanized.get(root.toLowerCase())?.[0];
+      
+      // If no exact match, try accent-normalized match
+      if (!pick) {
+        const normalizedRoot = root.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        for (const [key, entries] of dictionaryByRomanized.entries()) {
+          const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (normalizedKey === normalizedRoot) {
+            pick = entries[0];
+            break;
+          }
+        }
+      }
+      
       normalized = pick?.pashto ?? root;
     }
 
