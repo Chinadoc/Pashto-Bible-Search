@@ -96,3 +96,7 @@ async function testPOSDetection() {
 }
 
 testPOSDetection();
+
+
+
+

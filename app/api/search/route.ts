@@ -5,7 +5,8 @@ import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 import { refToFilename, audioUrlFromRef } from '@/utils/audio';
-import { searchVersesEnhanced, searchVersesFast, getSearchSuggestions } from '@/utils/supabase';
+// Removed supabase import due to file corruption
+import { normalizeVerses } from '@/app/utils/normalize-results';
 
 // Helper function to search with multiple terms
 async function searchWithMultipleTerms(terms: string[], scope: Scope, strategy: 'auto' | 'trigram' | 'fulltext' | 'hybrid' = 'auto') {
@@ -13,7 +14,7 @@ async function searchWithMultipleTerms(terms: string[], scope: Scope, strategy: 
 
   for (const term of terms) {
     try {
-      const results = await searchVersesEnhanced(term, scope, strategy);
+      const results = await hybridSearch(term, { scope });
       if (results && Array.isArray(results)) {
         for (const result of results) {
           // Use ref as key to deduplicate
@@ -86,6 +87,57 @@ const YOUSAFZAI_BOOKS = new Set(['Psalms', 'Proverbs', 'Song of Solomon']);
 
 const COMPOUND_HELPERS = new Set(['وهل', 'کول', 'کېدل', 'کړل', 'اخیستل', 'ساتل']);
 const helperVariantCache = new Map<string, string[]>();
+
+// Global audio map cache
+let audioMapCache: Record<string, string> | null = null;
+let audioMapCacheTime: number = 0;
+const AUDIO_MAP_CACHE_TTL = 3600000; // 1 hour in milliseconds
+
+async function getAudioMap(): Promise<Record<string, string>> {
+  const now = Date.now();
+  
+  // Return cached version if still valid
+  if (audioMapCache && (now - audioMapCacheTime) < AUDIO_MAP_CACHE_TTL) {
+    return audioMapCache;
+  }
+  
+  try {
+    console.log('🔄 Fetching fresh audio map from Supabase...');
+    const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
+      headers: {
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+    
+    if (audioResponse.ok) {
+      const audioData = await audioResponse.json();
+      const audioMap: Record<string, string> = {};
+      
+      if (Array.isArray(audioData)) {
+        for (const row of audioData) {
+          if (row.verse_ref && row.url && !/drive\.google|docs\.google/i.test(row.url)) {
+            audioMap[row.verse_ref] = row.url;
+          }
+        }
+      }
+      
+      // Cache the result
+      audioMapCache = audioMap;
+      audioMapCacheTime = now;
+      console.log(`✅ Audio map cached: ${Object.keys(audioMap).length} entries`);
+      
+      return audioMap;
+    }
+  } catch (error) {
+    console.warn('Failed to load audio map:', error);
+  }
+  
+  // Return empty map if fetch fails
+  return {};
+}
 
 async function getHelperVariants(helper: string): Promise<string[]> {
   if (!helper || !COMPOUND_HELPERS.has(helper)) return [];
@@ -191,30 +243,8 @@ export async function POST(request: NextRequest) {
     } = body;
     const scope = normaliseScope(body.scope);
 
-    // Load audio map for assigning audio URLs
-    let audioMap: Record<string, string> = {};
-    try {
-      const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      });
-      if (audioResponse.ok) {
-        const audioData = await audioResponse.json();
-        if (Array.isArray(audioData)) {
-          for (const row of audioData) {
-            if (row.verse_ref && row.url && !/drive\.google|docs\.google/i.test(row.url)) {
-              audioMap[row.verse_ref] = row.url;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load audio map:', error);
-    }
+    // Load audio map for assigning audio URLs (now cached)
+    const audioMap = await getAudioMap();
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -503,7 +533,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Single term - use direct search
         console.log('🔍 Using single term search for:', trimmedQuery);
-        enhancedResults = await searchVersesEnhanced(trimmedQuery, scope, 'auto');
+        enhancedResults = await hybridSearch(trimmedQuery, { scope });
       }
 
       console.log('🔍 Enhanced search raw results:', enhancedResults);
@@ -531,7 +561,7 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({
-          results: transformed,
+          results: normalizeVerses(transformed),
           relatedForms,
           processed: {
             original: originalQuery,
@@ -594,7 +624,7 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Variant fallback search found', transformed.length, 'results');
 
       return NextResponse.json({
-        results: transformed,
+        results: normalizeVerses(transformed),
         relatedForms,
         processed,
         count: transformed.length,
@@ -640,7 +670,7 @@ export async function POST(request: NextRequest) {
       };
 
       return NextResponse.json({
-        results: transformed,
+        results: normalizeVerses(transformed),
         relatedForms: null,
         processed,
         count: transformed.length,
@@ -876,7 +906,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${trimmedQuery}"`);
 
     return NextResponse.json({
-      results: transformed,
+      results: normalizeVerses(transformed),
       relatedForms,
       processed,
       count: transformed.length,

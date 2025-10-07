@@ -206,3 +206,7 @@ Get from **2 forms** → **40-60 forms** for verbs like "وهل"
 3. Expand database inflections table (manual work)
 
 Would you like me to implement the pattern-based fallback now?
+
+
+
+

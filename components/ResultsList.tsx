@@ -6,6 +6,7 @@ import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../utils/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
 import HighlightText from './HighlightText';
+import VirtualizedResults from './VirtualizedResults';
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
@@ -365,6 +366,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
+  
+  // Enable virtual scrolling for large result sets
+  const shouldUseVirtualization = results.length > 200;
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results.length]);
@@ -425,42 +429,82 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     )
   }
 
+  // Render function for virtualized items
+  const renderVirtualizedItem = useCallback((verse: Verse, index: number) => (
+    <VerseItem
+      key={verse.ref || `verse-${index}`}
+      verse={verse}
+      index={index}
+      page={1}
+      itemsPerPage={1}
+      audioMap={audioMap}
+      resolvedUrls={resolvedUrls}
+      setResolvedUrls={setResolvedUrls}
+      downloadingMap={downloadingMap}
+      setDownloadingMap={setDownloadingMap}
+      playingKey={playingKey}
+      setPlayingKey={setPlayingKey}
+      audioRefs={audioRefs}
+      termsProp={termsProp}
+      highlightBook={highlightBook}
+      processed={processed}
+    />
+  ), [audioMap, resolvedUrls, setResolvedUrls, downloadingMap, setDownloadingMap, playingKey, setPlayingKey, audioRefs, termsProp, highlightBook, processed]);
+
   return (
     <div>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
         <span>
-          Showing {paginatedResults.length} of {results.length} results
-          {results.length > itemsPerPage && (
+          Showing {shouldUseVirtualization ? results.length : paginatedResults.length} of {results.length} results
+          {!shouldUseVirtualization && results.length > itemsPerPage && (
             <span className="ml-2 text-xs">
               (Page {page} of {Math.ceil(results.length / itemsPerPage)})
             </span>
           )}
+          {shouldUseVirtualization && (
+            <span className="ml-2 text-xs text-blue-600">
+              (Virtualized for performance)
+            </span>
+          )}
         </span>
-        {showPagination && paginationControl('top')}
+        {!shouldUseVirtualization && showPagination && paginationControl('top')}
       </div>
 
-      {paginatedResults.map((verse, index) => (
-        <VerseItem
-          key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
-          verse={verse}
-          index={index}
-          page={page}
-          itemsPerPage={itemsPerPage}
-          audioMap={audioMap}
-          resolvedUrls={resolvedUrls}
-          setResolvedUrls={setResolvedUrls}
-          downloadingMap={downloadingMap}
-          setDownloadingMap={setDownloadingMap}
-          playingKey={playingKey}
-          setPlayingKey={setPlayingKey}
-          audioRefs={audioRefs}
-          termsProp={termsProp}
-          highlightBook={highlightBook}
-          processed={processed}
+      {shouldUseVirtualization ? (
+        <VirtualizedResults
+          verses={results}
+          itemHeight={120}
+          containerHeight={600}
+          overscan={5}
+          renderItem={renderVirtualizedItem}
+          className="border border-gray-200 dark:border-gray-700 rounded-lg"
         />
-      ))}
+      ) : (
+        <>
+          {paginatedResults.map((verse, index) => (
+            <VerseItem
+              key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
+              verse={verse}
+              index={index}
+              page={page}
+              itemsPerPage={itemsPerPage}
+              audioMap={audioMap}
+              resolvedUrls={resolvedUrls}
+              setResolvedUrls={setResolvedUrls}
+              downloadingMap={downloadingMap}
+              setDownloadingMap={setDownloadingMap}
+              playingKey={playingKey}
+              setPlayingKey={setPlayingKey}
+              audioRefs={audioRefs}
+              termsProp={termsProp}
+              highlightBook={highlightBook}
+              processed={processed}
+            />
+          ))}
 
-      {showPagination && paginationControl('bottom')}
+          {showPagination && paginationControl('bottom')}
+        </>
+      )}
     </div>
   );
 }

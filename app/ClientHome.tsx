@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
+import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -101,9 +102,9 @@ function savePersisted<T>(key: string, value: T): void {
 
 const PERSON_PATTERNS: Record<VerbFilterPerson, string[]> = {
   all: [],
-  '1st': ['1sg', '1 pl', '1pl'],
-  '2nd': ['2sg', '2 pl', '2pl'],
-  '3rd': ['3sg', '3 pl', '3pl'],
+  '1st': ['1sg', '1 pl', '1pl', '1st', 'first', 'i', 'we'],
+  '2nd': ['2sg', '2 pl', '2pl', '2nd', 'second', 'you'],
+  '3rd': ['3sg', '3 pl', '3pl', '3rd', 'third', 'he', 'she', 'they'],
 };
 
 const TENSE_MATCHERS: Record<VerbFilterTense, (label: string) => boolean> = {
@@ -180,6 +181,39 @@ function filterVerbVariants(
   };
 
   const filtered = verbs.filter(labelFilter);
+  return filtered;
+}
+
+function relaxFilters(filters: VerbFilterState): VerbFilterState {
+  return {
+    ...filters,
+    person: filters.person === 'all' ? 'all' : 'all', // Relax person first
+    tense: filters.tense === 'all' ? 'all' : 'all',   // Then tense
+  };
+}
+
+function applyVerbFiltersWithFallback(
+  verbs: RelatedFormVariant[],
+  filters: VerbFilterState
+): RelatedFormVariant[] {
+  // Try strict filtering first
+  let filtered = filterVerbVariants(verbs, filters);
+  
+  // If no results, try progressive relaxation
+  if (filtered.length === 0) {
+    const relaxedFilters = [
+      { ...filters, person: 'all' as VerbFilterPerson },
+      { ...filters, tense: 'all' as VerbFilterTense },
+      { ...filters, aspect: 'all' as VerbFilterAspect },
+      { ...filters, mood: 'all' as VerbFilterMood },
+    ];
+    
+    for (const relaxed of relaxedFilters) {
+      filtered = filterVerbVariants(verbs, relaxed);
+      if (filtered.length > 0) break;
+    }
+  }
+  
   return filtered;
 }
 
@@ -911,6 +945,41 @@ export default function ClientHome() {
     }));
   }, []);
 
+  // Optimized filtering function for large result sets
+  const optimizedVerseFilter = useCallback((verses: Verse[], forms: string[]) => {
+    if (forms.length === 0) return verses;
+    
+    return optimizedFilter(verses, (verse) => {
+      const text = verse.text ?? '';
+      const normalizedText = text.toLowerCase();
+      const collapsedText = normalizedText.replace(/\s+/g, '');
+      
+      return forms.some(form => {
+        const normalizedForm = form.toLowerCase();
+        const collapsedForm = normalizedForm.replace(/\s+/g, '');
+
+        if (normalizedForm.includes(' ')) {
+          return normalizedText.includes(normalizedForm) || collapsedText.includes(collapsedForm);
+        }
+
+        return collapsedText.includes(collapsedForm);
+      });
+    }, 50); // Process in batches of 50
+  }, []);
+
+  // Debounced filtering to prevent excessive re-renders
+  const debouncedFilter = useMemo(
+    () => debounce((verses: Verse[], forms: string[]) => {
+      const filtered = optimizedVerseFilter(verses, forms);
+      setResults(filtered);
+      
+      // Update coverage based on filtered results
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    }, 150),
+    [optimizedVerseFilter, calculateCoverageFromResults]
+  );
+
   const handleSearch = useCallback(
     (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
     [executeSearch]
@@ -931,7 +1000,7 @@ export default function ClientHome() {
       return;
     }
 
-    const filteredVariants = filterVerbVariants(relatedForms.verbs, sanitized);
+    const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
     const forms = formsFromVariants(filteredVariants);
 
     // If no forms match the filters, show no results
@@ -947,32 +1016,11 @@ export default function ClientHome() {
     // This prevents triggering new searches when filters change
     if (results && results.length > 0) {
       console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
-      const filtered = results.filter((verse) => {
-        const text = verse.text ?? '';
-        const normalizedText = text.toLowerCase();
-        const collapsedText = normalizedText.replace(/\s+/g, '');
-        
-        // Check if verse contains any of the filtered forms
-        return forms.some(form => {
-          const normalizedForm = form.toLowerCase();
-          const collapsedForm = normalizedForm.replace(/\s+/g, '');
-
-          if (normalizedForm.includes(' ')) {
-            return normalizedText.includes(normalizedForm) || collapsedText.includes(collapsedForm);
-          }
-
-          return collapsedText.includes(collapsedForm);
-        });
-      });
-
-      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
-      setResults(filtered);
+      
+      // Use debounced filtering for better performance
+      debouncedFilter(results, forms);
       setVariantsOverride(forms);
       setActiveVariantForms(forms);
-      
-      // Update coverage based on filtered results
-      const newCoverage = calculateCoverageFromResults(filtered);
-      setCoverage(newCoverage);
     } else {
       // No existing results - need to restore original results
       console.log('🔄 No existing results, restoring original search results');
