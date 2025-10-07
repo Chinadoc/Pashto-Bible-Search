@@ -350,9 +350,19 @@ export async function POST(request: NextRequest) {
 
         // Try to determine if it's a verb or noun and generate appropriate forms
         const { dictionary } = await getData();
-        const dictEntry = dictionary.find((entry: any) =>
-          entry.pashto === trimmedQuery || entry.romanized?.toLowerCase() === trimmedQuery.toLowerCase()
-        );
+        const dictEntry = dictionary.find((entry: any) => {
+          // Check exact Pashto match
+          if (entry.pashto === trimmedQuery) return true;
+          
+          // Check romanized match with accent normalization
+          if (entry.romanized) {
+            const normalizedEntry = entry.romanized.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const normalizedQuery = trimmedQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (normalizedEntry === normalizedQuery) return true;
+          }
+          
+          return false;
+        });
 
         // Detect part of speech from dictionary
         const pos = dictEntry?.pos?.toLowerCase() || '';
