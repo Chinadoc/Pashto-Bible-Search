@@ -260,6 +260,14 @@ JOIN word_occurrences wo ON wo.verse_id = v.id
 JOIN word_forms wf ON wf.id = wo.word_form_id
 GROUP BY v.id, v.book, v.chapter, v.verse, v.text, v.testament;
 
+-- Audio mapping view for audio URLs
+CREATE OR REPLACE VIEW audio_by_verse AS
+SELECT
+  v.book || ' ' || v.chapter::text || ':' || v.verse::text as verse_ref,
+  NULL as url -- Placeholder for audio URLs, can be populated later
+FROM verses v
+WHERE v.book IS NOT NULL AND v.chapter IS NOT NULL AND v.verse IS NOT NULL;
+
 -- ========================================
 -- SAMPLE DATA POPULATION
 -- ========================================
