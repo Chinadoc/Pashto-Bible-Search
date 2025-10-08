@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
-import type { AudioMap } from '../../../types'
+import { supabase, type AudioMap } from '../../../utils/supabase'
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
@@ -37,9 +36,12 @@ export async function GET(request: NextRequest) {
       })
       if (viewRes.ok) {
         viewData = await viewRes.json()
+      } else {
+        console.warn('Audio view query failed:', viewRes.status, viewRes.statusText)
       }
     } catch (e) {
       viewError = e
+      console.warn('Audio view fetch error:', e)
     }
 
     // Convert the data to the expected AudioMap format
@@ -58,24 +60,39 @@ export async function GET(request: NextRequest) {
     // Fetch audio_mappings in pages to avoid PostgREST limits
     const pageSize = 1000
     let from = 0
-    while (true) {
-      const { data: audioData, error } = await supabase
-        .from('audio_by_verse')
-        .select('verse_reference, audio_filename, audio_path')
-        .order('verse_reference')
-        .range(from, from + pageSize - 1)
+    let queryTimeout: NodeJS.Timeout | null = null
 
-      if (error) {
-        if (!viewError && Object.keys(audioMap).length === 0) {
-          console.error('Audio map fetch error:', error)
-          return NextResponse.json({}, { status: 500 })
+    try {
+      while (true) {
+        // Set a timeout for each query to prevent hanging
+        const queryPromise = supabase
+          .from('audio_by_verse')
+          .select('verse_reference, audio_filename, audio_path')
+          .order('verse_reference')
+          .range(from, from + pageSize - 1)
+
+        const timeoutPromise = new Promise((_, reject) => {
+          queryTimeout = setTimeout(() => reject(new Error('Query timeout')), 10000)
+        })
+
+        const { data: audioData, error } = await Promise.race([queryPromise, timeoutPromise]) as any
+
+        if (queryTimeout) {
+          clearTimeout(queryTimeout)
+          queryTimeout = null
         }
-        break
-      }
 
-      if (!audioData || audioData.length === 0) break
+        if (error) {
+          if (!viewError && Object.keys(audioMap).length === 0) {
+            console.error('Audio map fetch error:', error)
+            return NextResponse.json({}, { status: 500 })
+          }
+          break
+        }
 
-      for (const mapping of audioData) {
+        if (!audioData || audioData.length === 0) break
+
+        for (const mapping of audioData) {
         const { verse_reference, audio_filename, audio_path } = mapping as { verse_reference?: string | null; audio_filename?: string | null; audio_path?: string | null };
 
         if (!verse_reference) continue;
@@ -120,8 +137,21 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      from += audioData.length
-      if (audioData.length < pageSize) break
+        from += audioData.length
+        if (audioData.length < pageSize) break
+      }
+    } catch (error) {
+      console.error('Audio map query error:', error)
+      if (queryTimeout) {
+        clearTimeout(queryTimeout)
+      }
+      if (!viewError && Object.keys(audioMap).length === 0) {
+        return NextResponse.json({}, { status: 500 })
+      }
+    } finally {
+      if (queryTimeout) {
+        clearTimeout(queryTimeout)
+      }
     }
 
     // Also pull from verses table if drive IDs or filenames exist

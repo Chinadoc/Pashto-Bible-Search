@@ -20,7 +20,7 @@ export default function HighlightText({ text, tokens }: HighlightTextProps) {
       {chunks.map((c, i) =>
         i % 2 === 1
           ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
-          : <React.Fragment key={i}>{c}</React.Fragment>
+          : <span key={i}>{c}</span>
       )}
     </span>
   );

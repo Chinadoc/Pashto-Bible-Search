@@ -47,16 +47,19 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     const pattern = cleanTerms.map(escapeRegExp).join('|');
     const re = new RegExp(`(${pattern})`, 'gi');
     const parts = text.split(re);
+
+    // Ensure all parts are properly wrapped in React elements
     return (
       <span>
         {parts.map((part, i) =>
           i % 2 === 1
             ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>
-            : <React.Fragment key={i}>{part}</React.Fragment>
+            : <span key={i}>{part}</span>
         )}
       </span>
     );
-  } catch {
+  } catch (error) {
+    console.warn('Highlight regex error:', error);
     return <span>{text}</span>;
   }
 }
