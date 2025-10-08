@@ -363,7 +363,7 @@ function SearchControls({
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mode:</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Mode:</span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIncludeRelated(false)}
@@ -388,11 +388,28 @@ function SearchControls({
           </div>
         </div>
 
-        {/* Show indicator when Related Forms Mode is active */}
+        {/* LingDocs-style Inflections/Conjugations Button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIncludeRelated(!includeRelated)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+              includeRelated
+                ? 'bg-purple-600 text-white border-purple-600 shadow-lg transform scale-105'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+            </svg>
+            {includeRelated ? 'Search in Inflections/Conjugations' : 'Search Inflections/Conjugations'}
+          </button>
+        </div>
+
+        {/* Show indicator when Inflections/Conjugations search is active */}
         {includeRelated && (
-          <div className="w-full px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-md">
-            <p className="text-xs text-green-700 dark:text-green-300">
-              ✅ Related Forms Mode Active - Search will include grammatical variants
+          <div className="w-full px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-md">
+            <p className="text-xs text-purple-700 dark:text-purple-300">
+              🔍 Search in Inflections/Conjugations Active - Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
             </p>
           </div>
         )}
