@@ -7,6 +7,7 @@ import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/ve
 import { refToFilename, audioUrlFromRef } from '@/utils/audio';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
+import { disambiguateWithBibleContext } from '@/utils/enhanced_disambiguation';
 
 // Helper function to search with multiple terms
 async function searchWithMultipleTerms(terms: string[], scope: Scope, strategy: 'auto' | 'trigram' | 'fulltext' | 'hybrid' = 'auto') {
@@ -466,6 +467,19 @@ export async function POST(request: NextRequest) {
     // Combine search terms from query + English matches
     let searchTerms = Array.from(new Set([trimmedQuery, ...englishSearchTerms])) as string[];
 
+    // Apply enhanced disambiguation for ambiguous Pashto terms with Bible context
+    let disambiguationResult = null;
+    if (searchLanguage === 'pashto' && searchTerms.length === 1 && !englishSearchTerms.length) {
+      // Determine Bible context based on search scope
+      const bibleContext = scope === 'ot' ? 'religious' : scope === 'nt' ? 'religious' : 'religious';
+
+      const disambiguation = disambiguateWithBibleContext(trimmedQuery, undefined, bibleContext);
+      if (disambiguation.likelyMeaning) {
+        disambiguationResult = disambiguation.likelyMeaning;
+        console.log(`🔍 Enhanced disambiguation: "${trimmedQuery}" as ${disambiguationResult.likelyPos} (conf: ${disambiguationResult.confidence}) - Bible context: ${bibleContext}`);
+      }
+    }
+
     // If filtered variants are provided, use only those for search
     const effectiveIncludeRelated = variants && variants.length > 0 ? false : includeRelated;
 
@@ -711,6 +725,7 @@ export async function POST(request: NextRequest) {
             language: searchLanguage,
             englishMatches: englishMatches.length ? englishMatches : undefined,
             variantsSearched: searchTerms,
+            disambiguation: disambiguationResult,
           },
           count: transformed.length,
           ms: Date.now() - startedAt,
@@ -758,6 +773,7 @@ export async function POST(request: NextRequest) {
         language: searchLanguage,
         englishMatches: englishMatches.length ? englishMatches : undefined,
         variantsSearched: searchTerms,
+        disambiguation: disambiguationResults.length > 1 ? disambiguationResults : undefined,
       };
 
       console.log('🔄 Variant fallback search found', transformed.length, 'results');
@@ -810,6 +826,7 @@ export async function POST(request: NextRequest) {
         language: searchLanguage,
         englishMatches: englishMatches.length ? englishMatches : undefined,
         variantsSearched: searchTerms,
+        disambiguation: disambiguationResults.length > 1 ? disambiguationResults : undefined,
       };
 
       // Cache the results before returning
@@ -1039,6 +1056,7 @@ export async function POST(request: NextRequest) {
       language: searchLanguage,
       englishMatches: englishMatches.length ? englishMatches : undefined,
       variantsSearched: searchTerms,
+      disambiguation: disambiguationResults.length > 1 ? disambiguationResults : undefined,
     };
 
     console.log('DEBUG: Returning search results:', {
