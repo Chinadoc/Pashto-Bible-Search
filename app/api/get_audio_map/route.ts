@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, type AudioMap } from '../../../utils/supabase'
+import { supabase } from '../../../utils/supabase'
+import type { AudioMap } from '../../../types'
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null

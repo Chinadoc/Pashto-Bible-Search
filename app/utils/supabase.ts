@@ -16,10 +16,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 })
 
-// Export types for audio map
-export interface AudioMap {
-  [verseRef: string]: string
-}
+// AudioMap type is already defined in types/index.ts
 
 // Export common database table names
 export const TABLES = {
