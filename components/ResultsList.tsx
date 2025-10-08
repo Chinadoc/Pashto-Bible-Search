@@ -290,7 +290,7 @@ function VerseItem({
 
       {/* Verse text with absolute-positioned verse number chip */}
       <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-        {highlight(cleanVerseText(verse.text || ''), termsProp || [], processed)}
+        {verse.text ? highlight(cleanVerseText(verse.text), termsProp || [], processed) : <span className="text-gray-500 italic">No text available</span>}
       </p>
 
       {/* Verse number chip removed as requested */}
