@@ -729,21 +729,20 @@ export async function POST(request: NextRequest) {
       const { searchIndex } = await getData();
       const candidateVerses = new Set<any>();
 
+      // For Pashto Bible search, we need substring matching, not exact word matching
+      // This allows searching for roots within inflected forms (e.g., "دين" within "دينه")
       for (const variant of variants) {
         const lower = variant.toLowerCase();
 
-        // Check original text index
-        const originalMatches = searchIndex.byTextLower.get(lower) || [];
-        for (const verse of originalMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
+        // Search through all verses for substring matches
+        for (const verse of searchIndex.verses) {
+          if (!matchesScope(verse, scope)) continue;
 
-        // Check normalized text index
-        const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
-        for (const verse of normalizedMatches) {
-          if (matchesScope(verse, scope)) {
+          // Check if variant appears in original text or normalized text
+          const textMatch = verse.textLower.includes(lower);
+          const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(lower) : false;
+
+          if (textMatch || normalizedMatch) {
             candidateVerses.add(verse);
           }
         }
