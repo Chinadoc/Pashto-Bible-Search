@@ -704,23 +704,21 @@ export async function hybridSearch(
       searchTerms.push(...variants.map(v => v.toLowerCase()));
     }
 
-    // Fast exact match search using JSON index
-    if (searchIndex?.byTextLower) {
+    // Fast substring search using JSON data (not exact word matching)
+    // This allows searching for roots within inflected forms for Pashto morphology
+    if (searchIndex?.verses) {
       const candidateVerses = new Set();
 
       for (const searchTerm of searchTerms) {
-        // Check original text index
-        const originalMatches = searchIndex.byTextLower.get(searchTerm) || [];
-        for (const verse of originalMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
+        // Search through all verses for substring matches
+        for (const verse of searchIndex.verses) {
+          if (!matchesScope(verse, scope)) continue;
 
-        // Check normalized text index
-        const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm) || [];
-        for (const verse of normalizedMatches) {
-          if (matchesScope(verse, scope)) {
+          // Check if search term appears anywhere in original or normalized text
+          const textMatch = verse.textLower.includes(searchTerm);
+          const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(searchTerm) : false;
+
+          if (textMatch || normalizedMatch) {
             candidateVerses.add(verse);
           }
         }
