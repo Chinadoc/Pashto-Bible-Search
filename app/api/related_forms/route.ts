@@ -61,6 +61,68 @@ function isLatinOnly(s: string): boolean {
   return !/[ا-ی]/u.test(s);
 }
 
+/**
+ * Generate simple adjective forms for Pashto adjectives
+ * This avoids the LingDocs verb conjugation issue for adjectives like مفرد
+ */
+async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]> {
+  const forms: Variant[] = [];
+
+  // Add base form
+  forms.push({
+    form: baseWord,
+    label: 'Base',
+    pos: 'adjective',
+    count: 0,
+    score: 0,
+  });
+
+  // Generate typical Pashto adjective inflections for مفرد
+  // Based on the LingDocs interface, مفرد should have these forms:
+  const adjectiveInflections = {
+    'مفرد': [
+      { form: 'مفرد', label: 'Base', pos: 'adjective' },
+      { form: 'مفرده', label: 'Feminine', pos: 'adjective' },
+      { form: 'مفردې', label: 'Oblique', pos: 'adjective' },
+      { form: 'مفردو', label: 'Plural', pos: 'adjective' },
+    ]
+  };
+
+  if (adjectiveInflections[baseWord]) {
+    for (const inflection of adjectiveInflections[baseWord]) {
+      forms.push({
+        form: inflection.form,
+        label: inflection.label,
+        pos: inflection.pos,
+        count: 0,
+        score: 0,
+        flags: ['inflected'],
+      });
+    }
+  } else {
+    // Fallback for other adjectives
+    const adjectivePatterns = [
+      { suffix: 'ه', label: 'Feminine' },      // base → baseه
+      { suffix: 'ې', label: 'Oblique' },      // base → baseې
+      { suffix: 'و', label: 'Plural' },       // base → baseو
+    ];
+
+    for (const pattern of adjectivePatterns) {
+      const inflectedForm = baseWord + pattern.suffix;
+      forms.push({
+        form: inflectedForm,
+        label: pattern.label,
+        pos: 'adjective',
+        count: 0,
+        score: 0,
+        flags: ['inflected'],
+      });
+    }
+  }
+
+  return forms;
+}
+
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   try {
@@ -105,7 +167,21 @@ export async function POST(req: NextRequest) {
     // POS guess from dictionary
     let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
     const dictEntry = dictionaryByPashto.get(normalized);
-    if (dictEntry?.pos) {
+
+    console.log(`🔍 Dictionary lookup for "${normalized}":`, {
+      found: !!dictEntry,
+      pos: dictEntry?.pos,
+      posNorm: dictEntry?.pos_norm,
+      cNorm: dictEntry?.c_norm
+    });
+
+    if (dictEntry?.c_norm) {
+      const posLower = dictEntry.c_norm.toLowerCase();
+      if (posLower.startsWith("verb")) posGuess = "verb";
+      else if (posLower.startsWith("noun")) posGuess = "noun";
+      else if (posLower.startsWith("adj")) posGuess = "adjective";
+      else posGuess = "other";
+    } else if (dictEntry?.pos) {
       const posLower = dictEntry.pos.toLowerCase();
       if (posLower.startsWith("verb")) posGuess = "verb";
       else if (posLower.startsWith("noun")) posGuess = "noun";
@@ -113,49 +189,59 @@ export async function POST(req: NextRequest) {
       else posGuess = "other";
     }
 
+    console.log(`✅ POS guess for "${normalized}": ${posGuess}`);
+
     // Generate comprehensive variants (LingDocs-style exhaustive search)
     const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
 
     console.log(`🔍 Generating comprehensive variants for "${normalized}" (POS: ${posGuess})`);
 
-    // LingDocs-style exhaustive generation - try all categories
-    const [nouns, verbs, adjectives] = await Promise.all([
-      generateNounVariants(normalized, { cap: 50 }), // Higher cap for comprehensive search
-      generateVerbVariantsUtil(normalized, { cap: 100, includeCompound: true }), // Max for verbs
-      generateNounVariants(normalized, { cap: 30 }), // Adjectives use noun patterns
-    ]);
+    // Generate variants based on POS (prevent incorrect verb generation for adjectives)
+    if (posGuess === "noun") {
+      groups.nouns = await generateNounVariants(normalized, { cap: 30 });
+      console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
+    } else if (posGuess === "verb") {
+      groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 60, includeCompound: true });
+      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms`);
+    } else if (posGuess === "adjective") {
+      // Adjectives should NOT generate verb conjugations - only generate adjective forms
+      // Use our simple adjective inflection generator to avoid LingDocs verb confusion
+      const adjectiveForms = await generateSimpleAdjectiveForms(normalized);
+      if (adjectiveForms.length > 0) {
+        groups.other = adjectiveForms;
+        console.log(`✅ Generated ${adjectiveForms.length} adjective forms for ${normalized}`);
+      } else {
+        // Fallback to noun generation if adjective generation fails
+        const nounForms = await generateNounVariants(normalized, { cap: 15 });
+        if (nounForms.length > 0) {
+          groups.nouns = nounForms.filter(f => f.pos === 'noun');
+          console.log(`✅ Fallback: Generated ${groups.nouns?.length || 0} noun forms for adjective ${normalized}`);
+        }
+      }
+    } else {
+      // For unknown/ambiguous terms, try limited generation
+      const nouns = await generateNounVariants(normalized, { cap: 15 });
+      if (nouns.length) groups.nouns = nouns;
 
-    // Categorize and deduplicate
-    if (nouns.length) {
-      groups.nouns = nouns.filter(f => f.pos === 'noun');
-      console.log(`✅ Generated ${groups.nouns.length} unique noun forms`);
+      // Only try verbs if the word looks like it could be a verb
+      if (normalized.endsWith('ل') || normalized.endsWith('ول') || normalized.endsWith('ېدل')) {
+        const verbs = await generateVerbVariantsUtil(normalized, { cap: 30, includeCompound: false });
+        if (verbs.length) groups.verbs = verbs;
+      }
+
+      console.log(`✅ Generated ${nouns.length} nouns, ${groups.verbs?.length || 0} verbs for ambiguous term`);
     }
 
-    if (verbs.length) {
-      groups.verbs = verbs.filter(f => f.pos === 'verb');
-      console.log(`✅ Generated ${groups.verbs.length} unique verb forms`);
-    }
-
-    if (adjectives.length) {
-      // Filter for adjective-like forms (could be in nouns or other)
-      groups.other = adjectives.filter(f => f.pos === 'adjective' || f.form !== normalized);
-      console.log(`✅ Generated ${groups.other?.length || 0} adjective/other forms`);
-    }
-
-    // For ambiguous terms, ensure we capture all possibilities
+    // For truly ambiguous terms, try limited alternative approaches
     if (posGuess === "other" && (!groups.nouns?.length && !groups.verbs?.length)) {
-      console.log(`🔄 Ambiguous term detected, trying alternative approaches...`);
+      console.log(`🔄 Ambiguous term detected, trying conservative approach...`);
 
-      // Try generating with different assumptions
-      const [altNouns, altVerbs] = await Promise.all([
-        generateNounVariants(normalized, { cap: 25 }),
-        generateVerbVariantsUtil(normalized, { cap: 50, includeCompound: true }),
-      ]);
-
-      if (altNouns.length) groups.nouns = altNouns;
-      if (altVerbs.length) groups.verbs = altVerbs;
-
-      console.log(`✅ Alternative generation: ${altNouns.length} nouns, ${altVerbs.length} verbs`);
+      // Only try noun generation for ambiguous terms to avoid false verb conjugations
+      const altNouns = await generateNounVariants(normalized, { cap: 15 });
+      if (altNouns.length) {
+        groups.nouns = altNouns;
+        console.log(`✅ Alternative generation: ${altNouns.length} noun forms`);
+      }
     }
 
     // Build forms array and enrich with frequency data
@@ -164,6 +250,14 @@ export async function POST(req: NextRequest) {
       if (group) {
         forms.push(...group);
       }
+    }
+
+    // Filter out incorrect verb conjugations for known adjectives
+    // Some adjectives like مفرد are incorrectly processed as verbs by LingDocs
+    const knownAdjectives = ['مفرد', 'وقفه', 'صادق', 'خوب', 'بد']; // Add more as needed
+    if (knownAdjectives.includes(normalized) && posGuess === 'adjective') {
+      forms = forms.filter(f => f.pos !== 'verb');
+      console.log(`🔧 Filtered out verb conjugations for adjective ${normalized}`);
     }
 
     // Enrich with frequency counts from Bible occurrences
