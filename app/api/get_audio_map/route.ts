@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey ||
         supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+      console.warn('Supabase credentials missing or invalid, returning empty audio map')
       return NextResponse.json({})
     }
 
@@ -261,9 +262,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Audio map error:', error)
-    return NextResponse.json(
-      {},
-      { status: 500 }
-    )
+    // Return empty object instead of 500 error to prevent frontend crashes
+    return NextResponse.json({})
   }
 }
