@@ -1078,7 +1078,7 @@ export default function ClientHome() {
         executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
       }
     }
-  }, [includeRelated, relatedForms, results, executeSearch, query, isDefaultVerbFilter]);
+  }, [includeRelated, relatedForms, results, query, isDefaultVerbFilter]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
@@ -1132,7 +1132,7 @@ export default function ClientHome() {
       setActiveVariantForms(forms);
       executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'noun-filter' });
     }
-  }, [includeRelated, relatedForms, results, executeSearch, calculateCoverageFromResults]);
+  }, [includeRelated, relatedForms, results, calculateCoverageFromResults]);
 
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
     setAdjectiveFilters(nextFilters);
@@ -1186,7 +1186,7 @@ export default function ClientHome() {
       setActiveVariantForms(forms);
       executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'adjective-filter' });
     }
-  }, [includeRelated, relatedForms, results, executeSearch, calculateCoverageFromResults]);
+  }, [includeRelated, relatedForms, results, calculateCoverageFromResults]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
