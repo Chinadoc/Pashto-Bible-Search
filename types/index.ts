@@ -107,6 +107,22 @@ export interface VariantGroupMeta {
   forms: string[];
 }
 
+// Forward declaration for DisambiguationResult (defined in enhanced_disambiguation.ts)
+export interface DisambiguationResult {
+  word: string;
+  primaryMeaning: string;
+  primaryPOS: string;
+  confidence: number;
+  alternativeMeanings: Array<{
+    meaning: string;
+    pos: string;
+    confidence: number;
+    contextClues: string[];
+  }>;
+  contextAnalysis: any; // ContextFeatures type
+  recommendedAction: string;
+}
+
 export interface ProcessedSearchMetadata {
   original: string;
   normalized: string;
@@ -118,6 +134,13 @@ export interface ProcessedSearchMetadata {
   romanization?: string;
   language?: SearchLanguage;
   englishMatches?: EnglishMatchMeta[];
+  disambiguation?: {
+    word: string;
+    likelyPos: string;
+    confidence: number;
+    contextClues: string[];
+    recommendedAction: string;
+  };
 }
 
 export interface Conjugations {

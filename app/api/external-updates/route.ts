@@ -148,23 +148,70 @@ async function processTextUpdates(updates: ContentUpdate[]): Promise<void> {
  * Process audio content updates
  */
 async function processAudioUpdates(updates: ContentUpdate[]): Promise<void> {
-  // Audio processing would involve downloading new audio files
-  // and updating the audio_file_map.json
-
   for (const update of updates) {
     try {
       console.log(`Audio update needed for: ${update.url}`);
 
-      // Implementation would:
-      // 1. Download new audio file
-      // 2. Update audio_file_map.json
-      // 3. Trigger audio processing pipeline
+      // Check if this is an OT audio update from Afghan Bibles
+      if (update.url.includes('afghanbibles.org') && update.url.includes('pashto-afeastern-audio')) {
+        await processOTAudioUpdate(update);
+      } else {
+        // Handle other audio updates (NT, etc.)
+        await processOtherAudioUpdate(update);
+      }
 
     } catch (error) {
       console.error(`Error processing audio update ${update.url}:`, error);
       throw error;
     }
   }
+}
+
+/**
+ * Process OT audio updates from Afghan Bibles
+ */
+async function processOTAudioUpdate(update: ContentUpdate): Promise<void> {
+  const { book_slug, chapter } = update.metadata;
+
+  if (!book_slug || !chapter) {
+    console.warn(`Missing book_slug or chapter in OT audio update metadata: ${update.url}`);
+    return;
+  }
+
+  try {
+    // Run the OT audio monitor to download and process the file
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    console.log(`Processing OT audio update: ${book_slug} chapter ${chapter}`);
+
+    // Download the specific audio file
+    const downloadCommand = `python3 scripts/monitor_ot_audio.py --books ${book_slug} --download`;
+    await execAsync(downloadCommand, { cwd: process.cwd() });
+
+    // Update the audio file map
+    const updateMapCommand = `python3 scripts/update_ot_audio_map.py`;
+    await execAsync(updateMapCommand, { cwd: process.cwd() });
+
+    console.log(`Successfully processed OT audio update: ${book_slug} chapter ${chapter}`);
+
+  } catch (error) {
+    console.error(`Failed to process OT audio update ${book_slug} ${chapter}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Process other audio updates (NT, existing system, etc.)
+ */
+async function processOtherAudioUpdate(update: ContentUpdate): Promise<void> {
+  // Handle non-OT audio updates
+  // This could include NT audio files, existing system updates, etc.
+  console.log(`Processing other audio update: ${update.url}`);
+
+  // Implementation for other audio sources would go here
+  // For now, just log that processing would happen
 }
 
 /**

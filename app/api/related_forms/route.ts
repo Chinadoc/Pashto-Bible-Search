@@ -79,7 +79,7 @@ async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]
 
   // Generate typical Pashto adjective inflections for مفرد
   // Based on the LingDocs interface, مفرد should have these forms:
-  const adjectiveInflections = {
+  const adjectiveInflections: Record<string, Array<{ form: string; label: string; pos: string }>> = {
     'مفرد': [
       { form: 'مفرد', label: 'Base', pos: 'adjective' },
       { form: 'مفرده', label: 'Feminine', pos: 'adjective' },
@@ -93,7 +93,7 @@ async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]
       forms.push({
         form: inflection.form,
         label: inflection.label,
-        pos: inflection.pos,
+        pos: inflection.pos as 'noun'|'verb'|'adjective'|'other',
         count: 0,
         score: 0,
         flags: ['inflected'],
@@ -171,17 +171,9 @@ export async function POST(req: NextRequest) {
     console.log(`🔍 Dictionary lookup for "${normalized}":`, {
       found: !!dictEntry,
       pos: dictEntry?.pos,
-      posNorm: dictEntry?.pos_norm,
-      cNorm: dictEntry?.c_norm
     });
 
-    if (dictEntry?.c_norm) {
-      const posLower = dictEntry.c_norm.toLowerCase();
-      if (posLower.startsWith("verb")) posGuess = "verb";
-      else if (posLower.startsWith("noun")) posGuess = "noun";
-      else if (posLower.startsWith("adj")) posGuess = "adjective";
-      else posGuess = "other";
-    } else if (dictEntry?.pos) {
+    if (dictEntry?.pos) {
       const posLower = dictEntry.pos.toLowerCase();
       if (posLower.startsWith("verb")) posGuess = "verb";
       else if (posLower.startsWith("noun")) posGuess = "noun";

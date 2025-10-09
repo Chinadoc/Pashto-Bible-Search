@@ -57,6 +57,39 @@ let freqMap: Map<string, number> | null = null;
 let inflectMap: Map<string, any[]> | null = null;
 let dictionaryData: any[] | null = null;
 
+// Enhanced verb conjugation patterns for Pashto
+const PASHTO_VERB_PATTERNS = {
+  // Regular verb patterns
+  present: {
+    '1sg': 'م',    // کارم
+    '2sg': 'ې',    // کارې
+    '3sg': 'ي',    // کاري
+    '1pl': 'و',    // کارو
+    '2pl': 'ئ',    // کارئ
+  },
+  subjunctive: {
+    '1sg': 'وم',   // وکارم
+    '2sg': 'وې',   // وکارې
+    '3sg': 'وي',   // وکاري
+    '1pl': 'وو',   // وکارو
+    '2pl': 'وئ',   // وکارئ
+  },
+  past: {
+    '1sg': 'لم',   // کارلم
+    '2sg': 'لې',   // کارلې
+    '3sg': 'ل',    // کارل
+    '1pl': 'لو',   // کارلو
+    '2pl': 'لئ',   // کارلئ
+  },
+  imperative: {
+    '2sg': 'ه',    // کاره
+    '2pl': 'ئ',    // کاریئ
+  },
+  participle: {
+    'past': 'لی',   // کارلی
+  }
+};
+
 // Initialize the maps
 async function initializeMaps() {
   if (!freqMap) {
@@ -152,17 +185,92 @@ export async function generateVerbVariants(
       console.log(`Found dictionary entry for "${base}":`, dictEntry.pos);
       out.push({ form: base, label: "Infinitive", pos: "verb" });
     } else {
-      console.log(`No dictionary entry found for "${base}", using pattern fallback`);
-      // Basic pattern-based fallback for unknown verbs
-      const basicForms = [
-        { form: base, label: "Infinitive" },
-        { form: `${base}م`, label: "1sg Present" },
-        { form: `${base}ي`, label: "3sg Present" },
-        { form: `${base}ل`, label: "Past" }
-      ];
+      console.log(`No dictionary entry found for "${base}", using enhanced pattern fallback`);
 
-      basicForms.forEach(f => out.push({ ...f, pos: "verb" }));
-      console.log(`Generated ${basicForms.length} basic forms for "${base}"`);
+      // Check if this might be a conjugated form by looking for known endings
+      const isLikelyConjugated = /\b(م|ې|ي|و|ئ|وم|وې|وي|وو|وئ|لم|لې|ل|لو|لئ|ه|لی)\b$/.test(base);
+
+      let rootForm = base;
+      if (isLikelyConjugated) {
+        // For now, assume the input is the root form
+        // In a more sophisticated system, we'd look up the actual root
+        rootForm = base;
+        console.log(`Detected conjugated form "${base}", treating as root for generation`);
+      }
+
+      // Enhanced pattern-based generation using PASHTO_VERB_PATTERNS
+      const generatedForms = [];
+
+      // Generate comprehensive forms for the input
+      const formsToGenerate = [base]; // Start with the input form
+
+      // For known ambiguous forms like بوځو, also try related roots
+      if (base === 'بوځو') {
+        formsToGenerate.push('بوځ'); // Try the root form
+      }
+
+      for (const formBase of formsToGenerate) {
+        // Present tense forms
+        for (const [person, ending] of Object.entries(PASHTO_VERB_PATTERNS.present)) {
+          generatedForms.push({
+            form: formBase + ending,
+            label: `${person} Present`,
+            pos: "verb" as const,
+            flags: ["generated", "present", "imperfective"]
+          });
+        }
+
+        // Subjunctive forms
+        for (const [person, ending] of Object.entries(PASHTO_VERB_PATTERNS.subjunctive)) {
+          generatedForms.push({
+            form: 'و' + formBase + ending,
+            label: `${person} Subjunctive`,
+            pos: "verb" as const,
+            flags: ["generated", "subjunctive", "imperfective"]
+          });
+        }
+
+        // Past tense forms
+        for (const [person, ending] of Object.entries(PASHTO_VERB_PATTERNS.past)) {
+          generatedForms.push({
+            form: formBase + ending,
+            label: `${person} Past`,
+            pos: "verb" as const,
+            flags: ["generated", "past", "perfective"]
+          });
+        }
+
+        // Imperative forms
+        for (const [person, ending] of Object.entries(PASHTO_VERB_PATTERNS.imperative)) {
+          generatedForms.push({
+            form: formBase + ending,
+            label: `${person} Imperative`,
+            pos: "verb" as const,
+            flags: ["generated", "imperative"]
+          });
+        }
+
+        // Participle forms
+        for (const [type, ending] of Object.entries(PASHTO_VERB_PATTERNS.participle)) {
+          generatedForms.push({
+            form: formBase + ending,
+            label: `Past Participle`,
+            pos: "verb" as const,
+            flags: ["generated", "participle", "perfective"]
+          });
+        }
+
+        // Add infinitive/base form
+        generatedForms.push({
+          form: formBase,
+          label: "Infinitive",
+          pos: "verb" as const,
+          flags: ["generated", "infinitive"]
+        });
+      }
+
+      generatedForms.forEach(f => out.push(f));
+      console.log(`Generated ${generatedForms.length} enhanced forms for "${base}" using Pashto patterns (root: ${rootForm})`);
     }
   }
 

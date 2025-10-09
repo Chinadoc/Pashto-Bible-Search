@@ -137,6 +137,72 @@ class AfghanBiblesMonitor:
             logger.error(f"Failed to fetch {url}: {e}")
             raise
 
+    async def check_audio_file(self, book_slug: str, chapter: int) -> Optional[ContentUpdate]:
+        """Check if an OT audio file exists and has changed"""
+        audio_url = f"{self.BASE_URL}/pashto-afeastern-audio/{book_slug}-{chapter}.mp3"
+        cache_key = f"audio_{book_slug}_{chapter}"
+
+        try:
+            # Check if audio file exists (HEAD request)
+            async with self.session.head(audio_url) as response:
+                if response.status != 200:
+                    # Audio file doesn't exist
+                    if cache_key in self.content_cache:
+                        # File was deleted
+                        cached = self.content_cache[cache_key]
+                        return ContentUpdate(
+                            url=audio_url,
+                            content_type='audio',
+                            change_type='deleted',
+                            old_hash=cached.content_hash,
+                            metadata={
+                                'book_slug': book_slug,
+                                'chapter': chapter
+                            }
+                        )
+                    return None
+
+                # Get file metadata
+                last_modified = response.headers.get('Last-Modified')
+                content_length = response.headers.get('Content-Length')
+
+                # Check cache
+                cached = self.content_cache.get(cache_key)
+
+                if not cached:
+                    # New audio file
+                    return ContentUpdate(
+                        url=audio_url,
+                        content_type='audio',
+                        change_type='new',
+                        metadata={
+                            'book_slug': book_slug,
+                            'chapter': chapter,
+                            'last_modified': last_modified,
+                            'content_length': content_length
+                        }
+                    )
+
+                # Check if modified
+                if last_modified != cached.last_modified or content_length != cached.metadata.get('content_length'):
+                    return ContentUpdate(
+                        url=audio_url,
+                        content_type='audio',
+                        change_type='modified',
+                        old_hash=cached.content_hash,
+                        metadata={
+                            'book_slug': book_slug,
+                            'chapter': chapter,
+                            'last_modified': last_modified,
+                            'content_length': content_length
+                        }
+                    )
+
+        except Exception as e:
+            logger.warning(f"Error checking audio {book_slug} {chapter}: {e}")
+
+        return None
+
     def extract_book_chapters_from_html(self, html_content: str, book_slug: str) -> List[int]:
         """Extract available chapter numbers for a book"""
         # Look for chapter navigation options
