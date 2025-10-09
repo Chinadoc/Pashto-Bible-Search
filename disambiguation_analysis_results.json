@@ -1,0 +1,1844 @@
+{
+  "هغه": {
+    "total_occurrences": 10351,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "ورونو!",
+          "هر"
+        ],
+        "following_words": [
+          "څه",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:8"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "څه",
+          "چې"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:9"
+      },
+      {
+        "preceding_words": [
+          "شوې.",
+          "دا"
+        ],
+        "following_words": [
+          "د",
+          "خوشبویۍ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:18"
+      },
+      {
+        "preceding_words": [
+          "شو",
+          "کولای"
+        ],
+        "following_words": [
+          "وشمېري.",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": true,
+        "ref": "Revelation 7:9"
+      },
+      {
+        "preceding_words": [
+          "پوهېږې.»",
+          "بیا"
+        ],
+        "following_words": [
+          "راته",
+          "وویل:"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:14"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "هغوی": {
+    "total_occurrences": 4739,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "ځکه",
+          "چې"
+        ],
+        "following_words": [
+          "د",
+          "کلیمانتوس"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:3"
+      },
+      {
+        "preceding_words": [
+          "سره",
+          "دي،"
+        ],
+        "following_words": [
+          "هم",
+          "تاسو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:21"
+      },
+      {
+        "preceding_words": [
+          "ځانګړې",
+          "توګه"
+        ],
+        "following_words": [
+          "چې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:22"
+      },
+      {
+        "preceding_words": [
+          "تنه",
+          "ؤ."
+        ],
+        "following_words": [
+          "د",
+          "اسراییلو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Revelation 7:4"
+      },
+      {
+        "preceding_words": [
+          "ولاړ",
+          "وو."
+        ],
+        "following_words": [
+          "سپینې",
+          "چپنې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:9"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "عیسی": {
+    "total_occurrences": 1736,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "به",
+          "د"
+        ],
+        "following_words": [
+          "مسیح",
+          "په"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": true,
+        "ref": "Philippians 4:7"
+      },
+      {
+        "preceding_words": [
+          "مخې",
+          "د"
+        ],
+        "following_words": [
+          "مسیح",
+          "په"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:19"
+      },
+      {
+        "preceding_words": [
+          "چې",
+          "د"
+        ],
+        "following_words": [
+          "مسیح",
+          "سره"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:21"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "څښتن"
+        ],
+        "following_words": [
+          "مسیح",
+          "فضل"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:23"
+      },
+      {
+        "preceding_words": [
+          "مونږ",
+          "د"
+        ],
+        "following_words": [
+          "مسیح",
+          "سره"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Ephesians 2:6"
+      }
+    ],
+    "likely_pos": "ambiguous"
+  },
+  "سره": {
+    "total_occurrences": 4583,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "دوه",
+          "ښځو"
+        ],
+        "following_words": [
+          "مرسته",
+          "وکړې،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:3"
+      },
+      {
+        "preceding_words": [
+          "او",
+          "زاریو"
+        ],
+        "following_words": [
+          "خپلې",
+          "غوښتنې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:6"
+      },
+      {
+        "preceding_words": [
+          "ده،",
+          "ستاسو"
+        ],
+        "following_words": [
+          "مل",
+          "وي."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:9"
+      },
+      {
+        "preceding_words": [
+          "رښتیا",
+          "زما"
+        ],
+        "following_words": [
+          "علاقه",
+          "درلودله،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:10"
+      },
+      {
+        "preceding_words": [
+          "چې",
+          "زما"
+        ],
+        "following_words": [
+          "مو",
+          "په"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:14"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "خدای": {
+    "total_occurrences": 2847,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "غوښتنې",
+          "د"
+        ],
+        "following_words": [
+          "حضور",
+          "ته"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:6"
+      },
+      {
+        "preceding_words": [
+          "بیا",
+          "د"
+        ],
+        "following_words": [
+          "سوله",
+          "او"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:7"
+      },
+      {
+        "preceding_words": [
+          "بیا",
+          "به"
+        ],
+        "following_words": [
+          "چې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": true,
+        "ref": "Philippians 4:9"
+      },
+      {
+        "preceding_words": [
+          "ده",
+          "چې"
+        ],
+        "following_words": [
+          "ته",
+          "قبوله"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:18"
+      },
+      {
+        "preceding_words": [
+          "زما"
+        ],
+        "following_words": [
+          "به",
+          "ستاسو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:19"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "څخه": {
+    "total_occurrences": 3941,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "ملګریه،",
+          "ستا"
+        ],
+        "following_words": [
+          "غوښتنه",
+          "کوم"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:3"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "تحفو"
+        ],
+        "following_words": [
+          "مننه",
+          "کول"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:9"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "مقدونیې"
+        ],
+        "following_words": [
+          "روان",
+          "شوم،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:15"
+      },
+      {
+        "preceding_words": [
+          "ټولو",
+          "قبیلو"
+        ],
+        "following_words": [
+          "وو."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:4"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "قبیلې"
+        ],
+        "following_words": [
+          "دولس",
+          "زره"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:5"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "خپل": {
+    "total_occurrences": 3963,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "څوک",
+          "په"
+        ],
+        "following_words": [
+          "شتون",
+          "کې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:15"
+      },
+      {
+        "preceding_words": [
+          "کې",
+          "د"
+        ],
+        "following_words": [
+          "فضل",
+          "لویه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:7"
+      },
+      {
+        "preceding_words": [
+          "دا",
+          "ستاسو"
+        ],
+        "following_words": [
+          "کار",
+          "نه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:8"
+      },
+      {
+        "preceding_words": [
+          "او",
+          "د"
+        ],
+        "following_words": [
+          "بدن",
+          "په"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Ephesians 2:14"
+      },
+      {
+        "preceding_words": [
+          "ترڅو",
+          "په"
+        ],
+        "following_words": [
+          "بدن",
+          "کې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:15"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "ځکه": {
+    "total_occurrences": 2338,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "مرسته",
+          "وکړې،"
+        ],
+        "following_words": [
+          "چې",
+          "هغوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:3"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "هغه",
+          "وری"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:17"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "چې",
+          "تاسو"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:8"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "چې",
+          "مونږ"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:10"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "چې",
+          "مسیح"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:14"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "وویل": {
+    "total_occurrences": 182,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "دې",
+          "ماته"
+        ],
+        "following_words": [
+          "هغه",
+          "هېچا"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 23:22"
+      },
+      {
+        "preceding_words": [
+          "هغه",
+          "ته"
+        ],
+        "following_words": [
+          "چې",
+          "لاړ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 13:29"
+      },
+      {
+        "preceding_words": [
+          "ته",
+          "یې"
+        ],
+        "following_words": [
+          "چې",
+          "یو‌څه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 19:33"
+      },
+      {
+        "preceding_words": [
+          "هغوی",
+          "څه"
+        ],
+        "following_words": [
+          "او",
+          "هغوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Matthew 26:10"
+      },
+      {
+        "preceding_words": [
+          "دې",
+          "دپاره"
+        ],
+        "following_words": [
+          "چې",
+          "ایمان"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 16:1"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "کړی": {
+    "total_occurrences": 739,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "کې",
+          "ژوند"
+        ],
+        "following_words": [
+          "دی",
+          "او"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:12"
+      },
+      {
+        "preceding_words": [
+          "ښه",
+          "کار"
+        ],
+        "following_words": [
+          "دی."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:6"
+      },
+      {
+        "preceding_words": [
+          "ژوند",
+          "تېر"
+        ],
+        "following_words": [
+          "دی.»"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 23:1"
+      },
+      {
+        "preceding_words": [
+          "پولوس",
+          "مړ"
+        ],
+        "following_words": [
+          "نه",
+          "وي،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 23:21"
+      },
+      {
+        "preceding_words": [
+          "نه",
+          "دی"
+        ],
+        "following_words": [
+          "چې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Acts 23:29"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "کله": {
+    "total_occurrences": 2145,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "ورځو",
+          "کې"
+        ],
+        "following_words": [
+          "چې",
+          "زه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:15"
+      },
+      {
+        "preceding_words": [
+          "حتی"
+        ],
+        "following_words": [
+          "چې",
+          "په"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Philippians 4:16"
+      },
+      {
+        "preceding_words": [
+          "حتی"
+        ],
+        "following_words": [
+          "چې",
+          "مونږ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:5"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "چې",
+          "هغوی"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:11"
+      },
+      {
+        "preceding_words": [],
+        "following_words": [
+          "چې",
+          "ماښام"
+        ],
+        "is_first_word": true,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:17"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "کوی": {
+    "total_occurrences": 0,
+    "analyzed_contexts": [],
+    "likely_pos": "unknown"
+  },
+  "دپاره": {
+    "total_occurrences": 2529,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "د",
+          "دې"
+        ],
+        "following_words": [
+          "نه",
+          "کوم"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:11"
+      },
+      {
+        "preceding_words": [
+          "پوره",
+          "کولو"
+        ],
+        "following_words": [
+          "مرسته",
+          "راولېږله."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:16"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "دې"
+        ],
+        "following_words": [
+          "نه",
+          "کوم"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:17"
+      },
+      {
+        "preceding_words": [
+          "نېکو",
+          "کارونو"
+        ],
+        "following_words": [
+          "پیدا",
+          "شوي"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Ephesians 2:10"
+      },
+      {
+        "preceding_words": [
+          "هلته",
+          "زمونږ"
+        ],
+        "following_words": [
+          "ډوډۍ",
+          "تیاره"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:15"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "شوی": {
+    "total_occurrences": 670,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "ورته",
+          "ورکړل"
+        ],
+        "following_words": [
+          "ؤ",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:2"
+      },
+      {
+        "preceding_words": [
+          "هېڅ",
+          "پیدا"
+        ],
+        "following_words": [
+          "نه",
+          "وای.»"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:21"
+      },
+      {
+        "preceding_words": [
+          "خوا",
+          "رالېږل"
+        ],
+        "following_words": [
+          "ؤ."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:43"
+      },
+      {
+        "preceding_words": [
+          "لاس",
+          "جوړ"
+        ],
+        "following_words": [
+          "دی",
+          "ورانوم"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:58"
+      },
+      {
+        "preceding_words": [
+          "نوم",
+          "لیکل"
+        ],
+        "following_words": [
+          "ؤ:",
+          "«لوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 17:5"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "ورته": {
+    "total_occurrences": 1058,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "دا",
+          "اختیار"
+        ],
+        "following_words": [
+          "ورکړل",
+          "شوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:2"
+      },
+      {
+        "preceding_words": [
+          "ولېږل",
+          "او"
+        ],
+        "following_words": [
+          "ویې",
+          "ویل:"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:13"
+      },
+      {
+        "preceding_words": [
+          "چې",
+          "عیسی"
+        ],
+        "following_words": [
+          "ویلي",
+          "وو،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:16"
+      },
+      {
+        "preceding_words": [
+          "وه",
+          "او"
+        ],
+        "following_words": [
+          "ویلي",
+          "یې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:44"
+      },
+      {
+        "preceding_words": [
+          "ورغی",
+          "او"
+        ],
+        "following_words": [
+          "ویې",
+          "ویل:"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:45"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "سړی": {
+    "total_occurrences": 482,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "شئ،",
+          "یو"
+        ],
+        "following_words": [
+          "به",
+          "ووینئ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:13"
+      },
+      {
+        "preceding_words": [
+          "دا",
+          "هماغه"
+        ],
+        "following_words": [
+          "دی.",
+          "هغه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:44"
+      },
+      {
+        "preceding_words": [
+          "کې",
+          "یو"
+        ],
+        "following_words": [
+          "ؤ",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:1"
+      },
+      {
+        "preceding_words": [
+          "پورې",
+          "یو"
+        ],
+        "following_words": [
+          "بیا",
+          "نوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:3"
+      },
+      {
+        "preceding_words": [
+          "یو",
+          "زوړ"
+        ],
+        "following_words": [
+          "بیا",
+          "نوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:4"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "هکله": {
+    "total_occurrences": 567,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "شي",
+          "په"
+        ],
+        "following_words": [
+          "اندېښنه",
+          "مه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:6"
+      },
+      {
+        "preceding_words": [
+          "هغو",
+          "په"
+        ],
+        "following_words": [
+          "فکر",
+          "کوئ."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:8"
+      },
+      {
+        "preceding_words": [
+          "انکار",
+          "په"
+        ],
+        "following_words": [
+          "پېشګویي",
+          "(متي"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:26"
+      },
+      {
+        "preceding_words": [
+          "سړي",
+          "په"
+        ],
+        "following_words": [
+          "خبرې",
+          "کوئ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:71"
+      },
+      {
+        "preceding_words": [
+          "شیانو",
+          "په"
+        ],
+        "following_words": [
+          "خبرې",
+          "کوو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:11"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "ویل": {
+    "total_occurrences": 191,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "دا",
+          "کفر"
+        ],
+        "following_words": [
+          "واورېدل.",
+          "ستاسو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:64"
+      },
+      {
+        "preceding_words": [
+          "او",
+          "ورته"
+        ],
+        "following_words": [
+          "یې:",
+          "«اوس"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:65"
+      },
+      {
+        "preceding_words": [
+          "به",
+          "یې"
+        ],
+        "following_words": [
+          "چې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": true,
+        "ref": "Acts 14:22"
+      },
+      {
+        "preceding_words": [
+          "نه",
+          "دي"
+        ],
+        "following_words": [
+          "شوي،",
+          "هغوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Romans 15:21"
+      },
+      {
+        "preceding_words": [
+          "‹استاذ›",
+          "ونه"
+        ],
+        "following_words": [
+          "شي،",
+          "ځکه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Matthew 23:8"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "شول": {
+    "total_occurrences": 429,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "په",
+          "قهر"
+        ],
+        "following_words": [
+          "او",
+          "یو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:4"
+      },
+      {
+        "preceding_words": [
+          "کېدای"
+        ],
+        "following_words": [
+          "چې",
+          "دا"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:5"
+      },
+      {
+        "preceding_words": [
+          "څه",
+          "کولای"
+        ],
+        "following_words": [
+          "ویې",
+          "کړل."
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": false,
+        "ref": "Mark 14:8"
+      },
+      {
+        "preceding_words": [
+          "نو",
+          "خوشحاله"
+        ],
+        "following_words": [
+          "او",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Mark 14:11"
+      },
+      {
+        "preceding_words": [
+          "شاګردان",
+          "روان"
+        ],
+        "following_words": [
+          "او",
+          "ښار"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:16"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "وکړه": {
+    "total_occurrences": 472,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "دعا",
+          "یې"
+        ],
+        "following_words": [
+          "چې",
+          "که"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:35"
+      },
+      {
+        "preceding_words": [
+          "داسې",
+          "مینه"
+        ],
+        "following_words": [
+          "چې",
+          "خپل"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:16"
+      },
+      {
+        "preceding_words": [
+          "مې",
+          "پرېکړه"
+        ],
+        "following_words": [
+          "چې",
+          "تاسو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 23:30"
+      },
+      {
+        "preceding_words": [
+          "یې",
+          "پوښتنه"
+        ],
+        "following_words": [
+          "چې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Acts 23:34"
+      },
+      {
+        "preceding_words": [
+          "دا",
+          "پرېکړه"
+        ],
+        "following_words": [
+          "چې",
+          "رسولان"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Acts 14:5"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "ځای": {
+    "total_occurrences": 1322,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "له",
+          "کوم"
+        ],
+        "following_words": [
+          "نه",
+          "راغلي"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:13"
+      },
+      {
+        "preceding_words": [
+          "په",
+          "هغه"
+        ],
+        "following_words": [
+          "کې",
+          "د"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Mark 14:4"
+      },
+      {
+        "preceding_words": [
+          "نوم",
+          "یو"
+        ],
+        "following_words": [
+          "ته",
+          "ورسېدل،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": true,
+        "ref": "Mark 14:32"
+      },
+      {
+        "preceding_words": [
+          "په",
+          "هغه"
+        ],
+        "following_words": [
+          "کې",
+          "ولاړو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:69"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "کوم"
+        ],
+        "following_words": [
+          "نه",
+          "راځي"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:8"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "زوی": {
+    "total_occurrences": 749,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "د",
+          "انسان"
+        ],
+        "following_words": [
+          "باید",
+          "مړ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:21"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "انسان"
+        ],
+        "following_words": [
+          "به",
+          "ګناهکارانو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:41"
+      },
+      {
+        "preceding_words": [
+          "مبارک",
+          "خدای"
+        ],
+        "following_words": [
+          "یې؟»"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:61"
+      },
+      {
+        "preceding_words": [
+          "د",
+          "انسان"
+        ],
+        "following_words": [
+          "ووینئ",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:62"
+      },
+      {
+        "preceding_words": [
+          "انسان",
+          "د"
+        ],
+        "following_words": [
+          "نه",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "John 3:13"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "وکړی": {
+    "total_occurrences": 0,
+    "analyzed_contexts": [],
+    "likely_pos": "unknown"
+  },
+  "ټول": {
+    "total_occurrences": 1738,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "د",
+          "خدای"
+        ],
+        "following_words": [
+          "خلک",
+          "چې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Philippians 4:22"
+      },
+      {
+        "preceding_words": [
+          "نو",
+          "هغوی"
+        ],
+        "following_words": [
+          "شیان",
+          "هماغه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:16"
+      },
+      {
+        "preceding_words": [
+          "وویل:",
+          "«تاسو"
+        ],
+        "following_words": [
+          "به",
+          "وتښتئ"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:27"
+      },
+      {
+        "preceding_words": [
+          "«حتی",
+          "که"
+        ],
+        "following_words": [
+          "تا",
+          "پرېږدي،"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:29"
+      },
+      {
+        "preceding_words": [
+          "او",
+          "په"
+        ],
+        "following_words": [
+          "بدن",
+          "باندې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 17:3"
+      }
+    ],
+    "likely_pos": "noun"
+  },
+  "ونه": {
+    "total_occurrences": 864,
+    "analyzed_contexts": [
+      {
+        "preceding_words": [
+          "په",
+          "کومه"
+        ],
+        "following_words": [
+          "باندې",
+          "ونه"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:1"
+      },
+      {
+        "preceding_words": [
+          "ته",
+          "زیان"
+        ],
+        "following_words": [
+          "رسوئ.»"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Revelation 7:3"
+      },
+      {
+        "preceding_words": [
+          "زیان",
+          "به"
+        ],
+        "following_words": [
+          "رسوي",
+          "دوی"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": true,
+        "has_object_after": false,
+        "ref": "Revelation 7:16"
+      },
+      {
+        "preceding_words": [
+          "ورځو",
+          "کې"
+        ],
+        "following_words": [
+          "شي،",
+          "هسې"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:2"
+      },
+      {
+        "preceding_words": [
+          "انګورو",
+          "شربت"
+        ],
+        "following_words": [
+          "څښم",
+          "ترڅو"
+        ],
+        "is_first_word": false,
+        "is_last_word": false,
+        "has_modal_before": false,
+        "has_object_after": false,
+        "ref": "Mark 14:25"
+      }
+    ],
+    "likely_pos": "noun"
+  }
+}
