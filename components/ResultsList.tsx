@@ -452,7 +452,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       highlightBook={highlightBook}
       processed={processed}
     />
-  ), [audioMap, resolvedUrls, setResolvedUrls, downloadingMap, setDownloadingMap, playingKey, setPlayingKey, audioRefs, termsProp, highlightBook, processed]);
+  ), [audioMap, resolvedUrls, downloadingMap, playingKey, termsProp, highlightBook, processed]);
 
   return (
     <div>
