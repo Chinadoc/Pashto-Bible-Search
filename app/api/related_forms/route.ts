@@ -30,6 +30,17 @@ type RelatedFormsResponse = {
   total: number;
   variantDetails?: any;
   ms: number;
+  posGuess?: string;
+  metadata?: {
+    hasMultiplePos: boolean;
+    primaryPos: string;
+    totalFormsByPos: {
+      nouns: number;
+      verbs: number;
+      other: number;
+    };
+    generationStrategy: string;
+  };
 };
 
 const CACHE = new Map<string, { value: RelatedFormsResponse; until: number }>();
@@ -102,27 +113,49 @@ export async function POST(req: NextRequest) {
       else posGuess = "other";
     }
 
-    // Generate variants based on POS (using enhanced LingDocs adapter)
+    // Generate comprehensive variants (LingDocs-style exhaustive search)
     const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
 
-    console.log(`🔍 Generating variants for "${normalized}" (POS: ${posGuess})`);
+    console.log(`🔍 Generating comprehensive variants for "${normalized}" (POS: ${posGuess})`);
 
-    if (posGuess === "noun") {
-      groups.nouns = await generateNounVariants(normalized, { cap: 30 });
-      console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
-    } else if (posGuess === "verb") {
-      // Use enhanced generation with higher cap for verbs
-      groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 60, includeCompound: true });
-      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms`);
-    } else {
-      // Try both for ambiguous terms
-      const [nouns, verbs] = await Promise.all([
-        generateNounVariants(normalized, { cap: 20 }),
-        generateVerbVariantsUtil(normalized, { cap: 40, includeCompound: true }),
+    // LingDocs-style exhaustive generation - try all categories
+    const [nouns, verbs, adjectives] = await Promise.all([
+      generateNounVariants(normalized, { cap: 50 }), // Higher cap for comprehensive search
+      generateVerbVariantsUtil(normalized, { cap: 100, includeCompound: true }), // Max for verbs
+      generateNounVariants(normalized, { cap: 30 }), // Adjectives use noun patterns
+    ]);
+
+    // Categorize and deduplicate
+    if (nouns.length) {
+      groups.nouns = nouns.filter(f => f.pos === 'noun');
+      console.log(`✅ Generated ${groups.nouns.length} unique noun forms`);
+    }
+
+    if (verbs.length) {
+      groups.verbs = verbs.filter(f => f.pos === 'verb');
+      console.log(`✅ Generated ${groups.verbs.length} unique verb forms`);
+    }
+
+    if (adjectives.length) {
+      // Filter for adjective-like forms (could be in nouns or other)
+      groups.other = adjectives.filter(f => f.pos === 'adjective' || f.form !== normalized);
+      console.log(`✅ Generated ${groups.other?.length || 0} adjective/other forms`);
+    }
+
+    // For ambiguous terms, ensure we capture all possibilities
+    if (posGuess === "other" && (!groups.nouns?.length && !groups.verbs?.length)) {
+      console.log(`🔄 Ambiguous term detected, trying alternative approaches...`);
+
+      // Try generating with different assumptions
+      const [altNouns, altVerbs] = await Promise.all([
+        generateNounVariants(normalized, { cap: 25 }),
+        generateVerbVariantsUtil(normalized, { cap: 50, includeCompound: true }),
       ]);
-      if (nouns.length) groups.nouns = nouns;
-      if (verbs.length) groups.verbs = verbs;
-      console.log(`✅ Generated ${nouns.length} nouns, ${verbs.length} verbs`);
+
+      if (altNouns.length) groups.nouns = altNouns;
+      if (altVerbs.length) groups.verbs = altVerbs;
+
+      console.log(`✅ Alternative generation: ${altNouns.length} nouns, ${altVerbs.length} verbs`);
     }
 
     // Build forms array and enrich with frequency data
@@ -164,12 +197,25 @@ export async function POST(req: NextRequest) {
       total,
     };
 
+    // LingDocs-style comprehensive response
     const payload: RelatedFormsResponse = {
       root: normalized,
       forms: enrichedGroups,
       total,
       variantDetails,
       ms: Date.now() - startedAt,
+      posGuess,
+      // Enhanced LingDocs-style metadata
+      metadata: {
+        hasMultiplePos: Object.keys(enrichedGroups).length > 1,
+        primaryPos: posGuess,
+        totalFormsByPos: {
+          nouns: enrichedGroups.nouns?.length || 0,
+          verbs: enrichedGroups.verbs?.length || 0,
+          other: enrichedGroups.other?.length || 0,
+        },
+        generationStrategy: posGuess === "other" ? "ambiguous_exhaustive" : "pos_specific",
+      },
     };
 
     console.log(`✅ Returning ${total} forms with occurrence counts (${Date.now() - startedAt}ms)`);
