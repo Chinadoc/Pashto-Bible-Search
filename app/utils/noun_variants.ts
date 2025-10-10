@@ -122,6 +122,35 @@ export async function generateNounVariants(
     items.unshift({ form: base, label: "Lemma", pos: "noun", count: 0, score: 0 });
   }
 
+  // Generate Pattern 1 Basic inflections for feminine words ending in ه
+  console.log(`🔍 Legacy Pattern 1 check for "${base}": items.length=${items.length}, endsWith('ه')=${base.endsWith('ه')}`);
+  if (items.length <= 1 && base.endsWith('ه')) {
+    console.log(`🔧 Generating Pattern 1 inflections for "${base}"`);
+    const stem = base.slice(0, -1); // Remove final ه
+    
+    // Pattern 1: Basic feminine (اندازه, کور, ښځه)
+    const pattern1Forms = [
+      { form: base, label: "Plain", pos: "noun" },           // اندازه
+      { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
+      { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
+      { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
+    ];
+
+    for (const form of pattern1Forms) {
+      if (!items.some(item => item.form === form.form)) {
+        items.push({
+          form: form.form,
+          label: form.label,
+          pos: "noun",
+          count: freqMap?.get(form.form) ?? 0,
+          score: freqMap?.get(form.form) ?? 0,
+          flags: ['pattern1'],
+        });
+      }
+    }
+    console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 forms for "${base}"`);
+  }
+
   // Generate Pattern 3 stressed áy inflections if no database inflections found
   console.log(`🔍 Legacy Pattern 3 check for "${base}": items.length=${items.length}, endsWith('ی')=${base.endsWith('ی')}`);
   if (items.length <= 1 && base.endsWith('ی')) {
