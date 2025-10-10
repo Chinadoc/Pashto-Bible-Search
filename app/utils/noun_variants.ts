@@ -122,6 +122,34 @@ export async function generateNounVariants(
     items.unshift({ form: base, label: "Lemma", pos: "noun", count: 0, score: 0 });
   }
 
+  // Generate Pattern 3 stressed áy inflections if no database inflections found
+  if (items.length <= 1 && base.endsWith('ی')) {
+    console.log(`🔧 Generating Pattern 3 inflections for "${base}"`);
+    const stem = base.slice(0, -1); // Remove final ی
+    
+    // Pattern 3: Stressed ی - áy (سوری, ځلمی, لومړی)
+    const pattern3Forms = [
+      { form: base, label: "Plain", pos: "noun" },           // سوری
+      { form: stem + 'ي', label: "1st Inflection", pos: "noun" },  // سوري
+      { form: stem + 'یو', label: "2nd Inflection", pos: "noun" }, // سوریو
+      { form: stem + 'یه', label: "Vocative", pos: "noun" },       // سوریه
+    ];
+
+    for (const form of pattern3Forms) {
+      if (!items.some(item => item.form === form.form)) {
+        items.push({
+          form: form.form,
+          label: form.label,
+          pos: "noun",
+          count: freqMap?.get(form.form) ?? 0,
+          score: freqMap?.get(form.form) ?? 0,
+          flags: ['pattern3'],
+        });
+      }
+    }
+    console.log(`✅ Generated ${pattern3Forms.length} Pattern 3 forms for "${base}"`);
+  }
+
   // De-duplicate early
   let deduped = uniqBy(items, (v) => v.form);
 
