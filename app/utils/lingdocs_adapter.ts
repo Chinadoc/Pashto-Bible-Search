@@ -538,35 +538,69 @@ export async function generateEnhancedNounVariants(
     });
   }
 
-  // Generate Pattern 1 Basic inflections for feminine words ending in ه
-  console.log(`🔍 Pattern 1 check for "${entry.p}": variants.length=${variants.length}, endsWith('ه')=${entry.p.endsWith('ه')}`);
-  if (variants.length <= 3 && entry.p.endsWith('ه')) {
-    console.log(`🔧 Generating Pattern 1 inflections for "${entry.p}" in LingDocs adapter`);
-    const stem = entry.p.slice(0, -1); // Remove final ه
+    // Generate Pattern 1 Basic inflections for masculine words ending in consonants
+    console.log(`🔍 Pattern 1 masculine check for "${entry.p}": variants.length=${variants.length}, endsWith consonant=${!entry.p.endsWith('ه') && !entry.p.endsWith('ی') && !entry.p.endsWith('ې') && !entry.p.endsWith('و')}`);
+    if (variants.length <= 3 && !entry.p.endsWith('ه') && !entry.p.endsWith('ی') && !entry.p.endsWith('ې') && !entry.p.endsWith('و')) {
+      console.log(`🔧 Generating Pattern 1 masculine inflections for "${entry.p}" in LingDocs adapter`);
+      
+      // Pattern 1: Basic masculine (اتفاق, کور, برګ)
+      const pattern1Forms = [
+        { form: entry.p, label: "Plain", pos: "noun" },           // اتفاق
+        { form: entry.p, label: "1st Inflection", pos: "noun" },  // اتفاق
+        { form: entry.p + 'و', label: "2nd Inflection", pos: "noun" }, // اتفاقو
+        { form: entry.p + 'ونه', label: "Plural", pos: "noun" },       // اتفاقونه
+        { form: entry.p + 'ونو', label: "2nd Inflection", pos: "noun" }, // اتفاقونو
+        { form: entry.p + 'ه', label: "Vocative", pos: "noun" },       // اتفاقه
+        { form: entry.p + 'و', label: "Plur. Voc.", pos: "noun" },     // اتفاقو
+        { form: entry.p + 'ه', label: "Bundled Plural", pos: "noun" }, // اتفاقه
+        { form: entry.p + 'و', label: "Bundled 2nd Inf.", pos: "noun" }, // اتفاقو
+      ];
     
-    // Pattern 1: Basic feminine (اندازه, کور, ښځه)
-    const pattern1Forms = [
-      { form: entry.p, label: "Plain", pos: "noun" },           // اندازه
-      { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
-      { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
-      { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
-    ];
-
-    for (const form of pattern1Forms) {
-      if (!variants.some(v => v.form === form.form)) {
-        variants.push({
-          form: form.form,
-          label: form.label,
-          pos: "noun",
-          romanized: entry.f,
-          count: freqMap?.get(form.form) ?? 0,
-          score: freqMap?.get(form.form) ?? 0,
-          flags: ['pattern1'],
-        });
+      for (const form of pattern1Forms) {
+        if (!variants.some(v => v.form === form.form)) {
+          variants.push({
+            form: form.form,
+            label: form.label,
+            pos: "noun",
+            romanized: entry.f,
+            count: freqMap?.get(form.form) ?? 0,
+            score: freqMap?.get(form.form) ?? 0,
+            flags: ['pattern1'],
+          });
+        }
       }
+      console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 masculine forms for "${entry.p}"`);
     }
-    console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 forms for "${entry.p}"`);
-  }
+
+    // Generate Pattern 1 Basic inflections for feminine words ending in ه
+    console.log(`🔍 Pattern 1 feminine check for "${entry.p}": variants.length=${variants.length}, endsWith('ه')=${entry.p.endsWith('ه')}`);
+    if (variants.length <= 3 && entry.p.endsWith('ه')) {
+      console.log(`🔧 Generating Pattern 1 feminine inflections for "${entry.p}" in LingDocs adapter`);
+      const stem = entry.p.slice(0, -1); // Remove final ه
+      
+      // Pattern 1: Basic feminine (اندازه, کور, ښځه)
+      const pattern1Forms = [
+        { form: entry.p, label: "Plain", pos: "noun" },           // اندازه
+        { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
+        { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
+        { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
+      ];
+    
+      for (const form of pattern1Forms) {
+        if (!variants.some(v => v.form === form.form)) {
+          variants.push({
+            form: form.form,
+            label: form.label,
+            pos: "noun",
+            romanized: entry.f,
+            count: freqMap?.get(form.form) ?? 0,
+            score: freqMap?.get(form.form) ?? 0,
+            flags: ['pattern1'],
+          });
+        }
+      }
+      console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 feminine forms for "${entry.p}"`);
+    }
 
   // Generate Pattern 3 stressed áy inflections if we have few forms
   console.log(`🔍 Pattern 3 check for "${entry.p}": variants.length=${variants.length}, endsWith('ی')=${entry.p.endsWith('ی')}`);

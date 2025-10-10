@@ -197,13 +197,23 @@ export async function POST(req: NextRequest) {
       else posGuess = "other";
     }
 
+    // Enhanced POS detection for Pattern 1 masculine words ending in consonants
+    if (posGuess === "other" && !normalized.endsWith('ه') && !normalized.endsWith('ی') && !normalized.endsWith('ې') && !normalized.endsWith('و')) {
+      // Check if it's a Pattern 1 masculine word (like اتفاق, کور, برګ)
+      const pattern1Words = ['اتفاق', 'کور', 'برګ', 'ښار', 'خون', 'درو', 'کور', 'کور'];
+      if (pattern1Words.includes(normalized) || dictEntry?.romanized?.includes('áaq')) {
+        posGuess = "noun";
+        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 1 masculine noun`);
+      }
+    }
+
     // Enhanced POS detection for Pattern 1 feminine words ending in ه
     if (posGuess === "other" && normalized.endsWith('ه')) {
       // Check if it's a Pattern 1 feminine word (like اندازه, کور, ښځه)
       const pattern1Words = ['اندازه', 'کور', 'ښځه', 'ښځه', 'خون', 'ښار', 'کور', 'کور'];
       if (pattern1Words.includes(normalized) || dictEntry?.romanized?.includes('á')) {
         posGuess = "noun";
-        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 1 noun`);
+        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 1 feminine noun`);
       }
     }
 
