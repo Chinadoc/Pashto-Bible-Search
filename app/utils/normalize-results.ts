@@ -114,7 +114,7 @@ export function deduplicateVerses(verses: Verse[]): Verse[] {
  * Sort verses by book order
  */
 export function sortVersesByBook(verses: Verse[]): Verse[] {
-  const bookOrder = [
+  const oldTestamentBooks = [
     'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
     'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
     '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
@@ -122,7 +122,10 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
     'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
     'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
     'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
-    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
+  ];
+  
+  const newTestamentBooks = [
     'Matthew', 'Mark', 'Luke', 'John', 'Acts',
     'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
     'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy',
@@ -135,6 +138,15 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
     const bookA = a.ref.split(' ')[0];
     const bookB = b.ref.split(' ')[0];
     
+    // Prioritize New Testament books (they have audio)
+    const isNTA = newTestamentBooks.includes(bookA);
+    const isNTB = newTestamentBooks.includes(bookB);
+    
+    if (isNTA && !isNTB) return -1; // NT before OT
+    if (!isNTA && isNTB) return 1;  // OT after NT
+    
+    // Within same testament, sort by book order
+    const bookOrder = [...newTestamentBooks, ...oldTestamentBooks];
     const indexA = bookOrder.indexOf(bookA);
     const indexB = bookOrder.indexOf(bookB);
     

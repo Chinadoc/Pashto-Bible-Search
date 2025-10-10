@@ -538,6 +538,36 @@ export async function generateEnhancedNounVariants(
     });
   }
 
+  // Generate Pattern 1 Basic inflections for feminine words ending in ه
+  console.log(`🔍 Pattern 1 check for "${entry.p}": variants.length=${variants.length}, endsWith('ه')=${entry.p.endsWith('ه')}`);
+  if (variants.length <= 3 && entry.p.endsWith('ه')) {
+    console.log(`🔧 Generating Pattern 1 inflections for "${entry.p}" in LingDocs adapter`);
+    const stem = entry.p.slice(0, -1); // Remove final ه
+    
+    // Pattern 1: Basic feminine (اندازه, کور, ښځه)
+    const pattern1Forms = [
+      { form: entry.p, label: "Plain", pos: "noun" },           // اندازه
+      { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
+      { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
+      { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
+    ];
+
+    for (const form of pattern1Forms) {
+      if (!variants.some(v => v.form === form.form)) {
+        variants.push({
+          form: form.form,
+          label: form.label,
+          pos: "noun",
+          romanized: entry.f,
+          count: freqMap?.get(form.form) ?? 0,
+          score: freqMap?.get(form.form) ?? 0,
+          flags: ['pattern1'],
+        });
+      }
+    }
+    console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 forms for "${entry.p}"`);
+  }
+
   // Generate Pattern 3 stressed áy inflections if we have few forms
   console.log(`🔍 Pattern 3 check for "${entry.p}": variants.length=${variants.length}, endsWith('ی')=${entry.p.endsWith('ی')}`);
   if (variants.length <= 3 && entry.p.endsWith('ی')) {

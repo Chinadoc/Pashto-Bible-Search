@@ -297,11 +297,25 @@ function VerseItem({
           <button
             onClick={async () => {
               try {
-                await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
+                // Create bolded text with highlighted search terms
+                let textToCopy = verse.text || '';
+                
+                // Get search terms from processed data or termsProp
+                const searchTerms = processed?.variantsSearched || termsProp || [];
+                
+                // Bold each search term in the text
+                for (const term of searchTerms) {
+                  if (term && typeof term === 'string') {
+                    const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    textToCopy = textToCopy.replace(regex, '**$1**');
+                  }
+                }
+                
+                await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${textToCopy}`);
               } catch {}
             }}
             className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            title="Copy verse"
+            title="Copy verse with bolded search terms"
           >
             Copy
           </button>
