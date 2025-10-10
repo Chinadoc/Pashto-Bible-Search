@@ -27,20 +27,31 @@ function escapeRegExp(s: string) {
 }
 
 function highlight(text: string, terms: string[], processed?: any): ReactNode {
+  // Validate input
+  if (!text || typeof text !== 'string') {
+    console.warn('Invalid text passed to highlight:', text);
+    return <span>Invalid text</span>;
+  }
+
   // Use new Pashto-aware highlighting if we have processed data with variants
   if (processed) {
-    const tokens = [
-      processed.normalized,
-      ...(processed.variants ?? []),
-      ...(processed.variantGroups?.nouns ?? []).map((v: any) => v.form),
-      ...(processed.variantGroups?.verbs ?? []).map((v: any) => v.form),
-    ].filter(Boolean) as string[];
+    try {
+      const tokens = [
+        processed.normalized,
+        ...(processed.variants ?? []),
+        ...(processed.variantGroups?.nouns ?? []).map((v: any) => v?.form).filter(Boolean),
+        ...(processed.variantGroups?.verbs ?? []).map((v: any) => v?.form).filter(Boolean),
+      ].filter(Boolean) as string[];
 
-    return <HighlightText text={text} tokens={tokens} />;
+      return <HighlightText text={text} tokens={tokens} />;
+    } catch (error) {
+      console.warn('Error in processed highlighting:', error);
+      return <span>{text}</span>;
+    }
   }
 
   // Fallback to simple highlighting
-  const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
+  const cleanTerms = Array.from(new Set(terms.map((t) => t?.trim()).filter(Boolean)));
   if (cleanTerms.length === 0) return <span>{text}</span>;
 
   try {
@@ -51,11 +62,12 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     // Ensure all parts are properly wrapped in React elements
     return (
       <span>
-        {parts.map((part, i) =>
-          i % 2 === 1
+        {parts.map((part, i) => {
+          if (!part) return null; // Skip empty parts
+          return i % 2 === 1
             ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">{part}</mark>
-            : <span key={i}>{part}</span>
-        )}
+            : <span key={i}>{part}</span>;
+        }).filter(Boolean)}
       </span>
     );
   } catch (error) {
@@ -245,6 +257,26 @@ function VerseItem({
     console.warn('Verse missing ref:', verse);
   }
 
+  // Validate verse data before rendering
+  if (!verse || typeof verse !== 'object') {
+    console.error('Invalid verse object:', verse);
+    return (
+      <div className="p-3 mb-2 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/30">
+        <p className="text-red-600 dark:text-red-400">Error: Invalid verse data</p>
+      </div>
+    );
+  }
+
+  if (!verse.text || typeof verse.text !== 'string') {
+    console.error('Invalid verse text:', verse);
+    return (
+      <div className="p-3 mb-2 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/30">
+        <p className="text-red-600 dark:text-red-400">Error: Invalid verse text</p>
+        <p className="text-xs text-gray-500">Ref: {verse.ref || 'Unknown'}</p>
+      </div>
+    );
+  }
+
   return (
     <div
       key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
@@ -370,8 +402,31 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
   
+  // Validate results array
+  const validResults = React.useMemo(() => {
+    if (!Array.isArray(results)) {
+      console.error('Results is not an array:', results);
+      return [];
+    }
+    return results.filter((verse, index) => {
+      if (!verse || typeof verse !== 'object') {
+        console.error(`Invalid verse at index ${index}:`, verse);
+        return false;
+      }
+      if (!verse.ref || typeof verse.ref !== 'string') {
+        console.error(`Invalid verse ref at index ${index}:`, verse);
+        return false;
+      }
+      if (!verse.text || typeof verse.text !== 'string') {
+        console.error(`Invalid verse text at index ${index}:`, verse);
+        return false;
+      }
+      return true;
+    });
+  }, [results]);
+  
   // Enable virtual scrolling for large result sets
-  const shouldUseVirtualization = results.length > 200;
+  const shouldUseVirtualization = validResults.length > 200;
 
   // Render function for virtualized items — declared before early returns to keep hook order stable
   const renderVirtualizedItem = useCallback((verse: Verse, index: number) => (
@@ -396,7 +451,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   ), [audioMap, resolvedUrls, downloadingMap, playingKey, termsProp, highlightBook, processed]);
 
   // Reset to page 1 when results change
-  useEffect(() => { setPage(1); }, [results.length]);
+  useEffect(() => { setPage(1); }, [validResults.length]);
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
@@ -404,14 +459,14 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
   // Early returns only after all hooks are declared
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
-  if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
+  if (validResults.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
 
-  const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedResults = validResults.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  const showPagination = results.length > itemsPerPage
+  const showPagination = validResults.length > itemsPerPage
 
   const paginationControl = (position: 'top' | 'bottom') => {
-    const totalPages = Math.ceil(results.length / itemsPerPage)
+    const totalPages = Math.ceil(validResults.length / itemsPerPage)
     if (totalPages <= 1) return null
     
     return (
@@ -458,10 +513,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     <div>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
         <span>
-          Showing {shouldUseVirtualization ? results.length : paginatedResults.length} of {results.length} results
-          {!shouldUseVirtualization && results.length > itemsPerPage && (
+          Showing {shouldUseVirtualization ? validResults.length : paginatedResults.length} of {validResults.length} results
+          {!shouldUseVirtualization && validResults.length > itemsPerPage && (
             <span className="ml-2 text-xs">
-              (Page {page} of {Math.ceil(results.length / itemsPerPage)})
+              (Page {page} of {Math.ceil(validResults.length / itemsPerPage)})
             </span>
           )}
           {shouldUseVirtualization && (
@@ -475,7 +530,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
       {shouldUseVirtualization ? (
         <VirtualizedResults
-          verses={results}
+          verses={validResults}
           itemHeight={120}
           containerHeight={600}
           overscan={5}
