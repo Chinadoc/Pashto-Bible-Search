@@ -174,13 +174,29 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
  * Convert ApiResult to Verse format
  */
 function convertApiResultToVerse(apiResult: ApiResult): Verse {
+  // Generate audio URL for Yousafzai verses if not already set
+  let audioVerseUrl = apiResult.audio_verse_url;
+  if (!audioVerseUrl && apiResult.translation === 'Yousafzai 2019') {
+    const bookSlug = apiResult.ref.toLowerCase().includes('psalms') ? 'psalms' : 
+                    apiResult.ref.toLowerCase().includes('proverbs') ? 'proverbs' : null;
+    if (bookSlug) {
+      const match = apiResult.ref.match(/(\d+):(\d+)/);
+      if (match) {
+        const chapterPadded = String(match[1]).padStart(3, '0');
+        const versePadded = String(match[2]).padStart(3, '0');
+        const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
+        audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`;
+      }
+    }
+  }
+
   return {
     ref: apiResult.ref,
     text: apiResult.text,
     translation: apiResult.translation,
     dialect: apiResult.dialect,
     tags: apiResult.tags,
-    audio_verse_url: apiResult.audio_verse_url,
+    audio_verse_url: audioVerseUrl,
     testament: apiResult.testament as 'OT' | 'NT' | undefined,
   };
 }
