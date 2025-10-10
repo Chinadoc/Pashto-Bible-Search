@@ -461,6 +461,8 @@ export async function generateEnhancedNounVariants(
 ): Promise<Variant[]> {
   const cap = Math.max(1, Math.min(opts?.cap ?? 30, 50));
   
+  console.log(`🔍 generateEnhancedNounVariants called for "${rootOrLemma}"`);
+  
   // Check for enriched metadata from Supabase
   const enrichedMetadata = await getEnrichedMetadata(rootOrLemma);
   console.log(`📊 Noun enriched metadata for "${rootOrLemma}":`, {
@@ -470,6 +472,7 @@ export async function generateEnhancedNounVariants(
   });
 
   const entry = await convertToLingDocsEntry(rootOrLemma);
+  console.log(`🔍 convertToLingDocsEntry result for "${rootOrLemma}":`, entry ? 'found' : 'not found');
   if (!entry) return [];
 
   const variants: Variant[] = [];
