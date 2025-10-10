@@ -531,7 +531,8 @@ export async function generateEnhancedNounVariants(
   }
 
   // Generate Pattern 3 stressed áy inflections if we have few forms
-  if (variants.length <= 2 && entry.p.endsWith('ی')) {
+  console.log(`🔍 Pattern 3 check for "${entry.p}": variants.length=${variants.length}, endsWith('ی')=${entry.p.endsWith('ی')}`);
+  if (variants.length <= 3 && entry.p.endsWith('ی')) {
     console.log(`🔧 Generating Pattern 3 inflections for "${entry.p}" in LingDocs adapter`);
     const stem = entry.p.slice(0, -1); // Remove final ی
     
