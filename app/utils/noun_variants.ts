@@ -122,34 +122,67 @@ export async function generateNounVariants(
     items.unshift({ form: base, label: "Lemma", pos: "noun", count: 0, score: 0 });
   }
 
-  // Generate Pattern 1 Basic inflections for feminine words ending in ه
-  console.log(`🔍 Legacy Pattern 1 check for "${base}": items.length=${items.length}, endsWith('ه')=${base.endsWith('ه')}`);
-  if (items.length <= 1 && base.endsWith('ه')) {
-    console.log(`🔧 Generating Pattern 1 inflections for "${base}"`);
-    const stem = base.slice(0, -1); // Remove final ه
+    // Generate Pattern 1 Basic inflections for masculine words ending in consonants
+    console.log(`🔍 Legacy Pattern 1 masculine check for "${base}": items.length=${items.length}, endsWith consonant=${!base.endsWith('ه') && !base.endsWith('ی') && !base.endsWith('ې') && !base.endsWith('و')}`);
+    if (items.length <= 1 && !base.endsWith('ه') && !base.endsWith('ی') && !base.endsWith('ې') && !base.endsWith('و')) {
+      console.log(`🔧 Generating Pattern 1 masculine inflections for "${base}"`);
+      
+      // Pattern 1: Basic masculine (اتفاق, کور, برګ)
+      const pattern1Forms = [
+        { form: base, label: "Plain", pos: "noun" },           // اتفاق
+        { form: base, label: "1st Inflection", pos: "noun" },  // اتفاق
+        { form: base + 'و', label: "2nd Inflection", pos: "noun" }, // اتفاقو
+        { form: base + 'ونه', label: "Plural", pos: "noun" },       // اتفاقونه
+        { form: base + 'ونو', label: "2nd Inflection", pos: "noun" }, // اتفاقونو
+        { form: base + 'ه', label: "Vocative", pos: "noun" },       // اتفاقه
+        { form: base + 'و', label: "Plur. Voc.", pos: "noun" },     // اتفاقو
+        { form: base + 'ه', label: "Bundled Plural", pos: "noun" }, // اتفاقه
+        { form: base + 'و', label: "Bundled 2nd Inf.", pos: "noun" }, // اتفاقو
+      ];
     
-    // Pattern 1: Basic feminine (اندازه, کور, ښځه)
-    const pattern1Forms = [
-      { form: base, label: "Plain", pos: "noun" },           // اندازه
-      { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
-      { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
-      { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
-    ];
-
-    for (const form of pattern1Forms) {
-      if (!items.some(item => item.form === form.form)) {
-        items.push({
-          form: form.form,
-          label: form.label,
-          pos: "noun",
-          count: freqMap?.get(form.form) ?? 0,
-          score: freqMap?.get(form.form) ?? 0,
-          flags: ['pattern1'],
-        });
+      for (const form of pattern1Forms) {
+        if (!items.some(item => item.form === form.form)) {
+          items.push({
+            form: form.form,
+            label: form.label,
+            pos: "noun",
+            count: freqMap?.get(form.form) ?? 0,
+            score: freqMap?.get(form.form) ?? 0,
+            flags: ['pattern1'],
+          });
+        }
       }
+      console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 masculine forms for "${base}"`);
     }
-    console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 forms for "${base}"`);
-  }
+
+    // Generate Pattern 1 Basic inflections for feminine words ending in ه
+    console.log(`🔍 Legacy Pattern 1 feminine check for "${base}": items.length=${items.length}, endsWith('ه')=${base.endsWith('ه')}`);
+    if (items.length <= 1 && base.endsWith('ه')) {
+      console.log(`🔧 Generating Pattern 1 feminine inflections for "${base}"`);
+      const stem = base.slice(0, -1); // Remove final ه
+      
+      // Pattern 1: Basic feminine (اندازه, کور, ښځه)
+      const pattern1Forms = [
+        { form: base, label: "Plain", pos: "noun" },           // اندازه
+        { form: stem + 'ې', label: "1st Inflection", pos: "noun" },  // اندازې
+        { form: stem + 'و', label: "2nd Inflection", pos: "noun" }, // اندازو
+        { form: stem + 'ې', label: "Vocative", pos: "noun" },       // اندازې (vocative)
+      ];
+    
+      for (const form of pattern1Forms) {
+        if (!items.some(item => item.form === form.form)) {
+          items.push({
+            form: form.form,
+            label: form.label,
+            pos: "noun",
+            count: freqMap?.get(form.form) ?? 0,
+            score: freqMap?.get(form.form) ?? 0,
+            flags: ['pattern1'],
+          });
+        }
+      }
+      console.log(`✅ Generated ${pattern1Forms.length} Pattern 1 feminine forms for "${base}"`);
+    }
 
   // Generate Pattern 3 stressed áy inflections if no database inflections found
   console.log(`🔍 Legacy Pattern 3 check for "${base}": items.length=${items.length}, endsWith('ی')=${base.endsWith('ی')}`);
