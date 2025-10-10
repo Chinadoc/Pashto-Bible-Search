@@ -76,10 +76,15 @@ export interface LingDocsEntry {
 export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDocsEntry | null> {
   const { dictionary, dictionaryByRomanized } = await getData();
   
+  console.log(`🔍 convertToLingDocsEntry looking for "${pashtoWord}"`);
+  console.log(`🔍 Dictionary has ${dictionary.length} entries`);
+  
   // Try to find by Pashto text
   let entry = dictionary.find((d: any) => 
     d.pashto?.toLowerCase() === pashtoWord.toLowerCase()
   );
+  
+  console.log(`🔍 Found entry:`, !!entry);
   
   // If not found, try romanized
   if (!entry && isLatin(pashtoWord)) {
