@@ -177,12 +177,40 @@ function convertApiResultToVerse(apiResult: ApiResult): Verse {
  * Complete normalization pipeline for ApiResult[]
  */
 export function normalizeVerses(apiResults: ApiResult[]): Verse[] {
-  const verses = apiResults.map(convertApiResultToVerse);
-  return sortVersesByBook(
-    deduplicateVerses(
-      normalizeSearchResults(
-        filterValidVerses(verses)
+  // Validate input
+  if (!Array.isArray(apiResults)) {
+    console.error('normalizeVerses: apiResults is not an array:', apiResults);
+    return [];
+  }
+
+  try {
+    const verses = apiResults
+      .filter((result, index) => {
+        if (!result || typeof result !== 'object') {
+          console.warn(`normalizeVerses: Invalid result at index ${index}:`, result);
+          return false;
+        }
+        if (!result.ref || typeof result.ref !== 'string') {
+          console.warn(`normalizeVerses: Invalid ref at index ${index}:`, result);
+          return false;
+        }
+        if (!result.text || typeof result.text !== 'string') {
+          console.warn(`normalizeVerses: Invalid text at index ${index}:`, result);
+          return false;
+        }
+        return true;
+      })
+      .map(convertApiResultToVerse);
+
+    return sortVersesByBook(
+      deduplicateVerses(
+        normalizeSearchResults(
+          filterValidVerses(verses)
+        )
       )
-    )
-  );
+    );
+  } catch (error) {
+    console.error('Error in normalizeVerses:', error);
+    return [];
+  }
 }

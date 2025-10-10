@@ -7,23 +7,47 @@ interface HighlightTextProps {
 }
 
 export default function HighlightText({ text, tokens }: HighlightTextProps) {
-  const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
+  // Validate inputs
+  if (!text || typeof text !== 'string') {
+    console.warn('Invalid text passed to HighlightText:', text);
+    return <span>Invalid text</span>;
+  }
+
+  if (!Array.isArray(tokens)) {
+    console.warn('Invalid tokens passed to HighlightText:', tokens);
+    return <span>{text}</span>;
+  }
+
+  const rx = React.useMemo(() => {
+    try {
+      return buildHighlightRegex(tokens);
+    } catch (error) {
+      console.warn('Error building highlight regex:', error);
+      return null;
+    }
+  }, [tokens.join("|")]);
 
   if (!rx) {
     return <span>{text}</span>;
   }
 
-  // Split the text and render with highlights
-  const chunks = text.split(rx);
-  return (
-    <span>
-      {chunks.map((c, i) =>
-        i % 2 === 1
-          ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
-          : <span key={i}>{c}</span>
-      )}
-    </span>
-  );
+  try {
+    // Split the text and render with highlights
+    const chunks = text.split(rx);
+    return (
+      <span>
+        {chunks.map((c, i) => {
+          if (!c) return null; // Skip empty chunks
+          return i % 2 === 1
+            ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
+            : <span key={i}>{c}</span>;
+        }).filter(Boolean)}
+      </span>
+    );
+  } catch (error) {
+    console.warn('Error rendering highlighted text:', error);
+    return <span>{text}</span>;
+  }
 }
 
 
