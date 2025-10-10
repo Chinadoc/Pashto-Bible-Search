@@ -8,6 +8,7 @@ type DictionaryEntry = {
   pashto: string;
   romanized: string;
   pos?: string;
+  c?: string;
   english?: string;
 };
 
@@ -214,6 +215,7 @@ function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
       pashto: pashto.trim(), 
       romanized, 
       pos: pos?.trim(),
+      c: entry.c?.trim(),
       english: english?.trim()
     });
   }

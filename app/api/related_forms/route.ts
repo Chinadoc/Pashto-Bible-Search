@@ -4,6 +4,14 @@ import { getLightweightData } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 
+type DictionaryEntry = {
+  pashto: string;
+  romanized: string;
+  pos?: string;
+  c?: string;
+  english?: string;
+};
+
 export const runtime = 'nodejs';
 
 type Payload = {
@@ -179,6 +187,13 @@ export async function POST(req: NextRequest) {
       if (posLower.startsWith("verb")) posGuess = "verb";
       else if (posLower.startsWith("noun")) posGuess = "noun";
       else if (posLower.startsWith("adj")) posGuess = "adjective";
+      else posGuess = "other";
+    } else if (dictEntry?.c) {
+      // Check the 'c' field which contains values like "n. m.", "v.", "adj."
+      const cLower = dictEntry.c.toLowerCase();
+      if (cLower.startsWith("v.")) posGuess = "verb";
+      else if (cLower.startsWith("n.")) posGuess = "noun";
+      else if (cLower.startsWith("adj")) posGuess = "adjective";
       else posGuess = "other";
     }
 
