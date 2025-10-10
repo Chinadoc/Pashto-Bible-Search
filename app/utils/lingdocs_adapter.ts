@@ -81,7 +81,7 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
   
   // Try to find by Pashto text
   let entry = dictionary.find((d: any) => 
-    d.pashto?.toLowerCase() === pashtoWord.toLowerCase()
+    d.p?.toLowerCase() === pashtoWord.toLowerCase()
   );
   
   console.log(`🔍 Found entry:`, !!entry);
