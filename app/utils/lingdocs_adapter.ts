@@ -529,6 +529,35 @@ export async function generateEnhancedNounVariants(
       score: freqMap?.get(row.form) ?? 0,
     });
   }
+
+  // Generate Pattern 3 stressed áy inflections if we have few forms
+  if (variants.length <= 2 && entry.p.endsWith('ی')) {
+    console.log(`🔧 Generating Pattern 3 inflections for "${entry.p}" in LingDocs adapter`);
+    const stem = entry.p.slice(0, -1); // Remove final ی
+    
+    // Pattern 3: Stressed ی - áy (سوری, ځلمی, لومړی)
+    const pattern3Forms = [
+      { form: entry.p, label: "Plain", pos: "noun" },           // سوری
+      { form: stem + 'ي', label: "1st Inflection", pos: "noun" },  // سوري
+      { form: stem + 'یو', label: "2nd Inflection", pos: "noun" }, // سوریو
+      { form: stem + 'یه', label: "Vocative", pos: "noun" },       // سوریه
+    ];
+
+    for (const form of pattern3Forms) {
+      if (!variants.some(v => v.form === form.form)) {
+        variants.push({
+          form: form.form,
+          label: form.label,
+          pos: "noun",
+          romanized: entry.f,
+          count: freqMap?.get(form.form) ?? 0,
+          score: freqMap?.get(form.form) ?? 0,
+          flags: ['pattern3'],
+        });
+      }
+    }
+    console.log(`✅ Generated ${pattern3Forms.length} Pattern 3 forms for "${entry.p}"`);
+  }
   
   const unique = deduplicateVariants(variants);
   const sorted = unique.sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
