@@ -123,6 +123,7 @@ export async function generateNounVariants(
   }
 
   // Generate Pattern 3 stressed áy inflections if no database inflections found
+  console.log(`🔍 Legacy Pattern 3 check for "${base}": items.length=${items.length}, endsWith('ی')=${base.endsWith('ی')}`);
   if (items.length <= 1 && base.endsWith('ی')) {
     console.log(`🔧 Generating Pattern 3 inflections for "${base}"`);
     const stem = base.slice(0, -1); // Remove final ی
