@@ -14,13 +14,21 @@ export async function GET(request: NextRequest) {
     if (!shouldRefresh && AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
       return NextResponse.json(AUDIO_MAP_CACHE.data)
     }
+    
     // Check if we have valid Supabase credentials
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+    console.log('🔍 Audio map API called:', {
+      supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+      supabaseKey: supabaseKey ? `${supabaseKey.substring(0, 20)}...` : 'MISSING',
+      shouldRefresh,
+      hasCache: !!AUDIO_MAP_CACHE
+    })
+
     if (!supabaseUrl || !supabaseKey ||
         supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      console.warn('Supabase credentials missing or invalid, returning empty audio map')
+      console.warn('❌ Supabase credentials missing or invalid, returning empty audio map')
       return NextResponse.json({})
     }
 
@@ -28,6 +36,7 @@ export async function GET(request: NextRequest) {
     let viewError: unknown = null
     let viewData: Array<{ verse_ref?: string | null; url?: string | null }> | null = null
     try {
+      console.log('🔍 Attempting to fetch audio_by_verse view...')
       const viewRes = await fetch(`${supabaseUrl}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
         headers: {
           apikey: supabaseKey,
@@ -38,12 +47,15 @@ export async function GET(request: NextRequest) {
       })
       if (viewRes.ok) {
         viewData = await viewRes.json()
+        console.log(`✅ Audio view query succeeded: ${viewData?.length || 0} records`)
       } else {
-        console.warn('Audio view query failed:', viewRes.status, viewRes.statusText)
+        console.warn('❌ Audio view query failed:', viewRes.status, viewRes.statusText)
+        const errorText = await viewRes.text()
+        console.warn('Error details:', errorText)
       }
     } catch (e) {
       viewError = e
-      console.warn('Audio view fetch error:', e)
+      console.warn('❌ Audio view fetch error:', e)
     }
 
     // Convert the data to the expected AudioMap format
@@ -65,6 +77,7 @@ export async function GET(request: NextRequest) {
     let queryTimeout: NodeJS.Timeout | null = null
 
     try {
+      console.log('🔍 Attempting to fetch from audio_by_verse table...')
       while (true) {
         // Set a timeout for each query to prevent hanging
         const queryPromise = supabase
@@ -85,9 +98,10 @@ export async function GET(request: NextRequest) {
         }
 
         if (error) {
+          console.error('❌ Audio map table fetch error:', error)
           if (!viewError && Object.keys(audioMap).length === 0) {
-            console.error('Audio map fetch error:', error)
-            return NextResponse.json({}, { status: 500 })
+            console.error('❌ No data from view or table, returning 500')
+            return NextResponse.json({ error: 'Database query failed', details: error.message }, { status: 500 })
           }
           break
         }
@@ -261,8 +275,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(audioMap)
 
   } catch (error) {
-    console.error('Audio map error:', error)
-    // Return empty object instead of 500 error to prevent frontend crashes
-    return NextResponse.json({})
+    console.error('❌ Audio map error:', error)
+    // Return error details for debugging instead of empty object
+    return NextResponse.json({ 
+      error: 'Audio map generation failed', 
+      details: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
   }
 }
