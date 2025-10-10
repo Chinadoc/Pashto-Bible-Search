@@ -373,6 +373,28 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   // Enable virtual scrolling for large result sets
   const shouldUseVirtualization = results.length > 200;
 
+  // Render function for virtualized items — declared before early returns to keep hook order stable
+  const renderVirtualizedItem = useCallback((verse: Verse, index: number) => (
+    <VerseItem
+      key={verse.ref || `verse-${index}`}
+      verse={verse}
+      index={index}
+      page={1}
+      itemsPerPage={1}
+      audioMap={audioMap}
+      resolvedUrls={resolvedUrls}
+      setResolvedUrls={setResolvedUrls}
+      downloadingMap={downloadingMap}
+      setDownloadingMap={setDownloadingMap}
+      playingKey={playingKey}
+      setPlayingKey={setPlayingKey}
+      audioRefs={audioRefs}
+      termsProp={termsProp}
+      highlightBook={highlightBook}
+      processed={processed}
+    />
+  ), [audioMap, resolvedUrls, downloadingMap, playingKey, termsProp, highlightBook, processed]);
+
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results.length]);
 
@@ -431,28 +453,6 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       </div>
     )
   }
-
-  // Render function for virtualized items
-  const renderVirtualizedItem = useCallback((verse: Verse, index: number) => (
-    <VerseItem
-      key={verse.ref || `verse-${index}`}
-      verse={verse}
-      index={index}
-      page={1}
-      itemsPerPage={1}
-      audioMap={audioMap}
-      resolvedUrls={resolvedUrls}
-      setResolvedUrls={setResolvedUrls}
-      downloadingMap={downloadingMap}
-      setDownloadingMap={setDownloadingMap}
-      playingKey={playingKey}
-      setPlayingKey={setPlayingKey}
-      audioRefs={audioRefs}
-      termsProp={termsProp}
-      highlightBook={highlightBook}
-      processed={processed}
-    />
-  ), [audioMap, resolvedUrls, downloadingMap, playingKey, termsProp, highlightBook, processed]);
 
   return (
     <div>
