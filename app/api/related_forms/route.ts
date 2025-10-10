@@ -88,8 +88,9 @@ async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]
     ]
   };
 
-  if (adjectiveInflections[baseWord]) {
-    for (const inflection of adjectiveInflections[baseWord]) {
+  const specificInflections = adjectiveInflections[baseWord as keyof typeof adjectiveInflections];
+  if (specificInflections) {
+    for (const inflection of specificInflections) {
       forms.push({
         form: inflection.form,
         label: inflection.label,
@@ -179,6 +180,16 @@ export async function POST(req: NextRequest) {
       else if (posLower.startsWith("noun")) posGuess = "noun";
       else if (posLower.startsWith("adj")) posGuess = "adjective";
       else posGuess = "other";
+    }
+
+    // Enhanced POS detection for Pattern 3 stressed áy words
+    if (posGuess === "other" && normalized.endsWith('ی')) {
+      // Check if it's a Pattern 3 stressed áy word (like سوری, ځلمی, لومړی)
+      const pattern3Words = ['سوری', 'ځلمی', 'لومړی', 'ګران', 'نږدې', 'لرې', 'پورته', 'ښکته'];
+      if (pattern3Words.includes(normalized) || dictEntry?.romanized?.includes('áy')) {
+        posGuess = "noun";
+        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 3 noun`);
+      }
     }
 
     console.log(`✅ POS guess for "${normalized}": ${posGuess}`);
