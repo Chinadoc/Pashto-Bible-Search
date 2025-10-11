@@ -63,7 +63,27 @@ export async function GET(request: NextRequest) {
 
     // Load Google Drive audio data first (primary source)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app'}/google_drive_audio_urls.json`);
+      // Try to fetch from deployed file first, then fall back to local file
+      let googleDriveUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app'}/google_drive_audio_urls.json`;
+
+      // For development, try local file first
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const fs = await import('fs');
+          const path = await import('path');
+          const localPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+          if (fs.existsSync(localPath)) {
+            const localData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+            if (Object.keys(localData).length > 0) {
+              googleDriveUrl = localPath;
+            }
+          }
+        } catch (e) {
+          // Use deployed URL
+        }
+      }
+
+      const response = await fetch(googleDriveUrl);
       if (response.ok) {
         const localAudioData = await response.json();
         let localCount = 0;
@@ -78,7 +98,7 @@ export async function GET(request: NextRequest) {
               const urlMatch = data.google_drive_url.match(/id=([^&]+)/);
               fileId = urlMatch ? urlMatch[1] : null;
             }
-            if (fileId && fileId !== 'TEST_ID') {
+            if (fileId && fileId !== 'TEST_ID' && fileId !== 'FILE_ID_HERE') {
               audioMap[verseRef] = fileId;
               localCount++;
             }
