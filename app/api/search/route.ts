@@ -203,8 +203,38 @@ async function getAudioMap(): Promise<Record<string, string>> {
     return audioMapCache;
   }
 
+  const audioMap: Record<string, string> = {};
+
+  // Load local Google Drive audio data first (primary source)
   try {
-    console.log('🔄 Fetching fresh audio map from Supabase...');
+    const fs = await import('fs');
+    const path = await import('path');
+    const localAudioPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+
+    if (fs.existsSync(localAudioPath)) {
+      const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
+      let localCount = 0;
+
+      Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
+        if (data.book && data.chapter && data.verse && data.google_drive_file_id && data.google_drive_file_id !== 'TEST_ID') {
+          const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
+          const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
+          audioMap[verseRef] = data.google_drive_file_id;
+          localCount++;
+        }
+      });
+
+      console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
+    } else {
+      console.warn('Local Google Drive audio file not found');
+    }
+  } catch (localError) {
+    console.warn('Failed to load local Google Drive audio data:', localError);
+  }
+
+  // Also try to load from Supabase as secondary source
+  try {
+    console.log('🔄 Fetching audio map from Supabase as secondary source...');
     const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
       headers: {
         'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
@@ -216,58 +246,32 @@ async function getAudioMap(): Promise<Record<string, string>> {
 
     if (audioResponse.ok) {
       const audioData = await audioResponse.json();
-      const audioMap: Record<string, string> = {};
+      let supabaseCount = 0;
 
       if (Array.isArray(audioData)) {
         for (const row of audioData) {
           if (row.verse_ref && row.url && !/drive\.google|docs\.google/i.test(row.url)) {
-            audioMap[row.verse_ref] = row.url;
+            // Only add if not already in local data
+            if (!audioMap[row.verse_ref]) {
+              audioMap[row.verse_ref] = row.url;
+              supabaseCount++;
+            }
           }
         }
       }
 
-      // Load local Google Drive audio data as fallback
-      try {
-        const fs = await import('fs');
-        const path = await import('path');
-        const localAudioPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
-
-        if (fs.existsSync(localAudioPath)) {
-          const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
-          let localCount = 0;
-
-          Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
-            if (data.book && data.chapter && data.verse && data.google_drive_file_id && data.google_drive_file_id !== 'TEST_ID') {
-              const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
-              const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
-
-              // Only add if not already in Supabase data (Google Drive fallback)
-              if (!audioMap[verseRef]) {
-                audioMap[verseRef] = data.google_drive_file_id;
-                localCount++;
-              }
-            }
-          });
-
-          console.log(`🔗 Added ${localCount} Google Drive audio entries as fallback`);
-        }
-      } catch (localError) {
-        console.warn('Failed to load local Google Drive audio data:', localError);
-      }
-
-      // Cache the result
-      audioMapCache = audioMap;
-      audioMapCacheTime = now;
-      console.log(`✅ Audio map cached: ${Object.keys(audioMap).length} entries`);
-
-      return audioMap;
+      console.log(`🔗 Added ${supabaseCount} Supabase audio entries as secondary source`);
     }
   } catch (error) {
-    console.warn('Failed to load audio map:', error);
+    console.warn('Failed to load Supabase audio map:', error);
   }
 
-  // Return empty map if fetch fails
-  return {};
+  // Cache the result
+  audioMapCache = audioMap;
+  audioMapCacheTime = now;
+  console.log(`✅ Audio map cached: ${Object.keys(audioMap).length} entries`);
+
+  return audioMap;
 }
 
 async function getHelperVariants(helper: string): Promise<string[]> {
