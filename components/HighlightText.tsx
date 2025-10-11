@@ -18,14 +18,15 @@ export default function HighlightText({ text, tokens }: HighlightTextProps) {
     return <span>{text}</span>;
   }
 
-  const rx = React.useMemo(() => {
+  // Build regex directly without useMemo to avoid hooks violations
+  const rx = (() => {
     try {
       return buildHighlightRegex(tokens);
     } catch (error) {
       console.warn('Error building highlight regex:', error);
       return null;
     }
-  }, [tokens.join("|")]);
+  })();
 
   if (!rx) {
     return <span>{text}</span>;
