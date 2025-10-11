@@ -209,7 +209,7 @@ async function getAudioMap(): Promise<Record<string, string>> {
   try {
     const fs = await import('fs');
     const path = await import('path');
-    const localAudioPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+    const localAudioPath = path.join(process.cwd(), 'public', 'google_drive_audio_urls.json');
 
     if (fs.existsSync(localAudioPath)) {
       const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
