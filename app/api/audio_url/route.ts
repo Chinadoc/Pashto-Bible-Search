@@ -82,11 +82,11 @@ export async function GET(request: NextRequest) {
           const audioMap = await audioMapResponse.json();
           const audioEntry = audioMap[ref];
           if (audioEntry) {
-            // If it's a Google Drive file ID, return the direct download URL
+            // If it's a Google Drive file ID, return a proxy URL to avoid CORS issues
             if (typeof audioEntry === 'string' && !audioEntry.startsWith('http')) {
-              const driveUrl = `https://drive.google.com/uc?export=download&id=${audioEntry}`;
+              const proxyUrl = `/api/audio_proxy?fileId=${audioEntry}&ref=${encodeURIComponent(ref)}`;
               return NextResponse.json({
-                url: driveUrl,
+                url: proxyUrl,
                 ref,
                 filename: '',
                 isSigned: false,
