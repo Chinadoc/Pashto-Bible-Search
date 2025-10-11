@@ -61,13 +61,11 @@ export async function GET(request: NextRequest) {
     // Convert the data to the expected AudioMap format
     const audioMap: AudioMap = {}
 
-    // Load local Google Drive audio data first (primary source)
+    // Load Google Drive audio data first (primary source)
     try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const localAudioPath = path.join(process.cwd(), 'public', 'google_drive_audio_urls.json');
-      if (fs.existsSync(localAudioPath)) {
-        const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app'}/google_drive_audio_urls.json`);
+      if (response.ok) {
+        const localAudioData = await response.json();
         let localCount = 0;
         Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
           if (data.book && data.chapter && data.verse) {
@@ -88,10 +86,10 @@ export async function GET(request: NextRequest) {
         });
         console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
       } else {
-        console.warn('Local Google Drive audio file not found');
+        console.warn('Failed to fetch Google Drive audio file:', response.status);
       }
     } catch (localError) {
-      console.warn('Failed to load local Google Drive audio data:', localError);
+      console.warn('Failed to load Google Drive audio data:', localError);
     }
 
     if (viewData && Array.isArray(viewData) && viewData.length > 0) {
