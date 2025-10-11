@@ -443,7 +443,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   }
 
   // Render function for virtualized items
-  const renderVirtualizedItem = useCallback((verse: Verse, index: number) => (
+  const renderVirtualizedItem = (verse: Verse, index: number) => (
     <VerseItem
       key={verse.ref || `verse-${index}`}
       verse={verse}
@@ -468,7 +468,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       handlePlay={() => handleVersePlay(verse)}
       handlePause={() => handleVersePause(verse)}
     />
-  ), [audioMap, resolvedUrls, setResolvedUrls, downloadingMap, setDownloadingMap, playingKey, setPlayingKey, audioRefs, termsProp, highlightBook, processed, verseAudioUrls, loadVerseAudioUrl, handleVerseDownload, handleVersePlay, handleVersePause]);
+  );
 
   return (
     <div>
