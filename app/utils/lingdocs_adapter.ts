@@ -81,7 +81,7 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
   
   // Try to find by Pashto text
   let entry = dictionary.find((d: any) => 
-    d.p?.toLowerCase() === pashtoWord.toLowerCase()
+    d.pashto?.toLowerCase() === pashtoWord.toLowerCase()
   );
   
   console.log(`🔍 Found entry:`, !!entry);
@@ -90,6 +90,42 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
   if (!entry && isLatin(pashtoWord)) {
     const entries = dictionaryByRomanized.get(pashtoWord.toLowerCase());
     entry = entries?.[0];
+  }
+  
+  // Check if this is a perfective root of an irregular verb
+  if (!entry) {
+    console.log(`🔍 Checking if "${pashtoWord}" is a perfective root of irregular verb...`);
+    try {
+      const irregularVerbs = await import('../../irregular_verbs.json');
+      const irregularEntry = Object.entries(irregularVerbs.default || irregularVerbs).find(([infinitive, data]: [string, any]) => 
+        infinitive === pashtoWord || data.roots?.perfective === pashtoWord || data.roots?.imperfective === pashtoWord
+      );
+      
+      if (irregularEntry) {
+        const [infinitive, verbData] = irregularEntry;
+        console.log(`✅ Found "${pashtoWord}" as perfective root of "${infinitive}"`);
+        
+        // Create a synthetic entry for the irregular verb
+        entry = {
+          pashto: infinitive,
+          romanized: verbData.romanization?.imperfective_root || '',
+          english: 'irregular verb',
+          pos: 'v.',
+          c: 'v.',
+          // Add verb-specific fields for pattern generation
+          present_stem: verbData.stems?.imperfective,
+          present_stem_phonetics: verbData.romanization?.imperfective_stem,
+          subjunctive_stem: verbData.stems?.perfective,
+          subjunctive_stem_phonetics: verbData.romanization?.perfective_stem,
+          perfective_root: verbData.roots?.perfective,
+          perfective_root_phonetics: verbData.romanization?.perfective_root,
+          past_participle: verbData.past_participle,
+          past_participle_phonetics: verbData.romanization?.past_participle,
+        } as any; // Cast to any to allow additional verb-specific fields
+      }
+    } catch (error) {
+      console.warn('Failed to load irregular verbs:', error);
+    }
   }
   
   if (!entry) return null;
@@ -121,6 +157,105 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
  */
 function isLatin(text: string): boolean {
   return /^[a-zA-Z]/.test(text);
+}
+
+/**
+ * Detect if a verb has separable prefixes (split head) based on Pashto grammar
+ * Based on https://grammar.lingdocs.com/search?search=split+head
+ */
+function detectSeparableVerb(infinitive: string, enrichedInfo?: Record<string, any>): { isSeparable: boolean; prefix?: string; stem?: string } {
+  // Known separable verbs with their prefixes
+  const separableVerbs: Record<string, { prefix: string; stem: string }> = {
+    'وړل': { prefix: 'و', stem: 'ړل' },
+    'راوړل': { prefix: 'را', stem: 'وړل' },
+    'نیول': { prefix: 'نی', stem: 'ول' },
+    'خوړل': { prefix: 'خو', stem: 'ړل' },
+    'ویل': { prefix: 'و', stem: 'یل' },
+    'ویستل': { prefix: 'وی', stem: 'ستل' },
+    'ایستل': { prefix: 'ای', stem: 'ستل' },
+    'اخستل': { prefix: 'اخ', stem: 'ستل' },
+  };
+
+  if (separableVerbs[infinitive]) {
+    return {
+      isSeparable: true,
+      prefix: separableVerbs[infinitive].prefix,
+      stem: separableVerbs[infinitive].stem
+    };
+  }
+
+  // Pattern-based detection for separable verbs
+  // Verbs that can split their head in perfective aspect
+  if (infinitive.startsWith('و') && infinitive.length > 3) {
+    return {
+      isSeparable: true,
+      prefix: 'و',
+      stem: infinitive.slice(1)
+    };
+  }
+
+  if (infinitive.startsWith('را') && infinitive.length > 4) {
+    return {
+      isSeparable: true,
+      prefix: 'را',
+      stem: infinitive.slice(2)
+    };
+  }
+
+  return { isSeparable: false };
+}
+
+/**
+ * Determine if a verb is transitive or intransitive based on Pashto grammar rules
+ * Based on https://grammar.lingdocs.com/verbs/past-verbs/
+ */
+function determineTransitivity(infinitive: string, enrichedInfo?: Record<string, any>): boolean {
+  // Check enriched metadata first
+  if (enrichedInfo?.transitivity) {
+    return enrichedInfo.transitivity === 'transitive';
+  }
+
+  // Known intransitive verbs (verbs that don't take objects)
+  const intransitiveVerbs = new Set([
+    'رسېدل', 'تلل', 'راتلل', 'کېناستل', 'درېدل', 'ګرځېدل', 'ګرځول', 'پاتې کېدل',
+    'پاتې شول', 'پاتې کېدل', 'پاتې شول', 'ګرځېدل', 'ګرځول', 'ګرځېدل', 'ګرځول',
+    'ګرځېدل', 'ګرځول', 'ګرځېدل', 'ګرځول', 'ګرځېدل', 'ګرځول', 'ګرځېدل', 'ګرځول'
+  ]);
+
+  if (intransitiveVerbs.has(infinitive)) {
+    return false;
+  }
+
+  // Known transitive verbs (verbs that take objects)
+  const transitiveVerbs = new Set([
+    'کول', 'کېدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل',
+    'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل', 'ولیدل',
+    'ویستل', 'ایستل', 'اخستل', 'ورکول', 'ورکول', 'ورکول', 'ورکول', 'ورکول',
+    'وړل', 'راوړل', 'نیول', 'خوړل', 'ویل', 'ویستل', 'وړل'
+  ]);
+
+  if (transitiveVerbs.has(infinitive)) {
+    return true;
+  }
+
+  // Pattern-based detection
+  // Verbs ending in specific patterns are typically transitive
+  if (infinitive.endsWith('ول') || infinitive.endsWith('کول') || infinitive.endsWith('کېدل')) {
+    return true;
+  }
+
+  // Verbs ending in ېدل are typically intransitive (like نومېدل, تلل, رسېدل)
+  if (infinitive.endsWith('ېدل')) {
+    return false;
+  }
+
+  // Verbs ending in specific patterns are typically intransitive
+  if (infinitive.endsWith('ول') || infinitive.endsWith('شول')) {
+    return false;
+  }
+
+  // Default to transitive for most Pashto verbs
+  return true;
 }
 
 /**
@@ -259,7 +394,7 @@ export async function generateEnhancedVerbVariants(
   if (variants.length < 20) {
     console.log(`⚠️ Only ${variants.length} forms found, generating pattern-based forms...`);
     try {
-      const patternForms = generatePatternBasedVerbForms(entry.p, enrichedInfo);
+      const patternForms = generatePatternBasedVerbForms(entry.p, enrichedInfo, entry);
       console.log(`🔧 Pattern generation for "${entry.p}" created ${patternForms.length} forms:`, patternForms.map(f => f.form));
       variants.push(...patternForms);
       console.log(`✅ Added ${patternForms.length} pattern-based forms, total now: ${variants.length}`);
@@ -281,7 +416,7 @@ export async function generateEnhancedVerbVariants(
  * Generate basic verb forms using Pashto conjugation patterns
  * This is a fallback when database inflection data is incomplete
  */
-function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record<string, any>): Variant[] {
+function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record<string, any>, entry?: any): Variant[] {
   const variants: Variant[] = [];
 
   const raw = infinitive.trim();
@@ -293,15 +428,54 @@ function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record
   const prefix = hasPrefix ? `${segments.slice(0, -1).join(' ')} ` : '';
   const helperInfinitive = hasPrefix ? helperCandidate : raw;
 
-  // Use present stem from enriched data if the helper matches, otherwise derive from helper infinitive
-  const presentStem = enrichedInfo?.psp && !hasPrefix
-    ? enrichedInfo.psp
-    : helperInfinitive.replace(/ل$/, '');
+  // Determine if verb is transitive or intransitive based on Pashto grammar rules
+  const isTransitive = determineTransitivity(infinitive, enrichedInfo);
+  console.log(`🔍 Verb "${infinitive}" classified as ${isTransitive ? 'transitive' : 'intransitive'}`);
 
-  if (!presentStem) return variants;
+  // Detect if verb has separable prefixes (split head)
+  const separableInfo = detectSeparableVerb(infinitive, enrichedInfo);
+  console.log(`🔍 Verb "${infinitive}" separable: ${separableInfo.isSeparable}, prefix: ${separableInfo.prefix}, stem: ${separableInfo.stem}`);
 
-  // Use past participle stem from enriched data if available, otherwise use helper infinitive
-  const pastStem = enrichedInfo?.tppp && !hasPrefix ? enrichedInfo.tppp : helperInfinitive;
+  // Check for intransitive compound verb pattern (like نومېدل)
+  const compoundIntransitivePattern = /^([^\s]+)ېدل$/;
+  const compoundMatch = infinitive.match(compoundIntransitivePattern);
+
+  let base = '';
+  let isCompoundIntransitive = false;
+
+  if (compoundMatch && !isTransitive) {
+    base = compoundMatch[1];
+    isCompoundIntransitive = true;
+    console.log(`🔍 Detected intransitive compound verb: "${infinitive}" with base "${base}"`);
+  }
+
+  // Use present stem from enriched data or synthetic entry, otherwise derive from helper infinitive
+  const presentStem = enrichedInfo?.psp || (entry as any)?.present_stem;
+  let finalPresentStem = '';
+
+  if (presentStem && !hasPrefix) {
+    finalPresentStem = presentStem;
+  } else if (isCompoundIntransitive) {
+    // For intransitive compound verbs like نومېدل, the present stem is base + ېږـ
+    finalPresentStem = base + 'ېږ';
+  } else {
+    finalPresentStem = helperInfinitive.replace(/ل$/, '');
+  }
+
+  if (!finalPresentStem) return variants;
+
+  // Use past participle stem from enriched data or synthetic entry, otherwise use helper infinitive
+  const pastStem = enrichedInfo?.tppp || (entry as any)?.past_participle;
+  let finalPastStem = '';
+
+  if (pastStem && !hasPrefix) {
+    finalPastStem = pastStem;
+  } else if (isCompoundIntransitive) {
+    // For intransitive compound verbs, past participle is base + ېدلی
+    finalPastStem = base + 'ېدل';
+  } else {
+    finalPastStem = helperInfinitive;
+  }
 
   // Present tense endings
   const presentEndings = [
@@ -315,25 +489,43 @@ function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record
 
   // Add present tense forms
   for (const { ending, label } of presentEndings) {
+    const baseFlags = hasPrefix ? ['generated', 'present', 'compound', 'imperfective'] : ['generated', 'present', 'imperfective'];
+    const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
     variants.push({
-      form: `${prefix}${presentStem}${ending}`.trim(),
+      form: `${prefix}${finalPresentStem}${ending}`.trim(),
       label,
       pos: 'verb',
-      flags: hasPrefix ? ['generated', 'present', 'compound', 'imperfective'] : ['generated', 'present', 'imperfective'],
+      flags: [...baseFlags, transitivityFlag],
     });
   }
 
-  // Subjunctive (prefix و-)
+  // Subjunctive
   for (const { ending, label } of presentEndings) {
+    let form = '';
+    let baseFlags: string[] = [];
+
+    if (isCompoundIntransitive) {
+      // For intransitive compound verbs, subjunctive is و + present stem + endings
+      form = `${prefix}و${finalPresentStem}${ending}`.trim();
+      baseFlags = ['generated', 'subjunctive', 'compound', 'intransitive', 'imperfective'];
+    } else if (hasPrefix) {
+      form = `${prefix}و${finalPresentStem}${ending}`.trim();
+      baseFlags = ['generated', 'subjunctive', 'compound', 'imperfective'];
+    } else {
+      form = `${prefix}و${finalPresentStem}${ending}`.trim();
+      baseFlags = ['generated', 'subjunctive', 'imperfective'];
+    }
+
+    const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
     variants.push({
-      form: `${prefix}و${presentStem}${ending}`.trim(),
+      form,
       label: label.replace('Present', 'Subjunctive'),
       pos: 'verb',
-      flags: hasPrefix ? ['generated', 'subjunctive', 'compound', 'imperfective'] : ['generated', 'subjunctive', 'imperfective'],
+      flags: [...baseFlags, transitivityFlag],
     });
   }
 
-  // Past tense (use past participle stem if available, otherwise infinitive)
+  // Past tense
   const pastEndings = [
     { ending: 'م', label: '1sg Past' },
     { ending: 'ې', label: '2sg Past' },
@@ -344,36 +536,139 @@ function generatePatternBasedVerbForms(infinitive: string, enrichedInfo?: Record
   ];
 
   for (const { ending, label } of pastEndings) {
+    let form = '';
+    let baseFlags: string[] = [];
+
+    if (isCompoundIntransitive) {
+      // For intransitive compound verbs, past is past participle + endings
+      form = `${prefix}${finalPastStem}${ending}`.trim();
+      baseFlags = ['generated', 'past', 'compound', 'intransitive', 'perfective'];
+    } else if (hasPrefix) {
+      form = `${prefix}${finalPastStem}${ending}`.trim();
+      baseFlags = ['generated', 'past', 'compound', 'perfective'];
+    } else {
+      form = `${prefix}${finalPastStem}${ending}`.trim();
+      baseFlags = ['generated', 'past', 'perfective'];
+    }
+
+    const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
     variants.push({
-      form: `${prefix}${pastStem}${ending}`.trim(),
+      form,
       label,
       pos: 'verb',
-      flags: hasPrefix ? ['generated', 'past', 'compound', 'perfective'] : ['generated', 'past', 'perfective'],
+      flags: [...baseFlags, transitivityFlag],
     });
   }
 
   // Imperative (2nd person)
+  let imperativeFlags: string[] = [];
+  if (isCompoundIntransitive) {
+    imperativeFlags = ['generated', 'imperative', 'compound', 'intransitive'];
+  } else if (hasPrefix) {
+    imperativeFlags = ['generated', 'imperative', 'compound'];
+  } else {
+    imperativeFlags = ['generated', 'imperative'];
+  }
+  const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
+
   variants.push({
-    form: `${prefix}${presentStem}ه`.trim(),
+    form: `${prefix}${finalPresentStem}ه`.trim(),
     label: '2sg Imperative',
     pos: 'verb',
-    flags: hasPrefix ? ['generated', 'imperative', 'compound'] : ['generated', 'imperative'],
+    flags: [...imperativeFlags, transitivityFlag],
   });
 
   variants.push({
-    form: `${prefix}${presentStem}ئ`.trim(),
+    form: `${prefix}${finalPresentStem}ئ`.trim(),
     label: '2pl Imperative',
     pos: 'verb',
-    flags: hasPrefix ? ['generated', 'imperative', 'compound'] : ['generated', 'imperative'],
+    flags: [...imperativeFlags, transitivityFlag],
   });
 
-  // Past participle (common pattern)
-  variants.push({
-    form: `${prefix}${pastStem}لی`.trim(),
-    label: 'Past Participle',
-    pos: 'verb',
-    flags: hasPrefix ? ['generated', 'participle', 'compound', 'perfective'] : ['generated', 'participle', 'perfective'],
-  });
+  // Past participle
+  let participleFlags: string[] = [];
+  if (isCompoundIntransitive) {
+    // For intransitive compound verbs, past participle is base + ېدلی
+    const participleForm = `${prefix}${base}ېدلی`.trim();
+    participleFlags = ['generated', 'participle', 'compound', 'intransitive', 'perfective'];
+    variants.push({
+      form: participleForm,
+      label: 'Past Participle',
+      pos: 'verb',
+      flags: [...participleFlags, transitivityFlag],
+    });
+  } else {
+    // Standard past participle
+    const participleForm = `${prefix}${finalPastStem}لی`.trim();
+    participleFlags = hasPrefix ? ['generated', 'participle', 'compound', 'perfective'] : ['generated', 'participle', 'perfective'];
+    variants.push({
+      form: participleForm,
+      label: 'Past Participle',
+      pos: 'verb',
+      flags: [...participleFlags, transitivityFlag],
+    });
+  }
+
+  // Generate split-head forms for separable verbs
+  if (separableInfo.isSeparable && separableInfo.prefix && separableInfo.stem) {
+    console.log(`🔧 Generating split-head forms for "${infinitive}"`);
+    
+    // Add split-head present forms (prefix separated)
+    for (const { ending, label } of presentEndings) {
+      const baseFlags = ['generated', 'present', 'split-head', 'imperfective'];
+      const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
+      variants.push({
+        form: `${separableInfo.prefix} ${separableInfo.stem.replace(/ل$/, '')}${ending}`.trim(),
+        label: `${label} (Split Head)`,
+        pos: 'verb',
+        flags: [...baseFlags, transitivityFlag],
+      });
+    }
+
+    // Add split-head subjunctive forms
+    for (const { ending, label } of presentEndings) {
+      const baseFlags = ['generated', 'subjunctive', 'split-head', 'imperfective'];
+      const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
+      variants.push({
+        form: `${separableInfo.prefix} و${separableInfo.stem.replace(/ل$/, '')}${ending}`.trim(),
+        label: `${label.replace('Present', 'Subjunctive')} (Split Head)`,
+        pos: 'verb',
+        flags: [...baseFlags, transitivityFlag],
+      });
+    }
+
+    // Add split-head past forms
+    for (const { ending, label } of pastEndings) {
+      const baseFlags = ['generated', 'past', 'split-head', 'perfective'];
+      const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
+      variants.push({
+        form: `${separableInfo.prefix} ${separableInfo.stem}${ending}`.trim(),
+        label: `${label} (Split Head)`,
+        pos: 'verb',
+        flags: [...baseFlags, transitivityFlag],
+      });
+    }
+
+    // Add split-head imperative forms
+    const imperativeFlags = ['generated', 'imperative', 'split-head'];
+    const transitivityFlag = isTransitive ? 'transitive' : 'intransitive';
+    
+    variants.push({
+      form: `${separableInfo.prefix} ${separableInfo.stem.replace(/ل$/, '')}ه`.trim(),
+      label: '2sg Imperative (Split Head)',
+      pos: 'verb',
+      flags: [...imperativeFlags, transitivityFlag],
+    });
+
+    variants.push({
+      form: `${separableInfo.prefix} ${separableInfo.stem.replace(/ل$/, '')}ئ`.trim(),
+      label: '2pl Imperative (Split Head)',
+      pos: 'verb',
+      flags: [...imperativeFlags, transitivityFlag],
+    });
+
+    console.log(`✅ Generated split-head forms for "${infinitive}"`);
+  }
 
   return variants;
 }

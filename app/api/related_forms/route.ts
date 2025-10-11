@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getLightweightData } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
+import { generateEnhancedVerbVariants } from '@/app/utils/lingdocs_adapter';
 
 type DictionaryEntry = {
   pashto: string;
@@ -180,21 +181,64 @@ export async function POST(req: NextRequest) {
     console.log(`🔍 Dictionary lookup for "${normalized}":`, {
       found: !!dictEntry,
       pos: dictEntry?.pos,
+      c: dictEntry?.c,
+      pashto: dictEntry?.pashto,
     });
+
+    if (!dictEntry) {
+      console.log(`❌ Dictionary entry not found for "${normalized}"`);
+      // Check if the word exists in the dictionary at all
+      const allKeys = Array.from(dictionaryByPashto.keys());
+      const similarKeys = allKeys.filter(key => key.includes('نوم') || key.includes('دل'));
+      console.log(`🔍 Similar keys found:`, similarKeys.slice(0, 10));
+
+      // Check if the normalized word exists in raw dictionary data
+      const rawData = await getLightweightData();
+      const rawEntry = (rawData as any).dictionaryRaw?.entries?.find((e: any) => e.p === normalized || e.p_norm === normalized);
+      console.log(`🔍 Raw dictionary entry for "${normalized}":`, rawEntry ? 'found' : 'not found');
+    }
 
     if (dictEntry?.pos) {
       const posLower = dictEntry.pos.toLowerCase();
-      if (posLower.startsWith("verb")) posGuess = "verb";
-      else if (posLower.startsWith("noun")) posGuess = "noun";
+      console.log(`🔍 Checking pos field: "${posLower}"`);
+      if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
+      else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
       else if (posLower.startsWith("adj")) posGuess = "adjective";
       else posGuess = "other";
     } else if (dictEntry?.c) {
       // Check the 'c' field which contains values like "n. m.", "v.", "adj."
       const cLower = dictEntry.c.toLowerCase();
+      console.log(`🔍 Checking c field: "${cLower}"`);
       if (cLower.startsWith("v.")) posGuess = "verb";
       else if (cLower.startsWith("n.")) posGuess = "noun";
       else if (cLower.startsWith("adj")) posGuess = "adjective";
       else posGuess = "other";
+    }
+    
+    console.log(`🔍 Final posGuess: "${posGuess}"`);
+
+    // Enhanced POS detection for irregular verbs (check BEFORE other pattern detection)
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const irregularVerbsPath = path.join(process.cwd(), 'irregular_verbs.json');
+      const irregularVerbsData = JSON.parse(fs.readFileSync(irregularVerbsPath, 'utf8'));
+      const irregularEntry = Object.entries(irregularVerbsData).find(([infinitive, _]: [string, any]) =>
+        infinitive === normalized || infinitive === normalized.replace(/ل$/, '')
+      );
+
+      if (irregularEntry) {
+        posGuess = "verb";
+        console.log(`✅ Enhanced POS detection: "${normalized}" identified as irregular verb`);
+      }
+    } catch (error) {
+      console.warn('Failed to load irregular verbs for POS detection:', error);
+    }
+
+    // Special pattern-based detection for verbs ending in ېدل (like نومېدل)
+    if (posGuess === "other" && normalized.endsWith('ېدل')) {
+      posGuess = "verb";
+      console.log(`✅ Pattern-based POS detection: "${normalized}" identified as verb (ends with ېدل)`);
     }
 
     // Enhanced POS detection for Pattern 1 masculine words ending in consonants
@@ -241,8 +285,9 @@ export async function POST(req: NextRequest) {
       groups.nouns = await generateNounVariants(normalized, { cap: 30 });
       console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
     } else if (posGuess === "verb") {
-      groups.verbs = await generateVerbVariantsUtil(normalized, { cap: 60, includeCompound: true });
-      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms`);
+      // Use enhanced LingDocs adapter for verb generation
+      groups.verbs = await generateEnhancedVerbVariants(normalized, { cap: 60, includeCompound: true });
+      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms using LingDocs adapter`);
     } else if (posGuess === "adjective") {
       // Adjectives should NOT generate verb conjugations - only generate adjective forms
       // Use our simple adjective inflection generator to avoid LingDocs verb confusion
@@ -265,7 +310,7 @@ export async function POST(req: NextRequest) {
 
       // Only try verbs if the word looks like it could be a verb
       if (normalized.endsWith('ل') || normalized.endsWith('ول') || normalized.endsWith('ېدل')) {
-        const verbs = await generateVerbVariantsUtil(normalized, { cap: 30, includeCompound: false });
+        const verbs = await generateEnhancedVerbVariants(normalized, { cap: 30, includeCompound: false });
         if (verbs.length) groups.verbs = verbs;
       }
 
