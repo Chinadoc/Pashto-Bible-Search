@@ -1,0 +1,44 @@
+
+📋 BOOK PROCESSING WORKFLOW:
+
+🎯 REMAINING BOOKS TO PROCESS:
+• Ezra (182 files) - Started
+• Ecclesiastes (222 files)
+• Judges (859 files)
+• Leviticus (859 files)
+• Numbers (1,288 files)
+• Genesis (1,533 files)
+• Exodus (1,213 files)
+• Deuteronomy (958 files)
+• Proverbs (915 files)
+• Psalms (2,461 files)
+
+🔄 PROCESSING STEPS FOR EACH BOOK:
+
+1. 📂 Navigate to Book Folder
+   • Click on book folder (e.g., "ecclesiastes")
+   • Wait for chapter folders to load
+
+2. 📋 For Each Chapter (1-10 or more):
+   • Click on "chapter-1-verses"
+   • Run browser console script to extract file IDs
+   • Copy file IDs from console
+   • Navigate back to book folder
+   • Repeat for next chapter
+
+3. 📝 Compile Results
+   • Paste all chapter file IDs into book worksheet
+   • Update: python3 batch_update_file_ids.py [book]_worksheet.txt
+
+4. ✅ Test Integration
+   • Verify all file IDs are updated
+   • Check: google_drive_audio_urls.json
+
+💡 AUTOMATION TIPS:
+• Process books in order of size (smallest first)
+• Test each book before moving to next
+• Use browser back button to navigate between folders
+• Copy file IDs immediately after extraction
+• Batch process multiple chapters per book
+
+🚀 START WITH ECCLESIASTES (222 files)

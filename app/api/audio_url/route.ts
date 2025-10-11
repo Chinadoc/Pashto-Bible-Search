@@ -70,8 +70,45 @@ export async function GET(request: NextRequest) {
     let targetBucket = bucket || 'audio'
     let targetObject = object || path
 
-    // If we have a ref but no bucket/object, look up in audio_map table/view
+    // If we have a ref but no bucket/object, look up in audio map first
     if (ref && !targetObject) {
+      try {
+        // First check the audio map for Google Drive file IDs
+        const audioMapResponse = await fetch(`${request.url.split('/api/')[0]}/api/get_audio_map?clear_cache=1`, {
+          cache: 'no-store'
+        });
+        if (audioMapResponse.ok) {
+          const audioMap = await audioMapResponse.json();
+          const audioEntry = audioMap[ref];
+          if (audioEntry) {
+            // If it's a Google Drive file ID, return the direct download URL
+            if (typeof audioEntry === 'string' && !audioEntry.startsWith('http')) {
+              const driveUrl = `https://drive.google.com/uc?export=download&id=${audioEntry}`;
+              return NextResponse.json({
+                url: driveUrl,
+                ref,
+                filename: '',
+                isSigned: false,
+                ms: Date.now() - started,
+              });
+            }
+            // If it's already a URL, return it directly
+            if (typeof audioEntry === 'string' && audioEntry.startsWith('http')) {
+              return NextResponse.json({
+                url: audioEntry,
+                ref,
+                filename: '',
+                isSigned: false,
+                ms: Date.now() - started,
+              });
+            }
+          }
+        }
+      } catch (audioMapError) {
+        console.warn(`Failed to lookup ${ref} in audio map:`, audioMapError);
+      }
+
+      // Fallback to Supabase audio_map table/view
       try {
         const { data } = await supabase
           .from('audio_map')

@@ -1,0 +1,77 @@
+
+🎯 COMPREHENSIVE BOOK FILE ID EXTRACTION SCRIPT
+
+📋 AUTOMATED WORKFLOW:
+1. Navigate to main folder: https://drive.google.com/drive/folders/1m-Mv7r01GHTgXkzFxAXfANn_7sSHRSUC
+2. For each book folder, run this process:
+   a. Click on book folder (amos, deuteronomy, etc.)
+   b. Click on each chapter folder (chapter-1-verses, chapter-2-verses, etc.)
+   c. Extract file IDs from each chapter using browser console
+   d. Compile all file IDs for the book
+
+🔧 BROWSER CONSOLE SCRIPT (run in each chapter folder):
+
+// Comprehensive File ID Extractor for Chapter Folders
+function extractAllFileIdsFromChapter() {
+    const fileMapping = {};
+
+    // Get all file rows
+    const fileRows = document.querySelectorAll('[role="row"]');
+
+    fileRows.forEach(row => {
+        // Look for strong elements containing .mp3 filenames
+        const strongElement = row.querySelector('strong');
+        if (strongElement && strongElement.textContent.endsWith('.mp3')) {
+            const fileName = strongElement.textContent;
+
+            // Try to extract file ID from various sources
+            let fileId = null;
+
+            // Method 1: Check data attributes
+            const dataId = row.getAttribute('data-id');
+            if (dataId && dataId.length > 20) {
+                fileId = dataId;
+            }
+
+            // Method 2: Check for onclick handlers with file IDs
+            const onclick = row.getAttribute('onclick');
+            if (onclick) {
+                const idMatch = onclick.match(/fileId['"]:\s*['"]([a-zA-Z0-9_-]+)['"]/);
+                if (idMatch) {
+                    fileId = idMatch[1];
+                }
+            }
+
+            // Method 3: Check parent elements for data attributes
+            if (!fileId) {
+                let parent = row.parentElement;
+                while (parent && !fileId) {
+                    const parentDataId = parent.getAttribute('data-id');
+                    if (parentDataId && parentDataId.length > 20) {
+                        fileId = parentDataId;
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+
+            if (fileId) {
+                fileMapping[fileName] = fileId;
+            }
+        }
+    });
+
+    return fileMapping;
+}
+
+// Run the extraction
+const mapping = extractAllFileIdsFromChapter();
+console.log('Chapter file mapping:', mapping);
+console.log('Files found:', Object.keys(mapping).length);
+
+// Copy to clipboard in worksheet format
+const clipboardText = Object.entries(mapping)
+    .map(([filename, fileId]) => `${filename}:${fileId}`)
+    .join('\n');
+navigator.clipboard.writeText(clipboardText).then(() => {
+    console.log('File IDs copied to clipboard!');
+});
