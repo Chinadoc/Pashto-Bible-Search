@@ -1025,6 +1025,7 @@ export default function ClientHome() {
     console.log('Applying verb filters:', { nextFilters, sanitized });
     setVerbFilters(sanitized);
 
+    // Guard clauses moved to beginning to avoid early returns after hooks
     if (!includeRelated) {
       console.log('Related forms mode not active, filters ignored');
       return;
@@ -1051,7 +1052,7 @@ export default function ClientHome() {
     // This prevents triggering new searches when filters change
     if (results && results.length > 0) {
       console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
-      
+
       // Use debounced filtering for better performance
       debouncedFilter(results, forms);
       setVariantsOverride(forms);
@@ -1059,14 +1060,14 @@ export default function ClientHome() {
     } else {
       // No existing results - need to restore original results
       console.log('🔄 No existing results, restoring original search results');
-      
+
       // If filters are reset to "All", restore original results from the last successful search
       if (isDefaultVerbFilter(sanitized)) {
         console.log('🔄 Filters reset to "All", restoring original results');
         // Clear variant override to show all original forms
         setVariantsOverride(null);
         setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-        
+
         // Re-run the original search to restore results
         executeSearch({ preserveResults: false, reason: 'filter-reset' });
       } else {
@@ -1078,11 +1079,12 @@ export default function ClientHome() {
         executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
       }
     }
-  }, [includeRelated, relatedForms, results, query, isDefaultVerbFilter]);
+  }, [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
 
+    // Guard clauses moved to beginning to avoid early returns after hooks
     if (!includeRelated) {
       console.log('Related forms mode not active, filters ignored');
       return;
@@ -1108,11 +1110,11 @@ export default function ClientHome() {
     // Client-side filtering
     if (results && results.length > 0) {
       console.log('🔍 Client-side filtering existing results by', forms.length, 'noun forms');
-      
+
       const filtered = results.filter((verse) => {
         const text = verse.text ?? '';
         const collapsedText = text.replace(/\s+/g, '').toLowerCase();
-        
+
         return forms.some(form => {
           const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
           return collapsedText.includes(collapsedForm);
@@ -1123,7 +1125,7 @@ export default function ClientHome() {
       setResults(filtered);
       setVariantsOverride(forms);
       setActiveVariantForms(forms);
-      
+
       const newCoverage = calculateCoverageFromResults(filtered);
       setCoverage(newCoverage);
     } else {
@@ -1132,11 +1134,12 @@ export default function ClientHome() {
       setActiveVariantForms(forms);
       executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'noun-filter' });
     }
-  }, [includeRelated, relatedForms, results, calculateCoverageFromResults]);
+  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
 
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
     setAdjectiveFilters(nextFilters);
 
+    // Guard clauses moved to beginning to avoid early returns after hooks
     if (!includeRelated) {
       console.log('Related forms mode not active, filters ignored');
       return;
@@ -1162,11 +1165,11 @@ export default function ClientHome() {
     // Client-side filtering
     if (results && results.length > 0) {
       console.log('🔍 Client-side filtering existing results by', forms.length, 'adjective forms');
-      
+
       const filtered = results.filter((verse) => {
         const text = verse.text ?? '';
         const collapsedText = text.replace(/\s+/g, '').toLowerCase();
-        
+
         return forms.some(form => {
           const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
           return collapsedText.includes(collapsedForm);
@@ -1177,7 +1180,7 @@ export default function ClientHome() {
       setResults(filtered);
       setVariantsOverride(forms);
       setActiveVariantForms(forms);
-      
+
       const newCoverage = calculateCoverageFromResults(filtered);
       setCoverage(newCoverage);
     } else {
@@ -1186,7 +1189,7 @@ export default function ClientHome() {
       setActiveVariantForms(forms);
       executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'adjective-filter' });
     }
-  }, [includeRelated, relatedForms, results, calculateCoverageFromResults]);
+  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
