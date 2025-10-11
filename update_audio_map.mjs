@@ -44,8 +44,7 @@ async function updateAudioMap() {
   for (const [verseRef, fileId] of Object.entries(audioMap)) {
     updates.push({
       verse_ref: verseRef,
-      url: fileId, // The system will convert this to a download URL
-      updated_at: new Date().toISOString()
+      url: fileId // The system will convert this to a download URL
     });
   }
 

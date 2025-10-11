@@ -61,12 +61,47 @@ export async function GET(request: NextRequest) {
     // Convert the data to the expected AudioMap format
     const audioMap: AudioMap = {}
 
+    // Load local Google Drive audio data first (primary source)
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const localAudioPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+      if (fs.existsSync(localAudioPath)) {
+        const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
+        let localCount = 0;
+        Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
+          if (data.book && data.chapter && data.verse) {
+            const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
+            const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
+            // Use file ID if available, otherwise extract from URL
+            let fileId = data.google_drive_file_id;
+            if (!fileId && data.google_drive_url) {
+              // Extract file ID from URL: https://drive.google.com/uc?id=FILE_ID&export=download
+              const urlMatch = data.google_drive_url.match(/id=([^&]+)/);
+              fileId = urlMatch ? urlMatch[1] : null;
+            }
+            if (fileId && fileId !== 'TEST_ID') {
+              audioMap[verseRef] = fileId;
+              localCount++;
+            }
+          }
+        });
+        console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
+      } else {
+        console.warn('Local Google Drive audio file not found');
+      }
+    } catch (localError) {
+      console.warn('Failed to load local Google Drive audio data:', localError);
+    }
+
     if (viewData && Array.isArray(viewData) && viewData.length > 0) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
-        // Strongly prefer non-Drive URLs; only use Drive as absolute last resort
-        if (!isDrive) audioMap[row.verse_ref] = row.url
+        // Only add if not already in local data (Google Drive takes precedence)
+        if (!audioMap[row.verse_ref] && !isDrive) {
+          audioMap[row.verse_ref] = row.url
+        }
       }
     }
 
@@ -82,8 +117,8 @@ export async function GET(request: NextRequest) {
         // Set a timeout for each query to prevent hanging
         const queryPromise = supabase
           .from('audio_by_verse')
-          .select('verse_reference, audio_filename, audio_path')
-          .order('verse_reference')
+          .select('verse_ref, url')
+          .order('verse_ref')
           .range(from, from + pageSize - 1)
 
         const timeoutPromise = new Promise((_, reject) => {
@@ -109,42 +144,29 @@ export async function GET(request: NextRequest) {
         if (!audioData || audioData.length === 0) break
 
         for (const mapping of audioData) {
-        const { verse_reference, audio_filename, audio_path } = mapping as { verse_reference?: string | null; audio_filename?: string | null; audio_path?: string | null };
+        const { verse_ref, url: mappingUrl } = mapping as { verse_ref?: string | null; url?: string | null };
 
-        if (!verse_reference) continue;
+        if (!verse_ref || !mappingUrl) continue;
 
-        let url = ''
-        const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
-        if (audio_path && /^https?:\/\//i.test(audio_path)) {
-          url = audio_path
-        } else if (audio_filename && /\.mp3$/i.test(audio_filename)) {
-          // Prefer Supabase Storage public URL for mp3 filenames
-          url = storageBase + encodeURIComponent(audio_filename)
-        } else if (/\.mp3$/i.test(verse_reference)) {
-          // Fall back to using the verse_reference as filename in Storage
-          url = storageBase + encodeURIComponent(verse_reference)
-        } else {
-          // No storage-compatible filename – skip (do not emit Drive URLs)
-          url = ''
-        }
+        let url = mappingUrl
 
         if (url) {
           // Strongly prefer Supabase Storage URLs over Drive URLs
-          const existing = audioMap[verse_reference]
+          const existing = audioMap[verse_ref]
           const isStorage = url.includes('/storage/v1/object/public/')
           const isDrive = /drive\.google|docs\.google/i.test(url)
           const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
 
           // Always prefer Storage over Drive, and replace existing Drive URLs with Storage
           if (!existing || isStorage || (!isDrive && existingIsDrive)) {
-            audioMap[verse_reference] = url
+            audioMap[verse_ref] = url
           }
           // Also add alternate keys for numeric-leading vs trailing
           // 1john1_verse_x.mp3 <-> john11_verse_x.mp3 (but we only move single leading/trailing digit)
-          const alt1 = verse_reference.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
-          const alt2 = verse_reference.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
+          const alt1 = verse_ref.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
+          const alt2 = verse_ref.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
           for (const alt of [alt1, alt2]) {
-            if (alt && alt !== verse_reference) {
+            if (alt && alt !== verse_ref) {
               const existingAlt = audioMap[alt]
               const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
               if (!existingAlt || (isStorage && existingAltIsDrive)) audioMap[alt] = url

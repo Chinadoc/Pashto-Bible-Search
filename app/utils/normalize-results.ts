@@ -114,7 +114,7 @@ export function deduplicateVerses(verses: Verse[]): Verse[] {
  * Sort verses by book order
  */
 export function sortVersesByBook(verses: Verse[]): Verse[] {
-  const oldTestamentBooks = [
+  const bookOrder = [
     'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
     'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
     '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
@@ -122,10 +122,7 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
     'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
     'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
     'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
-    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
-  ];
-  
-  const newTestamentBooks = [
+    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
     'Matthew', 'Mark', 'Luke', 'John', 'Acts',
     'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
     'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy',
@@ -138,15 +135,6 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
     const bookA = a.ref.split(' ')[0];
     const bookB = b.ref.split(' ')[0];
     
-    // Prioritize New Testament books (they have audio)
-    const isNTA = newTestamentBooks.includes(bookA);
-    const isNTB = newTestamentBooks.includes(bookB);
-    
-    if (isNTA && !isNTB) return -1; // NT before OT
-    if (!isNTA && isNTB) return 1;  // OT after NT
-    
-    // Within same testament, sort by book order
-    const bookOrder = [...newTestamentBooks, ...oldTestamentBooks];
     const indexA = bookOrder.indexOf(bookA);
     const indexB = bookOrder.indexOf(bookB);
     
@@ -174,29 +162,13 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
  * Convert ApiResult to Verse format
  */
 function convertApiResultToVerse(apiResult: ApiResult): Verse {
-  // Generate audio URL for Yousafzai verses if not already set
-  let audioVerseUrl = apiResult.audio_verse_url;
-  if (!audioVerseUrl && apiResult.translation === 'Yousafzai 2019') {
-    const bookSlug = apiResult.ref.toLowerCase().includes('psalms') ? 'psalms' : 
-                    apiResult.ref.toLowerCase().includes('proverbs') ? 'proverbs' : null;
-    if (bookSlug) {
-      const match = apiResult.ref.match(/(\d+):(\d+)/);
-      if (match) {
-        const chapterPadded = String(match[1]).padStart(3, '0');
-        const versePadded = String(match[2]).padStart(3, '0');
-        const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
-        audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`;
-      }
-    }
-  }
-
   return {
     ref: apiResult.ref,
     text: apiResult.text,
     translation: apiResult.translation,
     dialect: apiResult.dialect,
     tags: apiResult.tags,
-    audio_verse_url: audioVerseUrl,
+    audio_verse_url: apiResult.audio_verse_url,
     testament: apiResult.testament as 'OT' | 'NT' | undefined,
   };
 }
@@ -205,40 +177,12 @@ function convertApiResultToVerse(apiResult: ApiResult): Verse {
  * Complete normalization pipeline for ApiResult[]
  */
 export function normalizeVerses(apiResults: ApiResult[]): Verse[] {
-  // Validate input
-  if (!Array.isArray(apiResults)) {
-    console.error('normalizeVerses: apiResults is not an array:', apiResults);
-    return [];
-  }
-
-  try {
-    const verses = apiResults
-      .filter((result, index) => {
-        if (!result || typeof result !== 'object') {
-          console.warn(`normalizeVerses: Invalid result at index ${index}:`, result);
-          return false;
-        }
-        if (!result.ref || typeof result.ref !== 'string') {
-          console.warn(`normalizeVerses: Invalid ref at index ${index}:`, result);
-          return false;
-        }
-        if (!result.text || typeof result.text !== 'string') {
-          console.warn(`normalizeVerses: Invalid text at index ${index}:`, result);
-          return false;
-        }
-        return true;
-      })
-      .map(convertApiResultToVerse);
-
-    return sortVersesByBook(
-      deduplicateVerses(
-        normalizeSearchResults(
-          filterValidVerses(verses)
-        )
+  const verses = apiResults.map(convertApiResultToVerse);
+  return sortVersesByBook(
+    deduplicateVerses(
+      normalizeSearchResults(
+        filterValidVerses(verses)
       )
-    );
-  } catch (error) {
-    console.error('Error in normalizeVerses:', error);
-    return [];
-  }
+    )
+  );
 }

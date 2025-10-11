@@ -215,14 +215,25 @@ async function getAudioMap(): Promise<Record<string, string>> {
       const localAudioData = JSON.parse(fs.readFileSync(localAudioPath, 'utf8'));
       let localCount = 0;
 
-      Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
-        if (data.book && data.chapter && data.verse && data.google_drive_file_id && data.google_drive_file_id !== 'TEST_ID') {
-          const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
-          const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
-          audioMap[verseRef] = data.google_drive_file_id;
-          localCount++;
-        }
-      });
+          Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
+            if (data.book && data.chapter && data.verse) {
+              const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
+              const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
+
+              // Use file ID if available, otherwise extract from URL
+              let fileId = data.google_drive_file_id;
+              if (!fileId && data.google_drive_url) {
+                // Extract file ID from URL: https://drive.google.com/uc?id=FILE_ID&export=download
+                const urlMatch = data.google_drive_url.match(/id=([^&]+)/);
+                fileId = urlMatch ? urlMatch[1] : null;
+              }
+
+              if (fileId && fileId !== 'TEST_ID') {
+                audioMap[verseRef] = fileId;
+                localCount++;
+              }
+            }
+          });
 
       console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
     } else {

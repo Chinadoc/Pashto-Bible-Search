@@ -1,0 +1,42 @@
+
+📋 AUTOMATED BOOK PROCESSING WORKFLOW:
+
+🎯 STEP 1: Navigate to Book Folder
+   • Go to: https://drive.google.com/drive/folders/1m-Mv7r01GHTgXkzFxAXfANn_7sSHRSUC
+   • Click on target book folder (e.g., "ecclesiastes")
+
+🎯 STEP 2: Run Browser Console Script
+   • Copy and paste the browser automation script
+   • This identifies all chapter folders automatically
+
+🎯 STEP 3: Systematic Chapter Processing
+   • For each chapter folder:
+     a. Click on chapter folder
+     b. Run file ID extraction script
+     c. Copy file IDs from console
+     d. Navigate back to book folder
+
+🎯 STEP 4: Compile Results
+   • Paste all chapter file IDs into book worksheet
+   • Format: filename:file_id (one per line)
+   • Run: python3 batch_update_file_ids.py [book]_worksheet.txt
+
+🎯 STEP 5: Test Integration
+   • Verify all file IDs updated in google_drive_audio_urls.json
+   • Test audio playback in application
+
+💡 PROCESSING ORDER (smallest to largest):
+1. ✅ Jonah (48 files) - Complete
+2. ✅ Isaiah (31 files) - Complete
+3. 🔄 Ezra (182 files) - In progress
+4. ⏳ Ecclesiastes (222 files)
+5. ⏳ Judges (859 files)
+6. ⏳ Leviticus (859 files)
+7. ⏳ Numbers (1,288 files)
+8. ⏳ Genesis (1,533 files)
+9. ⏳ Exodus (1,213 files)
+10. ⏳ Deuteronomy (958 files)
+11. ⏳ Proverbs (915 files)
+12. ⏳ Psalms (2,461 files)
+
+🚀 READY TO AUTOMATE ALL BOOKS!
