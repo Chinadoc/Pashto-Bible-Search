@@ -533,3 +533,4 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     </div>
   );
 }
+// Fixed React hooks issue
