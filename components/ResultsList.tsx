@@ -363,10 +363,56 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     const audio = new Audio(audioUrl);
     audioRefs.current.set(verse.ref, audio);
 
-    audio.play().catch((error) => {
-      console.error(`Failed to play ${verse.ref}:`, error);
-      setPlayingKey(null);
-    });
+    // Check if this is Yousafzai translation with verse-level timing data
+    const hasIndividualClip = verse.translation === 'Yousafzai 2019' && verse.audio_verse_url;
+    const hasTimingData = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0;
+
+    if (hasIndividualClip) {
+      // Individual verse clip - play from beginning
+      audio.play().then(() => setPlayingKey(verse.ref)).catch((error) => {
+        console.error(`Failed to play individual verse ${verse.ref}:`, error);
+        setPlayingKey(null);
+      });
+    } else if (hasTimingData) {
+      // Chapter MP3 - seek to verse start time if timing data is available
+      const seekTime = (() => {
+        // Find the timing segment for this specific verse
+        const verseNumber = parseRef(verse.ref)?.verse;
+        if (!verseNumber || !verse.tags) return null;
+
+        // Look for the first segment that corresponds to this verse
+        for (const segment of verse.tags) {
+          if (Array.isArray(segment) && segment.length >= 2 && typeof segment[0] === 'number') {
+            // segment[0] is start time, segment[1] is end time (optional)
+            return segment[0]; // Start time from jktags
+          }
+        }
+        return null;
+      })();
+
+      if (seekTime !== null) {
+        // Seek after play starts to ensure audio is ready
+        audio.play().then(() => {
+          audio.currentTime = seekTime;
+          setPlayingKey(verse.ref);
+        }).catch((error) => {
+          console.error(`Failed to play chapter with seeking ${verse.ref}:`, error);
+          setPlayingKey(null);
+        });
+      } else {
+        // No timing data found, play from beginning
+        audio.play().then(() => setPlayingKey(verse.ref)).catch((error) => {
+          console.error(`Failed to play chapter ${verse.ref}:`, error);
+          setPlayingKey(null);
+        });
+      }
+    } else {
+      // Regular chapter audio - play from beginning
+      audio.play().then(() => setPlayingKey(verse.ref)).catch((error) => {
+        console.error(`Failed to play ${verse.ref}:`, error);
+        setPlayingKey(null);
+      });
+    }
 
     audio.addEventListener('ended', () => {
       setPlayingKey(null);
