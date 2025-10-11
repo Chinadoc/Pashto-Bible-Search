@@ -272,6 +272,10 @@ function VerseItem({
 }
 
 export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed }: Props) {
+  // Early returns BEFORE any hooks to avoid React hooks violations
+  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
+  if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
+
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -389,10 +393,6 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
-
-  // Early returns only after all hooks are declared
-  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
-  if (results.length === 0) return <p className="text-center text-gray-500">No results found.</p>;
 
   const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
