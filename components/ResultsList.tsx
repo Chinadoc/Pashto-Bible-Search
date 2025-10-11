@@ -79,7 +79,7 @@ function getTranslationBadge(translation?: string | null, dialect?: string | nul
   );
 }
 
-// Separate component for individual verse items to avoid hooks in map
+// Separate component for individual verse items (no hooks here!)
 function VerseItem({
   verse,
   index,
@@ -95,7 +95,13 @@ function VerseItem({
   audioRefs,
   termsProp,
   highlightBook,
-  processed
+  processed,
+  audioUrl,
+  setAudioUrl,
+  loadAudioUrl,
+  handleDownload,
+  handlePlay,
+  handlePause
 }: {
   verse: Verse;
   index: number;
@@ -112,9 +118,13 @@ function VerseItem({
   termsProp?: string[];
   highlightBook?: string | null;
   processed?: any;
+  audioUrl?: string | null;
+  setAudioUrl?: (url: string | null) => void;
+  loadAudioUrl?: () => void;
+  handleDownload?: () => void;
+  handlePlay?: () => void;
+  handlePause?: () => void;
 }) {
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
   // Parse verse number from ref only (never from text)
   const refParts = parseRef(verse.ref);
   const verseNo = refParts?.verse ?? null;
@@ -132,113 +142,12 @@ function VerseItem({
     ...(processed.variants ?? []),
   ].filter(Boolean) as string[] : [];
 
-  const rx = React.useMemo(() => buildHighlightRegex(tokens), [tokens.join("|")]);
+  // Note: Cannot use hooks in this component, so we'll build regex directly
+  const rx = buildHighlightRegex(tokens);
 
-  // Resolve audio URLs lazily - only when user interacts with audio controls
-  // This prevents making 1000+ API calls on page load!
-  const loadAudioUrl = useCallback(async () => {
-    if (audioUrl) return; // Already loaded
-    const entry = audioMap[verse.ref];
-    const url = await resolveAudioUrl(verse.ref, entry);
-    if (url) {
-      setAudioUrl(url);
-      console.log('Resolved audio for:', verse.ref);
-      if (url.includes('drive.google.com')) {
-        console.warn(`⚠️ Using Google Drive URL for ${verse.ref} - consider refreshing audio map`);
-      } else if (url.includes('supabase.co/storage')) {
-        console.log(`✅ Using Supabase Storage URL for ${verse.ref}`);
-      }
-    }
-  }, [audioUrl, verse.ref, audioMap]);
-
-  // Debug: Check if conditions for UI are met
-  React.useEffect(() => {
-    console.log(`Verse ${verse.ref}: audioUrl=${!!audioUrl}, verse.ref=${!!verse.ref}, showDownload=${!!(audioUrl && verse.ref)}, verseNo=${verseNo}`);
-  }, [verse.ref, audioUrl]);
-
-  const handleDownload = async () => {
-    if (!verse.ref) return;
-    // Load audio URL if not already loaded
-    if (!audioUrl) await loadAudioUrl();
-    if (!audioUrl) return; // Still no URL after loading
-    setDownloadingMap((prev) => ({ ...prev, [verse.ref]: true }));
-    try {
-      const response = await fetch(audioUrl);
-      if (!response.ok) throw new Error(`Failed to download ${verse.ref}`);
-      const blob = await response.blob();
-      const sanitizedRef = verse.ref.replace(/[^0-9A-Za-z]+/g, '_') || 'audio';
-      const filename = `${sanitizedRef}.mp3`;
-      const link = document.createElement('a');
-      const objectUrl = URL.createObjectURL(blob);
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
-    } catch (error) {
-      console.error('Audio download failed', error);
-    } finally {
-      setDownloadingMap((prev) => {
-        const next = { ...prev };
-        delete next[verse.ref];
-        return next;
-      });
-    }
-  };
-
-  const handlePlayPause = async () => {
-    // Load audio URL if not already loaded
-    if (!audioUrl) await loadAudioUrl();
-    if (!audioUrl) return; // No URL available
-    
-    const el = audioRefs.current.get(verse.ref);
-    if (!el) return;
-
-    // pause others
-    audioRefs.current.forEach((a, key) => { if (key !== verse.ref) { try { a.pause(); } catch {} } });
-
-    if (el.paused) {
-      // For Yousafzai verses with individual verse clips, no seeking needed
-      const hasIndividualClip = verse.translation === 'Yousafzai 2019' && verse.audio_verse_url;
-
-      if (hasIndividualClip) {
-        // Individual verse clip - play from beginning
-        el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
-      } else {
-        // Chapter MP3 - seek to verse start time if timing data is available
-        const seekTime = verse.translation === 'Yousafzai 2019' && verse.tags && Array.isArray(verse.tags) && verse.tags.length > 0
-          ? (() => {
-              const firstSegment = verse.tags[0];
-              return Array.isArray(firstSegment) && firstSegment.length >= 2 && typeof firstSegment[0] === 'number'
-                ? firstSegment[0] // Start time from jktags
-                : null;
-            })()
-          : null;
-
-        if (seekTime !== null) {
-          // Seek after play starts to ensure audio is ready
-          el.play().then(() => {
-            el.currentTime = seekTime;
-            setPlayingKey(verse.ref);
-          }).catch(() => {});
-        } else {
-          el.play().then(() => setPlayingKey(verse.ref)).catch(() => {});
-        }
-      }
-    } else {
-      el.pause();
-      setPlayingKey(null);
-    }
-  };
-
-  const handleSeek = (seconds: number) => {
-    const el = audioRefs.current.get(verse.ref);
-    if (!el) return;
-
-    const newTime = Math.max(0, Math.min(el.duration, el.currentTime + seconds));
-    el.currentTime = newTime;
-  };
+  // Audio controls are now handled by parent component props
+  const isPlaying = playingKey === verse.ref;
+  const isDownloading = downloadingMap[verse.ref] || false;
 
   // Debug logging for troubleshooting
   if (!verse.ref) {
@@ -280,7 +189,7 @@ function VerseItem({
               onClick={handleDownload}
               className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
               title="Download audio"
-              disabled={!!downloadingMap[verse.ref]}
+              disabled={isDownloading}
             >
               {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
             </button>
@@ -312,10 +221,10 @@ function VerseItem({
             {/* Play/Pause */}
             <button
               className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={handlePlayPause}
-              title={playingKey === verse.ref ? 'Pause' : 'Play'}
+              onClick={isPlaying ? handlePause : handlePlay}
+              title={isPlaying ? 'Pause' : 'Play'}
             >
-              {playingKey === verse.ref ? '⏸️' : '▶️'}
+              {isPlaying ? '⏸️' : '▶️'}
             </button>
 
             {/* Compact audio element */}
@@ -351,7 +260,7 @@ function VerseItem({
               onClick={handleDownload}
               className="text-xs px-1.5 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-60"
               title="Download audio"
-              disabled={!!downloadingMap[verse.ref]}
+              disabled={isDownloading}
             >
               {downloadingMap[verse.ref] ? '⬇️' : '📥'}
             </button>
@@ -375,6 +284,107 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results.length]);
+
+  // Audio state for each verse (managed at parent level)
+  const [verseAudioUrls, setVerseAudioUrls] = useState<Record<string, string | null>>({});
+
+  const loadVerseAudioUrl = useCallback(async (verseRef: string) => {
+    if (verseAudioUrls[verseRef]) return; // Already loaded
+
+    const entry = audioMap[verseRef];
+    const url = await resolveAudioUrl(verseRef, entry);
+    if (url) {
+      setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
+      setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
+    }
+  }, [audioMap, setResolvedUrls, verseAudioUrls]);
+
+  // Helper functions for verse-specific audio operations
+  const handleVerseDownload = async (verse: Verse) => {
+    if (!verse.ref) return;
+
+    const audioUrl = verseAudioUrls[verse.ref];
+    if (!audioUrl) {
+      await loadVerseAudioUrl(verse.ref);
+    }
+
+    const finalAudioUrl = verseAudioUrls[verse.ref];
+    if (!finalAudioUrl) return;
+
+    setDownloadingMap((prev) => ({ ...prev, [verse.ref]: true }));
+    try {
+      const response = await fetch(finalAudioUrl);
+      if (!response.ok) throw new Error(`Failed to download ${verse.ref}`);
+      const blob = await response.blob();
+      const sanitizedRef = verse.ref.replace(/[^0-9A-Za-z]+/g, '_') || 'audio';
+      const filename = `${sanitizedRef}.mp3`;
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error(`Failed to download ${verse.ref}:`, error);
+    } finally {
+      setDownloadingMap((prev) => {
+        const next = { ...prev };
+        delete next[verse.ref];
+        return next;
+      });
+    }
+  };
+
+  const handleVersePlay = (verse: Verse) => {
+    if (!verse.ref) return;
+
+    const audioUrl = verseAudioUrls[verse.ref];
+    if (!audioUrl) {
+      loadVerseAudioUrl(verse.ref);
+      return;
+    }
+
+    // Stop any currently playing audio
+    if (playingKey && playingKey !== verse.ref) {
+      const currentAudio = audioRefs.current.get(playingKey);
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+    }
+
+    setPlayingKey(verse.ref);
+    const audio = new Audio(audioUrl);
+    audioRefs.current.set(verse.ref, audio);
+
+    audio.play().catch((error) => {
+      console.error(`Failed to play ${verse.ref}:`, error);
+      setPlayingKey(null);
+    });
+
+    audio.addEventListener('ended', () => {
+      setPlayingKey(null);
+      audioRefs.current.delete(verse.ref);
+    });
+
+    audio.addEventListener('error', () => {
+      console.error(`Audio error for ${verse.ref}:`, audio.error);
+      setPlayingKey(null);
+      audioRefs.current.delete(verse.ref);
+    });
+  };
+
+  const handleVersePause = (verse: Verse) => {
+    if (!verse.ref || playingKey !== verse.ref) return;
+
+    const audio = audioRefs.current.get(verse.ref);
+    if (audio) {
+      audio.pause();
+      setPlayingKey(null);
+    }
+  };
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
@@ -451,8 +461,14 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       termsProp={termsProp}
       highlightBook={highlightBook}
       processed={processed}
+      audioUrl={verseAudioUrls[verse.ref] || null}
+      setAudioUrl={(url: string | null) => setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: url }))}
+      loadAudioUrl={() => loadVerseAudioUrl(verse.ref)}
+      handleDownload={() => handleVerseDownload(verse)}
+      handlePlay={() => handleVersePlay(verse)}
+      handlePause={() => handleVersePause(verse)}
     />
-  ), [audioMap, resolvedUrls, setResolvedUrls, downloadingMap, setDownloadingMap, playingKey, setPlayingKey, audioRefs, termsProp, highlightBook, processed]);
+  ), [audioMap, resolvedUrls, setResolvedUrls, downloadingMap, setDownloadingMap, playingKey, setPlayingKey, audioRefs, termsProp, highlightBook, processed, verseAudioUrls, loadVerseAudioUrl, handleVerseDownload, handleVersePlay, handleVersePause]);
 
   return (
     <div>
@@ -502,6 +518,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               termsProp={termsProp}
               highlightBook={highlightBook}
               processed={processed}
+              audioUrl={verseAudioUrls[verse.ref] || null}
+              setAudioUrl={(url: string | null) => setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: url }))}
+              loadAudioUrl={() => loadVerseAudioUrl(verse.ref)}
+              handleDownload={() => handleVerseDownload(verse)}
+              handlePlay={() => handleVersePlay(verse)}
+              handlePause={() => handleVersePause(verse)}
             />
           ))}
 
