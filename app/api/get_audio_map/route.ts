@@ -65,9 +65,21 @@ export async function GET(request: NextRequest) {
     try {
       const fs = await import('fs');
       const path = await import('path');
-      const localPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+      // Try both root and public directory locations
+      const possiblePaths = [
+        path.join(process.cwd(), 'google_drive_audio_urls.json'),
+        path.join(process.cwd(), 'public', 'google_drive_audio_urls.json')
+      ];
 
-      if (fs.existsSync(localPath)) {
+      let localPath = null;
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          localPath = testPath;
+          break;
+        }
+      }
+
+      if (localPath) {
         const localAudioData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
         let localCount = 0;
         Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
@@ -87,9 +99,9 @@ export async function GET(request: NextRequest) {
             }
           }
         });
-        console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
+        console.log(`🔗 Loaded ${localCount} Google Drive audio entries from ${localPath}`);
       } else {
-        console.warn('Local Google Drive audio file not found');
+        console.warn('Local Google Drive audio file not found in any location');
       }
     } catch (localError) {
       console.warn('Failed to load local Google Drive audio data:', localError);
