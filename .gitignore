@@ -79,7 +79,8 @@ MANIFEST
 *.m4a
 audio/
 **/audio/
-*audio*/
+# Don't ignore API routes with "audio" in the name
+# *audio*/
 
 # Generated files
 *_frequencies_from_db*.json
