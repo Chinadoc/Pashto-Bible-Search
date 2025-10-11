@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
     if (ref && !targetObject) {
       try {
         // First check the audio map for Google Drive file IDs
-        const audioMapResponse = await fetch(`${request.url.split('/api/')[0]}/api/get_audio_map?clear_cache=1`, {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app';
+        const audioMapResponse = await fetch(`${baseUrl}/api/get_audio_map?clear_cache=1`, {
           cache: 'no-store'
         });
         if (audioMapResponse.ok) {
