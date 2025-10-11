@@ -207,29 +207,12 @@ async function getAudioMap(): Promise<Record<string, string>> {
 
   // Load Google Drive audio data first (primary source)
   try {
-    // Try to fetch from deployed file first, then fall back to local file
-    let googleDriveUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app'}/google_drive_audio_urls.json`;
+    const fs = await import('fs');
+    const path = await import('path');
+    const localPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
 
-    // For development, try local file first
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        const fs = await import('fs');
-        const path = await import('path');
-        const localPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
-        if (fs.existsSync(localPath)) {
-          const localData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-          if (Object.keys(localData).length > 0) {
-            googleDriveUrl = localPath;
-          }
-        }
-      } catch (e) {
-        // Use deployed URL
-      }
-    }
-
-    const response = await fetch(googleDriveUrl);
-    if (response.ok) {
-      const localAudioData = await response.json();
+    if (fs.existsSync(localPath)) {
+      const localAudioData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
       let localCount = 0;
 
       Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
@@ -254,10 +237,10 @@ async function getAudioMap(): Promise<Record<string, string>> {
 
       console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
     } else {
-      console.warn('Failed to fetch Google Drive audio file:', response.status);
+      console.warn('Local Google Drive audio file not found');
     }
   } catch (localError) {
-    console.warn('Failed to load Google Drive audio data:', localError);
+    console.warn('Failed to load local Google Drive audio data:', localError);
   }
 
   // Also try to load from Supabase as secondary source
