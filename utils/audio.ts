@@ -59,24 +59,52 @@ export async function resolveAudioUrl(ref: string, entry?: any): Promise<string 
 }
 
 export function audioUrlFromRef(ref: string, map: AudioMap): string {
+  // First try to find the verse reference directly in the audio map
+  const target = map[ref];
+  if (target) {
+    // If the map already contains a full URL (Drive link, Storage signed URL, CDN, etc.), return it directly
+    if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
+      return target;
+    }
+    // If the value is a gs:// path, convert using a public bucket base if provided
+    if (typeof target === 'string' && target.startsWith('gs://')) {
+      const PUBLIC_BASE = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE; // e.g., https://storage.googleapis.com/your-bucket
+      if (PUBLIC_BASE) {
+        const withoutScheme = target.replace(/^gs:\/\//, '').split('/');
+        const bucket = withoutScheme.shift();
+        const path = withoutScheme.join('/');
+        // If PUBLIC_BASE already includes bucket, don't duplicate it
+        if (bucket && PUBLIC_BASE.includes(bucket)) {
+          return `${PUBLIC_BASE}/${path}`;
+        }
+        if (bucket) {
+          return `${PUBLIC_BASE.replace(/\/$/, '')}/${bucket}/${path}`;
+        }
+      }
+    }
+    // Otherwise treat it as a Google Drive file ID
+    const driveId = String(target);
+    return `https://drive.google.com/uc?export=download&id=${driveId}`;
+  }
+
+  // Fallback: try filename-based lookup for backward compatibility
   const filename = refToFilename(ref);
   if (!filename) return "";
   // The Firestore map sometimes uses just the verse filename
   // Ensure both exact and lowercase keys are checked
-  const target = map[filename] || map[filename.toLowerCase()];
-  if (!target) return "";
-  // If the map already contains a full URL (Drive link, Storage signed URL, CDN, etc.), return it directly
-  if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
-    return target;
+  const filenameTarget = map[filename] || map[filename.toLowerCase()];
+  if (!filenameTarget) return "";
+
+  // Handle filename-based target the same way
+  if (typeof filenameTarget === 'string' && /^https?:\/\//i.test(filenameTarget)) {
+    return filenameTarget;
   }
-  // If the value is a gs:// path, convert using a public bucket base if provided
-  if (typeof target === 'string' && target.startsWith('gs://')) {
-    const PUBLIC_BASE = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE; // e.g., https://storage.googleapis.com/your-bucket
+  if (typeof filenameTarget === 'string' && filenameTarget.startsWith('gs://')) {
+    const PUBLIC_BASE = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE;
     if (PUBLIC_BASE) {
-      const withoutScheme = target.replace(/^gs:\/\//, '').split('/');
+      const withoutScheme = filenameTarget.replace(/^gs:\/\//, '').split('/');
       const bucket = withoutScheme.shift();
       const path = withoutScheme.join('/');
-      // If PUBLIC_BASE already includes bucket, don't duplicate it
       if (bucket && PUBLIC_BASE.includes(bucket)) {
         return `${PUBLIC_BASE}/${path}`;
       }
@@ -86,7 +114,7 @@ export function audioUrlFromRef(ref: string, map: AudioMap): string {
     }
   }
   // Otherwise treat it as a Google Drive file ID
-  const driveId = String(target);
+  const driveId = String(filenameTarget);
   return `https://drive.google.com/uc?export=download&id=${driveId}`;
 }
 
