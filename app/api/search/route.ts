@@ -95,6 +95,9 @@ let audioMapCache: Record<string, string> | null = null;
 let audioMapCacheTime: number = 0;
 const AUDIO_MAP_CACHE_TTL = 3600000; // 1 hour in milliseconds
 
+// Audio map loading optimization - avoid redundant loads
+let audioMapLoadingPromise: Promise<Record<string, string>> | null = null;
+
 // Search result cache
 interface SearchCacheKey {
   query: string;
@@ -114,7 +117,11 @@ interface SearchCacheEntry {
 
 const searchResultCache = new Map<string, SearchCacheEntry>();
 const SEARCH_CACHE_TTL = 1800000; // 30 minutes in milliseconds
-const MAX_CACHE_ENTRIES = 100;
+const MAX_CACHE_ENTRIES = 200; // Increased cache size for better hit rate
+
+// Cache performance tracking
+let cacheHitCount = 0;
+let cacheMissCount = 0;
 
 function generateCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string): string {
   return `${query}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}`;
@@ -122,16 +129,21 @@ function generateCacheKey(query: string, scope: string, includeRelated: boolean,
 
 function getCachedSearch(cacheKey: string): SearchCacheEntry | null {
   const cached = searchResultCache.get(cacheKey);
-  if (!cached) return null;
+  if (!cached) {
+    cacheMissCount++;
+    return null;
+  }
 
   const now = Date.now();
   if ((now - cached.timestamp) > SEARCH_CACHE_TTL) {
     searchResultCache.delete(cacheKey);
+    cacheMissCount++;
     return null;
   }
 
   // Update hit count
   cached.hitCount++;
+  cacheHitCount++;
   return cached;
 }
 
@@ -203,6 +215,23 @@ async function getAudioMap(): Promise<Record<string, string>> {
     return audioMapCache;
   }
 
+  // If already loading, return the existing promise to avoid duplicate loads
+  if (audioMapLoadingPromise) {
+    return audioMapLoadingPromise;
+  }
+
+  // Start loading process
+  audioMapLoadingPromise = loadAudioMapData();
+  
+  try {
+    const result = await audioMapLoadingPromise;
+    return result;
+  } finally {
+    audioMapLoadingPromise = null;
+  }
+}
+
+async function loadAudioMapData(): Promise<Record<string, string>> {
   const audioMap: Record<string, string> = {};
 
   // Load Google Drive audio data first (primary source)
@@ -279,7 +308,7 @@ async function getAudioMap(): Promise<Record<string, string>> {
 
   // Cache the result
   audioMapCache = audioMap;
-  audioMapCacheTime = now;
+  audioMapCacheTime = Date.now();
   console.log(`✅ Audio map cached: ${Object.keys(audioMap).length} entries`);
 
   return audioMap;
@@ -419,7 +448,8 @@ export async function POST(request: NextRequest) {
 
     const cachedResult = getCachedSearch(cacheKey);
     if (cachedResult) {
-      console.log(`✅ Cache hit for "${originalQuery}" (${cachedResult.hitCount} hits)`);
+      const hitRate = cacheHitCount / (cacheHitCount + cacheMissCount) * 100;
+      console.log(`✅ Cache hit for "${originalQuery}" (${cachedResult.hitCount} hits, ${hitRate.toFixed(1)}% hit rate)`);
       return NextResponse.json({
         results: normalizeVerses(cachedResult.results),
         relatedForms: cachedResult.relatedForms,
@@ -819,7 +849,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Cache the results before returning
-        setCachedSearch(cacheKey, transformed, relatedForms, {
+        const processedData = {
           original: originalQuery,
           normalized: trimmedQuery,
           variants: searchTerms,
@@ -828,7 +858,9 @@ export async function POST(request: NextRequest) {
           language: searchLanguage,
           englishMatches: englishMatches.length ? englishMatches : undefined,
           variantsSearched: searchTerms,
-        });
+        };
+        
+        setCachedSearch(cacheKey, transformed, relatedForms, processedData);
 
         return NextResponse.json({
           results: normalizeVerses(transformed),
@@ -897,6 +929,7 @@ export async function POST(request: NextRequest) {
 
       // Cache the results before returning
       setCachedSearch(cacheKey, transformed, relatedForms, processed);
+      console.log(`💾 Cached search results for "${originalQuery}" (${transformed.length} results)`);
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
@@ -948,6 +981,7 @@ export async function POST(request: NextRequest) {
 
       // Cache the results before returning
       setCachedSearch(cacheKey, transformed, null, processed);
+      console.log(`💾 Cached English search results for "${originalQuery}" (${transformed.length} results)`);
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
@@ -1196,6 +1230,7 @@ export async function POST(request: NextRequest) {
 
     // Cache the results before returning
     setCachedSearch(cacheKey, finalResults, relatedForms, processed);
+    console.log(`💾 Cached final search results for "${originalQuery}" (${finalResults.length} results)`);
 
     return NextResponse.json({
       results: normalizeVerses(finalResults),
