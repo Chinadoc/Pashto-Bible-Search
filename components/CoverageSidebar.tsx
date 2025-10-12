@@ -10,6 +10,8 @@ interface Props {
   coverageLevel: ComplexityLevel;
   onPickBook: (book: string) => void;
   selectedBook?: string | null;
+  selectedBooks?: string[];
+  onClearFilters?: () => void;
   resultsCount?: number;
   filteredCount?: number;
 }
@@ -20,14 +22,18 @@ export default function CoverageSidebar({
   coverageLevel,
   onPickBook,
   selectedBook,
+  selectedBooks = [],
+  onClearFilters,
   resultsCount,
   filteredCount
 }: Props) {
   const sidebarCoverage = useSidebarCoverage(coverage);
 
   const title = coverage.length > 0 ? "Search Results" : "Bible Books";
-  const subtitle = filteredCount !== undefined && selectedBook 
-    ? `Showing ${filteredCount} results from ${selectedBook}`
+  const subtitle = filteredCount !== undefined && selectedBooks.length > 0
+    ? selectedBooks.length === 1 
+      ? `Showing ${filteredCount} results from ${selectedBooks[0]}`
+      : `Showing ${filteredCount} results from ${selectedBooks.length} books`
     : undefined;
 
   return (
@@ -41,6 +47,8 @@ export default function CoverageSidebar({
         subtitle={subtitle}
         compact={true}
         selectedBook={selectedBook}
+        selectedBooks={selectedBooks}
+        onClearFilters={onClearFilters}
       />
     </div>
   );

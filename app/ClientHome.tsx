@@ -1929,6 +1929,8 @@ export default function ClientHome() {
               }
             }}
             selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
+            selectedBooks={bookFilter}
+            onClearFilters={() => setBookFilter([])}
             resultsCount={results.length}
             filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
           />

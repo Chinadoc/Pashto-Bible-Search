@@ -42,6 +42,8 @@ interface Props {
   subtitle?: string;
   complexityLevel?: ComplexityLevel;
   selectedBook?: string | null;
+  selectedBooks?: string[];
+  onClearFilters?: () => void;
 }
 
 function abbr(book: string): string {
@@ -67,7 +69,7 @@ function getTileClasses(count: number, maxCount: number, complexityLevel: Comple
 }
 
 
-export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook }: Props) {
+export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook, selectedBooks = [], onClearFilters }: Props) {
   const covMap = useMemo(() => {
     const m: Record<string, { count: number; translation?: string }> = {};
     for (const c of coverage) {
@@ -102,13 +104,13 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     const item = covMap[book]
     const rawCount = item?.count ?? 0
     const translation = item?.translation
-    const isSelected = selectedBook === book
+    const isSelected = selectedBook === book || selectedBooks.includes(book)
     const shouldSuppress = false // Don't suppress other books when one is selected
     const displayCount = shouldSuppress ? 0 : rawCount
     const active = displayCount > 0
     const showCount = complexityLevel >= ComplexityLevel.Basic && active
 
-    // Override classes for selected book
+    // Override classes for selected book(s)
     const tileClasses = isSelected
       ? `relative p-2 m-0.5 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold hover:bg-blue-200 dark:hover:bg-blue-700 ${compact ? 'text-xs' : 'text-sm'}`
       : getTileClasses(displayCount, maxCount, complexityLevel, compact ?? false)
@@ -134,8 +136,24 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     <div className={`w-full border border-gray-300 dark:border-gray-600 ${compact ? 'p-2' : 'p-3'}`}>
       {complexityLevel >= ComplexityLevel.Basic && !compact && (
         <div className="mb-2">
-          <div className="font-medium text-sm">{title || "Bible Coverage"}</div>
+          <div className="flex items-center justify-between">
+            <div className="font-medium text-sm">{title || "Bible Coverage"}</div>
+            {selectedBooks.length > 0 && onClearFilters && (
+              <button
+                onClick={onClearFilters}
+                className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                title="Clear all book filters"
+              >
+                Clear ({selectedBooks.length})
+              </button>
+            )}
+          </div>
           {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
+          {selectedBooks.length > 1 && (
+            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              Filtered by: {selectedBooks.map(book => abbr(book)).join(', ')}
+            </div>
+          )}
         </div>
       )}
       <div className="flex flex-col gap-4">
