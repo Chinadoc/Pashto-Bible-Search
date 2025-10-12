@@ -1020,33 +1020,34 @@ export default function ClientHome() {
     [executeSearch]
   );
 
-  const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
-    const sanitized = sanitizeVerbFilter(nextFilters);
-    console.log('Applying verb filters:', { nextFilters, sanitized });
-    setVerbFilters(sanitized);
+  const debouncedVerbFilterSearch = useMemo(
+    () => debounce((nextFilters: VerbFilterState) => {
+      const sanitized = sanitizeVerbFilter(nextFilters);
+      console.log('Applying verb filters:', { nextFilters, sanitized });
+      setVerbFilters(sanitized);
 
-    // Guard clauses moved to beginning to avoid early returns after hooks
-    if (!includeRelated) {
-      console.log('Related forms mode not active, filters ignored');
-      return;
-    }
+      // Guard clauses moved to beginning to avoid early returns after hooks
+      if (!includeRelated) {
+        console.log('Related forms mode not active, filters ignored');
+        return;
+      }
 
-    if (!relatedForms?.verbs?.length) {
-      console.log('Verb filters updated, awaiting related forms to refetch results');
-      return;
-    }
+      if (!relatedForms?.verbs?.length) {
+        console.log('Verb filters updated, awaiting related forms to refetch results');
+        return;
+      }
 
-    const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
-    const forms = formsFromVariants(filteredVariants);
+      const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
+      const forms = formsFromVariants(filteredVariants);
 
-    // If no forms match the filters, show no results
-    if (forms.length === 0) {
-      setResults([]);
-      setCoverage([]);
-      setVariantsOverride([]);
-      setActiveVariantForms([]);
-      return;
-    }
+      // If no forms match the filters, show no results
+      if (forms.length === 0) {
+        setResults([]);
+        setCoverage([]);
+        setVariantsOverride([]);
+        setActiveVariantForms([]);
+        return;
+      }
 
     // Always do client-side filtering when we have existing results
     // This prevents triggering new searches when filters change
@@ -1079,7 +1080,13 @@ export default function ClientHome() {
         executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
       }
     }
-  }, [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]);
+    }, 200), // 200ms debounce for filter changes
+    [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]
+  );
+
+  const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
+    debouncedVerbFilterSearch(nextFilters);
+  }, [debouncedVerbFilterSearch]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
@@ -1220,12 +1227,8 @@ export default function ClientHome() {
 
   // Trigger search when query changes (with debouncing)
   const previousQuery = useRef<string>(query);
-  useEffect(() => {
-    const trimmedQuery = query.trim();
-    const previousTrimmedQuery = previousQuery.current.trim();
-    
-    // Only trigger if query actually changed and we have a non-empty query
-    if (trimmedQuery !== previousTrimmedQuery && trimmedQuery) {
+  const debouncedSearch = useMemo(
+    () => debounce((trimmedQuery: string) => {
       console.log('🔄 Query changed, triggering new search');
       // Set flag to prevent filter persistence during query change
       isQueryChangingRef.current = true;
@@ -1242,9 +1245,20 @@ export default function ClientHome() {
       setTimeout(() => {
         isQueryChangingRef.current = false;
       }, 100);
+    }, 300), // 300ms debounce delay
+    [executeSearch]
+  );
+
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    const previousTrimmedQuery = previousQuery.current.trim();
+    
+    // Only trigger if query actually changed and we have a non-empty query
+    if (trimmedQuery !== previousTrimmedQuery && trimmedQuery) {
+      debouncedSearch(trimmedQuery);
     }
     previousQuery.current = query;
-  }, [query, executeSearch]);
+  }, [query, debouncedSearch]);
 
   // Trigger new search when verb filters change (already implemented above)
 
