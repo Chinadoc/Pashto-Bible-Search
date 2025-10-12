@@ -1904,6 +1904,13 @@ export default function ClientHome() {
             audioMap={audioMap}
             loading={isLoading}
             processed={processed}
+            verbFilters={verbFilters}
+            activeVariantForms={activeVariantForms}
+            onResetFilters={() => {
+              setVerbFilters({ ...DEFAULT_VERB_FILTER });
+              setNounFilters({ ...DEFAULT_NOUN_FILTER });
+              setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+            }}
           />
         </div>
 
