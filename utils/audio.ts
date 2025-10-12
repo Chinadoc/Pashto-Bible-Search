@@ -40,8 +40,8 @@ export async function resolveAudioUrl(ref: string, entry?: any): Promise<string 
     const r = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, { cache: 'no-store' });
     if (r.ok) {
       const { url } = await r.json();
-      if (url && /^https?:\/\//i.test(url)) {
-        return url; // short-lived signed URL from Supabase
+      if (url && (url.startsWith('/') || /^https?:\/\//i.test(url))) {
+        return url; // short-lived signed URL from Supabase or proxy URL
       }
     }
   } catch (error) {
