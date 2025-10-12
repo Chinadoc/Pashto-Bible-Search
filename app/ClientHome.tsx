@@ -54,6 +54,21 @@ const DEFAULT_VERB_FILTER: VerbFilterState = {
   mood: 'all',
 };
 
+// New multi-select filter state
+interface MultiVerbFilterState {
+  person: VerbFilterPerson[];
+  tense: VerbFilterTense[];
+  aspect: VerbFilterAspect[];
+  mood: VerbFilterMood[];
+}
+
+const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
+  person: ['all'],
+  tense: ['all'],
+  aspect: ['all'],
+  mood: ['all'],
+};
+
 const DEFAULT_NOUN_FILTER: NounFilterState = {
   inflectionType: 'all',
   gender: 'all',
@@ -244,6 +259,49 @@ function isDefaultVerbFilter(filters: VerbFilterState): boolean {
     filters.aspect === 'all' &&
     filters.mood === 'all'
   );
+}
+
+// Multi-select filter helpers
+function isDefaultMultiVerbFilter(filters: MultiVerbFilterState): boolean {
+  return (
+    filters.person.length === 1 && filters.person[0] === 'all' &&
+    filters.tense.length === 1 && filters.tense[0] === 'all' &&
+    filters.aspect.length === 1 && filters.aspect[0] === 'all' &&
+    filters.mood.length === 1 && filters.mood[0] === 'all'
+  );
+}
+
+function toggleMultiFilter<T extends string>(
+  currentValues: T[],
+  value: T,
+  allValue: T = 'all' as T
+): T[] {
+  if (value === allValue) {
+    // Toggle "all" - if it's selected, deselect everything; if not, select only "all"
+    return currentValues.includes(allValue) ? [] : [allValue];
+  }
+  
+  // Remove "all" if it's selected and select the specific value
+  const withoutAll = currentValues.filter(v => v !== allValue);
+  
+  if (withoutAll.includes(value)) {
+    // Deselect the value
+    const newValues = withoutAll.filter(v => v !== value);
+    // If no specific values remain, select "all"
+    return newValues.length === 0 ? [allValue] : newValues;
+  } else {
+    // Select the value
+    return [...withoutAll, value];
+  }
+}
+
+function multiFilterToSingleFilter(multiFilters: MultiVerbFilterState): VerbFilterState {
+  return {
+    person: multiFilters.person.includes('all') || multiFilters.person.length === 0 ? 'all' : multiFilters.person[0],
+    tense: multiFilters.tense.includes('all') || multiFilters.tense.length === 0 ? 'all' : multiFilters.tense[0],
+    aspect: multiFilters.aspect.includes('all') || multiFilters.aspect.length === 0 ? 'all' : multiFilters.aspect[0],
+    mood: multiFilters.mood.includes('all') || multiFilters.mood.length === 0 ? 'all' : multiFilters.mood[0],
+  };
 }
 
 // Noun/Adjective filter matching
@@ -594,6 +652,7 @@ export default function ClientHome() {
 
   // Verb understanding state
   const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER });
+  const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
@@ -889,6 +948,7 @@ export default function ClientHome() {
       // Reset filters when starting a new search (manual or query change)
       if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
+        setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
         setVerbFilters({ ...DEFAULT_VERB_FILTER });
         setNounFilters({ ...DEFAULT_NOUN_FILTER });
         setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
@@ -1088,6 +1148,15 @@ export default function ClientHome() {
     debouncedVerbFilterSearch(nextFilters);
   }, [debouncedVerbFilterSearch]);
 
+  const applyMultiVerbFiltersAndSearch = useCallback((nextFilters: MultiVerbFilterState) => {
+    console.log('Applying multi verb filters:', nextFilters);
+    setMultiVerbFilters(nextFilters);
+
+    // Convert multi-select to single-select for backward compatibility
+    const singleFilter = multiFilterToSingleFilter(nextFilters);
+    applyVerbFiltersAndSearch(singleFilter);
+  }, [applyVerbFiltersAndSearch]);
+
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
 
@@ -1216,6 +1285,7 @@ export default function ClientHome() {
   useEffect(() => {
     if (previousLanguage.current !== searchLanguage && query.trim()) {
       console.log('DEBUG: Search language changed to', searchLanguage, '- refreshing results');
+      setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
       setVerbFilters({ ...DEFAULT_VERB_FILTER });
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
@@ -1234,6 +1304,7 @@ export default function ClientHome() {
       isQueryChangingRef.current = true;
       // Reset filters and variant forms when query changes to ensure fresh analysis
       console.log('Clearing variant forms for new query:', trimmedQuery);
+      setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
       setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
@@ -1536,7 +1607,10 @@ export default function ClientHome() {
                         Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
                       </span>
                       <button
-                        onClick={() => applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER })}
+                        onClick={() => {
+                          setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+                          applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER });
+                        }}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         Reset filters
@@ -1552,13 +1626,11 @@ export default function ClientHome() {
                     <div className="space-y-1">
                       <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                         <input
-                          type="radio"
-                          name="person"
-                          checked={verbFilters.person === 'all'}
+                          type="checkbox"
+                          checked={multiVerbFilters.person.includes('all')}
                           onChange={() => {
-                            if (verbFilters.person !== 'all') {
-                              applyVerbFiltersAndSearch({ ...verbFilters, person: 'all' });
-                            }
+                            const newPerson = toggleMultiFilter(multiVerbFilters.person, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
                           }}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                         />
@@ -1567,13 +1639,11 @@ export default function ClientHome() {
                       {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
                         <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="radio"
-                            name="person"
-                            checked={verbFilters.person === option.value}
+                            type="checkbox"
+                            checked={multiVerbFilters.person.includes(option.value as VerbFilterPerson)}
                             onChange={() => {
-                              if (verbFilters.person !== option.value) {
-                                applyVerbFiltersAndSearch({ ...verbFilters, person: option.value as VerbFilterPerson });
-                              }
+                              const newPerson = toggleMultiFilter(multiVerbFilters.person, option.value as VerbFilterPerson);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -1591,13 +1661,11 @@ export default function ClientHome() {
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                         <input
-                          type="radio"
-                          name="tense"
-                          checked={verbFilters.tense === 'all'}
+                          type="checkbox"
+                          checked={multiVerbFilters.tense.includes('all')}
                           onChange={() => {
-                            if (verbFilters.tense !== 'all') {
-                              applyVerbFiltersAndSearch({ ...verbFilters, tense: 'all' });
-                            }
+                            const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
                           }}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                         />
@@ -1606,13 +1674,11 @@ export default function ClientHome() {
                       {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
                         <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="radio"
-                            name="tense"
-                            checked={verbFilters.tense === tense}
+                            type="checkbox"
+                            checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
                             onChange={() => {
-                              if (verbFilters.tense !== tense) {
-                                applyVerbFiltersAndSearch({ ...verbFilters, tense: tense as VerbFilterTense });
-                              }
+                              const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -1630,13 +1696,11 @@ export default function ClientHome() {
                     <div className="space-y-1">
                       <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                         <input
-                          type="radio"
-                          name="aspect"
-                          checked={verbFilters.aspect === 'all'}
+                          type="checkbox"
+                          checked={multiVerbFilters.aspect.includes('all')}
                           onChange={() => {
-                            if (verbFilters.aspect !== 'all') {
-                              applyVerbFiltersAndSearch({ ...verbFilters, aspect: 'all' });
-                            }
+                            const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
                           }}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                         />
@@ -1645,13 +1709,11 @@ export default function ClientHome() {
                       {['imperfective', 'perfective'].map((aspect) => (
                         <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="radio"
-                            name="aspect"
-                            checked={verbFilters.aspect === aspect}
+                            type="checkbox"
+                            checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
                             onChange={() => {
-                              if (verbFilters.aspect !== aspect) {
-                                applyVerbFiltersAndSearch({ ...verbFilters, aspect: aspect as VerbFilterAspect });
-                              }
+                              const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -1669,13 +1731,11 @@ export default function ClientHome() {
                     <div className="space-y-1">
                       <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                         <input
-                          type="radio"
-                          name="mood"
-                          checked={verbFilters.mood === 'all'}
+                          type="checkbox"
+                          checked={multiVerbFilters.mood.includes('all')}
                           onChange={() => {
-                            if (verbFilters.mood !== 'all') {
-                              applyVerbFiltersAndSearch({ ...verbFilters, mood: 'all' });
-                            }
+                            const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
                           }}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                         />
@@ -1684,13 +1744,11 @@ export default function ClientHome() {
                       {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
                         <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
                           <input
-                            type="radio"
-                            name="mood"
-                            checked={verbFilters.mood === mood}
+                            type="checkbox"
+                            checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
                             onChange={() => {
-                              if (verbFilters.mood !== mood) {
-                                applyVerbFiltersAndSearch({ ...verbFilters, mood: mood as VerbFilterMood });
-                              }
+                              const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
                             }}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           />
@@ -1921,6 +1979,7 @@ export default function ClientHome() {
             verbFilters={verbFilters}
             activeVariantForms={activeVariantForms}
             onResetFilters={() => {
+              setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
               setVerbFilters({ ...DEFAULT_VERB_FILTER });
               setNounFilters({ ...DEFAULT_NOUN_FILTER });
               setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
