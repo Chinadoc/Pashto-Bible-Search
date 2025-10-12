@@ -21,10 +21,10 @@ interface Props {
   highlightBook?: string | null; // book to visually highlight
   processed?: any; // processed data from search for highlighting
   verbFilters?: {
-    person: string;
-    tense: string;
-    aspect: string;
-    mood: string;
+    person: 'all' | '1st' | '2nd' | '3rd';
+    tense: 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
+    aspect: 'all' | 'imperfective' | 'perfective';
+    mood: 'all' | 'indicative' | 'subjunctive' | 'imperative' | 'ability';
   };
   activeVariantForms?: string[];
   onResetFilters?: () => void;
