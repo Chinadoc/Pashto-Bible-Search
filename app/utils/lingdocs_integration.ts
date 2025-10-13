@@ -24,6 +24,19 @@ type LingDocsEntry = {
 
 type LingDocsVerbConjugation = Record<string, any>;
 
+type DictionaryEntryLike = {
+  pashto?: string;
+  p?: string;
+  romanized?: string;
+  f?: string;
+  g?: string;
+  english?: string;
+  e?: string;
+  pos?: string;
+  c?: string;
+  [key: string]: unknown;
+};
+
 let lingDocsModulePromise: Promise<any> | null = null;
 
 async function loadLingDocsModule(): Promise<any> {
@@ -166,7 +179,8 @@ export async function generateVerbVariantsLingDocs(
 
     // Convert to LingDocs format and conjugate
     const lingDocs = await loadLingDocsModule();
-    const conjugation = lingDocs.conjugateVerb(dictEntry as LingDocsEntry);
+    const lingDocsEntry = toLingDocsEntry(dictEntry, 'v.');
+    const conjugation = lingDocs.conjugateVerb(lingDocsEntry);
 
     if (!conjugation) {
       console.warn(`Failed to conjugate "${rootOrInfinitive}", falling back to pattern-based generation`);
@@ -233,3 +247,19 @@ export function normalizePashtoText(text: string): string {
 
 // Export type for use in other modules
 export type { Variant };
+function toLingDocsEntry(entry: DictionaryEntryLike, defaultPos: string): LingDocsEntry {
+  const pashto = entry.pashto ?? entry.p ?? '';
+  const romanized = entry.romanized ?? entry.f ?? pashto;
+  const simplified = entry.g ?? romanized;
+  const english = entry.english ?? entry.e ?? '';
+  const pos = entry.c ?? entry.pos ?? defaultPos;
+
+  return {
+    ...entry,
+    p: pashto,
+    f: romanized,
+    g: simplified,
+    e: english,
+    c: pos,
+  };
+}
