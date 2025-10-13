@@ -142,3 +142,4 @@ audio/
 *frequencies*.json
 *consolidated*.json
 *enhanced*.json
+app/data/inflections_cache.json

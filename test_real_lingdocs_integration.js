@@ -7,7 +7,7 @@ async function testRealIntegration() {
 
   try {
     // Import the integration module
-    const integrationPath = path.join(__dirname, 'app/utils/lingdocs_integration.js');
+    const integrationPath = path.join(__dirname, 'app/utils/lingdocs_integration.ts');
     const { generateVerbVariantsLingDocs, generateNounVariantsLingDocs } = await import(integrationPath);
 
     console.log('✅ LingDocs integration imported successfully');
