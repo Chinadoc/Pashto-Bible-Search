@@ -194,32 +194,237 @@ def update_database_urls():
     print(f"\n✅ Updated {update_count} verses with audio URLs")
     return True
 
+def upload_psalms_to_storage():
+    """Upload Psalms chapter files to Supabase storage."""
+    print("🎵 Uploading Psalms audio files to Supabase storage...")
+
+    supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+    service_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_key:
+        print("❌ Missing environment variables")
+        return False
+
+    audio_dir = Path("/Users/jeremysamuels/Documents/pashto-bible-search/yousafzai_split_audio")
+    if not audio_dir.exists():
+        print(f"❌ Audio directory not found: {audio_dir}")
+        return False
+
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": "audio/mpeg"
+    }
+
+    uploaded_count = 0
+    error_count = 0
+
+    # Upload Psalms chapter files (psalms-1.mp3, psalms-2.mp3, etc.)
+    for chapter in range(1, 151):  # Psalms has 150 chapters
+        filename = f"psalms-{chapter}.mp3"
+        file_path = audio_dir / filename
+
+        if file_path.exists():
+            print(f"  📖 Uploading {filename}...")
+
+            # Upload to Supabase storage
+            storage_path = f"yousafzai/{filename}"
+            upload_url = f"{supabase_url}/storage/v1/object/audio/{quote(storage_path)}"
+
+            try:
+                with open(file_path, 'rb') as f:
+                    response = requests.post(upload_url, headers=headers, data=f)
+
+                if response.status_code in [200, 201]:
+                    print(f"    ✅ Uploaded {filename}")
+                    uploaded_count += 1
+                else:
+                    print(f"    ❌ Failed to upload {filename}: {response.status_code}")
+                    print(f"    Response: {response.text}")
+                    error_count += 1
+
+            except Exception as e:
+                print(f"    ❌ Error uploading {filename}: {e}")
+                error_count += 1
+        else:
+            print(f"  ⚠️  File not found: {filename}")
+
+    print(f"\n📊 Upload complete: {uploaded_count} uploaded, {error_count} errors")
+    return error_count == 0
+
+def update_psalms_audio_urls():
+    """Update database with Psalms chapter audio URLs."""
+    print("🔄 Updating Psalms audio URLs in database...")
+
+    supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+    service_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_key:
+        print("❌ Missing environment variables")
+        return False
+
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+
+    update_count = 0
+    error_count = 0
+
+    # Update each Psalms chapter
+    for chapter in range(1, 151):
+        print(f"  📖 Updating Psalms chapter {chapter}...")
+
+        # Generate storage URL for chapter file
+        storage_filename = f"psalms-{chapter}.mp3"
+        storage_path = f"yousafzai/{storage_filename}"
+        public_url = f"{supabase_url}/storage/v1/object/public/audio/{quote(storage_path)}"
+
+        # Update all verses in this chapter
+        update_data = {
+            "audio_chapter_url": public_url,
+            "audio_storage_filename": storage_filename
+        }
+
+        update_url = f"{supabase_url}/rest/v1/verses_yousafzai?book=eq.Psalms&chapter=eq.{chapter}"
+        try:
+            update_response = requests.patch(update_url, headers=headers, json=update_data)
+
+            if update_response.status_code in [200, 204]:
+                print(f"    ✅ Updated Psalms chapter {chapter}")
+                update_count += 1
+            else:
+                print(f"    ❌ Failed to update Psalms chapter {chapter}: {update_response.status_code}")
+                error_count += 1
+
+        except Exception as e:
+            print(f"    ❌ Error updating Psalms chapter {chapter}: {e}")
+            error_count += 1
+
+    print(f"\n📊 Database update complete: {update_count} updated, {error_count} errors")
+    return error_count == 0
+
+def check_and_update_psalms_audio():
+    """Check if individual Psalms verse clips exist and update database."""
+    print("🔍 Checking Psalms individual verse clips...")
+
+    supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+    service_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_key:
+        print("❌ Missing environment variables")
+        return False
+
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+
+    # Check Psalms chapters 1-5 for individual verse clips
+    for chapter in range(1, 6):
+        print(f"  📖 Checking Psalms chapter {chapter}...")
+
+        # Get verses for this chapter
+        verses_url = f"{supabase_url}/rest/v1/verses_yousafzai?book=eq.Psalms&chapter=eq.{chapter}&order=verse"
+        response = requests.get(verses_url, headers=headers)
+
+        if response.status_code != 200:
+            print(f"    ❌ Failed to fetch Psalms {chapter}: {response.status_code}")
+            continue
+
+        verses = response.json()
+        print(f"    Found {len(verses)} verses in chapter {chapter}")
+
+        for verse in verses:
+            verse_num = verse['verse']
+            storage_filename = f"yousafzai_psalms{chapter:03d}_verse_{verse_num:03d}.mp3"
+            storage_path = f"yousafzai/{storage_filename}"
+            public_url = f"{supabase_url}/storage/v1/object/public/audio/{quote(storage_path)}"
+
+            # Check if file exists in storage by trying to get it
+            check_url = f"{supabase_url}/storage/v1/object/public/audio/{quote(storage_path)}"
+            check_response = requests.head(check_url, headers={"apikey": service_key})
+
+            if check_response.status_code == 200:
+                # File exists, update database
+                update_data = {
+                    "audio_verse_url": public_url,
+                    "audio_storage_filename": storage_filename
+                }
+
+                update_url = f"{supabase_url}/rest/v1/verses_yousafzai?book=eq.Psalms&chapter=eq.{chapter}&verse=eq.{verse_num}"
+                update_response = requests.patch(update_url, headers=headers, json=update_data)
+
+                if update_response.status_code in [200, 204]:
+                    print(f"    ✅ Updated Psalms {chapter}:{verse_num} with individual clip")
+                else:
+                    print(f"    ❌ Failed to update Psalms {chapter}:{verse_num}: {update_response.status_code}")
+            else:
+                print(f"    ⚠️  No individual clip for Psalms {chapter}:{verse_num}")
+
 def main():
     """Main function to upload audio and update database."""
     print("🎯 Yousafzai Audio Integration Script")
     print("=====================================")
-    
-    if '--update-db-only' in sys.argv:
-        print("\n M-DEB-ONLY' flag detected. Skipping upload and updating database directly.")
-        if update_database_urls():
-            print("\n🎉 Database update complete! All verses should now have individual audio clips.")
-            print("🌐 Deploy to Vercel to see the changes live.")
-        else:
-            print("\n⚠️  Database update failed.")
-        return
+    print("Available options:")
+    print("1. Upload Psalms audio files to storage")
+    print("2. Update Psalms audio URLs in database")
+    print("3. Do both (upload then update)")
+    print("4. Check and update Psalms individual verse clips")
+    print("5. Run full integration (upload + update for all books)")
+    print()
 
-    # Step 1: Upload audio files
-    if upload_audio_files():
-        print("\n🎵 Audio upload successful!")
-        
-        # Step 2: Update database
-        if update_database_urls():
-            print("\n🎉 Integration complete! All verses now have individual audio clips.")
-            print("🌐 Deploy to Vercel to see the changes live.")
-        else:
-            print("\n⚠️  Audio uploaded but database update failed. Manual database update needed.")
+    if len(sys.argv) > 1:
+        choice = sys.argv[1]
     else:
-        print("\n❌ Audio upload failed. Check your Supabase credentials and try again.")
+        choice = input("Enter choice (1-5): ").strip()
+
+    if choice == '1':
+        success = upload_psalms_to_storage()
+        if success:
+            print("\n✅ Psalms upload complete!")
+    elif choice == '2':
+        success = update_psalms_audio_urls()
+        if success:
+            print("\n✅ Psalms database update complete!")
+    elif choice == '3':
+        success1 = upload_psalms_to_storage()
+        if success1:
+            success2 = update_psalms_audio_urls()
+            if success2:
+                print("\n🎉 Psalms integration complete!")
+    elif choice == '4':
+        success = check_and_update_psalms_audio()
+        if success:
+            print("\n🎉 Psalms check complete!")
+    elif choice == '5':
+        if '--update-db-only' in sys.argv:
+            print("\n🔄 --update-db-only flag detected. Skipping upload and updating database directly.")
+            if update_database_urls():
+                print("\n🎉 Database update complete! All verses should now have individual audio clips.")
+                print("🌐 Deploy to Vercel to see the changes live.")
+            else:
+                print("\n⚠️  Database update failed.")
+            return
+
+        # Step 1: Upload audio files
+        if upload_audio_files():
+            print("\n🎵 Audio upload successful!")
+
+            # Step 2: Update database
+            if update_database_urls():
+                print("\n🎉 Integration complete! All verses now have individual audio clips.")
+                print("🌐 Deploy to Vercel to see the changes live.")
+            else:
+                print("\n⚠️  Audio uploaded but database update failed. Manual database update needed.")
+        else:
+            print("\n❌ Audio upload failed. Check your Supabase credentials and try again.")
+    else:
+        print("❌ Invalid choice")
 
 if __name__ == "__main__":
     main()
