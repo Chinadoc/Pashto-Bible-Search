@@ -11,26 +11,46 @@
  * - Professional-grade quality
  */
 
-// Import LingDocs inflection library from local submodule
-// Note: This requires building the submodule first
-// Run: cd pashto-inflector/src/lib && npm install && npm run build
-
 import type { Variant } from './verb_variants';
 
-// Import the actual LingDocs library from the built distribution
-import {
-  conjugateVerb,
-  inflectWord,
-  getVerbInfo,
-  makePsString,
-  psStringFromEntry,
-} from '../../pashto-inflector/src/lib/dist/lib/library.cjs';
+type LingDocsEntry = {
+  p: string;
+  f?: string;
+  g?: string;
+  e?: string;
+  c?: string;
+  [key: string]: unknown;
+};
 
-import type * as LingDocsTypes from '../../pashto-inflector/src/types';
+type LingDocsVerbConjugation = Record<string, any>;
 
-// Type definitions for LingDocs
-type LingDocsEntry = LingDocsTypes.DictionaryEntry;
-type LingDocsVerbConjugation = LingDocsTypes.VerbOutput;
+let lingDocsModulePromise: Promise<any> | null = null;
+
+async function loadLingDocsModule(): Promise<any> {
+  if (!lingDocsModulePromise) {
+    lingDocsModulePromise = (async () => {
+      const { existsSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const { pathToFileURL } = await import('node:url');
+
+      const candidatePaths = [
+        join(process.cwd(), 'pashto-inflector', 'src', 'lib', 'dist', 'lib', 'library.cjs'),
+        join(process.cwd(), 'vendor', 'lingdocs', 'library.cjs'),
+      ];
+
+      for (const filePath of candidatePaths) {
+        if (existsSync(filePath)) {
+          return import(pathToFileURL(filePath).href);
+        }
+      }
+
+      throw new Error(
+        'LingDocs library not found. Ensure the pashto-inflector submodule is built or vendor/lingdocs/library.cjs is present.',
+      );
+    })();
+  }
+  return lingDocsModulePromise;
+}
 
 /**
  * Convert LingDocs verb conjugation to our Variant format
@@ -133,7 +153,7 @@ export async function generateVerbVariantsLingDocs(
   try {
     // Get the verb entry from our dictionary
     const { getData } = await import('../lib/data/load');
-    const { dictionary, dictionaryByPashto } = await getData();
+    const { dictionaryByPashto } = await getData();
 
     // Look up the verb in the dictionary
     const dictEntry = dictionaryByPashto.get(rootOrInfinitive);
@@ -145,7 +165,8 @@ export async function generateVerbVariantsLingDocs(
     }
 
     // Convert to LingDocs format and conjugate
-    const conjugation = conjugateVerb(dictEntry);
+    const lingDocs = await loadLingDocsModule();
+    const conjugation = lingDocs.conjugateVerb(dictEntry as LingDocsEntry);
 
     if (!conjugation) {
       console.warn(`Failed to conjugate "${rootOrInfinitive}", falling back to pattern-based generation`);
@@ -212,5 +233,3 @@ export function normalizePashtoText(text: string): string {
 
 // Export type for use in other modules
 export type { Variant };
-
-
