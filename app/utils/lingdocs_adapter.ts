@@ -715,7 +715,9 @@ async function generateAllVerbForms(
   forms.push(...generateImperativeForms(infinitive, verbInfo));
 
   // 5. Ability forms (Present Ability, Subjunctive Ability, etc.)
-  forms.push(...generateAbilityForms(infinitive, verbInfo));
+  const abilityForms = generateAbilityForms(infinitive, verbInfo);
+  console.log(`🔍 Generated ${abilityForms.length} ability forms for "${infinitive}":`, abilityForms.map(f => f.pashto));
+  forms.push(...abilityForms);
 
   // 6. Participle forms
   forms.push(...generateParticipleForms(infinitive, verbInfo));
@@ -874,10 +876,12 @@ function generateAbilityForms(
   infinitive: string,
   verbInfo: any
 ): Array<{pashto: string, romanized: string, label: string, flags?: string[]}> {
+  console.log(`🔍 generateAbilityForms called for "${infinitive}"`, verbInfo);
   const forms: Array<{pashto: string, romanized: string, label: string, flags?: string[]}> = [];
   
   // Get the past participle form (base for ability forms)
   const pastParticiple = verbInfo.pastParticiple || infinitive.replace(/ل$/, 'لی');
+  console.log(`🔍 Using past participle: "${pastParticiple}"`);
   
   // Present Ability endings
   const presentAbilityEndings = [
