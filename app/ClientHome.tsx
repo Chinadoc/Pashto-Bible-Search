@@ -136,10 +136,10 @@ const TENSE_MATCHERS: Record<VerbFilterTense, (label: string) => boolean> = {
 
 const MOOD_MATCHERS: Record<VerbFilterMood, (label: string) => boolean> = {
   all: () => true,
-  indicative: (l) => !l.toLowerCase().includes('subj') && !l.toLowerCase().includes('imperativ'),
+  indicative: (l) => !l.toLowerCase().includes('subj') && !l.toLowerCase().includes('imperativ') && !l.toLowerCase().includes('ability'),
   subjunctive: (l) => l.toLowerCase().includes('subj'),
   imperative: (l) => l.toLowerCase().includes('imperativ'),
-  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can'),
+  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can') || l.toLowerCase().includes('ش') || l.toLowerCase().includes('sh') || l.includes('ش'),
 };
 
 const ASPECT_MATCHERS: Record<VerbFilterAspect, (label: string) => boolean> = {
