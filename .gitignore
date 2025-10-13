@@ -144,3 +144,4 @@ audio/
 *enhanced*.json
 app/data/inflections_cache.json
 inflections_cache.json
+functions/verb_forms_index.json
