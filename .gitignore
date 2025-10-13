@@ -143,3 +143,4 @@ audio/
 *consolidated*.json
 *enhanced*.json
 app/data/inflections_cache.json
+inflections_cache.json
