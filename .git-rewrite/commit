@@ -1,16 +1,8 @@
-tree 31054a1fb2a86868f2aa3983195d9e71157c9a07
-parent ee5daba47a36fa4ab7dda6eb910fa9207dad9610
-author Chinadoc <jeremy.samuels17@gmail.com> 1758321832 -0500
-committer Chinadoc <jeremy.samuels17@gmail.com> 1758321832 -0500
+tree a679fcaed4d7abbd14e638a1249190e289add18b
+parent f4cfaabe04f3ce8acb553aab3ee193a14b467179
+author Cursor Agent <cursoragent@cursor.com> 1758558737 +0000
+committer Cursor Agent <cursoragent@cursor.com> 1758558737 +0000
 
-🔧 Fix fused compound verb detection and improve verb categorization
+Refactor SearchBar layout and styling
 
-- Add 'ېدل' to AUX_SET for proper fused compound detection
-- Create generateFusedCompoundVerbForms function for verbs like ګرمېدل
-- Update verb detection logic to check fused compounds before spaced compounds
-- Improve generateRegularVerbForms with proper stem patterns for -ول, -ېل, -ال verbs
-- Generate both squished and non-squished forms for stative compounds
-- Fix critical bug where ګرمېدل was treated as regular instead of compound
-- Now properly generates ګرمېږئ form found in Haggai 1:6
-
-Fixes consistency with LingDocs grammar standards.
+Co-authored-by: jeremy.samuels17 <jeremy.samuels17@gmail.com>

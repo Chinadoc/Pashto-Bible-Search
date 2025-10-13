@@ -1,11 +1,3 @@
-Implement comprehensive irregular verb system with conjugation functions
+Refactor SearchBar layout and styling
 
-- Add IRREGULAR_VERBS map with 18 irregular verbs from provided table
-- Add generateRegularVerbForms() for standard Pashto conjugation rules
-- Add generateCompoundVerbForms() with stative/dynamic distinction
-- Add generateIrregularVerbForms() using suppletive stems/roots
-- Integrate verb detection and generation into related forms logic
-- Prioritize: Irregular > Compound > Regular verb handling
-- Support for LingDocs grammar rules (welding/squishing for stative)
-- Fix TypeScript error in CoverageSidebar props
-- Add extensive debug logging for verb form generation
+Co-authored-by: jeremy.samuels17 <jeremy.samuels17@gmail.com>

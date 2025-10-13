@@ -42,9 +42,10 @@ export async function POST(request: NextRequest) {
     // 1) Determine root for the term
     let root = term
     try {
-      const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
-      url.searchParams.set('select', 'root')
-      url.searchParams.set('form', `eq.${term}`)
+      // Query form_roots table (relational format)
+      const url = new URL(`${supabaseUrl}/rest/v1/form_roots`)
+      url.searchParams.set('select', 'root_form')
+      url.searchParams.set('word_form', `eq.${term}`)
       url.searchParams.set('limit', '1')
       const res = await fetch(url.toString(), {
         headers: {
@@ -56,38 +57,16 @@ export async function POST(request: NextRequest) {
       })
       if (res.ok) {
         const rows = await res.json()
-        if (Array.isArray(rows) && rows[0]?.root) root = rows[0].root
+        if (Array.isArray(rows) && rows[0]?.root_form) {
+          root = rows[0].root_form
+        }
       }
     } catch {
       // ignore and keep root=term
     }
 
-    // 2) Fetch all forms for this root (collect only)
+    // 2) Get related forms from inflections table
     const formSet = new Set<string>()
-    try {
-      const url = new URL(`${supabaseUrl}/rest/v1/form_to_root_map`)
-      url.searchParams.set('select', 'form')
-      url.searchParams.set('root', `eq.${root}`)
-      url.searchParams.set('limit', String(limit))
-      const res = await fetch(url.toString(), {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      })
-        if (res.ok) {
-          const rows = await res.json()
-          if (Array.isArray(rows)) {
-            for (const r of rows) if (r?.form) formSet.add(String(r.form))
-          }
-        }
-    } catch {
-      // ignore – fall back to empty suggestions
-    }
-
-    // 3) If no forms found via mapping, try a secondary table name if exists
     if (formSet.size === 0) {
       try {
         const url = new URL(`${supabaseUrl}/rest/v1/inflections`)
@@ -139,8 +118,8 @@ export async function POST(request: NextRequest) {
     try {
       let rootPos: string | undefined
       let url = new URL(`${supabaseUrl}/rest/v1/verbs_lexicon`)
-      url.searchParams.set('select', 'p_norm')
-      url.searchParams.set('p_norm', `eq.${root}`)
+      url.searchParams.set('select', 'verb_root')
+      url.searchParams.set('verb_root', `eq.${root}`)
       url.searchParams.set('limit', '1')
       let r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
       if (r.ok) {
@@ -148,9 +127,10 @@ export async function POST(request: NextRequest) {
         if (Array.isArray(rows) && rows.length > 0) rootPos = 'verb'
       }
       if (!rootPos) {
+        // Query nouns_lexicon (relational format)
         url = new URL(`${supabaseUrl}/rest/v1/nouns_lexicon`)
-        url.searchParams.set('select', 'p_norm')
-        url.searchParams.set('p_norm', `eq.${root}`)
+        url.searchParams.set('select', 'noun_root')
+        url.searchParams.set('noun_root', `eq.${root}`)
         url.searchParams.set('limit', '1')
         r = await fetch(url.toString(), { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }, cache: 'no-store' })
         if (r.ok) {

@@ -62,6 +62,11 @@ export default function Home() {
   const [analysisWord, setAnalysisWord] = useState<string>("");
   const [lastSearchedQuery, setLastSearchedQuery] = useState<string>('');
 
+  // Verb understanding features
+  const [verbPerson, setVerbPerson] = useState<'1st' | '2nd' | '3rd'>('1st');
+  const [showFirstPerson, setShowFirstPerson] = useState<boolean>(false);
+  const [verbTense, setVerbTense] = useState<'present' | 'past' | 'future' | 'perfect'>('present');
+
 
 
   // hydrate persisted UI state
@@ -246,7 +251,7 @@ export default function Home() {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Left Side - Tabs for Search/Lexicon/Grammar */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 order-2 lg:order-1">
             <Tabs
               tabs={[
                 {
@@ -254,33 +259,124 @@ export default function Home() {
                   label: '🔍 Search',
                   content: (
                     <div className="space-y-4">
-                      <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                        <SearchBar
-                          query={query}
-                          setQuery={setQuery}
-                          scope={scope}
-                          setScope={setScope}
-                          onSearch={handleSearch}
-                          loading={loading}
-                        />
+                      {/* Search Section */}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
+                        <div className="flex flex-col space-y-4">
+                          {/* Search Input Row */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <SearchBar
+                                query={query}
+                                setQuery={setQuery}
+                                onSearch={handleSearch}
+                                loading={loading}
+                              />
+                            </div>
+                          </div>
 
-                        {/* Options */}
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
-                          <label className="flex items-center gap-1"><input type="checkbox" checked={includeRelated} onChange={(e) => setIncludeRelated(e.target.checked)} /> Include related forms</label>
+                          {/* Search Options Row */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                              {/* Scope Selection as Tabs */}
+                              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
+                                {[
+                                  {key: 'all', label: 'All', icon: '📚'},
+                                  {key: 'ot', label: 'OT', icon: '📖'},
+                                  {key: 'nt', label: 'NT', icon: '📜'}
+                                ].map((option) => (
+                                  <button
+                                    key={option.key}
+                                    onClick={() => setScope(option.key as Scope)}
+                                    className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-colors whitespace-nowrap ${
+                                      scope === option.key
+                                        ? 'bg-blue-500 text-white'
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                    }`}
+                                    title={option.label}
+                                  >
+                                    <span className="mr-1">{option.icon}</span>
+                                    <span className="hidden sm:inline">{option.label}</span>
+                                    <span className="sm:hidden">{option.key.toUpperCase()}</span>
+                                  </button>
+                                ))}
+                              </div>
+
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={includeRelated}
+                                  onChange={(e) => setIncludeRelated(e.target.checked)}
+                                  className="rounded"
+                                />
+                                <span className="text-gray-700 dark:text-gray-300">Include related forms</span>
+                              </label>
+                            </div>
+
+                            {/* Quick Search Actions */}
+                            <div className="flex items-center justify-between sm:justify-end gap-2">
+                              {query.trim() && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                                  {results.length} results
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Verb Understanding Panel */}
+                      {(showFirstPerson || verbPerson !== '1st' || verbTense !== 'present') && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 shadow-sm">
+                          <div className="flex items-start gap-2">
+                            <span className="text-blue-600 dark:text-blue-400 mt-0.5">🧠</span>
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                                Verb Understanding Mode
+                              </div>
+                              <div className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
+                                {showFirstPerson && <div>• Showing 1st person present forms (م for "I")</div>}
+                                {verbPerson === '2nd' && <div>• Showing 2nd person forms (ې for "you")</div>}
+                                {verbPerson === '3rd' && <div>• Showing 3rd person forms (ي for "he/she")</div>}
+                                {verbTense === 'past' && <div>• Showing past tense forms (لم for "I did")</div>}
+                                {verbTense === 'future' && <div>• Showing future tense forms (به for "I will")</div>}
+                                {verbTense === 'perfect' && <div>• Showing perfect forms (لیدلی for "I have seen")</div>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Results Section */}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
+                        {/* Results Header */}
                         {query.trim() && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                            {includeRelated ? `Including related forms (total variants: ${variantCount})` : `Direct search (${results.length} results found)`}
-                            {bookFilter && (
-                              results.length === 0 
-                                ? ` - No results in: ${bookFilter}` 
-                                : ` - Filtered by: ${bookFilter}`
-                            )}
+                          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center gap-4">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Search Results
+                              </h3>
+                              {bookFilter && (
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs rounded-full">
+                                  📍 {bookFilter}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {includeRelated
+                                ? `${variantCount} variants • ${results.length} occurrences`
+                                : `${results.length} direct matches`
+                              }
+                            </div>
                           </div>
                         )}
 
                         {loading ? (
-                          <div className="py-4 text-center text-gray-500">Loading...</div>
+                          <div className="py-8 text-center">
+                            <div className="inline-flex items-center gap-2 text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                              Searching...
+                            </div>
+                          </div>
                         ) : (
                           <ResultsList
                             results={visibleResults}
@@ -292,13 +388,25 @@ export default function Home() {
                         )}
 
                         {/* Inline frequency summary */}
-                        <InlineFrequency term={query} scope={scope} includeRelated={includeRelated} onPick={(f) => { setQuery(f); handleSearch(); }} />
-
-                        {/* Related forms panel */}
-                        {includeRelated && (
-                          <RelatedForms relatedForms={relatedForms} onPick={(f) => { setQuery(f); handleSearch(); }} />
-                        )}
+                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                          <InlineFrequency term={query} scope={scope} includeRelated={includeRelated} onPick={(f) => { setQuery(f); handleSearch(); }} />
+                        </div>
                       </div>
+
+                      {/* Related Forms Section */}
+                      {includeRelated && relatedForms && (
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-900 shadow-sm">
+                          <RelatedForms
+                            relatedForms={relatedForms}
+                            onPick={(f) => { setQuery(f); handleSearch(); }}
+                            verbState={{person: verbPerson, tense: verbTense}}
+                            setVerbState={(state) => {
+                              setVerbPerson(state.person)
+                              setVerbTense(state.tense)
+                            }}
+                          />
+                        </div>
+                      )}
 
                       {/* Keep search focused. Lexicon is a separate tab. */}
                     </div>
@@ -340,7 +448,7 @@ export default function Home() {
           </div>
 
           {/* Right Side - Coverage */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 order-1 lg:order-2">
             <CoverageSidebar
               coverage={coverage}
               scope={scope}
