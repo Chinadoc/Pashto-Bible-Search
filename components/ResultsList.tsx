@@ -26,6 +26,12 @@ interface Props {
     aspect: 'all' | 'imperfective' | 'perfective';
     mood: 'all' | 'indicative' | 'subjunctive' | 'imperative' | 'ability';
   };
+  multiVerbFilters?: {
+    person: string[];
+    tense: string[];
+    aspect: string[];
+    mood: string[];
+  };
   activeVariantForms?: string[];
   onResetFilters?: () => void;
 }
@@ -279,20 +285,31 @@ function VerseItem({
   );
 }
 
-export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed, verbFilters, activeVariantForms, onResetFilters }: Props) {
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed, verbFilters, multiVerbFilters, activeVariantForms, onResetFilters }: Props) {
   // Early returns BEFORE any hooks to avoid React hooks violations
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   
   // Enhanced "No results" message with context
   if (results.length === 0) {
-    const hasActiveFilters = verbFilters && (
+    // Check for active filters using multi-select filters first, then fallback to single-select
+    const hasActiveFilters = multiVerbFilters ? (
+      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ||
+      multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ||
+      multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ||
+      multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')
+    ) : verbFilters && (
       verbFilters.person !== 'all' ||
       verbFilters.tense !== 'all' ||
       verbFilters.aspect !== 'all' ||
       verbFilters.mood !== 'all'
     );
     
-    const activeFilterCount = verbFilters ? [
+    const activeFilterCount = multiVerbFilters ? [
+      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 'person' : null,
+      multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? 'tense' : null,
+      multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? 'aspect' : null,
+      multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? 'mood' : null,
+    ].filter(Boolean).length : verbFilters ? [
       verbFilters.person !== 'all' ? 'person' : null,
       verbFilters.tense !== 'all' ? 'tense' : null,
       verbFilters.aspect !== 'all' ? 'aspect' : null,
@@ -378,14 +395,24 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
   
   // Filter state indicator
-  const hasActiveFilters = verbFilters && (
+  const hasActiveFilters = multiVerbFilters ? (
+    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ||
+    multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ||
+    multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ||
+    multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')
+  ) : verbFilters && (
     verbFilters.person !== 'all' ||
     verbFilters.tense !== 'all' ||
     verbFilters.aspect !== 'all' ||
     verbFilters.mood !== 'all'
   );
   
-  const activeFilterCount = verbFilters ? [
+  const activeFilterCount = multiVerbFilters ? [
+    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 'person' : null,
+    multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? 'tense' : null,
+    multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? 'aspect' : null,
+    multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? 'mood' : null,
+  ].filter(Boolean).length : verbFilters ? [
     verbFilters.person !== 'all' ? 'person' : null,
     verbFilters.tense !== 'all' ? 'tense' : null,
     verbFilters.aspect !== 'all' ? 'aspect' : null,
@@ -636,25 +663,52 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 🔍 {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
               </span>
               <div className="flex gap-1">
-                {verbFilters?.person !== 'all' && (
-                  <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                    {verbFilters.person}
-                  </span>
-                )}
-                {verbFilters?.tense !== 'all' && (
-                  <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                    {verbFilters.tense}
-                  </span>
-                )}
-                {verbFilters?.aspect !== 'all' && (
-                  <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                    {verbFilters.aspect}
-                  </span>
-                )}
-                {verbFilters?.mood !== 'all' && (
-                  <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                    {verbFilters.mood}
-                  </span>
+                {multiVerbFilters ? (
+                  <>
+                    {(multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')) && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {multiVerbFilters.person.filter(p => p !== 'all').join(', ')}
+                      </span>
+                    )}
+                    {(multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all')) && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {multiVerbFilters.tense.filter(t => t !== 'all').join(', ')}
+                      </span>
+                    )}
+                    {(multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all')) && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {multiVerbFilters.aspect.filter(a => a !== 'all').join(', ')}
+                      </span>
+                    )}
+                    {(multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')) && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {multiVerbFilters.mood.filter(m => m !== 'all').join(', ')}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {verbFilters && verbFilters.person !== 'all' && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {verbFilters.person}
+                      </span>
+                    )}
+                    {verbFilters && verbFilters.tense !== 'all' && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {verbFilters.tense}
+                      </span>
+                    )}
+                    {verbFilters && verbFilters.aspect !== 'all' && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {verbFilters.aspect}
+                      </span>
+                    )}
+                    {verbFilters && verbFilters.mood !== 'all' && (
+                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {verbFilters.mood}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>

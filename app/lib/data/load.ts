@@ -675,7 +675,7 @@ export async function buildSearchIndexes(lazyData: LazySearchData): Promise<Sear
   };
 }
 
-// Hybrid search function that uses JSON for fast results and database for complex queries
+// Enhanced hybrid search function that uses morphological analysis
 export async function hybridSearch(
   query: string,
   options: {
@@ -684,6 +684,7 @@ export async function hybridSearch(
     limit?: number;
     enableFuzzy?: boolean;
     variants?: string[];
+    useMorphologicalSearch?: boolean;
   } = {}
 ): Promise<{
   results: any[];
@@ -693,68 +694,94 @@ export async function hybridSearch(
   ms: number;
 }> {
   const startTime = Date.now();
-  const { scope = 'all', includeRelated = false, limit = 100, enableFuzzy = false, variants = [] } = options;
+  const {
+    scope = 'all',
+    includeRelated = false,
+    limit = 100,
+    enableFuzzy = false,
+    variants = [],
+    useMorphologicalSearch = true
+  } = options;
 
   try {
-    // First, try fast JSON-based search
-    const { searchIndex, verses } = await getSearchData();
     let results: any[] = [];
+    let searchType = 'exact';
 
-    // Generate search terms including variants if available
-    let searchTerms = [query.toLowerCase()];
-    if (includeRelated && variants.length > 0) {
-      searchTerms.push(...variants.map(v => v.toLowerCase()));
-    }
+    if (useMorphologicalSearch) {
+      // Try morphological search first (includes verb conjugation expansion)
+      console.log(`🔍 Using morphological search for "${query}"`);
+      const { morphologicalSearch } = await import('../search/index');
+      const morphResult = await morphologicalSearch(query, scope as any, {
+        limit,
+        includeVariants: true,
+        includeCompounds: false,
+        maxVariants: 30,
+      });
 
-    // Fast substring search using JSON data (not exact word matching)
-    // This allows searching for roots within inflected forms for Pashto morphology
-    if (searchIndex?.verses) {
-      const candidateVerses = new Set();
+      results = morphResult.results;
+      searchType = morphResult.searchType;
 
-      for (const searchTerm of searchTerms) {
-        // Search through all verses for substring matches
-        for (const verse of searchIndex.verses) {
-          if (!matchesScope(verse, scope)) continue;
+      if (morphResult.variantCount > 0) {
+        console.log(`✅ Morphological search found ${results.length} results using ${morphResult.variantCount} variants`);
+      }
+    } else {
+      // Fallback to original substring search
+      const { searchIndex } = await getSearchData();
 
-          // Check if search term appears anywhere in original or normalized text
-          const textMatch = verse.textLower.includes(searchTerm);
-          const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(searchTerm) : false;
+      // Generate search terms including variants if available
+      let searchTerms = [query.toLowerCase()];
+      if (includeRelated && variants.length > 0) {
+        searchTerms.push(...variants.map(v => v.toLowerCase()));
+      }
 
-          if (textMatch || normalizedMatch) {
-            candidateVerses.add(verse);
+      if (searchIndex?.verses) {
+        const candidateVerses = new Set();
+
+        for (const searchTerm of searchTerms) {
+          for (const verse of searchIndex.verses) {
+            if (!matchesScope(verse, scope)) continue;
+
+            const textMatch = verse.textLower.includes(searchTerm);
+            const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(searchTerm) : false;
+
+            if (textMatch || normalizedMatch) {
+              candidateVerses.add(verse);
+            }
           }
         }
-      }
 
-      results = Array.from(candidateVerses).slice(0, limit);
-
-      // If no exact matches and fuzzy search is enabled, try database
-      if (!results.length && enableFuzzy) {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
-        // Try fuzzy search in database
-        const { data: dbResults } = await supabase
-          .from('verses')
-          .select('*')
-          .textSearch('text', query)
-          .limit(limit);
-
-        if (dbResults) {
-          results = dbResults.map((verse, index) => ({
-            ref: verse.ref,
-            text: verse.text,
-            testament: verse.testament,
-            book: verse.book || '',
-          }));
-        }
+        results = Array.from(candidateVerses).slice(0, limit);
       }
     }
 
-    // If still no results, fall back to database for complex queries
+    // If no results and fuzzy search is enabled, try database
+    if (!results.length && enableFuzzy) {
+      console.log(`🔄 No results found, trying database fuzzy search...`);
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data: dbResults } = await supabase
+        .from('verses')
+        .select('*')
+        .textSearch('text', query)
+        .limit(limit);
+
+      if (dbResults) {
+        results = dbResults.map((verse) => ({
+          ref: verse.ref,
+          text: verse.text,
+          testament: verse.testament,
+          book: verse.book || '',
+        }));
+        searchType = 'database_fuzzy';
+      }
+    }
+
+    // If still no results, fall back to database substring search
     if (!results.length) {
+      console.log(`🔄 Still no results, trying database substring search...`);
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -768,12 +795,13 @@ export async function hybridSearch(
 
       const { data: dbResults } = await queryBuilder;
       if (dbResults) {
-        results = dbResults.map((verse, index) => ({
+        results = dbResults.map((verse) => ({
           ref: verse.ref,
           text: verse.text,
           testament: verse.testament,
           book: verse.book || '',
         }));
+        searchType = 'database_substring';
       }
     }
 
@@ -789,7 +817,8 @@ export async function hybridSearch(
       processed: {
         original: query,
         normalized: query,
-        searchType: results.length > 0 ? 'hybrid' : 'database',
+        searchType,
+        variantCount: variants.length,
       },
       count: results.length,
       ms: Date.now() - startTime,

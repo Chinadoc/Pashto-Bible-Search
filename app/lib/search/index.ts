@@ -2,6 +2,7 @@ import 'server-only';
 import Fuse from 'fuse.js';
 import type { IFuseOptions } from 'fuse.js';
 import { getData, VerseRecord } from '../data/load';
+import { generateEnhancedVerbVariants } from '../../utils/lingdocs_adapter';
 
 export type Scope = 'all' | 'ot' | 'nt';
 export type SearchResult = Pick<VerseRecord, 'ref' | 'text' | 'testament' | 'source' | 'book'>;
@@ -161,5 +162,94 @@ export async function multiTermSearch(terms: string[], scope: Scope, limit = 100
   }
 
   return Array.from(resultsMap.values());
+}
+
+/**
+ * Morphological search that expands queries using verb conjugations and inflections
+ */
+export async function morphologicalSearch(
+  term: string,
+  scope: Scope,
+  options: {
+    limit?: number;
+    includeVariants?: boolean;
+    includeCompounds?: boolean;
+    maxVariants?: number;
+  } = {}
+): Promise<{
+  results: SearchResult[];
+  expandedTerms: string[];
+  variantCount: number;
+  searchType: 'morphological' | 'exact';
+}> {
+  const { limit = 100, includeVariants = true, includeCompounds = false, maxVariants = 50 } = options;
+
+  console.log(`🔍 Morphological search for "${term}" with options:`, options);
+
+  // First try exact matches
+  const exactResults = await directContains(term, scope, limit);
+
+  if (exactResults.length > 0) {
+    return {
+      results: exactResults,
+      expandedTerms: [term],
+      variantCount: 0,
+      searchType: 'exact',
+    };
+  }
+
+  // If no exact matches, try morphological expansion
+  const expandedTerms: string[] = [term];
+  let variantCount = 0;
+
+  try {
+    // Generate verb variants if this might be a verb
+    const { dictionaryByPashto } = await getData();
+    const entry = dictionaryByPashto.get(term);
+
+    if (entry && (entry.pos?.includes('verb') || entry.c?.includes('v.'))) {
+      console.log(`🔬 Detected verb "${term}", generating variants...`);
+
+      const variants = await generateEnhancedVerbVariants(term, {
+        cap: maxVariants,
+        includeCompound: includeCompounds,
+      });
+
+      variantCount = variants.length;
+
+      if (variants.length > 0) {
+        // Add variant forms to search terms
+        const variantForms = variants
+          .map(v => v.form)
+          .filter(form => form !== term); // Exclude the original term
+
+        expandedTerms.push(...variantForms);
+        console.log(`✅ Generated ${variantForms.length} variant forms for "${term}"`);
+      }
+    }
+
+    // Search with expanded terms
+    const morphologicalResults = await multiTermSearch(expandedTerms, scope, limit);
+
+    return {
+      results: morphologicalResults,
+      expandedTerms,
+      variantCount,
+      searchType: 'morphological',
+    };
+
+  } catch (error) {
+    console.error('❌ Morphological search failed:', error);
+
+    // Fallback to fuzzy search
+    const fuzzyResults = await fuzzySearch(term, scope, limit);
+
+    return {
+      results: fuzzyResults,
+      expandedTerms: [term],
+      variantCount: 0,
+      searchType: 'morphological',
+    };
+  }
 }
 
