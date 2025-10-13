@@ -145,3 +145,23 @@ audio/
 app/data/inflections_cache.json
 inflections_cache.json
 functions/verb_forms_index.json
+
+# Large data/cache files
+*.json
+!package.json
+!next.config.*
+!tailwind.config.*
+!postcss.config.*
+!firebase.json
+!firestore.*
+
+# Large data/cache files
+word_index.json
+app/data/verses.json
+public/inflections_cache.json
+grammatical_index_v15.json
+functions/verb_forms_index.json
+inflections_cache.json
+public/full_dictionary_enriched.json
+ot_form_occurrence_index.json
+dictionary_fast_index.json
