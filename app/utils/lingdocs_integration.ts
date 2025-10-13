@@ -1,9 +1,9 @@
 /**
  * LingDocs Integration Layer
- * 
+ *
  * This module provides a bridge between your Pashto Bible Search
  * and the professional LingDocs inflection engine.
- * 
+ *
  * Benefits:
  * - Linguistically accurate verb conjugation
  * - Dynamic inflection generation (no static tables needed)
@@ -17,26 +17,20 @@
 
 import type { Variant } from './verb_variants';
 
-// Type definitions for LingDocs
-interface LingDocsEntry {
-  ts: number;
-  p: string;  // Pashto text
-  f: string;  // Phonetics/romanization
-  g: string;  // Simplified phonetics
-  e: string;  // English meaning
-  c?: string; // Part of speech
-}
+// Import the actual LingDocs library from the built distribution
+import {
+  conjugateVerb,
+  inflectWord,
+  getVerbInfo,
+  makePsString,
+  psStringFromEntry,
+} from '../../pashto-inflector/src/lib/dist/lib/library.cjs';
 
-interface LingDocsVerbConjugation {
-  info: {
-    transitivity: string;
-    type: 'simple' | 'stative compound' | 'dynamic compound';
-  };
-  present?: any;
-  subjunctive?: any;
-  past?: any;
-  participle?: any;
-}
+import type * as LingDocsTypes from '../../pashto-inflector/src/types';
+
+// Type definitions for LingDocs
+type LingDocsEntry = LingDocsTypes.DictionaryEntry;
+type LingDocsVerbConjugation = LingDocsTypes.VerbOutput;
 
 /**
  * Convert LingDocs verb conjugation to our Variant format
@@ -127,7 +121,7 @@ function extractTenseVariants(
 
 /**
  * Generate verb variants using LingDocs engine
- * 
+ *
  * @param rootOrInfinitive - Pashto verb root or infinitive
  * @param opts - Options for generation
  * @returns Array of verb variants
@@ -137,23 +131,31 @@ export async function generateVerbVariantsLingDocs(
   opts?: { cap?: number; includeCompound?: boolean }
 ): Promise<Variant[]> {
   try {
-    // Note: This is a placeholder implementation
-    // You'll need to:
-    // 1. Build the LingDocs library: cd pashto-inflector/src/lib && npm run build
-    // 2. Import the actual functions: import { conjugateVerb } from '../../pashto-inflector/src/lib/dist/lib/library.cjs'
-    // 3. Look up the verb in your dictionary
-    // 4. Call conjugateVerb(verbEntry)
-    // 5. Convert the result to Variant[]
+    // Get the verb entry from our dictionary
+    const { getData } = await import('../lib/data/load');
+    const { dictionary, dictionaryByPashto } = await getData();
 
-    console.warn('LingDocs integration not yet fully implemented');
-    console.warn('To complete integration:');
-    console.warn('1. cd pashto-inflector/src/lib && npm install && npm run build');
-    console.warn('2. Update this file to import the built library');
-    console.warn('3. Connect to your dictionary data');
+    // Look up the verb in the dictionary
+    const dictEntry = dictionaryByPashto.get(rootOrInfinitive);
 
-    // Fallback to current implementation for now
-    const { generateVerbVariants } = await import('./verb_variants');
-    return generateVerbVariants(rootOrInfinitive, opts);
+    if (!dictEntry) {
+      console.warn(`Verb "${rootOrInfinitive}" not found in dictionary, falling back to pattern-based generation`);
+      const { generateVerbVariants } = await import('./verb_variants');
+      return generateVerbVariants(rootOrInfinitive, opts);
+    }
+
+    // Convert to LingDocs format and conjugate
+    const conjugation = conjugateVerb(dictEntry);
+
+    if (!conjugation) {
+      console.warn(`Failed to conjugate "${rootOrInfinitive}", falling back to pattern-based generation`);
+      const { generateVerbVariants } = await import('./verb_variants');
+      return generateVerbVariants(rootOrInfinitive, opts);
+    }
+
+    // Convert LingDocs conjugation to our Variant format
+    return lingDocsConjugationToVariants(conjugation, rootOrInfinitive);
+
   } catch (error) {
     console.error('LingDocs verb generation failed:', error);
     // Fallback to current system
