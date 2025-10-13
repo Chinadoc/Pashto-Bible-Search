@@ -1977,6 +1977,7 @@ export default function ClientHome() {
             loading={isLoading}
             processed={processed}
             verbFilters={verbFilters}
+            multiVerbFilters={multiVerbFilters}
             activeVariantForms={activeVariantForms}
             onResetFilters={() => {
               setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
