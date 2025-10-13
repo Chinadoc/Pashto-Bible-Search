@@ -113,6 +113,7 @@ function VerseItem({
   audioUrl,
   setAudioUrl,
   loadAudioUrl,
+  isLoadingAudio,
   handleDownload,
   handlePlay,
   handlePause
@@ -222,11 +223,12 @@ function VerseItem({
       {!audioUrl ? (
         <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
           <button
-            className="px-3 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+            className={`px-3 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700 ${isLoadingAudio ? 'opacity-60' : ''}`}
             onClick={loadAudioUrl}
             title="Load audio for this verse"
+            disabled={isLoadingAudio}
           >
-            🔊 Load Audio
+            {isLoadingAudio ? '⏳ Loading...' : '🔊 Load Audio'}
           </button>
         </div>
       ) : (
@@ -427,17 +429,102 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
   // Audio state for each verse (managed at parent level)
   const [verseAudioUrls, setVerseAudioUrls] = useState<Record<string, string | null>>({});
+  const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
+
+  // Preload audio for visible verses with batch optimization
+  useEffect(() => {
+    const preloadVisibleAudio = async () => {
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, results.length);
+
+      // Collect verses that need audio URLs
+      const versesNeedingAudio = [];
+      for (let i = startIndex; i < endIndex; i++) {
+        const verse = results[i];
+        if (verse && verse.ref && !verseAudioUrls[verse.ref]) {
+          versesNeedingAudio.push(verse.ref);
+        }
+      }
+
+      // Batch load audio URLs for efficiency (limit concurrent requests)
+      if (versesNeedingAudio.length > 0) {
+        // Process in batches of 5 to avoid overwhelming the server
+        const batchSize = 5;
+        for (let i = 0; i < versesNeedingAudio.length; i += batchSize) {
+          const batch = versesNeedingAudio.slice(i, i + batchSize);
+
+          try {
+            const response = await fetch('/api/audio_url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refs: batch })
+            });
+
+            if (response.ok) {
+              const { urls } = await response.json();
+              setVerseAudioUrls(prev => ({ ...prev, ...urls }));
+              setLoadingAudio(prev => {
+                const next = new Set(prev);
+                batch.forEach(ref => next.delete(ref));
+                return next;
+              });
+            }
+          } catch (error) {
+            console.warn('Failed to batch preload audio:', error);
+            // Fallback to individual loading with rate limiting
+            for (const verseRef of batch) {
+              setLoadingAudio(prev => new Set(prev).add(verseRef));
+              try {
+                const entry = audioMap[verseRef];
+                const url = await resolveAudioUrl(verseRef, entry);
+                if (url) {
+                  setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
+                }
+              } catch (error) {
+                console.warn(`Failed to preload audio for ${verseRef}:`, error);
+              } finally {
+                setLoadingAudio(prev => {
+                  const next = new Set(prev);
+                  next.delete(verseRef);
+                  return next;
+                });
+              }
+            }
+          }
+
+          // Small delay between batches to avoid overwhelming
+          if (i + batchSize < versesNeedingAudio.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      }
+    };
+
+    preloadVisibleAudio();
+  }, [page, results.length, audioMap]); // Remove verseAudioUrls from deps to avoid infinite loop
 
   const loadVerseAudioUrl = useCallback(async (verseRef: string) => {
-    if (verseAudioUrls[verseRef]) return; // Already loaded
+    if (verseAudioUrls[verseRef] || loadingAudio.has(verseRef)) return; // Already loaded or loading
 
-    const entry = audioMap[verseRef];
-    const url = await resolveAudioUrl(verseRef, entry);
-    if (url) {
-      setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
-      setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
+    setLoadingAudio(prev => new Set(prev).add(verseRef));
+
+    try {
+      const entry = audioMap[verseRef];
+      const url = await resolveAudioUrl(verseRef, entry);
+      if (url) {
+        setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
+        setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
+      }
+    } catch (error) {
+      console.warn(`Failed to load audio for ${verseRef}:`, error);
+    } finally {
+      setLoadingAudio(prev => {
+        const next = new Set(prev);
+        next.delete(verseRef);
+        return next;
+      });
     }
-  }, [audioMap, setResolvedUrls, verseAudioUrls]);
+  }, [audioMap, setResolvedUrls, verseAudioUrls, loadingAudio]);
 
   // Helper functions for verse-specific audio operations
   const handleVerseDownload = async (verse: Verse) => {
@@ -646,6 +733,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       audioUrl={verseAudioUrls[verse.ref] || null}
       setAudioUrl={(url: string | null) => setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: url }))}
       loadAudioUrl={() => loadVerseAudioUrl(verse.ref)}
+      isLoadingAudio={loadingAudio.has(verse.ref)}
       handleDownload={() => handleVerseDownload(verse)}
       handlePlay={() => handleVersePlay(verse)}
       handlePause={() => handleVersePause(verse)}

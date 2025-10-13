@@ -2,6 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+// Client-side cache for audio URLs
+const audioUrlCache = new Map<string, { url: string; timestamp: number }>();
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
 interface AudioPlayerProps {
   audioUrl: string;
   verseRef: string;
@@ -18,12 +22,20 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
 
   // Reset source when incoming URL changes
   useEffect(() => {
-    setSrc(audioUrl);
+    // Check cache first
+    const cached = audioUrlCache.get(verseRef);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setSrc(cached.url);
+      setDebugInfo('Using cached URL');
+    } else {
+      setSrc(audioUrl);
+    }
+
     setTriedAlt(false);
     setIsLoading(true);
     setError(null);
     setDebugInfo('');
-  }, [audioUrl]);
+  }, [audioUrl, verseRef]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -32,6 +44,13 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setIsLoading(false);
+
+      // Cache the successful URL
+      audioUrlCache.set(verseRef, {
+        url: src,
+        timestamp: Date.now()
+      });
+
       console.log(`✅ Audio loaded for ${verseRef}: ${audio.duration}s`);
     };
 

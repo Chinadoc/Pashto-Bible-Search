@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/utils/supabase'
 
+// Simple in-memory cache for audio URLs (server-side)
+const audioUrlCache = new Map<string, { url: string; expires: number }>()
+const CACHE_TTL = 60 * 60 * 1000 // 1 hour
+
+// CDN configuration for faster audio delivery
+const CDN_BASE_URL = process.env.NEXT_PUBLIC_CDN_BASE_URL || 'https://cdn.jsdelivr.net'
+
 /**
  * Generate signed URL for private audio files
  * Usage: GET /api/audio_url?ref=Genesis%201:1
@@ -33,20 +40,30 @@ function candidatePathsFromRef(ref: string): string[] {
   if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return [];
   const slug = normalizeBookNameToSlug(book);
 
-  // Standard patterns (existing)
+  // Optimized candidate selection - prioritize most likely paths first
+  const candidates = [];
+
+  // 1. Yousafzai individual verse clips (highest priority for Psalms/Proverbs)
+  if (['Psalms', 'Proverbs'].includes(book)) {
+    const chapPad = String(chapter).padStart(3, '0');
+    const verPad = String(verse).padStart(3, '0');
+    const yousafzaiBase = `yousafzai_${slug}${chapPad}_verse_${verPad}.mp3`;
+    candidates.push(`yousafzai/${yousafzaiBase}`);
+  }
+
+  // 2. Standard patterns (existing)
   const base = `${chapter}_verse_${verse}.mp3`;
-  const primary = `${slug}${base}`;
+  candidates.push(`${slug}${base}`);
+
+  // 3. Alternative numeric patterns
   const alts = altNumericBookSlugBothWays(slug).map(s => `${s}${base}`);
+  candidates.push(...alts);
+
+  // 4. Nested patterns (less common)
   const hy = hyphenSlug(book);
-  const nested = [`${hy}/chapter-${chapter}-verses/verse-${verse}.mp3`];
+  candidates.push(`${hy}/chapter-${chapter}-verses/verse-${verse}.mp3`);
 
-  // Yousafzai patterns (new - zero-padded, yousafzai prefix)
-  const chapPad = String(chapter).padStart(3, '0');
-  const verPad = String(verse).padStart(3, '0');
-  const yousafzaiBase = `yousafzai_${slug}${chapPad}_verse_${verPad}.mp3`;
-  const yousafzaiPath = `yousafzai/${yousafzaiBase}`;
-
-  return Array.from(new Set([primary, ...alts, ...nested, yousafzaiPath]));
+  return candidates;
 }
 
 export async function GET(request: NextRequest) {
@@ -65,6 +82,20 @@ export async function GET(request: NextRequest) {
     if (!supabaseUrl || !supabaseKey ||
         supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+    }
+
+    // Check cache first
+    const cacheKey = `${ref}-${bucket || 'audio'}-${object || path || ''}`
+    const cached = audioUrlCache.get(cacheKey)
+    if (cached && cached.expires > Date.now()) {
+      return NextResponse.json({
+        url: cached.url,
+        ref,
+        filename: object || path || '',
+        isSigned: true,
+        ms: Date.now() - started,
+        cached: true
+      })
     }
 
     let targetBucket = bucket || 'audio'
@@ -136,7 +167,18 @@ export async function GET(request: NextRequest) {
     // If we still don't have a target object, generate from ref
     if (!targetObject && ref) {
       const candidates = candidatePathsFromRef(ref)
-      targetObject = candidates[0] // Take first candidate only
+      // Try candidates in order until we find one that exists
+      for (const candidate of candidates) {
+        const { data } = await supabase.storage
+          .from(targetBucket)
+          .createSignedUrl(candidate, 60 * 60)
+
+        if (data?.signedUrl) {
+          targetObject = candidate
+          console.log(`Found audio file for ${ref}: ${candidate}`)
+          break
+        }
+      }
     }
 
     if (!targetObject) {
@@ -157,12 +199,29 @@ export async function GET(request: NextRequest) {
     const hasQuery = data.signedUrl.includes('?')
     const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
 
+    // Use CDN if configured
+    let finalUrl = withDl
+    if (CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net') {
+      // Replace Supabase domain with CDN domain
+      finalUrl = withDl.replace(
+        /https:\/\/[^\/]+\.supabase\.co/,
+        CDN_BASE_URL
+      )
+    }
+
+    // Cache the result
+    audioUrlCache.set(cacheKey, {
+      url: finalUrl,
+      expires: Date.now() + CACHE_TTL
+    })
+
     return NextResponse.json({
-      url: withDl,
+      url: finalUrl,
       ref,
       filename: targetObject,
       isSigned: true,
       ms: Date.now() - started,
+      cdn: !!CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net'
     })
 
   } catch (error) {
@@ -203,18 +262,38 @@ export async function POST(request: NextRequest) {
     for (const ref of refs) {
       try {
         const candidates = candidatePathsFromRef(ref)
-        const primaryCandidate = candidates[0] // Use first candidate only for performance
 
-        const { data, error } = await supabase.storage
-          .from('audio')
-          .createSignedUrl(primaryCandidate, 60 * 60)
+        // Try candidates in order until we find one that exists
+        let foundUrl = ''
+        let foundFilename = ''
 
-        if (!error && data?.signedUrl) {
-          const hasQuery = data.signedUrl.includes('?')
-          const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
-          results[ref] = { url: withDl, filename: primaryCandidate, isSigned: true }
-        } else {
-          results[ref] = { url: '', filename: '', isSigned: false }
+        for (const candidate of candidates) {
+          const { data, error } = await supabase.storage
+            .from('audio')
+            .createSignedUrl(candidate, 60 * 60)
+
+          if (!error && data?.signedUrl) {
+            const hasQuery = data.signedUrl.includes('?')
+            foundUrl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+
+            // Use CDN if configured
+            if (CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net') {
+              foundUrl = foundUrl.replace(
+                /https:\/\/[^\/]+\.supabase\.co/,
+                CDN_BASE_URL
+              )
+            }
+
+            foundFilename = candidate
+            console.log(`Batch found audio for ${ref}: ${candidate}`)
+            break
+          }
+        }
+
+        results[ref] = {
+          url: foundUrl,
+          filename: foundFilename,
+          isSigned: !!foundUrl
         }
       } catch {
         results[ref] = { url: '', filename: '', isSigned: false }
@@ -224,9 +303,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       urls: results,
       count: Object.keys(results).length,
-      ms: Date.now() - started
+      ms: Date.now() - started,
+      performance: {
+        total: Date.now() - started,
+        average: (Date.now() - started) / Object.keys(results).length
+      }
     })
-
   } catch (error) {
     console.error('Batch audio URL generation error:', error)
     return NextResponse.json(
