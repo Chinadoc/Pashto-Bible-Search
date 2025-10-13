@@ -35,6 +35,7 @@ type Variant = {
 
 type RelatedFormsResponse = {
   root: string;
+  searchedForm?: string; // The original form that was searched (for conjugated forms)
   forms: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   total: number;
   variantDetails?: any;
@@ -49,6 +50,7 @@ type RelatedFormsResponse = {
       other: number;
     };
     generationStrategy: string;
+    reverseLookup?: boolean; // Whether we found a root verb for a conjugated form
   };
 };
 
@@ -144,8 +146,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'form is required' }, { status: 400 });
     }
 
-    // Check cache first
-    const cacheKey = JSON.stringify({ root });
+    // Check cache first (use root verb for consistency)
+    const cacheKey = JSON.stringify({ root: rootVerb });
     const cached = getCache(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
@@ -158,7 +160,7 @@ export async function POST(req: NextRequest) {
     if (isLatinOnly(root)) {
       // Try exact match first
       let pick = dictionaryByRomanized.get(root.toLowerCase())?.[0];
-      
+
       // If no exact match, try accent-normalized match
       if (!pick) {
         const normalizedRoot = root.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -170,32 +172,59 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-      
+
       normalized = pick?.pashto ?? root;
+    }
+
+    // Try to find root verb for conjugated forms
+    let rootVerb = normalized;
+    if (posGuess === "verb" && !dictionaryByPashto.has(normalized)) {
+      // This might be a conjugated form, try to find the root verb
+      console.log(`🔍 "${normalized}" not found in dictionary, trying reverse conjugation lookup`);
+
+      // Check if this is a conjugated form of a known verb
+      for (const [verb, entry] of dictionaryByPashto.entries()) {
+        if (entry.pos?.includes('verb') || entry.c?.includes('v.')) {
+          try {
+            // Generate some forms for this verb and see if our input matches
+            const variants = await generateEnhancedVerbVariants(verb, { cap: 20, includeCompound: false });
+            const formMatches = variants.some(v => v.form === normalized);
+
+            if (formMatches) {
+              console.log(`✅ Found root verb "${verb}" for conjugated form "${normalized}"`);
+              rootVerb = verb;
+              break;
+            }
+          } catch (error) {
+            // Continue checking other verbs
+          }
+        }
+      }
     }
 
     // POS guess from dictionary
     let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
-    const dictEntry = dictionaryByPashto.get(normalized);
+    const dictEntry = dictionaryByPashto.get(rootVerb);
 
-    console.log(`🔍 Dictionary lookup for "${normalized}":`, {
+    console.log(`🔍 Dictionary lookup for "${rootVerb}" (searched for "${normalized}"):`, {
       found: !!dictEntry,
       pos: dictEntry?.pos,
       c: dictEntry?.c,
       pashto: dictEntry?.pashto,
+      originalSearch: normalized,
     });
 
     if (!dictEntry) {
-      console.log(`❌ Dictionary entry not found for "${normalized}"`);
+      console.log(`❌ Dictionary entry not found for "${rootVerb}"`);
       // Check if the word exists in the dictionary at all
       const allKeys = Array.from(dictionaryByPashto.keys());
-      const similarKeys = allKeys.filter(key => key.includes('نوم') || key.includes('دل'));
+      const similarKeys = allKeys.filter(key => key.includes('نوم') || key.includes('دل') || key.includes('ودل'));
       console.log(`🔍 Similar keys found:`, similarKeys.slice(0, 10));
 
-      // Check if the normalized word exists in raw dictionary data
+      // Check if the root verb exists in raw dictionary data
       const rawData = await getLightweightData();
-      const rawEntry = (rawData as any).dictionaryRaw?.entries?.find((e: any) => e.p === normalized || e.p_norm === normalized);
-      console.log(`🔍 Raw dictionary entry for "${normalized}":`, rawEntry ? 'found' : 'not found');
+      const rawEntry = (rawData as any).dictionaryRaw?.entries?.find((e: any) => e.p === rootVerb || e.p_norm === rootVerb);
+      console.log(`🔍 Raw dictionary entry for "${rootVerb}":`, rawEntry ? 'found' : 'not found');
     }
 
     if (dictEntry?.pos) {
@@ -278,15 +307,15 @@ export async function POST(req: NextRequest) {
     // Generate comprehensive variants (LingDocs-style exhaustive search)
     const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
 
-    console.log(`🔍 Generating comprehensive variants for "${normalized}" (POS: ${posGuess})`);
+    console.log(`🔍 Generating comprehensive variants for "${rootVerb}" (POS: ${posGuess}, searched for: "${normalized}")`);
 
     // Generate variants based on POS (prevent incorrect verb generation for adjectives)
     if (posGuess === "noun") {
-      groups.nouns = await generateNounVariants(normalized, { cap: 30 });
+      groups.nouns = await generateNounVariants(rootVerb, { cap: 30 });
       console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
     } else if (posGuess === "verb") {
       // Use enhanced LingDocs adapter for verb generation
-      groups.verbs = await generateEnhancedVerbVariants(normalized, { cap: 60, includeCompound: true });
+      groups.verbs = await generateEnhancedVerbVariants(rootVerb, { cap: 60, includeCompound: true });
       console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms using LingDocs adapter`);
     } else if (posGuess === "adjective") {
       // Adjectives should NOT generate verb conjugations - only generate adjective forms
@@ -371,14 +400,16 @@ export async function POST(req: NextRequest) {
     if (groups.other) enrichedGroups.other = forms.filter(f => f.pos !== 'noun' && f.pos !== 'verb');
 
     const variantDetails = {
-      root: normalized,
+      root: rootVerb,
+      searchedForm: normalized, // The original form that was searched
       forms: enrichedGroups,
       total,
     };
 
     // LingDocs-style comprehensive response
     const payload: RelatedFormsResponse = {
-      root: normalized,
+      root: rootVerb,
+      searchedForm: normalized, // Include the original searched form for context
       forms: enrichedGroups,
       total,
       variantDetails,
@@ -394,6 +425,7 @@ export async function POST(req: NextRequest) {
           other: enrichedGroups.other?.length || 0,
         },
         generationStrategy: posGuess === "other" ? "ambiguous_exhaustive" : "pos_specific",
+        reverseLookup: rootVerb !== normalized, // Whether we found a root verb for a conjugated form
       },
     };
 

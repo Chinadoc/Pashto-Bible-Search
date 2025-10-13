@@ -190,12 +190,73 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
     if (!value) return;
 
     if (Array.isArray(value)) {
-      if (value.length && Array.isArray(value[0]) && value.every((item) => Array.isArray(item))) {
-        // VerbBlock or ImperativeBlock
-        const labels = value.length === 2 ? IMPERATIVE_LABELS : PERSON_LABELS;
-        collectVerbBlock(value, label, labels as typeof PERSON_LABELS);
-        return;
+      // Handle deeply nested arrays like modal.nonImperative.long[person][gender][length][form]
+      if (value.length && Array.isArray(value[0])) {
+        // Check if this is a verb block structure (6 persons × 2 genders × 2 lengths)
+        if (value.length === 6 && value.every((item: any) => Array.isArray(item) && item.length === 2)) {
+          // VerbBlock structure: [person1, person2, person3, person4, person5, person6]
+          // Each person is [masc, fem], each gender is [long, short]
+          const persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
+          const lengths = ['long', 'short'];
+
+          value.forEach((personLine: any, personIdx: number) => {
+            if (!Array.isArray(personLine) || personLine.length !== 2) return;
+
+            const personLabel = persons[personIdx] || `${personIdx + 1}`;
+
+            personLine.forEach((genderLine: any, genderIdx: number) => {
+              if (!Array.isArray(genderLine) || genderLine.length !== 2) return;
+
+              const genderLabel = genderIdx === 0 ? 'Masc' : 'Fem';
+
+              genderLine.forEach((lengthLine: any, lengthIdx: number) => {
+                if (!Array.isArray(lengthLine)) return;
+
+                const lengthLabel = lengths[lengthIdx] || `Length${lengthIdx + 1}`;
+
+                lengthLine.forEach((ps: any) => {
+                  if (ps && typeof ps.p === 'string') {
+                    addVariant(ps, `${personLabel} ${label} ${genderLabel} ${lengthLabel}`);
+                  }
+                });
+              });
+            });
+          });
+          return;
+        }
+
+        // Handle imperative blocks (2 persons × 2 genders × 2 lengths)
+        if (value.length === 2 && value.every((item: any) => Array.isArray(item) && item.length === 2)) {
+          const persons = ['2sg', '2pl'];
+
+          value.forEach((personLine: any, personIdx: number) => {
+            if (!Array.isArray(personLine) || personLine.length !== 2) return;
+
+            const personLabel = persons[personIdx] || `${personIdx + 1}`;
+
+            personLine.forEach((genderLine: any, genderIdx: number) => {
+              if (!Array.isArray(genderLine) || genderLine.length !== 2) return;
+
+              const genderLabel = genderIdx === 0 ? 'Masc' : 'Fem';
+
+              genderLine.forEach((lengthLine: any, lengthIdx: number) => {
+                if (!Array.isArray(lengthLine)) return;
+
+                const lengthLabel = lengthIdx === 0 ? 'long' : 'short';
+
+                lengthLine.forEach((ps: any) => {
+                  if (ps && typeof ps.p === 'string') {
+                    addVariant(ps, `${personLabel} Imperative ${genderLabel} ${lengthLabel}`);
+                  }
+                });
+              });
+            });
+          });
+          return;
+        }
       }
+
+      // Handle simple arrays
       value.forEach((item) => collectFromNode(item, label));
       return;
     }
@@ -225,6 +286,7 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
         return;
       }
 
+      // Handle nested objects
       for (const nested of Object.values(value)) {
         collectFromNode(nested, label);
       }
@@ -236,83 +298,32 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
     collectFromNode(form, label);
   };
 
-  addVariant({ p: lemma }, 'Infinitive');
+  // Add base form
+  addVariant({ p: lemma, f: lemma }, 'Infinitive');
 
-  // Active voice
-  collectVerbForm(conjugation?.imperfective?.nonImperative, 'Present');
-  collectVerbForm(conjugation?.perfective?.nonImperative, 'Subjunctive');
-  collectVerbForm(conjugation?.imperfective?.future, 'Future (Imperfective)');
-  collectVerbForm(conjugation?.perfective?.future, 'Future (Perfective)');
-  collectVerbForm(conjugation?.imperfective?.past, 'Past (Imperfective)');
-  collectVerbForm(conjugation?.perfective?.past, 'Past (Perfective)');
-  collectVerbForm(conjugation?.imperfective?.habitualPast, 'Habitual Past (Imperfective)');
-  collectVerbForm(conjugation?.perfective?.habitualPast, 'Habitual Past (Perfective)');
-  collectVerbForm(conjugation?.imperfective?.imperative, 'Imperative');
-  if (conjugation?.perfective?.imperative) {
-    collectVerbForm(conjugation.perfective.imperative, 'Imperative (Perfective)');
+  // Extract all forms from the LingDocs conjugation structure
+  collectFromNode(conjugation, 'LingDocs Form');
+
+  // Also try the specific paths we know about
+  if (conjugation?.modal?.nonImperative?.long) {
+    collectFromNode(conjugation.modal.nonImperative.long, 'Present Ability');
+  }
+  if (conjugation?.modal?.nonImperative?.short) {
+    collectFromNode(conjugation.modal.nonImperative.short, 'Present Ability (Short)');
   }
 
-  const imperfectiveModal = conjugation?.imperfective?.modal;
-  if (imperfectiveModal) {
-    collectVerbForm(imperfectiveModal.nonImperative, 'Ability Present');
-    collectVerbForm(imperfectiveModal.future, 'Ability Future');
-    collectVerbForm(imperfectiveModal.past, 'Ability Past');
-    collectVerbForm(imperfectiveModal.habitualPast, 'Ability Habitual Past');
-    collectVerbForm(imperfectiveModal.hypotheticalPast, 'Ability Hypothetical Past');
+  if (conjugation?.imperfective?.nonImperative) {
+    collectFromNode(conjugation.imperfective.nonImperative, 'Present');
+  }
+  if (conjugation?.perfective?.nonImperative) {
+    collectFromNode(conjugation.perfective.nonImperative, 'Subjunctive');
   }
 
-  const perfectiveModal = conjugation?.perfective?.modal;
-  if (perfectiveModal) {
-    collectVerbForm(perfectiveModal.nonImperative, 'Ability Subjunctive');
-    collectVerbForm(perfectiveModal.future, 'Ability Future (Perfective)');
-    collectVerbForm(perfectiveModal.past, 'Ability Past (Perfective)');
-    collectVerbForm(perfectiveModal.habitualPast, 'Ability Habitual Past (Perfective)');
-    collectVerbForm(perfectiveModal.hypotheticalPast, 'Ability Hypothetical Past (Perfective)');
+  if (conjugation?.participle?.past) {
+    collectFromNode(conjugation.participle.past, 'Past Participle');
   }
-
-  collectVerbForm(conjugation?.hypothetical, 'Hypothetical');
-
-  const perfect = conjugation?.perfect;
-  if (perfect) {
-    collectVerbForm(perfect.present, 'Present Perfect');
-    collectVerbForm(perfect.past, 'Past Perfect');
-    collectVerbForm(perfect.future, 'Future Perfect');
-    collectVerbForm(perfect.habitual, 'Habitual Perfect');
-    collectVerbForm(perfect.subjunctive, 'Subjunctive Perfect');
-    collectVerbForm(perfect.wouldBe, 'Would Be Perfect');
-    collectVerbForm(perfect.pastSubjunctive, 'Past Subjunctive Perfect');
-    collectVerbForm(perfect.wouldHaveBeen, 'Would Have Been Perfect');
-  }
-
-  const participle = conjugation?.participle;
-  if (participle) {
-    collectVerbForm(participle.past, 'Past Participle');
-    collectVerbForm(participle.present, 'Present Participle');
-  }
-
-  const passive = conjugation?.passive;
-  if (passive) {
-    collectVerbForm(passive.imperfective?.nonImperative, 'Passive Present');
-    collectVerbForm(passive.imperfective?.future, 'Passive Future');
-    collectVerbForm(passive.imperfective?.past, 'Passive Past');
-    collectVerbForm(passive.imperfective?.habitualPast, 'Passive Habitual Past');
-
-    collectVerbForm(passive.perfective?.nonImperative, 'Passive Subjunctive');
-    collectVerbForm(passive.perfective?.future, 'Passive Future (Perfective)');
-    collectVerbForm(passive.perfective?.past, 'Passive Past (Perfective)');
-    collectVerbForm(passive.perfective?.habitualPast, 'Passive Habitual Past (Perfective)');
-
-    const passivePerfect = passive.perfect;
-    if (passivePerfect) {
-      collectVerbForm(passivePerfect.present, 'Passive Present Perfect');
-      collectVerbForm(passivePerfect.past, 'Passive Past Perfect');
-      collectVerbForm(passivePerfect.future, 'Passive Future Perfect');
-      collectVerbForm(passivePerfect.habitual, 'Passive Habitual Perfect');
-      collectVerbForm(passivePerfect.subjunctive, 'Passive Subjunctive Perfect');
-      collectVerbForm(passivePerfect.wouldBe, 'Passive Would Be Perfect');
-      collectVerbForm(passivePerfect.pastSubjunctive, 'Passive Past Subjunctive Perfect');
-      collectVerbForm(passivePerfect.wouldHaveBeen, 'Passive Would Have Been Perfect');
-    }
+  if (conjugation?.participle?.present) {
+    collectFromNode(conjugation.participle.present, 'Present Participle');
   }
 
   return Array.from(variantMap.values());

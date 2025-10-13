@@ -63,6 +63,7 @@ export interface RelatedFormVariant {
 
 export interface RelatedFormsData {
   root?: string;
+  searchedForm?: string; // The original form that was searched (for conjugated forms)
   verbs?: RelatedFormVariant[];
   nouns?: RelatedFormVariant[];
   other?: RelatedFormVariant[];

@@ -352,7 +352,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           {activeVariantForms && activeVariantForms.length > 0 && (
             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                Searching with {activeVariantForms.length} verb forms:
+                Searching with {activeVariantForms.length} verb forms{processed?.searchedForm && processed.searchedForm !== processed.root ? ` (from "${processed.searchedForm}")` : ''}:
               </p>
               <div className="flex flex-wrap gap-1 justify-center">
                 {activeVariantForms.slice(0, 8).map((form, i) => (
