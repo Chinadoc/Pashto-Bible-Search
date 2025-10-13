@@ -7,6 +7,8 @@
  */
 
 import { generateVerbVariantsLingDocs, generateNounVariantsLingDocs } from './lingdocs_integration';
+
+// Remove stub runtime - use real LingDocs integration only
 import type { Variant } from './verb_variants';
 
 // LingDocs adapter now uses the actual LingDocs library through lingdocs_integration.ts

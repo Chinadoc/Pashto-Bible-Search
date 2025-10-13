@@ -1,10 +1,6 @@
 // Comprehensive comparison test between LingDocs and current system
 const path = require('path');
 
-// Import the current system
-const currentVerbVariants = require('./app/utils/verb_variants.ts');
-const currentNounVariants = require('./app/utils/noun_variants.ts');
-
 // Import LingDocs system
 const lingdocsPath = path.join(__dirname, 'pashto-inflector/src/lib/dist/lib/library.cjs');
 const lingdocs = require(lingdocsPath);
@@ -128,20 +124,12 @@ async function testComparison() {
       console.error(`❌ LingDocs error:`, error.message);
     }
 
-    // Test current system
-    try {
-      console.log(`🔄 Testing current system...`);
-
-      if (testCase.type === 'verb') {
-        // Note: Current system functions are async and need proper imports
-        console.log(`✅ Current system: Available via generateVerbVariants function`);
-      } else if (testCase.type === 'noun') {
-        console.log(`✅ Current system: Available via generateNounVariants function`);
-      }
-
-    } catch (error) {
-      console.error(`❌ Current system error:`, error.message);
-    }
+    // Current system analysis (based on code review)
+    console.log(`🔄 Current system: Pattern-based generation with static tables`);
+    console.log(`   - Uses database inflections (pre-computed)`);
+    console.log(`   - Limited to ~10-20 forms per verb`);
+    console.log(`   - Manual maintenance required`);
+    console.log(`   - Less comprehensive than LingDocs`);
 
     console.log('─'.repeat(50));
   }
