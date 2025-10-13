@@ -82,10 +82,33 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
   console.log(`🔍 convertToLingDocsEntry looking for "${pashtoWord}"`);
 
   // Try to find by Pashto text first
-  let entry = dictionaryByPashto.get(pashtoWord);
-  if (!entry && isLatin(pashtoWord)) {
+  let entry: LingDocsEntry | null = null;
+  const dictEntry = dictionaryByPashto.get(pashtoWord);
+  if (dictEntry) {
+    // Convert DictionaryEntry to LingDocsEntry
+    entry = {
+      ts: Date.now(),
+      i: 0,
+      p: dictEntry.pashto,
+      f: dictEntry.romanized || dictEntry.pashto,
+      g: dictEntry.romanized || dictEntry.pashto,
+      e: dictEntry.english || '',
+      c: dictEntry.pos || 'v.',
+    };
+  } else if (isLatin(pashtoWord)) {
     const entries = dictionaryByRomanized.get(normalizeRomanized(pashtoWord));
-    entry = entries?.[0];
+    const dictEntry2 = entries?.[0];
+    if (dictEntry2) {
+      entry = {
+        ts: Date.now(),
+        i: 0,
+        p: dictEntry2.pashto,
+        f: dictEntry2.romanized || dictEntry2.pashto,
+        g: dictEntry2.romanized || dictEntry2.pashto,
+        e: dictEntry2.english || '',
+        c: dictEntry2.pos || 'v.',
+      };
+    }
   }
   
   // If no entry found, check irregular verbs
@@ -112,7 +135,7 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
           p: infinitive,
           f: verbData.romanization?.imperfective_root || infinitive,
           g: verbData.romanization?.imperfective_root || infinitive,
-          e: verbData.english || 'irregular verb',
+          e: 'irregular verb',
           c: 'v.',
 
           // Verb-specific fields for LingDocs
@@ -136,36 +159,13 @@ export async function convertToLingDocsEntry(pashtoWord: string): Promise<LingDo
     return null;
   }
   
-  // Convert to proper LingDocs format
-  const lingdocsEntry: LingDocsEntry = {
-    ts: (entry as any).id || Date.now(),
-    i: (entry as any).alphabetical_index || 0,
-    p: entry.pashto || pashtoWord,
-    f: entry.romanized || '',
-    g: entry.romanized || '',
-    e: entry.english || '',
-    c: entry.pos || entry.c || detectPOS(entry),
-
-    // Verb-specific fields if this is a verb
-    ...(isVerbEntry(entry) && {
-    psp: (entry as any).present_stem,
-    psf: (entry as any).present_stem_phonetics,
-    ssp: (entry as any).subjunctive_stem,
-    ssf: (entry as any).subjunctive_stem_phonetics,
-    prp: (entry as any).perfective_root,
-    prf: (entry as any).perfective_root_phonetics,
-    pprtp: (entry as any).past_participle,
-    pprtf: (entry as any).past_participle_phonetics,
-    }),
-  };
-
   console.log(`✅ Converted to LingDocs entry:`, {
-    p: lingdocsEntry.p,
-    c: lingdocsEntry.c,
-    hasVerbFields: !!(lingdocsEntry.psp || lingdocsEntry.ssp)
+    p: entry.p,
+    c: entry.c,
+    hasVerbFields: !!(entry.psp || entry.ssp)
   });
 
-  return lingdocsEntry;
+  return entry;
 }
 
 /**
