@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/utils/supabase'
-
 // Simple in-memory cache for audio URLs (server-side)
 const audioUrlCache = new Map<string, { url: string; expires: number }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 // CDN configuration for faster audio delivery
 const CDN_BASE_URL = process.env.NEXT_PUBLIC_CDN_BASE_URL || 'https://cdn.jsdelivr.net'
+
+const OT_BOOKS = new Set([
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+  'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+  '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
+  'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+  'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah',
+  'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel',
+  'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum',
+  'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
+])
 
 /**
  * Generate signed URL for private audio files
@@ -29,6 +38,11 @@ function altNumericBookSlugBothWays(bookSlug: string): string[] {
 
 function hyphenSlug(book: string): string {
   return book.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+function bookFromRef(ref: string): string {
+  const m = ref.match(/^(.+?)\s+\d+:\d+$/)
+  return m ? m[1].trim() : ''
 }
 
 function candidatePathsFromRef(ref: string): string[] {
@@ -95,14 +109,28 @@ export async function GET(request: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const allowSupabaseFallback = process.env.ALLOW_SUPABASE_AUDIO_FALLBACK !== '0'
+    const preferDriveOnly = process.env.PREFER_GOOGLE_DRIVE_AUDIO !== '0'
+    const supabase = allowSupabaseFallback
+      ? (await import('@/utils/supabase')).supabase
+      : null
 
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+    if (!allowSupabaseFallback && preferDriveOnly) {
+      // When we are in Google-Drive-only mode we do not require Supabase credentials.
+      if (!supabaseUrl || !supabaseKey) {
+        console.log('⚠️ Supabase credentials missing but fallback disabled – continuing in drive-only mode')
+      }
+    } else {
+      if (!supabaseUrl || !supabaseKey ||
+          supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+      }
     }
 
     // Check cache first
     const cacheKey = `${ref}-${bucket || 'audio'}-${object || path || ''}`
+    const bookName = ref ? bookFromRef(ref) : ''
+    const isOT = bookName ? OT_BOOKS.has(bookName) : false
     const cached = audioUrlCache.get(cacheKey)
     if (cached && cached.expires > Date.now()) {
       return NextResponse.json({
@@ -157,32 +185,42 @@ export async function GET(request: NextRequest) {
         console.warn(`Failed to lookup ${ref} in audio map:`, audioMapError);
       }
 
-      // Fallback to Supabase audio_map table/view
-      try {
-        const { data } = await supabase
-          .from('audio_map')
-          .select('bucket,object,direct,storage_path')
-          .eq('ref', ref)
-          .limit(1)
+      if (allowSupabaseFallback && !isOT && supabase) {
+        // Fallback to Supabase audio_map table/view
+        try {
+          const { data } = await supabase
+            .from('audio_map')
+            .select('bucket,object,direct,storage_path')
+            .eq('ref', ref)
+            .limit(1)
 
-        if (data?.[0]) {
-          const entry = data[0] as any
-          // Use bucket/object if available, otherwise try storage_path
-          if (entry.bucket && entry.object) {
-            targetBucket = entry.bucket
-            targetObject = entry.object
-          } else if (entry.storage_path) {
-            targetObject = entry.storage_path
+          if (data?.[0]) {
+            const entry = data[0] as any
+            // Use bucket/object if available, otherwise try storage_path
+            if (entry.bucket && entry.object) {
+              targetBucket = entry.bucket
+              targetObject = entry.object
+            } else if (entry.storage_path) {
+              targetObject = entry.storage_path
+            } else if (entry.direct) {
+              return NextResponse.json({
+                url: entry.direct,
+                ref,
+                filename: '',
+                isSigned: false,
+                ms: Date.now() - started,
+              })
+            }
+            console.log(`Found Supabase audio entry for ${ref}:`, entry)
           }
-          console.log(`Found audio entry for ${ref}:`, entry)
+        } catch (dbError) {
+          console.warn(`Failed to lookup ${ref} in audio_map:`, dbError)
         }
-      } catch (dbError) {
-        console.warn(`Failed to lookup ${ref} in audio_map:`, dbError)
       }
     }
 
     // If we still don't have a target object, generate from ref
-    if (!targetObject && ref) {
+    if (!targetObject && ref && allowSupabaseFallback && supabase && !isOT) {
       const candidates = candidatePathsFromRef(ref)
       // Try candidates in order until we find one that exists
       for (const candidate of candidates) {
@@ -199,6 +237,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (!targetObject) {
+      return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
+    }
+
+    if (!allowSupabaseFallback || !supabase) {
       return NextResponse.json({ url: '', ref, filename: '', isSigned: false, ms: Date.now() - started })
     }
 
@@ -265,6 +307,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Refs array required' }, { status: 400 })
     }
 
+    const allowSupabaseFallback = process.env.ALLOW_SUPABASE_AUDIO_FALLBACK === '1'
+    if (!allowSupabaseFallback) {
+      return NextResponse.json({ error: 'Supabase audio fallback disabled' }, { status: 400 })
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -272,6 +319,8 @@ export async function POST(request: NextRequest) {
         supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
     }
+
+    const { supabase } = await import('@/utils/supabase')
 
     const results: Record<string, { url: string; filename: string; isSigned: boolean }> = {}
 

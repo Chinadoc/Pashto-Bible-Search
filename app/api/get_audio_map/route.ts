@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
 import type { AudioMap } from '../../../types'
+
+const allowSupabaseFallback = process.env.ALLOW_SUPABASE_AUDIO_FALLBACK === '1'
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
 const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+const OT_BOOKS = new Set([
+  'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
+  '1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra',
+  'Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon',
+  'Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos',
+  'Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
+])
+
+function bookFromRef(ref: string | null | undefined): string {
+  if (!ref) return ''
+  const m = ref.match(/^(.+?)\s+\d+:\d+$/)
+  return m ? m[1].trim() : ''
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +33,9 @@ export async function GET(request: NextRequest) {
     // Check if we have valid Supabase credentials
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabase = allowSupabaseFallback && supabaseUrl && supabaseKey
+      ? (await import('../../../utils/supabase')).supabase
+      : null
 
     console.log('🔍 Audio map API called:', {
       supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
@@ -26,8 +44,8 @@ export async function GET(request: NextRequest) {
       hasCache: !!AUDIO_MAP_CACHE
     })
 
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+    if (allowSupabaseFallback && (!supabaseUrl || !supabaseKey ||
+        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder'))) {
       console.warn('❌ Supabase credentials missing or invalid, returning empty audio map')
       return NextResponse.json({})
     }
@@ -35,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Try optimized DB view first, if present (via REST to avoid TS generics)
     let viewError: unknown = null
     let viewData: Array<{ verse_ref?: string | null; url?: string | null }> | null = null
-    try {
+    if (allowSupabaseFallback && supabaseUrl && supabaseKey) try {
       console.log('🔍 Attempting to fetch audio_by_verse view...')
       const viewRes = await fetch(`${supabaseUrl}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
         headers: {
@@ -82,6 +100,7 @@ export async function GET(request: NextRequest) {
       if (localPath) {
         const localAudioData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
         let localCount = 0;
+        let missingDriveCount = 0;
         Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
           if (data.book && data.chapter && data.verse) {
             const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
@@ -96,10 +115,15 @@ export async function GET(request: NextRequest) {
             if (fileId && fileId !== 'TEST_ID' && fileId !== 'FILE_ID_HERE') {
               audioMap[verseRef] = fileId;
               localCount++;
+            } else {
+              missingDriveCount++;
             }
           }
         });
         console.log(`🔗 Loaded ${localCount} Google Drive audio entries from ${localPath}`);
+        if (missingDriveCount > 0) {
+          console.warn(`⚠️ ${missingDriveCount} Google Drive entries missing valid file IDs`);
+        }
       } else {
         console.warn('Local Google Drive audio file not found in any location');
       }
@@ -110,6 +134,8 @@ export async function GET(request: NextRequest) {
     if (viewData && Array.isArray(viewData) && viewData.length > 0) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
+        const book = bookFromRef(row.verse_ref)
+        if (OT_BOOKS.has(book)) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
         // Only add if not already in local data (Google Drive takes precedence)
         if (!audioMap[row.verse_ref] && !isDrive) {
@@ -120,123 +146,125 @@ export async function GET(request: NextRequest) {
 
     // If the view doesn't exist or returned nothing, fall back to tables
     // Fetch audio_mappings in pages to avoid PostgREST limits
-    const pageSize = 1000
-    let from = 0
-    let queryTimeout: NodeJS.Timeout | null = null
+    if (allowSupabaseFallback && supabase) {
+      const pageSize = 1000
+      let from = 0
+      let queryTimeout: NodeJS.Timeout | null = null
 
-    try {
-      console.log('🔍 Attempting to fetch from audio_by_verse table...')
-      while (true) {
-        // Set a timeout for each query to prevent hanging
-        const queryPromise = supabase
-          .from('audio_by_verse')
-          .select('verse_ref, url')
-          .order('verse_ref')
-          .range(from, from + pageSize - 1)
+      try {
+        console.log('🔍 Attempting to fetch from audio_by_verse table...')
+        while (true) {
+          // Set a timeout for each query to prevent hanging
+          const queryPromise = supabase
+            .from('audio_by_verse')
+            .select('verse_ref, url')
+            .order('verse_ref')
+            .range(from, from + pageSize - 1)
 
-        const timeoutPromise = new Promise((_, reject) => {
-          queryTimeout = setTimeout(() => reject(new Error('Query timeout')), 10000)
-        })
+          const timeoutPromise = new Promise((_, reject) => {
+            queryTimeout = setTimeout(() => reject(new Error('Query timeout')), 10000)
+          })
 
-        const { data: audioData, error } = await Promise.race([queryPromise, timeoutPromise]) as any
+          const { data: audioData, error } = await Promise.race([queryPromise, timeoutPromise]) as any
 
-        if (queryTimeout) {
-          clearTimeout(queryTimeout)
-          queryTimeout = null
-        }
-
-        if (error) {
-          console.error('❌ Audio map table fetch error:', error)
-          if (!viewError && Object.keys(audioMap).length === 0) {
-            console.error('❌ No data from view or table, returning 500')
-            return NextResponse.json({ error: 'Database query failed', details: error.message }, { status: 500 })
+          if (queryTimeout) {
+            clearTimeout(queryTimeout)
+            queryTimeout = null
           }
-          break
-        }
 
-        if (!audioData || audioData.length === 0) break
-
-        for (const mapping of audioData) {
-        const { verse_ref, url: mappingUrl } = mapping as { verse_ref?: string | null; url?: string | null };
-
-        if (!verse_ref || !mappingUrl) continue;
-
-        let url = mappingUrl
-
-        if (url) {
-          // Strongly prefer Supabase Storage URLs over Drive URLs
-          const existing = audioMap[verse_ref]
-          const isStorage = url.includes('/storage/v1/object/public/')
-          const isDrive = /drive\.google|docs\.google/i.test(url)
-          const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
-
-          // Always prefer Storage over Drive, and replace existing Drive URLs with Storage
-          if (!existing || isStorage || (!isDrive && existingIsDrive)) {
-            audioMap[verse_ref] = url
+          if (error) {
+            console.error('❌ Audio map table fetch error:', error)
+            if (!viewError && Object.keys(audioMap).length === 0) {
+              console.error('❌ No data from view or table, returning 500')
+              return NextResponse.json({ error: 'Database query failed', details: error.message }, { status: 500 })
+            }
+            break
           }
-          // Also add alternate keys for numeric-leading vs trailing
-          // 1john1_verse_x.mp3 <-> john11_verse_x.mp3 (but we only move single leading/trailing digit)
-          const alt1 = verse_ref.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
-          const alt2 = verse_ref.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
-          for (const alt of [alt1, alt2]) {
-            if (alt && alt !== verse_ref) {
-              const existingAlt = audioMap[alt]
-              const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
-              if (!existingAlt || (isStorage && existingAltIsDrive)) audioMap[alt] = url
+
+          if (!audioData || audioData.length === 0) break
+
+          for (const mapping of audioData) {
+            const { verse_ref, url: mappingUrl } = mapping as { verse_ref?: string | null; url?: string | null };
+
+            if (!verse_ref || !mappingUrl) continue;
+            const book = bookFromRef(verse_ref)
+            if (OT_BOOKS.has(book)) continue
+
+            const url = mappingUrl
+            if (!url) continue
+            const isDrive = /drive\.google|docs\.google/i.test(url)
+            if (isDrive) continue
+
+            const existing = audioMap[verse_ref]
+            const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
+
+            if (!existing || !existingIsDrive) {
+              audioMap[verse_ref] = url
+            }
+            const alt1 = verse_ref.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
+            const alt2 = verse_ref.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
+            for (const alt of [alt1, alt2]) {
+              if (alt && alt !== verse_ref) {
+                const existingAlt = audioMap[alt]
+                const existingAltIsDrive = existingAlt && /drive\.google|docs\.google/i.test(existingAlt)
+                if (!existingAlt || !existingAltIsDrive) audioMap[alt] = url
+              }
             }
           }
-        }
-      }
 
-        from += audioData.length
-        if (audioData.length < pageSize) break
-      }
-    } catch (error) {
-      console.error('Audio map query error:', error)
-      if (queryTimeout) {
-        clearTimeout(queryTimeout)
-      }
-      if (!viewError && Object.keys(audioMap).length === 0) {
-        return NextResponse.json({}, { status: 500 })
-      }
-    } finally {
-      if (queryTimeout) {
-        clearTimeout(queryTimeout)
+          from += audioData.length
+          if (audioData.length < pageSize) break
+        }
+      } catch (error) {
+        console.error('Audio map query error:', error)
+        if (queryTimeout) {
+          clearTimeout(queryTimeout)
+        }
+        if (!viewError && Object.keys(audioMap).length === 0) {
+          return NextResponse.json({}, { status: 500 })
+        }
+      } finally {
+        if (queryTimeout) {
+          clearTimeout(queryTimeout)
+        }
       }
     }
 
     // Also pull from verses table if drive IDs or filenames exist
-    const { data: versesData, error: versesError } = await supabase
-      .from('verses')
-      .select('book, chapter, verse, audio_filename, audio_drive_id')
-      .or('audio_filename.not.is.null,audio_drive_id.not.is.null')
+    if (allowSupabaseFallback && supabase && supabaseUrl) {
+      const { data: versesData, error: versesError } = await supabase
+        .from('verses')
+        .select('book, chapter, verse, audio_filename, audio_drive_id')
+        .or('audio_filename.not.is.null,audio_drive_id.not.is.null')
 
-    if (versesError) {
-      console.warn('Audio map (verses) fetch warning:', versesError)
-    }
+      if (versesError) {
+        console.warn('Audio map (verses) fetch warning:', versesError)
+      }
 
-    if (versesData) {
-      for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
-        const ref = `${v.book} ${v.chapter}:${v.verse}`
-        // Prefer Supabase Storage, fall back to Drive only if no storage alternative
-        let url = ''
-        if (v.audio_filename && /\.mp3$/i.test(v.audio_filename)) {
-          // Use Supabase Storage public URL for mp3 filenames
-          const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
-          url = storageBase + encodeURIComponent(v.audio_filename)
-        } else if (v.audio_drive_id) {
-          // Only use Drive as last resort
-          url = `https://drive.google.com/uc?export=download&id=${v.audio_drive_id}`
-        }
-        if (url) {
-          // Do not overwrite explicit path from audio_mappings if it exists
-          if (!audioMap[ref]) audioMap[ref] = url
+      if (versesData) {
+        for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
+          const ref = `${v.book} ${v.chapter}:${v.verse}`
+          // Prefer Google Drive, fall back to Supabase Storage only if no Drive alternative
+          let url = ''
+          if (v.audio_drive_id) {
+            // Use Google Drive as primary source
+            url = `https://drive.google.com/uc?export=download&id=${v.audio_drive_id}`
+          } else if (v.audio_filename && /\.mp3$/i.test(v.audio_filename)) {
+            // Only use Supabase Storage as fallback
+            const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
+            url = storageBase + encodeURIComponent(v.audio_filename)
+          }
+          if (url) {
+            // Do not overwrite explicit path from audio_mappings if it exists
+            if (!audioMap[ref]) audioMap[ref] = url
+          }
         }
       }
     }
+    }
 
     // Supplement with Yousafzai chapter audio (per-verse mapping to chapter files)
-    try {
+    if (allowSupabaseFallback && supabase) try {
       const { data: yousafzaiData, error: yousafzaiError } = await supabase
         .from('verses_yousafzai')
         .select('book, chapter, verse, audio_chapter_url')
@@ -261,7 +289,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Finally, ensure we include everything present in Storage bucket (authoritative)
-    try {
+    if (allowSupabaseFallback && supabase && supabaseUrl) try {
       const pageSizeStorage = 1000
       let offset = 0
       const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
@@ -281,10 +309,10 @@ export async function GET(request: NextRequest) {
           if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
           const file = item.name
           const url = storageBase + encodeURIComponent(file)
-          // Strongly prefer Supabase Storage URLs
+          // Only use Supabase Storage as fallback (prefer Drive)
           const existing = audioMap[file]
           const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
-          if (!existing || existingIsDrive) audioMap[file] = url
+          if (!existing && !existingIsDrive) audioMap[file] = url
 
           // add numeric-leading/trailing alternates
           const alt1 = file.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
@@ -293,7 +321,7 @@ export async function GET(request: NextRequest) {
             if (alt && alt !== file) {
               const existAlt = audioMap[alt]
               const existAltIsDrive = existAlt && /drive\.google|docs\.google/i.test(existAlt)
-              if (!existAlt || existAltIsDrive) audioMap[alt] = url
+              if (!existAlt && !existAltIsDrive) audioMap[alt] = url
             }
           }
         }

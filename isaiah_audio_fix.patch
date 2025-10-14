@@ -1,0 +1,44 @@
+From ccb828c7486c4b475d901fcd4ef2dd9256b60993 Mon Sep 17 00:00:00 2001
+From: Chinadoc <jeremy.samuels17@gmail.com>
+Date: Mon, 13 Oct 2025 19:31:56 -0500
+Subject: [PATCH] =?UTF-8?q?=F0=9F=94=A7=20Fix=20Isaiah=203:24=20audio=20-?=
+ =?UTF-8?q?=20upload=20to=20Google=20Drive=20and=20update=20file=20ID?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Upload isaiah003_verse_024.mp3 to Google Drive
+- Update google_drive_file_id from placeholder to actual ID: 1j73KLnlN4Zm7dxXTqhkRVxz87NrBjHlw
+- Update google_drive_url with correct download link
+- This should fix the empty audio URL issue for Isaiah 3:24
+---
+ google_drive_audio_urls.json | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/google_drive_audio_urls.json b/google_drive_audio_urls.json
+index afc6665..dfd7506 100644
+--- a/google_drive_audio_urls.json
++++ b/google_drive_audio_urls.json
+@@ -79788,10 +79788,10 @@
+     "book": "isaiah",
+     "chapter": 3,
+     "verse": 24,
+-    "google_drive_url": "https://drive.google.com/uc?id=FILE_ID_HERE&export=download",
++    "google_drive_url": "https://drive.google.com/uc?id=1j73KLnlN4Zm7dxXTqhkRVxz87NrBjHlw&export=download",
+     "local_path": "ot_audio_files/isaiah/chapter-3-verses/isaiah003_verse_024.mp3",
+     "folder_path": "isaiah/chapter-3-verses/isaiah003_verse_024.mp3",
+-    "google_drive_file_id": "FILE_ID_HERE"
++    "google_drive_file_id": "1j73KLnlN4Zm7dxXTqhkRVxz87NrBjHlw"
+   },
+   "isaiah003_verse_025.mp3": {
+     "book": "isaiah",
+@@ -87398,4 +87398,4 @@
+     "folder_path": "isaiah/chapter-9-verses/isaiah009_verse_021.mp3",
+     "google_drive_file_id": "FILE_ID_HERE"
+   }
+-}
++}
+\ No newline at end of file
+-- 
+2.50.1 (Apple Git-155)
+
