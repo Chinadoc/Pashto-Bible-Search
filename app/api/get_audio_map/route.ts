@@ -261,76 +261,79 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    }
 
     // Supplement with Yousafzai chapter audio (per-verse mapping to chapter files)
-    if (allowSupabaseFallback && supabase) try {
-      const { data: yousafzaiData, error: yousafzaiError } = await supabase
-        .from('verses_yousafzai')
-        .select('book, chapter, verse, audio_chapter_url')
+    if (allowSupabaseFallback && supabase) {
+      try {
+        const { data: yousafzaiData, error: yousafzaiError } = await supabase
+          .from('verses_yousafzai')
+          .select('book, chapter, verse, audio_chapter_url')
 
-      if (yousafzaiError) {
-        console.warn('Audio map (verses_yousafzai) fetch warning:', yousafzaiError)
-      }
-
-      if (Array.isArray(yousafzaiData)) {
-        for (const row of yousafzaiData as Array<{ book?: string | null; chapter?: number | null; verse?: number | null; audio_chapter_url?: string | null }>) {
-          if (!row?.book || row.chapter == null || row.verse == null) continue
-          const url = typeof row.audio_chapter_url === 'string' && row.audio_chapter_url ? row.audio_chapter_url : ''
-          if (!url) continue
-          const ref = `${row.book} ${row.chapter}:${row.verse}`
-          if (!audioMap[ref]) {
-            audioMap[ref] = url
-          }
-        }
-      }
-    } catch (yError) {
-      console.warn('Audio map (verses_yousafzai) catch:', yError)
-    }
-
-    // Finally, ensure we include everything present in Storage bucket (authoritative)
-    if (allowSupabaseFallback && supabase && supabaseUrl) try {
-      const pageSizeStorage = 1000
-      let offset = 0
-      const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
-      while (true) {
-        const { data: list, error: listErr } = await supabase.storage
-          .from('audio')
-          .list('', { limit: pageSizeStorage, offset })
-
-        if (listErr) {
-          console.warn('Storage list warning:', listErr)
-          break
+        if (yousafzaiError) {
+          console.warn('Audio map (verses_yousafzai) fetch warning:', yousafzaiError)
         }
 
-        if (!list || list.length === 0) break
-
-        for (const item of list) {
-          if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
-          const file = item.name
-          const url = storageBase + encodeURIComponent(file)
-          // Only use Supabase Storage as fallback (prefer Drive)
-          const existing = audioMap[file]
-          const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
-          if (!existing && !existingIsDrive) audioMap[file] = url
-
-          // add numeric-leading/trailing alternates
-          const alt1 = file.replace(/^(\d)([a-z].*)/, (_m, d, rest) => `${rest}${d}`)
-          const alt2 = file.replace(/^([a-z]+?)(\d)(_.+)/, (_m, rest, d, tail) => `${d}${rest}${tail}`)
-          for (const alt of [alt1, alt2]) {
-            if (alt && alt !== file) {
-              const existAlt = audioMap[alt]
-              const existAltIsDrive = existAlt && /drive\.google|docs\.google/i.test(existAlt)
-              if (!existAlt && !existAltIsDrive) audioMap[alt] = url
+        if (Array.isArray(yousafzaiData)) {
+          for (const row of yousafzaiData as Array<{ book?: string | null; chapter?: number | null; verse?: number | null; audio_chapter_url?: string | null }>) {
+            if (!row?.book || row.chapter == null || row.verse == null) continue
+            const url = typeof row.audio_chapter_url === 'string' && row.audio_chapter_url ? row.audio_chapter_url : ''
+            if (!url) continue
+            const ref = `${row.book} ${row.chapter}:${row.verse}`
+            if (!audioMap[ref]) {
+              audioMap[ref] = url
             }
           }
         }
-
-        offset += list.length
-        if (list.length < pageSizeStorage) break
+      } catch (yError) {
+        console.warn('Audio map (verses_yousafzai) catch:', yError)
       }
-    } catch (e) {
-      console.warn('Storage sync warning:', e)
+    }
+
+    // Finally, ensure we include everything present in Storage bucket (authoritative)
+    if (allowSupabaseFallback && supabase && supabaseUrl) {
+      try {
+        const pageSizeStorage = 1000
+        let offset = 0
+        const storageBase = `${supabaseUrl}/storage/v1/object/public/audio/`
+        while (true) {
+          const { data: list, error: listErr } = await supabase.storage
+            .from('audio')
+            .list('', { limit: pageSizeStorage, offset })
+
+          if (listErr) {
+            console.warn('Storage list warning:', listErr)
+            break
+          }
+
+          if (!list || list.length === 0) break
+
+          for (const item of list) {
+            if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
+            const file = item.name
+            const url = storageBase + encodeURIComponent(file)
+            // Only use Supabase Storage as fallback (prefer Drive)
+            const existing = audioMap[file]
+            const existingIsDrive = existing && /drive\.google|docs\.google/i.test(existing)
+            if (!existing && !existingIsDrive) audioMap[file] = url
+
+            // add numeric-leading/trailing alternates
+            const alt1 = file.replace(/^(\d)([a-z].*)/, (_m: string, d: string, rest: string) => `${rest}${d}`)
+            const alt2 = file.replace(/^([a-z]+?)(\d)(_.+)/, (_m: string, rest: string, d: string, tail: string) => `${d}${rest}${tail}`)
+            for (const alt of [alt1, alt2]) {
+              if (alt && alt !== file) {
+                const existAlt = audioMap[alt]
+                const existAltIsDrive = existAlt && /drive\.google|docs\.google/i.test(existAlt)
+                if (!existAlt && !existAltIsDrive) audioMap[alt] = url
+              }
+            }
+          }
+
+          offset += list.length
+          if (list.length < pageSizeStorage) break
+        }
+      } catch (e) {
+        console.warn('Storage sync warning:', e)
+      }
     }
 
     // Save to cache
