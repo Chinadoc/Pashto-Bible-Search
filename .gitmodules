@@ -1,0 +1,3 @@
+[submodule "pashto-inflector"]
+	path = pashto-inflector
+	url = https://github.com/lingdocs/pashto-inflector.git
