@@ -146,13 +146,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'form is required' }, { status: 400 });
     }
 
-    // Check cache first (use root verb for consistency)
-    const cacheKey = JSON.stringify({ root: rootVerb });
-    const cached = getCache(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
     const { dictionaryByRomanized, dictionaryByPashto, frequencyMap } = await getLightweightData();
 
     // Normalization (local)
@@ -178,6 +171,28 @@ export async function POST(req: NextRequest) {
 
     // Try to find root verb for conjugated forms
     let rootVerb = normalized;
+
+    // Check cache first (use root verb for consistency)
+    const cacheKey = JSON.stringify({ root: rootVerb });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // POS guess from dictionary (preliminary)
+    let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
+    const dictEntry = dictionaryByPashto.get(rootVerb);
+    if (dictEntry) {
+      const posLower = dictEntry.pos?.toLowerCase() || '';
+      const cLower = dictEntry.c?.toLowerCase() || '';
+      if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
+      else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
+      else if (posLower.startsWith("adj")) posGuess = "adjective";
+      else if (cLower.startsWith("v.")) posGuess = "verb";
+      else if (cLower.startsWith("n.")) posGuess = "noun";
+      else if (cLower.startsWith("adj")) posGuess = "adjective";
+    }
+
     if (posGuess === "verb" && !dictionaryByPashto.has(normalized)) {
       // This might be a conjugated form, try to find the root verb
       console.log(`🔍 "${normalized}" not found in dictionary, trying reverse conjugation lookup`);
@@ -202,9 +217,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // POS guess from dictionary
-    let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
-    const dictEntry = dictionaryByPashto.get(rootVerb);
+    // POS guess already determined above
 
     console.log(`🔍 Dictionary lookup for "${rootVerb}" (searched for "${normalized}"):`, {
       found: !!dictEntry,
