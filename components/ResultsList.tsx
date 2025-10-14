@@ -136,6 +136,7 @@ function VerseItem({
   audioUrl?: string | null;
   setAudioUrl?: (url: string | null) => void;
   loadAudioUrl?: () => void;
+  isLoadingAudio?: boolean;
   handleDownload?: () => void;
   handlePlay?: () => void;
   handlePause?: () => void;
