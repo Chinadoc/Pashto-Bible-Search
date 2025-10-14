@@ -15,6 +15,11 @@ const OT_BOOKS = new Set([
   'Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
 ])
 
+// Books to exclude from audio map due to text/audio version mismatches
+const EXCLUDED_BOOKS = new Set([
+  'Leviticus' // Audio is Yousafzai 2019, but text is Afghan 2023 - causing mismatch
+])
+
 function bookFromRef(ref: string | null | undefined): string {
   if (!ref) return ''
   const m = ref.match(/^(.+?)\s+\d+:\d+$/)
@@ -104,6 +109,10 @@ export async function GET(request: NextRequest) {
         Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
           if (data.book && data.chapter && data.verse) {
             const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
+            // Skip excluded books to prevent text/audio mismatches
+            if (EXCLUDED_BOOKS.has(bookName)) {
+              return;
+            }
             const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
             // Use file ID if available, otherwise extract from URL
             let fileId = data.google_drive_file_id;
@@ -135,7 +144,7 @@ export async function GET(request: NextRequest) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
         const book = bookFromRef(row.verse_ref)
-        if (OT_BOOKS.has(book)) continue
+        if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
         // Only add if not already in local data (Google Drive takes precedence)
         if (!audioMap[row.verse_ref] && !isDrive) {
@@ -188,7 +197,7 @@ export async function GET(request: NextRequest) {
 
             if (!verse_ref || !mappingUrl) continue;
             const book = bookFromRef(verse_ref)
-            if (OT_BOOKS.has(book)) continue
+            if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
 
             const url = mappingUrl
             if (!url) continue
@@ -243,6 +252,8 @@ export async function GET(request: NextRequest) {
 
       if (versesData) {
         for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
+          // Skip excluded books to prevent text/audio mismatches
+          if (EXCLUDED_BOOKS.has(v.book)) continue
           const ref = `${v.book} ${v.chapter}:${v.verse}`
           // Prefer Google Drive, fall back to Supabase Storage only if no Drive alternative
           let url = ''
@@ -276,6 +287,8 @@ export async function GET(request: NextRequest) {
         if (Array.isArray(yousafzaiData)) {
           for (const row of yousafzaiData as Array<{ book?: string | null; chapter?: number | null; verse?: number | null; audio_chapter_url?: string | null }>) {
             if (!row?.book || row.chapter == null || row.verse == null) continue
+            // Skip excluded books to prevent text/audio mismatches
+            if (EXCLUDED_BOOKS.has(row.book)) continue
             const url = typeof row.audio_chapter_url === 'string' && row.audio_chapter_url ? row.audio_chapter_url : ''
             if (!url) continue
             const ref = `${row.book} ${row.chapter}:${row.verse}`
