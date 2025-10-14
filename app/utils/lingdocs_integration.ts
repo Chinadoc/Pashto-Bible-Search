@@ -26,10 +26,10 @@ type CachedResources = {
 // Lazy resource loaders
 // ---------------------------------------------------------------------------
 
-let lingDocsLibraryPromise: Promise<LingDocsLibraryModule> | null = null;
+let lingDocsLibraryPromise: Promise<LingDocsLibraryModule | null> | null = null;
 let cachedResourcesPromise: Promise<CachedResources> | null = null;
 
-async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
+async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule | null> {
   if (!lingDocsLibraryPromise) {
     lingDocsLibraryPromise = import('../../pashto-inflector/src/lib/dist/lib/library.cjs')
       .then((mod) => {
@@ -37,8 +37,8 @@ async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
         return mod;
       })
       .catch((error) => {
-        console.error('❌ Failed to load LingDocs library:', error);
-        throw error;
+        console.warn('⚠️ LingDocs library not available (submodule issue), using fallback:', error.message);
+        return null; // Return null instead of throwing
       });
   }
   return lingDocsLibraryPromise;
@@ -389,6 +389,13 @@ export async function generateVerbVariantsLingDocs(
 ): Promise<Variant[]> {
   try {
     const LingDocs = await loadLingDocsLibrary();
+    
+    // Fallback when LingDocs library is not available
+    if (!LingDocs) {
+      console.warn(`⚠️ LingDocs library not available, returning empty variants for "${rootOrInfinitive}"`);
+      return [];
+    }
+    
     const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
     const dictEntry = dictionaryByPashto.get(rootOrInfinitive);
@@ -456,6 +463,13 @@ export async function generateNounVariantsLingDocs(
 ): Promise<Variant[]> {
   try {
     const LingDocs = await loadLingDocsLibrary();
+    
+    // Fallback when LingDocs library is not available
+    if (!LingDocs) {
+      console.warn(`⚠️ LingDocs library not available, returning empty variants for "${rootOrLemma}"`);
+      return [];
+    }
+    
     const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
     const dictEntry = dictionaryByPashto.get(rootOrLemma);
