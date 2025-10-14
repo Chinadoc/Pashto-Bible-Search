@@ -995,14 +995,18 @@ export default function ClientHome() {
       });
 
       setResults(searchData.results || []);
-      setRelatedForms({
-        ...searchData.relatedForms,
-        searchedForm: searchData.searchedForm,
-      } || null);
-      setProcessed({
-        ...searchData.processed,
-        searchedForm: searchData.searchedForm,
-      } || null);
+      setRelatedForms(
+        searchData.relatedForms ? {
+          ...searchData.relatedForms,
+          searchedForm: searchData.searchedForm,
+        } : null
+      );
+      setProcessed(
+        searchData.processed ? {
+          ...searchData.processed,
+          searchedForm: searchData.searchedForm,
+        } : null
+      );
 
       const processedVariants: string[] = searchData.processed?.variantsSearched
         || searchData.processed?.variants
