@@ -40,6 +40,23 @@ function candidatePathsFromRef(ref: string): string[] {
   if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return [];
   const slug = normalizeBookNameToSlug(book);
 
+  // Define OT books that should use Google Drive
+  const otBooks = [
+    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+    '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
+    'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+    'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah',
+    'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel',
+    'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum',
+    'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
+  ];
+
+  // For OT books, prioritize Google Drive (return empty to force Google Drive lookup)
+  if (otBooks.includes(book)) {
+    return [];
+  }
+
   // Optimized candidate selection - prioritize most likely paths first
   const candidates = [];
 
