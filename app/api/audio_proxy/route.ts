@@ -34,18 +34,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get the audio data
-    const audioBuffer = await response.arrayBuffer()
-    
-    // Set appropriate headers for audio streaming
+    // Stream the audio data instead of loading into memory
     const headers = new Headers()
     headers.set('Content-Type', 'audio/mpeg')
-    headers.set('Content-Length', audioBuffer.byteLength.toString())
     headers.set('Cache-Control', 'public, max-age=3600') // Cache for 1 hour
     headers.set('Accept-Ranges', 'bytes')
+    
+    // Copy relevant headers from Google Drive response
+    if (response.headers.get('content-length')) {
+      headers.set('Content-Length', response.headers.get('content-length')!)
+    }
+    if (response.headers.get('content-range')) {
+      headers.set('Content-Range', response.headers.get('content-range')!)
+    }
 
-    // Return the audio data
-    return new NextResponse(audioBuffer, {
+    // Return the audio data as a stream
+    return new NextResponse(response.body, {
       status: 200,
       headers,
     })
