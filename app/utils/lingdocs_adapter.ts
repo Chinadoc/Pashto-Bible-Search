@@ -6,7 +6,22 @@
  * and noun/adjective inflection.
  */
 
-import { generateVerbVariantsLingDocs, generateNounVariantsLingDocs } from './lingdocs_integration';
+// Dynamic import to handle LingDocs availability gracefully
+async function loadLingDocsIntegration() {
+  try {
+    const module = await import('./lingdocs_integration');
+    return {
+      generateVerbVariantsLingDocs: module.generateVerbVariantsLingDocs,
+      generateNounVariantsLingDocs: module.generateNounVariantsLingDocs,
+    };
+  } catch (error) {
+    console.warn('⚠️ LingDocs integration not available, using fallback:', error);
+    return {
+      generateVerbVariantsLingDocs: async () => [],
+      generateNounVariantsLingDocs: async () => [],
+    };
+  }
+}
 
 // Remove stub runtime - use real LingDocs integration only
 import type { Variant } from './verb_variants';
@@ -22,6 +37,9 @@ export async function generateEnhancedVerbVariants(
   console.log(`🚀 Using LingDocs for enhanced verb variants: "${rootOrInfinitive}"`);
 
   try {
+    // Dynamically load LingDocs integration
+    const { generateVerbVariantsLingDocs } = await loadLingDocsIntegration();
+
     // Use the actual LingDocs integration
     const variants = await generateVerbVariantsLingDocs(rootOrInfinitive, opts);
 
@@ -46,6 +64,9 @@ export async function generateEnhancedNounVariants(
   console.log(`🚀 Using LingDocs for enhanced noun variants: "${rootOrLemma}"`);
 
   try {
+    // Dynamically load LingDocs integration
+    const { generateNounVariantsLingDocs } = await loadLingDocsIntegration();
+
     // Use the actual LingDocs integration
     const variants = await generateNounVariantsLingDocs(rootOrLemma, opts);
 
