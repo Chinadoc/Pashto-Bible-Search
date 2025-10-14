@@ -8,7 +8,22 @@
 
 import type { Variant } from './verb_variants';
 
-type LingDocsLibraryModule = typeof import('../../pashto-inflector/src/lib/dist/lib/library.cjs');
+// Dynamic import for LingDocs library to handle submodule availability
+let LingDocsLibraryModule: any = null;
+
+async function loadLingDocsLibraryModule() {
+  if (!LingDocsLibraryModule) {
+    try {
+      const mod = await import('../../pashto-inflector/src/lib/dist/lib/library.cjs');
+      LingDocsLibraryModule = mod;
+      console.log('✅ LingDocs library loaded successfully');
+    } catch (error) {
+      console.warn('⚠️ LingDocs library not available (submodule issue), using fallback:', error);
+      LingDocsLibraryModule = null;
+    }
+  }
+  return LingDocsLibraryModule;
+}
 
 type CachedInflection = {
   form: string;
@@ -26,20 +41,12 @@ type CachedResources = {
 // Lazy resource loaders
 // ---------------------------------------------------------------------------
 
-let lingDocsLibraryPromise: Promise<LingDocsLibraryModule | null> | null = null;
+let lingDocsLibraryPromise: Promise<any> | null = null;
 let cachedResourcesPromise: Promise<CachedResources> | null = null;
 
-async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule | null> {
+async function loadLingDocsLibrary(): Promise<any> {
   if (!lingDocsLibraryPromise) {
-    lingDocsLibraryPromise = import('../../pashto-inflector/src/lib/dist/lib/library.cjs')
-      .then((mod) => {
-        console.log('✅ LingDocs library loaded successfully');
-        return mod;
-      })
-      .catch((error) => {
-        console.warn('⚠️ LingDocs library not available (submodule issue), using fallback:', error.message);
-        return null; // Return null instead of throwing
-      });
+    lingDocsLibraryPromise = loadLingDocsLibraryModule();
   }
   return lingDocsLibraryPromise;
 }
