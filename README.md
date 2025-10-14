@@ -80,3 +80,4 @@ No code changes are needed; `app/api/search_phrase/route.ts` will try the functi
 - Supabase
 - Tailwind CSS
 - Material-UI
+# Force Vercel rebuild
