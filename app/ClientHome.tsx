@@ -2017,6 +2017,7 @@ export default function ClientHome() {
             onClearFilters={() => setBookFilter([])}
             resultsCount={results.length}
             filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+            audioMap={audioMap}
           />
         </div>
       </div>

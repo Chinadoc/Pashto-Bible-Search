@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import classNames from "classnames";
-import type { CoverageItem } from "../types";
+import type { CoverageItem, AudioMap } from "../types";
 
 const OT_BOOKS = [
   "Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi"
@@ -44,6 +44,7 @@ interface Props {
   selectedBook?: string | null;
   selectedBooks?: string[];
   onClearFilters?: () => void;
+  audioMap?: AudioMap;
 }
 
 function abbr(book: string): string {
@@ -69,7 +70,7 @@ function getTileClasses(count: number, maxCount: number, complexityLevel: Comple
 }
 
 
-export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook, selectedBooks = [], onClearFilters }: Props) {
+export default function CoverageGrid({ coverage, onPickBook, compact, scope = "all", title, subtitle, complexityLevel = ComplexityLevel.Full, selectedBook, selectedBooks = [], onClearFilters, audioMap }: Props) {
   const covMap = useMemo(() => {
     const m: Record<string, { count: number; translation?: string }> = {};
     for (const c of coverage) {
@@ -100,6 +101,56 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
   // Compute max count for heatmap (only needed for Full level)
   const maxCount = useMemo(() => Math.max(1, ...Object.values(covMap).map(item => item.count)), [covMap])
 
+  // Analyze audio map for each book
+  const audioAnalysis = useMemo(() => {
+    if (!audioMap) return {};
+    
+    const analysis: Record<string, { 
+      hasAudio: boolean; 
+      audioCount: number; 
+      hasGoogleDrive: boolean; 
+      hasSupabase: boolean; 
+      hasMultipleSources: boolean 
+    }> = {};
+    
+    for (const [ref, url] of Object.entries(audioMap)) {
+      const bookMatch = ref.match(/^(.+?)\s+\d+:\d+$/);
+      if (!bookMatch) continue;
+      
+      const book = bookMatch[1];
+      if (!analysis[book]) {
+        analysis[book] = {
+          hasAudio: false,
+          audioCount: 0,
+          hasGoogleDrive: false,
+          hasSupabase: false,
+          hasMultipleSources: false
+        };
+      }
+      
+      analysis[book].hasAudio = true;
+      analysis[book].audioCount++;
+      
+      // Check audio source type
+      if (typeof url === 'string') {
+        if (url.length > 20 && !url.startsWith('http')) {
+          // Google Drive file ID
+          analysis[book].hasGoogleDrive = true;
+        } else if (url.includes('supabase')) {
+          // Supabase URL
+          analysis[book].hasSupabase = true;
+        }
+      }
+    }
+    
+    // Determine if book has multiple sources
+    for (const book in analysis) {
+      analysis[book].hasMultipleSources = analysis[book].hasGoogleDrive && analysis[book].hasSupabase;
+    }
+    
+    return analysis;
+  }, [audioMap]);
+
   const Tile = ({ book }: { book: string }) => {
     const item = covMap[book]
     const rawCount = item?.count ?? 0
@@ -110,24 +161,63 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     const active = displayCount > 0
     const showCount = complexityLevel >= ComplexityLevel.Basic && active
 
+    // Get audio analysis for this book
+    const audioInfo = audioAnalysis[book]
+    const hasAudio = audioInfo?.hasAudio ?? false
+    const audioCount = audioInfo?.audioCount ?? 0
+    const hasMultipleSources = audioInfo?.hasMultipleSources ?? false
+
     // Override classes for selected book(s)
     const tileClasses = isSelected
       ? `relative p-2 m-0.5 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold hover:bg-blue-200 dark:hover:bg-blue-700 ${compact ? 'text-xs' : 'text-sm'}`
       : getTileClasses(displayCount, maxCount, complexityLevel, compact ?? false)
 
+    // Build tooltip with audio information
+    const tooltipParts = [book];
+    if (translation) tooltipParts.push(`(${translation})`);
+    if (hasAudio) {
+      tooltipParts.push(`Audio: ${audioCount} verses`);
+      if (hasMultipleSources) tooltipParts.push('Multiple sources');
+    }
+    const tooltip = tooltipParts.join(' ');
+
     return (
       <button
         onClick={() => onPickBook?.(book)}
         className={tileClasses}
-        title={translation ? `${book} (${translation})` : book}
+        title={tooltip}
       >
         <span>{compact ? abbr(book) : book}</span>
+        
+        {/* Translation indicator (top-left) */}
         {translation && displayCount > 0 && (
           <span className="absolute -top-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-orange-500 text-white text-[8px]">
             {translation === 'Yousafzai 2019' ? '🕌' : '📖'}
           </span>
         )}
-        {showCount ? <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">{rawCount}</span> : null}
+        
+        {/* Audio indicator (top-right) */}
+        {hasAudio && (
+          <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] ${
+            hasMultipleSources ? 'bg-green-600' : 'bg-blue-600'
+          }`}>
+            🔊
+          </span>
+        )}
+        
+        {/* Count badge (bottom-right) */}
+        {showCount ? (
+          <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px]">
+            {rawCount}
+          </span>
+        ) : null}
+        
+        {/* Multiple sources indicator (bottom-left) */}
+        {hasMultipleSources && (
+          <span className="absolute -bottom-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-green-500 text-white text-[8px]">
+            2x
+          </span>
+        )}
       </button>
     )
   }
