@@ -1,0 +1,34 @@
+# VCS and system files
+.git
+**/__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.cache/
+
+# Local envs and deps
+venv/
+node_modules/
+
+# Large data and generated dirs not needed for API runtime
+all_txt_copies/
+ot_txt_copies/
+cache/
+rx/
+pashto-bible-react/
+ui_backend/
+inflection_cache/
+inflection_service/
+lingdocs_dictionary/
+docs/
+
+# Many per-book directories (exclude all starting with 'pashto')
+pashto*/
+
+# Keep backend, web assets, and top-level JSON indices
+# backend/
+# web/
+# form_occurrence_index.json
+# form_to_root_map.json
+# audio_file_map.json
+

@@ -1,0 +1,1010 @@
+lemma,family,rationale,irregular_by_engine,imperfective_stem,perfective_stem,imperfective_root,perfective_root,verified_via
+ورکېدل,aux_become,prefix ور+کېدل,False,,,,,none
+کېدل,aux_become,auxiliary; irregular present stem کېږ-,True,کېږ,وش,کېدل,وشو,local
+کول,aux_do,suppletive perfective stem کړ-,True,کو,وکړ,کول,وکړ,local
+نیول,capture_take,perfective ونی-,True,نیس,ونی,نیول,ونیول,local
+خوړل,consume_eat,perfective وخور-,True,خور,وخور,خوړل,وخوړل,local
+راکول,give,prefix + کول → راکړ- in perfective,False,,,,,none
+ورکول,give,prefix + کول → ورکړ- in perfective,False,,,,,none
+راتلل,motion_come,derived from تلل with را- prefix,False,,,,,none
+راوتل,motion_come_out,prefix + motion,False,,,,,none
+وتل,motion_exit,motion; often suppletive perfective forms,False,,,,,none
+تلل,motion_go,suppletive perfective root لاړل,True,ځ,لاړ ش,تلل,لاړل,local
+ورتلل,motion_go,prefix ور+تلل,False,,,,,none
+لیدل,perception_see,stems وین-/ووین-,True,وین,ووین,لیدل,ولیدل,local
+آبادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+آبدارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+آزادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+آماده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+آورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ابلاغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اثباتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+احاطه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+احساسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+احضارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اختطاف کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اخستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اخلالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ادا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ادغامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ارتاوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ارزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اروېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ازارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ازمایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ازمویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ازمیښت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اسانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+استثمارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+استعمالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اسیر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اشنا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اصلاح کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اظهارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اعدامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اعلامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اعلانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اغستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اغوستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اغېړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+امبارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+امتحان اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اموخته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+انبارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+انتقال کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+انجامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+انکاري کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اهل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوترېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اودرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اور اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوزګارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوچتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوړه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوږدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اوېزانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اړ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اږیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اګاه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایجابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایجاد کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایسارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ایله کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اېستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اېسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+اېشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+باطلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بحال کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بختور کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بد رد ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بدترېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بدل اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بدله اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بدلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برائت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برابرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برالبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بربادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بربنډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برخه اخستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برش کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برطرف کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برقرارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برمه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برهمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بري کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+برېښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بستر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بسته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بشپړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بلدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بلوسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بندي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بهر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بهېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بونګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بوڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بوکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بوڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بچ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بږنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بږی اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بڼیا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بیانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بیدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بیمه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بیېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بې حس کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بې سده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بې لارې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بې موراله کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بې هوشه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېرانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېزاره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېزارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېسده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بېهو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تار په تارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تازه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تامینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تاو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تاوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تاییدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تباه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تبدیلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تتر بتر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تجدیدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تجلیلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تحلیلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تحویلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تخصیص کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تخڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تدفینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تر شا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تر لاسه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تربت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترجمه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تردیدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترسره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترسیمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترمیمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترهېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ترکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تزنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تس نس کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تسخیر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تسلیمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تسکین کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تشخیصېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تصدیق کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تطبیقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تعبیرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تعذیبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تعقیبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تعمیم کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تقسیمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تلافي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تمامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تمبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تمدیدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+توانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+توبه ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+توبه ویستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تورنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+توقیفېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تولیدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+توهینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تویېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تړپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تږی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تښتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تکرارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تکمیلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تڼاکي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تیارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تېره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+تېزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ثابتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ثبتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جاج اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جانجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جایزه اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جبرانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جختېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جدا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جذباتي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جذبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جلا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جمعه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جوتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جوختېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+جګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حاصلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حاضرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حذفېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حسابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حصارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حصه اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حمل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+حیرانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خارجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خارښتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خاموشه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خبرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ختمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خریل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خرېیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خزانه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خسي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خطا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خطبه ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خفه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خلاصه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خلاصېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خواټولی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوشالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوشتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوشحاله کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوشحالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوټ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوټکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوړینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوږمنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خوښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خټکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خپرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خپلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خړوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+خیشتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+داخلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دایرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دربلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دربېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دردېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+درزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+درستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+درغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+درنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دروغ ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دریافت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+درېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دفن کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دننه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دوزانو کښېنستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+دوکه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ذبح کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رائجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راجع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راستنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راستونېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راوستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راویښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راټولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راپورته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+راکوزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ربلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رجسټر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رحمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رخصت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رد کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ردېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رسمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رسوا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رشوت اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رغړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رفع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رنځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رهي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روږدی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روږدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روښانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+روښنایي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رویکارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رژېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رڼا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ریل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ریټایر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ریچې ریچې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ریکارډ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رېزه رېزه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+رېږدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زخمي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زرغونېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زره زره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زلقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زلکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زمولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زنګ اخستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زهیرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زوړندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زړه نا زړه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زیات کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زیاتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زیږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+زېږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سا اخستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سا اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سازېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سانسورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ساه اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سبق وایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سبق ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستومانه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستومانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستړی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ستړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سخا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سختېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سرتورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سریښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سقوطېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سمبالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سنت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سنتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سندرې ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سنګارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سنګسارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سور کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سوری کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سوق کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سونګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سوځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپرې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپلای کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سپکې سپورې ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سکویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سیده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+سېټ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شاته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شاملېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شاهدي وایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شاړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شرحه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شرمنده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شرمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شرنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شروع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شریکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شمارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شنډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شوارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شړمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شکل ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+شڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+صادرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+صحیح کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+صفا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ضایع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+طلبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ظاهره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ظاهرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عادت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عاشق کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عبثېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عذابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عملي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+عیانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غالب کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غایبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غربېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غرقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غصه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غلبېل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غلطېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غلی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غمجنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غني کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوبلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غورځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوزارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوسه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوصه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غونجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غونډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوټه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوړپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غوږ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غچ اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غړمبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غړندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غړومبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+غیبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فارغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فاسدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فاش کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فراخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فرارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فرشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فرمایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فلج کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فنا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فناه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+فېل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قابو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قاتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قانع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قایمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قبضه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قبلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قتلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قدم اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قرارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قرباني کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قربانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قرض اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قرنطینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قلابند کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قید کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+قیمه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لالهاندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لاندې باندې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لاهو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لت پت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لتاړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لرې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لعنت ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لغوه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لغړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+للونېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لمبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لمدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لنډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لویېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لړزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لیلامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لېوالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لېونی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لېوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+لېږدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ماتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ماشوم اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مایل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مایله کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مایلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مایوسه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مایوسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+متحد کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+متروکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+متمدنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+متهمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+متوجه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مجازات کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مجازاتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مجبورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مجهزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محدودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محرومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محسوسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محفوظ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محکمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+محکومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مخامخ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مخامخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مختصر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مختلف کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مخکې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مخې ته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مدغمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مدللېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مرادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مراعتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مربوطېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مرتبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مرمت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مرمتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مروجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مرورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مزه اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مستردېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مستعفي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مستند کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مستندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسخ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسلمانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسمومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسکی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مشتقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مشغولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مشهور کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مشهورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مضبوطېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مطرح کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+معلومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مغلوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مقاله لوستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مقررېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مقصودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ملاستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ملامتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ملاوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ملحقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ممکنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منتخب کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منحرفېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منحلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منسوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منسوخ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منسوخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منصوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منظمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منعکس کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منعکسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منفي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منقبضېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+منکرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+موسکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+موسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مومیایي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+موندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مړ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مکمل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مکملېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+میده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+میراتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+میراث اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+میل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مین کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+مېشتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نازلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نازېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نافذېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نامنظوره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نامنظورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ناکامه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ناکامېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نتیجه اخستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نزدې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نسکورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نشرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نصب کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نغومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نفس ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نهیلی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نوستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نومېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نوږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نوی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نڅوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نچوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نژدې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نښلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نیمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نېزدې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+نېغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هرکلی وایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هسکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هضمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هلاکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هوارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هوسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هټکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هک دک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هک پک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هڼهڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هیبت اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هیسته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+هېښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واردېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وازېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واقع کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واوره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واپس کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واکسینېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+واکمنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وایل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ودانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ورانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ورزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وروستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وروسته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وروستو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ورکوټی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وریتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وزن کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وصلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وقفېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ولچکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وهمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ووړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وچېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وړاندې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وړوکی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وږمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویدېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویلي کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویلې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+وېزارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټانسل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټاټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټسټ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټمبه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټنډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټوخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټونګرېیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټوټه ټوټه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټوکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټپرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټکنی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټینګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټیټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټیپ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټیک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټېغ ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ټېکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پابندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاتې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاشل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پالش کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پاکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پایمالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پتېیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پخسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پخلا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پراخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرانستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرانیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرتوګ ایستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرنجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرچېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرکالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پریړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرېشانه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پرېشانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پس پا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پسخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پسې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پلانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پلنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پلیتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پلې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پناه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پنځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+په تمه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+په سد کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پورته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پوره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پورې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پوستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پوهېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پوپنا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پوڅه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پړسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پړقېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پړکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پښېمانه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیدا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیمالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیوند کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیچیده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پیکه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېش کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېشنهادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېچیده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېچېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+پېیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځایېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځغاستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځغستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځغلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځلبلاندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځنبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځنځیرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځنډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځوړندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ځړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څربېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرګنده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرګندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څملاستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څوکرېیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څڅېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څښېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+څیرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاغېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چالو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاودېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاپ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاپېره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاپېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چاکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چخڼی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چر کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چسپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چنجنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چوخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چورلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چونګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چوپ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چوڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چټلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چپ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چڼکاوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چیتېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چینګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چیچړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+چېک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډامبرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډاډه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډبرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډنګرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډوبېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډونګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډیجیټلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ډېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ړندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ړنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ړوندېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ږمنځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ژدویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ژوبلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ژړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښایسته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښویېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښکاره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښکارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښکته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښکلی کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښکېل کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښیل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ښېرازېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کابو کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کامیابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کاوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کبابېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کت کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کجاوې ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کرپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کرړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کسکرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کش کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کشفېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کشېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کفر ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کلوچېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کلکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کمزورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کنده کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کنټرولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کنډوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کنګالېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کنګلېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کورړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کوزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کولاوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کولېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کومڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کونډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کوچېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کوړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کوکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کوېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کټ کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کټارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کړمنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کړمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کړنګېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کړوپېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کږېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کښته کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کښېناستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ککړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کیسه ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کېناستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+کېناستېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګانې ویل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګران کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګردان کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګردانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرزېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرفتارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرمېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګروهېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرځېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرړېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګمراه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګنجېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګنسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګنګسېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګورېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګوزارېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګوټېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګوډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګوښه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګوڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګچه کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګډوډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګډېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګیرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ګېر چاپېره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یادېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یخېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یقیني کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یو شان کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یو ځای کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یوهومره کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یوځای کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یوې کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+یېرېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+ویل,speech_say,stems وای-/ووای-,True,وای,ووای,ویل,ووویل,local
+راوړل,transport_bring,derived bring; both roots راوړل,False,راوړ,راوړ,راوړل,راوړل,local
+وړل,transport_carry,irregular perfective ووړ-,True,وړ,ووړ,وړل,ووړل,local
+بوتلل,transport_pull_out,multiple stems بیای-/بوځ-,False,,,,,none

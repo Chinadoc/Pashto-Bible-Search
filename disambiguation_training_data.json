@@ -1,0 +1,69 @@
+{
+  "ambiguous_words": {
+    "پنډ": {
+      "meanings": [
+        "noun",
+        "adjective"
+      ],
+      "frequency": 20
+    },
+    "کوټه": {
+      "meanings": [
+        "noun",
+        "adjective"
+      ],
+      "frequency": 18
+    },
+    "توری": {
+      "meanings": [
+        "noun",
+        "adjective"
+      ],
+      "frequency": 14
+    }
+  },
+  "usage_patterns": {
+    "پنډ": [
+      {
+        "word": "پنډ",
+        "category": "CONJUGATED_VERB",
+        "sentence": "هغوی درانه پنډونه تړي او د خلکو په اوږو یې باروي، خو خپله نه غواړي چې ګوتې هم ورته وروړي چې د پنډ په وړلو کې ورسره مرسته وکړي",
+        "confidence": "MEDIUM"
+      },
+      {
+        "word": "پنډ",
+        "category": "CONJUGATED_VERB",
+        "sentence": "په یقین سره زه تاسو ته دا وایم چې هرڅوک چې د پسونو پنډغالي ته د دروازې په لاره نه ورننوځي، بلکې د کومې بلې لارې نه ورننوځي هغه غل او داړه مار دی",
+        "confidence": "MEDIUM"
+      }
+    ],
+    "کوټه": [
+      {
+        "word": "کوټه",
+        "category": "CONJUGATED_VERB",
+        "sentence": "او کوم کور ته چې هغه ورننوت، تاسو هم ورشئ او د کور خاوند ته ووایئ: ‹استاذ وایي د مېلمنو هغه کوټه چېرته ده چې زه او زما شاګردان به په کې د فسحې ډوډۍ وخورو",
+        "confidence": "MEDIUM"
+      },
+      {
+        "word": "کوټه",
+        "category": "CONJUGATED_VERB",
+        "sentence": "هغه به تاسو ته پاس په بالاخانه کې یوه لویه فرش شوې کوټه دروښایي",
+        "confidence": "MEDIUM"
+      }
+    ],
+    "توری": [
+      {
+        "word": "توری",
+        "category": "CONJUGATED_VERB",
+        "sentence": "لکه څنګه چې ما د خپل پلار له خوا دا واک او اختیار تر‌لاسه کړی دی، زه به هغه ته د سهار ستوری ورکړم",
+        "confidence": "MEDIUM"
+      },
+      {
+        "word": "توری",
+        "category": "CONJUGATED_VERB",
+        "sentence": "زه د داود د نسل څخه یم او د سهار ځلېدونکی ستوری یم",
+        "confidence": "MEDIUM"
+      }
+    ]
+  }
+}

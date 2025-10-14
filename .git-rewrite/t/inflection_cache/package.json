@@ -1,0 +1,11 @@
+{
+  "name": "inflection-cache",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "@lingdocs/inflect": "latest"
+  }
+}
+
+

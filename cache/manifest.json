@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "created": 1755026579.705903,
+  "stats": {
+    "total_verses": 24160,
+    "total_words": 681097,
+    "unique_words": 25669,
+    "index_size_bytes": 0,
+    "build_time_seconds": 170.5855438709259
+  },
+  "files": {
+    "ngram_index.pkl.gz": {
+      "size": 2320032,
+      "checksum": "4439e6f4a43ce616156347edc6c6e5b1"
+    },
+    "inverted_index.pkl.gz": {
+      "size": 1684297,
+      "checksum": "999a0ed438ae43bc5aa661bd0c343f5f"
+    },
+    "verses.json.gz": {
+      "size": 5886221,
+      "checksum": "46a5b227014dd61757e29d6f2c4d51e3"
+    },
+    "auxiliary_indices.pkl.gz": {
+      "size": 2730513,
+      "checksum": "ba26a7fb27f775882ba043f8d05ef551"
+    }
+  }
+}

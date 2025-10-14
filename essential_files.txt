@@ -1,0 +1,37 @@
+# 🎯 ESSENTIAL FILES FOR GITHUB DEPLOYMENT
+# Upload these files to GitHub for Vercel auto-deployment
+
+# Core deployment files
+comprehensive_unified_schema.sql
+frequency_consolidation_migration.sql
+lemma_anchored_unified_migration.sql
+
+# Next.js application (entire app directory)
+app/
+
+# Package configuration
+package.json
+package-lock.json
+vercel.json
+next.config.ts
+tailwind.config.js
+postcss.config.mjs
+tsconfig.json
+
+# Essential utilities (small files only)
+robust_git_push.sh
+git_utils.py
+verify_deployment.py
+
+# Documentation
+README.md
+README_UNIFIED_DEPLOYMENT.md
+
+# 🚫 EXCLUDE THESE LARGE FILES:
+# - _pages_tmp/ (163MB)
+# - cache/ (large JSON files)
+# - node_modules/ (build artifacts)
+# - .next/ (build artifacts)
+# - Large JSON files (*frequencies*.json, *index*.json)
+# - Audio directories
+# - Large data files
