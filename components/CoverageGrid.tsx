@@ -110,7 +110,9 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
       audioCount: number; 
       hasGoogleDrive: boolean; 
       hasSupabase: boolean; 
-      hasMultipleSources: boolean 
+      hasMultipleSources: boolean;
+      hasYousafzai: boolean;
+      sourceTypes: string[];
     }> = {};
     
     for (const [ref, url] of Object.entries(audioMap)) {
@@ -124,7 +126,9 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
           audioCount: 0,
           hasGoogleDrive: false,
           hasSupabase: false,
-          hasMultipleSources: false
+          hasMultipleSources: false,
+          hasYousafzai: false,
+          sourceTypes: []
         };
       }
       
@@ -136,16 +140,30 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         if (url.length > 20 && !url.startsWith('http')) {
           // Google Drive file ID
           analysis[book].hasGoogleDrive = true;
+          if (!analysis[book].sourceTypes.includes('Google Drive')) {
+            analysis[book].sourceTypes.push('Google Drive');
+          }
         } else if (url.includes('supabase')) {
           // Supabase URL
           analysis[book].hasSupabase = true;
+          if (!analysis[book].sourceTypes.includes('Supabase')) {
+            analysis[book].sourceTypes.push('Supabase');
+          }
+          
+          // Check if it's Yousafzai audio
+          if (url.includes('yousafzai')) {
+            analysis[book].hasYousafzai = true;
+            if (!analysis[book].sourceTypes.includes('Yousafzai')) {
+              analysis[book].sourceTypes.push('Yousafzai');
+            }
+          }
         }
       }
     }
     
     // Determine if book has multiple sources
     for (const book in analysis) {
-      analysis[book].hasMultipleSources = analysis[book].hasGoogleDrive && analysis[book].hasSupabase;
+      analysis[book].hasMultipleSources = analysis[book].sourceTypes.length > 1;
     }
     
     return analysis;
@@ -166,6 +184,8 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     const hasAudio = audioInfo?.hasAudio ?? false
     const audioCount = audioInfo?.audioCount ?? 0
     const hasMultipleSources = audioInfo?.hasMultipleSources ?? false
+    const hasYousafzai = audioInfo?.hasYousafzai ?? false
+    const sourceTypes = audioInfo?.sourceTypes ?? []
 
     // Override classes for selected book(s)
     const tileClasses = isSelected
@@ -177,7 +197,12 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
     if (translation) tooltipParts.push(`(${translation})`);
     if (hasAudio) {
       tooltipParts.push(`Audio: ${audioCount} verses`);
-      if (hasMultipleSources) tooltipParts.push('Multiple sources');
+      if (sourceTypes.length > 0) {
+        tooltipParts.push(`Sources: ${sourceTypes.join(', ')}`);
+      }
+      if (hasYousafzai) {
+        tooltipParts.push('Yousafzai translation');
+      }
     }
     const tooltip = tooltipParts.join(' ');
 
@@ -199,7 +224,8 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         {/* Audio indicator (top-right) */}
         {hasAudio && (
           <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] ${
-            hasMultipleSources ? 'bg-green-600' : 'bg-blue-600'
+            hasMultipleSources ? 'bg-green-600' : 
+            hasYousafzai ? 'bg-orange-600' : 'bg-blue-600'
           }`}>
             🔊
           </span>
@@ -215,7 +241,14 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         {/* Multiple sources indicator (bottom-left) */}
         {hasMultipleSources && (
           <span className="absolute -bottom-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-green-500 text-white text-[8px]">
-            2x
+            {sourceTypes.length}x
+          </span>
+        )}
+        
+        {/* Yousafzai indicator (bottom-left, or bottom-center if multiple sources) */}
+        {hasYousafzai && !hasMultipleSources && (
+          <span className="absolute -bottom-1 -left-1 inline-flex items-center justify-center w-3 h-3 rounded-full bg-orange-500 text-white text-[8px]">
+            🕌
           </span>
         )}
       </button>
