@@ -758,7 +758,7 @@ export default function ClientHome() {
         if (response.ok) {
           const data = await response.json();
           const audioMap = data || {};
-          const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.length > 20 && !url.startsWith('http')).length;
           const storageUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
 
           console.log(`Audio map loaded: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);

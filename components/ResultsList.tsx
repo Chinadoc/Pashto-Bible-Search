@@ -515,6 +515,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
+        console.log(`✅ Audio URL resolved for ${verseRef}: ${url}`);
+      } else {
+        console.warn(`❌ No audio URL found for ${verseRef}`);
       }
     } catch (error) {
       console.warn(`Failed to load audio for ${verseRef}:`, error);
