@@ -1,0 +1,167 @@
+{
+  "monitoring": {
+    "enabled": true,
+    "check_interval_hours": 24,
+    "books_to_monitor": [
+      "genesis", "exodus", "leviticus", "numbers", "deuteronomy",
+      "joshua", "judges", "ruth", "1-samuel", "2-samuel",
+      "1-kings", "2-kings", "1-chronicles", "2-chronicles",
+      "ezra", "nehemiah", "esther", "job", "psalms", "proverbs",
+      "ecclesiastes", "song-of-songs", "isaiah", "jeremiah",
+      "lamentations", "ezekiel", "daniel", "hosea", "joel",
+      "amos", "obadiah", "jonah", "micah", "nahum", "habakkuk",
+      "zephaniah", "haggai", "zechariah", "malachi"
+    ],
+    "content_types": ["text", "audio", "metadata"],
+    "respect_robots_txt": true,
+    "request_delay_seconds": 1.0
+  },
+
+  "n8n_integration": {
+    "enabled": true,
+    "webhook_url": "${N8N_WEBHOOK_URL}",
+    "api_key": "${N8N_API_KEY}",
+    "workflow_names": {
+      "content_monitoring": "content-updates",
+      "deployment_trigger": "deploy-updates",
+      "notification": "send-notifications"
+    },
+    "retry_attempts": 3,
+    "timeout_seconds": 30
+  },
+
+  "webhook_endpoints": {
+    "external_updates": {
+      "enabled": true,
+      "secret": "${EXTERNAL_UPDATE_WEBHOOK_SECRET}",
+      "allowed_sources": ["n8n", "afghan_bibles_monitor", "content_sync"],
+      "max_payload_size_mb": 10,
+      "rate_limit_per_hour": 100
+    }
+  },
+
+  "data_sync": {
+    "auto_sync_enabled": true,
+    "sync_on_update": true,
+    "backup_before_sync": true,
+    "data_directories": {
+      "app_data": "app/data",
+      "cache": "cache",
+      "backups": "backups"
+    },
+    "rebuild_on_sync": true,
+    "rebuild_timeout_minutes": 30
+  },
+
+  "notifications": {
+    "enabled": true,
+    "email": {
+      "enabled": false,
+      "smtp_server": "${SMTP_SERVER}",
+      "smtp_port": 587,
+      "username": "${SMTP_USERNAME}",
+      "password": "${SMTP_PASSWORD}",
+      "from_address": "noreply@pashto-bible-search.vercel.app",
+      "to_addresses": ["admin@pashto-bible-search.vercel.app"]
+    },
+    "slack": {
+      "enabled": false,
+      "webhook_url": "${SLACK_WEBHOOK_URL}",
+      "channel": "#content-updates",
+      "username": "Pashto Bible Monitor"
+    },
+    "discord": {
+      "enabled": false,
+      "webhook_url": "${DISCORD_WEBHOOK_URL}",
+      "username": "Pashto Bible Monitor"
+    }
+  },
+
+  "logging": {
+    "level": "INFO",
+    "file_path": "external_monitoring.log",
+    "max_file_size_mb": 100,
+    "backup_count": 5,
+    "include_timestamps": true,
+    "include_source_info": true
+  },
+
+  "deployment": {
+    "auto_deploy_enabled": true,
+    "deploy_on_significant_updates": true,
+    "min_updates_for_deploy": 5,
+    "deploy_timeout_minutes": 15,
+    "platforms": {
+      "vercel": {
+        "enabled": true,
+        "api_token": "${VERCEL_TOKEN}",
+        "project_id": "${VERCEL_PROJECT_ID}",
+        "team_id": "${VERCEL_TEAM_ID}"
+      },
+      "netlify": {
+        "enabled": false,
+        "site_id": "${NETLIFY_SITE_ID}",
+        "auth_token": "${NETLIFY_AUTH_TOKEN}"
+      }
+    }
+  },
+
+  "health_checks": {
+    "enabled": true,
+    "interval_minutes": 60,
+    "timeout_seconds": 30,
+    "endpoints": [
+      "https://pashto-bible-search.vercel.app/api/external-updates",
+      "https://afghanbibles.org/eng/pashto-bible/genesis/genesis-1"
+    ],
+    "expected_status_codes": [200, 201]
+  },
+
+  "caching": {
+    "content_cache_file": "external_content_cache.json",
+    "cache_ttl_hours": 24,
+    "max_cache_size_mb": 50,
+    "cleanup_interval_hours": 6
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 30,
+    "requests_per_hour": 1000,
+    "burst_limit": 10,
+    "backoff_multiplier": 2.0,
+    "max_backoff_seconds": 300
+  },
+
+  "error_handling": {
+    "max_retries": 3,
+    "retry_delay_seconds": 5,
+    "exponential_backoff": true,
+    "circuit_breaker_threshold": 5,
+    "circuit_breaker_timeout_minutes": 30,
+    "alert_on_errors": true,
+    "error_threshold_for_alert": 10
+  },
+
+  "development": {
+    "debug_mode": false,
+    "log_requests": false,
+    "mock_external_calls": false,
+    "skip_ssl_verification": false
+  },
+
+  "security": {
+    "require_https": true,
+    "validate_certificates": true,
+    "allowed_ip_ranges": [],
+    "blocked_ip_ranges": [],
+    "enable_cors": true,
+    "cors_origins": [
+      "https://pashto-bible-search.vercel.app",
+      "https://n8n.example.com"
+    ]
+  }
+}
+
+
+
+

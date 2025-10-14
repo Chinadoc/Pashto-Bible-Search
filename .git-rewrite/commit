@@ -1,0 +1,8 @@
+tree a679fcaed4d7abbd14e638a1249190e289add18b
+parent f4cfaabe04f3ce8acb553aab3ee193a14b467179
+author Cursor Agent <cursoragent@cursor.com> 1758558737 +0000
+committer Cursor Agent <cursoragent@cursor.com> 1758558737 +0000
+
+Refactor SearchBar layout and styling
+
+Co-authored-by: jeremy.samuels17 <jeremy.samuels17@gmail.com>

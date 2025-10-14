@@ -1,0 +1,128 @@
+[debug] [2025-08-15T16:35:58.537Z] ----------------------------------------------------------------------
+[debug] [2025-08-15T16:35:58.539Z] Command:       /opt/homebrew/Cellar/node/24.3.0/bin/node /opt/homebrew/bin/firebase deploy --only functions
+[debug] [2025-08-15T16:35:58.539Z] CLI Version:   14.12.1
+[debug] [2025-08-15T16:35:58.539Z] Platform:      darwin
+[debug] [2025-08-15T16:35:58.539Z] Node Version:  v24.3.0
+[debug] [2025-08-15T16:35:58.539Z] Time:          Fri Aug 15 2025 11:35:58 GMT-0500 (Central Daylight Time)
+[debug] [2025-08-15T16:35:58.539Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-15T16:35:58.619Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-08-15T16:35:58.619Z] > authorizing via signed-in user (jeremyandenmei@gmail.com)
+[debug] [2025-08-15T16:35:58.619Z] [iam] checking project pashto-bible-search for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-08-15T16:35:58.620Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:58.620Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:58.620Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions [none]
+[debug] [2025-08-15T16:35:58.620Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions x-goog-quota-user=projects/pashto-bible-search
+[debug] [2025-08-15T16:35:58.620Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-08-15T16:35:58.819Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions 200
+[debug] [2025-08-15T16:35:58.819Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-08-15T16:35:58.819Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:58.820Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:58.820Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-08-15T16:35:58.820Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-15T16:35:59.050Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-08-15T16:35:59.050Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'pashto-bible-search'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-08-15T16:35:59.054Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.054Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.054Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search [none]
+[debug] [2025-08-15T16:35:59.148Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search 200
+[debug] [2025-08-15T16:35:59.149Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search {"projectNumber":"381177313992","projectId":"pashto-bible-search","lifecycleState":"ACTIVE","name":"pashto-bible-search","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-08-15T13:04:30.143618Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-08-15T16:35:59.150Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.150Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.150Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig [none]
+[debug] [2025-08-15T16:35:59.401Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig 200
+[debug] [2025-08-15T16:35:59.401Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig {"projectId":"pashto-bible-search","storageBucket":"pashto-bible-search.firebasestorage.app"}
+[debug] [2025-08-15T16:35:59.401Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.401Z] Checked if tokens are valid: true, expires at: 1755279350328
+[debug] [2025-08-15T16:35:59.401Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs [none]
+[debug] [2025-08-15T16:35:59.618Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs 200
+[debug] [2025-08-15T16:35:59.618Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs {}
+[debug] [2025-08-15T16:35:59.620Z] Customer code is not Node
+[debug] [2025-08-15T16:35:59.620Z] Validating python source
+[debug] [2025-08-15T16:35:59.620Z] Building python source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2025-08-15T16:35:59.621Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-08-15T16:35:59.629Z] Running command with virtualenv: command=., args=["\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/bin/activate\"","&&","python3.13","-c","\"import firebase_functions; import os; print(os.path.dirname(firebase_functions.__file__))\""]
+[debug] [2025-08-15T16:36:02.294Z] stdout: /Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions
+
+[debug] [2025-08-15T16:36:02.303Z] Running admin server with args: ["python3.13","\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions/private/serving.py\""] and env: {"FIREBASE_CONFIG":"{\"projectId\":\"pashto-bible-search\",\"storageBucket\":\"pashto-bible-search.firebasestorage.app\"}","GCLOUD_PROJECT":"pashto-bible-search","GOOGLE_CLOUD_QUOTA_PROJECT":"pashto-bible-search","ADMIN_PORT":"8081"} in /Users/jeremysamuels/Documents/Pashto Bible split into verses/functions
+[debug] [2025-08-15T16:36:02.303Z] Running command with virtualenv: command=., args=["\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/bin/activate\"","&&","python3.13","\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions/private/serving.py\""]
+[debug] [2025-08-15T16:36:12.339Z] Failed to call quitquitquit. This often means the server failed to start request to http://127.0.0.1:8081/__/quitquitquit failed, reason: connect ECONNREFUSED 127.0.0.1:8081 {"message":"request to http://127.0.0.1:8081/__/quitquitquit failed, reason: connect ECONNREFUSED 127.0.0.1:8081","type":"system","errno":"ECONNREFUSED","code":"ECONNREFUSED"}
+[info]  * Serving Flask app 'serving'
+ * Debug mode: off
+
+[error] WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:8081
+Press CTRL+C to quit
+
+[debug] [2025-08-15T19:48:43.714Z] ----------------------------------------------------------------------
+[debug] [2025-08-15T19:48:43.715Z] Command:       /opt/homebrew/Cellar/node/24.3.0/bin/node /opt/homebrew/bin/firebase deploy --only functions
+[debug] [2025-08-15T19:48:43.715Z] CLI Version:   14.12.1
+[debug] [2025-08-15T19:48:43.715Z] Platform:      darwin
+[debug] [2025-08-15T19:48:43.715Z] Node Version:  v24.3.0
+[debug] [2025-08-15T19:48:43.715Z] Time:          Fri Aug 15 2025 14:48:43 GMT-0500 (Central Daylight Time)
+[debug] [2025-08-15T19:48:43.715Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-15T19:48:47.259Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-08-15T19:48:47.259Z] > authorizing via signed-in user (jeremyandenmei@gmail.com)
+[debug] [2025-08-15T19:48:47.260Z] [iam] checking project pashto-bible-search for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-08-15T19:48:47.261Z] Checked if tokens are valid: false, expires at: 1755286158760
+[debug] [2025-08-15T19:48:47.261Z] Checked if tokens are valid: false, expires at: 1755286158760
+[debug] [2025-08-15T19:48:47.262Z] > refreshing access token with scopes: []
+[debug] [2025-08-15T19:48:47.265Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-08-15T19:48:47.265Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-15T19:48:47.429Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-08-15T19:48:47.429Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-08-15T19:48:47.443Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions [none]
+[debug] [2025-08-15T19:48:47.443Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions x-goog-quota-user=projects/pashto-bible-search
+[debug] [2025-08-15T19:48:47.443Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-08-15T19:48:47.680Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions 200
+[debug] [2025-08-15T19:48:47.680Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-08-15T19:48:47.681Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:47.681Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:47.681Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-08-15T19:48:47.681Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-08-15T19:48:47.908Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-08-15T19:48:47.908Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/pashto-bible-search/serviceAccounts/pashto-bible-search@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'pashto-bible-search'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-08-15T19:48:47.911Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:47.912Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:47.912Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search [none]
+[debug] [2025-08-15T19:48:48.054Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search 200
+[debug] [2025-08-15T19:48:48.054Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/pashto-bible-search {"projectNumber":"381177313992","projectId":"pashto-bible-search","lifecycleState":"ACTIVE","name":"pashto-bible-search","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-08-15T13:04:30.143618Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-08-15T19:48:48.056Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:48.056Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:48.056Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig [none]
+[debug] [2025-08-15T19:48:48.356Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig 200
+[debug] [2025-08-15T19:48:48.356Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/pashto-bible-search/adminSdkConfig {"projectId":"pashto-bible-search","storageBucket":"pashto-bible-search.firebasestorage.app"}
+[debug] [2025-08-15T19:48:48.357Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:48.357Z] Checked if tokens are valid: true, expires at: 1755290926429
+[debug] [2025-08-15T19:48:48.357Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs [none]
+[debug] [2025-08-15T19:48:48.728Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs 200
+[debug] [2025-08-15T19:48:48.729Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pashto-bible-search/configs {}
+[debug] [2025-08-15T19:48:48.730Z] Customer code is not Node
+[debug] [2025-08-15T19:48:48.731Z] Validating python source
+[debug] [2025-08-15T19:48:48.731Z] Building python source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2025-08-15T19:48:48.732Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-08-15T19:48:48.740Z] Running command with virtualenv: command=., args=["\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/bin/activate\"","&&","python3.13","-c","\"import firebase_functions; import os; print(os.path.dirname(firebase_functions.__file__))\""]
+[debug] [2025-08-15T19:48:55.379Z] stdout: /Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions
+
+[debug] [2025-08-15T19:48:55.385Z] Running admin server with args: ["python3.13","\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions/private/serving.py\""] and env: {"FIREBASE_CONFIG":"{\"projectId\":\"pashto-bible-search\",\"storageBucket\":\"pashto-bible-search.firebasestorage.app\"}","GCLOUD_PROJECT":"pashto-bible-search","GOOGLE_CLOUD_QUOTA_PROJECT":"pashto-bible-search","ADMIN_PORT":"8082"} in /Users/jeremysamuels/Documents/Pashto Bible split into verses/functions
+[debug] [2025-08-15T19:48:55.385Z] Running command with virtualenv: command=., args=["\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/bin/activate\"","&&","python3.13","\"/Users/jeremysamuels/Documents/Pashto Bible split into verses/functions/venv/lib/python3.13/site-packages/firebase_functions/private/serving.py\""]
+[debug] [2025-08-15T19:49:05.814Z] Failed to call quitquitquit. This often means the server failed to start request to http://127.0.0.1:8082/__/quitquitquit failed, reason: connect ECONNREFUSED 127.0.0.1:8082 {"message":"request to http://127.0.0.1:8082/__/quitquitquit failed, reason: connect ECONNREFUSED 127.0.0.1:8082","type":"system","errno":"ECONNREFUSED","code":"ECONNREFUSED"}
