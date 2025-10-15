@@ -632,6 +632,14 @@ export default function ClientHome() {
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
+  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>('search');
+  const [audioClips, setAudioClips] = useState<any[]>([]);
+  const [poems, setPoems] = useState<any[]>([]);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
+  const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
+  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
+  const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
@@ -801,6 +809,87 @@ export default function ClientHome() {
     };
     loadAudioMaps();
   }, []);
+
+  // Fetch audio clips when videos tab is active
+  useEffect(() => {
+    if (activeMainTab === 'videos' && audioClips.length === 0) {
+      setLoadingAudio(true);
+      fetch('/api/audio-clips')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setAudioClips(data.clips || []);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching audio clips:', err);
+        })
+        .finally(() => {
+          setLoadingAudio(false);
+        });
+    }
+  }, [activeMainTab, audioClips.length]);
+
+  // Fetch poems when poems tab is active
+  useEffect(() => {
+    if (activeMainTab === 'poems' && poems.length === 0) {
+      setLoadingPoems(true);
+      fetch('/api/poems')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setPoems(data.poems || []);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching poems:', err);
+        })
+        .finally(() => {
+          setLoadingPoems(false);
+        });
+    }
+  }, [activeMainTab, poems.length]);
+
+  // Search transcripts function
+  const searchTranscripts = async (query: string) => {
+    if (!query.trim()) {
+      setTranscriptResults([]);
+      return;
+    }
+
+    setLoadingTranscripts(true);
+    try {
+      const response = await fetch(`/api/search-transcripts?q=${encodeURIComponent(query)}&limit=10`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTranscriptResults(data.results || []);
+      } else {
+        console.error('Error searching transcripts:', data.error);
+        setTranscriptResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching transcripts:', error);
+      setTranscriptResults([]);
+    } finally {
+      setLoadingTranscripts(false);
+    }
+  };
+
+  // Debounced transcript search
+  const debouncedTranscriptSearch = useCallback(
+    debounce((query: string) => {
+      searchTranscripts(query);
+    }, 500),
+    []
+  );
+
+  // Handle transcript search input change
+  const handleTranscriptSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setTranscriptSearchQuery(query);
+    debouncedTranscriptSearch(query);
+  };
 
   // Refresh audio maps when results change to ensure we have latest URLs
   useEffect(() => {
@@ -1518,31 +1607,80 @@ export default function ClientHome() {
         </p>
       </header>
 
-      {/* Translation Tabs */}
+      {/* Main Tabs */}
       <div className="flex justify-center mb-6">
         <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
           <button
-            onClick={() => setActiveTranslation('afghan2023')}
+            onClick={() => setActiveMainTab('search')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeTranslation === 'afghan2023'
+              activeMainTab === 'search'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
-            Afghan 2023
+            🔍 Search
           </button>
           <button
-            onClick={() => setActiveTranslation('yousafzai2019')}
+            onClick={() => setActiveMainTab('lexicon')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeTranslation === 'yousafzai2019'
+              activeMainTab === 'lexicon'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
-            Yousafzai 2019
+            📚 Lexicon
+          </button>
+          <button
+            onClick={() => setActiveMainTab('videos')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'videos'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            🎵 Videos/Audio
+          </button>
+          <button
+            onClick={() => setActiveMainTab('poems')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'poems'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📝 Poems
           </button>
         </div>
       </div>
+
+      {/* Main Content */}
+      {activeMainTab === 'search' && (
+        <>
+          {/* Translation Tabs */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+              <button
+                onClick={() => setActiveTranslation('afghan2023')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  activeTranslation === 'afghan2023'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                Afghan 2023
+              </button>
+              <button
+                onClick={() => setActiveTranslation('yousafzai2019')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  activeTranslation === 'yousafzai2019'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                Yousafzai 2019
+              </button>
+            </div>
+          </div>
 
       {/* Search Bar */}
       <div className="relative z-10 mb-6">
@@ -2095,6 +2233,208 @@ export default function ClientHome() {
           />
         </div>
       </div>
+        </>
+      )}
+
+      {/* Lexicon Tab */}
+      {activeMainTab === 'lexicon' && (
+        <div className="max-w-4xl mx-auto">
+          <LexiconPanel onPickForm={(form) => {
+            setQuery(form);
+            setActiveMainTab('search');
+          }} />
+        </div>
+      )}
+
+      {/* Videos/Audio Tab */}
+      {activeMainTab === 'videos' && (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              🎵 Videos/Audio
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Audio clips and transcripts from YouTube videos
+            </p>
+            
+            {/* Transcript Search */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                🔍 Search Transcripts
+              </h3>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={transcriptSearchQuery}
+                  onChange={handleTranscriptSearchChange}
+                  placeholder="Enter Pashto text to search in video transcripts..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {loadingTranscripts && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Search Results */}
+              {transcriptResults.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <p className="text-green-800 dark:text-green-300 font-medium">
+                      Found {transcriptResults.length} matching segments
+                    </p>
+                  </div>
+                  
+                  {transcriptResults.map((result, index) => (
+                    <div key={result.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        {result.verse_reference}
+                      </h4>
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Audio: {result.audio_filename} • Duration: {result.duration_seconds}s
+                        </p>
+                        <div className="bg-white dark:bg-gray-800 rounded border p-3 max-h-32 overflow-y-auto">
+                          <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+                            {result.transcript}
+                          </p>
+                        </div>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={`/api/audio-clips/${result.audio_filename}`} type="audio/wav" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {transcriptSearchQuery && transcriptResults.length === 0 && !loadingTranscripts && (
+                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <p className="text-yellow-800 dark:text-yellow-300">
+                    No matching transcripts found for "{transcriptSearchQuery}"
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Audio Clips Section */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                🎵 Available Audio Clips
+              </h3>
+            
+            {loadingAudio ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading audio clips...</p>
+              </div>
+            ) : audioClips.length > 0 ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-green-800 dark:text-green-300">
+                    Found {audioClips.length} audio clips
+                  </p>
+                </div>
+                
+                {audioClips.map((clip, index) => (
+                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      {clip.name}
+                    </h3>
+                    <div className="flex items-center space-x-4">
+                      <audio controls className="flex-1">
+                        <source src={clip.url} type="audio/wav" />
+                        Your browser does not support the audio element.
+                      </audio>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {(clip.size / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Created: {new Date(clip.created).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-blue-800 dark:text-blue-300">
+                  No audio clips found. Please process YouTube videos first.
+                </p>
+                <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
+                  <p>To process videos:</p>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Install dependencies: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">./setup_audio_processing.sh</code></li>
+                    <li>Run processor: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
+                  </ol>
+                </div>
+              </div>
+            )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Poems Tab */}
+      {activeMainTab === 'poems' && (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              📝 Poems
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Transcribed Pashto text from audio clips
+            </p>
+            
+            {loadingPoems ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading poems...</p>
+              </div>
+            ) : poems.length > 0 ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-green-800 dark:text-green-300">
+                    Found {poems.length} poems
+                  </p>
+                </div>
+                
+                {poems.map((poem, index) => (
+                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                      {poem.name}
+                    </h3>
+                    <div className="bg-white dark:bg-gray-800 rounded border p-4 max-h-64 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                        {poem.content}
+                      </pre>
+                    </div>
+                    <div className="mt-3 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                      <span>{poem.length} characters</span>
+                      <span>Created: {new Date(poem.created).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <p className="text-green-800 dark:text-green-300">
+                  No poems found. Please transcribe audio clips first.
+                </p>
+                <div className="mt-4 text-sm text-green-600 dark:text-green-400">
+                  <p>To create poems:</p>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Install dependencies: <code className="bg-green-100 dark:bg-green-800 px-1 rounded">./setup_audio_processing.sh</code></li>
+                    <li>Run processor: <code className="bg-green-100 dark:bg-green-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
+                  </ol>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
