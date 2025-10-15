@@ -17,36 +17,43 @@ export async function GET(
       );
     }
     
-    const filePath = join(process.cwd(), 'audio_clips', filename);
+    // Try sentence_clips first, then audio_clips
+    let filePath = join(process.cwd(), 'sentence_clips', filename);
+    let fileBuffer;
     
     try {
-      const fileBuffer = await readFile(filePath);
-      
-      // Determine content type based on file extension
-      let contentType = 'audio/wav';
-      if (filename.endsWith('.mp3')) {
-        contentType = 'audio/mpeg';
-      } else if (filename.endsWith('.m4a')) {
-        contentType = 'audio/mp4';
-      }
-      
-      const arrayBuffer = new ArrayBuffer(fileBuffer.byteLength)
-      new Uint8Array(arrayBuffer).set(fileBuffer)
-
-      return new Response(arrayBuffer, {
-        headers: {
-          'Content-Type': contentType,
-          'Content-Length': fileBuffer.length.toString(),
-          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-        },
-      });
-      
+      fileBuffer = await readFile(filePath);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      // If not found in sentence_clips, try audio_clips
+      filePath = join(process.cwd(), 'audio_clips', filename);
+      try {
+        fileBuffer = await readFile(filePath);
+      } catch (error2) {
+        return NextResponse.json(
+          { error: 'File not found' },
+          { status: 404 }
+        );
+      }
     }
+    
+    // Determine content type based on file extension
+    let contentType = 'audio/wav';
+    if (filename.endsWith('.mp3')) {
+      contentType = 'audio/mpeg';
+    } else if (filename.endsWith('.m4a')) {
+      contentType = 'audio/mp4';
+    }
+    
+    const arrayBuffer = new ArrayBuffer(fileBuffer.byteLength)
+    new Uint8Array(arrayBuffer).set(fileBuffer)
+
+    return new Response(arrayBuffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+      },
+    });
     
   } catch (error) {
     console.error('Error serving audio file:', error);
