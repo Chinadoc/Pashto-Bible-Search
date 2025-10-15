@@ -1,0 +1,4 @@
+# Requirements for YouTube Audio Processing
+yt-dlp>=2023.12.30
+requests>=2.31.0
+pathlib2>=2.3.7; python_version < "3.4"

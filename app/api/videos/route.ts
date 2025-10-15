@@ -3,7 +3,7 @@ import { supabase } from '@/app/utils/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all video transcripts from Supabase
+    // Get all video transcripts from Supabase (both segment and sentence level)
     const { data, error } = await supabase
       .from('audio_mappings')
       .select('*')
@@ -19,12 +19,24 @@ export async function GET(request: NextRequest) {
     const videoMap = new Map();
     
     data?.forEach((item) => {
-      // Extract video ID from verse_reference format: video_{video_id}_segment_{number}
-      const match = item.verse_reference.match(/^video_(.+)_segment_(\d+)$/);
-      if (!match) return;
+      // Extract video ID from verse_reference format: 
+      // video_{video_id}_segment_{number} or video_{video_id}_sentence_{segment}_{sentence}
+      const segmentMatch = item.verse_reference.match(/^video_(.+)_segment_(\d+)$/);
+      const sentenceMatch = item.verse_reference.match(/^video_(.+)_sentence_(\d+)_(\d+)$/);
       
-      const videoId = match[1]; // Full video ID (e.g., "Xqn_-onV9DQ")
-      const segmentNumber = parseInt(match[2]);
+      let videoId, segmentNumber, sentenceNumber;
+      
+      if (segmentMatch) {
+        videoId = segmentMatch[1];
+        segmentNumber = parseInt(segmentMatch[2]);
+        sentenceNumber = null;
+      } else if (sentenceMatch) {
+        videoId = sentenceMatch[1];
+        segmentNumber = parseInt(sentenceMatch[2]);
+        sentenceNumber = parseInt(sentenceMatch[3]);
+      } else {
+        return; // Skip if format doesn't match
+      }
       
       if (!videoMap.has(videoId)) {
         videoMap.set(videoId, {
@@ -38,14 +50,31 @@ export async function GET(request: NextRequest) {
       }
       
       const video = videoMap.get(videoId);
-      video.segments.push({
-        segmentNumber,
-        startTime: item.start_time_seconds || (segmentNumber - 1) * 300,
-        endTime: item.end_time_seconds || segmentNumber * 300,
-        transcript: item.audio_path, // This contains our transcript
-        audioFilename: item.audio_filename,
-        duration: item.duration_seconds || 300
-      });
+      
+      if (sentenceNumber) {
+        // This is a sentence-level segment
+        video.segments.push({
+          segmentNumber,
+          sentenceNumber,
+          startTime: item.start_time_seconds || (segmentNumber - 1) * 300,
+          endTime: item.end_time_seconds || segmentNumber * 300,
+          transcript: item.audio_path, // This contains our transcript
+          audioFilename: item.audio_filename,
+          duration: item.duration_seconds || 300,
+          type: 'sentence'
+        });
+      } else {
+        // This is a regular segment
+        video.segments.push({
+          segmentNumber,
+          startTime: item.start_time_seconds || (segmentNumber - 1) * 300,
+          endTime: item.end_time_seconds || segmentNumber * 300,
+          transcript: item.audio_path, // This contains our transcript
+          audioFilename: item.audio_filename,
+          duration: item.duration_seconds || 300,
+          type: 'segment'
+        });
+      }
       
       video.totalSegments++;
       video.totalDuration += item.duration_seconds || 300;
@@ -54,7 +83,16 @@ export async function GET(request: NextRequest) {
     // Convert map to array and sort segments
     const videos = Array.from(videoMap.values()).map(video => ({
       ...video,
-      segments: video.segments.sort((a: any, b: any) => a.segmentNumber - b.segmentNumber)
+      segments: video.segments.sort((a: any, b: any) => {
+        // Sort by segment number first, then by sentence number if available
+        if (a.segmentNumber !== b.segmentNumber) {
+          return a.segmentNumber - b.segmentNumber;
+        }
+        if (a.sentenceNumber && b.sentenceNumber) {
+          return a.sentenceNumber - b.sentenceNumber;
+        }
+        return 0;
+      })
     }));
 
     return NextResponse.json({

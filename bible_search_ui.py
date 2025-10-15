@@ -2530,8 +2530,8 @@ def get_form_occurrence_index_cached(version: str):
 # Compute lightweight mobile mode from query params and width hint
 MOBILE_MODE = True if (QP_APP == '1' or QP_M == '1') else False
 
-# Tabs: Search | Lexicon (comprehensive lists)
-tabs = st.tabs(["Search", "Lexicon"])
+# Tabs: Search | Lexicon (comprehensive lists) | Videos/Audio | Poems
+tabs = st.tabs(["Search", "Lexicon", "Videos/Audio", "Poems"])
 
 with tabs[0]:
     grammatical_index = load_data()
@@ -3214,3 +3214,97 @@ with tabs[1]:
 
     # Dictionary view: LingDocs full list (if available)
     # Removed the LingDocs dictionary tab per request
+
+    # Videos/Audio Tab
+    with tabs[2]:
+        st.subheader("Videos/Audio")
+        st.write("Audio clips and transcripts from YouTube videos")
+
+        # Search functionality for transcripts
+        st.subheader("Search Transcripts")
+        transcript_search = st.text_input("Search in video transcripts:", placeholder="Enter Pashto text to search...")
+        
+        if transcript_search:
+            try:
+                # Search transcripts using the API
+                import requests
+                response = requests.get(f"http://localhost:3000/api/search-transcripts?q={transcript_search}&limit=10")
+                if response.status_code == 200:
+                    results = response.json()
+                    st.write(f"Found {results['total']} matching segments:")
+                    
+                    for result in results['results']:
+                        with st.expander(f"Segment: {result['verse_reference']}"):
+                            st.write(f"**Audio File:** {result['audio_filename']}")
+                            st.write(f"**Duration:** {result['duration_seconds']} seconds")
+                            st.write(f"**Transcript:**")
+                            st.text_area("", result['transcript'], height=100, key=f"transcript_{result['id']}")
+                            
+                            # Try to play audio if file exists
+                            audio_path = f"audio_clips/{result['audio_filename']}"
+                            if os.path.exists(audio_path):
+                                st.audio(audio_path)
+                            else:
+                                st.info("Audio file not found locally")
+                else:
+                    st.error("Error searching transcripts")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+        # Display audio clips if they exist
+        audio_clips_dir = "audio_clips"
+        if os.path.exists(audio_clips_dir):
+            audio_files = [f for f in os.listdir(audio_clips_dir) if f.endswith(('.mp3', '.wav', '.m4a'))]
+            if audio_files:
+                st.subheader("Available Audio Clips")
+                st.write(f"Found {len(audio_files)} audio clips:")
+                for audio_file in audio_files:
+                    audio_path = os.path.join(audio_clips_dir, audio_file)
+                    st.audio(audio_path)
+                    st.write(f"**{audio_file}**")
+                    st.write("---")
+            else:
+                st.info("No audio clips found. Please process YouTube videos first.")
+        else:
+            st.info("Audio clips directory not found. Please process YouTube videos first.")
+
+    # Poems Tab
+    with tabs[3]:
+        st.subheader("Poems")
+        st.write("Transcribed Pashto text from audio clips")
+
+        # Display poems if they exist
+        poems_dir = "poems"
+        if os.path.exists(poems_dir):
+            poem_files = [f for f in os.listdir(poems_dir) if f.endswith('.txt')]
+            if poem_files:
+                st.write(f"Found {len(poem_files)} transcribed segments:")
+                for poem_file in sorted(poem_files):
+                    poem_path = os.path.join(poems_dir, poem_file)
+                    try:
+                        with open(poem_path, 'r', encoding='utf-8') as f:
+                            poem_content = f.read()
+                        
+                        # Extract segment number from filename
+                        segment_num = poem_file.split('_segment_')[1].split('.')[0] if '_segment_' in poem_file else "Unknown"
+                        
+                        with st.expander(f"Segment {segment_num}: {poem_file}"):
+                            st.write(f"**File:** {poem_file}")
+                            st.write(f"**Character Count:** {len(poem_content)}")
+                            st.write(f"**Transcript:**")
+                            st.text_area("", poem_content, height=200, key=f"poem_{poem_file}")
+                            
+                            # Try to play corresponding audio
+                            audio_file = poem_file.replace('.txt', '.wav')
+                            audio_path = f"audio_clips/{audio_file}"
+                            if os.path.exists(audio_path):
+                                st.audio(audio_path)
+                            else:
+                                st.info("Audio file not found locally")
+                        st.write("---")
+                    except Exception as e:
+                        st.error(f"Error reading {poem_file}: {e}")
+            else:
+                st.info("No poems found. Please transcribe audio clips first.")
+        else:
+            st.info("Poems directory not found. Please transcribe audio clips first.")

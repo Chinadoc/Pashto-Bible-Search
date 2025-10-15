@@ -2404,11 +2404,19 @@ export default function ClientHome() {
                         <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center justify-between mb-3">
                             <h6 className="font-medium text-gray-900 dark:text-gray-100">
-                              Segment {segment.segmentNumber}
+                              {segment.type === 'sentence' 
+                                ? `Segment ${segment.segmentNumber}, Sentence ${segment.sentenceNumber}`
+                                : `Segment ${segment.segmentNumber}`
+                              }
                             </h6>
                             <div className="text-sm text-gray-600 dark:text-gray-400">
                               {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} - 
                               {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
+                              {segment.type === 'sentence' && (
+                                <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
+                                  {segment.duration}s
+                                </span>
+                              )}
                             </div>
                           </div>
                           
