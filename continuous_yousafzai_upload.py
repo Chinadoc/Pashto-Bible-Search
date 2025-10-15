@@ -182,41 +182,43 @@ def upload_new_files(service, new_files, audio_data):
     
     success_count = 0
     failed_count = 0
+    batch_size = 15
     
-    # Upload files one by one to avoid rate limits
-    for i, (file_path, filename, entry) in enumerate(new_files):
-        print(f"\n📁 Uploading {i+1}/{len(new_files)}: {filename}")
+    # Upload files in batches to optimize throughput
+    for i in range(0, len(new_files), batch_size):
+        batch = new_files[i:i + batch_size]
+        print(f"\n📦 Processing batch {i//batch_size + 1}: {len(batch)} files")
         
-        # Upload file
-        file_id = upload_file_with_backoff(service, file_path, filename)
-        
-        if file_id:
-            # Update the entry
-            audio_data[filename] = {
-                'book': entry.get('book'),
-                'chapter': entry.get('chapter'),
-                'verse': entry.get('verse'),
-                'google_drive_file_id': file_id,
-                'google_drive_url': f"https://drive.google.com/uc?id={file_id}&export=download",
-                'local_path': entry.get('local_path'),
-                'folder_path': entry.get('folder_path')
-            }
-            success_count += 1
-            print(f"  ✅ Uploaded successfully: {file_id}")
+        batch_success = 0
+        for file_path, filename, entry in batch:
+            file_id = upload_file_with_backoff(service, file_path, filename)
             
-            # Save progress every 5 files
-            if success_count % 5 == 0:
-                save_audio_map(audio_data)
-                print(f"  💾 Progress saved ({success_count} uploaded)")
-        else:
-            failed_count += 1
-            print(f"  ❌ Failed to upload")
+            if file_id:
+                # Update the entry
+                audio_data[filename] = {
+                    'book': entry.get('book'),
+                    'chapter': entry.get('chapter'),
+                    'verse': entry.get('verse'),
+                    'google_drive_file_id': file_id,
+                    'google_drive_url': f"https://drive.google.com/uc?id={file_id}&export=download",
+                    'local_path': entry.get('local_path'),
+                    'folder_path': entry.get('folder_path')
+                }
+                success_count += 1
+                batch_success += 1
+                print(f"  ✅ {filename}: {file_id}")
+            else:
+                failed_count += 1
+                print(f"  ❌ {filename}: Failed")
         
-        # Rate limiting - pause between uploads
-        time.sleep(3 + random.uniform(0, 2))
-    
-    # Final save
-    save_audio_map(audio_data)
+        print(f"  💾 Batch complete: {batch_success}/{len(batch)} uploaded")
+        
+        # Save progress after each batch
+        save_audio_map(audio_data)
+        
+        # Rate limiting between batches
+        if i + batch_size < len(new_files):
+            time.sleep(2 + random.uniform(0, 1))
     
     print(f"\n📊 Upload Summary:")
     print(f"✅ Successfully uploaded: {success_count}")

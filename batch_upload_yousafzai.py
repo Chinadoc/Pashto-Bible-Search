@@ -239,7 +239,7 @@ def main():
     service = build('drive', 'v3', credentials=creds)
     
     # Upload in batches
-    results = upload_file_batch(service, files_to_upload, batch_size=3)
+    results = upload_file_batch(service, files_to_upload, batch_size=15)
     
     # Final summary
     success_count = sum(1 for _, file_id, _ in results if file_id)
