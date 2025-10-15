@@ -2400,7 +2400,7 @@ export default function ClientHome() {
                         Video Segments & Transcripts
                       </h5>
                       
-                      {video.segments.map((segment, segIndex) => (
+                      {video.segments.map((segment: any, segIndex: number) => (
                         <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center justify-between mb-3">
                             <h6 className="font-medium text-gray-900 dark:text-gray-100">
