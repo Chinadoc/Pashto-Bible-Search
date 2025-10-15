@@ -1432,8 +1432,10 @@ async function enrichVariantsFromSupabase(
         const entry = GRAMMATICAL_INDEX[term];
         for (const identity of entry.identities || []) {
           for (const [formType, forms] of Object.entries(identity.forms || {})) {
-            for (const form of forms) {
-              collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+            if (Array.isArray(forms)) {
+              for (const form of forms) {
+                collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+              }
             }
           }
         }
