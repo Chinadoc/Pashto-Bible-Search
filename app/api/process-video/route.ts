@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
     }
 
-    // Run the simplified video processor
-    const command = `source venv/bin/activate && python3 simple_video_processor.py "${youtubeUrl}"`;
+    // Run the cost-efficient video processor
+    const command = `source venv/bin/activate && python3 cost_efficient_processor.py "${youtubeUrl}"`;
     
     try {
       const { stdout, stderr } = await execAsync(command, {

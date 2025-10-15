@@ -78,7 +78,7 @@ async function transcribeAudioFile(audioFilePath: string): Promise<string | null
     const audioBuffer = await readFile(audioFilePath);
     
     const formData = new FormData();
-    formData.append('file', new Blob([audioBuffer]), 'audio.wav');
+    formData.append('file', new Blob([new Uint8Array(audioBuffer)]), 'audio.wav');
     formData.append('language', 'ps'); // Pashto
     formData.append('model_id', 'scribe_v1');
 
