@@ -1463,7 +1463,7 @@ async function enrichVariantsFromSupabase(
         const root = FORM_TO_ROOT_MAP[term][0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             // Determine if this is a verb conjugation based on the form
             const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
             collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
