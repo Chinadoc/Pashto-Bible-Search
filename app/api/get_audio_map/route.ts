@@ -163,7 +163,8 @@ export async function GET(request: NextRequest) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
         const book = bookFromRef(row.verse_ref)
-        if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
+        // Skip excluded books
+        if (EXCLUDED_BOOKS.has(book)) continue
         // Only include OT books that have confirmed Yousafzai 2019 audio
         if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
@@ -217,7 +218,8 @@ export async function GET(request: NextRequest) {
 
         if (!verse_ref || !mappingUrl) continue;
         const book = bookFromRef(verse_ref)
-        if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
+        // Skip excluded books
+        if (EXCLUDED_BOOKS.has(book)) continue
         // Only include OT books that have confirmed Yousafzai 2019 audio
         if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) continue
 
