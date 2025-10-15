@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "echo '🚀 Starting build at $(date)' && time next build && echo '✅ Build completed at $(date)'",
-    "postbuild": "mkdir -p public && (cp cache/verses.json.gz public/ 2>/dev/null || true) && (cp full_dictionary_enriched.json word_frequency_list.json form_to_root_map.json form_occurrence_index.json public/ 2>/dev/null || true) && (cp inflections_cache.json public/ 2>/dev/null || true)",
+    "postbuild": "mkdir -p public && (cp cache/verses.json.gz public/ 2>/dev/null || true) && (cp full_dictionary_enriched.json word_frequency_list.json form_to_root_map.json form_occurrence_index.json yousafzai_word_frequency_list.json public/ 2>/dev/null || true) && (cp inflections_cache.json public/ 2>/dev/null || true)",
     "start": "next start",
     "lint": "next lint",
     "upload:audio": "node scripts/upload_audio.js \"../Pashto new testament with audio\""
