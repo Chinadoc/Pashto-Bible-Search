@@ -53,6 +53,7 @@ type DataCache = {
   dictionaryByPashto: Map<string, DictionaryEntry>;
   dictionaryByRomanized: Map<string, DictionaryEntry[]>;
   frequencyMap: Map<string, number>;
+  yousafzaiFrequencyMap: Map<string, number>;
   inflectionsByBase: Map<string, InflectionRow[]>;
   formsByRoot: Map<string, string[]>;
   formToRoot: Record<string, string[]>;
@@ -253,8 +254,9 @@ function normaliseRomanized(value: string): string {
 
 async function loadData(): Promise<DataCache> {
   // Load smaller files first for faster parallel processing
-  const [frequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
+  const [frequencies, yousafzaiFrequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
     readJson<FrequencyRow[]>('word_frequency_list.json'),
+    readJson<FrequencyRow[]>('yousafzai_word_frequency_list.json').catch(() => []), // Fallback to empty array if file doesn't exist
     readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
     readJson<Record<string, string[]>>('form_to_root_map.json'),
     readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
@@ -283,6 +285,13 @@ async function loadData(): Promise<DataCache> {
     if (!row?.pashto) continue;
     const value = typeof row.frequency === 'number' ? row.frequency : Number.parseInt(String(row.frequency ?? 0), 10) || 0;
     frequencyMap.set(row.pashto, value);
+  }
+
+  const yousafzaiFrequencyMap = new Map<string, number>();
+  for (const row of yousafzaiFrequencies) {
+    if (!row?.pashto) continue;
+    const value = typeof row.frequency === 'number' ? row.frequency : Number.parseInt(String(row.frequency ?? 0), 10) || 0;
+    yousafzaiFrequencyMap.set(row.pashto, value);
   }
 
   const inflectionsByBase = new Map<string, InflectionRow[]>();
@@ -361,6 +370,7 @@ async function loadData(): Promise<DataCache> {
     dictionaryByPashto,
     dictionaryByRomanized,
     frequencyMap,
+    yousafzaiFrequencyMap,
     inflectionsByBase,
     formsByRoot,
     formToRoot,
@@ -376,6 +386,7 @@ type LightweightData = {
   dictionaryByPashto: Map<string, DictionaryEntry>;
   dictionaryByRomanized: Map<string, DictionaryEntry[]>;
   frequencyMap: Map<string, number>;
+  yousafzaiFrequencyMap: Map<string, number>;
   formToRoot: Record<string, string[]>;
   formsByRoot: Map<string, string[]>;
   occurrenceMap: Map<string, OccurrenceRow>;
@@ -404,8 +415,9 @@ type LazySearchData = {
 const lazySearchCache = globalThis as unknown as { __PBS_LAZY_SEARCH_CACHE__?: Promise<LazySearchData>; __PBS_LAZY_SEARCH_DATA__?: LazySearchData };
 
 async function loadLightweightData(): Promise<LightweightData> {
-  const [frequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
+  const [frequencies, yousafzaiFrequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
     readJson<FrequencyRow[]>('word_frequency_list.json'),
+    readJson<FrequencyRow[]>('yousafzai_word_frequency_list.json').catch(() => []), // Fallback to empty array if file doesn't exist
     readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
     readJson<Record<string, string[]>>('form_to_root_map.json'),
     readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
@@ -434,6 +446,13 @@ async function loadLightweightData(): Promise<LightweightData> {
     if (!row?.pashto) continue;
     const value = typeof row.frequency === 'number' ? row.frequency : Number.parseInt(String(row.frequency ?? 0), 10) || 0;
     frequencyMap.set(row.pashto, value);
+  }
+
+  const yousafzaiFrequencyMap = new Map<string, number>();
+  for (const row of yousafzaiFrequencies) {
+    if (!row?.pashto) continue;
+    const value = typeof row.frequency === 'number' ? row.frequency : Number.parseInt(String(row.frequency ?? 0), 10) || 0;
+    yousafzaiFrequencyMap.set(row.pashto, value);
   }
 
   const inflectionsByBase = new Map<string, InflectionRow[]>();
@@ -476,6 +495,7 @@ async function loadLightweightData(): Promise<LightweightData> {
     dictionaryByPashto,
     dictionaryByRomanized,
     frequencyMap,
+    yousafzaiFrequencyMap,
     formToRoot,
     formsByRoot,
     occurrenceMap,
