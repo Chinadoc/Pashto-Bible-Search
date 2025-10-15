@@ -1238,6 +1238,7 @@ export default function ClientHome() {
         enableFuzzy,
         bookFilter,
         language: languageOverride ?? searchLanguage,
+        translation: activeTranslation,
       };
 
       if (variantsPayload) {
@@ -1790,20 +1791,20 @@ export default function ClientHome() {
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
               <button
                 onClick={() => setActiveTranslation('afghan2023')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
                   activeTranslation === 'afghan2023'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 Afghan 2023
               </button>
               <button
                 onClick={() => setActiveTranslation('yousafzai2019')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
                   activeTranslation === 'yousafzai2019'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    ? 'bg-green-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 Yousafzai 2019
