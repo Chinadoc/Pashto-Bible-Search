@@ -8,7 +8,7 @@
 
 import type { Variant } from './verb_variants';
 
-type LingDocsLibraryModule = typeof import('../../pashto-inflector/src/lib/dist/lib/library.cjs');
+type LingDocsLibraryModule = typeof import('../../pashto-inflector/src/lib/dist/lib/library.cjs') | null;
 
 type CachedInflection = {
   form: string;
@@ -38,7 +38,8 @@ async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
       })
       .catch((error) => {
         console.error('❌ Failed to load LingDocs library:', error);
-        throw error;
+        console.warn('⚠️ Falling back to pattern-based generation');
+        return null; // Return null instead of throwing
       });
   }
   return lingDocsLibraryPromise;
@@ -389,6 +390,11 @@ export async function generateVerbVariantsLingDocs(
 ): Promise<Variant[]> {
   try {
     const LingDocs = await loadLingDocsLibrary();
+    if (!LingDocs) {
+      console.warn('⚠️ LingDocs library not available, returning empty variants');
+      return [];
+    }
+    
     const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
     const dictEntry = dictionaryByPashto.get(rootOrInfinitive);
@@ -456,6 +462,11 @@ export async function generateNounVariantsLingDocs(
 ): Promise<Variant[]> {
   try {
     const LingDocs = await loadLingDocsLibrary();
+    if (!LingDocs) {
+      console.warn('⚠️ LingDocs library not available, returning empty variants');
+      return [];
+    }
+    
     const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
     const dictEntry = dictionaryByPashto.get(rootOrLemma);
