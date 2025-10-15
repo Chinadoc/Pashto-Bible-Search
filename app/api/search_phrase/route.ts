@@ -1421,7 +1421,7 @@ async function enrichVariantsFromSupabase(
 
         // Find all forms that map to this root
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             collector.add(form, { sources: ['root-map'] });
           }
         }
