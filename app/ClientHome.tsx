@@ -642,6 +642,9 @@ export default function ClientHome() {
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
+  const [newVideoUrl, setNewVideoUrl] = useState('');
+  const [processingVideo, setProcessingVideo] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
@@ -916,6 +919,63 @@ export default function ClientHome() {
         newSet.delete(segmentIndex);
         return newSet;
       });
+    }
+  };
+
+  // Process new video function
+  const processNewVideo = async () => {
+    if (!newVideoUrl.trim()) {
+      alert('Please enter a YouTube URL');
+      return;
+    }
+
+    setProcessingVideo(true);
+    setProcessingStatus('Starting video processing...');
+
+    try {
+      const response = await fetch('/api/process-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ youtubeUrl: newVideoUrl }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setProcessingStatus(`✅ Successfully processed video!`);
+        setProcessingStatus(prev => prev + `\nVideo ID: ${data.videoId}`);
+        setProcessingStatus(prev => prev + `\nTotal chunks: ${data.totalChunks}`);
+        setProcessingStatus(prev => prev + `\nSuccessful transcriptions: ${data.successfulTranscriptions}`);
+        
+        // Refresh videos list
+        setVideos([]);
+        setTimeout(() => {
+          fetch('/api/videos')
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                setVideos(data.videos || []);
+              }
+            })
+            .catch(error => {
+              console.error('Error refreshing videos:', error);
+            });
+        }, 2000);
+        
+        setNewVideoUrl('');
+      } else {
+        setProcessingStatus(`❌ Processing failed: ${data.error}`);
+        if (data.output) {
+          setProcessingStatus(prev => prev + `\n\nDetails:\n${data.output}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing video:', error);
+      setProcessingStatus(`❌ Error: ${error}`);
+    } finally {
+      setProcessingVideo(false);
     }
   };
 
@@ -2325,6 +2385,40 @@ export default function ClientHome() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               YouTube videos with searchable Pashto transcripts
             </p>
+            
+            {/* Video Upload Section */}
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                🎬 Process New Video
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <input
+                    type="url"
+                    value={newVideoUrl}
+                    onChange={(e) => setNewVideoUrl(e.target.value)}
+                    placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={processingVideo}
+                  />
+                </div>
+                <button
+                  onClick={processNewVideo}
+                  disabled={processingVideo || !newVideoUrl.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  {processingVideo ? 'Processing...' : 'Process Video'}
+                </button>
+                
+                {processingStatus && (
+                  <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded border">
+                    <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                      {processingStatus}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
             
             {/* Transcript Search */}
             <div className="mb-6">
