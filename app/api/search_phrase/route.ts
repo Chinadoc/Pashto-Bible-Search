@@ -1782,8 +1782,8 @@ export async function POST(request: NextRequest) {
           .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
           .limit(3)
         if (Array.isArray(dictData)) {
-          for (const row of dictData) {
-            if (row && typeof row === 'object' && 'pashto' in row && row.pashto) {
+          for (const row of dictData as Array<{ pashto: string; pos?: string; romanized?: string }>) {
+            if (row && row.pashto) {
               const pos = typeof row.pos === 'string' ? row.pos : undefined
               const romanized = typeof row.romanized === 'string' ? row.romanized : undefined
               variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
