@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(YOUSAFZAI_FREQUENCY_CACHE.data)
     }
 
-    // Load Yousafzai frequency data from local file
-    const frequencyFile = path.join(process.cwd(), 'yousafzai_word_frequency_list.json')
+    // Load Yousafzai frequency data from public directory
+    const frequencyFile = path.join(process.cwd(), 'public', 'yousafzai_word_frequency_list.json')
     
     if (!fs.existsSync(frequencyFile)) {
       console.warn('Yousafzai frequency file not found:', frequencyFile)
