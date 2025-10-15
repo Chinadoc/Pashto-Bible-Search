@@ -62,15 +62,11 @@ if [ ! -f .env.local ]; then
 # OpenAI API Key for GPT-5 nano quality validation
 OPENAI_API_KEY=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
 
-# Google Drive API (optional - for file storage)
-GOOGLE_DRIVE_API_KEY=your_google_drive_api_key_here
-GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
-
-# Supabase (for metadata storage)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_supabase_anon_key_here
+# Supabase (already configured)
+NEXT_PUBLIC_SUPABASE_URL=https://nkombdutnjvaasxrbmdn.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rb21iZHV0bmp2YWFzeHJibWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzMxNDMsImV4cCI6MjA3MjA0OTE0M30.dBdCCD8hJAWV4Y8sRNVi2uUSnDrZbUM4TxR6vl8-ENg
 EOF
-    echo "Created .env.local file. Please add your API keys."
+    echo "Created .env.local file with existing Supabase configuration."
 fi
 
 echo "✅ Setup complete!"
