@@ -1783,9 +1783,9 @@ export async function POST(request: NextRequest) {
           .limit(3)
         if (Array.isArray(dictData)) {
           for (const row of dictData) {
-            if (row?.pashto) {
-              const pos = typeof row?.pos === 'string' ? row.pos : undefined
-              const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
+            if (row && typeof row === 'object' && 'pashto' in row && row.pashto) {
+              const pos = typeof row.pos === 'string' ? row.pos : undefined
+              const romanized = typeof row.romanized === 'string' ? row.romanized : undefined
               variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
             }
           }
