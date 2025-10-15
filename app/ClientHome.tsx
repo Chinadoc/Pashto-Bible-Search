@@ -639,6 +639,8 @@ export default function ClientHome() {
   const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
   const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
   const [loadingTranscripts, setLoadingTranscripts] = useState(false);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
@@ -849,6 +851,26 @@ export default function ClientHome() {
         });
     }
   }, [activeMainTab, poems.length]);
+
+  // Fetch videos when videos tab is active
+  useEffect(() => {
+    if (activeMainTab === 'videos' && videos.length === 0) {
+      setLoadingVideos(true);
+      fetch('/api/videos')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setVideos(data.videos || []);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching videos:', error);
+        })
+        .finally(() => {
+          setLoadingVideos(false);
+        });
+    }
+  }, [activeMainTab, videos.length]);
 
   // Search transcripts function
   const searchTranscripts = async (query: string) => {
@@ -2248,13 +2270,13 @@ export default function ClientHome() {
 
       {/* Videos/Audio Tab */}
       {activeMainTab === 'videos' && (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               🎵 Videos/Audio
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Audio clips and transcripts from YouTube videos
+              YouTube videos with searchable Pashto transcripts
             </p>
             
             {/* Transcript Search */}
@@ -2319,41 +2341,93 @@ export default function ClientHome() {
               )}
             </div>
             
-            {/* Audio Clips Section */}
+            {/* Videos Section */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                🎵 Available Audio Clips
+                📺 YouTube Videos with Transcripts
               </h3>
             
-            {loadingAudio ? (
+            {loadingVideos ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading audio clips...</p>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
               </div>
-            ) : audioClips.length > 0 ? (
-              <div className="space-y-4">
+            ) : videos.length > 0 ? (
+              <div className="space-y-6">
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                   <p className="text-green-800 dark:text-green-300">
-                    Found {audioClips.length} audio clips
+                    Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
                   </p>
                 </div>
                 
-                {audioClips.map((clip, index) => (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                      {clip.name}
-                    </h3>
-                    <div className="flex items-center space-x-4">
-                      <audio controls className="flex-1">
-                        <source src={clip.url} type="audio/wav" />
-                        Your browser does not support the audio element.
-                      </audio>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {(clip.size / 1024 / 1024).toFixed(1)} MB
+                {videos.map((video, index) => (
+                  <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <div className="mb-4">
+                      <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        {video.title}
+                      </h4>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span>{video.totalSegments} segments</span>
+                        <span>{Math.round(video.totalDuration / 60)} minutes total</span>
+                        <a 
+                          href={video.youtubeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          View on YouTube →
+                        </a>
                       </div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Created: {new Date(clip.created).toLocaleDateString()}
+                    
+                    {/* YouTube Embed */}
+                    <div className="mb-6">
+                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className="absolute top-0 left-0 w-full h-full rounded-lg"
+                          src={`https://www.youtube.com/embed/${video.id}`}
+                          title={video.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    </div>
+                    
+                    {/* Video Segments with Transcripts */}
+                    <div className="space-y-4">
+                      <h5 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        Video Segments & Transcripts
+                      </h5>
+                      
+                      {video.segments.map((segment, segIndex) => (
+                        <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <h6 className="font-medium text-gray-900 dark:text-gray-100">
+                              Segment {segment.segmentNumber}
+                            </h6>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} - 
+                              {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
+                            </div>
+                          </div>
+                          
+                          {/* Transcript */}
+                          <div className="mb-3">
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-40 overflow-y-auto">
+                              <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+                                {segment.transcript}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Audio Player */}
+                          <audio controls className="w-full">
+                            <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -2361,7 +2435,7 @@ export default function ClientHome() {
             ) : (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <p className="text-blue-800 dark:text-blue-300">
-                  No audio clips found. Please process YouTube videos first.
+                  No videos found. Please process YouTube videos first.
                 </p>
                 <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
                   <p>To process videos:</p>
