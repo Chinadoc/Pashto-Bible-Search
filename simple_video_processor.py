@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Automated Video Processing Pipeline with Quality Checks
+Simplified Video Processing Pipeline with Quality Checks
 - Downloads YouTube videos
 - Segments into optimal chunks to prevent quality loss
-- Detects and removes music segments
 - Transcribes with ElevenLabs
-- Validates transcription quality with OpenAI
+- Validates transcription quality with OpenAI GPT-4o-mini
 - Automatically re-transcribes poor quality segments
 """
 
@@ -17,8 +16,6 @@ import requests
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
-import librosa
-import numpy as np
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 import nltk
@@ -36,7 +33,7 @@ ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text"
 OPENAI_API_KEY = "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"
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
-class AutomatedVideoProcessor:
+class SimpleVideoProcessor:
     def __init__(self):
         self.output_dir = Path("processed_videos")
         self.output_dir.mkdir(exist_ok=True)
@@ -94,65 +91,9 @@ class AutomatedVideoProcessor:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to extract audio: {e}")
     
-    def detect_music_segments(self, audio_path: Path) -> List[Tuple[float, float]]:
-        """Detect music segments using audio analysis"""
-        try:
-            # Load audio with librosa
-            y, sr = librosa.load(str(audio_path), sr=16000)
-            
-            # Calculate spectral features
-            spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-            spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-            mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-            
-            # Calculate tempo (music typically has consistent tempo)
-            tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
-            
-            # Detect music based on:
-            # 1. High spectral centroid (bright sounds)
-            # 2. Consistent tempo
-            # 3. High spectral rolloff (rich harmonics)
-            
-            frame_length = 2048
-            hop_length = 512
-            frame_times = librosa.frames_to_time(np.arange(len(spectral_centroids)), 
-                                               sr=sr, hop_length=hop_length)
-            
-            music_segments = []
-            current_segment_start = None
-            
-            for i, (time, centroid, rolloff) in enumerate(zip(frame_times, spectral_centroids, spectral_rolloff)):
-                # Music detection criteria
-                is_music = (
-                    centroid > np.mean(spectral_centroids) * 1.2 and  # Bright sounds
-                    rolloff > np.mean(spectral_rolloff) * 1.1 and      # Rich harmonics
-                    tempo > 60  # Has tempo (not just speech)
-                )
-                
-                if is_music and current_segment_start is None:
-                    current_segment_start = time
-                elif not is_music and current_segment_start is not None:
-                    # End of music segment
-                    if time - current_segment_start > 2.0:  # Only segments > 2 seconds
-                        music_segments.append((current_segment_start, time))
-                    current_segment_start = None
-            
-            # Handle case where music continues to end
-            if current_segment_start is not None:
-                music_segments.append((current_segment_start, frame_times[-1]))
-            
-            return music_segments
-            
-        except Exception as e:
-            print(f"Warning: Could not detect music segments: {e}")
-            return []
-    
     def segment_audio_optimally(self, audio_path: Path, max_duration: int = 300) -> List[Path]:
         """Segment audio into optimal chunks to prevent quality loss"""
         audio = AudioSegment.from_wav(str(audio_path))
-        
-        # Detect music segments
-        music_segments = self.detect_music_segments(audio_path)
         
         # Split on silence first
         chunks = split_on_silence(
@@ -164,7 +105,6 @@ class AutomatedVideoProcessor:
         
         # Further segment chunks that are too long
         final_chunks = []
-        chunk_index = 0
         
         for chunk in chunks:
             if len(chunk) <= max_duration * 1000:  # Convert to milliseconds
@@ -179,24 +119,12 @@ class AutomatedVideoProcessor:
                     end_time = min((i + 1) * split_duration, len(chunk))
                     final_chunks.append(chunk[start_time:end_time])
         
-        # Save chunks and avoid music segments
+        # Save chunks
         chunk_paths = []
         for i, chunk in enumerate(final_chunks):
-            chunk_start_time = sum(len(c) for c in final_chunks[:i]) / 1000.0
-            chunk_end_time = chunk_start_time + len(chunk) / 1000.0
-            
-            # Check if chunk overlaps with music
-            overlaps_music = any(
-                chunk_start_time < music_end and chunk_end_time > music_start
-                for music_start, music_end in music_segments
-            )
-            
-            if not overlaps_music:
-                chunk_path = audio_path.parent / f"{audio_path.stem}_chunk_{i:03d}.wav"
-                chunk.export(str(chunk_path), format="wav")
-                chunk_paths.append(chunk_path)
-            else:
-                print(f"Skipping chunk {i} due to music overlap")
+            chunk_path = audio_path.parent / f"{audio_path.stem}_chunk_{i:03d}.wav"
+            chunk.export(str(chunk_path), format="wav")
+            chunk_paths.append(chunk_path)
         
         return chunk_paths
     
@@ -230,30 +158,25 @@ class AutomatedVideoProcessor:
             return None
     
     def validate_transcription_quality(self, transcript: str) -> Tuple[bool, str]:
-        """Validate transcription quality using OpenAI"""
-        if not OPENAI_API_KEY:
-            print("Warning: No OpenAI API key found, skipping quality validation")
-            return True, "No validation performed"
-        
-        # Check for non-Pashto/Dari content
+        """Validate transcription quality using OpenAI GPT-4o-mini"""
         prompt = f"""
-        Analyze this transcription for quality issues. The audio should contain only Pashto or Dari speech.
-        
-        Transcription: "{transcript}"
-        
-        Check for:
-        1. Non-Pashto/Dari scripts (Bengali, Hindi/Devanagari, English, etc.)
-        2. Music descriptions like "(music)", "(rock music)", "(dramatic music)"
-        3. Foreign language content
-        4. Gibberish or unclear text
-        
-        Respond with JSON:
-        {{
-            "is_valid": true/false,
-            "reason": "explanation",
-            "confidence": 0.0-1.0
-        }}
-        """
+Analyze this transcription for quality issues. The audio should contain only Pashto or Dari speech.
+
+Transcription: "{transcript}"
+
+Check for:
+1. Non-Pashto/Dari scripts (Bengali, Hindi/Devanagari, English, etc.)
+2. Music descriptions like "(music)", "(rock music)", "(dramatic music)"
+3. Foreign language content
+4. Gibberish or unclear text
+
+Respond with JSON:
+{{
+    "is_valid": true/false,
+    "reason": "explanation",
+    "confidence": 0.0-1.0
+}}
+"""
         
         try:
             response = requests.post(
@@ -333,11 +256,12 @@ class AutomatedVideoProcessor:
                             'transcript': transcript,
                             'status': 'success'
                         })
+                        print(f"   ✅ Quality check passed: {reason}")
                     else:
-                        print(f"   Quality check failed: {reason}")
+                        print(f"   ❌ Quality check failed: {reason}")
                         failed_chunks.append(chunk_path)
                 else:
-                    print(f"   Transcription failed")
+                    print(f"   ❌ Transcription failed")
                     failed_chunks.append(chunk_path)
                 
                 # Rate limiting
@@ -360,8 +284,9 @@ class AutomatedVideoProcessor:
                                 'transcript': transcript,
                                 'status': 'success_retry'
                             })
+                            print(f"   ✅ Re-transcription quality check passed: {reason}")
                         else:
-                            print(f"   Re-transcription also failed quality check: {reason}")
+                            print(f"   ❌ Re-transcription also failed quality check: {reason}")
                     
                     time.sleep(1)
             
@@ -401,11 +326,11 @@ def main():
     import sys
     
     if len(sys.argv) != 2:
-        print("Usage: python automated_video_processor.py <youtube_url>")
+        print("Usage: python simple_video_processor.py <youtube_url>")
         sys.exit(1)
     
     url = sys.argv[1]
-    processor = AutomatedVideoProcessor()
+    processor = SimpleVideoProcessor()
     result = processor.process_video(url)
     
     if result['success']:
