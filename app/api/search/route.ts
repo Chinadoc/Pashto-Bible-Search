@@ -44,6 +44,7 @@ type SearchRequest = {
   language?: 'pashto' | 'english' | 'anki';
   bookFilter?: string[];
   limit?: number;
+  translation?: 'afghan2023' | 'yousafzai2019';
 };
 
 type Variant = {
@@ -415,6 +416,7 @@ export async function POST(request: NextRequest) {
       enableFuzzy = false,
       language = 'pashto',
       limit = 100,
+      translation = 'afghan2023',
     } = body;
     const scope = normaliseScope(body.scope);
 
@@ -432,9 +434,66 @@ export async function POST(request: NextRequest) {
     const originalQuery = query.trim();
     const searchLanguage: 'pashto' | 'english' | 'anki' = language === 'anki' ? 'anki' : language === 'english' ? 'english' : 'pashto';
 
+    // Add transliteration support for common Pashto words
+    const transliterationMap: Record<string, string> = {
+      'weenum': 'وینم',
+      'winam': 'وینم', 
+      'wina': 'وینا',
+      'kawum': 'کوم',
+      'kawam': 'کوم',
+      'kawel': 'کول',
+      'kawedal': 'کېدل',
+      'kawral': 'کړل',
+      'akhistal': 'اخیستل',
+      'satal': 'ساتل',
+      'khuda': 'خدا',
+      'khudai': 'خدای',
+      'khuday': 'خدای',
+      'dunya': 'دنیا',
+      'dunya': 'دنیا',
+      'zindagi': 'ژوند',
+      'zindagi': 'ژوند',
+      'malik': 'مالک',
+      'malik': 'مالک',
+      'padar': 'پلار',
+      'padar': 'پلار',
+      'mor': 'مور',
+      'mor': 'مور',
+      'wror': 'ورور',
+      'wror': 'ورور',
+      'khor': 'خور',
+      'khor': 'خور',
+      'zama': 'زما',
+      'zama': 'زما',
+      'sta': 'ستا',
+      'sta': 'ستا',
+      'da': 'دا',
+      'da': 'دا',
+      'hagha': 'هغه',
+      'hagha': 'هغه',
+      'mung': 'مونږ',
+      'mung': 'مونږ',
+      'tasu': 'تاسو',
+      'tasu': 'تاسو',
+      'dasi': 'داسي',
+      'dasi': 'داسي',
+      'hasi': 'هاسي',
+      'hasi': 'هاسي'
+    };
+
+    // Try transliteration if query is in English/Latin script
+    let searchQuery = originalQuery;
+    if (searchLanguage === 'pashto' && /^[a-zA-Z\s]+$/.test(originalQuery)) {
+      const transliterated = transliterationMap[originalQuery.toLowerCase()];
+      if (transliterated) {
+        searchQuery = transliterated;
+        console.log(`🔄 Transliterated "${originalQuery}" to "${searchQuery}"`);
+      }
+    }
+
     // Check cache first
     const cacheKey = generateCacheKey(
-      originalQuery,
+      searchQuery,
       scope,
       includeRelated,
       enableFuzzy,
@@ -459,7 +518,7 @@ export async function POST(request: NextRequest) {
         cached: true,
       });
     }
-    let trimmedQuery = originalQuery;
+    let trimmedQuery = searchQuery;
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
