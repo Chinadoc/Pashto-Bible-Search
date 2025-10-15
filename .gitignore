@@ -72,11 +72,11 @@ MANIFEST
 
 # Audio files
 *.mp3
-*.wav
+#*.wav
 *.flac
 *.aac
 *.ogg
-*.m4a
+#*.m4a
 audio/
 **/audio/
 # Don't ignore API routes with "audio" in the name
@@ -132,11 +132,11 @@ audio/
 
 # Large individual files
 *.mp3
-*.wav
+#*.wav
 *.flac
 *.aac
 *.ogg
-*.m4a
+#*.m4a
 
 # Generated frequency files
 *frequencies*.json
@@ -168,5 +168,7 @@ dictionary_fast_index.json
 videos/*.mp4
 videos/
 *.mp4
-*.wav
-*.m4a
+#*.wav
+#*.m4a
+# Ignore files larger than 40MB
+*.{mp4,mkv,avi,mov}
