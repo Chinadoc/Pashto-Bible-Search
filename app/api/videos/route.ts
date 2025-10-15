@@ -19,13 +19,17 @@ export async function GET(request: NextRequest) {
     const videoMap = new Map();
     
     data?.forEach((item) => {
-      const videoId = item.verse_reference.split('_')[1]; // Extract video ID
-      const segmentNumber = parseInt(item.verse_reference.split('_segment_')[1]);
+      // Extract video ID from verse_reference format: video_{video_id}_segment_{number}
+      const match = item.verse_reference.match(/^video_(.+)_segment_(\d+)$/);
+      if (!match) return;
+      
+      const videoId = match[1]; // Full video ID (e.g., "Xqn_-onV9DQ")
+      const segmentNumber = parseInt(match[2]);
       
       if (!videoMap.has(videoId)) {
         videoMap.set(videoId, {
           id: videoId,
-          title: `Video ${videoId}`,
+          title: `Afghanistan - Pakistan War | Torkham Durand Line | د افغانستان پاکستان جنګ`,
           youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
           segments: [],
           totalSegments: 0,
