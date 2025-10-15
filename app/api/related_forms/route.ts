@@ -146,13 +146,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'form is required' }, { status: 400 });
     }
 
-    // Check cache first (use root verb for consistency)
-    const cacheKey = JSON.stringify({ root: rootVerb });
-    const cached = getCache(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
     const { dictionaryByRomanized, dictionaryByPashto, frequencyMap } = await getLightweightData();
 
     // Normalization (local)
@@ -174,6 +167,19 @@ export async function POST(req: NextRequest) {
       }
 
       normalized = pick?.pashto ?? root;
+    }
+
+    // POS guess from dictionary
+    let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
+    const dictEntry = dictionaryByPashto.get(normalized);
+    
+    if (dictEntry?.pos) {
+      const posLower = dictEntry.pos.toLowerCase();
+      console.log(`🔍 Checking pos field: "${posLower}"`);
+      if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
+      else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
+      else if (posLower.startsWith("adj")) posGuess = "adjective";
+      else posGuess = "other";
     }
 
     // Try to find root verb for conjugated forms
@@ -202,19 +208,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // POS guess from dictionary
-    let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
-    const dictEntry = dictionaryByPashto.get(rootVerb);
+    // Check cache first (use root verb for consistency)
+    const cacheKey = JSON.stringify({ root: rootVerb });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Update dictionary entry lookup to use rootVerb
+    const rootDictEntry = dictionaryByPashto.get(rootVerb);
 
     console.log(`🔍 Dictionary lookup for "${rootVerb}" (searched for "${normalized}"):`, {
-      found: !!dictEntry,
-      pos: dictEntry?.pos,
-      c: dictEntry?.c,
-      pashto: dictEntry?.pashto,
+      found: !!rootDictEntry,
+      pos: rootDictEntry?.pos,
+      c: rootDictEntry?.c,
+      pashto: rootDictEntry?.pashto,
       originalSearch: normalized,
     });
 
-    if (!dictEntry) {
+    if (!rootDictEntry) {
       console.log(`❌ Dictionary entry not found for "${rootVerb}"`);
       // Check if the word exists in the dictionary at all
       const allKeys = Array.from(dictionaryByPashto.keys());
@@ -227,16 +239,16 @@ export async function POST(req: NextRequest) {
       console.log(`🔍 Raw dictionary entry for "${rootVerb}":`, rawEntry ? 'found' : 'not found');
     }
 
-    if (dictEntry?.pos) {
-      const posLower = dictEntry.pos.toLowerCase();
+    if (rootDictEntry?.pos) {
+      const posLower = rootDictEntry.pos.toLowerCase();
       console.log(`🔍 Checking pos field: "${posLower}"`);
       if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
       else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
       else if (posLower.startsWith("adj")) posGuess = "adjective";
       else posGuess = "other";
-    } else if (dictEntry?.c) {
+    } else if (rootDictEntry?.c) {
       // Check the 'c' field which contains values like "n. m.", "v.", "adj."
-      const cLower = dictEntry.c.toLowerCase();
+      const cLower = rootDictEntry.c.toLowerCase();
       console.log(`🔍 Checking c field: "${cLower}"`);
       if (cLower.startsWith("v.")) posGuess = "verb";
       else if (cLower.startsWith("n.")) posGuess = "noun";
