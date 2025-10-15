@@ -131,10 +131,12 @@ export async function GET(request: NextRequest) {
             const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
             // Skip excluded books to prevent text/audio mismatches
             if (EXCLUDED_BOOKS.has(bookName)) {
+              console.log(`🚫 Skipping excluded book: ${bookName}`);
               return;
             }
             // Only include OT books that have confirmed Yousafzai 2019 audio
             if (OT_BOOKS.has(bookName) && !OT_BOOKS_WITH_AUDIO.has(bookName)) {
+              console.log(`🚫 Skipping non-whitelisted OT book: ${bookName}`);
               return;
             }
             const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
