@@ -408,7 +408,7 @@ export async function GET(request: NextRequest) {
         console.log(`🚫 Final cleanup: removing excluded book ${book}: ${ref}`)
         continue
       }
-      // Skip non-whitelisted OT books
+      // Skip non-whitelisted OT books (NT books are always allowed)
       if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) {
         console.log(`🚫 Final cleanup: removing non-whitelisted OT book ${book}: ${ref}`)
         continue
