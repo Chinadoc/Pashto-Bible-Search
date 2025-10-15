@@ -2,9 +2,53 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../utils/supabase'
 import type { AudioMap } from '../../../types'
 
+// Book abbreviation mapping
+const ABBR: Record<string, string> = {
+  'Genesis': 'gen', 'Exodus': 'exo', 'Leviticus': 'lev', 'Numbers': 'num', 'Deuteronomy': 'deu',
+  'Joshua': 'jos', 'Judges': 'jdg', 'Ruth': 'rut', '1 Samuel': '1sam', '2 Samuel': '2sam',
+  '1 Kings': '1kgs', '2 Kings': '2kgs', '1 Chronicles': '1chr', '2 Chronicles': '2chr',
+  'Ezra': 'ezr', 'Nehemiah': 'neh', 'Esther': 'est', 'Job': 'job', 'Psalms': 'psa',
+  'Proverbs': 'pro', 'Ecclesiastes': 'ecc', 'Song of Solomon': 'sng', 'Isaiah': 'isa',
+  'Jeremiah': 'jer', 'Lamentations': 'lam', 'Ezekiel': 'eze', 'Daniel': 'dan',
+  'Hosea': 'hos', 'Joel': 'joe', 'Amos': 'amo', 'Obadiah': 'oba', 'Jonah': 'jon',
+  'Micah': 'mic', 'Nahum': 'nah', 'Habakkuk': 'hab', 'Zephaniah': 'zep',
+  'Haggai': 'hag', 'Zechariah': 'zec', 'Malachi': 'mal',
+  'Matthew': 'mat', 'Mark': 'mar', 'Luke': 'luk', 'John': 'joh', 'Acts': 'act',
+  'Romans': 'rom', '1 Corinthians': '1cor', '2 Corinthians': '2cor', 'Galatians': 'gal',
+  'Ephesians': 'eph', 'Philippians': 'phi', 'Colossians': 'col', '1 Thessalonians': '1th',
+  '2 Thessalonians': '2th', '1 Timothy': '1tim', '2 Timothy': '2tim', 'Titus': 'tit',
+  'Philemon': 'phm', 'Hebrews': 'heb', 'James': 'jas', '1 Peter': '1pet',
+  '2 Peter': '2pet', '1 John': '1joh', '2 John': '2joh', '3 John': '3joh',
+  'Jude': 'jud', 'Revelation': 'rev'
+}
+
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
 const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+const OT_BOOKS = new Set([
+  'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
+  '1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra',
+  'Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon',
+  'Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos',
+  'Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
+])
+
+// Books to exclude from audio map due to text/audio version mismatches
+const EXCLUDED_BOOKS = new Set([
+  'Leviticus' // Audio is Yousafzai 2019, but text is Afghan 2023 - causing mismatch
+])
+
+// OT books that have confirmed Yousafzai 2019 audio on Afghan Bibles
+const OT_BOOKS_WITH_AUDIO = new Set([
+  'Isaiah', 'Ezekiel', 'Amos', 'Jonah', 'Proverbs', 'Judges', 'Psalms'
+])
+
+function bookFromRef(ref: string | null | undefined): string {
+  if (!ref) return ''
+  const m = ref.match(/^(.+?)\s+\d+:\d+$/)
+  return m ? m[1].trim() : ''
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,6 +129,14 @@ export async function GET(request: NextRequest) {
         Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
           if (data.book && data.chapter && data.verse) {
             const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
+            // Skip excluded books to prevent text/audio mismatches
+            if (EXCLUDED_BOOKS.has(bookName)) {
+              return;
+            }
+            // Only include OT books that have confirmed Yousafzai 2019 audio
+            if (OT_BOOKS.has(bookName) && !OT_BOOKS_WITH_AUDIO.has(bookName)) {
+              return;
+            }
             const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
             // Use file ID if available, otherwise extract from URL
             let fileId = data.google_drive_file_id;
@@ -110,6 +162,10 @@ export async function GET(request: NextRequest) {
     if (viewData && Array.isArray(viewData) && viewData.length > 0) {
       for (const row of viewData as Array<{ verse_ref?: string | null; url?: string | null }>) {
         if (!row.verse_ref || !row.url) continue
+        const book = bookFromRef(row.verse_ref)
+        if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
+        // Only include OT books that have confirmed Yousafzai 2019 audio
+        if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) continue
         const isDrive = /drive\.google|docs\.google/i.test(row.url)
         // Only add if not already in local data (Google Drive takes precedence)
         if (!audioMap[row.verse_ref] && !isDrive) {
@@ -160,6 +216,10 @@ export async function GET(request: NextRequest) {
         const { verse_ref, url: mappingUrl } = mapping as { verse_ref?: string | null; url?: string | null };
 
         if (!verse_ref || !mappingUrl) continue;
+        const book = bookFromRef(verse_ref)
+        if (OT_BOOKS.has(book) || EXCLUDED_BOOKS.has(book)) continue
+        // Only include OT books that have confirmed Yousafzai 2019 audio
+        if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) continue
 
         let url = mappingUrl
 
@@ -217,6 +277,10 @@ export async function GET(request: NextRequest) {
 
     if (versesData) {
       for (const v of versesData as Array<{ book: string; chapter: number; verse: number; audio_filename?: string | null; audio_drive_id?: string | null }>) {
+        // Skip excluded books to prevent text/audio mismatches
+        if (EXCLUDED_BOOKS.has(v.book)) continue
+        // Only include OT books that have confirmed Yousafzai 2019 audio
+        if (OT_BOOKS.has(v.book) && !OT_BOOKS_WITH_AUDIO.has(v.book)) continue
         const ref = `${v.book} ${v.chapter}:${v.verse}`
         // Prefer Supabase Storage, fall back to Drive only if no storage alternative
         let url = ''
@@ -248,6 +312,10 @@ export async function GET(request: NextRequest) {
       if (Array.isArray(yousafzaiData)) {
         for (const row of yousafzaiData as Array<{ book?: string | null; chapter?: number | null; verse?: number | null; audio_chapter_url?: string | null }>) {
           if (!row?.book || row.chapter == null || row.verse == null) continue
+          // Skip excluded books to prevent text/audio mismatches
+          if (EXCLUDED_BOOKS.has(row.book)) continue
+          // Only include OT books that have confirmed Yousafzai 2019 audio
+          if (OT_BOOKS.has(row.book) && !OT_BOOKS_WITH_AUDIO.has(row.book)) continue
           const url = typeof row.audio_chapter_url === 'string' && row.audio_chapter_url ? row.audio_chapter_url : ''
           if (!url) continue
           const ref = `${row.book} ${row.chapter}:${row.verse}`
@@ -280,6 +348,18 @@ export async function GET(request: NextRequest) {
         for (const item of list) {
           if (!item || !item.name || !/\.mp3$/i.test(item.name)) continue
           const file = item.name
+          
+          // Extract book name from filename to check whitelist
+          const match = file.match(/^(?:(\d+)([a-zA-Z]+)|([a-zA-Z]+)(\d+))_verse_(\d+)\.mp3$/i)
+          if (match) {
+            const bookName = match[2] || match[3]
+            const fullBookName = Object.keys(ABBR).find(key => ABBR[key].toLowerCase() === bookName.toLowerCase()) || bookName
+            // Skip excluded books to prevent text/audio mismatches
+            if (EXCLUDED_BOOKS.has(fullBookName)) continue
+            // Only include OT books that have confirmed Yousafzai 2019 audio
+            if (OT_BOOKS.has(fullBookName) && !OT_BOOKS_WITH_AUDIO.has(fullBookName)) continue
+          }
+          
           const url = storageBase + encodeURIComponent(file)
           // Strongly prefer Supabase Storage URLs
           const existing = audioMap[file]
