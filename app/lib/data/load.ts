@@ -257,7 +257,7 @@ async function loadData(): Promise<DataCache> {
   const [frequencies, yousafzaiFrequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
     readJson<FrequencyRow[]>('word_frequency_list.json'),
     readJson<FrequencyRow[]>('yousafzai_word_frequency_list.json').catch(() => []), // Fallback to empty array if file doesn't exist
-    readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
+    readJson<Record<string, InflectionRow[]>>('inflections_cache.json').catch(() => ({})), // Fallback to empty object if file doesn't exist
     readJson<Record<string, string[]>>('form_to_root_map.json'),
     readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
     readJson<any>('full_dictionary_enriched.json'),
@@ -418,7 +418,7 @@ async function loadLightweightData(): Promise<LightweightData> {
   const [frequencies, yousafzaiFrequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
     readJson<FrequencyRow[]>('word_frequency_list.json'),
     readJson<FrequencyRow[]>('yousafzai_word_frequency_list.json').catch(() => []), // Fallback to empty array if file doesn't exist
-    readJson<Record<string, InflectionRow[]>>('inflections_cache.json'),
+    readJson<Record<string, InflectionRow[]>>('inflections_cache.json').catch(() => ({})), // Fallback to empty object if file doesn't exist
     readJson<Record<string, string[]>>('form_to_root_map.json'),
     readJson<Record<string, OccurrenceRow>>('form_occurrence_index.json'),
     readJson<any>('full_dictionary_enriched.json'),
