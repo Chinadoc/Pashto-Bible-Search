@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Convert map to array and sort segments
     const videos = Array.from(videoMap.values()).map(video => ({
       ...video,
-      segments: video.segments.sort((a, b) => a.segmentNumber - b.segmentNumber)
+      segments: video.segments.sort((a: any, b: any) => a.segmentNumber - b.segmentNumber)
     }));
 
     return NextResponse.json({
