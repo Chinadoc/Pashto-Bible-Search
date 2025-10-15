@@ -55,7 +55,7 @@ async function loadLingDocsResources(): Promise<CachedResources> {
       const [fs, path] = await Promise.all([import('fs/promises'), import('path')]);
 
       const dictionaryPath = path.join(process.cwd(), 'app/data/full_dictionary_enriched.json');
-      const inflectionCachePath = path.join(process.cwd(), 'app/data/inflections_cache.json');
+      const inflectionCachePath = path.join(process.cwd(), 'inflections_cache.json');
       const frequencyPath = path.join(process.cwd(), 'app/data/word_frequency_list.json');
 
       const [dictionaryRaw, cacheRaw, frequencyRaw] = await Promise.all([
