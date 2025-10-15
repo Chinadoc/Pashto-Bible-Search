@@ -166,3 +166,7 @@ public/full_dictionary_enriched.json
 ot_form_occurrence_index.json
 dictionary_fast_index.json
 videos/*.mp4
+videos/
+*.mp4
+*.wav
+*.m4a
