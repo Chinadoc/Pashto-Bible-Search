@@ -392,7 +392,17 @@ export async function GET(request: NextRequest) {
     // Final cleanup: remove any non-whitelisted OT books that slipped through
     const filteredAudioMap: AudioMap = {}
     for (const [ref, url] of Object.entries(audioMap)) {
-      const book = bookFromRef(ref)
+      let book = bookFromRef(ref)
+      
+      // Handle filename format (e.g., "romans1_verse_1.mp3")
+      if (!book && ref.includes('_verse_')) {
+        const match = ref.match(/^(?:(\d+)([a-zA-Z]+)|([a-zA-Z]+)(\d+))_verse_(\d+)\.mp3$/i)
+        if (match) {
+          const bookName = match[2] || match[3]
+          book = Object.keys(ABBR).find(key => ABBR[key].toLowerCase() === bookName.toLowerCase()) || bookName
+        }
+      }
+      
       // Skip excluded books
       if (EXCLUDED_BOOKS.has(book)) {
         console.log(`🚫 Final cleanup: removing excluded book ${book}: ${ref}`)
