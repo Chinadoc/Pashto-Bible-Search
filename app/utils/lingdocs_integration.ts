@@ -8,7 +8,8 @@
 
 import type { Variant } from './verb_variants';
 
-type LingDocsLibraryModule = typeof import('../../pashto-inflector/src/lib/dist/lib/library.cjs') | null;
+// Conditional import type to avoid build errors when LingDocs is not available
+type LingDocsLibraryModule = any | null;
 
 type CachedInflection = {
   form: string;
