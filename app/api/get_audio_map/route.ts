@@ -24,7 +24,7 @@ const ABBR: Record<string, string> = {
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
 let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
-const AUDIO_MAP_TTL_MS = 10 * 60 * 1000 // 10 minutes
+const AUDIO_MAP_TTL_MS = 0 // Disable cache for debugging
 
 const OT_BOOKS = new Set([
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
@@ -389,9 +389,28 @@ export async function GET(request: NextRequest) {
       console.warn('Storage sync warning:', e)
     }
 
+    // Final cleanup: remove any non-whitelisted OT books that slipped through
+    const filteredAudioMap: AudioMap = {}
+    for (const [ref, url] of Object.entries(audioMap)) {
+      const book = bookFromRef(ref)
+      // Skip excluded books
+      if (EXCLUDED_BOOKS.has(book)) {
+        console.log(`🚫 Final cleanup: removing excluded book ${book}: ${ref}`)
+        continue
+      }
+      // Skip non-whitelisted OT books
+      if (OT_BOOKS.has(book) && !OT_BOOKS_WITH_AUDIO.has(book)) {
+        console.log(`🚫 Final cleanup: removing non-whitelisted OT book ${book}: ${ref}`)
+        continue
+      }
+      filteredAudioMap[ref] = url
+    }
+    
+    console.log(`🔍 Audio map filtering complete: ${Object.keys(audioMap).length} -> ${Object.keys(filteredAudioMap).length} entries`)
+    
     // Save to cache
-    AUDIO_MAP_CACHE = { data: audioMap, ts: Date.now() }
-    return NextResponse.json(audioMap)
+    AUDIO_MAP_CACHE = { data: filteredAudioMap, ts: Date.now() }
+    return NextResponse.json(filteredAudioMap)
 
   } catch (error) {
     console.error('❌ Audio map error:', error)
