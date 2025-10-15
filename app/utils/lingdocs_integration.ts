@@ -32,16 +32,19 @@ let cachedResourcesPromise: Promise<CachedResources> | null = null;
 
 async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
   if (!lingDocsLibraryPromise) {
-    lingDocsLibraryPromise = import('../../pashto-inflector/src/lib/dist/lib/library.cjs')
-      .then((mod) => {
+    lingDocsLibraryPromise = (async () => {
+      try {
+        // Use Function constructor to avoid build-time resolution
+        const importFunc = new Function('path', 'return import(path)');
+        const mod = await importFunc('../../pashto-inflector/src/lib/dist/lib/library.cjs');
         console.log('✅ LingDocs library loaded successfully');
         return mod;
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('❌ Failed to load LingDocs library:', error);
         console.warn('⚠️ Falling back to pattern-based generation');
         return null; // Return null instead of throwing
-      });
+      }
+    })();
   }
   return lingDocsLibraryPromise;
 }
