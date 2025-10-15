@@ -170,5 +170,7 @@ videos/
 *.mp4
 #*.wav
 #*.m4a
-# Ignore files larger than 40MB
-*.{mp4,mkv,avi,mov}
+# Ignore audio/video files larger than 40MB
+# Note: Git doesn't support size-based filtering, so we ignore common large media formats
+*.{mp4,mkv,avi,mov,webm,flv}
+# Allow smaller audio files like .wav, .mp3, .m4a under 40MB

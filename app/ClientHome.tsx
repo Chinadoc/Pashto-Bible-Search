@@ -641,6 +641,7 @@ export default function ClientHome() {
   const [loadingTranscripts, setLoadingTranscripts] = useState(false);
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
@@ -871,6 +872,52 @@ export default function ClientHome() {
         });
     }
   }, [activeMainTab, videos.length]);
+
+  // Re-transcribe segment function
+  const retranscribeSegment = async (audioFilename: string, segmentIndex: number) => {
+    setRetranscribingSegments(prev => new Set(prev).add(segmentIndex));
+    
+    try {
+      const response = await fetch('/api/retranscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioFilename }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Update the transcript in the videos state
+        setVideos(prevVideos => 
+          prevVideos.map(video => ({
+            ...video,
+            segments: video.segments.map((segment: any, index: number) => 
+              index === segmentIndex 
+                ? { ...segment, transcript: data.transcript }
+                : segment
+            )
+          }))
+        );
+        
+        // Show success message (you could add a toast notification here)
+        console.log('Transcript updated successfully');
+      } else {
+        console.error('Failed to re-transcribe:', data.error);
+        alert('Failed to re-transcribe segment. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error re-transcribing segment:', error);
+      alert('Error re-transcribing segment. Please try again.');
+    } finally {
+      setRetranscribingSegments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(segmentIndex);
+        return newSet;
+      });
+    }
+  };
 
   // Search transcripts function
   const searchTranscripts = async (query: string) => {
@@ -2426,6 +2473,15 @@ export default function ClientHome() {
                               <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
                                 {segment.transcript}
                               </p>
+                            </div>
+                            <div className="mt-2 flex justify-end">
+                              <button
+                                onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
+                                disabled={retranscribingSegments.has(segIndex)}
+                                className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
+                              </button>
                             </div>
                           </div>
                           

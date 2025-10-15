@@ -51,30 +51,34 @@ export async function GET(request: NextRequest) {
       
       const video = videoMap.get(videoId);
       
-      if (sentenceNumber) {
-        // This is a sentence-level segment
-        video.segments.push({
-          segmentNumber,
-          sentenceNumber,
-          startTime: item.start_time_seconds || (segmentNumber - 1) * 300,
-          endTime: item.end_time_seconds || segmentNumber * 300,
-          transcript: item.audio_path, // This contains our transcript
-          audioFilename: item.audio_filename,
-          duration: item.duration_seconds || 300,
-          type: 'sentence'
-        });
-      } else {
-        // This is a regular segment
-        video.segments.push({
-          segmentNumber,
-          startTime: item.start_time_seconds || (segmentNumber - 1) * 300,
-          endTime: item.end_time_seconds || segmentNumber * 300,
-          transcript: item.audio_path, // This contains our transcript
-          audioFilename: item.audio_filename,
-          duration: item.duration_seconds || 300,
-          type: 'segment'
-        });
-      }
+          if (sentenceNumber) {
+            // This is a sentence-level segment
+            const startTime = item.start_time_seconds || (segmentNumber - 1) * 300 + (sentenceNumber - 1) * 10;
+            const duration = item.duration_seconds || 10;
+            video.segments.push({
+              segmentNumber,
+              sentenceNumber,
+              startTime: startTime,
+              endTime: startTime + duration,
+              transcript: item.audio_path, // This contains our transcript
+              audioFilename: item.audio_filename,
+              duration: duration,
+              type: 'sentence'
+            });
+          } else {
+            // This is a regular segment
+            const startTime = item.start_time_seconds || (segmentNumber - 1) * 300;
+            const duration = item.duration_seconds || 300;
+            video.segments.push({
+              segmentNumber,
+              startTime: startTime,
+              endTime: startTime + duration,
+              transcript: item.audio_path, // This contains our transcript
+              audioFilename: item.audio_filename,
+              duration: duration,
+              type: 'segment'
+            });
+          }
       
       video.totalSegments++;
       video.totalDuration += item.duration_seconds || 300;
