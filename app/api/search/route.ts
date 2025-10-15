@@ -468,12 +468,19 @@ export async function POST(request: NextRequest) {
 
     // Try transliteration if query is in English/Latin script
     let searchQuery = originalQuery;
+    console.log(`🔍 Original query: "${originalQuery}", searchLanguage: "${searchLanguage}"`);
     if (searchLanguage === 'pashto' && /^[a-zA-Z\s]+$/.test(originalQuery)) {
+      console.log(`🔍 Query matches Latin script pattern`);
       const transliterated = transliterationMap[originalQuery.toLowerCase()];
+      console.log(`🔍 Transliteration lookup for "${originalQuery.toLowerCase()}":`, transliterated);
       if (transliterated) {
         searchQuery = transliterated;
         console.log(`🔄 Transliterated "${originalQuery}" to "${searchQuery}"`);
+      } else {
+        console.log(`⚠️ No transliteration found for "${originalQuery}"`);
       }
+    } else {
+      console.log(`🔍 Query does not match transliteration conditions`);
     }
 
     // Check cache first (use original query for cache key to avoid conflicts)
