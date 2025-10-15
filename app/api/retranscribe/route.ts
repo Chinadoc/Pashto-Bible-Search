@@ -4,6 +4,74 @@ import { join } from 'path';
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+const OPENAI_API_KEY = "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";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+
+async function validateTranscriptionQuality(transcript: string): Promise<{ isValid: boolean; reason: string }> {
+  try {
+    const prompt = `
+Analyze this transcription for quality issues. The audio should contain only Pashto or Dari speech.
+
+Transcription: "${transcript}"
+
+Check for:
+1. Non-Pashto/Dari scripts (Bengali, Hindi/Devanagari, English, etc.)
+2. Music descriptions like "(music)", "(rock music)", "(dramatic music)"
+3. Foreign language content
+4. Gibberish or unclear text
+
+Respond with JSON:
+{
+    "is_valid": true/false,
+    "reason": "explanation",
+    "confidence": 0.0-1.0
+}
+`;
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 150,
+        temperature: 0.1
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      const content = result.choices[0].message.content;
+      
+      try {
+        const validation = JSON.parse(content);
+        return {
+          isValid: validation.is_valid || false,
+          reason: validation.reason || 'Valid'
+        };
+      } catch {
+        // Fallback: simple text analysis
+        if (content.toLowerCase().includes('invalid') || 
+            content.toLowerCase().includes('poor') || 
+            content.toLowerCase().includes('wrong') || 
+            content.toLowerCase().includes('music') || 
+            content.toLowerCase().includes('foreign')) {
+          return { isValid: false, reason: 'Quality check failed' };
+        }
+        return { isValid: true, reason: 'Valid' };
+      }
+    } else {
+      console.error('OpenAI API error:', response.status);
+      return { isValid: true, reason: 'API error, assuming valid' };
+    }
+  } catch (error) {
+    console.error('Error validating transcription:', error);
+    return { isValid: true, reason: 'Validation error, assuming valid' };
+  }
+}
 
 async function transcribeAudioFile(audioFilePath: string): Promise<string | null> {
   try {
@@ -62,11 +130,24 @@ export async function POST(request: NextRequest) {
     const transcript = await transcribeAudioFile(audioFilePath);
 
     if (transcript) {
-      return NextResponse.json({
-        success: true,
-        transcript: transcript,
-        audioFilename: audioFilename
-      });
+      // Validate transcription quality
+      const validation = await validateTranscriptionQuality(transcript);
+      
+      if (validation.isValid) {
+        return NextResponse.json({
+          success: true,
+          transcript: transcript,
+          audioFilename: audioFilename,
+          qualityCheck: validation
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: 'Transcription failed quality check',
+          reason: validation.reason,
+          transcript: transcript
+        }, { status: 400 });
+      }
     } else {
       return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 });
     }

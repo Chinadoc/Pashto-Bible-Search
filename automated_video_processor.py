@@ -33,7 +33,7 @@ except LookupError:
 # API Configuration
 ELEVENLABS_API_KEY = "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543"
 ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get from environment
+OPENAI_API_KEY = "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"
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
 class AutomatedVideoProcessor:
@@ -263,7 +263,7 @@ class AutomatedVideoProcessor:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "gpt-3.5-turbo",
+                    "model": "gpt-4o-mini",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 150,
                     "temperature": 0.1

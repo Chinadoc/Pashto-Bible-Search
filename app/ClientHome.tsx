@@ -904,11 +904,14 @@ export default function ClientHome() {
           }))
         );
         
-        // Show success message (you could add a toast notification here)
-        console.log('Transcript updated successfully');
+        // Show success message with quality check info
+        const qualityInfo = data.qualityCheck ? `\nQuality check: ${data.qualityCheck.reason}` : '';
+        alert(`Transcript updated successfully!${qualityInfo}`);
+        console.log('Transcript updated successfully', data.qualityCheck);
       } else {
         console.error('Failed to re-transcribe:', data.error);
-        alert('Failed to re-transcribe segment. Please try again.');
+        const errorMsg = data.reason ? `Quality check failed: ${data.reason}` : 'Failed to re-transcribe segment. Please try again.';
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('Error re-transcribing segment:', error);
