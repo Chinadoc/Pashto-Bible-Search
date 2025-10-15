@@ -630,6 +630,8 @@ export default function ClientHome() {
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
+  const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
+  const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
@@ -749,87 +751,137 @@ export default function ClientHome() {
     }
   }, []);
 
-  // Load audio map data
+  // Load audio map data for both translations
   useEffect(() => {
-    const loadAudioMap = async () => {
+    const loadAudioMaps = async () => {
       try {
-        // Always force refresh to get latest URLs without Drive links
-        const response = await fetch('/api/get_audio_map?clear_cache=1');
-        if (response.ok) {
-          const data = await response.json();
-          const audioMap = data || {};
-          const driveUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(audioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+        // Load Afghan 2023 audio map
+        const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
+        if (afghanResponse.ok) {
+          const afghanData = await afghanResponse.json();
+          const afghanAudioMap = afghanData || {};
+          const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
 
-          console.log(`Audio map loaded: ${Object.keys(audioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
-          setAudioMap(audioMap);
+          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+          setAudioMap(afghanAudioMap);
 
           if (driveUrls > 0) {
-            console.warn(`⚠️ Audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
+            console.warn(`⚠️ Afghan 2023 audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
           }
         } else {
-          console.warn('Audio map API returned error:', response.status, response.statusText);
+          console.warn('Afghan 2023 audio map API returned error:', afghanResponse.status, afghanResponse.statusText);
           setAudioMap({});
         }
+
+        // Load Yousafzai 2019 audio map
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+        if (yousafzaiResponse.ok) {
+          const yousafzaiData = await yousafzaiResponse.json();
+          const yousafzaiAudioMap = yousafzaiData || {};
+          const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+
+          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+          setYousafzaiAudioMap(yousafzaiAudioMap);
+
+          if (yousafzaiDriveUrls > 0) {
+            console.warn(`⚠️ Yousafzai 2019 audio map contains ${yousafzaiDriveUrls} Google Drive URLs - consider manual refresh`);
+          }
+        } else {
+          console.warn('Yousafzai 2019 audio map API returned error:', yousafzaiResponse.status, yousafzaiResponse.statusText);
+          setYousafzaiAudioMap({});
+        }
       } catch (error) {
-        console.error('Failed to load audio map:', error);
-        // Audio map is optional, so we can continue without it
+        console.error('Failed to load audio maps:', error);
+        // Audio maps are optional, so we can continue without them
         setAudioMap({});
+        setYousafzaiAudioMap({});
       }
     };
-    loadAudioMap();
+    loadAudioMaps();
   }, []);
 
-  // Refresh audio map when results change to ensure we have latest URLs
+  // Refresh audio maps when results change to ensure we have latest URLs
   useEffect(() => {
-    // Only refresh if we have results but no audio map
-    if (results.length > 0 && Object.keys(audioMap).length === 0) {
-      const refreshAudioMap = async () => {
+    // Only refresh if we have results but no audio map for the active translation
+    const currentAudioMap = activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap;
+    if (results.length > 0 && Object.keys(currentAudioMap).length === 0) {
+      const refreshAudioMaps = async () => {
         try {
-          const response = await fetch('/api/get_audio_map?clear_cache=1');
-          if (response.ok) {
-            const data = await response.json();
-            const newAudioMap = data || {};
-            console.log(`Refreshed audio map: ${Object.keys(newAudioMap).length} entries`);
-            setAudioMap(newAudioMap);
+          // Refresh Afghan 2023 audio map
+          const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
+          if (afghanResponse.ok) {
+            const afghanData = await afghanResponse.json();
+            const newAfghanAudioMap = afghanData || {};
+            console.log(`Refreshed Afghan 2023 audio map: ${Object.keys(newAfghanAudioMap).length} entries`);
+            setAudioMap(newAfghanAudioMap);
+          }
+
+          // Refresh Yousafzai 2019 audio map
+          const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+          if (yousafzaiResponse.ok) {
+            const yousafzaiData = await yousafzaiResponse.json();
+            const newYousafzaiAudioMap = yousafzaiData || {};
+            console.log(`Refreshed Yousafzai 2019 audio map: ${Object.keys(newYousafzaiAudioMap).length} entries`);
+            setYousafzaiAudioMap(newYousafzaiAudioMap);
           }
         } catch (error) {
-          console.error('Failed to refresh audio map:', error);
+          console.error('Failed to refresh audio maps:', error);
         }
       };
-      refreshAudioMap();
+      refreshAudioMaps();
     }
-  }, [results.length]); // Remove audioMap dependency to prevent excessive re-runs
+  }, [results.length, activeTranslation]); // Remove audioMap dependency to prevent excessive re-runs
 
   // Manual audio map refresh function
   const refreshAudioMap = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/get_audio_map?clear_cache=1');
-      if (response.ok) {
-        const data = await response.json();
-        const newAudioMap = data || {};
-        const driveUrls = Object.values(newAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const storageUrls = Object.values(newAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+      
+      // Refresh Afghan 2023 audio map
+      const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
+      if (afghanResponse.ok) {
+        const afghanData = await afghanResponse.json();
+        const newAfghanAudioMap = afghanData || {};
+        const afghanDriveUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
 
-        console.log(`Audio map refreshed: ${Object.keys(newAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
-        setAudioMap(newAudioMap);
+        console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Supabase, ${afghanDriveUrls} Drive)`);
+        setAudioMap(newAfghanAudioMap);
 
-        if (driveUrls > 0) {
-          alert(`Audio map refreshed with ${driveUrls} Google Drive URLs still present. Try refreshing again.`);
+        // Refresh Yousafzai 2019 audio map
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+        if (yousafzaiResponse.ok) {
+          const yousafzaiData = await yousafzaiResponse.json();
+          const newYousafzaiAudioMap = yousafzaiData || {};
+          const yousafzaiDriveUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+
+          console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+          setYousafzaiAudioMap(newYousafzaiAudioMap);
+
+          const totalDriveUrls = afghanDriveUrls + yousafzaiDriveUrls;
+          const totalStorageUrls = afghanStorageUrls + yousafzaiStorageUrls;
+
+          if (totalDriveUrls > 0) {
+            alert(`Audio maps refreshed with ${totalDriveUrls} Google Drive URLs still present. Try refreshing again.`);
+          } else {
+            alert(`Audio maps refreshed with ${totalStorageUrls} Supabase Storage URLs!`);
+          }
         } else {
-          alert(`Audio map refreshed with ${storageUrls} Supabase Storage URLs!`);
+          alert('Failed to refresh Yousafzai 2019 audio map');
         }
       } else {
-        alert('Failed to refresh audio map');
+        alert('Failed to refresh Afghan 2023 audio map');
       }
     } catch (error) {
-      console.error('Failed to refresh audio map:', error);
-      alert('Failed to refresh audio map');
+      console.error('Failed to refresh audio maps:', error);
+      alert('Failed to refresh audio maps');
     } finally {
       setIsLoading(false);
     }
-  }, [setAudioMap, setIsLoading]);
+  }, [setAudioMap, setYousafzaiAudioMap, setIsLoading]);
 
   // Filter results by selected books
   const filteredResults = useMemo(() => {
@@ -995,14 +1047,14 @@ export default function ClientHome() {
       });
 
       setResults(searchData.results || []);
-      setRelatedForms({
+      setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
-      } || null);
-      setProcessed({
+      } : null);
+      setProcessed(searchData.processed ? {
         ...searchData.processed,
         searchedForm: searchData.searchedForm,
-      } || null);
+      } : null);
 
       const processedVariants: string[] = searchData.processed?.variantsSearched
         || searchData.processed?.variants
@@ -1465,6 +1517,32 @@ export default function ClientHome() {
           {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
+
+      {/* Translation Tabs */}
+      <div className="flex justify-center mb-6">
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+          <button
+            onClick={() => setActiveTranslation('afghan2023')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTranslation === 'afghan2023'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            Afghan 2023
+          </button>
+          <button
+            onClick={() => setActiveTranslation('yousafzai2019')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTranslation === 'yousafzai2019'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            Yousafzai 2019
+          </button>
+        </div>
+      </div>
 
       {/* Search Bar */}
       <div className="relative z-10 mb-6">
@@ -1979,7 +2057,7 @@ export default function ClientHome() {
           {/* Results List */}
           <ResultsList
             results={filteredResults}
-            audioMap={audioMap}
+            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
             loading={isLoading}
             processed={processed}
             verbFilters={verbFilters}
@@ -2013,6 +2091,7 @@ export default function ClientHome() {
             onClearFilters={() => setBookFilter([])}
             resultsCount={results.length}
             filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
           />
         </div>
       </div>

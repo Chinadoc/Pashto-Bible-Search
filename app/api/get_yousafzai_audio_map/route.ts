@@ -23,7 +23,7 @@ const ABBR: Record<string, string> = {
 }
 
 // Simple in-memory cache to reduce storage/list churn during a server's lifetime
-let AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
+let YOUSAFZAI_AUDIO_MAP_CACHE: { data: AudioMap; ts: number } | null = null
 const AUDIO_MAP_TTL_MS = 30 * 60 * 1000 // 30 minutes
 
 function bookFromRef(ref: string | null | undefined): string {
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
   try {
     const forceRefresh = request.nextUrl?.searchParams?.get('refresh') === '1'
     const shouldRefresh = forceRefresh || request.nextUrl?.searchParams?.get('clear_cache') === '1'
-    if (!shouldRefresh && AUDIO_MAP_CACHE && Date.now() - AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
-      return NextResponse.json(AUDIO_MAP_CACHE.data)
+    if (!shouldRefresh && YOUSAFZAI_AUDIO_MAP_CACHE && Date.now() - YOUSAFZAI_AUDIO_MAP_CACHE.ts < AUDIO_MAP_TTL_MS) {
+      return NextResponse.json(YOUSAFZAI_AUDIO_MAP_CACHE.data)
     }
     
     // Check if we have valid Supabase credentials
@@ -53,13 +53,13 @@ export async function GET(request: NextRequest) {
     // Convert the data to the expected AudioMap format
     const audioMap: AudioMap = {}
 
-    // Load Google Drive audio data first (primary source for Afghan 2023)
+    // Load Google Drive audio data for Yousafzai books (Genesis to Revelation)
     try {
       const fs = await import('fs');
       const path = await import('path');
       const possiblePaths = [
-        path.join(process.cwd(), 'google_drive_audio_urls.json'),
-        path.join(process.cwd(), 'public', 'google_drive_audio_urls.json')
+        path.join(process.cwd(), 'yousafzai_google_drive_audio_urls.json'),
+        path.join(process.cwd(), 'public', 'yousafzai_google_drive_audio_urls.json')
       ];
 
       let localPath = null;
@@ -89,13 +89,13 @@ export async function GET(request: NextRequest) {
             }
           }
         });
-        console.log(`🔗 Loaded ${localCount} Google Drive audio entries from ${localPath}`);
+        console.log(`🔗 Loaded ${localCount} Yousafzai Google Drive audio entries from ${localPath}`);
       }
     } catch (localError) {
-      console.warn('Failed to load local Google Drive audio data:', localError);
+      console.warn('Failed to load local Yousafzai Google Drive audio data:', localError);
     }
 
-    // Load Supabase Storage audio (for NT books and any remaining Afghan 2023)
+    // Load Supabase Storage audio for Yousafzai books
     try {
       const pageSizeStorage = 1000
       let offset = 0
@@ -140,13 +140,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Save to cache
-    AUDIO_MAP_CACHE = { data: audioMap, ts: Date.now() }
+    YOUSAFZAI_AUDIO_MAP_CACHE = { data: audioMap, ts: Date.now() }
     return NextResponse.json(audioMap)
 
   } catch (error) {
-    console.error('❌ Audio map error:', error)
+    console.error('❌ Yousafzai audio map error:', error)
     return NextResponse.json({ 
-      error: 'Audio map generation failed', 
+      error: 'Yousafzai audio map generation failed', 
       details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     }, { status: 500 })

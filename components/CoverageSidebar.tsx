@@ -2,7 +2,7 @@
 
 import CoverageGrid, { ComplexityLevel } from './CoverageGrid';
 import { useSidebarCoverage } from '../hooks/useSidebarCoverage';
-import type { CoverageItem, Scope } from '../types';
+import type { CoverageItem, Scope, AudioMap } from '../types';
 
 interface Props {
   coverage: CoverageItem[];
@@ -14,6 +14,7 @@ interface Props {
   onClearFilters?: () => void;
   resultsCount?: number;
   filteredCount?: number;
+  audioMap?: AudioMap;
 }
 
 export default function CoverageSidebar({
@@ -25,7 +26,8 @@ export default function CoverageSidebar({
   selectedBooks = [],
   onClearFilters,
   resultsCount,
-  filteredCount
+  filteredCount,
+  audioMap
 }: Props) {
   const sidebarCoverage = useSidebarCoverage(coverage);
 
@@ -49,6 +51,7 @@ export default function CoverageSidebar({
         selectedBook={selectedBook}
         selectedBooks={selectedBooks}
         onClearFilters={onClearFilters}
+        audioMap={audioMap}
       />
     </div>
   );
