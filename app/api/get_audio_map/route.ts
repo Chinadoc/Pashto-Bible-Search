@@ -22,7 +22,7 @@ const EXCLUDED_BOOKS = new Set([
 
 // OT books that have confirmed Yousafzai 2019 audio on Afghan Bibles
 const OT_BOOKS_WITH_AUDIO = new Set([
-  'Isaiah', 'Ezekiel', 'Amos', 'Jonah', 'Proverbs', 'Judges'
+  'Isaiah', 'Ezekiel', 'Amos', 'Jonah', 'Proverbs', 'Judges', 'Psalms'
 ])
 
 function bookFromRef(ref: string | null | undefined): string {
