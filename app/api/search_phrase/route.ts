@@ -2240,7 +2240,11 @@ export async function POST(request: NextRequest) {
               .limit(30)
 
             if (Array.isArray(occurrenceData)) {
-              for (const row of occurrenceData) {
+              const typedRows = occurrenceData as Array<{
+                pashto_form?: string | null
+                frequency?: number | null
+              }>
+              for (const row of typedRows) {
                 if (row?.pashto_form && row?.frequency) {
                   existingForms.push({
                     form: row.pashto_form,
@@ -2261,7 +2265,11 @@ export async function POST(request: NextRequest) {
                 .limit(30)
 
               if (Array.isArray(occurrenceData2)) {
-                for (const row of occurrenceData2) {
+                const typedRows2 = occurrenceData2 as Array<{
+                  pashto_form?: string | null
+                  frequency?: number | null
+                }>
+                for (const row of typedRows2) {
                   if (row?.pashto_form && row?.frequency) {
                     existingForms.push({
                       form: row.pashto_form,
