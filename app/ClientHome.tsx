@@ -2891,8 +2891,9 @@ export default function ClientHome() {
                 </div>
               </>
             );
-            </div>
-          ) : (
+          })()}
+              </div>
+            ) : (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <p className="text-blue-800 dark:text-blue-300">
                   No videos found. Please process YouTube videos first.
@@ -2904,15 +2905,6 @@ export default function ClientHome() {
                     <li>Run processor: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
                   </ol>
                 </div>
-              </div>
-            )}
-                </div>
-              </>
-            );
-                })}
-              </div>
-            );
-                })}
               </div>
             )}
 
