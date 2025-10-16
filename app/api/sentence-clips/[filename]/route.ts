@@ -30,7 +30,7 @@ export async function GET(
                          ext === 'mp3' ? 'audio/mpeg' :
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
-      return new NextResponse(fileBuffer as Uint8Array, {
+      return new NextResponse(fileBuffer.buffer, {
         status: 200,
         headers: {
           'Content-Type': contentType,
