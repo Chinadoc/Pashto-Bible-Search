@@ -3180,6 +3180,7 @@ export default function ClientHome() {
                 </div>
               </>
             )}
+            </>
 
             {activeVideosTab === 'transcripts' && (
               <>
