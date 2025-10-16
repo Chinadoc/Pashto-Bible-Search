@@ -3180,7 +3180,6 @@ export default function ClientHome() {
                 </div>
               </>
             )}
-            </>
 
             {activeVideosTab === 'transcripts' && (
               <>
@@ -3361,6 +3360,7 @@ export default function ClientHome() {
                 </div>
               </>
             )}
+            </>
           </div>
         </div>
       )}
