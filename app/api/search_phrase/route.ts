@@ -1800,10 +1800,10 @@ export async function POST(request: NextRequest) {
             .ilike('romanization', `%${originalTerm}%`)
             .limit(3)
           if (Array.isArray(data)) {
-            for (const row of data) {
-              if (row?.pashto_word) {
-                const pos = typeof row?.pos === 'string' ? row.pos : undefined
-                const romanized = typeof row?.romanization === 'string' ? row.romanization : undefined
+            for (const row of data as Array<{ pashto_word: string; pos?: string; romanization?: string }>) {
+              if (row && row.pashto_word) {
+                const pos = typeof row.pos === 'string' ? row.pos : undefined
+                const romanized = typeof row.romanization === 'string' ? row.romanization : undefined
                 variantCollector.add(row.pashto_word, { sources: ['romanized-dictionary'], pos, romanization: romanized })
               }
             }
