@@ -13,6 +13,14 @@ interface FrequencyItem {
     romanized?: string;
     pos?: string;
     english?: string;
+    conjugation_pattern?: string;
+    stems?: any;
+    roots?: any;
+    past_participle?: string;
+    irregularity_type?: string;
+    gender?: string;
+    number?: string;
+    plural_forms?: any;
   };
   morphological?: {
     relatedForms?: Array<{ form: string; count: number }>;
@@ -275,40 +283,66 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word, correction, timestamp: new Date().toISOString() }),
       });
-      alert('تصحیح شما ارسال شد. با تشکر!');
+      alert('Your correction has been submitted. Thank you!');
       setShowNoteForm(null);
     } catch (err) {
       console.error('Failed to submit correction:', err);
-      alert('خطا در ارسال تصحیح. لطفاً دوباره امتحان کنید.');
+      alert('Error submitting correction. Please try again.');
     }
   };
 
   // Export functionality
   const exportToCSV = (data: FrequencyItem[]) => {
     const headers = [
-      'رتبه',
-      'کلمه',
-      'ریشه',
-      'نوع',
-      'فریکونسی',
-      'لغت‌نامه',
-      'تعریف',
-      'رومنیزه',
-      'اشکال مرتبط',
-      'آیات',
-      'یادداشت کاربر'
+      'Rank',
+      'Word',
+      'Root',
+      'Type',
+      'Frequency',
+      'Romanized',
+      'Definition',
+      'POS',
+      'Conjugation Pattern',
+      'Irregularity Type',
+      'Gender',
+      'Number',
+      'Stems',
+      'Past Participle',
+      'Related Forms',
+      'Inflections',
+      'Plural Forms',
+      'Verses',
+      'User Notes'
     ];
 
     const csvData = data.map((item, index) => [
       (index + 1).toString(),
       item.form,
       item.root || '',
-      item.pos === 'verb' ? 'فعل' : item.pos === 'noun' ? 'اسم' : 'نامشخص',
+      item.pos === 'verb' ? 'Verb' : item.pos === 'noun' ? 'Noun' : 'Unknown',
       item.frequency.toString(),
-      item.dictionary?.pos || '',
-      item.dictionary?.definition || '',
       item.dictionary?.romanized || '',
+      item.dictionary?.definition || '',
+      item.dictionary?.pos || '',
+      item.dictionary?.conjugation_pattern || '',
+      item.dictionary?.irregularity_type || '',
+      item.dictionary?.gender || '',
+      item.dictionary?.number || '',
+      item.dictionary?.stems ?
+        (typeof item.dictionary.stems === 'object' ?
+          Object.entries(item.dictionary.stems).map(([k, v]) => `${k}:${v}`).join('; ') :
+          String(item.dictionary.stems)) : '',
+      item.dictionary?.past_participle || '',
       item.morphological?.relatedForms?.map(f => `${f.form}(${f.count})`).join('; ') || '',
+      item.morphological?.inflections?.map(i =>
+        `${i.form}(${typeof i.grammatical_info === 'object' ?
+          Object.entries(i.grammatical_info).map(([k, v]) => `${k}:${v}`).join(',') :
+          i.grammatical_info}${i.frequency > 0 ? `;${i.frequency}` : ''})`
+      ).join('; ') || '',
+      item.dictionary?.plural_forms ?
+        (typeof item.dictionary.plural_forms === 'object' ?
+          Object.entries(item.dictionary.plural_forms).map(([k, v]) => `${k}:${v}`).join('; ') :
+          String(item.dictionary.plural_forms)) : '',
       item.verseContexts?.map(c => c.verse_ref).join('; ') || '',
       userNotes[item.form] || ''
     ]);
@@ -543,15 +577,73 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                       {item.frequency.toLocaleString()}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.dictionary?.definition ? (
-                        <div className="max-w-xs truncate" title={item.dictionary.definition}>
-                          <span className="text-xs text-gray-600 dark:text-gray-400">
-                            {item.dictionary.romanized && `${item.dictionary.romanized}: `}
-                          </span>
-                          <span className="text-xs">
-                            {item.dictionary.definition}
-                          </span>
-                        </div>
+                      {item.dictionary?.definition || item.dictionary?.conjugation_pattern || item.dictionary?.gender ? (
+                        <div className="max-w-xs">
+                          <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                            {item.dictionary.romanized || item.form}
+                          </div>
+
+                          {item.dictionary.definition && (
+                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.dictionary.definition}>
+                              {item.dictionary.definition}
+                            </div>
+                          )}
+
+                          <div className="text-xs space-y-1">
+                            {item.dictionary.pos && (
+                              <div className="text-xs text-blue-600 dark:text-blue-400">
+                                POS: {item.dictionary.pos}
+            </div>
+          )}
+
+                            {item.dictionary.conjugation_pattern && (
+                              <div className="text-xs text-purple-600 dark:text-purple-400">
+                                Pattern: {item.dictionary.conjugation_pattern}
+              </div>
+              )}
+
+                            {item.dictionary.irregularity_type && (
+                              <div className="text-xs text-orange-600 dark:text-orange-400">
+                                Irregular: {item.dictionary.irregularity_type}
+            </div>
+          )}
+
+                            {item.dictionary.gender && (
+                              <div className="text-xs text-green-600 dark:text-green-400">
+                                Gender: {item.dictionary.gender}
+          </div>
+                            )}
+
+                            {item.dictionary.number && (
+                              <div className="text-xs text-indigo-600 dark:text-indigo-400">
+                                Number: {item.dictionary.number}
+                </div>
+              )}
+            </div>
+
+                          {item.dictionary.stems && (
+                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1">
+                              Stems:
+                              <div className="text-xs text-gray-600 dark:text-gray-400 ml-2">
+                                {typeof item.dictionary.stems === 'object' ?
+                                  Object.entries(item.dictionary.stems).map(([key, value]) =>
+                                    `${key}: ${value}`
+                                  ).join(', ') :
+                                  String(item.dictionary.stems)
+                                }
+                              </div>
+                            </div>
+                          )}
+
+                          {item.dictionary.past_participle && (
+                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                              Past Participle:
+                              <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                                {item.dictionary.past_participle}
+                              </span>
+                </div>
+              )}
+            </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
@@ -559,15 +651,53 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.morphological?.relatedForms && item.morphological.relatedForms.length > 0 ? (
                         <div className="max-w-xs">
+                          <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
+                            Related Forms:
+                          </div>
                           {item.morphological.relatedForms.slice(0, 3).map((form, idx) => (
                             <div key={idx} className="text-xs">
-                              {form.form} ({form.count})
-                            </div>
+                              <span className="font-mono">{form.form}</span>
+                              <span className="text-gray-500">({form.count})</span>
+          </div>
                           ))}
                           {item.morphological.relatedForms.length > 3 && (
                             <div className="text-xs text-gray-400">+{item.morphological.relatedForms.length - 3} more</div>
                           )}
-                        </div>
+                          {item.morphological?.inflections && item.morphological.inflections.length > 0 && (
+                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-2 mb-1">
+                              Inflections:
+          </div>
+                          )}
+                          {item.morphological?.inflections && item.morphological.inflections.slice(0, 2).map((inflection, idx) => (
+                            <div key={idx} className="text-xs">
+                              <span className="font-mono">{inflection.form}</span>
+                              {inflection.grammatical_info && (
+                                <span className="text-gray-500 ml-1">
+                                  ({typeof inflection.grammatical_info === 'object' ?
+                                    Object.entries(inflection.grammatical_info).map(([k, v]) => `${k}:${v}`).join(', ') :
+                                    inflection.grammatical_info})
+                                </span>
+                              )}
+                              {inflection.frequency > 0 && (
+                                <span className="text-blue-500 ml-1">({inflection.frequency})</span>
+                              )}
+                            </div>
+                          ))}
+
+                          {item.dictionary?.plural_forms && (
+                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1">
+                              Plural Forms:
+                              <div className="text-xs text-gray-600 dark:text-gray-400 ml-2">
+                                {typeof item.dictionary.plural_forms === 'object' ?
+                                  Object.entries(item.dictionary.plural_forms).map(([key, value]) =>
+                                    `${key}: ${value}`
+                                  ).join(', ') :
+                                  String(item.dictionary.plural_forms)
+                                }
+                              </div>
+                            </div>
+            )}
+          </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
@@ -602,7 +732,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                         <div className="space-y-2">
                           <textarea
                             className="w-full p-2 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
-                            placeholder="یادداشت یا تصحیح خود را بنویسید..."
+                            placeholder="Write your note or correction..."
                             rows={2}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && e.ctrlKey) {
@@ -626,13 +756,13 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                               }}
                               className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
-                              ارسال
+                              Submit
                             </button>
                             <button
                               onClick={() => setShowNoteForm(null)}
                               className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
                             >
-                              لغو
+                              Cancel
                             </button>
                           </div>
                         </div>
@@ -645,7 +775,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                             onClick={() => setShowNoteForm(item.form)}
                             className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
-                            {userNotes[item.form] ? 'ویرایش' : 'افزودن'}
+                            {userNotes[item.form] ? 'Edit' : 'Add'}
                           </button>
                         </div>
                       )}
@@ -655,7 +785,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                         onClick={() => onPickForm?.(item.form)}
                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                       >
-                        جستجو
+                        Search
                       </button>
                     </td>
                   </tr>
@@ -710,7 +840,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <div className="space-y-2">
                 {Object.entries(
                   filteredData.reduce((acc, item) => {
-                    const pos = item.pos === 'verb' ? 'فعل‌ها' : item.pos === 'noun' ? 'اسم‌ها' : 'نامشخص';
+                    const pos = item.pos === 'verb' ? 'Verbs' : item.pos === 'noun' ? 'Nouns' : 'Unknown';
                     acc[pos] = (acc[pos] || 0) + 1;
                     return acc;
                   }, {} as Record<string, number>)
@@ -721,8 +851,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                       <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
-                            pos === 'فعل‌ها' ? 'bg-blue-500' :
-                            pos === 'اسم‌ها' ? 'bg-green-500' : 'bg-gray-500'
+                            pos === 'Verbs' ? 'bg-blue-500' :
+                            pos === 'Nouns' ? 'bg-green-500' : 'bg-gray-500'
                           }`}
                           style={{ width: `${(count / filteredData.length) * 100}%` }}
                         ></div>
@@ -731,18 +861,18 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     </div>
                   </div>
                 ))}
-              </div>
+        </div>
             </div>
 
             {/* Frequency Ranges */}
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">توزیع فریکونسی</h4>
+              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Frequency Distribution</h4>
               <div className="space-y-2">
                 {[
-                  { label: 'کم (۱-۱۰)', min: 1, max: 10 },
-                  { label: 'متوسط (۱۱-۱۰۰)', min: 11, max: 100 },
-                  { label: 'زیاد (۱۰۱-۱۰۰۰)', min: 101, max: 1000 },
-                  { label: 'بسیار زیاد (۱۰۰۰+)', min: 1001, max: Infinity },
+                  { label: 'Low (1-10)', min: 1, max: 10 },
+                  { label: 'Medium (11-100)', min: 11, max: 100 },
+                  { label: 'High (101-1000)', min: 101, max: 1000 },
+                  { label: 'Very High (1000+)', min: 1001, max: Infinity },
                 ].map(range => {
                   const count = filteredData.filter(item => item.frequency >= range.min && item.frequency <= range.max).length;
                   return (
@@ -757,7 +887,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                         </div>
                         <span className="text-sm font-medium">{count}</span>
                       </div>
-                    </div>
+                </div>
                   );
                 })}
               </div>
@@ -769,7 +899,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       {/* Summary */}
       {filteredData.length > 0 && (
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-          نمایش {filteredData.length} نتیجه از {frequencyData.length} کلمه
+          Showing {filteredData.length} results from {frequencyData.length} words
         </div>
       )}
     </div>

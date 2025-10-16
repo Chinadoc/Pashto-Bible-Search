@@ -69,6 +69,8 @@ interface SearchRequest {
   extraVariants?: string[]
   // When true, expand variants by related forms (root -> forms)
   includeRelated?: boolean
+  // Translation to search in (afghan2023 or yousafzai2019)
+  translation?: 'afghan2023' | 'yousafzai2019'
 }
 
 // Irregular verbs map based on the comprehensive table provided
@@ -1609,7 +1611,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants, includeRelated, bookFilter }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated, bookFilter, translation = 'afghan2023' }: SearchRequest = await request.json()
 
     if (!query?.trim()) {
       return NextResponse.json({
@@ -1943,11 +1945,16 @@ export async function POST(request: NextRequest) {
     const selectCols = 'book,chapter,verse,text,testament'
     let textSearchHit = false
     
-    // Search all variants in both main verses table and Yousafzai table
-    const tablesToSearch = [
-      { name: 'verses', translation: 'Standard' },
-      { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
-    ]
+    // Search based on translation
+    const tablesToSearch = translation === 'yousafzai2019'
+      ? [
+          { name: 'verses_yousafzai', translation: 'Yousafzai 2019' },
+          { name: 'verses', translation: 'Standard' }
+        ]
+      : [
+          { name: 'verses', translation: 'Afghan 2023' },
+          { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
+        ]
 
     for (const table of tablesToSearch) {
       for (let i = 0; i < variantsToSearch.length; i++) {

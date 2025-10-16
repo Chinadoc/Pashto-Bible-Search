@@ -67,11 +67,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4) Fetch dictionary data for forms
-    const dictionaryMap = new Map<string, { definition?: string; romanized?: string; pos?: string; english?: string }>()
+    // 4) Fetch comprehensive dictionary and linguistic data for forms
+    const dictionaryMap = new Map<string, {
+      definition?: string;
+      romanized?: string;
+      pos?: string;
+      english?: string;
+      conjugation_pattern?: string;
+      stems?: any;
+      roots?: any;
+      past_participle?: string;
+      irregularity_type?: string;
+    }>()
+
     if (forms.length > 0) {
       for (const part of chunk(forms, 400)) {
         const inForms = part.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+
+        // Fetch dictionary data
         const dictUrl = `${supabaseUrl}/rest/v1/dictionary?select=pashto,definition,romanized,pos&pashto=in.(${inForms})`
         const dictRes = await fetch(dictUrl, { headers, cache: 'no-store' })
         if (dictRes.ok) {
@@ -82,7 +95,89 @@ export async function GET(request: NextRequest) {
                 definition: row.definition,
                 romanized: row.romanized,
                 pos: row.pos,
-                english: row.definition, // Use definition as english for now
+                english: row.definition,
+              })
+            }
+          })
+        }
+
+        // Fetch verb conjugation data from irregular_verbs and verbs_lexicon
+        const verbsUrl = `${supabaseUrl}/rest/v1/irregular_verbs?select=verb_root,stems,roots,past_participle,romanization,irregularity_type,conjugation_pattern&verb_root=in.(${inForms})`
+        const verbsRes = await fetch(verbsUrl, { headers, cache: 'no-store' })
+        if (verbsRes.ok) {
+          const verbRows: Array<{
+            verb_root: string;
+            stems?: any;
+            roots?: any;
+            past_participle?: string;
+            romanization?: any;
+            irregularity_type?: string;
+            conjugation_pattern?: string;
+          }> = await verbsRes.json()
+
+          verbRows.forEach(row => {
+            if (row.verb_root) {
+              const existing = dictionaryMap.get(row.verb_root) || {}
+              dictionaryMap.set(row.verb_root, {
+                ...existing,
+                conjugation_pattern: row.conjugation_pattern,
+                stems: row.stems,
+                roots: row.roots,
+                past_participle: row.past_participle,
+                irregularity_type: row.irregularity_type,
+              })
+            }
+          })
+        }
+
+        // Also check regular verbs lexicon
+        const regularVerbsUrl = `${supabaseUrl}/rest/v1/verbs_lexicon?select=verb_root,stems,roots,past_participle,romanization,conjugation_pattern&verb_root=in.(${inForms})`
+        const regularVerbsRes = await fetch(regularVerbsUrl, { headers, cache: 'no-store' })
+        if (regularVerbsRes.ok) {
+          const regularVerbRows: Array<{
+            verb_root: string;
+            stems?: any;
+            roots?: any;
+            past_participle?: string;
+            romanization?: any;
+            conjugation_pattern?: string;
+          }> = await regularVerbsRes.json()
+
+          regularVerbRows.forEach(row => {
+            if (row.verb_root) {
+              const existing = dictionaryMap.get(row.verb_root) || {}
+              dictionaryMap.set(row.verb_root, {
+                ...existing,
+                conjugation_pattern: row.conjugation_pattern,
+                stems: row.stems,
+                roots: row.roots,
+                past_participle: row.past_participle,
+              })
+            }
+          })
+        }
+
+        // Fetch noun data
+        const nounsUrl = `${supabaseUrl}/rest/v1/nouns_lexicon?select=pashto_word,romanized,gender,number,plural_forms&pashto_word=in.(${inForms})`
+        const nounsRes = await fetch(nounsUrl, { headers, cache: 'no-store' })
+        if (nounsRes.ok) {
+          const nounRows: Array<{
+            pashto_word: string;
+            romanized?: string;
+            gender?: string;
+            number?: string;
+            plural_forms?: any;
+          }> = await nounsRes.json()
+
+          nounRows.forEach(row => {
+            if (row.pashto_word) {
+              const existing = dictionaryMap.get(row.pashto_word) || {}
+              dictionaryMap.set(row.pashto_word, {
+                ...existing,
+                romanized: row.romanized,
+                gender: row.gender,
+                number: row.number,
+                plural_forms: row.plural_forms,
               })
             }
           })

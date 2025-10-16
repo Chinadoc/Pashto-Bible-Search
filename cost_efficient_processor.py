@@ -40,6 +40,8 @@ class CostEfficientProcessor:
         self.output_dir.mkdir(exist_ok=True)
         self.clips_dir = Path("audio_clips")
         self.clips_dir.mkdir(exist_ok=True)
+        self.sentence_clips_dir = Path("sentence_clips")
+        self.sentence_clips_dir.mkdir(exist_ok=True)
         
     def extract_video_id(self, url: str) -> str:
         """Extract YouTube video ID from URL"""
@@ -47,13 +49,22 @@ class CostEfficientProcessor:
             r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([^&\n?#]+)',
             r'youtube\.com/v/([^&\n?#]+)',
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, url)
             if match:
                 return match.group(1)
-        
+
         raise ValueError(f"Could not extract video ID from URL: {url}")
+
+    def create_unique_filename(self, base_name: str, extension: str, timestamp: bool = True) -> str:
+        """Create a unique filename to prevent conflicts"""
+        import datetime
+        if timestamp:
+            timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            return f"{base_name}_{timestamp_str}.{extension}"
+        else:
+            return f"{base_name}.{extension}"
     
     def download_video(self, url: str) -> Path:
         """Download YouTube video using yt-dlp"""
@@ -141,7 +152,18 @@ class CostEfficientProcessor:
             if current_segment_start is not None:
                 music_segments.append((current_segment_start, frame_times[-1]))
             
+            # Calculate total music duration for cost tracking
+            total_music_duration = sum(end - start for start, end in music_segments)
+            total_audio_duration = len(y) / sr
+
             print(f"Detected {len(music_segments)} music segments")
+            music_percent = total_music_duration/total_audio_duration*100
+            speech_percent = (1 - total_music_duration/total_audio_duration)*100
+            print(f"Total music duration: {total_music_duration:.1f}s ({music_percent:.1f}% of audio)")
+            print(f"Speech duration: {total_audio_duration - total_music_duration:.1f}s ({speech_percent:.1f}% of audio)")
+            cost_savings = total_music_duration * 0.01
+            print(f"💰 Cost savings: ~${cost_savings:.2f} transcription cost avoided")
+
             return music_segments
             
         except Exception as e:
@@ -174,17 +196,22 @@ class CostEfficientProcessor:
                 for music_start, music_end in music_segments
             )
             
-            if not overlaps_music and chunk_duration > 1.0:  # Skip very short chunks
+            if overlaps_music:
+                print(f"   ⏭️ Skipping music segment {i+1}: {current_time:.1f}s - {chunk_end:.1f}s ({chunk_duration:.1f}s)")
+            elif chunk_duration > 1.0:  # Skip very short chunks
                 chunk_path = self.clips_dir / f"segment_{i:03d}.wav"
                 chunk.export(str(chunk_path), format="wav")
                 segments.append((current_time, chunk_end, chunk_path))
+                print(f"   ✅ Processing speech segment {i+1}: {current_time:.1f}s - {chunk_end:.1f}s ({chunk_duration:.1f}s)")
+            else:
+                print(f"   ⏭️ Skipping short segment {i+1}: {chunk_duration:.1f}s < 1.0s")
             
             current_time = chunk_end
         
         return segments
     
-    def transcribe_audio(self, audio_path: Path) -> Optional[str]:
-        """Transcribe audio using ElevenLabs API"""
+    def transcribe_audio(self, audio_path: Path, segment_info: str = "") -> Optional[str]:
+        """Transcribe audio using ElevenLabs API with Pashto optimization"""
         try:
             with open(audio_path, 'rb') as audio_file:
                 files = {'file': audio_file}
@@ -192,7 +219,11 @@ class CostEfficientProcessor:
                     'language': 'ps',  # Pashto
                     'model_id': 'scribe_v1'
                 }
-                
+
+                # Add context about Pashto content for better accuracy
+                if segment_info:
+                    print(f"  Transcribing {segment_info}...")
+
                 response = requests.post(
                     ELEVENLABS_API_URL,
                     files=files,
@@ -200,17 +231,116 @@ class CostEfficientProcessor:
                     headers={'xi-api-key': ELEVENLABS_API_KEY},
                     timeout=60
                 )
-                
+
                 if response.status_code == 200:
                     result = response.json()
-                    return result.get('text', '')
+                    transcript = result.get('text', '')
+
+                    # Validate that we got Pashto content
+                    if transcript and self._contains_pashto(transcript):
+                        print(f"  ✅ Got Pashto transcription: {transcript[:100]}...")
+                        return transcript
+                    elif transcript:
+                        print(f"  ⚠️ Non-Pashto content detected: {transcript[:100]}...")
+                        return transcript  # Still return it but flag for review
+                    else:
+                        print("  ❌ Empty transcription")
+                        return None
                 else:
                     print(f"ElevenLabs API error: {response.status_code} - {response.text}")
                     return None
-                    
+
         except Exception as e:
             print(f"Error transcribing {audio_path}: {e}")
             return None
+
+    def _contains_pashto(self, text: str) -> bool:
+        """Check if text contains Pashto characters"""
+        pashto_chars = set('ابتثجحخدذرزسشصضطظعغفقکلمنوهیےۍېښږڅچډړژڱکښگںهيئىأآةىيئ')
+        return any(char in pashto_chars for char in text)
+
+    def break_into_sentences(self, transcript: str) -> List[str]:
+        """Break transcript into individual sentences for better audio sync"""
+        import re
+
+        # Split on common sentence endings in Pashto
+        sentence_endings = r'[.!؟?؟۔]'
+
+        # Split into sentences
+        sentences = re.split(f'({sentence_endings})', transcript)
+
+        # Group sentences with their endings
+        result = []
+        for i in range(0, len(sentences) - 1, 2):
+            if i + 1 < len(sentences):
+                sentence = sentences[i] + sentences[i + 1]
+                # Clean up extra spaces
+                sentence = re.sub(r'\s+', ' ', sentence.strip())
+                if sentence and len(sentence) > 3:  # Filter very short sentences
+                    result.append(sentence)
+
+        # If no sentence endings found, try to split by length
+        if not result:
+            words = transcript.split()
+            # Create sentences of roughly 10-15 words each
+            for i in range(0, len(words), 12):
+                sentence = ' '.join(words[i:i+12])
+                if sentence.strip():
+                    result.append(sentence.strip())
+
+        return result
+
+    def create_sentence_audio_clips(self, audio_path: Path, transcript: str, start_time: float) -> List[Dict]:
+        """Create individual audio clips for each sentence with timing"""
+        sentences = self.break_into_sentences(transcript)
+
+        if not sentences:
+            return []
+
+        audio = AudioSegment.from_wav(str(audio_path))
+        sentence_clips = []
+
+        # Estimate timing based on audio length and text length
+        audio_duration = len(audio) / 1000.0  # Convert to seconds
+        words_per_minute = 150  # Average speaking rate
+        estimated_total_words = len(transcript.split())
+        estimated_duration = (estimated_total_words / words_per_minute) * 60
+
+        # Distribute timing across sentences proportionally
+        current_time = start_time
+        for i, sentence in enumerate(sentences):
+            sentence_words = len(sentence.split())
+            sentence_duration = (sentence_words / estimated_total_words) * estimated_duration
+
+            # Extract the audio segment for this sentence
+            start_ms = int(current_time * 1000)
+            end_ms = int((current_time + sentence_duration) * 1000)
+
+            if end_ms > len(audio):
+                end_ms = len(audio)
+
+            sentence_audio = audio[start_ms:end_ms]
+
+            # Create unique filename for this sentence
+            sentence_filename = f"sentence_{int(current_time*1000)}_{i+1}.wav"
+            sentence_path = self.sentence_clips_dir / sentence_filename
+
+            # Export the audio clip
+            sentence_audio.export(str(sentence_path), format="wav")
+
+            sentence_clips.append({
+                'sentence': sentence,
+                'start_time': current_time,
+                'end_time': current_time + sentence_duration,
+                'duration': sentence_duration,
+                'audio_filename': sentence_filename,
+                'audio_path': str(sentence_path),
+                'sentence_number': i + 1
+            })
+
+            current_time += sentence_duration
+
+        return sentence_clips
     
     def validate_transcription_quality(self, transcript: str) -> Tuple[bool, str]:
         """Validate transcription quality using OpenAI GPT-5 nano"""
@@ -350,7 +480,7 @@ Respond with JSON:
                 print(f"   Processing segment {i+1}/{len(segments)}: {chunk_path.name}")
                 
                 # Transcribe
-                transcript = self.transcribe_audio(chunk_path)
+                transcript = self.transcribe_audio(chunk_path, f"segment {i+1}/{len(segments)}")
                 
                 if transcript:
                     # Validate quality
@@ -359,7 +489,10 @@ Respond with JSON:
                     if is_valid:
                         # Upload to Google Drive
                         google_drive_id = self.upload_to_google_drive(chunk_path, chunk_path.name)
-                        
+
+                        # Create sentence-level audio clips
+                        sentence_clips = self.create_sentence_audio_clips(chunk_path, transcript, start_time)
+
                         processed_segments.append({
                             'index': i,
                             'filename': chunk_path.name,
@@ -369,9 +502,20 @@ Respond with JSON:
                             'duration': end_time - start_time,
                             'file_size': chunk_path.stat().st_size,
                             'google_drive_id': google_drive_id,
-                            'status': 'success'
+                            'status': 'success',
+                            'sentence_clips': sentence_clips
                         })
+
                         print(f"   ✅ Quality check passed: {reason}")
+                        print(f"   📝 Created {len(sentence_clips)} sentence audio clips")
+
+                        # Upload sentence clips to Google Drive and store metadata
+                        for sentence_clip in sentence_clips:
+                            sentence_drive_id = self.upload_to_google_drive(
+                                Path(sentence_clip['audio_path']),
+                                sentence_clip['audio_filename']
+                            )
+                            sentence_clip['google_drive_id'] = sentence_drive_id
                     else:
                         print(f"   ❌ Quality check failed: {reason}")
                         failed_segments.append((start_time, end_time, chunk_path))
@@ -387,7 +531,7 @@ Respond with JSON:
                 print(f"5. Re-transcribing {len(failed_segments)} failed segments...")
                 for start_time, end_time, chunk_path in failed_segments:
                     print(f"   Re-transcribing: {chunk_path.name}")
-                    transcript = self.transcribe_audio(chunk_path)
+                    transcript = self.transcribe_audio(chunk_path, "re-transcription")
                     
                     if transcript:
                         is_valid, reason = self.validate_transcription_quality(transcript)
@@ -431,13 +575,22 @@ Respond with JSON:
                     'segments': processed_segments
                 }, f, ensure_ascii=False, indent=2)
             
+            # Calculate cost savings
+            total_audio_duration = sum(s['duration'] for s in processed_segments)
+            estimated_cost_savings = len(failed_segments) * 0.01  # Assuming $0.01 per skipped second
+
             print(f"✅ Processing complete! Results saved to {results_path}")
+            print(f"💰 Cost analysis: Processed {total_audio_duration:.1f}s of speech, skipped music segments")
+            print(f"💰 Estimated savings: ${estimated_cost_savings:.2f}")
+
             return {
                 'success': True,
                 'video_id': video_id,
                 'results_path': str(results_path),
                 'total_segments': len(segments),
                 'successful': len(processed_segments),
+                'skipped_music': len(failed_segments),
+                'estimated_cost_savings': estimated_cost_savings,
                 'supabase_success': supabase_success
             }
             

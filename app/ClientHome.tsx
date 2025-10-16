@@ -642,12 +642,31 @@ export default function ClientHome() {
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
-  const [newVideoUrl, setNewVideoUrl] = useState('');
+  const [newVideoUrl, setNewVideoUrl] = useState('https://www.youtube.com/watch?v=0tvvnixN7iw&t=252s');
   const [wordFrequency, setWordFrequency] = useState<any>(null);
   const [loadingWordFrequency, setLoadingWordFrequency] = useState(false);
   const [activeVideosTab, setActiveVideosTab] = useState<'videos' | 'frequency' | 'transcripts'>('videos');
   const [processingVideo, setProcessingVideo] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
+  const [playingSentence, setPlayingSentence] = useState<{segmentIndex: number, sentenceIndex: number} | null>(null);
+
+  // Function to play sentence with timing tracking
+  const playSentenceWithTiming = (segmentIndex: number, sentenceIndex: number, audioUrl: string) => {
+    setPlayingSentence({segmentIndex, sentenceIndex});
+
+    const audio = new Audio(audioUrl);
+    audio.play();
+
+    // Clear the playing state when audio ends
+    audio.onended = () => {
+      setPlayingSentence(null);
+    };
+
+    // Also clear if audio is paused/stopped
+    audio.onpause = () => {
+      setPlayingSentence(null);
+    };
+  };
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
@@ -1819,27 +1838,44 @@ export default function ClientHome() {
                 onClick={() => setActiveTranslation('afghan2023')}
                 className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
                   activeTranslation === 'afghan2023'
-                    ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                    ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
-                Afghan 2023
+                🇦🇫 Afghan 2023
               </button>
               <button
                 onClick={() => setActiveTranslation('yousafzai2019')}
                 className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
                   activeTranslation === 'yousafzai2019'
-                    ? 'bg-green-500 text-white shadow-lg transform scale-105'
+                    ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
-                Yousafzai 2019
+                🕌 Yousafzai 2019
               </button>
             </div>
           </div>
 
+      {/* Translation Indicator */}
+      <div className="mb-4 text-center">
+        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+          activeTranslation === 'afghan2023'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+        }`}>
+          {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+          <span className="ml-2">
+            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
+          </span>
+        </div>
+      </div>
+
       {/* Search Bar */}
       <div className="relative z-10 mb-6">
+        <div className={`absolute inset-0 rounded-lg opacity-10 ${
+          activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
+        }`} style={{ zIndex: -1 }}></div>
         <TextField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -1941,6 +1977,20 @@ export default function ClientHome() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Results with Inline Filtering */}
         <div className="lg:col-span-3">
+          {/* Translation Indicator in Results */}
+          <div className="mb-3">
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              activeTranslation === 'afghan2023'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            }`}>
+              {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+              <span className="ml-2">
+                {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+              </span>
+            </div>
+          </div>
+
           {/* Results Header */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -2639,13 +2689,13 @@ export default function ClientHome() {
                         <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center justify-between mb-3">
                             <h6 className="font-medium text-gray-900 dark:text-gray-100">
-                              {segment.type === 'sentence' 
+                              {segment.type === 'sentence'
                                 ? `Segment ${segment.segmentNumber}, Sentence ${segment.sentenceNumber}`
                                 : `Segment ${segment.segmentNumber}`
                               }
                             </h6>
                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} - 
+                              {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} -
                               {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
                               {segment.type === 'sentence' && (
                                 <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
@@ -2654,30 +2704,140 @@ export default function ClientHome() {
                               )}
                             </div>
                           </div>
-                          
-                          {/* Transcript */}
+
+                          {/* Enhanced Transcript Display with Sentence-Level Playback */}
                           <div className="mb-3">
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-40 overflow-y-auto">
-                              <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
-                                {segment.transcript}
-                              </p>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-60 overflow-y-auto">
+                              <div className="space-y-2">
+                                {segment.transcript.split(/[.!؟?؟۔]\s+/).filter(s => s.trim()).map((sentence: string, sIndex: number) => {
+                                  const sentenceKey = `${segIndex}-${sIndex}`;
+                                  return (
+                                    <div key={sentenceKey} className="group">
+                                      <div className="flex items-start gap-2 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <button
+                                          onClick={() => {
+                                            // Play individual sentence audio if available
+                                            const sentenceAudio = segment.sentenceClips?.[sIndex];
+                                            if (sentenceAudio) {
+                                              playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceAudio.audio_filename}`);
+                                            }
+                                          }}
+                                          className={`flex-shrink-0 mt-0.5 p-1 rounded ${
+                                            playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                              ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                              : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                          }`}
+                                          title="Play this sentence"
+                                        >
+                                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                          </svg>
+                                        </button>
+                                        <p className={`text-sm leading-relaxed flex-1 ${
+                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                            ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded'
+                                            : 'text-gray-900 dark:text-gray-100'
+                                        }`}>
+                                          {sentence.trim()}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            <div className="mt-2 flex justify-end">
-                              <button
-                                onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
-                                disabled={retranscribingSegments.has(segIndex)}
-                                className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
-                              </button>
+                            <div className="mt-2 flex justify-between items-center">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
+                                  disabled={retranscribingSegments.has(segIndex)}
+                                  className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
+                                </button>
+                                {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      // Play all sentences in sequence for this segment with timing tracking
+                                      const playAllSentences = async () => {
+                                        for (let i = 0; i < segment.sentenceClips.length; i++) {
+                                          const sentenceClip = segment.sentenceClips[i];
+                                          setPlayingSentence({segmentIndex: segIndex, sentenceIndex: i});
+                                          const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                          await new Promise(resolve => {
+                                            audio.onended = () => {
+                                              if (i === segment.sentenceClips.length - 1) {
+                                                setPlayingSentence(null);
+                                              }
+                                              resolve();
+                                            };
+                                            audio.onpause = () => setPlayingSentence(null);
+                                            audio.play();
+                                          });
+                                        }
+                                      };
+                                      playAllSentences();
+                                    }}
+                                    className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800"
+                                  >
+                                    ▶️ Play All Sentences
+                                  </button>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {segment.sentenceClips ? `${segment.sentenceClips.length} sentences` : 'Full segment'}
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Audio Player */}
-                          <audio controls className="w-full">
-                            <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
-                            Your browser does not support the audio element.
-                          </audio>
+
+                          {/* Enhanced Audio Controls */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Segment:</span>
+                              <audio controls className="flex-1">
+                                <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+
+                            {/* Sentence-Level Audio Clips */}
+                            {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                              <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                  Individual Sentences:
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                  {segment.sentenceClips.map((sentenceClip: any, sIndex: number) => (
+                                    <div key={sIndex} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                      <button
+                                        onClick={() => {
+                                          playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                        }}
+                                        className={`flex-shrink-0 p-1 rounded ${
+                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                            ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                            : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                        }`}
+                                        title={`Play sentence ${sIndex + 1}`}
+                                      >
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                          {sentenceClip.sentence.substring(0, 40)}...
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-500">
+                                          {Math.floor(sentenceClip.start_time / 60)}:{(sentenceClip.start_time % 60).toString().padStart(2, '0')} - {sentenceClip.duration}s
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

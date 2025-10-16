@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
     let targetObject = object || path
 
     // If we have a ref but no bucket/object, look up in audio map first
+    // For Afghan 2023, prioritize Google Drive (more reliable)
     if (ref && !targetObject) {
       try {
         // First check the audio map for Google Drive file IDs
@@ -113,8 +114,11 @@ export async function GET(request: NextRequest) {
           const audioMap = await audioMapResponse.json();
           const audioEntry = audioMap[ref];
           if (audioEntry) {
-            // If it's a Google Drive file ID, return a proxy URL to avoid CORS issues
-            if (typeof audioEntry === 'string' && !audioEntry.startsWith('http')) {
+            // For Afghan 2023 (Matthew, Mark, Luke, John), use Google Drive proxy
+            const isAfghan2023 = ref && (ref.toLowerCase().includes('matthew') || ref.toLowerCase().includes('mark') || ref.toLowerCase().includes('luke') || ref.toLowerCase().includes('john'));
+
+            if (isAfghan2023 && typeof audioEntry === 'string' && !audioEntry.startsWith('http')) {
+              // Use Google Drive proxy for Afghan 2023
               const proxyUrl = `/api/audio_proxy?fileId=${audioEntry}&ref=${encodeURIComponent(ref)}`;
               return NextResponse.json({
                 url: proxyUrl,
@@ -122,8 +126,10 @@ export async function GET(request: NextRequest) {
                 filename: '',
                 isSigned: false,
                 ms: Date.now() - started,
+                source: 'google-drive'
               });
             }
+
             // If it's already a URL, return it directly
             if (typeof audioEntry === 'string' && audioEntry.startsWith('http')) {
               return NextResponse.json({
@@ -132,6 +138,7 @@ export async function GET(request: NextRequest) {
                 filename: '',
                 isSigned: false,
                 ms: Date.now() - started,
+                source: 'direct-url'
               });
             }
           }
@@ -291,29 +298,38 @@ export async function POST(request: NextRequest) {
     // Process each ref with optimized candidate selection
     for (const ref of refs) {
       try {
-        const candidates = candidatePathsFromRef(ref)
         const isAfghanAudio = ref && (ref.toLowerCase().includes('matthew') || ref.toLowerCase().includes('mark') || ref.toLowerCase().includes('luke') || ref.toLowerCase().includes('john'));
 
-        // For Afghan 2023 audio, try direct URLs first for better browser compatibility
+        // For Afghan 2023, check Google Drive audio map first (more reliable)
         if (isAfghanAudio) {
-          for (const candidate of candidates) {
-            try {
-              const directUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/${candidate}`;
-              const testResponse = await fetch(directUrl, { method: 'HEAD' });
-              if (testResponse.ok) {
+          try {
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pashto-bible-search.vercel.app';
+            const audioMapResponse = await fetch(`${baseUrl}/api/get_audio_map?clear_cache=1`, {
+              cache: 'no-store'
+            });
+            if (audioMapResponse.ok) {
+              const audioMap = await audioMapResponse.json();
+              const audioEntry = audioMap[ref];
+              if (audioEntry && typeof audioEntry === 'string' && !audioEntry.startsWith('http')) {
+                // Use Google Drive proxy for Afghan 2023
+                const proxyUrl = `/api/audio_proxy?fileId=${audioEntry}&ref=${encodeURIComponent(ref)}`;
                 results[ref] = {
-                  url: directUrl,
-                  filename: candidate,
-                  isSigned: false
+                  url: proxyUrl,
+                  filename: '',
+                  isSigned: false,
+                  source: 'google-drive'
                 }
-                console.log(`Batch found direct audio for ${ref}: ${candidate}`)
+                console.log(`Batch found Google Drive audio for ${ref}`)
                 continue; // Move to next ref
               }
-            } catch (directError) {
-              // Try next candidate
             }
+          } catch (audioMapError) {
+            console.warn(`Failed to lookup ${ref} in audio map:`, audioMapError);
           }
         }
+
+        // For non-Afghan audio, use Supabase storage
+        const candidates = candidatePathsFromRef(ref)
 
         // If not Afghan or direct URL not found, use signed URLs
         if (!results[ref] || !results[ref].url) {
