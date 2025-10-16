@@ -2686,6 +2686,7 @@ export default function ClientHome() {
                   if (!currentVideo) return null;
 
                   return (
+                    <>
                     <div key={currentVideo.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
                     <div className="mb-4">
                       <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -2907,6 +2908,9 @@ export default function ClientHome() {
             )}
                 </div>
               </>
+            );
+                })}
+              </div>
             );
                 })}
               </div>
@@ -3411,7 +3415,9 @@ export default function ClientHome() {
                       <span>Created: {new Date(poem.created).toLocaleDateString()}</span>
                     </div>
                   </div>
-                ))}
+                    </>
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
