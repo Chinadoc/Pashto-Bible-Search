@@ -31,12 +31,13 @@ export async function GET(
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
       return new NextResponse(fileBuffer, {
+        status: 200,
         headers: {
           'Content-Type': contentType,
           'Content-Length': fileBuffer.length.toString(),
           'Cache-Control': 'public, max-age=31536000',
         },
-      });
+      } as any);
 
     } catch (error) {
       return NextResponse.json(
