@@ -2083,20 +2083,44 @@ export async function POST(request: NextRequest) {
                 }
 
                 const { data: verseData } = await verseQuery.limit(1)
-                if (verseData && verseData.length > 0) {
-                  const row = verseData[0]
-                  const fallbackRef = `${row.book} ${row.chapter}:${row.verse}`
+                const verseRows = Array.isArray(verseData)
+                  ? (verseData as Array<{
+                      book?: string | null
+                      chapter?: number | null
+                      verse?: number | null
+                      text?: string | null
+                      testament?: 'OT' | 'NT' | null
+                    }>)
+                  : []
+
+                if (verseRows.length > 0) {
+                  const row = verseRows[0]
+                  const bookValue = row.book ?? ''
+                  const chapterValue =
+                    typeof row.chapter === 'number' ? row.chapter : Number(row.chapter)
+                  const verseValue =
+                    typeof row.verse === 'number' ? row.verse : Number(row.verse)
+
+                  if (
+                    !bookValue ||
+                    !Number.isFinite(chapterValue) ||
+                    !Number.isFinite(verseValue)
+                  ) {
+                    continue
+                  }
+                  const fallbackRef = `${bookValue} ${chapterValue}:${verseValue}`
+
                   if (!coverageRefSet.has(fallbackRef)) {
                     coverageRefSet.add(fallbackRef)
-                    coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+                    coverageMap.set(bookValue, (coverageMap.get(bookValue) || 0) + 1)
                   }
                   // Determine testament based on book name if not in database
                   let testament = row.testament
                   if (!testament) {
-                    const bookName = row.book?.toLowerCase() || ''
-                    if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
+                    const bookName = bookValue.toLowerCase()
+                    if (OT_BOOKS.some((otBook) => otBook.toLowerCase() === bookName)) {
                       testament = 'OT'
-                    } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
+                    } else if (NT_BOOKS.some((ntBook) => ntBook.toLowerCase() === bookName)) {
                       testament = 'NT'
                     }
                   }
