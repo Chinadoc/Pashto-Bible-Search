@@ -1,8 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/app/utils/supabase';
 
+// Helper function to analyze Pashto text and count words
+function analyzePashtoText(text: string): { wordCount: number, uniqueWords: string[], wordFreq: Record<string, number> } {
+  // Remove punctuation and normalize text
+  const cleanText = text
+    .replace(/[^\u0600-\u06FF\s]/g, ' ') // Keep only Pashto characters and spaces
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+
+  const words = cleanText.split(' ').filter(word => word.length > 0);
+
+  const wordFreq: Record<string, number> = {};
+  for (const word of words) {
+    wordFreq[word] = (wordFreq[word] || 0) + 1;
+  }
+
+  return {
+    wordCount: words.length,
+    uniqueWords: Object.keys(wordFreq).sort(),
+    wordFreq
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const url = new URL(request.url);
+    const includeFrequency = url.searchParams.get('frequency') === 'true';
+
     // Get all video transcripts from Supabase (both segment and sentence level)
     const { data, error } = await supabase
       .from('audio_mappings')
@@ -115,10 +140,32 @@ export async function GET(request: NextRequest) {
       })
     }));
 
+    let wordFrequencyData = null;
+    if (includeFrequency) {
+      // Aggregate word frequency across all transcripts
+      const allTranscripts = videos.flatMap(video =>
+        video.segments.map((segment: any) => segment.transcript)
+      ).join(' ');
+
+      const analysis = analyzePashtoText(allTranscripts);
+
+      // Convert word frequency to sorted array for easier consumption
+      const wordFrequencyArray = Object.entries(analysis.wordFreq)
+        .map(([word, frequency]) => ({ word, frequency }))
+        .sort((a, b) => b.frequency - a.frequency);
+
+      wordFrequencyData = {
+        totalWords: analysis.wordCount,
+        uniqueWords: analysis.uniqueWords.length,
+        wordFrequency: wordFrequencyArray
+      };
+    }
+
     return NextResponse.json({
       success: true,
       videos,
-      count: videos.length
+      count: videos.length,
+      ...(includeFrequency && { wordFrequency: wordFrequencyData })
     });
 
   } catch (error) {

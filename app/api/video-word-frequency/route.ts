@@ -100,7 +100,15 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, limit);
 
-    let categorization = null;
+    type CategorizationType = {
+      pashto: Array<{verseReference: string, transcript: string, category: string}>;
+      mixed: Array<{verseReference: string, transcript: string, category: string}>;
+      nonPashto: Array<{verseReference: string, transcript: string, category: string}>;
+      music: Array<{verseReference: string, transcript: string, category: string}>;
+      empty: Array<{verseReference: string, transcript: string, category: string}>;
+    } | null;
+
+    let categorization: CategorizationType = null;
     if (includeCategorization) {
       categorization = {
         pashto: [],
@@ -118,8 +126,24 @@ export async function GET(request: NextRequest) {
           category: category
         };
 
-        if (categorization && categorization[category]) {
-          categorization[category].push(transcriptData);
+        if (categorization) {
+          switch (category) {
+            case 'pashto':
+              categorization.pashto.push(transcriptData);
+              break;
+            case 'mixed':
+              categorization.mixed.push(transcriptData);
+              break;
+            case 'non-pashto':
+              categorization.nonPashto.push(transcriptData);
+              break;
+            case 'music':
+              categorization.music.push(transcriptData);
+              break;
+            case 'empty':
+              categorization.empty.push(transcriptData);
+              break;
+          }
         }
       });
     }
@@ -131,7 +155,7 @@ export async function GET(request: NextRequest) {
         uniqueWords: analysis.uniqueWords.length,
         wordFrequency: wordFrequencyArray
       },
-      categorization: categorization
+      categorization: categorization as CategorizationType
     });
 
   } catch (error) {

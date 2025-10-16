@@ -164,6 +164,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // For Afghan 2023 audio, try to use direct Supabase storage URL without signing for better browser compatibility
+    if (ref && !targetObject && (ref.toLowerCase().includes('matthew') || ref.toLowerCase().includes('mark') || ref.toLowerCase().includes('luke') || ref.toLowerCase().includes('john'))) {
+      try {
+        const candidates = candidatePathsFromRef(ref);
+        for (const candidate of candidates) {
+          // Try to access the file directly (public access)
+          const directUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/${candidate}`;
+          const testResponse = await fetch(directUrl, { method: 'HEAD' });
+          if (testResponse.ok) {
+            return NextResponse.json({
+              url: directUrl,
+              ref,
+              filename: candidate,
+              isSigned: false,
+              ms: Date.now() - started,
+            });
+          }
+        }
+      } catch (directError) {
+        console.warn(`Failed to find direct URL for ${ref}:`, directError);
+      }
+    }
+
     // If we still don't have a target object, generate from ref
     if (!targetObject && ref) {
       const candidates = candidatePathsFromRef(ref)
@@ -186,9 +209,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Try Supabase Storage first - this should work for files uploaded to the bucket
+    // Use longer expiry for Afghan 2023 audio (24 hours) to handle slow loading
+    const isAfghanAudio = ref && (ref.toLowerCase().includes('matthew') || ref.toLowerCase().includes('mark') || ref.toLowerCase().includes('luke') || ref.toLowerCase().includes('john'));
+    const expiryTime = isAfghanAudio ? 24 * 60 * 60 : 60 * 60; // 24 hours for Afghan, 1 hour for others
+
     const { data, error } = await supabase.storage
       .from(targetBucket)
-      .createSignedUrl(targetObject, 60 * 60)
+      .createSignedUrl(targetObject, expiryTime)
 
     if (error || !data?.signedUrl) {
       console.warn(`Failed to create signed URL for ${targetBucket}/${targetObject}:`, error)
@@ -199,7 +226,7 @@ export async function GET(request: NextRequest) {
     const hasQuery = data.signedUrl.includes('?')
     const withDl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
 
-    // Use CDN if configured
+    // Use CDN if configured, otherwise use direct Supabase URL for better CORS compatibility
     let finalUrl = withDl
     if (CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net') {
       // Replace Supabase domain with CDN domain
@@ -207,6 +234,9 @@ export async function GET(request: NextRequest) {
         /https:\/\/[^\/]+\.supabase\.co/,
         CDN_BASE_URL
       )
+    } else {
+      // For Afghan 2023 audio, use direct Supabase URL which should work better with CORS
+      finalUrl = withDl
     }
 
     // Cache the result
@@ -262,41 +292,69 @@ export async function POST(request: NextRequest) {
     for (const ref of refs) {
       try {
         const candidates = candidatePathsFromRef(ref)
+        const isAfghanAudio = ref && (ref.toLowerCase().includes('matthew') || ref.toLowerCase().includes('mark') || ref.toLowerCase().includes('luke') || ref.toLowerCase().includes('john'));
 
-        // Try candidates in order until we find one that exists
-        let foundUrl = ''
-        let foundFilename = ''
-
-        for (const candidate of candidates) {
-          const { data, error } = await supabase.storage
-            .from('audio')
-            .createSignedUrl(candidate, 60 * 60)
-
-          if (!error && data?.signedUrl) {
-            const hasQuery = data.signedUrl.includes('?')
-            foundUrl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
-
-            // Use CDN if configured
-            if (CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net') {
-              foundUrl = foundUrl.replace(
-                /https:\/\/[^\/]+\.supabase\.co/,
-                CDN_BASE_URL
-              )
+        // For Afghan 2023 audio, try direct URLs first for better browser compatibility
+        if (isAfghanAudio) {
+          for (const candidate of candidates) {
+            try {
+              const directUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/${candidate}`;
+              const testResponse = await fetch(directUrl, { method: 'HEAD' });
+              if (testResponse.ok) {
+                results[ref] = {
+                  url: directUrl,
+                  filename: candidate,
+                  isSigned: false
+                }
+                console.log(`Batch found direct audio for ${ref}: ${candidate}`)
+                continue; // Move to next ref
+              }
+            } catch (directError) {
+              // Try next candidate
             }
-
-            foundFilename = candidate
-            console.log(`Batch found audio for ${ref}: ${candidate}`)
-            break
           }
         }
 
-        results[ref] = {
-          url: foundUrl,
-          filename: foundFilename,
-          isSigned: !!foundUrl
+        // If not Afghan or direct URL not found, use signed URLs
+        if (!results[ref] || !results[ref].url) {
+          let foundUrl = ''
+          let foundFilename = ''
+
+          for (const candidate of candidates) {
+            const expiryTime = isAfghanAudio ? 24 * 60 * 60 : 60 * 60; // 24 hours for Afghan, 1 hour for others
+
+            const { data, error } = await supabase.storage
+              .from('audio')
+              .createSignedUrl(candidate, expiryTime)
+
+            if (!error && data?.signedUrl) {
+              const hasQuery = data.signedUrl.includes('?')
+              foundUrl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+
+              // Use CDN if configured, otherwise use direct Supabase URL for better CORS compatibility
+              if (CDN_BASE_URL && CDN_BASE_URL !== 'https://cdn.jsdelivr.net') {
+                foundUrl = foundUrl.replace(
+                  /https:\/\/[^\/]+\.supabase\.co/,
+                  CDN_BASE_URL
+                )
+              } else {
+                foundUrl = data.signedUrl + (hasQuery ? '&' : '?') + 'download=1'
+              }
+
+              foundFilename = candidate
+              console.log(`Batch found signed audio for ${ref}: ${candidate}`)
+              break
+            }
+          }
+
+          results[ref] = {
+            url: foundUrl,
+            filename: foundFilename,
+            isSigned: !!foundUrl
+          }
         }
       } catch {
-        results[ref] = { url: '', filename: '', isSigned: false }
+        results[ref] = { url: '', filename: '', isSigned: false };
       }
     }
 
@@ -308,12 +366,12 @@ export async function POST(request: NextRequest) {
         total: Date.now() - started,
         average: (Date.now() - started) / Object.keys(results).length
       }
-    })
+    });
   } catch (error) {
-    console.error('Batch audio URL generation error:', error)
+    console.error('Batch audio URL generation error:', error);
     return NextResponse.json(
       { error: 'Failed to generate audio URLs' },
       { status: 500 }
-    )
+    );
   }
 }
