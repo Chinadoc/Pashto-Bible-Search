@@ -2904,6 +2904,8 @@ export default function ClientHome() {
                 </div>
               </div>
             )}
+              </>
+            )}
 
             {activeVideosTab === 'frequency' && (
               <>
