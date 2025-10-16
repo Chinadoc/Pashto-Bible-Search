@@ -2678,7 +2678,7 @@ export default function ClientHome() {
                     </div>
                   </div>
                 )}
-                
+
                 {(() => {
                   const currentVideoId = selectedVideoId || (videos.length > 0 ? videos[0].id : null);
                   const currentVideo = videos.find(v => v.id === currentVideoId);
@@ -2686,7 +2686,7 @@ export default function ClientHome() {
                   if (!currentVideo) return null;
 
                   return (
-                    <div key={currentVideo.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                  <div key={currentVideo.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
                     <div className="mb-4">
                       <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                         {currentVideo.title}
@@ -2888,8 +2888,8 @@ export default function ClientHome() {
                     </div>
                   </div>
                 </div>
-            );
-          })()}
+                  );
+                })()}
               </div>
             ) : (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
