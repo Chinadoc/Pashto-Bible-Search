@@ -30,7 +30,10 @@ export async function GET(
                          ext === 'mp3' ? 'audio/mpeg' :
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
-      return new NextResponse(new Blob([fileBuffer], { type: contentType }), {
+      // Convert Buffer to Uint8Array for Blob compatibility
+      const uint8Array = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength);
+      
+      return new NextResponse(new Blob([uint8Array], { type: contentType }), {
         status: 200,
         headers: {
           'Content-Length': fileBuffer.length.toString(),
