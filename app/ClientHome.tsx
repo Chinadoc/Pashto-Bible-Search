@@ -3404,9 +3404,7 @@ export default function ClientHome() {
                       <span>Created: {new Date(poem.created).toLocaleDateString()}</span>
                     </div>
                   </div>
-                    </>
-                  );
-                })}
+                ))}
               </div>
             ) : (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
