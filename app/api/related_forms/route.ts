@@ -427,7 +427,7 @@ async function generateVerbConjugations(rootVerb: string): Promise<Variant[]> {
         }
       }
 
-      console.log(`✅ Generated ${nouns.length} nouns, ${groups.verbs?.length || 0} verbs for ambiguous term`);
+      console.log(`✅ Generated ${groups.nouns?.length || 0} nouns, ${groups.verbs?.length || 0} verbs for ambiguous term`);
     }
 
     // For truly ambiguous terms, try limited alternative approaches
