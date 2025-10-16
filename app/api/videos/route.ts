@@ -53,17 +53,29 @@ export async function GET(request: NextRequest) {
       
           if (sentenceNumber) {
             // This is a sentence-level segment
-            // Use actual timestamps from database if available, otherwise estimate
+            // Parse timestamps from audio_path if available
+            let startTime, endTime, transcript = item.audio_path;
             const duration = item.duration_seconds || 10;
-            const startTime = item.start_time_seconds || ((segmentNumber - 1) * 300 + (sentenceNumber - 1) * 15);
-            const endTime = item.end_time_seconds || (startTime + duration);
+            
+            // Check if timestamps are embedded in the transcript
+            const timestampMatch = transcript.match(/\[TIMESTAMPS:start=([\d.]+),end=([\d.]+),duration=([\d.]+)\]/);
+            if (timestampMatch) {
+              startTime = parseFloat(timestampMatch[1]);
+              endTime = parseFloat(timestampMatch[2]);
+              // Remove timestamp info from transcript
+              transcript = transcript.replace(/\[TIMESTAMPS:[^\]]+\]\s*/, '');
+            } else {
+              // Fallback to estimation
+              startTime = (segmentNumber - 1) * 300 + (sentenceNumber - 1) * 15;
+              endTime = startTime + duration;
+            }
             
             video.segments.push({
               segmentNumber,
               sentenceNumber,
               startTime: startTime,
               endTime: endTime,
-              transcript: item.audio_path, // This contains our transcript
+              transcript: transcript,
               audioFilename: item.audio_filename,
               duration: duration,
               type: 'sentence'

@@ -42,13 +42,14 @@ def fix_audio_timestamps():
         f"{supabase_url}/rest/v1/audio_mappings",
         headers=headers,
         params={
-            'verse_reference': 'like.video_%_sentence_%',
-            'select': 'id,verse_reference,audio_filename,duration_seconds,start_time_seconds,end_time_seconds'
+            'verse_reference': 'like.*video_*_sentence_*',
+            'select': 'id,verse_reference,audio_filename,duration_seconds'
         }
     )
     
     if response.status_code != 200:
         print(f"❌ Failed to fetch existing segments: {response.status_code}")
+        print(f"Response: {response.text}")
         return
     
     existing_segments = response.json()
@@ -62,6 +63,10 @@ def fix_audio_timestamps():
             filename = segment['audio_filename']
             verse_ref = segment['verse_reference']
             
+            # Only process YouTube video segments, skip Bible verse segments
+            if not verse_ref.startswith('video_') or '_sentence_' not in verse_ref:
+                continue
+                
             # Extract segment and sentence numbers
             parts = verse_ref.split('_sentence_')
             if len(parts) >= 2:
@@ -86,9 +91,14 @@ def fix_audio_timestamps():
             global_end_time = (segment_num - 1) * 300 + segment_data['end_time']
             
             # Update the segment in Supabase
+            # Note: We'll store timestamps in the audio_path field temporarily
+            # until we can add proper timestamp columns to the schema
+            timestamp_info = f"[TIMESTAMPS:start={global_start_time:.1f},end={global_end_time:.1f},duration={segment_data['duration']:.1f}]"
+            existing_transcript = segment.get('audio_path', '')
+            updated_transcript = f"{timestamp_info} {existing_transcript}"
+            
             update_data = {
-                'start_time_seconds': global_start_time,
-                'end_time_seconds': global_end_time,
+                'audio_path': updated_transcript,
                 'duration_seconds': int(segment_data['duration'])
             }
             
