@@ -2629,34 +2629,6 @@ export default function ClientHome() {
               )}
             </div>
 
-            {/* Video Selector for Multiple Videos */}
-            {videos.length > 1 && (
-              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-blue-600 dark:text-blue-400">📺</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">Select Video:</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {videos.map((video) => (
-                    <button
-                      key={video.id}
-                      onClick={() => setSelectedVideoId(video.id)}
-                      className={`p-3 rounded-lg border-2 text-left transition-all ${
-                        selectedVideoId === video.id || (!selectedVideoId && videos.indexOf(video) === 0)
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
-                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-600'
-                      }`}
-                    >
-                      <div className="font-medium truncate">{video.title}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {video.totalSegments} segments • {Math.round(video.totalDuration / 60)} min
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Conditional Content Based on Active Sub-tab */}
             {activeVideosTab === 'videos' && (
               <>
@@ -2678,6 +2650,34 @@ export default function ClientHome() {
                     Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
                   </p>
                 </div>
+                
+                {/* Video Selector for Multiple Videos */}
+                {videos.length > 1 && (
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-blue-600 dark:text-blue-400">📺</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Select Video:</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {videos.map((video) => (
+                        <button
+                          key={video.id}
+                          onClick={() => setSelectedVideoId(video.id)}
+                          className={`p-3 rounded-lg border-2 text-left transition-all ${
+                            selectedVideoId === video.id || (!selectedVideoId && videos.indexOf(video) === 0)
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-600'
+                          }`}
+                        >
+                          <div className="font-medium truncate">{video.title}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {video.totalSegments} segments • {Math.round(video.totalDuration / 60)} min
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {(() => {
                   const currentVideoId = selectedVideoId || (videos.length > 0 ? videos[0].id : null);
