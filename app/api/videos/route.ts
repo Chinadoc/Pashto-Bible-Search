@@ -26,10 +26,10 @@ function analyzePashtoText(text: string): { wordCount: number, uniqueWords: stri
 }
 
 // Helper function to load local video data from JSON files
-async function loadLocalVideoData() {
+async function loadLocalVideoData(): Promise<any[]> {
   try {
     const processedDir = path.join(process.cwd(), 'processed_videos');
-    const videos = [];
+    const videos: any[] = [];
 
     if (!fs.existsSync(processedDir)) {
       return videos;
