@@ -13,14 +13,6 @@ interface FrequencyItem {
     romanized?: string;
     pos?: string;
     english?: string;
-    conjugation_pattern?: string;
-    stems?: any;
-    roots?: any;
-    past_participle?: string;
-    irregularity_type?: string;
-    gender?: string;
-    number?: string;
-    plural_forms?: any;
   };
   morphological?: {
     relatedForms?: Array<{ form: string; count: number }>;
@@ -302,15 +294,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       'Romanized',
       'Definition',
       'POS',
-      'Conjugation Pattern',
-      'Irregularity Type',
-      'Gender',
-      'Number',
-      'Stems',
-      'Past Participle',
       'Related Forms',
       'Inflections',
-      'Plural Forms',
       'Verses',
       'User Notes'
     ];
@@ -324,25 +309,12 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       item.dictionary?.romanized || '',
       item.dictionary?.definition || '',
       item.dictionary?.pos || '',
-      item.dictionary?.conjugation_pattern || '',
-      item.dictionary?.irregularity_type || '',
-      item.dictionary?.gender || '',
-      item.dictionary?.number || '',
-      item.dictionary?.stems ?
-        (typeof item.dictionary.stems === 'object' ?
-          Object.entries(item.dictionary.stems).map(([k, v]) => `${k}:${v}`).join('; ') :
-          String(item.dictionary.stems)) : '',
-      item.dictionary?.past_participle || '',
       item.morphological?.relatedForms?.map(f => `${f.form}(${f.count})`).join('; ') || '',
       item.morphological?.inflections?.map(i =>
         `${i.form}(${typeof i.grammatical_info === 'object' ?
           Object.entries(i.grammatical_info).map(([k, v]) => `${k}:${v}`).join(',') :
           i.grammatical_info}${i.frequency > 0 ? `;${i.frequency}` : ''})`
       ).join('; ') || '',
-      item.dictionary?.plural_forms ?
-        (typeof item.dictionary.plural_forms === 'object' ?
-          Object.entries(item.dictionary.plural_forms).map(([k, v]) => `${k}:${v}`).join('; ') :
-          String(item.dictionary.plural_forms)) : '',
       item.verseContexts?.map(c => c.verse_ref).join('; ') || '',
       userNotes[item.form] || ''
     ]);
@@ -445,7 +417,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <option value="ot">Old Testament</option>
               <option value="nt">New Testament</option>
             </select>
-          </div>
+      </div>
 
           <div>
             <label className="block text-xs font-medium mb-1">Word Type</label>
@@ -458,7 +430,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <option value="verb">Verbs</option>
               <option value="noun">Nouns</option>
             </select>
-          </div>
+            </div>
 
           <div>
             <label className="block text-xs font-medium mb-1">Result Count</label>
@@ -472,7 +444,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <option value={500}>500</option>
               <option value={1000}>1000</option>
             </select>
-          </div>
+              </div>
 
           <div>
             <label className="block text-xs font-medium mb-1">Sort By</label>
@@ -493,8 +465,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               </button>
             </div>
           </div>
-        </div>
-      </div>
+                </div>
+            </div>
 
       {/* Results Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -577,70 +549,17 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                       {item.frequency.toLocaleString()}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.dictionary?.definition || item.dictionary?.conjugation_pattern || item.dictionary?.gender ? (
+                      {item.dictionary?.definition ? (
                         <div className="max-w-xs">
                           <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
                             {item.dictionary.romanized || item.form}
                           </div>
-
-                          {item.dictionary.definition && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.dictionary.definition}>
-                              {item.dictionary.definition}
-                            </div>
-                          )}
-
-                          <div className="text-xs space-y-1">
-                            {item.dictionary.pos && (
-                              <div className="text-xs text-blue-600 dark:text-blue-400">
-                                POS: {item.dictionary.pos}
-            </div>
-          )}
-
-                            {item.dictionary.conjugation_pattern && (
-                              <div className="text-xs text-purple-600 dark:text-purple-400">
-                                Pattern: {item.dictionary.conjugation_pattern}
-              </div>
-              )}
-
-                            {item.dictionary.irregularity_type && (
-                              <div className="text-xs text-orange-600 dark:text-orange-400">
-                                Irregular: {item.dictionary.irregularity_type}
-            </div>
-          )}
-
-                            {item.dictionary.gender && (
-                              <div className="text-xs text-green-600 dark:text-green-400">
-                                Gender: {item.dictionary.gender}
-          </div>
-                            )}
-
-                            {item.dictionary.number && (
-                              <div className="text-xs text-indigo-600 dark:text-indigo-400">
-                                Number: {item.dictionary.number}
-                </div>
-              )}
-            </div>
-
-                          {item.dictionary.stems && (
-                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1">
-                              Stems:
-                              <div className="text-xs text-gray-600 dark:text-gray-400 ml-2">
-                                {typeof item.dictionary.stems === 'object' ?
-                                  Object.entries(item.dictionary.stems).map(([key, value]) =>
-                                    `${key}: ${value}`
-                                  ).join(', ') :
-                                  String(item.dictionary.stems)
-                                }
-                              </div>
-                            </div>
-                          )}
-
-                          {item.dictionary.past_participle && (
-                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                              Past Participle:
-                              <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
-                                {item.dictionary.past_participle}
-                              </span>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.dictionary.definition}>
+                            {item.dictionary.definition}
+                          </div>
+                          {item.dictionary.pos && (
+                            <div className="text-xs text-blue-600 dark:text-blue-400">
+                              {item.dictionary.pos}
                 </div>
               )}
             </div>
@@ -684,19 +603,6 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                             </div>
                           ))}
 
-                          {item.dictionary?.plural_forms && (
-                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1">
-                              Plural Forms:
-                              <div className="text-xs text-gray-600 dark:text-gray-400 ml-2">
-                                {typeof item.dictionary.plural_forms === 'object' ?
-                                  Object.entries(item.dictionary.plural_forms).map(([key, value]) =>
-                                    `${key}: ${value}`
-                                  ).join(', ') :
-                                  String(item.dictionary.plural_forms)
-                                }
-                              </div>
-                            </div>
-            )}
           </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>

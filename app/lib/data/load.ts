@@ -2,7 +2,6 @@ import 'server-only';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { createClient } from '@supabase/supabase-js';
 
 type DictionaryEntry = {
   pashto: string;
@@ -774,55 +773,16 @@ export async function hybridSearch(
       }
     }
 
-    // If no results and fuzzy search is enabled, try database
+    // If no results and fuzzy search is enabled, try basic fallback
     if (!results.length && enableFuzzy) {
-      console.log(`🔄 No results found, trying database fuzzy search...`);
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const { data: dbResults } = await supabase
-        .from('verses')
-        .select('*')
-        .textSearch('text', query)
-        .limit(limit);
-
-      if (dbResults) {
-        results = dbResults.map((verse) => ({
-          ref: verse.ref,
-          text: verse.text,
-          testament: verse.testament,
-          book: verse.book || '',
-        }));
-        searchType = 'database_fuzzy';
-      }
+      console.log(`🔄 No results found, fuzzy search not available without database`);
+      searchType = 'no_results';
     }
 
-    // If still no results, fall back to database substring search
+    // If still no results, return empty results
     if (!results.length) {
-      console.log(`🔄 Still no results, trying database substring search...`);
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const queryBuilder = supabase
-        .from('verses')
-        .select('*')
-        .or(`text.ilike.%${query}%,text_normalized.ilike.%${query}%`)
-        .limit(limit);
-
-      const { data: dbResults } = await queryBuilder;
-      if (dbResults) {
-        results = dbResults.map((verse) => ({
-          ref: verse.ref,
-          text: verse.text,
-          testament: verse.testament,
-          book: verse.book || '',
-        }));
-        searchType = 'database_substring';
-      }
+      console.log(`🔄 No results found`);
+      searchType = 'no_results';
     }
 
     // Generate related forms if requested

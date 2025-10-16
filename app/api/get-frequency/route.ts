@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getLightweightData } from '../../lib/data/load';
 
 interface FrequencyItem {
   pashto: string;
-  frequency: number;
-}
-
-interface RawFrequencyRow {
-  word: string;
   frequency: number;
 }
 
@@ -14,43 +10,20 @@ export const runtime = 'nodejs'; // Ensure this runs in Node.js runtime
 
 export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    console.log('Loading frequency data...');
+    const { frequencyMap } = await getLightweightData();
+    console.log(`Loaded ${frequencyMap.size} frequency entries`);
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase URL or Key is not defined.');
-    }
+    // Convert frequency map to array format
+    const allFreq: FrequencyItem[] = Array.from(frequencyMap.entries())
+      .map(([pashto, frequency]) => ({ pashto, frequency }))
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 100); // Limit to top 100
 
-    // Function to fetch frequencies for a given testament
-    const fetchFrequencies = async (testament: string | null = null): Promise<FrequencyItem[]> => {
-      let url = `${supabaseUrl}/rest/v1/word_frequencies?select=word,frequency&order=frequency.desc&limit=100`;
-      if (testament) {
-        url += `&testament=eq.${testament}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to fetch frequency data for ${testament || 'all'}: ${errorData.message || response.statusText}`);
-      }
-      const data: RawFrequencyRow[] = await response.json();
-      // Map to the expected FrequencyItem interface
-      return data.map((item: RawFrequencyRow) => ({
-        pashto: item.word,
-        frequency: item.frequency,
-      }));
-    };
-
-    const allFreq = await fetchFrequencies();
-    const ntFreq = await fetchFrequencies('NT');
-    const otFreq = await fetchFrequencies('OT');
+    // For NT and OT, we'd need to filter by testament if that data was available
+    // For now, return the same data for all categories since we don't have testament info in the JSON
+    const ntFreq = allFreq.slice(0, 50); // Top 50 for NT
+    const otFreq = allFreq.slice(0, 50); // Top 50 for OT
 
     return NextResponse.json({
       nt: ntFreq,

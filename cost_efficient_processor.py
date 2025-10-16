@@ -21,8 +21,6 @@ from typing import List, Dict, Tuple, Optional
 import numpy as np
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
-import librosa
-import soundfile as sf
 
 # API Configuration
 ELEVENLABS_API_KEY = "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543"
@@ -106,68 +104,16 @@ class CostEfficientProcessor:
             raise RuntimeError(f"Failed to extract audio: {e}")
     
     def detect_music_segments(self, audio_path: Path) -> List[Tuple[float, float]]:
-        """Detect music segments using librosa - more accurate than pydub"""
+        """Detect music segments - fallback to no music detection since librosa not available"""
         try:
-            # Load audio
-            y, sr = librosa.load(str(audio_path), sr=16000)
-            
-            # Calculate features for music detection
-            spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-            spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-            mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-            
-            # Calculate tempo
-            tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
-            
-            # Calculate RMS energy
-            rms = librosa.feature.rms(y=y)[0]
-            
-            # Frame times
-            frame_length = 2048
-            hop_length = 512
-            frame_times = librosa.frames_to_time(np.arange(len(spectral_centroids)), 
-                                               sr=sr, hop_length=hop_length)
-            
-            music_segments = []
-            current_segment_start = None
-            
-            for i, (time, centroid, rolloff, energy) in enumerate(zip(frame_times, spectral_centroids, spectral_rolloff, rms)):
-                # Music detection criteria (more sophisticated)
-                is_music = (
-                    centroid > np.mean(spectral_centroids) * 1.3 and  # Bright sounds
-                    rolloff > np.mean(spectral_rolloff) * 1.2 and      # Rich harmonics
-                    energy > np.mean(rms) * 0.8 and                    # Sufficient energy
-                    tempo > 80  # Has tempo (not just speech)
-                )
-                
-                if is_music and current_segment_start is None:
-                    current_segment_start = time
-                elif not is_music and current_segment_start is not None:
-                    # End of music segment
-                    if time - current_segment_start > 3.0:  # Only segments > 3 seconds
-                        music_segments.append((current_segment_start, time))
-                    current_segment_start = None
-            
-            # Handle case where music continues to end
-            if current_segment_start is not None:
-                music_segments.append((current_segment_start, frame_times[-1]))
-            
-            # Calculate total music duration for cost tracking
-            total_music_duration = sum(end - start for start, end in music_segments)
-            total_audio_duration = len(y) / sr
+            # For now, return empty list (no music detected) to allow processing to continue
+            # TODO: Implement music detection without librosa if needed
+            print("ℹ️ Music detection skipped (librosa not available)")
+            print("ℹ️ Processing entire audio as speech (no cost savings from music detection)")
+            return []
 
-            print(f"Detected {len(music_segments)} music segments")
-            music_percent = total_music_duration/total_audio_duration*100
-            speech_percent = (1 - total_music_duration/total_audio_duration)*100
-            print(f"Total music duration: {total_music_duration:.1f}s ({music_percent:.1f}% of audio)")
-            print(f"Speech duration: {total_audio_duration - total_music_duration:.1f}s ({speech_percent:.1f}% of audio)")
-            cost_savings = total_music_duration * 0.01
-            print(f"💰 Cost savings: ~${cost_savings:.2f} transcription cost avoided")
-
-            return music_segments
-            
         except Exception as e:
-            print(f"Warning: Could not detect music segments: {e}")
+            print(f"Warning: Music detection failed ({e}), falling back to no music detection")
             return []
     
     def segment_audio_by_silence(self, audio_path: Path) -> List[Tuple[float, float, Path]]:
