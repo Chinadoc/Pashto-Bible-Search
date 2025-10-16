@@ -2054,9 +2054,16 @@ export async function POST(request: NextRequest) {
           .eq('pashto_form', primaryTerm)
             .limit(1)
         
-        if (data && data.length > 0 && Array.isArray(data[0].verses)) {
+        const formOccurrenceRows = Array.isArray(data)
+          ? (data as Array<{ verses?: unknown }>)
+          : []
+
+        if (
+          formOccurrenceRows.length > 0 &&
+          Array.isArray(formOccurrenceRows[0].verses)
+        ) {
           // Take first few verse references and try to find them
-          const verseRefs = data[0].verses.slice(0, 10)
+          const verseRefs = (formOccurrenceRows[0].verses as string[]).slice(0, 10)
           for (const ref of verseRefs) {
             if (typeof ref === 'string' && ref.includes(' ')) {
               const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
