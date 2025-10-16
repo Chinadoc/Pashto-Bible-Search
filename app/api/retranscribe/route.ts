@@ -16,7 +16,7 @@ Transcription: "${transcript}"
 
 Check for:
 1. Non-Pashto/Dari scripts (Bengali, Hindi/Devanagari, English, etc.)
-2. Music descriptions like "(music)", "(rock music)", "(dramatic music)"
+2. Music descriptions like "(music)", "(rock music)", "(dramatic music)", "jazz music", "Jazz music"
 3. Foreign language content
 4. Gibberish or unclear text
 
@@ -130,10 +130,14 @@ export async function POST(request: NextRequest) {
     const transcript = await transcribeAudioFile(audioFilePath);
 
     if (transcript) {
+      console.log('ElevenLabs transcript:', transcript);
+      
       // Validate transcription quality
       const validation = await validateTranscriptionQuality(transcript);
+      console.log('Quality validation result:', validation);
       
       if (validation.isValid) {
+        console.log('✅ Transcript passed quality check');
         return NextResponse.json({
           success: true,
           transcript: transcript,
@@ -141,6 +145,7 @@ export async function POST(request: NextRequest) {
           qualityCheck: validation
         });
       } else {
+        console.log('❌ Transcript failed quality check:', validation.reason);
         return NextResponse.json({
           success: false,
           error: 'Transcription failed quality check',
