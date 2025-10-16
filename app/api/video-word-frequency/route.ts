@@ -53,8 +53,42 @@ function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | '
   return 'non-pashto';
 }
 
-// Enhanced function to categorize word types based on Pashto grammar rules
-function categorizeWordType(word: string): { type: string; confidence: number; reason: string } {
+// Enhanced function to categorize word types based on Pashto grammar rules and LingDocs data
+async function categorizeWordType(word: string): Promise<{ type: string; confidence: number; reason: string }> {
+  // First, try to get dictionary data from LingDocs
+  try {
+    const dictResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/lexicon_frequency?search=${encodeURIComponent(word)}&limit=1`);
+    if (dictResponse.ok) {
+      const dictData = await dictResponse.json();
+      if (dictData.items && dictData.items.length > 0) {
+        const item = dictData.items[0];
+        if (item.pos) {
+          return {
+            type: item.pos.toLowerCase(),
+            confidence: 0.95,
+            reason: `LingDocs dictionary POS: ${item.pos}`
+          };
+        }
+        // If no POS but has morphological data, infer from structure
+        if (item.morphological?.inflections && item.morphological.inflections.length > 0) {
+          const hasVerbForms = item.morphological.inflections.some((inf: any) =>
+            inf.grammatical_info?.includes('verb') || inf.grammatical_info?.includes('infinitive')
+          );
+          if (hasVerbForms) {
+            return { type: 'verb', confidence: 0.8, reason: 'Has verb inflections in LingDocs data' };
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to fetch dictionary data for categorization:', error);
+  }
+
+  // Fall back to pattern-based analysis
+  return categorizeWordTypeByPattern(word);
+}
+
+function categorizeWordTypeByPattern(word: string): { type: string; confidence: number; reason: string } {
   if (!word || word.trim().length === 0) {
     return { type: 'unknown', confidence: 0, reason: 'Empty word' };
   }
@@ -124,21 +158,45 @@ function categorizeWordType(word: string): { type: string; confidence: number; r
     return { type: 'verb', confidence: 0.6, reason: 'Matches Pashto verb ending patterns' };
   }
 
-  // Enhanced noun patterns (common Pashto noun endings)
-  const nounEndings = ['ی', 'ه', 'ون', 'ان', 'ګان', 'ګانو', 'ونه', 'انه', 'ستان', 'وند'];
+  // Enhanced noun patterns (common Pashto noun endings and plurals)
+  const nounEndings = ['ی', 'ه', 'ون', 'ان', 'ګان', 'ګانو', 'ونه', 'انه', 'ستان', 'وند', 'و'];
   const isNoun = nounEndings.some(ending => cleanWord.endsWith(ending));
 
   if (isNoun) {
-    return { type: 'noun', confidence: 0.7, reason: 'Matches Pashto noun ending patterns' };
+    return { type: 'noun', confidence: 0.8, reason: 'Matches Pashto noun ending patterns (including plurals)' };
+  }
+
+  // Enhanced verb detection - handle irregular and compound verbs
+  // Special cases for words that should be verbs but don't follow regular patterns
+  const irregularVerbs = ['ويل', 'خلک', 'کول', 'کېدل', 'راتلل', 'تلل', 'موندل', 'راوړل'];
+  if (irregularVerbs.includes(cleanWord)) {
+    return { type: 'verb', confidence: 0.9, reason: 'Known irregular Pashto verb form' };
   }
 
   // Check for LingDocs-style verb forms that might be missed
-  // Words that contain common verb roots
-  const verbRoots = ['و', 'ک', 'ر', 'ت', 'م', 'ل', 'ش', 'خ', 'غ', 'ق'];
-  const hasVerbRoot = verbRoots.some(root => cleanWord.startsWith(root));
+  // Words that contain common verb roots or are known verb forms
+  const verbRoots = ['و', 'ک', 'ر', 'ت', 'م', 'ل', 'ش', 'خ', 'غ', 'ق', 'خل'];
+  const hasVerbRoot = verbRoots.some(root => cleanWord.includes(root) || cleanWord.startsWith(root));
 
   if (hasVerbRoot && cleanWord.length >= 3) {
+    // Additional check for verb-like patterns
+    if (cleanWord.length >= 4 && (cleanWord.includes('ل') || cleanWord.includes('و'))) {
+      return { type: 'verb', confidence: 0.7, reason: 'Contains Pashto verb root and morphological patterns' };
+    }
     return { type: 'verb', confidence: 0.5, reason: 'Contains Pashto verb root patterns' };
+  }
+
+  // Check for plural forms that might be nouns (like خلکو - khalko)
+  if (cleanWord.endsWith('و') && cleanWord.length >= 4) {
+    return { type: 'noun', confidence: 0.6, reason: 'Likely plural noun form (ends with و)' };
+  }
+
+  // Check for words that might be adjectives (common patterns)
+  const adjectiveEndings = ['ی', 'ه', 'ین', 'ترین'];
+  const isAdjective = adjectiveEndings.some(ending => cleanWord.endsWith(ending));
+
+  if (isAdjective && cleanWord.length >= 3) {
+    return { type: 'adjective', confidence: 0.6, reason: 'Matches Pashto adjective ending patterns' };
   }
 
   // Default categorization based on length and structure
@@ -203,9 +261,9 @@ export async function GET(request: NextRequest) {
     const analysis = analyzePashtoText(allTranscripts);
 
     // Convert word frequency to sorted array with enhanced type information
-    const wordFrequencyArray = Object.entries(analysis.wordFreq)
-      .map(([word, frequency]) => {
-        const typeInfo = categorizeWordType(word);
+    const wordFrequencyPromises = Object.entries(analysis.wordFreq)
+      .map(async ([word, frequency]) => {
+        const typeInfo = await categorizeWordType(word);
         return {
           word,
           frequency,
@@ -213,7 +271,9 @@ export async function GET(request: NextRequest) {
           confidence: typeInfo.confidence,
           reason: typeInfo.reason
         };
-      })
+      });
+
+    const wordFrequencyArray = (await Promise.all(wordFrequencyPromises))
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, limit);
 
