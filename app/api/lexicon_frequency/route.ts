@@ -16,12 +16,44 @@ export async function GET(request: NextRequest) {
     // Load LingDocs dictionary and frequency data
     console.log('Loading lightweight data...')
     const data = await getLightweightData()
-    console.log(`Loaded ${data.dictionaryByPashto.size} dictionary entries, ${data.frequencyMap.size} frequency entries`)
+    console.log(`Loaded ${data.dictionaryByPashto.size} dictionary entries, ${data.frequencyMap.size} frequency entries, ${data.yousafzaiFrequencyMap.size} yousafzai entries`)
 
-    const { dictionaryByPashto, frequencyMap, formToRoot, formsByRoot, occurrenceMap, inflectionsByBase } = data
+    const { dictionaryByPashto, frequencyMap, yousafzaiFrequencyMap, formToRoot, formsByRoot, occurrenceMap, inflectionsByBase } = data
+
+    // Merge all frequency sources (Bible + Yousafzai + Dictionary)
+    const combinedFrequencyMap = new Map<string, number>()
+    
+    // Add Bible frequencies
+    for (const [word, freq] of frequencyMap.entries()) {
+      combinedFrequencyMap.set(word, freq)
+    }
+    
+    // Add Yousafzai frequencies (add to existing or create new)
+    for (const [word, freq] of yousafzaiFrequencyMap.entries()) {
+      const existing = combinedFrequencyMap.get(word) || 0
+      combinedFrequencyMap.set(word, existing + freq)
+    }
+    
+    // Add dictionary words that don't appear in frequency lists (with frequency 0)
+    for (const [word] of dictionaryByPashto.entries()) {
+      if (!combinedFrequencyMap.has(word)) {
+        combinedFrequencyMap.set(word, 0)
+      }
+    }
+    
+    console.log(`Combined frequency map size: ${combinedFrequencyMap.size}`)
+    console.log(`وهم in combined map: ${combinedFrequencyMap.has('وهم')}`)
+    console.log(`وهم frequency: ${combinedFrequencyMap.get('وهم')}`)
+    console.log(`وهم in dictionary: ${dictionaryByPashto.has('وهم')}`)
+    console.log(`وهم in yousafzai: ${yousafzaiFrequencyMap.has('وهم')}`)
+    console.log(`وهم yousafzai freq: ${yousafzaiFrequencyMap.get('وهم')}`)
+    
+    // Debug: Show all words containing وهم
+    const wahamWords = Array.from(combinedFrequencyMap.keys()).filter(w => w.includes('وهم'))
+    console.log(`Words containing وهم: ${JSON.stringify(wahamWords)}`)
 
     // Get top frequency words
-    const freqEntries = Array.from(frequencyMap.entries())
+    const freqEntries = Array.from(combinedFrequencyMap.entries())
       .map(([word, frequency]) => ({ word, frequency }))
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, limit)
