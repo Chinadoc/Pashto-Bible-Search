@@ -225,6 +225,15 @@ const IRREGULAR_VERBS: Record<string, {
     pastParticiple: 'ختلی',
     notes: 'Irregular stems; intransitive'
   },
+  'وهل': {
+    meaning: 'to hit/strike',
+    imperfectiveStem: 'وهـ',
+    perfectiveStem: 'ووهـ',
+    imperfectiveRoot: 'وهل',
+    perfectiveRoot: 'ووهل',
+    pastParticiple: 'وهلی',
+    notes: 'Irregular stems; transitive'
+  },
   'غوښتل': {
     meaning: 'to want',
     imperfectiveStem: 'غواړـ',
@@ -1421,7 +1430,7 @@ async function enrichVariantsFromSupabase(
 
         // Find all forms that map to this root
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             collector.add(form, { sources: ['root-map'] });
           }
         }
@@ -1432,8 +1441,10 @@ async function enrichVariantsFromSupabase(
         const entry = GRAMMATICAL_INDEX[term];
         for (const identity of entry.identities || []) {
           for (const [formType, forms] of Object.entries(identity.forms || {})) {
-            for (const form of forms) {
-              collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+            if (Array.isArray(forms)) {
+              for (const form of forms) {
+                collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
+              }
             }
           }
         }
@@ -1461,7 +1472,7 @@ async function enrichVariantsFromSupabase(
         const root = FORM_TO_ROOT_MAP[term][0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
         for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (roots.includes(root)) {
+          if (Array.isArray(roots) && roots.includes(root)) {
             // Determine if this is a verb conjugation based on the form
             const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
             collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
@@ -1780,10 +1791,10 @@ export async function POST(request: NextRequest) {
           .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
           .limit(3)
         if (Array.isArray(dictData)) {
-          for (const row of dictData) {
-            if (row?.pashto) {
-              const pos = typeof row?.pos === 'string' ? row.pos : undefined
-              const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
+          for (const row of dictData as Array<{ pashto: string; pos?: string; romanized?: string }>) {
+            if (row && row.pashto) {
+              const pos = typeof row.pos === 'string' ? row.pos : undefined
+              const romanized = typeof row.romanized === 'string' ? row.romanized : undefined
               variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
             }
           }
@@ -1798,10 +1809,10 @@ export async function POST(request: NextRequest) {
             .ilike('romanization', `%${originalTerm}%`)
             .limit(3)
           if (Array.isArray(data)) {
-            for (const row of data) {
-              if (row?.pashto_word) {
-                const pos = typeof row?.pos === 'string' ? row.pos : undefined
-                const romanized = typeof row?.romanization === 'string' ? row.romanization : undefined
+            for (const row of data as Array<{ pashto_word: string; pos?: string; romanization?: string }>) {
+              if (row && row.pashto_word) {
+                const pos = typeof row.pos === 'string' ? row.pos : undefined
+                const romanized = typeof row.romanization === 'string' ? row.romanization : undefined
                 variantCollector.add(row.pashto_word, { sources: ['romanized-dictionary'], pos, romanization: romanized })
               }
             }
@@ -1820,6 +1831,8 @@ export async function POST(request: NextRequest) {
         'wur': ['ور', 'وور'],
         'wahul': ['وهل'],
         'wahel': ['وهل'],
+        'wahal': ['وهل'],
+        'wahúl': ['وهل'],
         'kawul': ['کول'],
         'kedal': ['کېدل'],
         'kedel': ['کېدل']
@@ -1837,7 +1850,7 @@ export async function POST(request: NextRequest) {
           .eq('pashto', originalTerm)
           .limit(1)
         if (Array.isArray(dictRows) && dictRows.length > 0) {
-          const row = dictRows[0]
+          const row = dictRows[0] as { pashto: string; pos?: string; romanized?: string }
           if (row?.pos) {
             const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
             variantCollector.add(originalTerm, { sources: ['dictionary'], pos: row.pos, romanization: romanized })
@@ -1879,8 +1892,12 @@ export async function POST(request: NextRequest) {
           .select('pashto_word,frequency_count')
           .in('pashto_word', pashtoFormsForFrequency)
         if (Array.isArray(data)) {
+          type WordFrequencyRow = {
+            pashto_word: string | null
+            frequency_count: number | null
+          }
           const freqMap = new Map<string, number>()
-          for (const row of data) {
+          for (const row of data as WordFrequencyRow[]) {
             if (row?.pashto_word) {
               const freqVal = Number(row.frequency_count)
               if (Number.isFinite(freqVal)) {
@@ -2048,9 +2065,16 @@ export async function POST(request: NextRequest) {
           .eq('pashto_form', primaryTerm)
             .limit(1)
         
-        if (data && data.length > 0 && Array.isArray(data[0].verses)) {
+        const formOccurrenceRows = Array.isArray(data)
+          ? (data as Array<{ verses?: unknown }>)
+          : []
+
+        if (
+          formOccurrenceRows.length > 0 &&
+          Array.isArray(formOccurrenceRows[0].verses)
+        ) {
           // Take first few verse references and try to find them
-          const verseRefs = data[0].verses.slice(0, 10)
+          const verseRefs = (formOccurrenceRows[0].verses as string[]).slice(0, 10)
           for (const ref of verseRefs) {
             if (typeof ref === 'string' && ref.includes(' ')) {
               const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
@@ -2070,20 +2094,44 @@ export async function POST(request: NextRequest) {
                 }
 
                 const { data: verseData } = await verseQuery.limit(1)
-                if (verseData && verseData.length > 0) {
-                  const row = verseData[0]
-                  const fallbackRef = `${row.book} ${row.chapter}:${row.verse}`
+                const verseRows = Array.isArray(verseData)
+                  ? (verseData as Array<{
+                      book?: string | null
+                      chapter?: number | null
+                      verse?: number | null
+                      text?: string | null
+                      testament?: 'OT' | 'NT' | null
+                    }>)
+                  : []
+
+                if (verseRows.length > 0) {
+                  const row = verseRows[0]
+                  const bookValue = row.book ?? ''
+                  const chapterValue =
+                    typeof row.chapter === 'number' ? row.chapter : Number(row.chapter)
+                  const verseValue =
+                    typeof row.verse === 'number' ? row.verse : Number(row.verse)
+
+                  if (
+                    !bookValue ||
+                    !Number.isFinite(chapterValue) ||
+                    !Number.isFinite(verseValue)
+                  ) {
+                    continue
+                  }
+                  const fallbackRef = `${bookValue} ${chapterValue}:${verseValue}`
+
                   if (!coverageRefSet.has(fallbackRef)) {
                     coverageRefSet.add(fallbackRef)
-                    coverageMap.set(row.book, (coverageMap.get(row.book) || 0) + 1)
+                    coverageMap.set(bookValue, (coverageMap.get(bookValue) || 0) + 1)
                   }
                   // Determine testament based on book name if not in database
-                  let testament = row.testament
+                  let testament: 'OT' | 'NT' | undefined = row.testament ?? undefined
                   if (!testament) {
-                    const bookName = row.book?.toLowerCase() || ''
-                    if (OT_BOOKS.some(otBook => otBook.toLowerCase() === bookName)) {
+                    const bookName = bookValue.toLowerCase()
+                    if (OT_BOOKS.some((otBook) => otBook.toLowerCase() === bookName)) {
                       testament = 'OT'
-                    } else if (NT_BOOKS.some(ntBook => ntBook.toLowerCase() === bookName)) {
+                    } else if (NT_BOOKS.some((ntBook) => ntBook.toLowerCase() === bookName)) {
                       testament = 'NT'
                     }
                   }
@@ -2091,7 +2139,7 @@ export async function POST(request: NextRequest) {
                   allResults.push({
                     ref: fallbackRef,
                     text: row.text || '',
-                    testament
+                    testament: testament || undefined
                   })
                   if (allResults.length >= 10) break
                 }
@@ -2203,7 +2251,11 @@ export async function POST(request: NextRequest) {
               .limit(30)
 
             if (Array.isArray(occurrenceData)) {
-              for (const row of occurrenceData) {
+              const typedRows = occurrenceData as Array<{
+                pashto_form?: string | null
+                frequency?: number | null
+              }>
+              for (const row of typedRows) {
                 if (row?.pashto_form && row?.frequency) {
                   existingForms.push({
                     form: row.pashto_form,
@@ -2224,7 +2276,11 @@ export async function POST(request: NextRequest) {
                 .limit(30)
 
               if (Array.isArray(occurrenceData2)) {
-                for (const row of occurrenceData2) {
+                const typedRows2 = occurrenceData2 as Array<{
+                  pashto_form?: string | null
+                  frequency?: number | null
+                }>
+                for (const row of typedRows2) {
                   if (row?.pashto_form && row?.frequency) {
                     existingForms.push({
                       form: row.pashto_form,
@@ -2280,7 +2336,11 @@ export async function POST(request: NextRequest) {
             .limit(20)
 
           if (Array.isArray(wordFreqData)) {
-            for (const row of wordFreqData) {
+            const typedWordFreqRows = wordFreqData as Array<{
+              word?: string | null
+              frequency?: number | null
+            }>
+            for (const row of typedWordFreqRows) {
               if (row?.word && row?.frequency && !existingForms.find(e => e.form === row.word)) {
                 existingForms.push({
                   form: row.word,
@@ -2301,7 +2361,11 @@ export async function POST(request: NextRequest) {
               .limit(20)
 
             if (Array.isArray(wordFreqData2)) {
-              for (const row of wordFreqData2) {
+              const typedWordFreqRows2 = wordFreqData2 as Array<{
+                pashto_word?: string | null
+                frequency_count?: number | null
+              }>
+              for (const row of typedWordFreqRows2) {
                 if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
                   existingForms.push({
                     form: row.pashto_word,

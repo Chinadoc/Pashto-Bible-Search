@@ -62,7 +62,9 @@ def upload_sentence_segments():
                 'audio_filename': filename,
                 'audio_path': segment.get('transcribed_text', segment.get('original_text', '')),
                 'file_size': len(segment.get('transcribed_text', segment.get('original_text', ''))),
-                'duration_seconds': int(segment['duration'])
+                'duration_seconds': int(segment['duration']),
+                'start_time_seconds': global_start_time,
+                'end_time_seconds': global_end_time
             }
             
             response = requests.post(
