@@ -342,7 +342,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
   return (
     <div className="p-4" dir="rtl">
-      <h2 className="text-xl font-bold mb-4">لغت نامه - فریکونسی لیست</h2>
+      <h2 className="text-xl font-bold mb-4">Lexicon - Word Frequency List</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Pashto Lexicon - Word frequency list from Bible text
       </p>
@@ -356,10 +356,10 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={
-              searchMode === 'exact' ? 'جستجوی دقیق...' :
-              searchMode === 'fuzzy' ? 'جستجوی تقریبی...' :
-              searchMode === 'regex' ? 'عبارت منظم (regex)...' :
-              'جستجوی ریشه...'
+              searchMode === 'exact' ? 'Search words or roots...' :
+              searchMode === 'fuzzy' ? 'Fuzzy search...' :
+              searchMode === 'regex' ? 'Regex pattern...' :
+              'Root pattern search...'
             }
             className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
           />
@@ -368,17 +368,17 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
             onChange={(e) => setSearchMode(e.target.value as 'exact' | 'fuzzy' | 'regex' | 'root')}
             className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
           >
-            <option value="exact">دقیق</option>
-            <option value="fuzzy">تقریبی</option>
-            <option value="regex">عبارت منظم</option>
-            <option value="root">ریشه</option>
+            <option value="exact">Exact</option>
+            <option value="fuzzy">Fuzzy</option>
+            <option value="regex">Regex</option>
+            <option value="root">Root</option>
           </select>
           <button
             onClick={fetchFrequencyData}
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
             disabled={loading}
           >
-            {loading ? 'بارگذاری...' : 'بارگذاری مجدد'}
+            {loading ? 'Loading...' : 'Reload'}
           </button>
         </div>
 
@@ -388,68 +388,68 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
             onClick={() => setShowStats(!showStats)}
             className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center gap-2"
           >
-            📊 آمار {showStats ? 'مخفی' : 'نمایش'}
+            📊 Statistics {showStats ? 'Hide' : 'Show'}
           </button>
           <button
             onClick={() => exportToCSV(filteredData)}
             className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
           >
-            📥 خروجی CSV
+            📥 Export CSV
           </button>
         </div>
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium mb-1">محدوده</label>
+            <label className="block text-xs font-medium mb-1">Scope</label>
             <select
               value={scope}
               onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
             >
-              <option value="all">کل کتاب مقدس</option>
-              <option value="ot">عهد عتیق</option>
-              <option value="nt">عهد جدید</option>
+              <option value="all">All Bible</option>
+              <option value="ot">Old Testament</option>
+              <option value="nt">New Testament</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1">نوع کلمه</label>
+            <label className="block text-xs font-medium mb-1">Word Type</label>
             <select
               value={posFilter}
               onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
             >
-              <option value="any">همه</option>
-              <option value="verb">فعل‌ها</option>
-              <option value="noun">اسم‌ها</option>
+              <option value="any">All</option>
+              <option value="verb">Verbs</option>
+              <option value="noun">Nouns</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1">تعداد نتایج</label>
+            <label className="block text-xs font-medium mb-1">Result Count</label>
             <select
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value))}
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
             >
-              <option value={100}>۱۰۰</option>
-              <option value={300}>۳۰۰</option>
-              <option value={500}>۵۰۰</option>
-              <option value={1000}>۱۰۰۰</option>
+              <option value={100}>100</option>
+              <option value={300}>300</option>
+              <option value={500}>500</option>
+              <option value={1000}>1000</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1">مرتب‌سازی</label>
+            <label className="block text-xs font-medium mb-1">Sort By</label>
             <div className="flex gap-1">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
                 className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
               >
-                <option value="frequency">فریکونسی</option>
-                <option value="form">حرف الفبا</option>
+                <option value="frequency">Frequency</option>
+                <option value="form">Alphabetical</option>
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
@@ -469,37 +469,37 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  رتبه
+                  Rank
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  کلمه
+                  Word
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  ریشه
+                  Root
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  نوع
+                  Type
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  فریکونسی
+                  Frequency
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  لغت‌نامه
+                  Dictionary
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  اشکال مرتبط
+                  Related Forms
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  صوت
+                  Audio
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  آیات
+                  Verses
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  یادداشت‌ها
+                  Notes
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  عملیات
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -507,13 +507,13 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               {loading ? (
                 <tr>
                   <td colSpan={11} className="px-3 py-4 text-center text-gray-500">
-                    بارگذاری...
+                    Loading...
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="px-3 py-4 text-center text-gray-500">
-                    هیچ نتیجه‌ای یافت نشد
+                    No results found
                   </td>
                 </tr>
               ) : (
@@ -536,7 +536,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                       }`}>
-                        {item.pos === 'verb' ? 'فعل' : item.pos === 'noun' ? 'اسم' : 'نامشخص'}
+                        {item.pos === 'verb' ? 'Verb' : item.pos === 'noun' ? 'Noun' : 'Unknown'}
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -669,7 +669,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       {/* Statistics Panel */}
       {showStats && filteredData.length > 0 && (
         <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-lg">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">📊 آمار فریکونسی</h3>
+          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">📊 Frequency Statistics</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Basic Statistics */}
@@ -677,28 +677,28 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {filteredData.length.toLocaleString()}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">کل کلمات</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Words</div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {Math.round(filteredData.reduce((sum, item) => sum + item.frequency, 0) / filteredData.length).toLocaleString()}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">میانگین فریکونسی</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Average Frequency</div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                 {filteredData[0]?.frequency.toLocaleString() || 0}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">بالاترین فریکونسی</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Highest Frequency</div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {filteredData.reduce((sum, item) => sum + item.frequency, 0).toLocaleString()}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">مجموع فریکونسی</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Occurrences</div>
             </div>
           </div>
 
@@ -706,7 +706,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* POS Distribution */}
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">توزیع بر اساس نوع کلمه</h4>
+              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Distribution by Word Type</h4>
               <div className="space-y-2">
                 {Object.entries(
                   filteredData.reduce((acc, item) => {
