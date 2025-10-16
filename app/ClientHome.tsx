@@ -646,6 +646,7 @@ export default function ClientHome() {
   const [wordFrequency, setWordFrequency] = useState<any>(null);
   const [loadingWordFrequency, setLoadingWordFrequency] = useState(false);
   const [activeVideosTab, setActiveVideosTab] = useState<'videos' | 'frequency' | 'transcripts'>('videos');
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [processingVideo, setProcessingVideo] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [playingSentence, setPlayingSentence] = useState<{segmentIndex: number, sentenceIndex: number} | null>(null);
@@ -902,7 +903,8 @@ export default function ClientHome() {
   useEffect(() => {
     if (activeMainTab === 'videos' && activeVideosTab === 'frequency' && !wordFrequency) {
       setLoadingWordFrequency(true);
-      fetch('/api/video-word-frequency?categorize=true&limit=100')
+      const currentVideoId = selectedVideoId || (videos.length > 0 ? videos[0].id : null);
+      fetch(`/api/video-word-frequency?categorize=true&limit=100${currentVideoId ? `&videoId=${currentVideoId}` : ''}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -916,7 +918,7 @@ export default function ClientHome() {
           setLoadingWordFrequency(false);
         });
     }
-  }, [activeMainTab, activeVideosTab, wordFrequency]);
+  }, [activeMainTab, activeVideosTab, wordFrequency, selectedVideoId, videos]);
 
   // Re-transcribe segment function
   const retranscribeSegment = async (audioFilename: string, segmentIndex: number) => {
@@ -1743,7 +1745,7 @@ export default function ClientHome() {
   };
 
   return (
-    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
+    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -2470,8 +2472,10 @@ export default function ClientHome() {
                 </p>
               </div>
 
-            {/* Enhanced Sub-tabs for Videos/Audio section */}
-            <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
+            {/* Sticky Header with Navigation */}
+            <div className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 mb-8">
+              <div className="max-w-7xl mx-auto px-8 py-4">
+                <div className="flex flex-wrap gap-2 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => setActiveVideosTab('videos')}
                 className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
@@ -2520,9 +2524,11 @@ export default function ClientHome() {
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
                 )}
               </button>
+                </div>
+              </div>
             </div>
-            
-              {/* Enhanced Video Upload Section */}
+
+            {/* Enhanced Video Upload Section */}
               <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
@@ -2623,6 +2629,34 @@ export default function ClientHome() {
               )}
             </div>
 
+            {/* Video Selector for Multiple Videos */}
+            {videos.length > 1 && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-blue-600 dark:text-blue-400">📺</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">Select Video:</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {videos.map((video) => (
+                    <button
+                      key={video.id}
+                      onClick={() => setSelectedVideoId(video.id)}
+                      className={`p-3 rounded-lg border-2 text-left transition-all ${
+                        selectedVideoId === video.id || (!selectedVideoId && videos.indexOf(video) === 0)
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-600'
+                      }`}
+                    >
+                      <div className="font-medium truncate">{video.title}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {video.totalSegments} segments • {Math.round(video.totalDuration / 60)} min
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Conditional Content Based on Active Sub-tab */}
             {activeVideosTab === 'videos' && (
               <>
@@ -2645,18 +2679,24 @@ export default function ClientHome() {
                   </p>
                 </div>
                 
-                {videos.map((video, index) => (
-                  <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                {(() => {
+                  const currentVideoId = selectedVideoId || (videos.length > 0 ? videos[0].id : null);
+                  const currentVideo = videos.find(v => v.id === currentVideoId);
+
+                  if (!currentVideo) return null;
+
+                  return (
+                    <div key={currentVideo.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
                     <div className="mb-4">
                       <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        {video.title}
+                        {currentVideo.title}
                       </h4>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span>{video.totalSegments} segments</span>
-                        <span>{Math.round(video.totalDuration / 60)} minutes total</span>
-                        <a 
-                          href={video.youtubeUrl} 
-                          target="_blank" 
+                        <span>{currentVideo.totalSegments} segments</span>
+                        <span>{Math.round(currentVideo.totalDuration / 60)} minutes total</span>
+                        <a
+                          href={currentVideo.youtubeUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
@@ -2664,14 +2704,14 @@ export default function ClientHome() {
                         </a>
                       </div>
                     </div>
-                    
+
                     {/* YouTube Embed */}
                     <div className="mb-6">
                       <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                         <iframe
                           className="absolute top-0 left-0 w-full h-full rounded-lg"
-                          src={`https://www.youtube.com/embed/${video.id}`}
-                          title={video.title}
+                          src={`https://www.youtube.com/embed/${currentVideo.id}`}
+                          title={currentVideo.title}
                           frameBorder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -2685,7 +2725,7 @@ export default function ClientHome() {
                         Video Segments & Transcripts
                       </h5>
                       
-                      {video.segments.map((segment: any, segIndex: number) => (
+                      {currentVideo.segments.map((segment: any, segIndex: number) => (
                         <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center justify-between mb-3">
                             <h6 className="font-medium text-gray-900 dark:text-gray-100">
@@ -2865,6 +2905,9 @@ export default function ClientHome() {
             )}
                 </div>
               </>
+            );
+                })}
+              </div>
             )}
 
             {activeVideosTab === 'frequency' && (
@@ -2922,6 +2965,42 @@ export default function ClientHome() {
                         </div>
                       </div>
 
+                      {/* Word Type Statistics */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{wordFrequency.wordTypeStats?.verbs || 0}</div>
+                          <div className="text-xs text-blue-600/70 dark:text-blue-400/70">Verbs</div>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-green-600 dark:text-green-400">{wordFrequency.wordTypeStats?.nouns || 0}</div>
+                          <div className="text-xs text-green-600/70 dark:text-green-400/70">Nouns</div>
+                        </div>
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{wordFrequency.wordTypeStats?.particles || 0}</div>
+                          <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70">Particles</div>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{wordFrequency.wordTypeStats?.pronouns || 0}</div>
+                          <div className="text-xs text-purple-600/70 dark:text-purple-400/70">Pronouns</div>
+                        </div>
+                        <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-pink-600 dark:text-pink-400">{wordFrequency.wordTypeStats?.prepositions || 0}</div>
+                          <div className="text-xs text-pink-600/70 dark:text-pink-400/70">Prepositions</div>
+                        </div>
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{wordFrequency.wordTypeStats?.adjectives || 0}</div>
+                          <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70">Adjectives</div>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{wordFrequency.wordTypeStats?.numbers || 0}</div>
+                          <div className="text-xs text-orange-600/70 dark:text-orange-400/70">Numbers</div>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-gray-600 dark:text-gray-400">{wordFrequency.wordTypeStats?.unknown || 0}</div>
+                          <div className="text-xs text-gray-600/70 dark:text-gray-400/70">Unknown</div>
+                        </div>
+                      </div>
+
                       {/* Enhanced Word Frequency Table */}
                       <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
                         <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
@@ -2940,20 +3019,23 @@ export default function ClientHome() {
                           </div>
                         </div>
                         <div className="max-h-96 overflow-y-auto">
-                          <table className="w-full">
+                          <table className="w-full min-w-[600px]">
                             <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
                               <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                <th className="px-3 md:px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                                   #
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                <th className="px-3 md:px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                                   Pashto Word
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                <th className="px-3 md:px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                                   Count
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                  Usage %
+                                <th className="px-3 md:px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  Type
+                                </th>
+                                <th className="px-3 md:px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  Confidence
                                 </th>
                               </tr>
                             </thead>
@@ -2968,7 +3050,7 @@ export default function ClientHome() {
                                       isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
                                     }`}
                                   >
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                                         isTopTen
                                           ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
@@ -2977,32 +3059,34 @@ export default function ClientHome() {
                                         {index + 1}
                                       </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                       <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
                                         {item.word}
                                       </span>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                       <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
                                         {item.frequency.toLocaleString()}
                                       </span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                      <div className="flex items-center gap-2">
-                                        <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
-                                          <div
-                                            className={`h-full transition-all duration-500 ${
-                                              isTopTen
-                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
-                                            }`}
-                                            style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
-                                          ></div>
-                                        </div>
-                                        <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                          {percentage}%
-                                        </span>
-                                      </div>
+                                    <td className="px-3 md:px-6 py-4">
+                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                        item.type === 'verb' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                        item.type === 'noun' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                        item.type === 'particle' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                        item.type === 'pronoun' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                        item.type === 'preposition' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' :
+                                        item.type === 'adjective' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                                        item.type === 'number' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                        'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                      }`}>
+                                        {item.type}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 md:px-6 py-4">
+                                      <span className={`text-xs font-medium ${isTopTen ? 'text-slate-700 dark:text-slate-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                                        {Math.round(item.confidence * 100)}%
+                                      </span>
                                     </td>
                                   </tr>
                                 );

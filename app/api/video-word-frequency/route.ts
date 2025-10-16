@@ -53,25 +53,99 @@ function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | '
   return 'non-pashto';
 }
 
+// Enhanced function to categorize word types based on Pashto grammar rules
+function categorizeWordType(word: string): { type: string; confidence: number; reason: string } {
+  if (!word || word.trim().length === 0) {
+    return { type: 'unknown', confidence: 0, reason: 'Empty word' };
+  }
+
+  const cleanWord = word.trim();
+
+  // Common Pashto particles and conjunctions (او is a conjunction, not a verb)
+  const particles = ['او', 'اوو', 'یا', 'او یا', 'که', 'چې', 'خو', 'نو', 'پس', 'ځکه', 'چېرته', 'کله', 'څنګه'];
+  if (particles.includes(cleanWord)) {
+    return { type: 'particle', confidence: 0.9, reason: 'Common Pashto particle/conjunction' };
+  }
+
+  // Pronouns
+  const pronouns = ['زما', 'ستا', 'دده', 'زمونږ', 'ستاسو', 'ددوی', 'زه', 'ته', 'هغه', 'مونږ', 'تاسو', 'هغوی'];
+  if (pronouns.includes(cleanWord)) {
+    return { type: 'pronoun', confidence: 0.9, reason: 'Pashto pronoun' };
+  }
+
+  // Prepositions
+  const prepositions = ['په', 'له', 'سره', 'پورې', 'نه', 'ته', 'څخه', 'کې', 'پورې', 'لاندې', 'پورته', 'شاته'];
+  if (prepositions.includes(cleanWord)) {
+    return { type: 'preposition', confidence: 0.9, reason: 'Pashto preposition' };
+  }
+
+  // Numbers
+  const pashtoNumbers = ['یو', 'دوه', 'درې', 'څلور', 'پنځه', 'شپږ', 'اووه', 'اته', 'نهه', 'لس'];
+  if (pashtoNumbers.includes(cleanWord)) {
+    return { type: 'number', confidence: 0.9, reason: 'Pashto number' };
+  }
+
+  // Common adjectives
+  const adjectives = ['ښه', 'بد', 'لوی', 'کوچنی', 'سپین', 'تور', 'سرخ', 'شنه', 'آبی', 'ژېړ'];
+  if (adjectives.includes(cleanWord)) {
+    return { type: 'adjective', confidence: 0.7, reason: 'Common Pashto adjective' };
+  }
+
+  // Verb patterns in Pashto (ending patterns)
+  const verbEndings = ['يږي', 'وي', 'يږي', 'وي', 'وي', 'وي', 'يږي', 'وي', 'يږي', 'وي'];
+  const isVerb = verbEndings.some(ending => cleanWord.endsWith(ending));
+
+  if (isVerb) {
+    return { type: 'verb', confidence: 0.6, reason: 'Matches Pashto verb ending patterns' };
+  }
+
+  // Noun patterns (common Pashto noun endings)
+  const nounEndings = ['ی', 'ه', 'ون', 'ان', 'ګان', 'ګانو'];
+  const isNoun = nounEndings.some(ending => cleanWord.endsWith(ending));
+
+  if (isNoun) {
+    return { type: 'noun', confidence: 0.5, reason: 'Matches Pashto noun ending patterns' };
+  }
+
+  // Default categorization based on length and structure
+  if (cleanWord.length <= 2) {
+    return { type: 'particle', confidence: 0.3, reason: 'Short word, likely particle' };
+  }
+
+  if (cleanWord.length >= 5) {
+    return { type: 'noun', confidence: 0.4, reason: 'Longer word, likely noun' };
+  }
+
+  return { type: 'unknown', confidence: 0.1, reason: 'Could not determine type' };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const includeCategorization = url.searchParams.get('categorize') === 'true';
     const limit = parseInt(url.searchParams.get('limit') || '100');
+    const videoId = url.searchParams.get('videoId');
 
-    // Get all video transcripts from Supabase
-    const { data, error } = await supabase
+    // Get video transcripts - either from specific video or all videos
+    let query = supabase
       .from('audio_mappings')
       .select('*')
       .like('verse_reference', 'video_%')
       .order('verse_reference');
+
+    if (videoId) {
+      // Filter for specific video ID
+      query = query.like('verse_reference', `video_${videoId}_%`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    // Aggregate all transcripts for word frequency analysis
+    // Aggregate transcripts for word frequency analysis
     const allTranscripts = data?.map(item => item.audio_path).join(' ') || '';
 
     if (!allTranscripts.trim()) {
@@ -94,9 +168,18 @@ export async function GET(request: NextRequest) {
 
     const analysis = analyzePashtoText(allTranscripts);
 
-    // Convert word frequency to sorted array
+    // Convert word frequency to sorted array with enhanced type information
     const wordFrequencyArray = Object.entries(analysis.wordFreq)
-      .map(([word, frequency]) => ({ word, frequency }))
+      .map(([word, frequency]) => {
+        const typeInfo = categorizeWordType(word);
+        return {
+          word,
+          frequency,
+          type: typeInfo.type,
+          confidence: typeInfo.confidence,
+          reason: typeInfo.reason
+        };
+      })
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, limit);
 
@@ -155,7 +238,17 @@ export async function GET(request: NextRequest) {
         uniqueWords: analysis.uniqueWords.length,
         wordFrequency: wordFrequencyArray
       },
-      categorization: categorization as CategorizationType
+      categorization: categorization as CategorizationType,
+      wordTypeStats: {
+        verbs: wordFrequencyArray.filter(w => w.type === 'verb').length,
+        nouns: wordFrequencyArray.filter(w => w.type === 'noun').length,
+        particles: wordFrequencyArray.filter(w => w.type === 'particle').length,
+        pronouns: wordFrequencyArray.filter(w => w.type === 'pronoun').length,
+        prepositions: wordFrequencyArray.filter(w => w.type === 'preposition').length,
+        adjectives: wordFrequencyArray.filter(w => w.type === 'adjective').length,
+        numbers: wordFrequencyArray.filter(w => w.type === 'number').length,
+        unknown: wordFrequencyArray.filter(w => w.type === 'unknown').length
+      }
     });
 
   } catch (error) {

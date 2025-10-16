@@ -183,14 +183,18 @@ export async function GET(request: NextRequest) {
     } else {
       // Keep by form
       items = freqEntries.map(entry => {
-        const pos = rootPos.get(entry.word) || undefined
         const root = formToRoot[entry.word]?.[0] || undefined
+        const dictionary = dictionaryMap.get(entry.word)
+
+        // Prioritize dictionary POS over root-based POS when dictionary is available
+        const pos = dictionary?.pos ? dictionary.pos : (root ? rootPos.get(root) : undefined)
+
         return {
           form: entry.word,
           root,
           pos,
           frequency: entry.frequency,
-          dictionary: dictionaryMap.get(entry.word),
+          dictionary,
           morphological: morphologicalMap.get(entry.word),
           verseContexts: verseContextsMap.get(entry.word)
         }

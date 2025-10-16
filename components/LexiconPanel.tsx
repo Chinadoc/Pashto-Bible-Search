@@ -475,40 +475,40 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       {/* Results Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Rank
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Word
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Root
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Frequency
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-80 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Dictionary
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-48 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Related Forms
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Audio
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Verses
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Notes
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -540,13 +540,27 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        item.pos === 'verb'
+                        item.pos?.includes('v.') || item.pos?.includes('verb')
                           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : item.pos === 'noun'
+                          : item.pos?.includes('n.') || item.pos?.includes('noun')
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : item.pos?.includes('adpos') || item.pos?.includes('adp')
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          : item.pos?.includes('conj')
+                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                          : item.pos?.includes('adv')
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          : item.pos?.includes('pron')
+                          ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
+                          : item.pos?.includes('adj')
+                          ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
+                          : item.pos?.includes('num')
+                          ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
+                          : item.pos?.includes('part')
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                       }`}>
-                        {item.pos === 'verb' ? 'Verb' : item.pos === 'noun' ? 'Noun' : 'Unknown'}
+                        {item.pos || 'Unknown'}
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -554,7 +568,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       {item.dictionary?.definition ? (
-                        <div className="max-w-sm">
+                        <div>
                           <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
                             {item.dictionary.romanized || item.form}
                           </div>
@@ -564,16 +578,16 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                           {item.dictionary.pos && (
                             <div className="text-xs text-blue-600 dark:text-blue-400">
                               {item.dictionary.pos}
-                            </div>
-                          )}
-                        </div>
+                </div>
+              )}
+            </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       {item.morphological?.relatedForms && item.morphological.relatedForms.length > 0 ? (
-                        <div className="max-w-sm">
+                        <div>
                           <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
                             Related Forms:
                           </div>
