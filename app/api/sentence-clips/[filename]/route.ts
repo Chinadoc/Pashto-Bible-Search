@@ -30,14 +30,14 @@ export async function GET(
                          ext === 'mp3' ? 'audio/mpeg' :
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(fileBuffer as Uint8Array, {
         status: 200,
         headers: {
           'Content-Type': contentType,
           'Content-Length': fileBuffer.length.toString(),
           'Cache-Control': 'public, max-age=31536000',
         },
-      } as any);
+      });
 
     } catch (error) {
       return NextResponse.json(
