@@ -78,6 +78,9 @@ export async function GET(request: NextRequest) {
       roots?: any;
       past_participle?: string;
       irregularity_type?: string;
+      gender?: string;
+      number?: string;
+      plural_forms?: string;
     }>()
 
     if (forms.length > 0) {
