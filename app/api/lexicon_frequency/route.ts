@@ -176,15 +176,40 @@ export async function GET(request: NextRequest) {
       root?: string;
       pos?: string;
       frequency: number;
+      // Enhanced LingDocs-style fields
+      category?: string; // LingDocs 'c' field (e.g., "v.", "n. m.", "adj.")
+      link?: number; // LingDocs 'l' field (timestamp of related word)
+      commonality?: number; // LingDocs 'r' field (0-4 commonality rank)
       dictionary?: {
         definition?: string;
         romanized?: string;
         pos?: string;
         english?: string;
+        // LingDocs inflection fields
+        infap?: string; // first masculine irregular inflection
+        infaf?: string;
+        infbp?: string; // base for second masculine/feminine inflection
+        infbf?: string;
+        app?: string; // Arabic plural
+        apf?: string;
+        ppp?: string; // Pashto irregular plural
+        ppf?: string;
+        // Verb-specific fields
+        psp?: string; // imperfective stem
+        psf?: string;
+        ssp?: string; // perfective stem
+        ssf?: string;
+        prp?: string; // perfective root
+        prf?: string;
+        pprtp?: string; // past participle
+        pprtf?: string;
       };
       morphological?: {
         relatedForms?: Array<{ form: string; count: number }>;
         inflections?: Array<{ form: string; grammatical_info: any; frequency: number }>;
+        // LingDocs-style inflection patterns
+        inflectionPattern?: string;
+        noInf?: boolean; // doesn't inflect
       };
       verseContexts?: Array<{
         verse_ref: string;
@@ -203,31 +228,94 @@ export async function GET(request: NextRequest) {
         const root = formToRoot[entry.word]?.[0] || entry.word
         sum.set(root, (sum.get(root) || 0) + entry.frequency)
       }
-      items = Array.from(sum.entries()).map(([root, frequency]) => ({
-        form: root,
-        root,
-        pos: rootPos.get(root),
-        frequency,
-        dictionary: dictionaryMap.get(root),
-        morphological: morphologicalMap.get(root),
-        verseContexts: verseContextsMap.get(root)
-      }))
+      items = Array.from(sum.entries()).map(([root, frequency]) => {
+        const dictEntry = dictionaryMap.get(root)
+        return {
+          form: root,
+          root,
+          pos: rootPos.get(root),
+          frequency,
+          // Enhanced LingDocs-style fields
+          category: dictEntry?.c,
+          link: dictEntry?.l,
+          commonality: dictEntry?.r,
+          dictionary: dictEntry ? {
+            definition: dictEntry.e,
+            romanized: dictEntry.f,
+            pos: dictEntry.c,
+            english: dictEntry.e,
+            // LingDocs inflection fields
+            infap: dictEntry.infap,
+            infaf: dictEntry.infaf,
+            infbp: dictEntry.infbp,
+            infbf: dictEntry.infbf,
+            app: dictEntry.app,
+            apf: dictEntry.apf,
+            ppp: dictEntry.ppp,
+            ppf: dictEntry.ppf,
+            // Verb-specific fields
+            psp: dictEntry.psp,
+            psf: dictEntry.psf,
+            ssp: dictEntry.ssp,
+            ssf: dictEntry.ssf,
+            prp: dictEntry.prp,
+            prf: dictEntry.prf,
+            pprtp: dictEntry.pprtp,
+            pprtf: dictEntry.pprtf,
+          } : undefined,
+          morphological: morphologicalMap.get(root) ? {
+            ...morphologicalMap.get(root),
+            noInf: dictEntry?.noInf,
+          } : undefined,
+          verseContexts: verseContextsMap.get(root)
+        }
+      })
     } else {
       // Keep by form
       items = freqEntries.map(entry => {
         const root = formToRoot[entry.word]?.[0] || undefined
-        const dictionary = dictionaryMap.get(entry.word)
+        const dictEntry = dictionaryMap.get(entry.word)
 
         // Prioritize dictionary POS over root-based POS when dictionary is available
-        const pos = dictionary?.pos ? dictionary.pos : (root ? rootPos.get(root) : undefined)
+        const pos = dictEntry?.c ? dictEntry.c : (root ? rootPos.get(root) : undefined)
 
         return {
           form: entry.word,
           root,
           pos,
           frequency: entry.frequency,
-          dictionary,
-          morphological: morphologicalMap.get(entry.word),
+          // Enhanced LingDocs-style fields
+          category: dictEntry?.c,
+          link: dictEntry?.l,
+          commonality: dictEntry?.r,
+          dictionary: dictEntry ? {
+            definition: dictEntry.e,
+            romanized: dictEntry.f,
+            pos: dictEntry.c,
+            english: dictEntry.e,
+            // LingDocs inflection fields
+            infap: dictEntry.infap,
+            infaf: dictEntry.infaf,
+            infbp: dictEntry.infbp,
+            infbf: dictEntry.infbf,
+            app: dictEntry.app,
+            apf: dictEntry.apf,
+            ppp: dictEntry.ppp,
+            ppf: dictEntry.ppf,
+            // Verb-specific fields
+            psp: dictEntry.psp,
+            psf: dictEntry.psf,
+            ssp: dictEntry.ssp,
+            ssf: dictEntry.ssf,
+            prp: dictEntry.prp,
+            prf: dictEntry.prf,
+            pprtp: dictEntry.pprtp,
+            pprtf: dictEntry.pprtf,
+          } : undefined,
+          morphological: morphologicalMap.get(entry.word) ? {
+            ...morphologicalMap.get(entry.word),
+            noInf: dictEntry?.noInf,
+          } : undefined,
           verseContexts: verseContextsMap.get(entry.word)
         }
       })

@@ -62,20 +62,54 @@ async function categorizeWordType(word: string): Promise<{ type: string; confide
       const dictData = await dictResponse.json();
       if (dictData.items && dictData.items.length > 0) {
         const item = dictData.items[0];
+
+        // Use LingDocs category field if available (highest confidence)
+        if (item.category) {
+          const category = item.category.toLowerCase();
+          return {
+            type: category.startsWith('v.') ? 'verb' :
+                  category.startsWith('n.') ? 'noun' :
+                  category.startsWith('adj.') ? 'adjective' :
+                  category.startsWith('adv.') ? 'adverb' :
+                  category.startsWith('det.') ? 'pronoun' :
+                  category.startsWith('loc. adv.') ? 'adverb' : category,
+            confidence: 0.95,
+            reason: `LingDocs category: ${item.category}`
+          };
+        }
+
+        // Use POS field if available
         if (item.pos) {
           return {
             type: item.pos.toLowerCase(),
-            confidence: 0.95,
-            reason: `LingDocs dictionary POS: ${item.pos}`
+            confidence: 0.9,
+            reason: `LingDocs POS: ${item.pos}`
           };
         }
-        // If no POS but has morphological data, infer from structure
-        if (item.morphological?.inflections && item.morphological.inflections.length > 0) {
-          const hasVerbForms = item.morphological.inflections.some((inf: any) =>
-            inf.grammatical_info?.includes('verb') || inf.grammatical_info?.includes('infinitive')
-          );
-          if (hasVerbForms) {
-            return { type: 'verb', confidence: 0.8, reason: 'Has verb inflections in LingDocs data' };
+
+        // Check for morphological indicators
+        if (item.morphological?.noInf === true) {
+          return { type: 'particle', confidence: 0.8, reason: 'Marked as non-inflecting in LingDocs' };
+        }
+
+        // Check for verb-specific fields
+        if (item.dictionary?.psp || item.dictionary?.ssp || item.dictionary?.prp) {
+          return { type: 'verb', confidence: 0.85, reason: 'Has verb stems/roots in LingDocs data' };
+        }
+
+        // Check for plural forms
+        if (item.dictionary?.ppp || item.dictionary?.app) {
+          return { type: 'noun', confidence: 0.8, reason: 'Has plural forms in LingDocs data' };
+        }
+
+        // Check for inflection patterns
+        if (item.morphological?.inflectionPattern) {
+          const pattern = item.morphological.inflectionPattern;
+          if (pattern.includes('verb')) {
+            return { type: 'verb', confidence: 0.75, reason: `LingDocs inflection pattern: ${pattern}` };
+          }
+          if (pattern.includes('noun')) {
+            return { type: 'noun', confidence: 0.75, reason: `LingDocs inflection pattern: ${pattern}` };
           }
         }
       }
@@ -84,7 +118,7 @@ async function categorizeWordType(word: string): Promise<{ type: string; confide
     console.warn('Failed to fetch dictionary data for categorization:', error);
   }
 
-  // Fall back to pattern-based analysis
+  // Fall back to enhanced pattern-based analysis
   return categorizeWordTypeByPattern(word);
 }
 
@@ -168,9 +202,17 @@ function categorizeWordTypeByPattern(word: string): { type: string; confidence: 
 
   // Enhanced verb detection - handle irregular and compound verbs
   // Special cases for words that should be verbs but don't follow regular patterns
-  const irregularVerbs = ['ويل', 'خلک', 'کول', 'کېدل', 'راتلل', 'تلل', 'موندل', 'راوړل'];
+  const irregularVerbs = [
+    'ويل', 'خلک', 'کول', 'کېدل', 'راتلل', 'تلل', 'موندل', 'راوړل',
+    'کول', 'کېدل', 'راتلل', 'تلل', 'موندل', 'راوړل', 'وړل', 'ایستل'
+  ];
   if (irregularVerbs.includes(cleanWord)) {
     return { type: 'verb', confidence: 0.9, reason: 'Known irregular Pashto verb form' };
+  }
+
+  // Special case for words like "خلک" (khalk) - can be both noun and verb in some contexts
+  if (cleanWord === 'خلک') {
+    return { type: 'noun', confidence: 0.9, reason: 'خلک (khalk) - people/nation (primary noun usage)' };
   }
 
   // Check for LingDocs-style verb forms that might be missed
