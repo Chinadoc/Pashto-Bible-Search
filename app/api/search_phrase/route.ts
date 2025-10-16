@@ -1881,8 +1881,12 @@ export async function POST(request: NextRequest) {
           .select('pashto_word,frequency_count')
           .in('pashto_word', pashtoFormsForFrequency)
         if (Array.isArray(data)) {
+          type WordFrequencyRow = {
+            pashto_word: string | null
+            frequency_count: number | null
+          }
           const freqMap = new Map<string, number>()
-          for (const row of data) {
+          for (const row of data as WordFrequencyRow[]) {
             if (row?.pashto_word) {
               const freqVal = Number(row.frequency_count)
               if (Number.isFinite(freqVal)) {
