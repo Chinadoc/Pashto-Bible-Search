@@ -1839,7 +1839,7 @@ export async function POST(request: NextRequest) {
           .eq('pashto', originalTerm)
           .limit(1)
         if (Array.isArray(dictRows) && dictRows.length > 0) {
-          const row = dictRows[0]
+          const row = dictRows[0] as { pashto: string; pos?: string; romanized?: string }
           if (row?.pos) {
             const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
             variantCollector.add(originalTerm, { sources: ['dictionary'], pos: row.pos, romanization: romanized })
