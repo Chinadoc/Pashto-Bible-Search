@@ -53,13 +53,16 @@ export async function GET(request: NextRequest) {
       
           if (sentenceNumber) {
             // This is a sentence-level segment
-            const startTime = item.start_time_seconds || (segmentNumber - 1) * 300 + (sentenceNumber - 1) * 10;
+            // Use actual timestamps from database if available, otherwise estimate
             const duration = item.duration_seconds || 10;
+            const startTime = item.start_time_seconds || ((segmentNumber - 1) * 300 + (sentenceNumber - 1) * 15);
+            const endTime = item.end_time_seconds || (startTime + duration);
+            
             video.segments.push({
               segmentNumber,
               sentenceNumber,
               startTime: startTime,
-              endTime: startTime + duration,
+              endTime: endTime,
               transcript: item.audio_path, // This contains our transcript
               audioFilename: item.audio_filename,
               duration: duration,
