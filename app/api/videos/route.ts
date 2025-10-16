@@ -58,21 +58,17 @@ export async function GET(request: NextRequest) {
             const duration = item.duration_seconds || 10;
             
             // Check if timestamps are embedded in the transcript
-            console.log('DEBUG: audioPathContent:', transcript);
             const timestampMatch = transcript.match(/\[TIMESTAMPS:start=([\d.]+),end=([\d.]+),duration=([\d.]+)\]/);
-            console.log('DEBUG: regex match result:', timestampMatch);
             
             if (timestampMatch) {
               startTime = parseFloat(timestampMatch[1]);
               endTime = parseFloat(timestampMatch[2]);
               // Remove timestamp info from transcript
               transcript = transcript.replace(/\[TIMESTAMPS:[^\]]+\]\s*/, '');
-              console.log('DEBUG: Parsed transcript after removing timestamps:', transcript);
             } else {
               // Fallback to estimation
               startTime = (segmentNumber - 1) * 300 + (sentenceNumber - 1) * 15;
               endTime = startTime + duration;
-              console.log('DEBUG: No regex match, using full audioPathContent as transcript:', transcript);
             }
             
             video.segments.push({
