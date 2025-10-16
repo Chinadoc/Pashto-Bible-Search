@@ -106,12 +106,10 @@ async function loadLocalVideoData(): Promise<any[]> {
   }
 }
 
-export async function GET(request: NextRequest) {
+// Helper function to process video data and return formatted response
+async function processVideoData(includeFrequency: boolean = false): Promise<any> {
   try {
-    const url = new URL(request.url);
-    const includeFrequency = url.searchParams.get('frequency') === 'true';
-
-    // Get all video transcripts from Supabase (both segment and sentence level)
+    // Get data from Supabase
     const { data, error } = await supabase
       .from('audio_mappings')
       .select('*')
@@ -120,10 +118,9 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Supabase error:', error);
-      // Continue with local data if Supabase fails
     }
 
-    // Also check for local video data
+    // Get local video data
     const localVideos = await loadLocalVideoData();
 
     // Combine Supabase and local data
@@ -256,12 +253,33 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json({
+    return {
       success: true,
       videos,
       count: videos.length,
       ...(includeFrequency && { wordFrequency: wordFrequencyData })
-    });
+    };
+
+  } catch (error) {
+    console.error('Error processing video data:', error);
+    return {
+      success: false,
+      error: 'Failed to process video data',
+      videos: [],
+      count: 0
+    };
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const url = new URL(request.url);
+    const includeFrequency = url.searchParams.get('frequency') === 'true';
+
+    // Use the shared processing function
+    const result = await processVideoData(includeFrequency);
+
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Error fetching videos:', error);
@@ -284,12 +302,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get video data (reuse the same logic)
-    const url = new URL(request.url);
-    url.searchParams.set('frequency', 'false');
-
-    const videoResponse = await GET(url);
-    const videoData = await videoResponse.json();
+    // Get video data using the shared processing function
+    const videoData = await processVideoData(false);
 
     if (!videoData.success) {
       return NextResponse.json(
