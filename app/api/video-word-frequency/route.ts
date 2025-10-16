@@ -91,20 +91,54 @@ function categorizeWordType(word: string): { type: string; confidence: number; r
     return { type: 'adjective', confidence: 0.7, reason: 'Common Pashto adjective' };
   }
 
-  // Verb patterns in Pashto (ending patterns)
-  const verbEndings = ['يږي', 'وي', 'يږي', 'وي', 'وي', 'وي', 'يږي', 'وي', 'يږي', 'وي'];
-  const isVerb = verbEndings.some(ending => cleanWord.endsWith(ending));
+  // Enhanced verb detection for Pashto verb forms (like ويل - wayúl)
+  // Check for common Pashto verb patterns and forms
+  const verbPatterns = [
+    // Present tense endings
+    'يږي', 'وي', 'يږي', 'وي', 'وي', 'وي', 'يږي', 'وي', 'يږي', 'وي',
+    // Past tense patterns
+    'و', 'ه', 'ه', 'ه', 'ه', 'ه',
+    // Imperfective stems (like wayúl)
+    'يل', 'ول', 'ال', 'ول', 'ال', 'ول',
+    // Common verb roots and stems
+    'ويل', 'وول', 'وال', 'کول', 'کېدل', 'راوړل', 'تلل', 'راتلل', 'موندل'
+  ];
+
+  // Check if word ends with verb patterns or contains verb stems
+  const isVerb = verbPatterns.some(pattern => cleanWord.includes(pattern) || cleanWord.endsWith(pattern));
+
+  // Special case for words like "ويل" (wayúl) - should be verb (connected to wayul root)
+  if (cleanWord === 'ويل' || cleanWord.startsWith('و') && (cleanWord.includes('يل') || cleanWord.includes('ول'))) {
+    return { type: 'verb', confidence: 0.9, reason: 'Pashto verb form - matches LingDocs conjugation patterns (wayul root)' };
+  }
 
   if (isVerb) {
+    return { type: 'verb', confidence: 0.8, reason: 'Matches Pashto verb patterns and stems' };
+  }
+
+  // Legacy verb ending patterns (kept for compatibility)
+  const verbEndings = ['يږي', 'وي', 'يږي', 'وي', 'وي', 'وي', 'يږي', 'وي', 'يږي', 'وي'];
+  const isLegacyVerb = verbEndings.some(ending => cleanWord.endsWith(ending));
+
+  if (isLegacyVerb) {
     return { type: 'verb', confidence: 0.6, reason: 'Matches Pashto verb ending patterns' };
   }
 
-  // Noun patterns (common Pashto noun endings)
-  const nounEndings = ['ی', 'ه', 'ون', 'ان', 'ګان', 'ګانو'];
+  // Enhanced noun patterns (common Pashto noun endings)
+  const nounEndings = ['ی', 'ه', 'ون', 'ان', 'ګان', 'ګانو', 'ونه', 'انه', 'ستان', 'وند'];
   const isNoun = nounEndings.some(ending => cleanWord.endsWith(ending));
 
   if (isNoun) {
-    return { type: 'noun', confidence: 0.5, reason: 'Matches Pashto noun ending patterns' };
+    return { type: 'noun', confidence: 0.7, reason: 'Matches Pashto noun ending patterns' };
+  }
+
+  // Check for LingDocs-style verb forms that might be missed
+  // Words that contain common verb roots
+  const verbRoots = ['و', 'ک', 'ر', 'ت', 'م', 'ل', 'ش', 'خ', 'غ', 'ق'];
+  const hasVerbRoot = verbRoots.some(root => cleanWord.startsWith(root));
+
+  if (hasVerbRoot && cleanWord.length >= 3) {
+    return { type: 'verb', confidence: 0.5, reason: 'Contains Pashto verb root patterns' };
   }
 
   // Default categorization based on length and structure
