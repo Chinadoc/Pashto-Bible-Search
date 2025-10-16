@@ -3360,7 +3360,6 @@ export default function ClientHome() {
                 </div>
               </>
             )}
-            </>
           </div>
         </div>
       )}
