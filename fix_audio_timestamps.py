@@ -43,7 +43,7 @@ def fix_audio_timestamps():
         headers=headers,
         params={
             'verse_reference': 'like.*video_*_sentence_*',
-            'select': 'id,verse_reference,audio_filename,duration_seconds'
+            'select': 'id,verse_reference,audio_filename,duration_seconds,audio_path'
         }
     )
     
