@@ -31,7 +31,12 @@ export async function GET(
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
       // Convert Buffer to Uint8Array for Blob compatibility
-      const uint8Array = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength);
+      // Explicitly cast to ArrayBuffer to satisfy TypeScript's strict type checking
+      const uint8Array = new Uint8Array(
+        fileBuffer.buffer as ArrayBuffer, 
+        fileBuffer.byteOffset, 
+        fileBuffer.byteLength
+      );
       
       return new NextResponse(new Blob([uint8Array], { type: contentType }), {
         status: 200,
