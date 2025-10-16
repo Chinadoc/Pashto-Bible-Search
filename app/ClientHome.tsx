@@ -2709,7 +2709,7 @@ export default function ClientHome() {
                           <div className="mb-3">
                             <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-60 overflow-y-auto">
                               <div className="space-y-2">
-                                {segment.transcript.split(/[.!؟?؟۔]\s+/).filter(s => s.trim()).map((sentence: string, sIndex: number) => {
+                                {segment.transcript.split(/[.!؟?؟۔]\s+/).filter((s: string) => s.trim()).map((sentence: string, sIndex: number) => {
                                   const sentenceKey = `${segIndex}-${sIndex}`;
                                   return (
                                     <div key={sentenceKey} className="group">
