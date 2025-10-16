@@ -2325,7 +2325,11 @@ export async function POST(request: NextRequest) {
             .limit(20)
 
           if (Array.isArray(wordFreqData)) {
-            for (const row of wordFreqData) {
+            const typedWordFreqRows = wordFreqData as Array<{
+              word?: string | null
+              frequency?: number | null
+            }>
+            for (const row of typedWordFreqRows) {
               if (row?.word && row?.frequency && !existingForms.find(e => e.form === row.word)) {
                 existingForms.push({
                   form: row.word,
@@ -2346,7 +2350,11 @@ export async function POST(request: NextRequest) {
               .limit(20)
 
             if (Array.isArray(wordFreqData2)) {
-              for (const row of wordFreqData2) {
+              const typedWordFreqRows2 = wordFreqData2 as Array<{
+                pashto_word?: string | null
+                frequency_count?: number | null
+              }>
+              for (const row of typedWordFreqRows2) {
                 if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
                   existingForms.push({
                     form: row.pashto_word,
