@@ -2115,7 +2115,7 @@ export async function POST(request: NextRequest) {
                     coverageMap.set(bookValue, (coverageMap.get(bookValue) || 0) + 1)
                   }
                   // Determine testament based on book name if not in database
-                  let testament = row.testament
+                  let testament: 'OT' | 'NT' | undefined = row.testament ?? undefined
                   if (!testament) {
                     const bookName = bookValue.toLowerCase()
                     if (OT_BOOKS.some((otBook) => otBook.toLowerCase() === bookName)) {
@@ -2128,7 +2128,7 @@ export async function POST(request: NextRequest) {
                   allResults.push({
                     ref: fallbackRef,
                     text: row.text || '',
-                    testament
+                    testament: testament || undefined
                   })
                   if (allResults.length >= 10) break
                 }
