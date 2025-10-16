@@ -67,7 +67,184 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    type Item = { form: string; root?: string; pos?: 'verb' | 'noun'; frequency: number }
+    // 4) Fetch dictionary data for forms
+    const dictionaryMap = new Map<string, { definition?: string; romanized?: string; pos?: string; english?: string }>()
+    if (forms.length > 0) {
+      for (const part of chunk(forms, 400)) {
+        const inForms = part.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+        const dictUrl = `${supabaseUrl}/rest/v1/dictionary?select=pashto,definition,romanized,pos&pashto=in.(${inForms})`
+        const dictRes = await fetch(dictUrl, { headers, cache: 'no-store' })
+        if (dictRes.ok) {
+          const dictRows: Array<{ pashto: string; definition?: string; romanized?: string; pos?: string }> = await dictRes.json()
+          dictRows.forEach(row => {
+            if (row.pashto) {
+              dictionaryMap.set(row.pashto, {
+                definition: row.definition,
+                romanized: row.romanized,
+                pos: row.pos,
+                english: row.definition, // Use definition as english for now
+              })
+            }
+          })
+        }
+      }
+    }
+
+    // 5) Fetch morphological data (related forms and inflections)
+    const morphologicalMap = new Map<string, {
+      relatedForms?: Array<{ form: string; count: number }>;
+      inflections?: Array<{ form: string; grammatical_info: any; frequency: number }>;
+    }>()
+
+    // 6) Fetch verse contexts for top frequency words
+    const verseContextsMap = new Map<string, Array<{
+      verse_ref: string;
+      verse_text: string;
+      book: string;
+      chapter: number;
+      verse: number;
+    }>>()
+
+    // Only fetch contexts for the top 50 most frequent words to avoid performance issues
+    const topForms = forms.slice(0, 50)
+    if (topForms.length > 0) {
+      for (const part of chunk(topForms, 20)) {
+        const inForms = part.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+
+        // Get verse contexts via form_occurrences
+        const contextsUrl = `${supabaseUrl}/rest/v1/form_occurrences?select=pashto_form,verse_reference,context&pashto_form=in.(${inForms})`
+        const contextsRes = await fetch(contextsUrl, { headers, cache: 'no-store' })
+        if (contextsRes.ok) {
+          const contextsRows: Array<{ pashto_form: string; verse_reference: string; context: string }> = await contextsRes.json()
+
+          // Group contexts by word form
+          const contextsByForm = new Map<string, Array<{
+            verse_ref: string;
+            verse_text: string;
+            book: string;
+            chapter: number;
+            verse: number;
+          }>>()
+
+          contextsRows.forEach(row => {
+            if (row.pashto_form && row.verse_reference && row.context) {
+              const form = row.pashto_form
+              if (!contextsByForm.has(form)) {
+                contextsByForm.set(form, [])
+              }
+
+              // Parse verse reference (e.g., "Genesis 1:1")
+              const verseMatch = row.verse_reference.match(/^(.+?)\s+(\d+):(\d+)$/)
+              if (verseMatch) {
+                const [, book, chapter, verse] = verseMatch
+                contextsByForm.get(form)!.push({
+                  verse_ref: row.verse_reference,
+                  verse_text: row.context,
+                  book,
+                  chapter: parseInt(chapter),
+                  verse: parseInt(verse)
+                })
+              }
+            }
+          })
+
+          contextsByForm.forEach((contexts, form) => {
+            verseContextsMap.set(form, contexts.sort((a, b) =>
+              a.book.localeCompare(b.book) || a.chapter - b.chapter || a.verse - b.verse
+            ).slice(0, 5)) // Limit to 5 contexts per word
+          })
+        }
+      }
+    }
+
+    if (forms.length > 0) {
+      for (const part of chunk(forms, 400)) {
+        const inForms = part.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+
+        // Get related forms via form_roots
+        const relatedFormsUrl = `${supabaseUrl}/rest/v1/form_roots?select=word_form,root_word,frequency&word_form=in.(${inForms})`
+        const relatedFormsRes = await fetch(relatedFormsUrl, { headers, cache: 'no-store' })
+        if (relatedFormsRes.ok) {
+          const relatedFormsRows: Array<{ word_form: string; root_word: string; frequency: number }> = await relatedFormsRes.json()
+
+          // Group related forms by base word
+          const relatedFormsByBase = new Map<string, Array<{ form: string; count: number }>>()
+          relatedFormsRows.forEach(row => {
+            if (row.word_form && row.root_word) {
+              const base = row.word_form
+              if (!relatedFormsByBase.has(base)) {
+                relatedFormsByBase.set(base, [])
+              }
+              relatedFormsByBase.get(base)!.push({
+                form: row.root_word,
+                count: row.frequency || 0
+              })
+            }
+          })
+
+          relatedFormsByBase.forEach((forms, base) => {
+            morphologicalMap.set(base, {
+              ...morphologicalMap.get(base),
+              relatedForms: forms.sort((a, b) => b.count - a.count).slice(0, 10)
+            })
+          })
+        }
+
+        // Get inflections
+        const inflectionsUrl = `${supabaseUrl}/rest/v1/inflections?select=base_word,inflected_form,grammatical_info,frequency&base_word=in.(${inForms})`
+        const inflectionsRes = await fetch(inflectionsUrl, { headers, cache: 'no-store' })
+        if (inflectionsRes.ok) {
+          const inflectionsRows: Array<{ base_word: string; inflected_form: string; grammatical_info: any; frequency: number }> = await inflectionsRes.json()
+
+          // Group inflections by base word
+          const inflectionsByBase = new Map<string, Array<{ form: string; grammatical_info: any; frequency: number }>>()
+          inflectionsRows.forEach(row => {
+            if (row.base_word && row.inflected_form) {
+              const base = row.base_word
+              if (!inflectionsByBase.has(base)) {
+                inflectionsByBase.set(base, [])
+              }
+              inflectionsByBase.get(base)!.push({
+                form: row.inflected_form,
+                grammatical_info: row.grammatical_info,
+                frequency: row.frequency || 0
+              })
+            }
+          })
+
+          inflectionsByBase.forEach((inflections, base) => {
+            morphologicalMap.set(base, {
+              ...morphologicalMap.get(base),
+              inflections: inflections.sort((a, b) => b.frequency - a.frequency).slice(0, 15)
+            })
+          })
+        }
+      }
+    }
+
+    type Item = {
+      form: string;
+      root?: string;
+      pos?: 'verb' | 'noun';
+      frequency: number;
+      dictionary?: {
+        definition?: string;
+        romanized?: string;
+        pos?: string;
+        english?: string;
+      };
+      morphological?: {
+        relatedForms?: Array<{ form: string; count: number }>;
+        inflections?: Array<{ form: string; grammatical_info: any; frequency: number }>;
+      };
+      verseContexts?: Array<{
+        verse_ref: string;
+        verse_text: string;
+        book: string;
+        chapter: number;
+        verse: number;
+      }>;
+    }
     let items: Item[] = []
 
     if (aggregate) {
@@ -77,13 +254,29 @@ export async function GET(request: NextRequest) {
         const root = formToRoot.get(row.word) || row.word
         sum.set(root, (sum.get(root) || 0) + Number(row.frequency || 0))
       }
-      items = Array.from(sum.entries()).map(([root, frequency]) => ({ form: root, root, pos: rootPos.get(root), frequency }))
+      items = Array.from(sum.entries()).map(([root, frequency]) => ({
+        form: root,
+        root,
+        pos: rootPos.get(root),
+        frequency,
+        dictionary: dictionaryMap.get(root),
+        morphological: morphologicalMap.get(root),
+        verseContexts: verseContextsMap.get(root)
+      }))
     } else {
       // Keep by form
       items = freqRows.map(row => {
         const root = formToRoot.get(row.word)
         const pos = root ? rootPos.get(root) : undefined
-        return { form: row.word, root, pos, frequency: Number(row.frequency || 0) }
+        return {
+          form: row.word,
+          root,
+          pos,
+          frequency: Number(row.frequency || 0),
+          dictionary: dictionaryMap.get(row.word),
+          morphological: morphologicalMap.get(row.word),
+          verseContexts: verseContextsMap.get(row.word)
+        }
       })
     }
 

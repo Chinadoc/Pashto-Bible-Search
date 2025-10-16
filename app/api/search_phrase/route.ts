@@ -225,6 +225,15 @@ const IRREGULAR_VERBS: Record<string, {
     pastParticiple: 'ختلی',
     notes: 'Irregular stems; intransitive'
   },
+  'وهل': {
+    meaning: 'to hit/strike',
+    imperfectiveStem: 'وهـ',
+    perfectiveStem: 'ووهـ',
+    imperfectiveRoot: 'وهل',
+    perfectiveRoot: 'ووهل',
+    pastParticiple: 'وهلی',
+    notes: 'Irregular stems; transitive'
+  },
   'غوښتل': {
     meaning: 'to want',
     imperfectiveStem: 'غواړـ',
@@ -1822,6 +1831,8 @@ export async function POST(request: NextRequest) {
         'wur': ['ور', 'وور'],
         'wahul': ['وهل'],
         'wahel': ['وهل'],
+        'wahal': ['وهل'],
+        'wahúl': ['وهل'],
         'kawul': ['کول'],
         'kedal': ['کېدل'],
         'kedel': ['کېدل']
