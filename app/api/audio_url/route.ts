@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
     }
 
-    const results: Record<string, { url: string; filename: string; isSigned: boolean }> = {}
+    const results: Record<string, { url: string; filename: string; isSigned: boolean; source?: string }> = {}
 
     // Process each ref with optimized candidate selection
     for (const ref of refs) {
