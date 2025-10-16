@@ -42,7 +42,7 @@ async function loadLocalVideoData(): Promise<any[]> {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
       if (data.video_id && data.segments) {
-        const video = {
+        const video: any = {
           id: data.video_id,
           title: `Video ${data.video_id}`,
           youtubeUrl: data.video_url || `https://www.youtube.com/watch?v=${data.video_id}`,

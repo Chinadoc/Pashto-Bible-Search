@@ -184,9 +184,10 @@ export async function GET(request: NextRequest) {
       // Keep by form
       items = freqEntries.map(entry => {
         const pos = rootPos.get(entry.word) || undefined
+        const root = formToRoot[entry.word]?.[0] || undefined
         return {
           form: entry.word,
-          root: undefined, // No root information available in current data
+          root,
           pos,
           frequency: entry.frequency,
           dictionary: dictionaryMap.get(entry.word),

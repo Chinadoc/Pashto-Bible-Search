@@ -61,7 +61,11 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       const response = await fetch(`/api/lexicon_frequency?${params}`);
       const data = await response.json();
 
+      console.log('API Response:', { ok: response.ok, status: response.status, itemsCount: data.items?.length });
+      console.log('Sample item:', data.items?.[0]);
+
       if (response.ok && data.items && data.items.length > 0) {
+        console.log('Using API data with', data.items.length, 'items');
         setFrequencyData(data.items || []);
       } else {
         // Fallback to static JSON data
@@ -548,28 +552,28 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.frequency.toLocaleString()}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       {item.dictionary?.definition ? (
-                        <div className="max-w-xs">
+                        <div className="max-w-sm">
                           <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
                             {item.dictionary.romanized || item.form}
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.dictionary.definition}>
+                          <div className="text-xs text-gray-600 dark:text-gray-400" title={item.dictionary.definition}>
                             {item.dictionary.definition}
                           </div>
                           {item.dictionary.pos && (
                             <div className="text-xs text-blue-600 dark:text-blue-400">
                               {item.dictionary.pos}
-                </div>
-              )}
-            </div>
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       {item.morphological?.relatedForms && item.morphological.relatedForms.length > 0 ? (
-                        <div className="max-w-xs">
+                        <div className="max-w-sm">
                           <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
                             Related Forms:
                           </div>
