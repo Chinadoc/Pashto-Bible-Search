@@ -304,15 +304,61 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Enhanced POS detection for Pattern 3 stressed áy words
-    if (posGuess === "other" && normalized.endsWith('ی')) {
-      // Check if it's a Pattern 3 stressed áy word (like سوری, ځلمی, لومړی)
-      const pattern3Words = ['سوری', 'ځلمی', 'لومړی', 'ګران', 'نږدې', 'لرې', 'پورته', 'ښکته'];
-      if (pattern3Words.includes(normalized) || dictEntry?.romanized?.includes('áy')) {
-        posGuess = "noun";
-        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 3 noun`);
-      }
+// Enhanced POS detection for Pattern 3 stressed áy words
+  if (posGuess === "other" && normalized.endsWith('ی')) {
+    // Check if it's a Pattern 3 stressed áy word (like سوری, ځلمی, لومړی)
+    const pattern3Words = ['سوری', 'ځلمی', 'لومړی', 'ګران', 'نږدې', 'لرې', 'پورته', 'ښکته'];
+    if (pattern3Words.includes(normalized) || dictEntry?.romanized?.includes('áy')) {
+      posGuess = "noun";
+      console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 3 noun`);
     }
+  }
+
+// Simple pattern-based verb conjugation generator
+async function generateVerbConjugations(rootVerb: string): Promise<Variant[]> {
+  const variants: Variant[] = [];
+
+  // Add the infinitive form
+  variants.push({
+    form: rootVerb,
+    label: "Infinitive",
+    pos: "verb",
+    count: 0,
+    score: 0
+  });
+
+  // Generate basic conjugations using patterns
+  const patterns = {
+    present: { '1sg': 'م', '2sg': 'ې', '3sg': 'ي', '1pl': 'و', '2pl': 'ئ' },
+    subjunctive: { '1sg': 'وم', '2sg': 'وې', '3sg': 'وي', '1pl': 'وو', '2pl': 'وئ' },
+    past: { '1sg': 'لم', '2sg': 'لې', '3sg': 'ل', '1pl': 'لو', '2pl': 'لئ' },
+    imperative: { '2sg': 'ه', '2pl': 'ئ' }
+  };
+
+  for (const [tense, persons] of Object.entries(patterns)) {
+    for (const [person, suffix] of Object.entries(persons)) {
+      const conjugated = rootVerb + suffix;
+      variants.push({
+        form: conjugated,
+        label: `${person} ${tense}`,
+        pos: "verb",
+        count: 0,
+        score: 0
+      });
+    }
+  }
+
+  // Generate participles
+  variants.push({
+    form: rootVerb + 'لی',
+    label: "Past Participle",
+    pos: "verb",
+    count: 0,
+    score: 0
+  });
+
+  return variants.slice(0, 20); // Limit to prevent too many results
+}
 
     console.log(`✅ POS guess for "${normalized}": ${posGuess}`);
 
@@ -323,36 +369,62 @@ export async function POST(req: NextRequest) {
 
     // Generate variants based on POS (prevent incorrect verb generation for adjectives)
     if (posGuess === "noun") {
-      groups.nouns = await generateNounVariants(rootVerb, { cap: 30 });
-      console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
+      try {
+        groups.nouns = await generateNounVariants(rootVerb, { cap: 30 });
+        console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
+      } catch (error) {
+        console.error(`❌ Noun generation failed for "${rootVerb}":`, error);
+        groups.nouns = [];
+      }
     } else if (posGuess === "verb") {
-      // Use enhanced LingDocs adapter for verb generation
-      groups.verbs = await generateEnhancedVerbVariants(rootVerb, { cap: 60, includeCompound: true });
-      console.log(`✅ Generated ${groups.verbs?.length || 0} verb forms using LingDocs adapter`);
+      // Generate verb conjugations using pattern-based approach
+      try {
+        groups.verbs = await generateVerbConjugations(rootVerb);
+        console.log(`✅ Generated ${groups.verbs?.length || 0} verb conjugations for "${rootVerb}"`);
+      } catch (error) {
+        console.error(`❌ Verb conjugation generation failed for "${rootVerb}":`, error);
+        groups.verbs = [];
+      }
     } else if (posGuess === "adjective") {
       // Adjectives should NOT generate verb conjugations - only generate adjective forms
       // Use our simple adjective inflection generator to avoid LingDocs verb confusion
-      const adjectiveForms = await generateSimpleAdjectiveForms(normalized);
-      if (adjectiveForms.length > 0) {
-        groups.other = adjectiveForms;
-        console.log(`✅ Generated ${adjectiveForms.length} adjective forms for ${normalized}`);
-      } else {
-        // Fallback to noun generation if adjective generation fails
-        const nounForms = await generateNounVariants(normalized, { cap: 15 });
-        if (nounForms.length > 0) {
-          groups.nouns = nounForms.filter(f => f.pos === 'noun');
-          console.log(`✅ Fallback: Generated ${groups.nouns?.length || 0} noun forms for adjective ${normalized}`);
+      try {
+        const adjectiveForms = await generateSimpleAdjectiveForms(normalized);
+        if (adjectiveForms.length > 0) {
+          groups.other = adjectiveForms;
+          console.log(`✅ Generated ${adjectiveForms.length} adjective forms for ${normalized}`);
+        } else {
+          // Fallback to noun generation if adjective generation fails
+          try {
+            const nounForms = await generateNounVariants(normalized, { cap: 15 });
+            if (nounForms.length > 0) {
+              groups.nouns = nounForms.filter(f => f.pos === 'noun');
+              console.log(`✅ Fallback: Generated ${groups.nouns?.length || 0} noun forms for adjective ${normalized}`);
+            }
+          } catch (nounError) {
+            console.error(`❌ Noun fallback failed for "${normalized}":`, nounError);
+          }
         }
+      } catch (adjError) {
+        console.error(`❌ Adjective generation failed for "${normalized}":`, adjError);
       }
     } else {
       // For unknown/ambiguous terms, try limited generation
-      const nouns = await generateNounVariants(normalized, { cap: 15 });
-      if (nouns.length) groups.nouns = nouns;
+      try {
+        const nouns = await generateNounVariants(normalized, { cap: 15 });
+        if (nouns.length) groups.nouns = nouns;
+      } catch (error) {
+        console.error(`❌ Unknown POS generation failed for "${normalized}":`, error);
+      }
 
       // Only try verbs if the word looks like it could be a verb
       if (normalized.endsWith('ل') || normalized.endsWith('ول') || normalized.endsWith('ېدل')) {
-        const verbs = await generateEnhancedVerbVariants(normalized, { cap: 30, includeCompound: false });
-        if (verbs.length) groups.verbs = verbs;
+        try {
+          const verbs = await generateVerbConjugations(normalized);
+          if (verbs.length) groups.verbs = verbs;
+        } catch (verbError) {
+          console.error(`❌ Verb conjugation generation failed for "${normalized}":`, verbError);
+        }
       }
 
       console.log(`✅ Generated ${nouns.length} nouns, ${groups.verbs?.length || 0} verbs for ambiguous term`);

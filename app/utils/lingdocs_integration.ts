@@ -34,9 +34,31 @@ async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
   if (!lingDocsLibraryPromise) {
     lingDocsLibraryPromise = (async () => {
       try {
-        // Use Function constructor to avoid build-time resolution
-        const importFunc = new Function('path', 'return import(path)');
-        const mod = await importFunc('../../pashto-inflector/src/lib/dist/lib/library.cjs');
+        // Use dynamic import with proper path resolution
+        const fs = await import('fs');
+        const path = await import('path');
+
+        // Try different possible paths for the LingDocs library
+        const possiblePaths = [
+          path.join(process.cwd(), '../pashto-inflector/src/lib/dist/lib/library.cjs'),
+          path.join(process.cwd(), '../../pashto-inflector/src/lib/dist/lib/library.cjs'),
+          path.join(process.cwd(), 'pashto-inflector/src/lib/dist/lib/library.cjs'),
+        ];
+
+        let libPath = null;
+        for (const testPath of possiblePaths) {
+          if (fs.existsSync(testPath)) {
+            libPath = testPath;
+            break;
+          }
+        }
+
+        if (!libPath) {
+          throw new Error(`LingDocs library not found in any of: ${possiblePaths.join(', ')}`);
+        }
+
+        console.log('🔍 Loading LingDocs library from:', libPath);
+        const mod = await import(libPath);
         console.log('✅ LingDocs library loaded successfully');
         return mod;
       } catch (error) {
@@ -55,7 +77,7 @@ async function loadLingDocsResources(): Promise<CachedResources> {
       const [fs, path] = await Promise.all([import('fs/promises'), import('path')]);
 
       const dictionaryPath = path.join(process.cwd(), 'app/data/full_dictionary_enriched.json');
-      const inflectionCachePath = path.join(process.cwd(), 'inflections_cache.json');
+      const inflectionCachePath = path.join(process.cwd(), 'app/data/inflections_cache.json');
       const frequencyPath = path.join(process.cwd(), 'app/data/word_frequency_list.json');
 
       const [dictionaryRaw, cacheRaw, frequencyRaw] = await Promise.all([

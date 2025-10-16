@@ -483,32 +483,9 @@ export async function POST(request: NextRequest) {
       console.log(`🔍 Query does not match transliteration conditions`);
     }
 
-    // Check cache first (use original query for cache key to avoid conflicts)
-    const cacheKey = generateCacheKey(
-      originalQuery,
-      scope,
-      includeRelated,
-      enableFuzzy,
-      searchLanguage
-    );
-
     // For Anki mode, prioritize dictionary entries with audio
     if (searchLanguage === 'anki') {
       console.log('🔄 Anki mode: prioritizing dictionary entries with audio');
-    }
-
-    const cachedResult = getCachedSearch(cacheKey);
-    if (cachedResult) {
-      const hitRate = cacheHitCount / (cacheHitCount + cacheMissCount) * 100;
-      console.log(`✅ Cache hit for "${originalQuery}" (${cachedResult.hitCount} hits, ${hitRate.toFixed(1)}% hit rate)`);
-      return NextResponse.json({
-        results: normalizeVerses(cachedResult.results),
-        relatedForms: cachedResult.relatedForms,
-        processed: cachedResult.processed,
-        count: cachedResult.results.length,
-        ms: 0, // Cached result
-        cached: true,
-      });
     }
     let trimmedQuery = searchQuery;
     let englishSearchTerms: string[] = [];
@@ -651,8 +628,15 @@ export async function POST(request: NextRequest) {
     let relatedForms = null;
 
     // LingDocs-style inflection search for Pashto terms
+    console.log('🔍 Checking related forms conditions:', {
+      effectiveIncludeRelated,
+      searchLanguage,
+      trimmedQuery,
+      searchTermsLength: searchTerms.length
+    });
     if (effectiveIncludeRelated && searchLanguage === 'pashto') {
       console.log('🔍 LingDocs-style inflection search enabled for Pashto');
+      console.log('🔍 effectiveIncludeRelated:', effectiveIncludeRelated, 'searchLanguage:', searchLanguage);
 
       try {
         // Call the enhanced related_forms API to get all inflections/conjugations
@@ -662,25 +646,44 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({ form: trimmedQuery }),
         });
 
+        console.log('🔍 Related forms API response status:', relatedResponse.status);
+        console.log('🔍 Related forms API response ok:', relatedResponse.ok);
         if (relatedResponse.ok) {
-          relatedForms = await relatedResponse.json();
+          const relatedFormsText = await relatedResponse.text();
+          console.log('🔍 Related forms raw response:', relatedFormsText.substring(0, 200));
+          relatedForms = JSON.parse(relatedFormsText);
           console.log(`✅ LingDocs-style search found ${relatedForms.total} related forms`);
+          console.log(`🔍 Related forms structure:`, {
+            hasNouns: !!relatedForms.forms?.nouns?.length,
+            hasVerbs: !!relatedForms.forms?.verbs?.length,
+            hasOther: !!relatedForms.forms?.other?.length,
+            nounsCount: relatedForms.forms?.nouns?.length || 0,
+            verbsCount: relatedForms.forms?.verbs?.length || 0,
+            otherCount: relatedForms.forms?.other?.length || 0
+          });
 
           // Add all related forms to search terms for comprehensive Bible search
           const allSearchTerms = [trimmedQuery]; // Include original
 
           if (relatedForms.forms?.nouns) {
-            allSearchTerms.push(...relatedForms.forms.nouns.map((f: any) => f.form));
+            const nounForms = relatedForms.forms.nouns.map((f: any) => f.form);
+            allSearchTerms.push(...nounForms);
+            console.log(`🔍 Added ${nounForms.length} noun forms:`, nounForms.slice(0, 3));
           }
           if (relatedForms.forms?.verbs) {
-            allSearchTerms.push(...relatedForms.forms.verbs.map((f: any) => f.form));
+            const verbForms = relatedForms.forms.verbs.map((f: any) => f.form);
+            allSearchTerms.push(...verbForms);
+            console.log(`🔍 Added ${verbForms.length} verb forms:`, verbForms.slice(0, 3));
           }
           if (relatedForms.forms?.other) {
-            allSearchTerms.push(...relatedForms.forms.other.map((f: any) => f.form));
+            const otherForms = relatedForms.forms.other.map((f: any) => f.form);
+            allSearchTerms.push(...otherForms);
+            console.log(`🔍 Added ${otherForms.length} other forms:`, otherForms.slice(0, 3));
           }
 
           searchTerms = Array.from(new Set(allSearchTerms));
           console.log(`🔍 Expanded search to ${searchTerms.length} terms including ${relatedForms.total} inflections`);
+          console.log(`🔍 Final search terms:`, searchTerms.slice(0, 5));
         } else {
           console.warn('❌ LingDocs-style inflection search failed:', relatedResponse.status);
         }
@@ -858,6 +861,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check cache after related forms processing (use search terms hash for cache key)
+    const searchTermsHash = searchTerms.sort().join('|');
+    const cacheKey = generateCacheKey(
+      searchTermsHash,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      searchLanguage
+    );
+
+    const cachedResult = getCachedSearch(cacheKey);
+    if (cachedResult) {
+      const hitRate = cacheHitCount / (cacheHitCount + cacheMissCount) * 100;
+      console.log(`✅ Cache hit for "${searchTermsHash}" (${cachedResult.hitCount} hits, ${hitRate.toFixed(1)}% hit rate)`);
+      return NextResponse.json({
+        results: normalizeVerses(cachedResult.results),
+        relatedForms: cachedResult.relatedForms,
+        processed: cachedResult.processed,
+        count: cachedResult.results.length,
+        ms: 0, // Cached result
+        cached: true,
+      });
+    }
+
     // Try enhanced search first (if SQL functions are available)
     console.log('🔍 Attempting enhanced search for:', trimmedQuery, 'with', searchTerms.length, 'terms');
     console.log('🔍 Search terms being used:', searchTerms);
@@ -912,6 +939,7 @@ export async function POST(request: NextRequest) {
         };
         
         setCachedSearch(cacheKey, transformed, relatedForms, processedData);
+        console.log(`💾 Cached search results for "${searchTermsHash}" (${transformed.length} results)`);
 
         return NextResponse.json({
           results: normalizeVerses(transformed),
@@ -980,7 +1008,7 @@ export async function POST(request: NextRequest) {
 
       // Cache the results before returning
       setCachedSearch(cacheKey, transformed, relatedForms, processed);
-      console.log(`💾 Cached search results for "${originalQuery}" (${transformed.length} results)`);
+      console.log(`💾 Cached search results for "${searchTermsHash}" (${transformed.length} results)`);
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
@@ -1032,7 +1060,7 @@ export async function POST(request: NextRequest) {
 
       // Cache the results before returning
       setCachedSearch(cacheKey, transformed, null, processed);
-      console.log(`💾 Cached English search results for "${originalQuery}" (${transformed.length} results)`);
+      console.log(`💾 Cached English search results for "${searchTermsHash}" (${transformed.length} results)`);
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
@@ -1281,7 +1309,7 @@ export async function POST(request: NextRequest) {
 
     // Cache the results before returning
     setCachedSearch(cacheKey, finalResults, relatedForms, processed);
-    console.log(`💾 Cached final search results for "${originalQuery}" (${finalResults.length} results)`);
+    console.log(`💾 Cached final search results for "${searchTermsHash}" (${finalResults.length} results)`);
 
     return NextResponse.json({
       results: normalizeVerses(finalResults),

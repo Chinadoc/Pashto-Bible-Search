@@ -27,7 +27,10 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), 'public', filename);
+    // In production, files are in public directory; in development, files are in app/data
+    const isProduction = process.env.NODE_ENV === 'production';
+    const basePath = isProduction ? 'public' : 'app/data';
+    const filePath = path.join(process.cwd(), basePath, filename);
 
     try {
       const fileContents = await fs.readFile(filePath, 'utf8');
