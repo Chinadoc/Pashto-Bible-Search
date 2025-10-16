@@ -42,10 +42,15 @@ async function loadLocalVideoData(): Promise<any[]> {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
       if (data.video_id && data.segments) {
+        // Extract video ID from the URL to get the correct title
+        const youtubeUrl = data.video_url || `https://www.youtube.com/watch?v=${data.video_id}`;
+        const urlMatch = youtubeUrl.match(/[?&]v=([^&]+)/);
+        const actualVideoId = urlMatch ? urlMatch[1] : data.video_id;
+
         const video: any = {
-          id: data.video_id,
-          title: `Video ${data.video_id}`,
-          youtubeUrl: data.video_url || `https://www.youtube.com/watch?v=${data.video_id}`,
+          id: actualVideoId,
+          title: `Processed Video ${actualVideoId}`,
+          youtubeUrl: youtubeUrl,
           segments: [],
           totalSegments: data.total_segments || data.segments.length,
           totalDuration: 0
@@ -123,18 +128,16 @@ async function processVideoData(includeFrequency: boolean = false): Promise<any>
     // Get local video data
     const localVideos = await loadLocalVideoData();
 
-    // Combine Supabase and local data
-    const allVideos = [...(data || []), ...localVideos];
-
     // Group transcripts by video and create video objects
     const videoMap = new Map();
 
-    // Handle local video data (already structured as video objects)
+    // Prioritize local video data over Supabase data
+    // Handle local video data first (already structured as video objects)
     localVideos.forEach((video) => {
       videoMap.set(video.id, video);
     });
 
-    // Handle Supabase data (individual items)
+    // Only add Supabase data if it doesn't conflict with local data
     data?.forEach((item) => {
       // Extract video ID from verse_reference format:
       // video_{video_id}_segment_{number} or video_{video_id}_sentence_{segment}_{sentence}
@@ -158,7 +161,7 @@ async function processVideoData(includeFrequency: boolean = false): Promise<any>
       if (!videoMap.has(videoId)) {
         videoMap.set(videoId, {
           id: videoId,
-          title: `Afghanistan - Pakistan War | Torkham Durand Line | د افغانستان پاکستان جنګ`,
+          title: `Video ${videoId}`,
           youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
           segments: [],
           totalSegments: 0,
