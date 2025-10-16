@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     type Item = {
       form: string;
       root?: string;
-      pos?: 'verb' | 'noun';
+      pos?: string;
       frequency: number;
       dictionary?: {
         definition?: string;
