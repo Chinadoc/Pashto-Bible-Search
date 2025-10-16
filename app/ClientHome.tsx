@@ -2763,15 +2763,20 @@ export default function ClientHome() {
                                         for (let i = 0; i < segment.sentenceClips.length; i++) {
                                           const sentenceClip = segment.sentenceClips[i];
                                           setPlayingSentence({segmentIndex: segIndex, sentenceIndex: i});
-                                          const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
-                                          await new Promise(resolve => {
+
+                                          // Wait for the audio to complete
+                                          await new Promise<void>((resolve) => {
+                                            const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
                                             audio.onended = () => {
                                               if (i === segment.sentenceClips.length - 1) {
                                                 setPlayingSentence(null);
                                               }
                                               resolve();
                                             };
-                                            audio.onpause = () => setPlayingSentence(null);
+                                            audio.onpause = () => {
+                                              setPlayingSentence(null);
+                                              resolve();
+                                            };
                                             audio.play();
                                           });
                                         }
