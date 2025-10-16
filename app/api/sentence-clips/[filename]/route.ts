@@ -30,10 +30,9 @@ export async function GET(
                          ext === 'mp3' ? 'audio/mpeg' :
                          ext === 'm4a' ? 'audio/mp4' : 'audio/wav';
 
-      return new NextResponse(fileBuffer.buffer, {
+      return new NextResponse(new Blob([fileBuffer], { type: contentType }), {
         status: 200,
         headers: {
-          'Content-Type': contentType,
           'Content-Length': fileBuffer.length.toString(),
           'Cache-Control': 'public, max-age=31536000',
         },
