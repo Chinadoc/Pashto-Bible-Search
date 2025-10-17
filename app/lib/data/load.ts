@@ -9,6 +9,35 @@ type DictionaryEntry = {
   pos?: string;
   c?: string;
   english?: string;
+  // LingDocs properties
+  ts?: number;
+  p?: string;
+  f?: string;
+  e?: string;
+  r?: number;
+  a?: number;
+  i?: number;
+  g?: string;
+  c_norm?: string;
+  pos_family?: string;
+  gender?: string;
+  f_primary?: string;
+  p_norm?: string;
+  l?: number;
+  infap?: string;
+  infaf?: string;
+  infbp?: string;
+  infbf?: string;
+  infcp?: string;
+  infcf?: string;
+  app?: string;
+  apf?: string;
+  tppp?: string;
+  tppf?: string;
+  ec?: string;
+  ep?: string;
+  a_norm?: number;
+  i_norm?: number;
 };
 
 type FrequencyRow = {
@@ -211,12 +240,43 @@ function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
 
     const pos: string | undefined = entry.c || entry.c_norm || entry.pos_family;
     const english = extractEnglish(entry);
-    output.push({ 
-      pashto: pashto.trim(), 
-      romanized, 
+
+    // Extract all LingDocs properties
+    output.push({
+      pashto: pashto.trim(),
+      romanized,
       pos: pos?.trim(),
       c: entry.c?.trim(),
-      english: english?.trim()
+      english: english?.trim(),
+      // LingDocs properties
+      ts: entry.ts,
+      p: entry.p,
+      f: entry.f,
+      e: entry.e,
+      r: entry.r,
+      a: entry.a,
+      i: entry.i,
+      g: entry.g,
+      c_norm: entry.c_norm,
+      pos_family: entry.pos_family,
+      gender: entry.gender,
+      f_primary: entry.f_primary,
+      p_norm: entry.p_norm,
+      l: entry.l,
+      infap: entry.infap,
+      infaf: entry.infaf,
+      infbp: entry.infbp,
+      infbf: entry.infbf,
+      infcp: entry.infcp,
+      infcf: entry.infcf,
+      app: entry.app,
+      apf: entry.apf,
+      tppp: entry.tppp,
+      tppf: entry.tppf,
+      ec: entry.ec,
+      ep: entry.ep,
+      a_norm: entry.a_norm,
+      i_norm: entry.i_norm
     });
   }
 
