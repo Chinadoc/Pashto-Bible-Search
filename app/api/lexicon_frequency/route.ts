@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
         sum.set(root, (sum.get(root) || 0) + entry.frequency)
       }
       items = Array.from(sum.entries()).map(([root, frequency]) => {
-        const dictEntry = dictionaryMap.get(root)
+        const dictEntry = dictionaryByPashto.get(root)
         return {
           form: root,
           root,
@@ -240,10 +240,10 @@ export async function GET(request: NextRequest) {
           link: dictEntry?.l,
           commonality: dictEntry?.r,
           dictionary: dictEntry ? {
-            definition: dictEntry.e,
-            romanized: dictEntry.f,
-            pos: dictEntry.c,
-            english: dictEntry.e,
+            definition: dictEntry.english,
+            romanized: dictEntry.romanized,
+            pos: dictEntry.pos,
+            english: dictEntry.english,
             // LingDocs inflection fields
             infap: dictEntry.infap,
             infaf: dictEntry.infaf,
@@ -274,10 +274,10 @@ export async function GET(request: NextRequest) {
       // Keep by form
       items = freqEntries.map(entry => {
         const root = formToRoot[entry.word]?.[0] || undefined
-        const dictEntry = dictionaryMap.get(entry.word)
+        const dictEntry = dictionaryByPashto.get(entry.word)
 
         // Prioritize dictionary POS over root-based POS when dictionary is available
-        const pos = dictEntry?.c ? dictEntry.c : (root ? rootPos.get(root) : undefined)
+        const pos = dictEntry?.pos ? dictEntry.pos : (root ? rootPos.get(root) : undefined)
 
         return {
           form: entry.word,
@@ -289,10 +289,10 @@ export async function GET(request: NextRequest) {
           link: dictEntry?.l,
           commonality: dictEntry?.r,
           dictionary: dictEntry ? {
-            definition: dictEntry.e,
-            romanized: dictEntry.f,
-            pos: dictEntry.c,
-            english: dictEntry.e,
+            definition: dictEntry.english,
+            romanized: dictEntry.romanized,
+            pos: dictEntry.pos,
+            english: dictEntry.english,
             // LingDocs inflection fields
             infap: dictEntry.infap,
             infaf: dictEntry.infaf,

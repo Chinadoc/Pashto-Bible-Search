@@ -38,6 +38,17 @@ type DictionaryEntry = {
   ep?: string;
   a_norm?: number;
   i_norm?: number;
+  // Additional LingDocs properties
+  ppp?: string;
+  ppf?: string;
+  psp?: string;
+  psf?: string;
+  ssp?: string;
+  ssf?: string;
+  prp?: string;
+  prf?: string;
+  pprtp?: string;
+  pprtf?: string;
 };
 
 type FrequencyRow = {
@@ -276,7 +287,18 @@ function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
       ec: entry.ec,
       ep: entry.ep,
       a_norm: entry.a_norm,
-      i_norm: entry.i_norm
+      i_norm: entry.i_norm,
+      // Additional LingDocs properties
+      ppp: entry.ppp,
+      ppf: entry.ppf,
+      psp: entry.psp,
+      psf: entry.psf,
+      ssp: entry.ssp,
+      ssf: entry.ssf,
+      prp: entry.prp,
+      prf: entry.prf,
+      pprtp: entry.pprtp,
+      pprtf: entry.pprtf
     });
   }
 
