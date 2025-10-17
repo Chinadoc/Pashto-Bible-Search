@@ -49,6 +49,7 @@ type DictionaryEntry = {
   prf?: string;
   pprtp?: string;
   pprtf?: string;
+  noInf?: boolean;
 };
 
 type FrequencyRow = {
@@ -298,7 +299,8 @@ function buildDictionaryEntries(dictionaryRaw: any): DictionaryEntry[] {
       prp: entry.prp,
       prf: entry.prf,
       pprtp: entry.pprtp,
-      pprtf: entry.pprtf
+      pprtf: entry.pprtf,
+      noInf: entry.noInf
     });
   }
 
