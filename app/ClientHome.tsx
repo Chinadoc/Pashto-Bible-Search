@@ -2220,7 +2220,8 @@ export default function ClientHome() {
         </div>
       )}
 
-
+      {/* Poems Tab */}
+      {activeMainTab === 'poems' && (
         <div className="max-w-4xl mx-auto">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
