@@ -162,8 +162,8 @@ export function generateForms(lemma: LemmaData): GeneratedForms {
       break;
 
     case 'split_stem':
-      if (lemma.stems?.present && lemma.stems?.perfective && lemma.stems?.past_participle) {
-        const generator = generateSplitStem(lemma.stems.present, lemma.stems.perfective, lemma.stems.past_participle);
+      if (lemma.stems?.present && lemma.stems?.perfective && lemma.stems?.pastParticiple) {
+        const generator = generateSplitStem(lemma.stems.present, lemma.stems.perfective, lemma.stems.pastParticiple);
         forms.present = {
           '1sg': generator.present('1sg'),
           '2sg': generator.present('2sg'),
