@@ -7,7 +7,9 @@ export async function fetchLingDocsAudio(word: string): Promise<string | null> {
   return null;
 }
 
-export function generateAudioFilename(word: string): string {
+export function generateAudioFilename(wordId: string, word: string): string {
   // Stub implementation - returns a placeholder filename
-  return `audio_${word.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`;
+  // Use wordId if provided, otherwise fall back to word
+  const identifier = wordId || word;
+  return `audio_${identifier.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`;
 }
