@@ -6,7 +6,7 @@ export function refToFilename(ref: string): string {
   return `audio_${ref.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`;
 }
 
-export function audioUrlFromRef(ref: string): string | null {
+export function audioUrlFromRef(ref: string, audioMap: any): string | null {
   // Stub implementation - returns null for now
   console.warn(`audioUrlFromRef called for ${ref} - not implemented`);
   return null;
