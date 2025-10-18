@@ -11,3 +11,9 @@ export function audioUrlFromRef(ref: string): string | null {
   console.warn(`audioUrlFromRef called for ${ref} - not implemented`);
   return null;
 }
+
+export async function resolveAudioUrl(ref: string, entry: any): Promise<string | null> {
+  // Stub implementation - returns null for now
+  console.warn(`resolveAudioUrl called for ${ref} - not implemented`);
+  return null;
+}

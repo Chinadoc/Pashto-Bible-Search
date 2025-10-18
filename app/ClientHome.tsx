@@ -828,6 +828,35 @@ export default function ClientHome() {
 
 
 
+  // Transcript search state
+  const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
+  const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
+  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
+
+  // Transcript search function
+  const searchTranscripts = async (query: string) => {
+    if (!query.trim()) {
+      setTranscriptResults([]);
+      return;
+    }
+
+    setLoadingTranscripts(true);
+    try {
+      const response = await fetch('/api/search-transcripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      const data = await response.json();
+      setTranscriptResults(data.results || []);
+    } catch (error) {
+      console.error('Transcript search error:', error);
+      setTranscriptResults([]);
+    } finally {
+      setLoadingTranscripts(false);
+    }
+  };
+
   // Debounced transcript search
   const debouncedTranscriptSearch = useCallback(
     debounce((query: string) => {
