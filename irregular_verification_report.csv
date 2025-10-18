@@ -130,7 +130,23 @@ lemma,family,rationale,irregular_by_engine,imperfective_stem,perfective_stem,imp
 بږنېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
 بږی اخیستل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
 بک کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
-بکېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
+بکېدل,stative_compound,manual verification,True,بکېږ,بک,بکېدل,بکېدل,local
+خوښول,stative_compound,manual verification,True,خوښو,خوښک,خوښول,وخوښول,local
+بلېدل,stative_compound,manual verification,True,بلېږ,بل,بلېدل,بلېدل,local
+غوړول,stative_compound,manual verification,True,غوړو,غوړک,غوړول,وغوړول,local
+نازلېدل,standard_stative_pattern,pattern verification,True,نازلېږ,نازل,نازلېدل,نازلېدل,local
+آبادېدل,standard_stative_pattern,pattern verification,True,آبادېږ,آباد,آبادېدل,آبادېدل,local
+آزادېدل,standard_stative_pattern,pattern verification,True,آزادېږ,آزاد,آزادېدل,آزادېدل,local
+اسانېدل,standard_stative_pattern,pattern verification,True,اسانېږ,اسان,اسانېدل,اسانېدل,local
+برابرېدل,standard_stative_pattern,pattern verification,True,برابرېږ,برابر,برابرېدل,برابرېدل,local
+بلدېدل,standard_stative_pattern,pattern verification,True,بلدېږ,بلد,بلدېدل,بلدېدل,local
+بندېدل,standard_stative_pattern,pattern verification,True,بندېږ,بند,بندېدل,بندېدل,local
+بهېدل,standard_stative_pattern,pattern verification,True,بهېږ,به,بهېدل,بهېدل,local
+درېدل,standard_stative_pattern,pattern verification,True,درېږ,در,درېدل,درېدل,local
+روانېدل,standard_stative_pattern,pattern verification,True,روانېږ,روان,روانېدل,روانېدل,local
+شلېدل,standard_stative_pattern,pattern verification,True,شلېږ,شل,شلېدل,شلېدل,local
+غمجنېدل,standard_stative_pattern,pattern verification,True,غمجنېږ,غمجن,غمجنېدل,غمجنېدل,local
+قانعېدل,standard_stative_pattern,pattern verification,True,قانعېږ,قانع,قانعېدل,قانعېدل,local
 بڼیا کېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
 بڼېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none
 بیانېدل,potential_irregular,ending heuristic (یل/ېدل/ستل),False,,,,,none

@@ -182,6 +182,69 @@ const IRREGULAR_VERBS: Record<string, {
     pastParticiple: 'الوتلی',
     notes: 'Irregular stems; intransitive'
   },
+  'بکېدل': {
+    meaning: 'to be bent over, become hunchbacked',
+    imperfectiveStem: 'بکېږـ',
+    perfectiveStem: 'بکـ',
+    imperfectiveRoot: 'بکېدل',
+    perfectiveRoot: 'بکېدل',
+    pastParticiple: 'بکېدلی',
+    notes: 'Stative compound; intransitive; irregular stems'
+  },
+  'خوښول': {
+    meaning: 'to like, to choose, to select; to make happy',
+    imperfectiveStem: 'خوښوـ',
+    perfectiveStem: 'خوښکـ',
+    imperfectiveRoot: 'خوښول',
+    perfectiveRoot: 'وخوښول',
+    pastParticiple: 'خوښولی',
+    notes: 'Stative compound; transitive'
+  },
+  'بلېدل': {
+    meaning: 'to burn, catch fire',
+    imperfectiveStem: 'بلېږـ',
+    perfectiveStem: 'بلـ',
+    imperfectiveRoot: 'بلېدل',
+    perfectiveRoot: 'بلېدل',
+    pastParticiple: 'بلېدلی',
+    notes: 'Stative compound; intransitive'
+  },
+  'غوړول': {
+    meaning: 'to grease, oil, butter, lubricate, to make greasy or oily',
+    imperfectiveStem: 'غوړوـ',
+    perfectiveStem: 'غوړکـ',
+    imperfectiveRoot: 'غوړول',
+    perfectiveRoot: 'وغوړول',
+    pastParticiple: 'غوړولی',
+    notes: 'Stative compound; transitive'
+  },
+  'خوب شول': {
+    meaning: 'to fall asleep',
+    imperfectiveStem: 'خوب شوـ',
+    perfectiveStem: 'خوب شوـ',
+    imperfectiveRoot: 'خوب شول',
+    perfectiveRoot: 'خوب شول',
+    pastParticiple: 'خوب شوی',
+    notes: 'Stative compound with شول; intransitive'
+  },
+  'تازه کېدل': {
+    meaning: 'to become fresh, renewed',
+    imperfectiveStem: 'تازه کېږـ',
+    perfectiveStem: 'تازه کـ',
+    imperfectiveRoot: 'تازه کېدل',
+    perfectiveRoot: 'تازه کېدل',
+    pastParticiple: 'تازه کېدلی',
+    notes: 'Stative compound with کېدل; intransitive'
+  },
+  'غوره کېدل': {
+    meaning: 'to be chosen, selected',
+    imperfectiveStem: 'غوره کېږـ',
+    perfectiveStem: 'غوره کـ',
+    imperfectiveRoot: 'غوره کېدل',
+    perfectiveRoot: 'غوره کېدل',
+    pastParticiple: 'غوره کېدلی',
+    notes: 'Stative compound with کېدل; intransitive'
+  },
   'ایستل': {
     meaning: 'to take out',
     imperfectiveStem: 'باسـ',
@@ -757,39 +820,71 @@ function organizeFormsByAspect(forms: string[]): {
 }
 
 // Generate forms for fused compound verbs (e.g., ګرمېدل)
+// Enhanced to match LingDocs standard stative compound patterns
 function generateFusedCompoundVerbForms(infinitive: string): string[] {
   const forms: string[] = [infinitive]
-  
-  // Detect fused stative compounds ending in ېدل or کېدل
+
+  // Detect fused stative compounds ending in ېدل (standard pattern)
   if (infinitive.endsWith('ېدل')) {
     const stem = infinitive.slice(0, -3) // Remove ېدل
-    
-    // Generate conjugated forms
+
+    // Complete conjugation based on LingDocs pattern for بکېدل
+    // Present/Imperfective: STEMěG-
     forms.push(stem + 'ېږم')    // 1st singular
-    forms.push(stem + 'ېږې')    // 2nd singular  
+    forms.push(stem + 'ېږې')    // 2nd singular
     forms.push(stem + 'ېږي')    // 3rd singular
     forms.push(stem + 'ېږو')    // 1st plural
     forms.push(stem + 'ېږئ')    // 2nd plural
-    
-    // Generate both squished and non-squished forms
-    const baseObj = stem
-    forms.push(baseObj + ' کېدل')    // Non-squished infinitive
-    forms.push(baseObj + ' کېږم')    // Non-squished 1st singular
-    forms.push(baseObj + ' کېږې')    // Non-squished 2nd singular
-    forms.push(baseObj + ' کېږي')    // Non-squished 3rd singular
-    forms.push(baseObj + ' کېږو')    // Non-squished 1st plural
-    forms.push(baseObj + ' کېږئ')    // Non-squished 2nd plural
-    
+
+    // Perfective: STEM sh-
+    forms.push(stem + 'م')      // 1st singular
+    forms.push(stem + 'ې')      // 2nd singular
+    forms.push(stem)           // 3rd singular
+    forms.push(stem + 'و')      // 1st plural
+    forms.push(stem + 'ئ')      // 2nd plural
+
+    // Past participle: STEM shúway
+    forms.push(stem + 'ېدلی')   // Past participle
+
+    // Subjunctive: و + present forms
+    forms.push('و' + stem + 'ېږم')    // 1st singular subjunctive
+    forms.push('و' + stem + 'ېږې')    // 2nd singular subjunctive
+    forms.push('و' + stem + 'ېږي')    // 3rd singular subjunctive
+    forms.push('و' + stem + 'ېږو')    // 1st plural subjunctive
+    forms.push('و' + stem + 'ېږئ')    // 2nd plural subjunctive
+
+    // Imperative: ېږه، ېږئ
+    forms.push(stem + 'ېږه')   // 2nd singular imperative
+    forms.push(stem + 'ېږئ')   // 2nd plural imperative
+
+    // Non-squished forms with space
+    forms.push(stem + ' کېدل')    // Non-squished infinitive
+    forms.push(stem + ' کېږم')    // Non-squished 1st singular
+    forms.push(stem + ' کېږې')    // Non-squished 2nd singular
+    forms.push(stem + ' کېږي')    // Non-squished 3rd singular
+    forms.push(stem + ' کېږو')    // Non-squished 1st plural
+    forms.push(stem + ' کېږئ')    // Non-squished 2nd plural
+
   } else if (infinitive.endsWith('کېدل')) {
     const stem = infinitive.slice(0, -4) // Remove کېدل
-    
-    // Generate conjugated forms
+
+    // Generate conjugated forms for special cases like تازه کېدل، غوره کېدل
     forms.push(stem + 'کېږم')    // 1st singular
     forms.push(stem + 'کېږې')    // 2nd singular
     forms.push(stem + 'کېږي')    // 3rd singular
     forms.push(stem + 'کېږو')    // 1st plural
     forms.push(stem + 'کېږئ')    // 2nd plural
-    
+
+    // Perfective forms
+    forms.push(stem + 'کم')      // 1st singular perfective
+    forms.push(stem + 'کې')      // 2nd singular perfective
+    forms.push(stem + 'ک')       // 3rd singular perfective
+    forms.push(stem + 'کو')      // 1st plural perfective
+    forms.push(stem + 'کئ')      // 2nd plural perfective
+
+    // Past participle
+    forms.push(stem + 'کېدلی')   // Past participle
+
     // Generate spaced version
     forms.push(stem + ' کېدل')    // Spaced infinitive
     forms.push(stem + ' کېږم')    // Spaced 1st singular
@@ -797,6 +892,36 @@ function generateFusedCompoundVerbForms(infinitive: string): string[] {
     forms.push(stem + ' کېږي')    // Spaced 3rd singular
     forms.push(stem + ' کېږو')    // Spaced 1st plural
     forms.push(stem + ' کېږئ')    // Spaced 2nd plural
+
+  } else if (infinitive.endsWith(' شول')) {
+    // Handle special cases like خوب شول
+    const stem = infinitive.slice(0, -4) // Remove شول
+
+    // Generate conjugated forms for شول compounds
+    forms.push(stem + ' شوم')    // 1st singular
+    forms.push(stem + ' شوې')    // 2nd singular
+    forms.push(stem + ' شو')     // 3rd singular
+    forms.push(stem + ' شوو')    // 1st plural
+    forms.push(stem + ' شوئ')    // 2nd plural
+
+    // Past participle
+    forms.push(stem + ' شوی')    // Past participle
+
+    // Subjunctive forms
+    forms.push('و' + stem + ' شوم')    // 1st singular subjunctive
+    forms.push('و' + stem + ' شوې')    // 2nd singular subjunctive
+    forms.push('و' + stem + ' شو')     // 3rd singular subjunctive
+
+  } else if (infinitive.endsWith('کول')) {
+    // Handle special cases like غوره کول (though this might be dynamic)
+    const stem = infinitive.slice(0, -3) // Remove کول
+
+    // Generate some basic forms - may need refinement based on actual usage
+    forms.push(stem + ' کوم')    // 1st singular
+    forms.push(stem + ' کوې')    // 2nd singular
+    forms.push(stem + ' کوي')    // 3rd singular
+    forms.push(stem + ' کوو')    // 1st plural
+    forms.push(stem + ' کوئ')    // 2nd plural
   }
   
   return forms.filter(Boolean)

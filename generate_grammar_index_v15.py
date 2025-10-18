@@ -81,13 +81,95 @@ def load_verb_lexicon():
 
 VERB_LEXICON = load_verb_lexicon()
 
+# --- Function Words Lexicon (Pronouns, Prepositions, Conjunctions) ---
+FUNCTION_WORDS_LEXICON = normalize_lexicon({
+    # Personal Pronouns
+    'زه': {'type': 'Pronoun', 'pattern_info': '1st Person Singular', 'translit': 'zu'},
+    'تا': {'type': 'Pronoun', 'pattern_info': '2nd Person Singular', 'translit': 'taa'},
+    'هغه': {'type': 'Pronoun', 'pattern_info': '3rd Person Singular Masculine', 'translit': 'hagha'},
+    'هغې': {'type': 'Pronoun', 'pattern_info': '3rd Person Singular Feminine', 'translit': 'haghe'},
+    'موږ': {'type': 'Pronoun', 'pattern_info': '1st Person Plural', 'translit': 'moonG'},
+    'تاسو': {'type': 'Pronoun', 'pattern_info': '2nd Person Plural/Respectful', 'translit': 'taaso'},
+    'هغوی': {'type': 'Pronoun', 'pattern_info': '3rd Person Plural', 'translit': 'haghooy'},
+    'ما': {'type': 'Pronoun', 'pattern_info': '1st Person Singular Object', 'translit': 'maa'},
+    'ستا': {'type': 'Pronoun', 'pattern_info': '2nd Person Singular Possessive', 'translit': 'staa'},
+
+    # Prepositions
+    'د': {'type': 'Preposition', 'pattern_info': 'Genitive/Of', 'translit': 'du'},
+    'په': {'type': 'Preposition', 'pattern_info': 'In/On/With', 'translit': 'pu'},
+    'له': {'type': 'Preposition', 'pattern_info': 'From', 'translit': 'la'},
+    'ته': {'type': 'Preposition', 'pattern_info': 'To', 'translit': 'ta'},
+    'سره': {'type': 'Preposition', 'pattern_info': 'With', 'translit': 'sara'},
+    'پر': {'type': 'Preposition', 'pattern_info': 'On/Upon', 'translit': 'pur'},
+    'دپاره': {'type': 'Preposition', 'pattern_info': 'For', 'translit': 'dupara'},
+    'څخه': {'type': 'Preposition', 'pattern_info': 'From/Than', 'translit': 'tsukha'},
+    'پورې': {'type': 'Preposition', 'pattern_info': 'Until/Up to', 'translit': 'pore'},
+    'باندې': {'type': 'Preposition', 'pattern_info': 'On/Over/About', 'translit': 'baande'},
+
+    # Conjunctions
+    'او': {'type': 'Conjunction', 'pattern_info': 'And', 'translit': 'aw'},
+    'چې': {'type': 'Conjunction', 'pattern_info': 'That/So/If', 'translit': 'che'},
+    'نو': {'type': 'Conjunction', 'pattern_info': 'So/Then', 'translit': 'no'},
+    'یا': {'type': 'Conjunction', 'pattern_info': 'Or', 'translit': 'yaa'},
+    'بلکې': {'type': 'Conjunction', 'pattern_info': 'But/Rather', 'translit': 'balke'},
+    'ځکه': {'type': 'Conjunction', 'pattern_info': 'Because', 'translit': 'dzuka'},
+
+    # Particles/Adverbs
+    'به': {'type': 'Particle', 'pattern_info': 'Future Tense Marker', 'translit': 'ba'},
+    'نه': {'type': 'Particle', 'pattern_info': 'Negation', 'translit': 'na'},
+    'هم': {'type': 'Particle', 'pattern_info': 'Also/Too', 'translit': 'hum'},
+    'خو': {'type': 'Particle', 'pattern_info': 'But/However', 'translit': 'kho'},
+    'یا': {'type': 'Particle', 'pattern_info': 'Or', 'translit': 'yaa'},
+    'تل': {'type': 'Adverb', 'pattern_info': 'Always/Forever', 'translit': 'tul'},
+    'اوس': {'type': 'Adverb', 'pattern_info': 'Now', 'translit': 'oos'},
+    'بیا': {'type': 'Adverb', 'pattern_info': 'Again', 'translit': 'byaa'},
+    'وروسته': {'type': 'Adverb', 'pattern_info': 'After/Later', 'translit': 'wroosta'},
+    'مخکې': {'type': 'Adverb', 'pattern_info': 'Before', 'translit': 'mukhke'},
+    'هلته': {'type': 'Adverb', 'pattern_info': 'There', 'translit': 'halta'},
+    'دلته': {'type': 'Adverb', 'pattern_info': 'Here', 'translit': 'dalta'},
+    'چېرې': {'type': 'Adverb', 'pattern_info': 'Where', 'translit': 'chere'},
+    'څنګه': {'type': 'Adverb', 'pattern_info': 'How', 'translit': 'tsanga'},
+    'ولې': {'type': 'Adverb', 'pattern_info': 'Why', 'translit': 'wale'},
+})
+
 IRREGULAR_NOUN_ADJ_LEXICON = normalize_lexicon({
     'پښتون': {'type': 'Noun/Adj', 'pattern_info': 'Pattern 4: Pashtoon', 'inflected_forms': ['پښتانه', 'پښتنو', 'پښتنه', 'پښتنې'], 'translit': 'puxtoon'},
-    # Add other nouns...
+    # Common nouns
+    'سړی': {'type': 'Noun', 'pattern_info': 'Pattern 4 Masculine Animate', 'inflected_forms': ['سړي', 'سړیو', 'سړی', 'سړي'], 'translit': 'saRay'},
+    'ښځه': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['ښځې', 'ښځو', 'ښځه', 'ښځو'], 'translit': 'xudza'},
+    'کور': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['کورونه', 'کورونو', 'کور', 'کورونو'], 'translit': 'kor'},
+    'لاره': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['لارې', 'لارو', 'لاره', 'لارو'], 'translit': 'laara'},
+    'مور': {'type': 'Noun', 'pattern_info': 'Feminine Animate', 'inflected_forms': ['مور', 'مورو', 'مور', 'مورو'], 'translit': 'mor'},
+    'پلار': {'type': 'Noun', 'pattern_info': 'Masculine Animate', 'inflected_forms': ['پلار', 'پلارو', 'پلار', 'پلارو'], 'translit': 'plaar'},
+    'زوی': {'type': 'Noun', 'pattern_info': 'Masculine Animate', 'inflected_forms': ['زوی', 'زویو', 'زوی', 'زویو'], 'translit': 'zooy'},
+    'لور': {'type': 'Noun', 'pattern_info': 'Feminine Animate', 'inflected_forms': ['لور', 'لورو', 'لور', 'لورو'], 'translit': 'lor'},
+    'ماشوم': {'type': 'Noun', 'pattern_info': 'Masculine Animate', 'inflected_forms': ['ماشومان', 'ماشومانو', 'ماشوم', 'ماشومانو'], 'translit': 'maashoom'},
+    'ځان': {'type': 'Noun', 'pattern_info': 'Reflexive Pronoun', 'inflected_forms': ['ځان', 'ځان', 'ځان', 'ځان'], 'translit': 'dzaan'},
+    'وخت': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['وختونه', 'وختونو', 'وخت', 'وختونو'], 'translit': 'wakht'},
+    'کار': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['کارونه', 'کارونو', 'کار', 'کارونو'], 'translit': 'kaar'},
+    'سر': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['سرونه', 'سرونو', 'سر', 'سرونو'], 'translit': 'sar'},
+    'لاس': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['لاسونه', 'لاسونو', 'لاس', 'لاسونو'], 'translit': 'laas'},
+    'غوږ': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['غوږونه', 'غوږونو', 'غوږ', 'غوږونو'], 'translit': 'ghwuG'},
+    'زړه': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['زړونې', 'زړونو', 'زړه', 'زړونو'], 'translit': 'zRu'},
+    'ورځ': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['ورځې', 'ورځو', 'ورځ', 'ورځو'], 'translit': 'wradz'},
+    'شپه': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['شپې', 'شپو', 'شپه', 'شپو'], 'translit': 'shpa'},
+    'میاشت': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['میاشتې', 'میاشتو', 'میاشت', 'میاشتو'], 'translit': 'myaasht'},
+    'کال': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['کلونه', 'کلونو', 'کال', 'کلونو'], 'translit': 'kaal'},
+    'ښار': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['ښارونه', 'ښارونو', 'ښار', 'ښارونو'], 'translit': 'xaar'},
+    'کتاب': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['کتابونه', 'کتابونو', 'کتاب', 'کتابونو'], 'translit': 'kitaab'},
+    'دعا': {'type': 'Noun', 'pattern_info': 'Feminine Noun', 'inflected_forms': ['دعاګانې', 'دعاګانو', 'دعا', 'دعاګانو'], 'translit': 'duaa'},
+    'ایمان': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['ایمانونه', 'ایمانونو', 'ایمان', 'ایمانونو'], 'translit': 'eemaan'},
+    'روح': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['روحونه', 'روحونو', 'روح', 'روحونو'], 'translit': 'rooh'},
+    'قدرت': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['قدرتونه', 'قدرتونو', 'قدرت', 'قدرتونو'], 'translit': 'qudrat'},
+    'قوم': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['قومونه', 'قومونو', 'قوم', 'قومونو'], 'translit': 'qom'},
+    'شریعت': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['شریعتونه', 'شریعتونو', 'شریعت', 'شریعتونو'], 'translit': 'shariyaat'},
+    'آسمان': {'type': 'Noun', 'pattern_info': 'Masculine Noun', 'inflected_forms': ['آسمانونه', 'آسمانونو', 'آسمان', 'آسمانونو'], 'translit': 'aasamaan'},
+    'انسان': {'type': 'Noun', 'pattern_info': 'Masculine Animate', 'inflected_forms': ['انسانان', 'انسانانو', 'انسان', 'انسانانو'], 'translit': 'insaana'},
+    'ځان': {'type': 'Noun', 'pattern_info': 'Reflexive', 'inflected_forms': ['ځان', 'ځان', 'ځان', 'ځان'], 'translit': 'dzaan'},
 })
 
 # --- Word Data Loading (Normalized) ---
-def load_word_data(filepath='all_txt_copies/word_index_v10_final.txt'):
+def load_word_data(filepath='word_index_v10_final.txt'):
     word_data = {}
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
@@ -124,7 +206,12 @@ def find_all_possible_roots(word, all_words_set):
         if 'related_roots' in details and word in details['related_roots']:
             interpretations.append((root, {'type': 'Verb', 'pattern_info': details['pattern_info'], 'form_description': f"Related Root: '{word}'"}))
 
-    # 2. Noun/Adj Analysis
+    # 2. Function Word Analysis (Pronouns, Prepositions, etc.)
+    for root, details in FUNCTION_WORDS_LEXICON.items():
+        if word == root:
+            interpretations.append((root, {'type': details['type'], 'pattern_info': details['pattern_info'], 'form_description': 'Function Word'}))
+
+    # 3. Noun/Adj Analysis
     for root, details in IRREGULAR_NOUN_ADJ_LEXICON.items():
         if word == root:
             interpretations.append((root, {'type': 'Noun/Adj', 'pattern_info': details['pattern_info'], 'form_description': 'Base Form (Masc. Plain)'}))
@@ -187,7 +274,7 @@ for word, data in word_data.items():
         identity = next((id_obj for id_obj in final_index[root]['identities'] if id_obj['type'] == details['type']), None)
         
         if identity is None:
-            lexicon_entry = VERB_LEXICON.get(root) or IRREGULAR_NOUN_ADJ_LEXICON.get(root)
+            lexicon_entry = VERB_LEXICON.get(root) or IRREGULAR_NOUN_ADJ_LEXICON.get(root) or FUNCTION_WORDS_LEXICON.get(root)
             identity = {
                 'type': details['type'],
                 'pattern_info': lexicon_entry.get('pattern_info', 'N/A') if lexicon_entry else 'Regular Noun/Adj',
@@ -201,7 +288,7 @@ for word, data in word_data.items():
             'translit': transliterate(word) # Transliterate each form
         })
 
-output_path = 'all_txt_copies/grammatical_index_v15.json'
+output_path = 'grammatical_index_v15.json'
 with open(output_path, 'w', encoding='utf-8') as f:
     json.dump(final_index, f, ensure_ascii=False, indent=2)
 
