@@ -12,9 +12,10 @@ export interface Features {
 }
 
 export interface Stems {
-  present?: string;        // e.g., STEM + ېږ for stative
-  perfective?: string;     // e.g., STEM + ش
-  pastParticiple?: string; // STEM + ېدلی / irregular
+  present?: string;         // e.g., STEM + ېږ for stative
+  perfective?: string;      // e.g., STEM + ش
+  pastParticiple?: string;  // STEM + ېدلی / irregular
+  past_participle?: string; // snake_case alternative from CSV/legacy exports
 }
 
 // Verb endings (present) per LingDocs verb-endings overview
@@ -169,5 +170,4 @@ export function generateDynamic(prefix: string, helperPresentStem: string) {
   }
   return { present };
 }
-
 

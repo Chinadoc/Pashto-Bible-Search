@@ -58,7 +58,9 @@ async function loadLingDocsLibrary(): Promise<LingDocsLibraryModule> {
         }
 
         console.log('🔍 Loading LingDocs library from:', libPath);
-        const mod = await import(libPath);
+        const { pathToFileURL } = await import('url');
+        const moduleUrl = pathToFileURL(libPath).href;
+        const mod = await import(/* webpackIgnore: true */ moduleUrl);
         console.log('✅ LingDocs library loaded successfully');
         return mod;
       } catch (error) {
