@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
+import VideosPanel from "../components/VideosPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
@@ -78,6 +79,9 @@ const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
 };
+
+const MAIN_TABS = ['search', 'lexicon', 'videos', 'poems'] as const;
+type MainTab = typeof MAIN_TABS[number];
 
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
 const TENSE_VALUES: VerbFilterTense[] = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'];
@@ -632,8 +636,8 @@ export default function ClientHome() {
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
-  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>(() =>
-    loadPersisted<'search' | 'lexicon' | 'videos' | 'poems'>('activeMainTab', 'search')
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>(() =>
+    loadPersisted<MainTab>('activeMainTab', 'search')
   );
   const [poems, setPoems] = useState<any[]>([]);
 
@@ -668,6 +672,7 @@ export default function ClientHome() {
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
+  const translationEffectGuard = useRef<boolean>(true);
 
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
@@ -730,6 +735,8 @@ export default function ClientHome() {
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
+    const savedTab = loadPersisted<MainTab>('activeMainTab', 'search');
+    setActiveMainTab(MAIN_TABS.includes(savedTab) ? savedTab : 'search');
   }, []);
 
   // Persist preferences when they change
@@ -829,12 +836,6 @@ export default function ClientHome() {
     }
   }, [activeMainTab, poems.length]);
 
-  // Fetch videos when videos tab is active
-  useEffect(() => {
-    if (activeMainTab === 'videos' && videos.length === 0) {
-      fetchVideos();
-    }
-  }, [activeMainTab, videos.length]);
 
 
 
@@ -843,12 +844,6 @@ export default function ClientHome() {
   const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
   const [loadingTranscripts, setLoadingTranscripts] = useState(false);
 
-  // Video processing state
-  const [videos, setVideos] = useState<any[]>([]);
-  const [loadingVideos, setLoadingVideos] = useState(false);
-  const [processingVideo, setProcessingVideo] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('https://www.youtube.com/watch?v=0tvvnixN7iw&t=724s');
-  const [videoProcessingResult, setVideoProcessingResult] = useState<any>(null);
 
   // Transcript search function
   const searchTranscripts = async (query: string) => {
@@ -889,52 +884,6 @@ export default function ClientHome() {
     debouncedTranscriptSearch(query);
   };
 
-  // Video processing functions
-  const fetchVideos = async () => {
-    setLoadingVideos(true);
-    try {
-      const response = await fetch('/api/videos');
-      const data = await response.json();
-      if (data.success) {
-        setVideos(data.videos || []);
-      }
-    } catch (error) {
-      console.error('Error fetching videos:', error);
-    } finally {
-      setLoadingVideos(false);
-    }
-  };
-
-  const processVideo = async () => {
-    if (!videoUrl.trim()) return;
-    
-    setProcessingVideo(true);
-    setVideoProcessingResult(null);
-    
-    try {
-      const response = await fetch('/api/process-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: videoUrl })
-      });
-      
-      const result = await response.json();
-      setVideoProcessingResult(result);
-      
-      if (result.success) {
-        // Refresh videos list after successful processing
-        await fetchVideos();
-      }
-    } catch (error) {
-      console.error('Error processing video:', error);
-      setVideoProcessingResult({
-        success: false,
-        error: 'Failed to process video'
-      });
-    } finally {
-      setProcessingVideo(false);
-    }
-  };
 
   // Refresh audio maps when results change to ensure we have latest URLs
   useEffect(() => {
@@ -1215,7 +1164,7 @@ export default function ClientHome() {
     } finally {
       setIsLoading(false);
     }
-  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
+  }, [activeTranslation, bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
 
   // Helper to calculate coverage from filtered results
   const calculateCoverageFromResults = useCallback((verses: Verse[]) => {
@@ -1272,6 +1221,17 @@ export default function ClientHome() {
     (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
     [executeSearch]
   );
+
+  useEffect(() => {
+    if (translationEffectGuard.current) {
+      translationEffectGuard.current = false;
+      return;
+    }
+    if (!query.trim()) {
+      return;
+    }
+    executeSearch({ preserveResults: false, reason: 'translation-switch' });
+  }, [activeTranslation, executeSearch, query]);
 
   const debouncedVerbFilterSearch = useMemo(
     () => debounce((nextFilters: VerbFilterState) => {
@@ -1677,16 +1637,6 @@ export default function ClientHome() {
             📚 Lexicon
           </button>
           <button
-            onClick={() => setActiveMainTab('poems')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'poems'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📝 Poems
-          </button>
-          <button
             onClick={() => setActiveMainTab('videos')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'videos'
@@ -1695,6 +1645,16 @@ export default function ClientHome() {
             }`}
           >
             🎬 Videos
+          </button>
+          <button
+            onClick={() => setActiveMainTab('poems')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'poems'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📝 Poems
           </button>
         </div>
       </div>
@@ -2323,6 +2283,20 @@ export default function ClientHome() {
         </div>
       )}
 
+      {/* Videos Tab */}
+      {activeMainTab === 'videos' && (
+        <div className="max-w-4xl mx-auto">
+          <VideosPanel
+            onSelectClip={(clip) => {
+              if (clip?.query) {
+                setQuery(clip.query);
+                setActiveMainTab('search');
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Poems Tab */}
       {activeMainTab === 'poems' && (
         <div className="max-w-4xl mx-auto">
@@ -2382,165 +2356,6 @@ export default function ClientHome() {
         </div>
       )}
 
-      {/* Videos Tab */}
-      {activeMainTab === 'videos' && (
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              🎬 Video Processing
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Process YouTube videos for Pashto transcription and audio extraction
-            </p>
-
-            {/* Process New Video Section */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
-                Process New Video
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    YouTube URL
-                  </label>
-                  <input
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  />
-                </div>
-                <button
-                  onClick={processVideo}
-                  disabled={processingVideo || !videoUrl.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {processingVideo ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    'Process Video'
-                  )}
-                </button>
-              </div>
-
-              {/* Processing Result */}
-              {videoProcessingResult && (
-                <div className={`mt-4 p-4 rounded-md ${
-                  videoProcessingResult.success 
-                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
-                    : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                }`}>
-                  <p className={`font-medium ${
-                    videoProcessingResult.success 
-                      ? 'text-green-800 dark:text-green-300' 
-                      : 'text-red-800 dark:text-red-300'
-                  }`}>
-                    {videoProcessingResult.success ? '✅ Processing Complete!' : '❌ Processing Failed'}
-                  </p>
-                  {videoProcessingResult.success && (
-                    <div className="mt-2 text-sm text-green-700 dark:text-green-400">
-                      <p>Video ID: {videoProcessingResult.videoId}</p>
-                      <p>Total chunks: {videoProcessingResult.totalChunks}</p>
-                      <p>Successful transcriptions: {videoProcessingResult.successfulTranscriptions}</p>
-                    </div>
-                  )}
-                  {videoProcessingResult.error && (
-                    <p className="mt-2 text-sm text-red-700 dark:text-red-400">
-                      Error: {videoProcessingResult.error}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Processed Videos List */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Processed Videos
-              </h3>
-              
-              {loadingVideos ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
-                </div>
-              ) : videos.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                    <p className="text-green-800 dark:text-green-300">
-                      Found {videos.length} processed video{videos.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  
-                  {videos.map((video) => (
-                    <div key={video.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                          {video.title}
-                        </h4>
-                        <a
-                          href={video.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                        >
-                          View on YouTube
-                        </a>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        <div>
-                          <span className="font-medium">Segments:</span> {video.totalSegments}
-                        </div>
-                        <div>
-                          <span className="font-medium">Duration:</span> {Math.round(video.totalDuration / 60)} min
-                        </div>
-                        <div>
-                          <span className="font-medium">Video ID:</span> {video.id}
-                        </div>
-                      </div>
-
-                      {/* Video Segments */}
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {video.segments.slice(0, 10).map((segment: any, index: number) => (
-                          <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded p-3 text-sm">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="font-medium text-gray-700 dark:text-gray-300">
-                                {segment.type === 'sentence' ? `Sentence ${segment.sentenceNumber}` : `Segment ${segment.segmentNumber}`}
-                              </span>
-                              <span className="text-gray-500 dark:text-gray-400">
-                                {Math.round(segment.startTime)}s - {Math.round(segment.endTime)}s
-                              </span>
-                            </div>
-                            <p className="text-gray-600 dark:text-gray-400 text-xs">
-                              {segment.transcript || 'No transcript available'}
-                            </p>
-                          </div>
-                        ))}
-                        {video.segments.length > 10 && (
-                          <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
-                            ... and {video.segments.length - 10} more segments
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <p className="text-yellow-800 dark:text-yellow-300">
-                    No processed videos found. Process a video above to get started.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

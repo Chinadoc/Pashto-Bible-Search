@@ -68,6 +68,8 @@ type OccurrenceRow = {
   verses?: string[];
 };
 
+export type TranslationKey = 'afghan2023' | 'yousafzai2019';
+
 export type VerseRecord = {
   ref: string;
   book: string;
@@ -79,6 +81,9 @@ export type VerseRecord = {
   textNormalizedLower?: string;
   testament?: 'OT' | 'NT';
   source?: string;
+  translationKey?: TranslationKey;
+  translationLabel?: string;
+  dialect?: string | null;
 };
 
 // Create a search index for faster lookups
@@ -138,63 +143,160 @@ async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf
 }
 
 // Pre-compute verses data to avoid repeated decompression
-let versesCache: VerseRecord[] | null = null;
+const versesCache = new Map<TranslationKey, VerseRecord[]>();
 
-async function loadVerses(): Promise<VerseRecord[]> {
-  if (versesCache) {
-    return versesCache;
+async function loadVerses(translation: TranslationKey = 'afghan2023'): Promise<VerseRecord[]> {
+  if (versesCache.has(translation)) {
+    return versesCache.get(translation)!;
   }
 
-  // In production, load from public directory
-  const isProduction = process.env.NODE_ENV === 'production';
-  const filePath = isProduction
-    ? path.join(process.cwd(), 'public', 'verses.json.gz')
-    : path.join(process.cwd(), 'app', 'data', 'verses.json');
+  if (translation === 'afghan2023') {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const filePath = isProduction
+      ? path.join(process.cwd(), 'public', 'verses.json.gz')
+      : path.join(process.cwd(), 'app', 'data', 'verses.json');
 
-  let raw: Record<string, any>;
-  if (isProduction) {
-    const compressed = await fs.readFile(filePath);
-    const jsonText = gunzipSync(compressed).toString('utf8');
-    raw = JSON.parse(jsonText) as Record<string, any>;
-  } else {
-    // In development, load from app/data/verses.json (not compressed)
-    const rawText = await fs.readFile(filePath, 'utf8');
-    raw = JSON.parse(rawText) as Record<string, any>;
+    let raw: Record<string, any>;
+    if (isProduction) {
+      const compressed = await fs.readFile(filePath);
+      const jsonText = gunzipSync(compressed).toString('utf8');
+      raw = JSON.parse(jsonText) as Record<string, any>;
+    } else {
+      const rawText = await fs.readFile(filePath, 'utf8');
+      raw = JSON.parse(rawText) as Record<string, any>;
+    }
+    const verses: VerseRecord[] = [];
+
+    for (const [ref, value] of Object.entries(raw)) {
+      if (!value || typeof value !== 'object') continue;
+      const text: string | undefined = value.text;
+      if (!ref || !text) continue;
+
+      const { book, chapter, verse } = splitRef(ref);
+      const normalizedBook = normaliseBook(book);
+      const plainBook = normalizedBook.replace(/-/g, ' ');
+      const canonicalBook = plainBook.replace(/\s+/g, ' ').trim();
+      const testament = PASHTO_BOOKS_OT.has(normalizedBook) || PASHTO_BOOKS_OT.has(canonicalBook)
+        ? 'OT'
+        : 'NT';
+
+      const textLower = text.toLowerCase();
+      const textNormalized: string | undefined = typeof value.text_normalized === 'string' ? value.text_normalized : undefined;
+
+      verses.push({
+        ref,
+        book: canonicalBook,
+        chapter,
+        verse,
+        text,
+        textNormalized,
+        textLower,
+        textNormalizedLower: textNormalized ? textNormalized.toLowerCase() : undefined,
+        testament,
+        source: typeof value.source === 'string' ? value.source : undefined,
+        translationKey: 'afghan2023',
+        translationLabel: 'Afghan 2023',
+        dialect: (typeof value.dialect === 'string' ? value.dialect : undefined) ?? 'afghan',
+      });
+    }
+
+    versesCache.set(translation, verses);
+    return verses;
   }
+
+  const candidatePaths = [
+    path.join(process.cwd(), 'public', 'yousafzai_all_verses.json'),
+    path.join(process.cwd(), 'app', 'data', 'yousafzai_all_verses.json'),
+    path.join(process.cwd(), 'yousafzai_all_verses.json'),
+  ];
+
+  let jsonText: string | null = null;
+  for (const candidate of candidatePaths) {
+    try {
+      jsonText = await fs.readFile(candidate, 'utf8');
+      if (jsonText) break;
+    } catch {
+      continue;
+    }
+  }
+
+  if (!jsonText) {
+    throw new Error('Yousafzai verses dataset not found (yousafzai_all_verses.json)');
+  }
+
+  const parsed = JSON.parse(jsonText) as Array<Record<string, any>>;
   const verses: VerseRecord[] = [];
 
-  for (const [ref, value] of Object.entries(raw)) {
-    if (!value || typeof value !== 'object') continue;
-    const text: string | undefined = value.text;
-    if (!ref || !text) continue;
+  for (const entry of parsed) {
+    if (!entry) continue;
+    const bookRaw = typeof entry.book === 'string' ? entry.book.trim() : '';
+    if (!bookRaw) continue;
+    const chapter = Number.parseInt(String(entry.chapter ?? 0), 10) || 0;
+    const verseNumber = Number.parseInt(String(entry.verse ?? 0), 10) || 0;
+    const ref = `${bookRaw} ${chapter}:${verseNumber}`;
 
-    const { book, chapter, verse } = splitRef(ref);
-    const normalizedBook = normaliseBook(book);
-    const plainBook = normalizedBook.replace(/-/g, ' ');
-    const canonicalBook = plainBook.replace(/\s+/g, ' ').trim();
-    const testament = PASHTO_BOOKS_OT.has(normalizedBook) || PASHTO_BOOKS_OT.has(canonicalBook)
-      ? 'OT'
-      : 'NT';
+    const rawText = typeof entry.text === 'string' ? entry.text : '';
+    const htmlText = typeof entry.text_html === 'string' ? entry.text_html : rawText;
+    const cleanText = rawText.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    const normalized = htmlText.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim() || cleanText;
 
-    const textLower = text.toLowerCase();
-    const textNormalized: string | undefined = typeof value.text_normalized === 'string' ? value.text_normalized : undefined;
+    if (!cleanText) continue;
+
+    const textLower = cleanText.toLowerCase();
+    const textNormalizedLower = normalized ? normalized.toLowerCase() : undefined;
+    const canonicalBook = bookRaw.replace(/\s+/g, ' ').trim();
+    const testament = PASHTO_BOOKS_OT.has(canonicalBook) ? 'OT' : 'NT';
 
     verses.push({
       ref,
       book: canonicalBook,
       chapter,
-      verse,
-      text,
-      textNormalized,
+      verse: verseNumber,
+      text: cleanText,
+      textNormalized: normalized,
       textLower,
-      textNormalizedLower: textNormalized ? textNormalized.toLowerCase() : undefined,
+      textNormalizedLower,
       testament,
-      source: typeof value.source === 'string' ? value.source : undefined,
+      source: 'yousafzai_all_verses.json',
+      translationKey: 'yousafzai2019',
+      translationLabel: typeof entry.translation === 'string' ? entry.translation : 'Yousafzai 2019',
+      dialect: typeof entry.dialect === 'string' ? entry.dialect : 'yousafzai',
     });
   }
 
-  versesCache = verses;
+  versesCache.set(translation, verses);
   return verses;
+}
+
+function buildSearchIndex(verses: VerseRecord[]): SearchIndex {
+  const byTextLower = new Map<string, VerseRecord[]>();
+  const byTextNormalizedLower = new Map<string, VerseRecord[]>();
+
+  for (const verse of verses) {
+    const words = verse.textLower.split(/\s+/);
+    for (const word of words) {
+      if (!word) continue;
+      const bucket = byTextLower.get(word) ?? [];
+      bucket.push(verse);
+      byTextLower.set(word, bucket);
+    }
+
+    if (verse.textNormalizedLower) {
+      const normWords = verse.textNormalizedLower.split(/\s+/);
+      for (const normWord of normWords) {
+        if (!normWord) continue;
+        const bucket = byTextNormalizedLower.get(normWord) ?? [];
+        bucket.push(verse);
+        byTextNormalizedLower.set(normWord, bucket);
+      }
+    }
+  }
+
+  return {
+    verses,
+    byTextLower,
+    byTextNormalizedLower,
+  };
 }
 
 function extractRomanized(entry: any): string | undefined {
