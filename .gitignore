@@ -72,15 +72,18 @@ MANIFEST
 
 # Audio files
 *.mp3
-#*.wav
+*.wav
 *.flac
 *.aac
 *.ogg
-#*.m4a
+*.m4a
 audio/
 **/audio/
 # Don't ignore API routes with "audio" in the name
 # *audio*/
+
+# Processed video files (large audio files)
+processed_videos/
 
 # Generated files
 *_frequencies_from_db*.json
