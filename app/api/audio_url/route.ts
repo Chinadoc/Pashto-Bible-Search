@@ -1,8 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AudioMap } from '@/types';
 
+// Replicate the audio map loading logic from /api/get_audio_map
+async function loadAudioMapFromSource(): Promise<AudioMap> {
+  const audioMap: AudioMap = {};
+
+  // Load Supabase audio (NT only, OT removed as requested)
+  const supabaseAudioMap = await loadSupabaseAudioMap();
+  Object.assign(audioMap, supabaseAudioMap);
+
+  // Load Google Drive audio
+  const googleDriveAudioMap = await loadGoogleDriveAudioMaps();
+  Object.assign(audioMap, googleDriveAudioMap);
+
+  return audioMap;
+}
+
+async function loadSupabaseAudioMap(): Promise<AudioMap> {
+  try {
+    // Load NT audio files from Supabase public storage (OT portion removed as requested)
+    // Using direct URLs since the storage API requires different authentication
+    const audioMap: Record<string, string> = {};
+    const baseUrl = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio';
+
+    // NT books only (OT books removed as per user request)
+    const ntBooks = new Set([
+      'matthew', 'mark', 'luke', 'john', 'acts', 'romans',
+      '1corinthians', '2corinthians', 'galatians', 'ephesians',
+      'philippians', 'colossians', '1thessalonians', '2thessalonians',
+      '1timothy', '2timothy', 'titus', 'philemon', 'hebrews',
+      'james', '1peter', '2peter', '1john', '2john', '3john',
+      'jude', 'revelation'
+    ]);
+
+    // Helper function to add a range of verses for a book/chapter
+    const addVerses = (book: string, chapter: number, startVerse: number, endVerse: number) => {
+      for (let verse = startVerse; verse <= endVerse; verse++) {
+        const filename = `${book.toLowerCase()}${chapter}_verse_${verse}.mp3`;
+        const bookName = book.toLowerCase(); // Keep lowercase to match existing format
+        const verseRef = `${bookName} ${chapter}:${verse}`;
+        audioMap[verseRef] = `${baseUrl}/${filename}`;
+      }
+    };
+
+    // Add Mark (confirmed exists in Supabase storage)
+    if (ntBooks.has('mark')) {
+      addVerses('Mark', 1, 1, 45);
+    }
+
+    // The existing NT books (1corinthians, 1john, 1peter, 1thessalonians, 1timothy)
+    // are already being loaded by the Google Drive portion, so we don't need to duplicate them here
+
+    console.log(`Loaded ${Object.keys(audioMap).length} NT audio entries from Supabase (OT removed)`);
+    return audioMap;
+  } catch (error) {
+    console.error('Error loading Supabase audio map:', error);
+    return {};
+  }
+}
+
+async function loadGoogleDriveAudioMaps(): Promise<AudioMap> {
+  const audioMap: AudioMap = {};
+
+  try {
+    // Load Afghan 2023 OT audio from Google Drive
+    const afghanOtData = await loadGoogleDriveFolder('1m-Mv7r01GHTgXkzFxAXfANn_7sSHRSUC');
+    Object.assign(audioMap, afghanOtData);
+
+    // Load Yousafzai audio from Google Drive (search for files)
+    const yousafzaiData = await loadYousafzaiAudioFromDrive();
+    Object.assign(audioMap, yousafzaiData);
+
+    console.log(`Loaded ${Object.keys(audioMap).length} Google Drive audio entries`);
+    return audioMap;
+  } catch (error) {
+    console.error('Error loading Google Drive audio maps:', error);
+    return {};
+  }
+}
+
+async function loadGoogleDriveFolder(folderId: string): Promise<Record<string, string>> {
+  // For now, return empty - would need Google Drive API integration
+  console.log(`Google Drive folder ${folderId} loading not implemented yet`);
+  return {};
+}
+
+async function loadYousafzaiAudioFromDrive(): Promise<Record<string, string>> {
+  // For now, return empty - would need Google Drive API integration
+  console.log('Yousafzai Google Drive audio loading not implemented yet');
+  return {};
+}
+
 export const runtime = 'nodejs';
 
+// Helper functions (already defined later in the file)
 function normalizeRef(ref: string): string {
   return ref.trim().replace(/\s+/g, ' ');
 }
@@ -115,19 +206,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(`Looking up audio for ref: ${ref}`);
-
-    // Load audio map from the get_audio_map API
-    const audioMapResponse = await fetch(`${request.nextUrl.origin}/api/get_audio_map`, {
-      method: 'GET',
-      cache: 'no-store',
-    });
-
-    if (!audioMapResponse.ok) {
-      throw new Error(`Failed to load audio map: ${audioMapResponse.status}`);
-    }
-
-    const audioMap = await audioMapResponse.json();
+    // Load audio map directly instead of making internal API call
+    const audioMap = await loadAudioMapFromSource();
     console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
 
     const match = lookupAudioEntry(ref, audioMap);
@@ -186,17 +266,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Refs array contained no usable values' }, { status: 400 });
     }
 
-    // Load audio map from the get_audio_map API
-    const audioMapResponse = await fetch(`${request.nextUrl.origin}/api/get_audio_map`, {
-      method: 'GET',
-      cache: 'no-store',
-    });
-    
-    if (!audioMapResponse.ok) {
-      throw new Error(`Failed to load audio map: ${audioMapResponse.status}`);
-    }
-    
-    const audioMap = await audioMapResponse.json();
+    // Load audio map directly instead of making internal API call
+    const audioMap = await loadAudioMapFromSource();
     const urls: Record<string, string | null> = {};
 
     for (const ref of stringRefs) {

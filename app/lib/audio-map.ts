@@ -63,6 +63,10 @@ function normalizeKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+export function canonicalBookFromSlug(value: string): string | null {
+  return BOOK_NAME_LOOKUP.get(normalizeKey(value)) ?? null;
+}
+
 function toVerseRef(book: string, chapter: number | string, verse: number | string): string | null {
   const normalized = normalizeKey(book);
   const canonical = BOOK_NAME_LOOKUP.get(normalized);
