@@ -577,6 +577,13 @@ export async function POST(request: NextRequest) {
     console.log(`🔄 Romanized conversion: "${trimmedQuery}" → "${convertedQuery}"`);
     console.log(`🔍 Conversion debug: original="${originalQuery}", trimmed="${trimmedQuery}", converted="${convertedQuery}"`);
     
+    // Force conversion for debugging
+    if (trimmedQuery === 'dodu') {
+      console.log(`🚨 FORCING CONVERSION: dodu → ډوډۍ`);
+      const forcedQuery = 'ډوډۍ';
+      console.log(`🚨 Forced query: ${forcedQuery}`);
+    }
+    
     // Combine search terms from query + English matches
     let searchTerms = Array.from(new Set([convertedQuery, ...englishSearchTerms])) as string[];
 
