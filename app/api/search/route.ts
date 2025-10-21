@@ -572,8 +572,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Apply romanized to Pashto conversion to the main query
+    const convertedQuery = romanizedToPashto(trimmedQuery);
+    console.log(`🔄 Romanized conversion: "${trimmedQuery}" → "${convertedQuery}"`);
+    
     // Combine search terms from query + English matches
-    let searchTerms = Array.from(new Set([trimmedQuery, ...englishSearchTerms])) as string[];
+    let searchTerms = Array.from(new Set([convertedQuery, ...englishSearchTerms])) as string[];
 
     // Apply enhanced disambiguation for ambiguous Pashto terms with Bible context
 
@@ -581,12 +585,12 @@ export async function POST(request: NextRequest) {
       // Use the new comprehensive disambiguation system
       try {
         // Create a sample sentence context for disambiguation
-        const contextSentence = `خدا بوځو شو چې ${trimmedQuery} راوړو`;
-        const tempAnalysis = PashtoDisambiguator.disambiguate(trimmedQuery, contextSentence, 2);
+        const contextSentence = `خدا بوځو شو چې ${convertedQuery} راوړو`;
+        const tempAnalysis = PashtoDisambiguator.disambiguate(convertedQuery, contextSentence, 2);
 
         if (tempAnalysis) {
           disambiguationAnalysis = tempAnalysis;
-          console.log(`🔍 Enhanced disambiguation: "${trimmedQuery}" → ${disambiguationAnalysis.primaryPOS} (${Math.round(disambiguationAnalysis.confidence * 100)}% confidence)`);
+          console.log(`🔍 Enhanced disambiguation: "${convertedQuery}" → ${disambiguationAnalysis.primaryPOS} (${Math.round(disambiguationAnalysis.confidence * 100)}% confidence)`);
           console.log(`   Context analysis: preceding=${disambiguationAnalysis.contextAnalysis.precedingWords.join(',')}, following=${disambiguationAnalysis.contextAnalysis.followingWords.join(',')}`);
           console.log(`   Morphological pattern: ${disambiguationAnalysis.contextAnalysis.morphologicalPattern}`);
 
@@ -597,7 +601,7 @@ export async function POST(request: NextRequest) {
           // Use disambiguation result for search enhancement
           if (disambiguationAnalysis.confidence > 0.7) {
             disambiguationResult = {
-              word: trimmedQuery,
+              word: convertedQuery,
               likelyPos: disambiguationAnalysis.primaryPOS,
               confidence: disambiguationAnalysis.confidence,
               contextClues: disambiguationAnalysis.alternativeMeanings.map(m => m.contextClues).flat(),
@@ -612,7 +616,7 @@ export async function POST(request: NextRequest) {
       // Fallback to old system if new system fails
       if (!disambiguationResult) {
         // Legacy disambiguation system removed - enhanced system is primary
-        console.log(`🔍 Enhanced disambiguation completed for "${trimmedQuery}"`);
+        console.log(`🔍 Enhanced disambiguation completed for "${convertedQuery}"`);
       }
     }
 
@@ -643,7 +647,7 @@ export async function POST(request: NextRequest) {
         const relatedResponse = await fetch('/api/related_forms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ form: trimmedQuery }),
+          body: JSON.stringify({ form: convertedQuery }),
         });
 
         console.log('🔍 Related forms API response status:', relatedResponse.status);
@@ -663,7 +667,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Add all related forms to search terms for comprehensive Bible search
-          const allSearchTerms = [trimmedQuery]; // Include original
+          const allSearchTerms = [convertedQuery]; // Include original
 
           if (relatedForms.forms?.nouns) {
             const nounForms = relatedForms.forms.nouns.map((f: any) => {
@@ -736,18 +740,18 @@ export async function POST(request: NextRequest) {
       };
     } else if (effectiveIncludeRelated) {
       try {
-        console.log('🔍 Generating related forms for expanded search:', trimmedQuery);
+        console.log('🔍 Generating related forms for expanded search:', convertedQuery);
 
         // Try to determine if it's a verb or noun and generate appropriate forms
         const { dictionary } = await getData();
         const dictEntry = dictionary.find((entry: any) => {
           // Check exact Pashto match
-          if (entry.pashto === trimmedQuery) return true;
+          if (entry.pashto === convertedQuery) return true;
           
           // Check romanized match with accent normalization
           if (entry.romanized) {
             const normalizedEntry = entry.romanized.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const normalizedQuery = trimmedQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const normalizedQuery = convertedQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             if (normalizedEntry === normalizedQuery) return true;
           }
           
@@ -760,7 +764,7 @@ export async function POST(request: NextRequest) {
         const isVerb = pos.includes('verb') || pos.includes('v.');
         const isAdjective = pos.includes('adj');
 
-        console.log(`📖 Dictionary entry for "${trimmedQuery}":`, {
+        console.log(`📖 Dictionary entry for "${convertedQuery}":`, {
           pos: dictEntry?.pos,
           detected: isNoun ? 'noun' : isVerb ? 'verb' : isAdjective ? 'adjective' : 'unknown',
           entry: dictEntry
@@ -773,29 +777,29 @@ export async function POST(request: NextRequest) {
         if (isNoun) {
           // It's a noun - only generate noun inflections
           console.log('✅ Detected as NOUN - generating inflections');
-          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 30 });
+          const nounVariants = await generateNounVariants(convertedQuery, { cap: 30 });
           allVariants.push(...nounVariants);
           posGuess = 'noun';
         } else if (isVerb) {
           // It's a verb - only generate verb conjugations
           console.log('✅ Detected as VERB - generating conjugations');
-          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
+          const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'verb';
         } else if (isAdjective) {
           // It's an adjective - generate both inflections and possibly compound verbs
           console.log('✅ Detected as ADJECTIVE - generating inflections and compounds');
-          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+          const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           allVariants.push(...nounVariants);
           // Also check for stative compounds (adj + کېدل/کول)
-          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 20, includeCompound: true });
+          const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 20, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'adjective';
         } else {
           // Unknown - try both but prioritize by what generates more results
           console.log('⚠️ Unknown POS - trying both');
-          const verbVariants = await generateVerbVariantsUtil(trimmedQuery, { cap: 40, includeCompound: true });
-          const nounVariants = await generateNounVariants(trimmedQuery, { cap: 20 });
+          const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
+          const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           
           if (verbVariants.length > nounVariants.length) {
             allVariants.push(...verbVariants);
@@ -820,8 +824,8 @@ export async function POST(request: NextRequest) {
 
         if (forms.length > 0) {
           // Add all forms as search terms (excluding the original query)
-          const additionalTerms = forms.map(f => f.form).filter(f => f !== trimmedQuery);
-          searchTerms = [trimmedQuery, ...additionalTerms];
+          const additionalTerms = forms.map(f => f.form).filter(f => f !== convertedQuery);
+          searchTerms = [convertedQuery, ...additionalTerms];
 
           console.log(`✅ Generated ${forms.length} related forms, expanding search to ${searchTerms.length} terms`);
 
@@ -864,7 +868,7 @@ export async function POST(request: NextRequest) {
           };
 
           relatedForms = {
-            root: trimmedQuery,
+            root: convertedQuery,
             total: forms.length,
             verbs: groupedForms.verbs,
             nouns: groupedForms.nouns,
@@ -904,7 +908,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try enhanced search first (if SQL functions are available)
-    console.log('🔍 Attempting enhanced search for:', trimmedQuery, 'with', searchTerms.length, 'terms');
+    console.log('🔍 Attempting enhanced search for:', convertedQuery, 'with', searchTerms.length, 'terms');
     console.log('🔍 Search terms being used:', searchTerms);
     
     let enhancedResults: any = null;
@@ -916,8 +920,8 @@ export async function POST(request: NextRequest) {
         enhancedResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
       } else {
         // Single term - use direct search
-        console.log('🔍 Using single term search for:', trimmedQuery);
-        enhancedResults = await hybridSearch(trimmedQuery, { scope });
+        console.log('🔍 Using single term search for:', convertedQuery);
+        enhancedResults = await hybridSearch(convertedQuery, { scope });
       }
 
       console.log('🔍 Enhanced search raw results:', enhancedResults);
@@ -947,7 +951,7 @@ export async function POST(request: NextRequest) {
         // Cache the results before returning
         const processedData = {
           original: originalQuery,
-          normalized: trimmedQuery,
+          normalized: convertedQuery,
           variants: searchTerms,
           searchType: 'enhanced',
           pos: 'unknown',
@@ -964,7 +968,7 @@ export async function POST(request: NextRequest) {
           relatedForms,
           processed: {
             original: originalQuery,
-            normalized: trimmedQuery,
+            normalized: convertedQuery,
             variants: searchTerms,
             disambiguation: disambiguationResult,
             searchType: 'enhanced',
@@ -1013,7 +1017,7 @@ export async function POST(request: NextRequest) {
       const transformed = transformResults(results, audioMap);
       const processed: Processed = {
         original: originalQuery,
-        normalized: trimmedQuery,
+        normalized: convertedQuery,
         variants: Array.from(new Set(variants.filter(Boolean))),
         disambiguation: disambiguationResult,
         searchType: 'hybrid',
@@ -1067,7 +1071,7 @@ export async function POST(request: NextRequest) {
       const transformed = transformResults(results, audioMap);
       const processed: Processed = {
         original: originalQuery,
-        normalized: trimmedQuery,
+        normalized: convertedQuery,
         variants: Array.from(new Set(variants.filter(Boolean))),
         disambiguation: disambiguationResult,
         searchType: 'fast',
@@ -1090,18 +1094,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const isPashtoQuery = containsPashto(trimmedQuery);
-    const isLatin = isLatinOnly(trimmedQuery);
+    const isPashtoQuery = containsPashto(convertedQuery);
+    const isLatin = isLatinOnly(convertedQuery);
 
     // Normalization (from dictionary data)
-    let normalized = trimmedQuery;
+    let normalized = convertedQuery;
     let romanization: string | undefined;
     let posGuess: Processed["pos"] = undefined;
     let rootFromForm: string | undefined;
 
     if (isLatin) {
       const { dictionaryByRomanized } = await getData();
-      const pick = dictionaryByRomanized.get(trimmedQuery.toLowerCase())?.[0];
+      const pick = dictionaryByRomanized.get(convertedQuery.toLowerCase())?.[0];
       if (pick?.pashto) {
         normalized = pick.pashto;
         romanization = pick.romanized;
@@ -1134,7 +1138,9 @@ export async function POST(request: NextRequest) {
     console.log('Search debug:', {
       searchIndexExists: !!searchIndex,
       versesCount: verses.length,
-      searchTerm: normalized
+      searchTerm: normalized,
+      originalQuery: originalQuery,
+      convertedQuery: convertedQuery
     });
 
     // Enhanced search with variants when includeRelated is enabled
@@ -1275,7 +1281,7 @@ export async function POST(request: NextRequest) {
       && searchTerms.length === 1;
 
     if (shouldApplyCollapsedFilter && results.length > 0) {
-      const collapsedQuery = trimmedQuery.replace(/\s+/g, '');
+      const collapsedQuery = convertedQuery.replace(/\s+/g, '');
       if (collapsedQuery.length > 1) {
         results = results.filter((verse) => {
           const text = verse.text ?? '';
@@ -1326,7 +1332,7 @@ export async function POST(request: NextRequest) {
 
     const processed: Processed = {
       original: originalQuery,
-      normalized,
+      normalized: convertedQuery,
       variants: variantForms.slice(0, 40),
       disambiguation: disambiguationResult,
       searchType,
@@ -1346,7 +1352,7 @@ export async function POST(request: NextRequest) {
     });
 
     const totalMs = Date.now() - startedAt;
-    console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${trimmedQuery}"`);
+    console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${convertedQuery}"`);
 
     // For Anki mode, prioritize results with dictionary audio
     let finalResults = transformed;
