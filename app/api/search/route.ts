@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
 import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
+import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
+import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
-import { refToFilename, audioUrlFromRef } from '@/utils/audio';
+import { audioUrlFromRef } from '@/utils/audio';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
@@ -233,86 +235,34 @@ async function getAudioMap(): Promise<Record<string, string>> {
 }
 
 async function loadAudioMapData(): Promise<Record<string, string>> {
-  const audioMap: Record<string, string> = {};
-
-  // Load Google Drive audio data first (primary source)
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const localPath = path.join(process.cwd(), 'google_drive_audio_urls.json');
+    const [driveMap, supabaseMap] = await Promise.all([
+      loadDriveAudioMap(),
+      loadSupabaseAudioMap(),
+    ]);
 
-    if (fs.existsSync(localPath)) {
-      const localAudioData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-      let localCount = 0;
-
-      Object.entries(localAudioData).forEach(([filename, data]: [string, any]) => {
-        if (data.book && data.chapter && data.verse) {
-          const bookName = data.book.charAt(0).toUpperCase() + data.book.slice(1);
-          const verseRef = `${bookName} ${data.chapter}:${data.verse}`;
-
-          // Use file ID if available, otherwise extract from URL
-          let fileId = data.google_drive_file_id;
-          if (!fileId && data.google_drive_url) {
-            // Extract file ID from URL: https://drive.google.com/uc?id=FILE_ID&export=download
-            const urlMatch = data.google_drive_url.match(/id=([^&]+)/);
-            fileId = urlMatch ? urlMatch[1] : null;
-          }
-
-          if (fileId && fileId !== 'TEST_ID' && fileId !== 'FILE_ID_HERE') {
-            audioMap[verseRef] = fileId;
-            localCount++;
-          }
-        }
-      });
-
-      console.log(`🔗 Loaded ${localCount} Google Drive audio entries as primary source`);
-    } else {
-      console.warn('Local Google Drive audio file not found');
-    }
-  } catch (localError) {
-    console.warn('Failed to load local Google Drive audio data:', localError);
-  }
-
-  // Also try to load from Supabase as secondary source
-  try {
-    console.log('🔄 Fetching audio map from Supabase as secondary source...');
-    const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audio_by_verse?select=verse_ref,url&limit=10000`, {
-      headers: {
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (audioResponse.ok) {
-      const audioData = await audioResponse.json();
-      let supabaseCount = 0;
-
-      if (Array.isArray(audioData)) {
-        for (const row of audioData) {
-          if (row.verse_ref && row.url && !/drive\.google|docs\.google/i.test(row.url)) {
-            // Only add if not already in local data
-            if (!audioMap[row.verse_ref]) {
-              audioMap[row.verse_ref] = row.url;
-              supabaseCount++;
-            }
-          }
-        }
+    const merged: Record<string, string> = { ...driveMap };
+    let supabaseAdded = 0;
+    for (const [key, value] of Object.entries(supabaseMap)) {
+      if (!merged[key]) {
+        merged[key] = value;
+        supabaseAdded++;
       }
-
-      console.log(`🔗 Added ${supabaseCount} Supabase audio entries as secondary source`);
     }
+
+    audioMapCache = merged;
+    audioMapCacheTime = Date.now();
+    console.log(
+      `✅ Audio map cached: ${Object.keys(merged).length} entries (Drive ${Object.keys(driveMap).length}, Supabase added ${supabaseAdded})`,
+    );
+
+    return merged;
   } catch (error) {
-    console.warn('Failed to load Supabase audio map:', error);
+    console.error('Failed to load audio map data:', error);
+    audioMapCache = {};
+    audioMapCacheTime = Date.now();
+    return {};
   }
-
-  // Cache the result
-  audioMapCache = audioMap;
-  audioMapCacheTime = Date.now();
-  console.log(`✅ Audio map cached: ${Object.keys(audioMap).length} entries`);
-
-  return audioMap;
 }
 
 async function getHelperVariants(helper: string): Promise<string[]> {

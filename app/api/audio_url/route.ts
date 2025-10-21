@@ -148,7 +148,7 @@ function filenameVariants(ref: string): string[] {
   return Array.from(variants);
 }
 
-function lookupAudioEntry(ref: string, audioMap: AudioMap): { key: string; value: string } | null {
+function getLookupCandidates(ref: string): string[] {
   const candidates = new Set<string>();
   candidates.add(ref);
 
@@ -165,6 +165,12 @@ function lookupAudioEntry(ref: string, audioMap: AudioMap): { key: string; value
       candidates.add(variant.toLowerCase());
     }
   }
+
+  return Array.from(candidates);
+}
+
+function lookupAudioEntry(ref: string, audioMap: AudioMap): { key: string; value: string } | null {
+  const candidates = getLookupCandidates(ref);
 
   for (const key of candidates) {
     const value = audioMap[key];
@@ -209,6 +215,11 @@ export async function GET(request: NextRequest) {
     // Load audio map directly instead of making internal API call
     const audioMap = await loadAudioMapFromSource();
     console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
+
+    const candidates = getLookupCandidates(ref);
+    console.log(`Looking for ref: ${ref}`);
+    console.log(`Candidates:`, candidates);
+    console.log(`Available keys in map:`, Object.keys(audioMap).filter(k => k.includes('1corinthians')).slice(0, 5));
 
     const match = lookupAudioEntry(ref, audioMap);
     console.log(`Lookup result for ${ref}:`, match);
