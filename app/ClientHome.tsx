@@ -649,6 +649,7 @@ export default function ClientHome() {
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [processed, setProcessed] = useState<{
     original: string;
     normalized: string;
@@ -1046,6 +1047,15 @@ export default function ClientHome() {
       return;
     }
 
+    // Cancel any ongoing search
+    if (abortControllerRef.current) {
+      console.log('🔄 Cancelling previous search');
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this search
+    abortControllerRef.current = new AbortController();
+
     const {
       overrideVariants,
       languageOverride,
@@ -1114,6 +1124,7 @@ export default function ClientHome() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(searchParams),
+        signal: abortControllerRef.current?.signal,
       });
 
       if (!response.ok) {
@@ -1153,6 +1164,12 @@ export default function ClientHome() {
 
       console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
     } catch (err) {
+      // Don't show error for aborted searches
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('🔄 Search was cancelled');
+        return;
+      }
+
       console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
       if (!preserveResults) {
@@ -1162,6 +1179,10 @@ export default function ClientHome() {
       }
       setProcessed(null);
     } finally {
+      // Clear the abort controller when search completes
+      if (abortControllerRef.current) {
+        abortControllerRef.current = null;
+      }
       setIsLoading(false);
     }
   }, [activeTranslation, bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
@@ -1448,11 +1469,25 @@ export default function ClientHome() {
     previousLanguage.current = searchLanguage;
   }, [searchLanguage, query, executeSearch]);
 
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Trigger search when query changes (with debouncing)
   const previousQuery = useRef<string>(query);
   const debouncedSearch = useMemo(
     () => debounce((trimmedQuery: string) => {
       console.log('🔄 Query changed, triggering new search');
+      // Cancel any ongoing search before starting new one
+      if (abortControllerRef.current) {
+        console.log('🔄 Cancelling previous search due to query change');
+        abortControllerRef.current.abort();
+      }
       // Set flag to prevent filter persistence during query change
       isQueryChangingRef.current = true;
       // Reset filters and variant forms when query changes to ensure fresh analysis
