@@ -45,6 +45,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [elevenLabsLoading, setElevenLabsLoading] = useState(false);
   const [elevenLabsResult, setElevenLabsResult] = useState<string | null>(null);
   const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVideos = async () => {
@@ -106,17 +107,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
   const handleElevenLabsTranscription = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('audio/')) {
-      setElevenLabsError('Please select an audio file');
-      return;
-    }
-
-    // Validate file size (max 25MB for ElevenLabs)
-    if (file.size > 25 * 1024 * 1024) {
-      setElevenLabsError('File size must be less than 25MB');
+    // If no file selected but we have a YouTube URL, process that
+    if (!file && !youtubeUrl.trim()) {
+      setElevenLabsError('Please select an audio file or enter a YouTube URL');
       return;
     }
 
@@ -126,7 +120,30 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
     try {
       const formData = new FormData();
-      formData.append('audio', file);
+
+      if (file) {
+        // Handle file upload
+        if (!file.type.startsWith('audio/')) {
+          setElevenLabsError('Please select an audio file');
+          return;
+        }
+
+        if (file.size > 25 * 1024 * 1024) {
+          setElevenLabsError('File size must be less than 25MB');
+          return;
+        }
+
+        formData.append('audio', file);
+      } else if (youtubeUrl.trim()) {
+        // Handle YouTube URL
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+        if (!youtubeRegex.test(youtubeUrl.trim())) {
+          setElevenLabsError('Please enter a valid YouTube URL');
+          return;
+        }
+
+        formData.append('youtubeUrl', youtubeUrl.trim());
+      }
 
       const response = await fetch('/api/transcribe-audio', {
         method: 'POST',
@@ -137,12 +154,56 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
       if (response.ok && result.success) {
         setElevenLabsResult(result.transcript);
+
+        // Show additional info for YouTube videos
+        if (result.source === 'youtube' && result.originalSize && result.compressedSize) {
+          console.log(`YouTube video compressed from ${result.originalSize} to ${result.compressedSize} bytes`);
+        }
       } else {
         setElevenLabsError(result.error || 'Transcription failed');
       }
     } catch (error) {
       console.error('ElevenLabs transcription error:', error);
       setElevenLabsError('Failed to transcribe audio');
+    } finally {
+      setElevenLabsLoading(false);
+    }
+  };
+
+  const handleYouTubeTranscription = async () => {
+    if (!youtubeUrl.trim()) {
+      setElevenLabsError('Please enter a YouTube URL');
+      return;
+    }
+
+    setElevenLabsLoading(true);
+    setElevenLabsError(null);
+    setElevenLabsResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('youtubeUrl', youtubeUrl.trim());
+
+      const response = await fetch('/api/transcribe-audio', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setElevenLabsResult(result.transcript);
+
+        // Show compression info for YouTube videos
+        if (result.originalSize && result.compressedSize) {
+          console.log(`YouTube video compressed from ${result.originalSize} to ${result.compressedSize} bytes`);
+        }
+      } else {
+        setElevenLabsError(result.error || 'Transcription failed');
+      }
+    } catch (error) {
+      console.error('ElevenLabs transcription error:', error);
+      setElevenLabsError('Failed to transcribe YouTube video');
     } finally {
       setElevenLabsLoading(false);
     }
@@ -155,6 +216,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const resetElevenLabsState = () => {
     setElevenLabsResult(null);
     setElevenLabsError(null);
+    setYoutubeUrl('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -181,34 +243,96 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
       {/* ElevenLabs Transcription Section */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
-        <div className="flex items-center mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              🎤 ElevenLabs Pashto Transcription
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Upload an audio file to get instant Pashto transcription using ElevenLabs AI
-            </p>
-          </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            🎤 ElevenLabs Pashto Transcription
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Upload an audio file or enter a YouTube URL to get instant Pashto transcription using ElevenLabs AI
+          </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
           <button
-            onClick={triggerFileUpload}
-            disabled={elevenLabsLoading}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+            onClick={() => setYoutubeUrl('')}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              !youtubeUrl.trim()
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-            </svg>
-            <span>{elevenLabsLoading ? 'Transcribing...' : 'Upload Audio'}</span>
+            📁 File Upload
+          </button>
+          <button
+            onClick={() => {
+              // Clear file input when switching to YouTube
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              youtubeUrl.trim()
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            🎥 YouTube URL
           </button>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/*"
-          onChange={handleElevenLabsTranscription}
-          className="hidden"
-        />
+        {/* File Upload Tab */}
+        {!youtubeUrl.trim() && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center">
+              <button
+                onClick={triggerFileUpload}
+                disabled={elevenLabsLoading}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                <span>{elevenLabsLoading ? 'Transcribing...' : 'Upload Audio'}</span>
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleElevenLabsTranscription}
+              className="hidden"
+            />
+          </div>
+        )}
+
+        {/* YouTube URL Tab */}
+        {youtubeUrl.trim() && (
+          <div className="space-y-3">
+            <div className="flex space-x-2">
+              <input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleYouTubeTranscription}
+                disabled={elevenLabsLoading || !youtubeUrl.trim()}
+                className="px-4 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-md hover:from-red-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 8a9 9 0 110-18 9 9 0 010 18z" />
+                </svg>
+                <span>{elevenLabsLoading ? 'Processing...' : 'Transcribe'}</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              YouTube videos will be automatically downloaded and compressed to under 25MB for transcription
+            </p>
+          </div>
+        )}
 
         {elevenLabsLoading && (
           <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">

@@ -2,9 +2,101 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+
+async function downloadAndCompressYouTubeAudio(youtubeUrl: string): Promise<{ audioBuffer: ArrayBuffer; originalSize: number; compressedSize: number } | null> {
+  try {
+    // Extract video ID from YouTube URL
+    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    if (!videoIdMatch) {
+      throw new Error('Invalid YouTube URL');
+    }
+    const videoId = videoIdMatch[1];
+
+    // Create temporary directory for processing
+    const tempDir = join(process.cwd(), 'temp');
+    const tempVideoPath = join(tempDir, `${videoId}_original.mp4`);
+    const tempAudioPath = join(tempDir, `${videoId}_compressed.mp3`);
+
+    try {
+      // Download video using yt-dlp
+      console.log(`Downloading YouTube video: ${videoId}`);
+      const downloadCmd = `yt-dlp --extract-audio --audio-format mp3 --output "${tempVideoPath}" "${youtubeUrl}"`;
+      await execAsync(downloadCmd, { timeout: 300000 }); // 5 minute timeout
+
+      // Check if file exists
+      try {
+        await writeFile(join(tempDir, '.gitkeep'), ''); // Ensure temp dir exists
+      } catch {
+        // Directory might already exist
+      }
+
+      // Get original file size
+      const originalStats = await import('fs').then(fs => fs.promises.stat(tempVideoPath));
+      const originalSize = originalStats.size;
+
+      // Compress audio to ensure it's under 25MB
+      console.log(`Compressing audio from ${originalSize} bytes`);
+      let targetBitrate = 128; // Start with 128kbps
+
+      // If original file is too large, progressively reduce bitrate
+      const maxSize = 25 * 1024 * 1024; // 25MB
+      let compressedSize = originalSize;
+
+      while (compressedSize > maxSize && targetBitrate > 32) {
+        const compressCmd = `ffmpeg -i "${tempVideoPath}" -b:a ${targetBitrate}k -y "${tempAudioPath}"`;
+        await execAsync(compressCmd, { timeout: 120000 });
+
+        const compressedStats = await import('fs').then(fs => fs.promises.stat(tempAudioPath));
+        compressedSize = compressedStats.size;
+        console.log(`Compressed to ${compressedSize} bytes at ${targetBitrate}kbps`);
+
+        if (compressedSize <= maxSize) {
+          break;
+        }
+
+        targetBitrate -= 16; // Reduce bitrate
+      }
+
+      // Read the compressed audio file
+      const audioBuffer = await import('fs').then(fs => fs.promises.readFile(tempAudioPath));
+
+      // Clean up temporary files
+      try {
+        await unlink(tempVideoPath);
+        await unlink(tempAudioPath);
+      } catch (error) {
+        console.warn('Failed to clean up temp files:', error);
+      }
+
+      return {
+        audioBuffer: audioBuffer.buffer.slice(audioBuffer.byteOffset, audioBuffer.byteOffset + audioBuffer.byteLength),
+        originalSize,
+        compressedSize
+      };
+
+    } catch (error) {
+      // Clean up temp files if they exist
+      try {
+        await unlink(tempVideoPath);
+        await unlink(tempAudioPath);
+      } catch {
+        // Files might not exist
+      }
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error processing YouTube video:', error);
+    return null;
+  }
+}
 
 async function transcribeWithElevenLabs(audioBuffer: ArrayBuffer): Promise<string | null> {
   try {
@@ -74,54 +166,54 @@ async function validatePashtoTranscription(transcript: string): Promise<{ isVali
 }
 
 export async function POST(request: NextRequest) {
-  let tempFilePath: string | null = null;
-
   try {
     const formData = await request.formData();
     const file = formData.get('audio') as File | null;
+    const youtubeUrl = formData.get('youtubeUrl') as string | null;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+    let audioBuffer: ArrayBuffer;
+    let fileSize: number;
+    let fileType: string;
+    let originalSize: number | undefined;
+    let compressedSize: number | undefined;
+
+    if (youtubeUrl) {
+      // Handle YouTube URL
+      if (!youtubeUrl.includes('youtube.com') && !youtubeUrl.includes('youtu.be')) {
+        return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
+      }
+
+      const result = await downloadAndCompressYouTubeAudio(youtubeUrl);
+      if (!result) {
+        return NextResponse.json({ error: 'Failed to download and compress YouTube audio' }, { status: 500 });
+      }
+
+      audioBuffer = result.audioBuffer;
+      fileSize = result.compressedSize;
+      fileType = 'audio/mp3';
+      originalSize = result.originalSize;
+      compressedSize = result.compressedSize;
+
+    } else if (file) {
+      // Handle file upload
+      if (!file.type.startsWith('audio/')) {
+        return NextResponse.json({ error: 'File must be an audio file' }, { status: 400 });
+      }
+
+      if (file.size > 25 * 1024 * 1024) {
+        return NextResponse.json({ error: 'File size must be less than 25MB' }, { status: 400 });
+      }
+
+      audioBuffer = await file.arrayBuffer();
+      fileSize = file.size;
+      fileType = file.type;
+
+    } else {
+      return NextResponse.json({ error: 'No audio file or YouTube URL provided' }, { status: 400 });
     }
-
-    // Validate file type
-    if (!file.type.startsWith('audio/')) {
-      return NextResponse.json({ error: 'File must be an audio file' }, { status: 400 });
-    }
-
-    // Validate file size (max 25MB for ElevenLabs)
-    if (file.size > 25 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 25MB' }, { status: 400 });
-    }
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-
-    // Save temporary file for processing
-    const tempFileName = `${randomUUID()}.wav`;
-    tempFilePath = join(process.cwd(), 'temp', tempFileName);
-
-    // Ensure temp directory exists
-    const tempDir = join(process.cwd(), 'temp');
-    try {
-      await writeFile(join(tempDir, '.gitkeep'), ''); // Create temp directory if it doesn't exist
-    } catch {
-      // Directory might already exist
-    }
-
-    await writeFile(tempFilePath, Buffer.from(bytes));
 
     // Transcribe with ElevenLabs
-    const transcript = await transcribeWithElevenLabs(bytes);
-
-    // Clean up temp file
-    if (tempFilePath) {
-      try {
-        await unlink(tempFilePath);
-      } catch (error) {
-        console.warn('Failed to clean up temp file:', error);
-      }
-    }
+    const transcript = await transcribeWithElevenLabs(audioBuffer);
 
     if (!transcript) {
       return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 });
@@ -142,22 +234,14 @@ export async function POST(request: NextRequest) {
       success: true,
       transcript: transcript,
       validation: validation,
-      fileSize: file.size,
-      fileType: file.type
+      fileSize,
+      fileType,
+      ...(youtubeUrl && { originalSize, compressedSize, source: 'youtube' }),
+      ...(file && { source: 'upload' })
     });
 
   } catch (error) {
     console.error('Transcription API error:', error);
-
-    // Clean up temp file if it exists
-    if (tempFilePath) {
-      try {
-        await unlink(tempFilePath);
-      } catch (error) {
-        console.warn('Failed to clean up temp file:', error);
-      }
-    }
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
