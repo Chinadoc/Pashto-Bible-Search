@@ -52,6 +52,7 @@ function romanizedToPashto(romanized: string): string {
 
   // Apply special patterns first (longest to shortest)
   const sortedPatterns = Object.keys(romanizedToPashtoMap).sort((a, b) => b.length - a.length);
+  console.log(`🔍 Pattern order for "${romanized}":`, sortedPatterns.slice(0, 10));
 
   for (const pattern of sortedPatterns) {
     const replacement = romanizedToPashtoMap[pattern];
