@@ -7,7 +7,7 @@
   "buildCommand": "npm run build",
   "functions": {
     "app/api/**/*.ts": {
-      "includeFiles": "public/google_drive_audio_urls.json"
+      "includeFiles": "google_drive_audio_urls.json"
     }
   },
   "regions": ["iad1"]

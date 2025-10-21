@@ -48,7 +48,7 @@ async function loadGoogleDriveAudioMaps(): Promise<Record<string, string>> {
   const filename = 'google_drive_audio_urls.json';
 
   try {
-    const filePath = path.join(process.cwd(), 'public', filename);
+    const filePath = path.join(process.cwd(), filename);
     const fileContent = await fs.readFile(filePath, 'utf8');
     const data = JSON.parse(fileContent);
 
