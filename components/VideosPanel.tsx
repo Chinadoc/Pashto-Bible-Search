@@ -246,6 +246,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
     try {
       const segmentsToTranscribe = selectedSegments.map(index => audioAnalysis.segments[index]);
+      const videoId = audioAnalysis.videoId;
 
       const response = await fetch('/api/split-video', {
         method: 'POST',
@@ -261,6 +262,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       if (response.ok && result.success) {
         // Process each extracted segment for transcription
         const transcriptions: string[] = [];
+        const audioSegments: any[] = [];
 
         for (const segment of result.extractedSegments) {
           try {
@@ -278,12 +280,55 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
             if (transResponse.ok && transResult.success) {
               transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] ${transResult.transcript}`);
+
+              // Store audio segment info for Supabase storage
+              audioSegments.push({
+                segmentIndex: segment.segmentIndex,
+                startTime: segment.start,
+                endTime: segment.end,
+                duration: segment.duration,
+                size: segment.size,
+                transcript: transResult.transcript,
+                validation: transResult.validation
+              });
+
+              // TODO: Upload audio segment to Google Drive and get file ID
+              // This would involve calling the Google Drive API helper
             } else {
               transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Transcription failed: ${transResult.error || 'Unknown error'}]`);
             }
           } catch (error) {
             transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Error: ${error}]`);
           }
+        }
+
+        // Store the complete transcript in Supabase
+        try {
+          const storeResponse = await fetch('/api/store-video-transcript', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              videoId: videoId,
+              videoUrl: youtubeUrl.trim(),
+              transcript: transcriptions.join('\n\n'),
+              segments: segmentsToTranscribe,
+              audioSegments: audioSegments,
+              metadata: {
+                totalSegments: selectedSegments.length,
+                audioInfo: audioAnalysis.audioInfo,
+                processingDate: new Date().toISOString()
+              }
+            }),
+          });
+
+          const storeResult = await storeResponse.json();
+          if (storeResponse.ok && storeResult.success) {
+            console.log('✅ Transcript stored in Supabase:', storeResult.transcriptId);
+          } else {
+            console.warn('⚠️ Failed to store transcript in Supabase:', storeResult.error);
+          }
+        } catch (error) {
+          console.warn('⚠️ Error storing transcript in Supabase:', error);
         }
 
         setElevenLabsResult(transcriptions.join('\n\n'));
