@@ -169,15 +169,17 @@ interface SearchCacheEntry {
 }
 
 const searchResultCache = new Map<string, SearchCacheEntry>();
-const SEARCH_CACHE_TTL = 1800000; // 30 minutes in milliseconds
-const MAX_CACHE_ENTRIES = 200; // Increased cache size for better hit rate
+const SEARCH_CACHE_TTL = 7200000; // 2 hours in milliseconds (increased from 30 min)
+const MAX_CACHE_ENTRIES = 500; // Increased cache size for better hit rate
 
 // Cache performance tracking
 let cacheHitCount = 0;
 let cacheMissCount = 0;
 
 function generateCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string): string {
-  return `${query}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}`;
+  // Create a more efficient cache key by normalizing query first
+  const normalizedQuery = query.trim().toLowerCase();
+  return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}`;
 }
 
 function getCachedSearch(cacheKey: string): SearchCacheEntry | null {
@@ -424,8 +426,8 @@ export async function POST(request: NextRequest) {
     let disambiguationResult: any = null;
     let disambiguationAnalysis: DisambiguationResult | null = null;
 
-    // Load audio map for assigning audio URLs (now cached)
-    const audioMap = await getAudioMap();
+    // Load audio map for assigning audio URLs (now cached) - do this in parallel with other operations
+    const audioMapPromise = getAudioMap();
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -581,42 +583,65 @@ export async function POST(request: NextRequest) {
 
     // Apply enhanced disambiguation for ambiguous Pashto terms with Bible context
 
-    if (searchLanguage === 'pashto' && searchTerms.length === 1 && !englishSearchTerms.length) {
-      // Use the new comprehensive disambiguation system
-      try {
-        // Create a sample sentence context for disambiguation
-        const contextSentence = `خدا بوځو شو چې ${convertedQuery} راوړو`;
-        const tempAnalysis = PashtoDisambiguator.disambiguate(convertedQuery, contextSentence, 2);
-
-        if (tempAnalysis) {
-          disambiguationAnalysis = tempAnalysis;
-          console.log(`🔍 Enhanced disambiguation: "${convertedQuery}" → ${disambiguationAnalysis.primaryPOS} (${Math.round(disambiguationAnalysis.confidence * 100)}% confidence)`);
-          console.log(`   Context analysis: preceding=${disambiguationAnalysis.contextAnalysis.precedingWords.join(',')}, following=${disambiguationAnalysis.contextAnalysis.followingWords.join(',')}`);
-          console.log(`   Morphological pattern: ${disambiguationAnalysis.contextAnalysis.morphologicalPattern}`);
-
-          if (disambiguationAnalysis.alternativeMeanings.length > 0) {
-            console.log(`   Alternative meanings: ${disambiguationAnalysis.alternativeMeanings.map(m => `${m.pos} (${Math.round(m.confidence * 100)}%)`).join(', ')}`);
+    // Parallelize disambiguation and related forms operations
+    const disambiguationPromise = (searchLanguage === 'pashto' && searchTerms.length === 1 && !englishSearchTerms.length)
+      ? Promise.resolve().then(async () => {
+          try {
+            const contextSentence = `خدا بوځو شو چې ${convertedQuery} راوړو`;
+            return await PashtoDisambiguator.disambiguate(convertedQuery, contextSentence, 2);
+          } catch (error) {
+            console.warn('Disambiguation analysis failed:', error);
+            return null;
           }
+        })
+      : Promise.resolve(null);
 
-          // Use disambiguation result for search enhancement
-          if (disambiguationAnalysis.confidence > 0.7) {
-            disambiguationResult = {
-              word: convertedQuery,
-              likelyPos: disambiguationAnalysis.primaryPOS,
-              confidence: disambiguationAnalysis.confidence,
-              contextClues: disambiguationAnalysis.alternativeMeanings.map(m => m.contextClues).flat(),
-              recommendedAction: disambiguationAnalysis.recommendedAction
-            };
+    const relatedFormsPromise = (effectiveIncludeRelated && searchLanguage === 'pashto')
+      ? Promise.resolve().then(async () => {
+          try {
+            const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ form: convertedQuery }),
+            });
+
+            if (relatedResponse.ok) {
+              const relatedFormsText = await relatedResponse.text();
+              return JSON.parse(relatedFormsText);
+            }
+            return null;
+          } catch (error) {
+            console.error('Error in LingDocs-style inflection search:', error);
+            return null;
           }
-        }
-      } catch (error) {
-        console.warn('Disambiguation analysis failed:', error);
+        })
+      : Promise.resolve(null);
+
+    // Wait for parallelized operations to complete
+    const [tempAnalysis, relatedFormsResult] = await Promise.all([
+      disambiguationPromise,
+      relatedFormsPromise
+    ]);
+
+    if (tempAnalysis) {
+      disambiguationAnalysis = tempAnalysis;
+      console.log(`🔍 Enhanced disambiguation: "${convertedQuery}" → ${disambiguationAnalysis.primaryPOS} (${Math.round(disambiguationAnalysis.confidence * 100)}% confidence)`);
+      console.log(`   Context analysis: preceding=${disambiguationAnalysis.contextAnalysis.precedingWords.join(',')}, following=${disambiguationAnalysis.contextAnalysis.followingWords.join(',')}`);
+      console.log(`   Morphological pattern: ${disambiguationAnalysis.contextAnalysis.morphologicalPattern}`);
+
+      if (disambiguationAnalysis.alternativeMeanings.length > 0) {
+        console.log(`   Alternative meanings: ${disambiguationAnalysis.alternativeMeanings.map(m => `${m.pos} (${Math.round(m.confidence * 100)}%)`).join(', ')}`);
       }
 
-      // Fallback to old system if new system fails
-      if (!disambiguationResult) {
-        // Legacy disambiguation system removed - enhanced system is primary
-        console.log(`🔍 Enhanced disambiguation completed for "${convertedQuery}"`);
+      // Use disambiguation result for search enhancement
+      if (disambiguationAnalysis.confidence > 0.7) {
+        disambiguationResult = {
+          word: convertedQuery,
+          likelyPos: disambiguationAnalysis.primaryPOS,
+          confidence: disambiguationAnalysis.confidence,
+          contextClues: disambiguationAnalysis.alternativeMeanings.map(m => m.contextClues).flat(),
+          recommendedAction: disambiguationAnalysis.recommendedAction
+        };
       }
     }
 
@@ -631,87 +656,49 @@ export async function POST(request: NextRequest) {
     // Generate related forms for LingDocs-style inflection search
     let relatedForms = null;
 
-    // LingDocs-style inflection search for Pashto terms
-    console.log('🔍 Checking related forms conditions:', {
-      effectiveIncludeRelated,
-      searchLanguage,
-      trimmedQuery,
-      searchTermsLength: searchTerms.length
-    });
-    if (effectiveIncludeRelated && searchLanguage === 'pashto') {
-      console.log('🔍 LingDocs-style inflection search enabled for Pashto');
-      console.log('🔍 effectiveIncludeRelated:', effectiveIncludeRelated, 'searchLanguage:', searchLanguage);
+    // Handle related forms from parallelized operation
+    if (relatedFormsResult) {
+      relatedForms = relatedFormsResult;
+      console.log(`✅ LingDocs-style search found ${relatedForms.total} related forms`);
+      console.log(`🔍 Related forms structure:`, {
+        hasNouns: !!relatedForms.forms?.nouns?.length,
+        hasVerbs: !!relatedForms.forms?.verbs?.length,
+        hasOther: !!relatedForms.forms?.other?.length,
+        nounsCount: relatedForms.forms?.nouns?.length || 0,
+        verbsCount: relatedForms.forms?.verbs?.length || 0,
+        otherCount: relatedForms.forms?.other?.length || 0
+      });
 
-      try {
-        // Call the enhanced related_forms API to get all inflections/conjugations
-        const relatedResponse = await fetch('/api/related_forms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ form: convertedQuery }),
+      // Add all related forms to search terms for comprehensive Bible search
+      const allSearchTerms = [convertedQuery]; // Include original
+
+      if (relatedForms.forms?.nouns) {
+        const nounForms = relatedForms.forms.nouns.map((f: any) => {
+          const form = f.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form;
         });
-
-        console.log('🔍 Related forms API response status:', relatedResponse.status);
-        console.log('🔍 Related forms API response ok:', relatedResponse.ok);
-        if (relatedResponse.ok) {
-          const relatedFormsText = await relatedResponse.text();
-          console.log('🔍 Related forms raw response:', relatedFormsText.substring(0, 200));
-          relatedForms = JSON.parse(relatedFormsText);
-          console.log(`✅ LingDocs-style search found ${relatedForms.total} related forms`);
-          console.log(`🔍 Related forms structure:`, {
-            hasNouns: !!relatedForms.forms?.nouns?.length,
-            hasVerbs: !!relatedForms.forms?.verbs?.length,
-            hasOther: !!relatedForms.forms?.other?.length,
-            nounsCount: relatedForms.forms?.nouns?.length || 0,
-            verbsCount: relatedForms.forms?.verbs?.length || 0,
-            otherCount: relatedForms.forms?.other?.length || 0
-          });
-
-          // Add all related forms to search terms for comprehensive Bible search
-          const allSearchTerms = [convertedQuery]; // Include original
-
-          if (relatedForms.forms?.nouns) {
-            const nounForms = relatedForms.forms.nouns.map((f: any) => {
-              // Convert romanized forms to Pashto script
-              const form = f.form;
-              const convertedForm = romanizedToPashto(form);
-              console.log(`🔄 Converting noun form: "${form}" → "${convertedForm}"`);
-              return convertedForm !== form ? convertedForm : form; // Use converted if different
-            });
-            allSearchTerms.push(...nounForms);
-            console.log(`🔍 Added ${nounForms.length} noun forms:`, nounForms.slice(0, 3));
-          }
-          if (relatedForms.forms?.verbs) {
-            const verbForms = relatedForms.forms.verbs.map((f: any) => {
-              // Convert romanized forms to Pashto script
-              const form = f.form;
-              const convertedForm = romanizedToPashto(form);
-              console.log(`🔄 Converting verb form: "${form}" → "${convertedForm}"`);
-              return convertedForm !== form ? convertedForm : form; // Use converted if different
-            });
-            allSearchTerms.push(...verbForms);
-            console.log(`🔍 Added ${verbForms.length} verb forms:`, verbForms.slice(0, 3));
-          }
-          if (relatedForms.forms?.other) {
-            const otherForms = relatedForms.forms.other.map((f: any) => {
-              // Convert romanized forms to Pashto script
-              const form = f.form;
-              const convertedForm = romanizedToPashto(form);
-              console.log(`🔄 Converting other form: "${form}" → "${convertedForm}"`);
-              return convertedForm !== form ? convertedForm : form; // Use converted if different
-            });
-            allSearchTerms.push(...otherForms);
-            console.log(`🔍 Added ${otherForms.length} other forms:`, otherForms.slice(0, 3));
-          }
-
-          searchTerms = Array.from(new Set(allSearchTerms));
-          console.log(`🔍 Expanded search to ${searchTerms.length} terms including ${relatedForms.total} inflections`);
-          console.log(`🔍 Final search terms:`, searchTerms.slice(0, 5));
-        } else {
-          console.warn('❌ LingDocs-style inflection search failed:', relatedResponse.status);
-        }
-      } catch (error) {
-        console.error('❌ Error in LingDocs-style inflection search:', error);
+        allSearchTerms.push(...nounForms);
       }
+      if (relatedForms.forms?.verbs) {
+        const verbForms = relatedForms.forms.verbs.map((f: any) => {
+          const form = f.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form;
+        });
+        allSearchTerms.push(...verbForms);
+      }
+      if (relatedForms.forms?.other) {
+        const otherForms = relatedForms.forms.other.map((f: any) => {
+          const form = f.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form;
+        });
+        allSearchTerms.push(...otherForms);
+      }
+
+      searchTerms = Array.from(new Set(allSearchTerms));
+      console.log(`🔍 Expanded search to ${searchTerms.length} terms including ${relatedForms.total} inflections`);
     }
 
     // If English search mode, create a special relatedForms object to show all matches
@@ -907,470 +894,127 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Try enhanced search first (if SQL functions are available)
-    console.log('🔍 Attempting enhanced search for:', convertedQuery, 'with', searchTerms.length, 'terms');
-    console.log('🔍 Search terms being used:', searchTerms);
-    
-    let enhancedResults: any = null;
-    try {
-      // Use the expanded search terms if we have related forms
-      if (searchTerms.length > 1) {
-        // Multiple terms - use our helper function
-        console.log('🔍 Using multiple terms search for:', searchTerms);
-        enhancedResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
-      } else {
-        // Single term - use direct search
-        console.log('🔍 Using single term search for:', convertedQuery);
-        enhancedResults = await hybridSearch(convertedQuery, { scope });
-      }
+    // Get audio map now that we need it for result transformation
+    const audioMap = await audioMapPromise;
 
-      console.log('🔍 Enhanced search raw results:', enhancedResults);
+    // Optimized search execution - use the most efficient approach based on query characteristics
+    console.log('🔍 Executing optimized search for:', convertedQuery, 'with', searchTerms.length, 'terms');
 
-      if (enhancedResults && enhancedResults.length > 0) {
-        console.log('✅ Enhanced search successful, found', enhancedResults.length, 'results');
+    let searchResults: any[] = [];
+    let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
 
-        // Transform results to match expected format
-        const transformed = enhancedResults.map((result: any, index: number) => ({
-          ref: result.ref,
-          text: result.text,
-          testament: result.testament || 'NT',
-          translation: null, // Will be filled by audio mapping
-          dialect: null,
-          tags: [] as any[][],
-          audio_verse_url: audioMap[result.ref] || null,
-          id: index + 1,
-        }));
+    // Choose the most efficient search strategy
+    if (searchTerms.length === 1 && !includeRelated) {
+      // Single term, no related forms - use direct search
+      console.log('🔍 Using direct single-term search');
+      try {
+        searchResults = await hybridSearch(convertedQuery, { scope, limit });
+        searchType = 'enhanced';
+      } catch (error) {
+        console.warn('Direct search failed, falling back to index search:', error);
+        // Fallback to index-based search
+        const { searchIndex } = await getSearchData();
+        const candidateVerses = new Set();
 
-        console.log('🔄 Returning enhanced search results:', {
-          resultCount: transformed.length,
-          firstFewRefs: transformed.slice(0, 3).map((r: any) => r.ref),
-          hasRelatedForms: !!relatedForms,
-          relatedFormsCount: relatedForms?.total || 0
-        });
-
-        // Cache the results before returning
-        const processedData = {
-          original: originalQuery,
-          normalized: convertedQuery,
-          variants: searchTerms,
-          searchType: 'enhanced',
-          pos: 'unknown',
-          language: searchLanguage,
-          englishMatches: englishMatches.length ? englishMatches : undefined,
-          variantsSearched: searchTerms,
-        };
-        
-        setCachedSearch(cacheKey, transformed, relatedForms, processedData);
-        console.log(`💾 Cached search results for "${searchTermsHash}" (${transformed.length} results)`);
-
-        return NextResponse.json({
-          results: normalizeVerses(transformed),
-          relatedForms,
-          processed: {
-            original: originalQuery,
-            normalized: convertedQuery,
-            variants: searchTerms,
-            disambiguation: disambiguationResult,
-            searchType: 'enhanced',
-            pos: 'unknown',
-            language: searchLanguage,
-            englishMatches: englishMatches.length ? englishMatches : undefined,
-            variantsSearched: searchTerms,
-          },
-          count: transformed.length,
-          ms: Date.now() - startedAt,
-          cached: false,
-        });
-      } else {
-        console.log('⚠️ Enhanced search returned no results, will try fallback');
-      }
-    } catch (error) {
-      console.warn('Enhanced search failed, falling back to legacy search:', error);
-    }
-
-    // If enhanced search failed or returned no results, but we have variants, use them
-    if ((enhancedResults === null || (enhancedResults && enhancedResults.length === 0)) && Array.isArray(variants) && variants.length > 0) {
-      console.log('🔄 Enhanced search failed/empty, using variant fallback search with', variants.length, 'terms');
-      const { searchIndex } = await getData();
-      const candidateVerses = new Set<any>();
-
-      // For Pashto Bible search, we need substring matching, not exact word matching
-      // This allows searching for roots within inflected forms (e.g., "دين" within "دينه")
-      for (const variant of variants) {
-        const lower = variant.toLowerCase();
-
-        // Search through all verses for substring matches
-        for (const verse of searchIndex.verses) {
-          if (!matchesScope(verse, scope)) continue;
-
-          // Check if variant appears in original text or normalized text
-          const textMatch = verse.textLower.includes(lower);
-          const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(lower) : false;
-
-          if (textMatch || normalizedMatch) {
-            candidateVerses.add(verse);
+        for (const searchTerm of searchTerms) {
+          const lower = searchTerm.toLowerCase();
+          const originalMatches = searchIndex.byTextLower.get(lower) || [];
+          for (const verse of originalMatches) {
+            if (matchesScope(verse, scope)) candidateVerses.add(verse);
+          }
+          const normalizedMatches = searchIndex.byTextNormalizedLower?.get(lower) || [];
+          for (const verse of normalizedMatches) {
+            if (matchesScope(verse, scope)) candidateVerses.add(verse);
           }
         }
-      }
 
-      const results = Array.from(candidateVerses).slice(0, limit);
-      const transformed = transformResults(results, audioMap);
-      const processed: Processed = {
+        searchResults = Array.from(candidateVerses).slice(0, limit);
+        searchType = 'fast';
+      }
+    } else if (searchTerms.length > 1) {
+      // Multiple terms - use optimized multiple terms search
+      console.log('🔍 Using optimized multiple terms search');
+      searchResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
+      searchType = 'enhanced';
+    } else {
+      // Fallback to comprehensive search
+      console.log('🔍 Using comprehensive fallback search');
+      searchResults = await hybridSearch(convertedQuery, { scope, limit, includeRelated: true });
+      searchType = 'hybrid';
+    }
+
+    if (searchResults && searchResults.length > 0) {
+      console.log('✅ Search successful, found', searchResults.length, 'results');
+
+      // Transform results efficiently
+      const transformed = searchResults.map((result: any, index: number) => ({
+        ref: result.ref,
+        text: result.text,
+        testament: result.testament || 'NT',
+        translation: null,
+        dialect: null,
+        tags: [] as any[][],
+        audio_verse_url: audioMap[result.ref] || null,
+        id: index + 1,
+      }));
+
+      // Cache the results
+      const processedData = {
         original: originalQuery,
         normalized: convertedQuery,
-        variants: Array.from(new Set(variants.filter(Boolean))),
-        disambiguation: disambiguationResult,
-        searchType: 'hybrid',
+        variants: searchTerms,
+        searchType,
+        pos: 'unknown',
         language: searchLanguage,
         englishMatches: englishMatches.length ? englishMatches : undefined,
         variantsSearched: searchTerms,
       };
 
-      console.log('🔄 Variant fallback search found', transformed.length, 'results');
-
-      // Cache the results before returning
-      setCachedSearch(cacheKey, transformed, relatedForms, processed);
-      console.log(`💾 Cached search results for "${searchTermsHash}" (${transformed.length} results)`);
+      setCachedSearch(cacheKey, transformed, relatedForms, processedData);
+      console.log(`💾 Cached search results (${transformed.length} results)`);
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
         relatedForms,
-        processed,
+        processed: {
+          original: originalQuery,
+          normalized: convertedQuery,
+          variants: searchTerms,
+          disambiguation: disambiguationResult,
+          searchType,
+          pos: 'unknown',
+          language: searchLanguage,
+          englishMatches: englishMatches.length ? englishMatches : undefined,
+          variantsSearched: searchTerms,
+        },
         count: transformed.length,
         ms: Date.now() - startedAt,
         cached: false,
       });
     }
 
-    // Original variant OR search logic (kept for backwards compatibility)
-    if (Array.isArray(variants) && variants.length > 0) {
-      const { searchIndex } = await getData();
-      const candidateVerses = new Set<any>();
-
-      for (const variant of variants) {
-        const lower = variant.toLowerCase();
-
-        // Check original text index
-        const originalMatches = searchIndex.byTextLower.get(lower) || [];
-        for (const verse of originalMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-
-        // Check normalized text index
-        const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
-        for (const verse of normalizedMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-      }
-
-      const results = Array.from(candidateVerses).slice(0, limit);
-      const transformed = transformResults(results, audioMap);
-      const processed: Processed = {
-        original: originalQuery,
-        normalized: convertedQuery,
-        variants: Array.from(new Set(variants.filter(Boolean))),
-        disambiguation: disambiguationResult,
-        searchType: 'fast',
-        language: searchLanguage,
-        englishMatches: englishMatches.length ? englishMatches : undefined,
-        variantsSearched: searchTerms,
-      };
-
-      // Cache the results before returning
-      setCachedSearch(cacheKey, transformed, null, processed);
-      console.log(`💾 Cached English search results for "${searchTermsHash}" (${transformed.length} results)`);
-
-      return NextResponse.json({
-        results: normalizeVerses(transformed),
-        relatedForms: null,
-        processed,
-        count: transformed.length,
-        ms: Date.now() - startedAt,
-        cached: false,
-      });
-    }
-
-    const isPashtoQuery = containsPashto(convertedQuery);
-    const isLatin = isLatinOnly(convertedQuery);
-
-    // Normalization (from dictionary data)
-    let normalized = convertedQuery;
-    let romanization: string | undefined;
-    let posGuess: Processed["pos"] = undefined;
-    let rootFromForm: string | undefined;
-
-    if (isLatin) {
-      const { dictionaryByRomanized } = await getData();
-      const pick = dictionaryByRomanized.get(convertedQuery.toLowerCase())?.[0];
-      if (pick?.pashto) {
-        normalized = pick.pashto;
-        romanization = pick.romanized;
-      }
-    } else {
-      // Check if this is a form that maps to a root
-      const { formToRoot } = await getData();
-      const roots = formToRoot[normalized];
-      if (roots && roots.length > 0) {
-        // Use the first root found
-        const root = roots[0];
-        if (root && root !== normalized) {
-          rootFromForm = root;
-          console.log(`Found root for form ${normalized}: ${root}`);
-        }
-      }
-    }
-
-    const effectiveLimit = Math.max(10, Math.min(limit, 200));
-
-    let results: Array<{ ref: string; text: string; testament?: string; book: string }> = [];
-    let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
-    let searchIndex: any = null;
-
-    // Get search data for potential use throughout the function
-    const data = await getData();
-    const { verses } = data;
-    searchIndex = data.searchIndex;
-
-    console.log('Search debug:', {
-      searchIndexExists: !!searchIndex,
-      versesCount: verses.length,
-      searchTerm: normalized,
-      originalQuery: originalQuery,
-      convertedQuery: convertedQuery
-    });
-
-    // Enhanced search with variants when includeRelated is enabled
-    if (searchIndex?.byTextLower) {
-      const candidateVerses = new Set<any>();
-
-      // Build comprehensive search terms list
-      const searchTerms = [normalized];
-      if (rootFromForm) searchTerms.push(rootFromForm);
-
-      // Add related forms if we generated them earlier
-      if (effectiveIncludeRelated && relatedForms) {
-        // Extract forms from the related forms we generated earlier
-        const variantForms = [];
-        if (relatedForms.forms?.verbs) {
-          variantForms.push(...relatedForms.forms.verbs.map((v: any) => {
-            // Convert romanized forms to Pashto script
-            const form = v.form;
-            const convertedForm = romanizedToPashto(form);
-            return convertedForm !== form ? convertedForm : form; // Use converted if different
-          }));
-        }
-        if (relatedForms.forms?.nouns) {
-          variantForms.push(...relatedForms.forms.nouns.map((v: any) => {
-            // Convert romanized forms to Pashto script
-            const form = v.form;
-            const convertedForm = romanizedToPashto(form);
-            return convertedForm !== form ? convertedForm : form; // Use converted if different
-          }));
-        }
-        if (relatedForms.forms?.other) {
-          variantForms.push(...relatedForms.forms.other.map((v: any) => {
-            // Convert romanized forms to Pashto script
-            const form = v.form;
-            const convertedForm = romanizedToPashto(form);
-            return convertedForm !== form ? convertedForm : form; // Use converted if different
-          }));
-        }
-        if (variantForms.length > 0) {
-        searchTerms.push(...variantForms);
-        }
-      }
-
-      console.log('DEBUG: Searching with terms:', searchTerms.length, 'terms');
-
-      for (const searchTerm of searchTerms) {
-        const lower = searchTerm.toLowerCase();
-
-        // Check original text index
-        const originalMatches = searchIndex.byTextLower.get(lower) || [];
-        console.log(`DEBUG: Found ${originalMatches.length} matches for "${searchTerm}" in original text`);
-        for (const verse of originalMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-
-        // Check normalized text index
-        const normalizedMatches = searchIndex.byTextNormalizedLower.get(lower) || [];
-        console.log(`DEBUG: Found ${normalizedMatches.length} matches for "${searchTerm}" in normalized text`);
-        for (const verse of normalizedMatches) {
-          if (matchesScope(verse, scope)) {
-            candidateVerses.add(verse);
-          }
-        }
-      }
-
-      results = Array.from(candidateVerses).slice(0, effectiveLimit);
-      searchType = includeRelated && relatedForms ? 'enhanced' : 'fast';
-      console.log('DEBUG: Enhanced search found results:', results.length, 'with search type:', searchType);
-    }
-
-    // Fallback to fuzzy search if no results and enabled
-    if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
-      console.log('Falling back to fuzzy search');
-
-    // Fast search using index
-    if (searchIndex?.byTextLower) {
-        const candidateVerses = new Set<any>();
-
-        // Use root form for searching if we found one from a form
-        const searchTerms = rootFromForm ? [normalized, rootFromForm] : [normalized];
-
-        for (const searchTerm of searchTerms) {
-          // Check original text index
-          const originalMatches = searchIndex.byTextLower.get(searchTerm.toLowerCase()) || [];
-          console.log(`Original matches found for ${searchTerm}:`, originalMatches.length);
-          for (const verse of originalMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
-            }
-          }
-
-          // Check normalized text index
-          const normalizedMatches = searchIndex.byTextNormalizedLower.get(searchTerm.toLowerCase()) || [];
-          console.log(`Normalized matches found for ${searchTerm}:`, normalizedMatches.length);
-          for (const verse of normalizedMatches) {
-            if (matchesScope(verse, scope)) {
-              candidateVerses.add(verse);
-            }
-          }
-        }
-
-        results = Array.from(candidateVerses).slice(0, effectiveLimit);
-        console.log('Total results found:', results.length);
-      }
-
-      // Fallback to fuzzy search if no results and enabled
-      if (!results.length && (enableFuzzy ?? !isPashtoQuery)) {
-        console.log('Falling back to fuzzy search');
-
-        // Create Fuse instance with verses
-        const fuse = new Fuse(verses, {
-          keys: ['text', 'textNormalized'],
-          includeScore: true,
-          threshold: 0.35,
-          minMatchCharLength: 2,
-        });
-
-        const hits = fuse.search(normalized, { limit: effectiveLimit * 3 });
-        const scoped = hits
-          .map((hit) => hit.item)
-          .filter((verse) => matchesScope(verse, scope))
-          .slice(0, effectiveLimit);
-
-        if (scoped.length) {
-          results = scoped;
-          searchType = 'fuzzy';
-        }
-      }
-    }
 
 
-
-    const shouldApplyCollapsedFilter = searchLanguage === 'pashto'
-      && (!englishSearchTerms.length)
-      && (!Array.isArray(variants) || variants.length === 0)
-      && searchTerms.length === 1;
-
-    if (shouldApplyCollapsedFilter && results.length > 0) {
-      const collapsedQuery = convertedQuery.replace(/\s+/g, '');
-      if (collapsedQuery.length > 1) {
-        results = results.filter((verse) => {
-          const text = verse.text ?? '';
-          const normalizedText = (verse as any).textNormalized ?? '';
-          const collapsedText = text.replace(/\s+/g, '');
-          const collapsedNormalized = typeof normalizedText === 'string'
-            ? normalizedText.replace(/\s+/g, '')
-            : '';
-          return collapsedText.includes(collapsedQuery) || collapsedNormalized.includes(collapsedQuery);
-        });
-      }
-    }
-
-    const transformed = transformResults(results, audioMap);
-
-    // Extract variant forms for the processed object
-    let variantForms: string[] = [];
-    if (effectiveIncludeRelated && relatedForms) {
-      if (relatedForms.forms?.verbs) {
-        variantForms.push(...relatedForms.forms.verbs.map((v: any) => {
-          // Convert romanized forms to Pashto script for display
-          const form = v.form;
-          const convertedForm = romanizedToPashto(form);
-          return convertedForm !== form ? convertedForm : form; // Use converted if different
-        }));
-      }
-      if (relatedForms.forms?.nouns) {
-        variantForms.push(...relatedForms.forms.nouns.map((v: any) => {
-          // Convert romanized forms to Pashto script for display
-          const form = v.form;
-          const convertedForm = romanizedToPashto(form);
-          return convertedForm !== form ? convertedForm : form; // Use converted if different
-        }));
-      }
-      if (relatedForms.forms?.other) {
-        variantForms.push(...relatedForms.forms.other.map((v: any) => {
-          // Convert romanized forms to Pashto script for display
-          const form = v.form;
-          const convertedForm = romanizedToPashto(form);
-          return convertedForm !== form ? convertedForm : form; // Use converted if different
-        }));
-      }
-    }
-
-    if (!variantForms.length) {
-      variantForms = Array.from(new Set(searchTerms));
-    }
+    // If no results found, return empty result set
+    console.log(`🔄 No results found for query: "${convertedQuery}"`);
 
     const processed: Processed = {
       original: originalQuery,
       normalized: convertedQuery,
-      variants: variantForms.slice(0, 40),
+      variants: searchTerms,
       disambiguation: disambiguationResult,
-      searchType,
-      pos: posGuess,
-      romanization,
+      searchType: 'no_results',
       language: searchLanguage,
       englishMatches: englishMatches.length ? englishMatches : undefined,
       variantsSearched: searchTerms,
     };
 
-    console.log('DEBUG: Returning search results:', {
-      resultsCount: transformed.length,
-      hasRelatedForms: !!relatedForms,
-      relatedFormsTotal: relatedForms?.total || 0,
-      searchType: processed?.searchType || 'unknown',
-      query: originalQuery,
-    });
-
-    const totalMs = Date.now() - startedAt;
-    console.log(`✅ Search completed in ${totalMs}ms: ${transformed.length} results for "${convertedQuery}"`);
-
-    // For Anki mode, prioritize results with dictionary audio
-    let finalResults = transformed;
-    if (searchLanguage === 'anki') {
-      finalResults = prioritizeAnkiResults(transformed);
-      console.log(`🔄 Anki mode: filtered to ${finalResults.length} results with dictionary audio`);
-    }
-
-    // Cache the results before returning
-    setCachedSearch(cacheKey, finalResults, relatedForms, processed);
-    console.log(`💾 Cached final search results for "${searchTermsHash}" (${finalResults.length} results)`);
-
     return NextResponse.json({
-      results: normalizeVerses(finalResults),
+      results: [],
       relatedForms,
       processed,
-      count: finalResults.length,
-      ms: totalMs,
+      count: 0,
+      ms: Date.now() - startedAt,
       cached: false,
     });
   } catch (error) {

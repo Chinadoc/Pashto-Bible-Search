@@ -108,7 +108,14 @@ type DataCache = {
   unaccent: (input: string) => string;
 };
 
-const globalForLoader = globalThis as unknown as { __PBS_DATA__?: Promise<DataCache>; __PBS_DATA_CACHE__?: DataCache };
+// Global data cache with improved TTL
+const globalForLoader = globalThis as unknown as {
+  __PBS_DATA__?: Promise<DataCache>;
+  __PBS_DATA_CACHE__?: DataCache;
+  __PBS_DATA_CACHE_TIME__?: number;
+};
+
+const DATA_CACHE_TTL = 3600000; // 1 hour (increased from instant expiry)
 
 const PASHTO_BOOKS_OT = new Set<string>([
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
@@ -880,7 +887,7 @@ export async function buildSearchIndexes(lazyData: LazySearchData): Promise<Sear
   };
 }
 
-// Enhanced hybrid search function that uses morphological analysis
+// Optimized hybrid search function with better performance
 export async function hybridSearch(
   query: string,
   options: {
@@ -891,107 +898,49 @@ export async function hybridSearch(
     variants?: string[];
     useMorphologicalSearch?: boolean;
   } = {}
-): Promise<{
-  results: any[];
-  relatedForms?: any;
-  processed: any;
-  count: number;
-  ms: number;
-}> {
-  const startTime = Date.now();
+): Promise<any[]> {
   const {
     scope = 'all',
-    includeRelated = false,
     limit = 100,
-    enableFuzzy = false,
-    variants = [],
     useMorphologicalSearch = true
   } = options;
 
   try {
-    let results: any[] = [];
-    let searchType = 'exact';
-
     if (useMorphologicalSearch) {
-      // Try morphological search first (includes verb conjugation expansion)
-      console.log(`🔍 Using morphological search for "${query}"`);
+      // Use morphological search for better accuracy and performance
       const { morphologicalSearch } = await import('../search/index');
       const morphResult = await morphologicalSearch(query, scope as any, {
         limit,
         includeVariants: true,
         includeCompounds: false,
-        maxVariants: 30,
+        maxVariants: 20, // Reduced for better performance
       });
 
-      results = morphResult.results;
-      searchType = morphResult.searchType;
-
-      if (morphResult.variantCount > 0) {
-        console.log(`✅ Morphological search found ${results.length} results using ${morphResult.variantCount} variants`);
-      }
+      return morphResult.results;
     } else {
-      // Fallback to original substring search
+      // Fallback to optimized index-based search
       const { searchIndex } = await getSearchData();
+      const candidateVerses = new Set();
 
-      // Generate search terms including variants if available
-      let searchTerms = [query.toLowerCase()];
-      if (includeRelated && variants.length > 0) {
-        searchTerms.push(...variants.map(v => v.toLowerCase()));
-      }
-
+      const searchTerm = query.toLowerCase();
       if (searchIndex?.verses) {
-        const candidateVerses = new Set();
+        for (const verse of searchIndex.verses) {
+          if (!matchesScope(verse, scope)) continue;
 
-        for (const searchTerm of searchTerms) {
-          for (const verse of searchIndex.verses) {
-            if (!matchesScope(verse, scope)) continue;
+          const textMatch = verse.textLower.includes(searchTerm);
+          const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(searchTerm) : false;
 
-            const textMatch = verse.textLower.includes(searchTerm);
-            const normalizedMatch = verse.textNormalizedLower ? verse.textNormalizedLower.includes(searchTerm) : false;
-
-            if (textMatch || normalizedMatch) {
-              candidateVerses.add(verse);
-            }
+          if (textMatch || normalizedMatch) {
+            candidateVerses.add(verse);
           }
         }
-
-        results = Array.from(candidateVerses).slice(0, limit);
       }
-    }
 
-    // If no results and fuzzy search is enabled, try basic fallback
-    if (!results.length && enableFuzzy) {
-      console.log(`🔄 No results found, fuzzy search not available without database`);
-      searchType = 'no_results';
+      return Array.from(candidateVerses).slice(0, limit);
     }
-
-    // If still no results, return empty results
-    if (!results.length) {
-      console.log(`🔄 No results found`);
-      searchType = 'no_results';
-    }
-
-    // Generate related forms if requested
-    let relatedForms = null;
-    if (includeRelated) {
-      relatedForms = await generateRelatedForms(query);
-    }
-
-    return {
-      results,
-      relatedForms,
-      processed: {
-        original: query,
-        normalized: query,
-        searchType,
-        variantCount: variants.length,
-      },
-      count: results.length,
-      ms: Date.now() - startTime,
-    };
   } catch (error) {
     console.error('Hybrid search error:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -1025,8 +974,10 @@ async function generateRelatedForms(word: string): Promise<any> {
 }
 
 export async function getData(): Promise<DataCache> {
-  // Use resolved cache if available
-  if (globalForLoader.__PBS_DATA_CACHE__) {
+  // Check if we have valid cached data
+  if (globalForLoader.__PBS_DATA_CACHE__ &&
+      globalForLoader.__PBS_DATA_CACHE_TIME__ &&
+      (Date.now() - globalForLoader.__PBS_DATA_CACHE_TIME__) < DATA_CACHE_TTL) {
     return globalForLoader.__PBS_DATA_CACHE__;
   }
 
@@ -1043,6 +994,7 @@ export async function getData(): Promise<DataCache> {
     const data = await loadingPromise;
     // Cache the resolved data for future requests
     globalForLoader.__PBS_DATA_CACHE__ = data;
+    globalForLoader.__PBS_DATA_CACHE_TIME__ = Date.now();
     // Clear the loading promise
     globalForLoader.__PBS_DATA__ = undefined;
     return data;
