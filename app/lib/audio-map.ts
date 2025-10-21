@@ -221,7 +221,6 @@ async function loadGoogleDriveMaps(target: AudioMap) {
     const data = await readJsonIfExists(segments);
     if (!data) continue;
     const entries = Object.entries(data as Record<string, unknown>);
-    const isYousafzai = segments.includes('yousafzai');
 
     for (const [filename, entry] of entries) {
       if (!entry || typeof entry !== 'object') continue;
@@ -234,46 +233,60 @@ async function loadGoogleDriveMaps(target: AudioMap) {
         record.verse as number | string,
       );
 
-      if (isYousafzai) {
-        // For Yousafzai, generate Supabase storage URLs
-        if (ref) {
-          const storageUrl = generateYousafzaiStorageUrl(ref, filename);
-          if (storageUrl) {
-            addEntry(target, ref, storageUrl);
-          }
-        }
-      } else {
-        // For Afghan/other, use Google Drive URLs as before
-        const value = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
-        if (ref && typeof value === 'string') {
-          addEntry(target, ref, value);
-        }
-        if (typeof value === 'string' && !target[filename]) {
-          target[filename] = value;
-        }
+      // Use Google Drive file ID or URL as before for all files
+      const value = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
+      if (ref && typeof value === 'string') {
+        addEntry(target, ref, value);
+      }
+      if (typeof value === 'string' && !target[filename]) {
+        target[filename] = value;
       }
     }
   }
 }
 
-function generateYousafzaiStorageUrl(ref: string, filename: string): string | null {
-  // Parse the reference to get book, chapter, verse
-  const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
-  if (!match) return null;
 
-  const [, book, chapterStr, verseStr] = match;
-  const chapter = Number(chapterStr);
-  const verse = Number(verseStr);
+async function loadFromDatabase(target: AudioMap): Promise<void> {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (Number.isNaN(chapter) || Number.isNaN(verse)) return null;
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('⚠️ Supabase credentials not available, skipping database audio loading');
+      return;
+    }
 
-  // Generate filename in the format expected by Supabase storage
-  const bookSlug = normalizeBookNameToSlug(book);
-  const chapterPadded = String(chapter).padStart(3, '0');
-  const versePadded = String(verse).padStart(3, '0');
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Return Supabase storage URL for Yousafzai
-  return `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
+    const { data, error } = await supabase
+      .from('audio_files')
+      .select('verse_reference, google_drive_url, supabase_storage_url, translation_key')
+      .not('google_drive_url', 'is', null);
+
+    if (error) {
+      console.error('❌ Failed to load audio files from database:', error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      console.log(`🎵 Loaded ${data.length} audio entries from database`);
+
+      for (const row of data) {
+        const url = row.google_drive_url || row.supabase_storage_url;
+        if (url && row.verse_reference) {
+          addEntry(target, row.verse_reference, url);
+          // Also add by translation-specific reference if needed
+          if (row.translation_key) {
+            const translationRef = `${row.verse_reference}_${row.translation_key}`;
+            addEntry(target, translationRef, url);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error loading audio from database:', error);
+  }
 }
 
 export async function loadAudioMap(forceRefresh = false): Promise<AudioMap> {
@@ -285,6 +298,7 @@ export async function loadAudioMap(forceRefresh = false): Promise<AudioMap> {
   await loadLocalVerseMaps(map);
   await loadProcessedMaps(map);
   await loadGoogleDriveMaps(map);
+  await loadFromDatabase(map); // Add database loading
 
   cache = { data: map, timestamp: Date.now() };
   return map;

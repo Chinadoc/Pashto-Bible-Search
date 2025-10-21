@@ -260,13 +260,96 @@ JOIN word_occurrences wo ON wo.verse_id = v.id
 JOIN word_forms wf ON wf.id = wo.word_form_id
 GROUP BY v.id, v.book, v.chapter, v.verse, v.text, v.testament;
 
--- Audio mapping view for audio URLs
+-- Audio files table for storing Google Drive file IDs and metadata
+CREATE TABLE IF NOT EXISTS audio_files (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  verse_reference TEXT NOT NULL,
+  translation_key TEXT NOT NULL, -- 'afghan2023', 'yousafzai2019', etc.
+  book TEXT NOT NULL,
+  chapter INTEGER NOT NULL,
+  verse INTEGER NOT NULL,
+  google_drive_file_id TEXT,
+  google_drive_url TEXT,
+  supabase_storage_url TEXT,
+  file_size_bytes INTEGER,
+  duration_seconds DECIMAL,
+  audio_quality TEXT, -- 'high', 'medium', 'low'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(verse_reference, translation_key)
+);
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_audio_files_verse_ref ON audio_files(verse_reference);
+CREATE INDEX IF NOT EXISTS idx_audio_files_translation ON audio_files(translation_key);
+CREATE INDEX IF NOT EXISTS idx_audio_files_book_chapter_verse ON audio_files(book, chapter, verse);
+
+-- Audio mapping view for audio URLs (updated to use audio_files table)
 CREATE OR REPLACE VIEW audio_by_verse AS
 SELECT
+  v.id as verse_id,
   v.book || ' ' || v.chapter::text || ':' || v.verse::text as verse_ref,
-  NULL as url -- Placeholder for audio URLs, can be populated later
+  COALESCE(
+    af.google_drive_url,
+    af.supabase_storage_url,
+    NULL
+  ) as url,
+  af.translation_key,
+  af.audio_quality,
+  af.duration_seconds
 FROM verses v
+LEFT JOIN audio_files af ON (
+  af.verse_reference = v.book || ' ' || v.chapter::text || ':' || v.verse::text
+  AND af.translation_key IN ('afghan2023', 'yousafzai2019')
+)
 WHERE v.book IS NOT NULL AND v.chapter IS NOT NULL AND v.verse IS NOT NULL;
+
+-- Migration script to populate audio_files table from JSON data
+-- This should be run after creating the audio_files table
+/*
+INSERT INTO audio_files (verse_reference, translation_key, book, chapter, verse, google_drive_file_id, google_drive_url)
+SELECT
+  verse_ref,
+  'afghan2023' as translation_key,
+  split_part(verse_ref, ' ', 1) as book,
+  split_part(split_part(verse_ref, ' ', 2), ':', 1)::INTEGER as chapter,
+  split_part(split_part(verse_ref, ' ', 2), ':', 2)::INTEGER as verse,
+  google_drive_file_id,
+  google_drive_url
+FROM json_populate_recordset(
+  null::audio_files,
+  (SELECT json_agg(
+    json_build_object(
+      'verse_ref', key,
+      'google_drive_file_id', value->>'google_drive_file_id',
+      'google_drive_url', value->>'google_drive_url'
+    )
+  ) FROM json_each((SELECT content FROM pg_read_file('google_drive_audio_urls.json', 0, 100000000)::json)))
+) data
+WHERE google_drive_file_id IS NOT NULL;
+
+-- Also populate Yousafzai entries
+INSERT INTO audio_files (verse_reference, translation_key, book, chapter, verse, google_drive_file_id, google_drive_url)
+SELECT
+  verse_ref,
+  'yousafzai2019' as translation_key,
+  split_part(verse_ref, ' ', 1) as book,
+  split_part(split_part(verse_ref, ' ', 2), ':', 1)::INTEGER as chapter,
+  split_part(split_part(verse_ref, ' ', 2), ':', 2)::INTEGER as verse,
+  google_drive_file_id,
+  google_drive_url
+FROM json_populate_recordset(
+  null::audio_files,
+  (SELECT json_agg(
+    json_build_object(
+      'verse_ref', key,
+      'google_drive_file_id', value->>'google_drive_file_id',
+      'google_drive_url', value->>'google_drive_url'
+    )
+  ) FROM json_each((SELECT content FROM pg_read_file('yousafzai_google_drive_audio_urls.json', 0, 100000000)::json)))
+) data
+WHERE google_drive_file_id IS NOT NULL;
+*/
 
 -- ========================================
 -- SAMPLE DATA POPULATION
