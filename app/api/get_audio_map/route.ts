@@ -13,11 +13,21 @@ function shouldRefresh(value: string | null): boolean {
 
 async function loadSupabaseAudioMap(): Promise<Record<string, string>> {
   try {
-    // Load NT audio files from Supabase public storage
+    // Load NT audio files from Supabase public storage (OT portion removed as requested)
     // Using direct URLs since the storage API requires different authentication
     const audioMap: Record<string, string> = {};
     const baseUrl = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio';
-    
+
+    // NT books only (OT books removed as per user request)
+    const ntBooks = new Set([
+      'matthew', 'mark', 'luke', 'john', 'acts', 'romans',
+      '1corinthians', '2corinthians', 'galatians', 'ephesians',
+      'philippians', 'colossians', '1thessalonians', '2thessalonians',
+      '1timothy', '2timothy', 'titus', 'philemon', 'hebrews',
+      'james', '1peter', '2peter', '1john', '2john', '3john',
+      'jude', 'revelation'
+    ]);
+
     // Helper function to add a range of verses for a book/chapter
     const addVerses = (book: string, chapter: number, startVerse: number, endVerse: number) => {
       for (let verse = startVerse; verse <= endVerse; verse++) {
@@ -27,14 +37,16 @@ async function loadSupabaseAudioMap(): Promise<Record<string, string>> {
         audioMap[verseRef] = `${baseUrl}/${filename}`;
       }
     };
-    
-    // Mark chapter 1 (verses 1-45 based on typical Mark 1 length)
-    addVerses('Mark', 1, 1, 45);
-    
-    // Add more chapters as they become available
-    // For now, just add Mark 1 since we know those files exist
 
-    console.log(`Loaded ${Object.keys(audioMap).length} NT audio entries from Supabase`);
+    // Add Mark (confirmed exists in Supabase storage)
+    if (ntBooks.has('mark')) {
+      addVerses('Mark', 1, 1, 45);
+    }
+
+    // The existing NT books (1corinthians, 1john, 1peter, 1thessalonians, 1timothy)
+    // are already being loaded by the Google Drive portion, so we don't need to duplicate them here
+
+    console.log(`Loaded ${Object.keys(audioMap).length} NT audio entries from Supabase (OT removed)`);
     return audioMap;
   } catch (error) {
     console.error('Error loading Supabase audio map:', error);
