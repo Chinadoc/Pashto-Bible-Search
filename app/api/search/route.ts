@@ -583,6 +583,9 @@ export async function POST(request: NextRequest) {
 
     // Apply enhanced disambiguation for ambiguous Pashto terms with Bible context
 
+    // If filtered variants are provided, use only those for search
+    const effectiveIncludeRelated = variants && variants.length > 0 ? false : includeRelated;
+
     // Parallelize disambiguation and related forms operations
     const disambiguationPromise = (searchLanguage === 'pashto' && searchTerms.length === 1 && !englishSearchTerms.length)
       ? Promise.resolve().then(async () => {
@@ -644,9 +647,6 @@ export async function POST(request: NextRequest) {
         };
       }
     }
-
-    // If filtered variants are provided, use only those for search
-    const effectiveIncludeRelated = variants && variants.length > 0 ? false : includeRelated;
 
     if (variants && variants.length > 0) {
       console.log('🔽 Using filtered variants for search:', variants);
