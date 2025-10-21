@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
-import { getData, getLightweightData, hybridSearch } from '@/app/lib/data/load';
+import { getData, getLightweightData, getSearchData, hybridSearch } from '@/app/lib/data/load';
 import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
 import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
