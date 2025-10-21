@@ -22,7 +22,7 @@ async function loadSupabaseAudioMap(): Promise<Record<string, string>> {
     const addVerses = (book: string, chapter: number, startVerse: number, endVerse: number) => {
       for (let verse = startVerse; verse <= endVerse; verse++) {
         const filename = `${book.toLowerCase()}${chapter}_verse_${verse}.mp3`;
-        const bookName = book.charAt(0).toUpperCase() + book.slice(1);
+        const bookName = book.toLowerCase(); // Keep lowercase to match existing format
         const verseRef = `${bookName} ${chapter}:${verse}`;
         audioMap[verseRef] = `${baseUrl}/${filename}`;
       }
