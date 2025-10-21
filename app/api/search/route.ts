@@ -113,7 +113,7 @@ type Processed = {
   original: string;
   normalized: string;
   variants: string[];
-  searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid';
+  searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'no_results';
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   variantGroups?: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   variantDetails?: any;
@@ -901,7 +901,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Executing optimized search for:', convertedQuery, 'with', searchTerms.length, 'terms');
 
     let searchResults: any[] = [];
-    let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' = 'fast';
+    let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'no_results' = 'fast';
 
     // Choose the most efficient search strategy
     if (searchTerms.length === 1 && !includeRelated) {
