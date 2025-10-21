@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface TranscriptionAttempt {
   attempt: number;
@@ -9,24 +9,29 @@ interface TranscriptionAttempt {
   timestamp: number;
 }
 
-interface VideoResult {
-  success: boolean;
-  video_id: string;
-  youtube_url: string;
-  audio_file: string;
-  transcription: TranscriptionAttempt;
+interface NormalizedClip {
+  sentence_number: number;
+  sentence: string;
+  start_time: number;
+  end_time: number;
+  duration: number;
+  filename: string;
+  file_path: string;
+  server_url: string | null;
+  exists: boolean | null;
+}
+
+interface NormalizedVideo {
+  success?: boolean;
+  video_id?: string;
+  youtube_url?: string;
+  audio_file?: string;
+  transcription?: TranscriptionAttempt;
   transcription_attempts?: TranscriptionAttempt[];
-  clips: Array<{
-    sentence_number: number;
-    sentence: string;
-    start_time: number;
-    end_time: number;
-    duration: number;
-    filename: string;
-    file_path: string;
-  }>;
+  clips: NormalizedClip[];
   total_clips: number;
   total_duration: number;
+  updated_at: string | null;
 }
 
 interface VideosPanelProps {
@@ -34,9 +39,13 @@ interface VideosPanelProps {
 }
 
 export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
-  const [videos, setVideos] = useState<VideoResult[]>([]);
+  const [videos, setVideos] = useState<NormalizedVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [elevenLabsLoading, setElevenLabsLoading] = useState(false);
+  const [elevenLabsResult, setElevenLabsResult] = useState<string | null>(null);
+  const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVideos = async () => {
     setLoading(true);
@@ -95,6 +104,62 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     return new Date(timestamp * 1000).toLocaleString();
   };
 
+  const handleElevenLabsTranscription = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      setElevenLabsError('Please select an audio file');
+      return;
+    }
+
+    // Validate file size (max 25MB for ElevenLabs)
+    if (file.size > 25 * 1024 * 1024) {
+      setElevenLabsError('File size must be less than 25MB');
+      return;
+    }
+
+    setElevenLabsLoading(true);
+    setElevenLabsError(null);
+    setElevenLabsResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      const response = await fetch('/api/transcribe-audio', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setElevenLabsResult(result.transcript);
+      } else {
+        setElevenLabsError(result.error || 'Transcription failed');
+      }
+    } catch (error) {
+      console.error('ElevenLabs transcription error:', error);
+      setElevenLabsError('Failed to transcribe audio');
+    } finally {
+      setElevenLabsLoading(false);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const resetElevenLabsState = () => {
+    setElevenLabsResult(null);
+    setElevenLabsError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -113,6 +178,100 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       <p className="text-gray-600 dark:text-gray-400 mb-6">
         View processed YouTube videos with Pashto transcription and audio clips
       </p>
+
+      {/* ElevenLabs Transcription Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
+        <div className="flex items-center mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              🎤 ElevenLabs Pashto Transcription
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Upload an audio file to get instant Pashto transcription using ElevenLabs AI
+            </p>
+          </div>
+          <button
+            onClick={triggerFileUpload}
+            disabled={elevenLabsLoading}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+            <span>{elevenLabsLoading ? 'Transcribing...' : 'Upload Audio'}</span>
+          </button>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          onChange={handleElevenLabsTranscription}
+          className="hidden"
+        />
+
+        {elevenLabsLoading && (
+          <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="text-blue-700 dark:text-blue-300">Transcribing your audio with ElevenLabs AI...</p>
+          </div>
+        )}
+
+        {elevenLabsError && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-red-700 dark:text-red-300">{elevenLabsError}</p>
+              <button
+                onClick={resetElevenLabsState}
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {elevenLabsResult && (
+          <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-green-800 dark:text-green-200">Transcription Result</h4>
+              <button
+                onClick={resetElevenLabsState}
+                className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-green-800 dark:text-green-200 leading-relaxed mb-3">
+              {elevenLabsResult}
+            </p>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  if (onSelectClip) {
+                    onSelectClip({
+                      query: elevenLabsResult,
+                      startTime: 0,
+                      endTime: 0
+                    });
+                  }
+                }}
+                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                Search This Text
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(elevenLabsResult);
+                }}
+                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Copy Text
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="text-center py-8">
@@ -148,36 +307,52 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                    Transcription (Attempt {video.transcription.attempt})
+                    Transcription {video.transcription ? `(Attempt ${video.transcription.attempt})` : '(No transcription)'}
                   </h4>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      video.transcription.is_pashto 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
-                      {video.transcription.is_pashto ? 'Pashto ✓' : 'Not Pashto ✗'}
-                    </span>
-                    {!video.transcription.is_pashto && (
-                      <button
-                        onClick={() => retryTranscription(video.video_id)}
-                        disabled={retrying === video.video_id}
-                        className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
-                      >
-                        {retrying === video.video_id ? 'Retrying...' : 'Re-send'}
-                      </button>
+                    {video.transcription ? (
+                      <>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          video.transcription.is_pashto
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {video.transcription.is_pashto ? 'Pashto ✓' : 'Not Pashto ✗'}
+                        </span>
+                        {!video.transcription.is_pashto && (
+                          <button
+                            onClick={() => retryTranscription(video.video_id || '')}
+                            disabled={retrying === (video.video_id || '')}
+                            className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                          >
+                            {retrying === (video.video_id || '') ? 'Retrying...' : 'Re-send'}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                        No transcription available
+                      </span>
                     )}
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-gray-800 rounded border p-4">
-                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
-                    {video.transcription.transcript}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Generated: {formatTimestamp(video.transcription.timestamp)}
-                  </p>
-                </div>
+                {video.transcription ? (
+                  <div className="bg-white dark:bg-gray-800 rounded border p-4">
+                    <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
+                      {video.transcription.transcript}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Generated: {formatTimestamp(video.transcription.timestamp)}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-gray-800 rounded border p-4">
+                    <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-gray-500 italic">
+                      No transcription available for this video.
+                    </p>
+                  </div>
+                )}
 
                 {/* Previous Attempts */}
                 {video.transcription_attempts && video.transcription_attempts.length > 0 && (
