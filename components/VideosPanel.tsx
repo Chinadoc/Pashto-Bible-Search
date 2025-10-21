@@ -66,6 +66,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [elevenLabsResult, setElevenLabsResult] = useState<string | null>(null);
   const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [uploadMode, setUploadMode] = useState<'file' | 'youtube'>('file');
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
   const [analyzingAudio, setAnalyzingAudio] = useState(false);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
@@ -132,9 +133,12 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const handleElevenLabsTranscription = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
-    // If no file selected but we have a YouTube URL, process that
-    if (!file && !youtubeUrl.trim()) {
-      setElevenLabsError('Please select an audio file or enter a YouTube URL');
+    if (!file) {
+      if (uploadMode === 'youtube') {
+        void analyzeYouTubeAudio();
+        return;
+      }
+      setElevenLabsError('Please select an audio file');
       return;
     }
 
@@ -145,29 +149,18 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     try {
       const formData = new FormData();
 
-      if (file) {
-        // Handle file upload
-        if (!file.type.startsWith('audio/')) {
-          setElevenLabsError('Please select an audio file');
-          return;
-        }
-
-        if (file.size > 25 * 1024 * 1024) {
-          setElevenLabsError('File size must be less than 25MB');
-          return;
-        }
-
-        formData.append('audio', file);
-      } else if (youtubeUrl.trim()) {
-        // Handle YouTube URL
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-        if (!youtubeRegex.test(youtubeUrl.trim())) {
-          setElevenLabsError('Please enter a valid YouTube URL');
-          return;
-        }
-
-        formData.append('youtubeUrl', youtubeUrl.trim());
+      // Handle file upload
+      if (!file.type.startsWith('audio/')) {
+        setElevenLabsError('Please select an audio file');
+        return;
       }
+
+      if (file.size > 25 * 1024 * 1024) {
+        setElevenLabsError('File size must be less than 25MB');
+        return;
+      }
+
+      formData.append('audio', file);
 
       const response = await fetch('/api/transcribe-audio', {
         method: 'POST',
@@ -351,6 +344,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     setElevenLabsResult(null);
     setElevenLabsError(null);
     setYoutubeUrl('');
+    setUploadMode('file');
     setAudioAnalysis(null);
     setSelectedSegments([]);
     if (fileInputRef.current) {
@@ -391,9 +385,14 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         {/* Tab Navigation */}
         <div className="flex mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
           <button
-            onClick={() => setYoutubeUrl('')}
+            onClick={() => {
+              setUploadMode('file');
+              setAudioAnalysis(null);
+              setSelectedSegments([]);
+              setYoutubeUrl('');
+            }}
             className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              !youtubeUrl.trim()
+              uploadMode === 'file'
                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
@@ -402,13 +401,15 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
           </button>
           <button
             onClick={() => {
-              // Clear file input when switching to YouTube
+              setUploadMode('youtube');
               if (fileInputRef.current) {
                 fileInputRef.current.value = '';
               }
+              setAudioAnalysis(null);
+              setSelectedSegments([]);
             }}
             className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              youtubeUrl.trim()
+              uploadMode === 'youtube'
                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
@@ -418,7 +419,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         </div>
 
         {/* File Upload Tab */}
-        {!youtubeUrl.trim() && (
+        {uploadMode === 'file' && (
           <div className="space-y-3">
             <div className="flex items-center justify-center">
               <button
@@ -443,7 +444,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         )}
 
         {/* YouTube URL Tab */}
-        {youtubeUrl.trim() && (
+        {uploadMode === 'youtube' && (
           <div className="space-y-4">
             {/* URL Input and Analysis */}
             {!audioAnalysis && !analyzingAudio && (

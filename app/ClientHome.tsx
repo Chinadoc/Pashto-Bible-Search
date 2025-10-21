@@ -789,7 +789,7 @@ export default function ClientHome() {
         }
 
         // Load Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
         if (yousafzaiResponse.ok) {
           const yousafzaiData = await yousafzaiResponse.json();
           const yousafzaiAudioMap = yousafzaiData || {};
@@ -902,7 +902,7 @@ export default function ClientHome() {
           }
 
           // Refresh Yousafzai 2019 audio map
-          const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+          const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
           if (yousafzaiResponse.ok) {
             const yousafzaiData = await yousafzaiResponse.json();
             const newYousafzaiAudioMap = yousafzaiData || {};
@@ -934,7 +934,7 @@ export default function ClientHome() {
         setAudioMap(newAfghanAudioMap);
 
         // Refresh Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
         if (yousafzaiResponse.ok) {
           const yousafzaiData = await yousafzaiResponse.json();
           const newYousafzaiAudioMap = yousafzaiData || {};

@@ -7,7 +7,7 @@
   "buildCommand": "npm run build",
   "functions": {
     "app/api/**/*.ts": {
-      "includeFiles": "public/full_dictionary_enriched.json public/word_frequency_list.json public/inflections_cache.json public/form_to_root_map.json public/form_occurrence_index.json public/verses.json.gz"
+      "includeFiles": "public/full_dictionary_enriched.json public/word_frequency_list.json public/inflections_cache.json public/form_to_root_map.json public/form_occurrence_index.json public/verses.json.gz public/google_drive_audio_urls.json public/google_drive_audio_urls_backup.json public/google_drive_audio_urls_backup2.json public/yousafzai_google_drive_audio_urls.json"
     }
   },
   "regions": ["iad1"]
