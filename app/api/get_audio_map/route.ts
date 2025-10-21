@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const forceRefresh =
       shouldRefresh(params.get('refresh')) || shouldRefresh(params.get('clear_cache'));
+    const debug = params.get('debug') === '1';
 
     // Load audio maps
     const [supabaseAudioMap, googleDriveAudioMap] = await Promise.all([
@@ -88,6 +89,23 @@ export async function GET(request: NextRequest) {
 
     // Combine both maps (Google Drive takes precedence for conflicts)
     const combinedAudioMap = { ...supabaseAudioMap, ...googleDriveAudioMap };
+
+    const stats = {
+      supabase: Object.keys(supabaseAudioMap).length,
+      googleDrive: Object.keys(googleDriveAudioMap).length,
+      combined: Object.keys(combinedAudioMap).length
+    };
+    
+    console.log(`Audio map stats:`, stats);
+
+    if (debug) {
+      return NextResponse.json({
+        stats,
+        supabaseSample: Object.keys(supabaseAudioMap).slice(0, 5),
+        googleDriveSample: Object.keys(googleDriveAudioMap).slice(0, 5),
+        combinedSample: Object.keys(combinedAudioMap).slice(0, 5)
+      });
+    }
 
     return NextResponse.json(combinedAudioMap);
   } catch (error) {
