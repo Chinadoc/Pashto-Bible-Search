@@ -10,6 +10,16 @@ const execAsync = promisify(exec);
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
 
+function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof ArrayBuffer) {
+    return data.slice(0);
+  }
+  const arrayBuffer = new ArrayBuffer(data.byteLength);
+  const view = new Uint8Array(arrayBuffer);
+  view.set(data);
+  return arrayBuffer;
+}
+
 async function downloadAndCompressYouTubeAudio(youtubeUrl: string): Promise<{ audioBuffer: ArrayBuffer; originalSize: number; compressedSize: number } | null> {
   try {
     // Extract video ID from YouTube URL
@@ -76,7 +86,7 @@ async function downloadAndCompressYouTubeAudio(youtubeUrl: string): Promise<{ au
       }
 
       return {
-        audioBuffer: audioBuffer.slice(0),
+        audioBuffer: toArrayBuffer(audioBuffer),
         originalSize,
         compressedSize
       };
@@ -213,7 +223,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transcribe with ElevenLabs
-    const transcript = await transcribeWithElevenLabs(audioBuffer);
+    const transcript = await transcribeWithElevenLabs(toArrayBuffer(audioBuffer));
 
     if (!transcript) {
       return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 });
