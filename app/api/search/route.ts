@@ -52,7 +52,6 @@ function romanizedToPashto(romanized: string): string {
 
   // Apply special patterns first (longest to shortest)
   const sortedPatterns = Object.keys(romanizedToPashtoMap).sort((a, b) => b.length - a.length);
-  console.log(`🔍 Pattern order for "${romanized}":`, sortedPatterns.slice(0, 10));
 
   for (const pattern of sortedPatterns) {
     const replacement = romanizedToPashtoMap[pattern];
@@ -576,14 +575,6 @@ export async function POST(request: NextRequest) {
     // Apply romanized to Pashto conversion to the main query
     const convertedQuery = romanizedToPashto(trimmedQuery);
     console.log(`🔄 Romanized conversion: "${trimmedQuery}" → "${convertedQuery}"`);
-    console.log(`🔍 Conversion debug: original="${originalQuery}", trimmed="${trimmedQuery}", converted="${convertedQuery}"`);
-    
-    // Force conversion for debugging
-    if (trimmedQuery === 'dodu') {
-      console.log(`🚨 FORCING CONVERSION: dodu → ډوډۍ`);
-      const forcedQuery = 'ډوډۍ';
-      console.log(`🚨 Forced query: ${forcedQuery}`);
-    }
     
     // Combine search terms from query + English matches
     let searchTerms = Array.from(new Set([convertedQuery, ...englishSearchTerms])) as string[];
