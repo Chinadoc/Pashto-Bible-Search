@@ -19,6 +19,8 @@ type CachedInflection = {
 
 type DictionaryEntry = {
   p?: string;
+  f?: string;
+  g?: string;
   c?: string;
   c_norm?: string;
   pos_family?: string;
