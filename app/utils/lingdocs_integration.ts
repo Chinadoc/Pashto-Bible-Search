@@ -17,8 +17,24 @@ type CachedInflection = {
   category?: string;
 };
 
+type DictionaryEntry = {
+  p?: string;
+  c?: string;
+  c_norm?: string;
+  pos_family?: string;
+  pos?: string;
+  e?: string;
+  gender?: string;
+  ppp?: string;
+  ppf?: string;
+  infap?: string;
+  infaf?: string;
+  ts?: number;
+};
+
 type CachedResources = {
-  dictionaryByPashto: Map<string, any>;
+  dictionaryByPashto: Map<string, DictionaryEntry>;
+  dictionaryVariantsByPashto: Map<string, DictionaryEntry[]>;
   inflectionCache: Map<string, CachedInflection[]>;
   frequencyMap: Map<string, number>;
 };
@@ -90,12 +106,17 @@ async function loadLingDocsResources(): Promise<CachedResources> {
 
       // Dictionary ----------------------------------------------------------
       const dictionaryJson = JSON.parse(dictionaryRaw ?? '{}');
-      const dictionaryEntries: any[] = Array.isArray(dictionaryJson.entries) ? dictionaryJson.entries : [];
-      const dictionaryByPashto = new Map<string, any>();
+      const dictionaryEntries: DictionaryEntry[] = Array.isArray(dictionaryJson.entries) ? dictionaryJson.entries : [];
+      const dictionaryByPashto = new Map<string, DictionaryEntry>();
+      const dictionaryVariantsByPashto = new Map<string, DictionaryEntry[]>();
       for (const entry of dictionaryEntries) {
-        if (entry?.p && !dictionaryByPashto.has(entry.p)) {
+        if (!entry?.p) continue;
+        if (!dictionaryByPashto.has(entry.p)) {
           dictionaryByPashto.set(entry.p, entry);
         }
+        const variants = dictionaryVariantsByPashto.get(entry.p) ?? [];
+        variants.push(entry);
+        dictionaryVariantsByPashto.set(entry.p, variants);
       }
 
       // Inflection cache ----------------------------------------------------
@@ -138,7 +159,7 @@ async function loadLingDocsResources(): Promise<CachedResources> {
         }
       }
 
-      return { dictionaryByPashto, inflectionCache, frequencyMap };
+      return { dictionaryByPashto, dictionaryVariantsByPashto, inflectionCache, frequencyMap };
     })();
   }
 
@@ -423,9 +444,9 @@ export async function generateVerbVariantsLingDocs(
       return [];
     }
     
-    const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
+    const { dictionaryByPashto, dictionaryVariantsByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
-    const dictEntry = dictionaryByPashto.get(rootOrInfinitive);
+    const dictEntry = resolveDictionaryEntry(rootOrInfinitive, 'verb', dictionaryByPashto, dictionaryVariantsByPashto);
     if (!dictEntry) {
       console.warn(`❌ Verb "${rootOrInfinitive}" not found in dictionary`);
       return [];
@@ -495,9 +516,9 @@ export async function generateNounVariantsLingDocs(
       return [];
     }
     
-    const { dictionaryByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
+    const { dictionaryByPashto, dictionaryVariantsByPashto, inflectionCache, frequencyMap } = await loadLingDocsResources();
 
-    const dictEntry = dictionaryByPashto.get(rootOrLemma);
+    const dictEntry = resolveDictionaryEntry(rootOrLemma, 'noun', dictionaryByPashto, dictionaryVariantsByPashto);
     if (!dictEntry) {
       console.warn(`❌ Noun "${rootOrLemma}" not found in dictionary`);
       return [];
@@ -562,4 +583,84 @@ export function isPashtoWord(word: string): boolean {
 
 export function normalizePashtoText(text: string): string {
   return text.trim().replace(/\u200c/g, '').replace(/\u200d/g, '').replace(/\s+/g, ' ');
+}
+
+type TargetPos = 'noun' | 'verb' | 'adjective' | 'other';
+
+function classifyPos(entry: DictionaryEntry | null | undefined): TargetPos {
+  if (!entry) return 'other';
+  const parts = [
+    typeof entry.pos === 'string' ? entry.pos : '',
+    typeof entry.c === 'string' ? entry.c : '',
+    typeof entry.c_norm === 'string' ? entry.c_norm : '',
+    typeof entry.pos_family === 'string' ? entry.pos_family : '',
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  if (parts.includes('verb') || /\bv\./.test(parts)) return 'verb';
+  if (parts.includes('noun') || /\bn\./.test(parts)) return 'noun';
+  if (parts.includes('adj')) return 'adjective';
+  return 'other';
+}
+
+function scoreEntry(entry: DictionaryEntry, target: TargetPos): number {
+  let score = 0;
+  const pos = classifyPos(entry);
+
+  if (pos === target) {
+    score += 100;
+  } else if (target === 'noun' && pos === 'other') {
+    // Still allow nouns that might be marked differently (e.g., anim.)
+    score += 15;
+  } else if (target === 'verb' && pos === 'other') {
+    score += 10;
+  } else if (pos !== target) {
+    score -= 10;
+  }
+
+  if (target === 'noun') {
+    if (entry.ppp || entry.ppf) score += 25;
+    const descriptor = [entry.c, entry.c_norm, entry.pos_family].join(' ').toLowerCase();
+    if (descriptor.includes('anim')) score += 5;
+    if (descriptor.includes('fam')) score += 5;
+  }
+
+  if (target === 'verb') {
+    const descriptor = [entry.c, entry.c_norm, entry.pos_family].join(' ').toLowerCase();
+    if (descriptor.includes('compound')) score += 3;
+  }
+
+  if (target === 'adjective') {
+    const descriptor = [entry.c, entry.c_norm, entry.pos_family].join(' ').toLowerCase();
+    if (descriptor.includes('adj')) score += 20;
+  }
+
+  return score;
+}
+
+function resolveDictionaryEntry(
+  word: string,
+  target: TargetPos,
+  primaryMap: Map<string, DictionaryEntry>,
+  variantsMap: Map<string, DictionaryEntry[]>
+): DictionaryEntry | undefined {
+  const candidates = variantsMap.get(word);
+  if (Array.isArray(candidates) && candidates.length > 0) {
+    let best: DictionaryEntry | undefined;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const score = scoreEntry(candidate, target);
+      if (score > bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+
+    if (best) return best;
+  }
+
+  return primaryMap.get(word);
 }
