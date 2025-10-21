@@ -5,5 +5,10 @@
   },
   "installCommand": "npm ci --no-audit --no-fund",
   "buildCommand": "npm run build",
+  "functions": {
+    "app/api/**/*.ts": {
+      "includeFiles": "public/google_drive_audio_urls.json"
+    }
+  },
   "regions": ["iad1"]
 }

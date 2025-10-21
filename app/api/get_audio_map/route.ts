@@ -44,40 +44,33 @@ async function loadSupabaseAudioMap(): Promise<Record<string, string>> {
 async function loadGoogleDriveAudioMaps(): Promise<Record<string, string>> {
   const audioMap: Record<string, string> = {};
 
-  // Load from JSON files
-  const jsonFiles = [
-    'google_drive_audio_urls.json',
-    'google_drive_audio_urls_backup.json',
-    'google_drive_audio_urls_backup2.json',
-    'yousafzai_google_drive_audio_urls.json'
-  ];
+  // Load from included JSON file (only the main one for now)
+  const filename = 'google_drive_audio_urls.json';
 
-  for (const filename of jsonFiles) {
-    try {
-      const filePath = path.join(process.cwd(), 'public', filename);
-      const fileContent = await fs.readFile(filePath, 'utf8');
-      const data = JSON.parse(fileContent);
+  try {
+    const filePath = path.join(process.cwd(), 'public', filename);
+    const fileContent = await fs.readFile(filePath, 'utf8');
+    const data = JSON.parse(fileContent);
 
-      if (data && typeof data === 'object') {
-        const entries = Object.entries(data as Record<string, unknown>);
-        for (const [key, value] of entries) {
-          if (typeof value === 'string') {
-            audioMap[key] = value;
-          } else if (typeof value === 'object' && value !== null) {
-            const record = value as Record<string, unknown>;
-            const url = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
-            if (typeof url === 'string') {
-              audioMap[key] = url;
-            }
+    if (data && typeof data === 'object') {
+      const entries = Object.entries(data as Record<string, unknown>);
+      for (const [key, value] of entries) {
+        if (typeof value === 'string') {
+          audioMap[key] = value;
+        } else if (typeof value === 'object' && value !== null) {
+          const record = value as Record<string, unknown>;
+          const url = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
+          if (typeof url === 'string') {
+            audioMap[key] = url;
           }
         }
       }
-    } catch (error) {
-      console.warn(`Failed to load ${filename}:`, error);
     }
+  } catch (error) {
+    console.warn(`Failed to load ${filename}:`, error);
   }
 
-  console.log(`Loaded ${Object.keys(audioMap).length} audio entries from Google Drive files`);
+  console.log(`Loaded ${Object.keys(audioMap).length} audio entries from Google Drive file`);
   return audioMap;
 }
 
