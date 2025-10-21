@@ -81,13 +81,10 @@ export async function GET(request: NextRequest) {
       shouldRefresh(params.get('refresh')) || shouldRefresh(params.get('clear_cache'));
 
     // Load audio maps
-    const [supabaseAudioMap, googleDriveAudioMap] = await Promise.all([
-      loadSupabaseAudioMap(),
-      loadGoogleDriveAudioMaps()
-    ]);
+    const googleDriveAudioMap = await loadGoogleDriveAudioMaps();
 
-    // Combine both maps (Google Drive takes precedence for conflicts)
-    const combinedAudioMap = { ...supabaseAudioMap, ...googleDriveAudioMap };
+    // For now, only use Google Drive data since Supabase doesn't have URLs yet
+    const combinedAudioMap = googleDriveAudioMap;
 
     return NextResponse.json(combinedAudioMap);
   } catch (error) {
