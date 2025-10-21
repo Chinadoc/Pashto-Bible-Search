@@ -44,6 +44,8 @@ function romanizedToPashto(romanized: string): string {
     'w': 'و',
     // Special combinations for bread/food
     'DoD': 'ډوډ', 'dod': 'ډوډ', 'dodu': 'ډوډۍ',
+    // Verb forms
+    'wahul': 'وهل', 'wahel': 'وهل',
     // Common patterns
     'aan': 'ان', 'iin': 'ین', 'oon': 'ون',
   };
@@ -59,6 +61,14 @@ function romanizedToPashto(romanized: string): string {
   }
 
   return result;
+}
+
+function normalizeRomanizedInput(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[^A-Za-z'\-\s]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
 // Helper function to search with multiple terms
@@ -470,17 +480,93 @@ export async function POST(request: NextRequest) {
 
     // Try transliteration if query is in English/Latin script
     let searchQuery = originalQuery;
+    let romanizedDictionaryMatch: { pashto: string; romanized: string } | null = null;
     console.log(`🔍 Original query: "${originalQuery}", searchLanguage: "${searchLanguage}"`);
-    if (searchLanguage === 'pashto' && /^[a-zA-Z\s]+$/.test(originalQuery)) {
-      console.log(`🔍 Query matches Latin script pattern`);
+    const isLatinScriptQuery = searchLanguage === 'pashto' && isLatinOnly(originalQuery);
+
+    if (isLatinScriptQuery) {
+      try {
+        const normalizedRoman = normalizeRomanizedInput(originalQuery);
+        console.log(`🔍 Normalized romanized key: "${normalizedRoman}"`);
+
+        if (normalizedRoman) {
+          const { dictionaryByRomanized, frequencyMap } = await getLightweightData();
+          let candidates = dictionaryByRomanized.get(normalizedRoman);
+
+          if (!candidates || candidates.length === 0) {
+            const accentlessKey = normalizedRoman.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (accentlessKey && accentlessKey !== normalizedRoman) {
+              candidates = dictionaryByRomanized.get(accentlessKey);
+            }
+          }
+
+          if (!candidates || candidates.length === 0) {
+            for (const [key, entries] of dictionaryByRomanized.entries()) {
+              if (key === normalizedRoman) continue;
+              if (key.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === normalizedRoman) {
+                candidates = entries;
+                break;
+              }
+            }
+          }
+
+          if (candidates && candidates.length > 0) {
+            let bestEntry = candidates[0] as any;
+            let bestScore = Number.NEGATIVE_INFINITY;
+
+            for (const candidate of candidates) {
+              if (!candidate?.pashto) continue;
+              const candidateRoman = typeof candidate.romanized === 'string' ? normalizeRomanizedInput(candidate.romanized) : '';
+              const candidateG = typeof candidate.g === 'string' ? normalizeRomanizedInput(candidate.g) : '';
+              const freq = frequencyMap.get(candidate.pashto) ?? 0;
+              const posField = [candidate.pos, candidate.c, candidate.pos_family]
+                .map((value: unknown) => (typeof value === 'string' ? value.toLowerCase() : ''))
+                .join(' ');
+
+              let score = freq > 0 ? Math.log10(freq + 1) * 25 : 0;
+              if (candidateRoman === normalizedRoman) score += 40;
+              if (candidateG === normalizedRoman) score += 30;
+              if (posField.includes('verb')) score += 12;
+              else if (posField.includes('noun')) score += 6;
+              if (typeof candidate.pashto === 'string' && candidate.pashto.length) {
+                score += Math.max(0, 8 - candidate.pashto.length);
+              }
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestEntry = candidate;
+              }
+            }
+
+            romanizedDictionaryMatch = {
+              pashto: bestEntry.pashto,
+              romanized: typeof bestEntry.romanized === 'string' ? bestEntry.romanized : originalQuery,
+            };
+            searchQuery = bestEntry.pashto;
+            console.log(
+              `✅ Dictionary romanized lookup matched "${originalQuery}" → "${searchQuery}" (score=${Number.isFinite(bestScore) ? bestScore.toFixed(1) : 'n/a'})`,
+            );
+          } else {
+            console.log(`⚠️ Dictionary romanized lookup had no match for "${normalizedRoman}"`);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Dictionary romanized lookup failed:', error);
+      }
+    }
+
+    if (!romanizedDictionaryMatch && searchLanguage === 'pashto' && /^[a-zA-Z\s]+$/.test(originalQuery)) {
+      console.log(`🔍 Query matches Latin script pattern (fallback transliteration)`);
       const transliterated = transliterationMap[originalQuery.toLowerCase()];
       console.log(`🔍 Transliteration lookup for "${originalQuery.toLowerCase()}":`, transliterated);
       if (transliterated) {
         searchQuery = transliterated;
-        console.log(`🔄 Transliterated "${originalQuery}" to "${searchQuery}"`);
+        console.log(`🔄 Transliterated "${originalQuery}" to "${searchQuery}" via fallback map`);
       } else {
-        console.log(`⚠️ No transliteration found for "${originalQuery}"`);
+        console.log(`⚠️ No transliteration found for "${originalQuery}" in fallback map`);
       }
+    } else if (romanizedDictionaryMatch) {
+      console.log('🔄 Using dictionary-backed romanized conversion result');
     } else {
       console.log(`🔍 Query does not match transliteration conditions`);
     }
@@ -968,6 +1054,8 @@ export async function POST(request: NextRequest) {
         language: searchLanguage,
         englishMatches: englishMatches.length ? englishMatches : undefined,
         variantsSearched: searchTerms,
+        romanization: romanizedDictionaryMatch?.romanized,
+        root: romanizedDictionaryMatch?.pashto,
       };
 
       setCachedSearch(cacheKey, transformed, relatedForms, processedData);
@@ -986,6 +1074,8 @@ export async function POST(request: NextRequest) {
           language: searchLanguage,
           englishMatches: englishMatches.length ? englishMatches : undefined,
           variantsSearched: searchTerms,
+          romanization: romanizedDictionaryMatch?.romanized,
+          root: romanizedDictionaryMatch?.pashto,
         },
         count: transformed.length,
         ms: Date.now() - startedAt,
@@ -1007,6 +1097,8 @@ export async function POST(request: NextRequest) {
       language: searchLanguage,
       englishMatches: englishMatches.length ? englishMatches : undefined,
       variantsSearched: searchTerms,
+      romanization: romanizedDictionaryMatch?.romanized,
+      root: romanizedDictionaryMatch?.pashto,
     };
 
     return NextResponse.json({
