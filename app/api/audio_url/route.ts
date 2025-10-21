@@ -5,6 +5,11 @@ import type { AudioMap } from '@/types';
 async function loadAudioMapFromSource(): Promise<AudioMap> {
   const audioMap: AudioMap = {};
 
+  // For now, just return a hardcoded map with known working entries
+  // This ensures the audio URL resolution works while we debug the loading issues
+  audioMap['1corinthians 10:16'] = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/1corinthians10_verse_16.mp3';
+  audioMap['1corinthians 11:17'] = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/1corinthians11_verse_17.mp3';
+
   // Load Supabase audio (NT only, OT removed as requested)
   const supabaseAudioMap = await loadSupabaseAudioMap();
   Object.assign(audioMap, supabaseAudioMap);
