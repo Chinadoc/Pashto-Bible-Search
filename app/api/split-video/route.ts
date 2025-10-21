@@ -65,7 +65,15 @@ async function extractAudioSegment(videoPath: string, startTime: number, endTime
         audioBuffer = fileBuffer;
       } else {
         // Buffer case - create new ArrayBuffer from Buffer data
-        audioBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+        const buffer = fileBuffer.buffer;
+        const byteOffset = fileBuffer.byteOffset;
+        const byteLength = fileBuffer.byteLength;
+
+        // Create a new ArrayBuffer and copy the data
+        audioBuffer = new ArrayBuffer(byteLength);
+        const view = new Uint8Array(audioBuffer);
+        const sourceView = new Uint8Array(buffer, byteOffset, byteLength);
+        view.set(sourceView);
       }
 
       return audioBuffer;
