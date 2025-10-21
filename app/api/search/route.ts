@@ -43,7 +43,7 @@ function romanizedToPashto(romanized: string): string {
     'y': 'ی', 'ý': 'ی',
     'w': 'و',
     // Special combinations for bread/food
-    'DoD': 'ډوډ', 'dod': 'ډوډ',
+    'DoD': 'ډوډ', 'dod': 'ډوډ', 'dodu': 'ډوډۍ',
     // Common patterns
     'aan': 'ان', 'iin': 'ین', 'oon': 'ون',
   };
@@ -575,6 +575,7 @@ export async function POST(request: NextRequest) {
     // Apply romanized to Pashto conversion to the main query
     const convertedQuery = romanizedToPashto(trimmedQuery);
     console.log(`🔄 Romanized conversion: "${trimmedQuery}" → "${convertedQuery}"`);
+    console.log(`🔍 Conversion debug: original="${originalQuery}", trimmed="${trimmedQuery}", converted="${convertedQuery}"`);
     
     // Combine search terms from query + English matches
     let searchTerms = Array.from(new Set([convertedQuery, ...englishSearchTerms])) as string[];
