@@ -115,7 +115,7 @@ const globalForLoader = globalThis as unknown as {
   __PBS_DATA_CACHE_TIME__?: number;
 };
 
-const DATA_CACHE_TTL = 3600000; // 1 hour (increased from instant expiry)
+const DATA_CACHE_TTL = 7200000; // 2 hours (increased for better performance)
 
 const PASHTO_BOOKS_OT = new Set<string>([
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
@@ -586,7 +586,8 @@ type LightweightData = {
   unaccent: (input: string) => string;
 };
 
-const lightweightCache = globalThis as unknown as { __PBS_LIGHTWEIGHT_CACHE__?: Promise<LightweightData>; __PBS_LIGHTWEIGHT_DATA__?: LightweightData };
+const lightweightCache = globalThis as unknown as { __PBS_LIGHTWEIGHT_CACHE__?: Promise<LightweightData>; __PBS_LIGHTWEIGHT_DATA__?: LightweightData; __PBS_LIGHTWEIGHT_CACHE_TIME__?: number };
+const LIGHTWEIGHT_CACHE_TTL = 7200000; // 2 hours
 
 // Search data for endpoints that need full search capability
 type SearchData = {
@@ -595,7 +596,8 @@ type SearchData = {
   indexesLoaded: boolean;
 };
 
-const searchCache = globalThis as unknown as { __PBS_SEARCH_CACHE__?: Promise<SearchData>; __PBS_SEARCH_DATA__?: SearchData };
+const searchCache = globalThis as unknown as { __PBS_SEARCH_CACHE__?: Promise<SearchData>; __PBS_SEARCH_DATA__?: SearchData; __PBS_SEARCH_CACHE_TIME__?: number };
+const SEARCH_DATA_CACHE_TTL = 7200000; // 2 hours
 
 // Lazy-loaded search data that builds indexes only when needed
 type LazySearchData = {
@@ -604,7 +606,8 @@ type LazySearchData = {
   indexesLoaded: boolean;
 };
 
-const lazySearchCache = globalThis as unknown as { __PBS_LAZY_SEARCH_CACHE__?: Promise<LazySearchData>; __PBS_LAZY_SEARCH_DATA__?: LazySearchData };
+const lazySearchCache = globalThis as unknown as { __PBS_LAZY_SEARCH_CACHE__?: Promise<LazySearchData>; __PBS_LAZY_SEARCH_DATA__?: LazySearchData; __PBS_LAZY_SEARCH_CACHE_TIME__?: number };
+const LAZY_SEARCH_CACHE_TTL = 7200000; // 2 hours
 
 async function loadLightweightData(): Promise<LightweightData> {
   const [frequencies, yousafzaiFrequencies, inflections, formToRoot, occurrences, dictionaryRaw] = await Promise.all([
@@ -750,8 +753,10 @@ async function loadSearchData(): Promise<SearchData> {
 }
 
 export async function getLightweightData(): Promise<LightweightData> {
-  // Use resolved cache if available
-  if (lightweightCache.__PBS_LIGHTWEIGHT_DATA__) {
+  // Check if we have valid cached data with TTL
+  if (lightweightCache.__PBS_LIGHTWEIGHT_DATA__ &&
+      lightweightCache.__PBS_LIGHTWEIGHT_CACHE_TIME__ &&
+      (Date.now() - lightweightCache.__PBS_LIGHTWEIGHT_CACHE_TIME__) < LIGHTWEIGHT_CACHE_TTL) {
     return lightweightCache.__PBS_LIGHTWEIGHT_DATA__;
   }
 
@@ -766,8 +771,9 @@ export async function getLightweightData(): Promise<LightweightData> {
 
   try {
     const data = await loadingPromise;
-    // Cache the resolved data for future requests
+    // Cache the resolved data for future requests with timestamp
     lightweightCache.__PBS_LIGHTWEIGHT_DATA__ = data;
+    lightweightCache.__PBS_LIGHTWEIGHT_CACHE_TIME__ = Date.now();
     // Clear the loading promise
     lightweightCache.__PBS_LIGHTWEIGHT_CACHE__ = undefined;
     return data;
@@ -779,8 +785,10 @@ export async function getLightweightData(): Promise<LightweightData> {
 }
 
 export async function getSearchData(): Promise<SearchData> {
-  // Use resolved cache if available
-  if (searchCache.__PBS_SEARCH_DATA__) {
+  // Check if we have valid cached data with TTL
+  if (searchCache.__PBS_SEARCH_DATA__ &&
+      searchCache.__PBS_SEARCH_CACHE_TIME__ &&
+      (Date.now() - searchCache.__PBS_SEARCH_CACHE_TIME__) < SEARCH_DATA_CACHE_TTL) {
     return searchCache.__PBS_SEARCH_DATA__;
   }
 
@@ -795,8 +803,9 @@ export async function getSearchData(): Promise<SearchData> {
 
   try {
     const data = await loadingPromise;
-    // Cache the resolved data for future requests
+    // Cache the resolved data for future requests with timestamp
     searchCache.__PBS_SEARCH_DATA__ = data;
+    searchCache.__PBS_SEARCH_CACHE_TIME__ = Date.now();
     // Clear the loading promise
     searchCache.__PBS_SEARCH_CACHE__ = undefined;
     return data;
@@ -808,8 +817,10 @@ export async function getSearchData(): Promise<SearchData> {
 }
 
 export async function getLazyLoadedSearchData(): Promise<LazySearchData> {
-  // Use resolved cache if available
-  if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__) {
+  // Check if we have valid cached data with TTL
+  if (lazySearchCache.__PBS_LAZY_SEARCH_DATA__ &&
+      lazySearchCache.__PBS_LAZY_SEARCH_CACHE_TIME__ &&
+      (Date.now() - lazySearchCache.__PBS_LAZY_SEARCH_CACHE_TIME__) < LAZY_SEARCH_CACHE_TTL) {
     return lazySearchCache.__PBS_LAZY_SEARCH_DATA__;
   }
 
@@ -824,8 +835,9 @@ export async function getLazyLoadedSearchData(): Promise<LazySearchData> {
 
   try {
     const data = await loadingPromise;
-    // Cache the resolved data for future requests
+    // Cache the resolved data for future requests with timestamp
     lazySearchCache.__PBS_LAZY_SEARCH_DATA__ = data;
+    lazySearchCache.__PBS_LAZY_SEARCH_CACHE_TIME__ = Date.now();
     // Clear the loading promise
     lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
     return data;
@@ -833,6 +845,29 @@ export async function getLazyLoadedSearchData(): Promise<LazySearchData> {
     // Clear the failed promise
     lazySearchCache.__PBS_LAZY_SEARCH_CACHE__ = undefined;
     throw error;
+  }
+}
+
+// Cache warming utility for production deployments
+export async function warmCaches(): Promise<void> {
+  console.log('🔥 Warming up caches...');
+
+  try {
+    // Warm up lightweight data cache (dictionary, frequencies, etc.)
+    await getLightweightData();
+    console.log('✅ Lightweight data cache warmed');
+
+    // Warm up search data cache (verses and indexes)
+    await getSearchData();
+    console.log('✅ Search data cache warmed');
+
+    // Warm up lazy search data cache (verses only)
+    await getLazyLoadedSearchData();
+    console.log('✅ Lazy search data cache warmed');
+
+    console.log('🎉 All caches warmed successfully');
+  } catch (error) {
+    console.error('❌ Failed to warm caches:', error);
   }
 }
 

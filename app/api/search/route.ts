@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
-import { getData, getLightweightData, getSearchData, hybridSearch } from '@/app/lib/data/load';
+import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
 import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
 import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
@@ -189,6 +189,14 @@ const INSTANT_RESULTS_CACHE = new Map<string, SearchCacheEntry>();
 // Cache performance tracking
 let cacheHitCount = 0;
 let cacheMissCount = 0;
+
+// Warm caches on startup (only in production)
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+  // Warm caches asynchronously on module load (but don't block)
+  setTimeout(() => {
+    warmCaches().catch(console.error);
+  }, 1000); // Wait 1 second after startup
+}
 
 function generateCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string): string {
   // Create a more efficient cache key by normalizing query first
@@ -1216,6 +1224,16 @@ export async function GET(request: NextRequest) {
     await preloadCommonSearches();
     return NextResponse.json({
       message: 'Common searches preloaded',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (action === 'warm') {
+    // Warm up all caches (data + common searches)
+    await warmCaches();
+    await preloadCommonSearches();
+    return NextResponse.json({
+      message: 'All caches warmed',
       timestamp: new Date().toISOString()
     });
   }
