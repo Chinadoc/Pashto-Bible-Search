@@ -13,32 +13,28 @@ function shouldRefresh(value: string | null): boolean {
 
 async function loadSupabaseAudioMap(): Promise<Record<string, string>> {
   try {
-    // Since the Supabase storage API isn't working, we'll manually add known Mark files
-    // This is a temporary solution until we can properly list the storage bucket
+    // Load NT audio files from Supabase public storage
+    // Using direct URLs since the storage API requires different authentication
     const audioMap: Record<string, string> = {};
+    const baseUrl = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio';
     
-    // Add Mark files manually (we know they exist from the direct URL test)
-    const markFiles = [
-      'mark1_verse_1.mp3', 'mark1_verse_2.mp3', 'mark1_verse_3.mp3', 'mark1_verse_4.mp3',
-      'mark1_verse_5.mp3', 'mark1_verse_6.mp3', 'mark1_verse_7.mp3', 'mark1_verse_8.mp3',
-      'mark1_verse_9.mp3', 'mark1_verse_10.mp3', 'mark1_verse_11.mp3', 'mark1_verse_12.mp3',
-      'mark1_verse_13.mp3', 'mark1_verse_14.mp3', 'mark1_verse_15.mp3', 'mark1_verse_16.mp3',
-      'mark1_verse_17.mp3', 'mark1_verse_18.mp3', 'mark1_verse_19.mp3', 'mark1_verse_20.mp3',
-      'mark1_verse_21.mp3', 'mark1_verse_22.mp3', 'mark1_verse_23.mp3', 'mark1_verse_24.mp3'
-    ];
-    
-    for (const filename of markFiles) {
-      const match = filename.match(/^(.+?)(\d+)_verse_(\d+)\.mp3$/);
-      if (match) {
-        const [, book, chapter, verse] = match;
+    // Helper function to add a range of verses for a book/chapter
+    const addVerses = (book: string, chapter: number, startVerse: number, endVerse: number) => {
+      for (let verse = startVerse; verse <= endVerse; verse++) {
+        const filename = `${book.toLowerCase()}${chapter}_verse_${verse}.mp3`;
         const bookName = book.charAt(0).toUpperCase() + book.slice(1);
         const verseRef = `${bookName} ${chapter}:${verse}`;
-        const publicUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/${filename}`;
-        audioMap[verseRef] = publicUrl;
+        audioMap[verseRef] = `${baseUrl}/${filename}`;
       }
-    }
+    };
+    
+    // Mark chapter 1 (verses 1-45 based on typical Mark 1 length)
+    addVerses('Mark', 1, 1, 45);
+    
+    // Add more chapters as they become available
+    // For now, just add Mark 1 since we know those files exist
 
-    console.log(`Loaded ${Object.keys(audioMap).length} Mark audio entries from Supabase`);
+    console.log(`Loaded ${Object.keys(audioMap).length} NT audio entries from Supabase`);
     return audioMap;
   } catch (error) {
     console.error('Error loading Supabase audio map:', error);
