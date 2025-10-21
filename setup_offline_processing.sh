@@ -41,3 +41,4 @@ echo "   python3 process_video_offline.py --retry <video_id>"
 echo ""
 echo "📺 The script will process: https://www.youtube.com/watch?v=0tvvnixN7iw&t=724s"
 
+

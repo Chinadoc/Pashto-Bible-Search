@@ -11,6 +11,56 @@ import { audioUrlFromRef } from '@/utils/audio';
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
 
+// Romanized to Pashto conversion utility
+function romanizedToPashto(romanized: string): string {
+  // Basic romanized to Pashto conversion map
+  const romanizedToPashtoMap: Record<string, string> = {
+    // Vowels
+    'aa': 'ا', 'a': 'ا', 'á': 'ا',
+    'ee': 'ې', 'e': 'ې', 'é': 'ې',
+    'oo': 'و', 'o': 'و', 'ó': 'و',
+    'uu': 'و', 'u': 'و', 'ú': 'و',
+    'ai': 'ی', 'ei': 'ی',
+    // Consonants
+    'b': 'ب', 'p': 'پ',
+    't': 'ت', 'ṭ': 'ط',
+    's': 'س', 'ṣ': 'ص',
+    'j': 'ج', 'ch': 'چ',
+    'kh': 'خ', 'x': 'خ',
+    'd': 'د', 'ḍ': 'ض',
+    'z': 'ز', 'ẓ': 'ظ',
+    'r': 'ر',
+    'zh': 'ژ',
+    'sh': 'ش',
+    'gh': 'غ', 'ġ': 'غ',
+    'f': 'ف',
+    'q': 'ق',
+    'k': 'ک', 'g': 'گ',
+    'l': 'ل',
+    'm': 'م',
+    'n': 'ن',
+    'h': 'ه', 'ḥ': 'ح',
+    'y': 'ی', 'ý': 'ی',
+    'w': 'و',
+    // Special combinations for bread/food
+    'DoD': 'ډوډ', 'dod': 'ډوډ',
+    // Common patterns
+    'aan': 'ان', 'iin': 'ین', 'oon': 'ون',
+  };
+
+  let result = romanized;
+
+  // Apply special patterns first (longest to shortest)
+  const sortedPatterns = Object.keys(romanizedToPashtoMap).sort((a, b) => b.length - a.length);
+
+  for (const pattern of sortedPatterns) {
+    const replacement = romanizedToPashtoMap[pattern];
+    result = result.replace(new RegExp(pattern, 'g'), replacement);
+  }
+
+  return result;
+}
+
 // Helper function to search with multiple terms
 async function searchWithMultipleTerms(terms: string[], scope: Scope, strategy: 'auto' | 'trigram' | 'fulltext' | 'hybrid' = 'auto') {
   const allResults = new Map<string, any>();
@@ -616,17 +666,35 @@ export async function POST(request: NextRequest) {
           const allSearchTerms = [trimmedQuery]; // Include original
 
           if (relatedForms.forms?.nouns) {
-            const nounForms = relatedForms.forms.nouns.map((f: any) => f.form);
+            const nounForms = relatedForms.forms.nouns.map((f: any) => {
+              // Convert romanized forms to Pashto script
+              const form = f.form;
+              const convertedForm = romanizedToPashto(form);
+              console.log(`🔄 Converting noun form: "${form}" → "${convertedForm}"`);
+              return convertedForm !== form ? convertedForm : form; // Use converted if different
+            });
             allSearchTerms.push(...nounForms);
             console.log(`🔍 Added ${nounForms.length} noun forms:`, nounForms.slice(0, 3));
           }
           if (relatedForms.forms?.verbs) {
-            const verbForms = relatedForms.forms.verbs.map((f: any) => f.form);
+            const verbForms = relatedForms.forms.verbs.map((f: any) => {
+              // Convert romanized forms to Pashto script
+              const form = f.form;
+              const convertedForm = romanizedToPashto(form);
+              console.log(`🔄 Converting verb form: "${form}" → "${convertedForm}"`);
+              return convertedForm !== form ? convertedForm : form; // Use converted if different
+            });
             allSearchTerms.push(...verbForms);
             console.log(`🔍 Added ${verbForms.length} verb forms:`, verbForms.slice(0, 3));
           }
           if (relatedForms.forms?.other) {
-            const otherForms = relatedForms.forms.other.map((f: any) => f.form);
+            const otherForms = relatedForms.forms.other.map((f: any) => {
+              // Convert romanized forms to Pashto script
+              const form = f.form;
+              const convertedForm = romanizedToPashto(form);
+              console.log(`🔄 Converting other form: "${form}" → "${convertedForm}"`);
+              return convertedForm !== form ? convertedForm : form; // Use converted if different
+            });
             allSearchTerms.push(...otherForms);
             console.log(`🔍 Added ${otherForms.length} other forms:`, otherForms.slice(0, 3));
           }
@@ -1082,13 +1150,28 @@ export async function POST(request: NextRequest) {
         // Extract forms from the related forms we generated earlier
         const variantForms = [];
         if (relatedForms.forms?.verbs) {
-          variantForms.push(...relatedForms.forms.verbs.map((v: any) => v.form));
+          variantForms.push(...relatedForms.forms.verbs.map((v: any) => {
+            // Convert romanized forms to Pashto script
+            const form = v.form;
+            const convertedForm = romanizedToPashto(form);
+            return convertedForm !== form ? convertedForm : form; // Use converted if different
+          }));
         }
         if (relatedForms.forms?.nouns) {
-          variantForms.push(...relatedForms.forms.nouns.map((v: any) => v.form));
+          variantForms.push(...relatedForms.forms.nouns.map((v: any) => {
+            // Convert romanized forms to Pashto script
+            const form = v.form;
+            const convertedForm = romanizedToPashto(form);
+            return convertedForm !== form ? convertedForm : form; // Use converted if different
+          }));
         }
         if (relatedForms.forms?.other) {
-          variantForms.push(...relatedForms.forms.other.map((v: any) => v.form));
+          variantForms.push(...relatedForms.forms.other.map((v: any) => {
+            // Convert romanized forms to Pashto script
+            const form = v.form;
+            const convertedForm = romanizedToPashto(form);
+            return convertedForm !== form ? convertedForm : form; // Use converted if different
+          }));
         }
         if (variantForms.length > 0) {
         searchTerms.push(...variantForms);
@@ -1212,13 +1295,28 @@ export async function POST(request: NextRequest) {
     let variantForms: string[] = [];
     if (effectiveIncludeRelated && relatedForms) {
       if (relatedForms.forms?.verbs) {
-        variantForms.push(...relatedForms.forms.verbs.map((v: any) => v.form));
+        variantForms.push(...relatedForms.forms.verbs.map((v: any) => {
+          // Convert romanized forms to Pashto script for display
+          const form = v.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form; // Use converted if different
+        }));
       }
       if (relatedForms.forms?.nouns) {
-        variantForms.push(...relatedForms.forms.nouns.map((v: any) => v.form));
+        variantForms.push(...relatedForms.forms.nouns.map((v: any) => {
+          // Convert romanized forms to Pashto script for display
+          const form = v.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form; // Use converted if different
+        }));
       }
       if (relatedForms.forms?.other) {
-        variantForms.push(...relatedForms.forms.other.map((v: any) => v.form));
+        variantForms.push(...relatedForms.forms.other.map((v: any) => {
+          // Convert romanized forms to Pashto script for display
+          const form = v.form;
+          const convertedForm = romanizedToPashto(form);
+          return convertedForm !== form ? convertedForm : form; // Use converted if different
+        }));
       }
     }
 
