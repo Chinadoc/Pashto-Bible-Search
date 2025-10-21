@@ -26,6 +26,7 @@ const LOCAL_GOOGLE_DRIVE_CANDIDATES = [
   ['google_drive_audio_urls.json'],
   ['google_drive_audio_urls_backup.json'],
   ['google_drive_audio_urls_backup2.json'],
+  ['yousafzai_google_drive_audio_urls.json'],
   ['Pashto-Bible-Search', 'google_drive_audio_urls.json'],
   ['Pashto-Bible-Search', 'google_drive_audio_urls_backup.json'],
   ['Pashto-Bible-Search', 'google_drive_audio_urls_backup2.json'],
@@ -220,23 +221,59 @@ async function loadGoogleDriveMaps(target: AudioMap) {
     const data = await readJsonIfExists(segments);
     if (!data) continue;
     const entries = Object.entries(data as Record<string, unknown>);
+    const isYousafzai = segments.includes('yousafzai');
+
     for (const [filename, entry] of entries) {
       if (!entry || typeof entry !== 'object') continue;
       const record = entry as Record<string, unknown>;
+
+      // Generate reference from record data or filename
       const ref = toVerseRef(
         String(record.book || record.book_name || record.bookTitle || filename),
         record.chapter as number | string,
         record.verse as number | string,
       );
-      const value = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
-      if (ref && typeof value === 'string') {
-        addEntry(target, ref, value);
-      }
-      if (typeof value === 'string' && !target[filename]) {
-        target[filename] = value;
+
+      if (isYousafzai) {
+        // For Yousafzai, generate Supabase storage URLs
+        if (ref) {
+          const storageUrl = generateYousafzaiStorageUrl(ref, filename);
+          if (storageUrl) {
+            addEntry(target, ref, storageUrl);
+          }
+        }
+      } else {
+        // For Afghan/other, use Google Drive URLs as before
+        const value = record.google_drive_file_id ?? record.google_drive_url ?? record.url ?? record.direct_url;
+        if (ref && typeof value === 'string') {
+          addEntry(target, ref, value);
+        }
+        if (typeof value === 'string' && !target[filename]) {
+          target[filename] = value;
+        }
       }
     }
   }
+}
+
+function generateYousafzaiStorageUrl(ref: string, filename: string): string | null {
+  // Parse the reference to get book, chapter, verse
+  const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
+  if (!match) return null;
+
+  const [, book, chapterStr, verseStr] = match;
+  const chapter = Number(chapterStr);
+  const verse = Number(verseStr);
+
+  if (Number.isNaN(chapter) || Number.isNaN(verse)) return null;
+
+  // Generate filename in the format expected by Supabase storage
+  const bookSlug = normalizeBookNameToSlug(book);
+  const chapterPadded = String(chapter).padStart(3, '0');
+  const versePadded = String(verse).padStart(3, '0');
+
+  // Return Supabase storage URL for Yousafzai
+  return `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
 }
 
 export async function loadAudioMap(forceRefresh = false): Promise<AudioMap> {
