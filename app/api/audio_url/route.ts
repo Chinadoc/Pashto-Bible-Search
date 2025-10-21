@@ -115,18 +115,23 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log(`Looking up audio for ref: ${ref}`);
+
     // Load audio map from the get_audio_map API
     const audioMapResponse = await fetch(`${request.nextUrl.origin}/api/get_audio_map`, {
       method: 'GET',
       cache: 'no-store',
     });
-    
+
     if (!audioMapResponse.ok) {
       throw new Error(`Failed to load audio map: ${audioMapResponse.status}`);
     }
-    
+
     const audioMap = await audioMapResponse.json();
+    console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
+
     const match = lookupAudioEntry(ref, audioMap);
+    console.log(`Lookup result for ${ref}:`, match);
     if (!match) {
       return NextResponse.json(
         {
