@@ -76,7 +76,7 @@ async function downloadAndCompressYouTubeAudio(youtubeUrl: string): Promise<{ au
       }
 
       return {
-        audioBuffer: audioBuffer.buffer.slice(audioBuffer.byteOffset, audioBuffer.byteOffset + audioBuffer.byteLength),
+        audioBuffer: audioBuffer.slice(0),
         originalSize,
         compressedSize
       };

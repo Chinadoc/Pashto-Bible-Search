@@ -9,6 +9,26 @@ interface TranscriptionAttempt {
   timestamp: number;
 }
 
+interface AudioSegment {
+  start: number;
+  end: number;
+  duration: number;
+  hasSpeech: boolean;
+  confidence: number;
+}
+
+interface AudioAnalysis {
+  segments: AudioSegment[];
+  audioInfo: {
+    duration: number;
+    size: number;
+    bitrate: number;
+    sampleRate: number;
+    channels: number;
+  };
+  videoId: string;
+}
+
 interface NormalizedClip {
   sentence_number: number;
   sentence: string;
@@ -46,6 +66,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [elevenLabsResult, setElevenLabsResult] = useState<string | null>(null);
   const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
+  const [analyzingAudio, setAnalyzingAudio] = useState(false);
+  const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
+  const [transcribingSegments, setTranscribingSegments] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVideos = async () => {
@@ -170,42 +194,107 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     }
   };
 
-  const handleYouTubeTranscription = async () => {
+  const analyzeYouTubeAudio = async () => {
     if (!youtubeUrl.trim()) {
       setElevenLabsError('Please enter a YouTube URL');
       return;
     }
 
-    setElevenLabsLoading(true);
+    setAnalyzingAudio(true);
     setElevenLabsError(null);
-    setElevenLabsResult(null);
+    setAudioAnalysis(null);
+    setSelectedSegments([]);
 
     try {
-      const formData = new FormData();
-      formData.append('youtubeUrl', youtubeUrl.trim());
-
-      const response = await fetch('/api/transcribe-audio', {
+      const response = await fetch('/api/analyze-audio', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtubeUrl: youtubeUrl.trim() }),
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setElevenLabsResult(result.transcript);
-
-        // Show compression info for YouTube videos
-        if (result.originalSize && result.compressedSize) {
-          console.log(`YouTube video compressed from ${result.originalSize} to ${result.compressedSize} bytes`);
-        }
+        setAudioAnalysis(result);
       } else {
-        setElevenLabsError(result.error || 'Transcription failed');
+        setElevenLabsError(result.error || 'Audio analysis failed');
       }
     } catch (error) {
-      console.error('ElevenLabs transcription error:', error);
-      setElevenLabsError('Failed to transcribe YouTube video');
+      console.error('Audio analysis error:', error);
+      setElevenLabsError('Failed to analyze YouTube audio');
     } finally {
-      setElevenLabsLoading(false);
+      setAnalyzingAudio(false);
+    }
+  };
+
+  const handleSegmentSelection = (segmentIndex: number) => {
+    setSelectedSegments(prev =>
+      prev.includes(segmentIndex)
+        ? prev.filter(i => i !== segmentIndex)
+        : [...prev, segmentIndex]
+    );
+  };
+
+  const transcribeSelectedSegments = async () => {
+    if (!audioAnalysis || selectedSegments.length === 0) {
+      setElevenLabsError('Please select audio segments to transcribe');
+      return;
+    }
+
+    setTranscribingSegments(true);
+    setElevenLabsError(null);
+
+    try {
+      const segmentsToTranscribe = selectedSegments.map(index => audioAnalysis.segments[index]);
+
+      const response = await fetch('/api/split-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          youtubeUrl: youtubeUrl.trim(),
+          selectedSegments: segmentsToTranscribe
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Process each extracted segment for transcription
+        const transcriptions: string[] = [];
+
+        for (const segment of result.extractedSegments) {
+          try {
+            // Send each segment to ElevenLabs for transcription
+            const formData = new FormData();
+            const audioBlob = new Blob([segment.audioBuffer], { type: 'audio/mp3' });
+            formData.append('audio', audioBlob, `segment_${segment.segmentIndex}.mp3`);
+
+            const transResponse = await fetch('/api/transcribe-audio', {
+              method: 'POST',
+              body: formData,
+            });
+
+            const transResult = await transResponse.json();
+
+            if (transResponse.ok && transResult.success) {
+              transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] ${transResult.transcript}`);
+            } else {
+              transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Transcription failed: ${transResult.error || 'Unknown error'}]`);
+            }
+          } catch (error) {
+            transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Error: ${error}]`);
+          }
+        }
+
+        setElevenLabsResult(transcriptions.join('\n\n'));
+      } else {
+        setElevenLabsError(result.error || 'Failed to process video segments');
+      }
+    } catch (error) {
+      console.error('Segment transcription error:', error);
+      setElevenLabsError('Failed to transcribe selected segments');
+    } finally {
+      setTranscribingSegments(false);
     }
   };
 
@@ -217,6 +306,8 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     setElevenLabsResult(null);
     setElevenLabsError(null);
     setYoutubeUrl('');
+    setAudioAnalysis(null);
+    setSelectedSegments([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -248,7 +339,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
             🎤 ElevenLabs Pashto Transcription
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Upload an audio file or enter a YouTube URL to get instant Pashto transcription using ElevenLabs AI
+            Upload an audio file or enter a YouTube URL to analyze audio segments and get targeted Pashto transcription using ElevenLabs AI
           </p>
         </div>
 
@@ -308,36 +399,136 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
         {/* YouTube URL Tab */}
         {youtubeUrl.trim() && (
-          <div className="space-y-3">
-            <div className="flex space-x-2">
-              <input
-                type="url"
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleYouTubeTranscription}
-                disabled={elevenLabsLoading || !youtubeUrl.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-md hover:from-red-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 8a9 9 0 110-18 9 9 0 010 18z" />
-                </svg>
-                <span>{elevenLabsLoading ? 'Processing...' : 'Transcribe'}</span>
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              YouTube videos will be automatically downloaded and compressed to under 25MB for transcription
-            </p>
+          <div className="space-y-4">
+            {/* URL Input and Analysis */}
+            {!audioAnalysis && !analyzingAudio && (
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="url"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={analyzeYouTubeAudio}
+                    disabled={analyzingAudio || !youtubeUrl.trim()}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <span>{analyzingAudio ? 'Analyzing...' : 'Analyze Audio'}</span>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  YouTube videos will be analyzed for speech segments before transcription
+                </p>
+              </div>
+            )}
+
+            {/* Audio Analysis in Progress */}
+            {analyzingAudio && (
+              <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <p className="text-blue-700 dark:text-blue-300">Analyzing audio segments...</p>
+              </div>
+            )}
+
+            {/* Audio Analysis Results and Segment Selection */}
+            {audioAnalysis && !analyzingAudio && (
+              <div className="space-y-4">
+                {/* Audio Info */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Audio Information</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div>Duration: {formatDuration(audioAnalysis.audioInfo.duration)}</div>
+                    <div>Size: {(audioAnalysis.audioInfo.size / 1024 / 1024).toFixed(1)}MB</div>
+                    <div>Bitrate: {audioAnalysis.audioInfo.bitrate}kbps</div>
+                    <div>Sample Rate: {audioAnalysis.audioInfo.sampleRate}Hz</div>
+                  </div>
+                </div>
+
+                {/* Segments */}
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    Audio Segments ({audioAnalysis.segments.length})
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {audioAnalysis.segments.map((segment, index) => (
+                      <div
+                        key={index}
+                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                          selectedSegments.includes(index)
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                        onClick={() => handleSegmentSelection(index)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedSegments.includes(index)}
+                              onChange={() => handleSegmentSelection(index)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="font-medium text-sm">Segment {index + 1}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatDuration(segment.start)} - {formatDuration(segment.end)}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            Duration: {formatDuration(segment.duration)}
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              segment.hasSpeech
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            }`}>
+                              {segment.hasSpeech ? 'Speech' : 'Silence'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {Math.round(segment.confidence * 100)}% confidence
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Transcribe Selected Segments */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedSegments.length} of {audioAnalysis.segments.length} segments selected
+                  </span>
+                  <button
+                    onClick={transcribeSelectedSegments}
+                    disabled={transcribingSegments || selectedSegments.length === 0}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                    <span>{transcribingSegments ? 'Transcribing...' : 'Transcribe Selected'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {elevenLabsLoading && (
+        {(elevenLabsLoading || transcribingSegments) && (
           <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="text-blue-700 dark:text-blue-300">Transcribing your audio with ElevenLabs AI...</p>
+            <p className="text-blue-700 dark:text-blue-300">
+              {transcribingSegments ? 'Transcribing selected segments...' : 'Transcribing your audio with ElevenLabs AI...'}
+            </p>
           </div>
         )}
 
