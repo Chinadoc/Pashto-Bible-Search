@@ -57,15 +57,18 @@ async function extractAudioSegment(videoPath: string, startTime: number, endTime
 
     try {
       // Read the extracted audio file
-      const audioBuffer = await import('fs').then(fs => fs.promises.readFile(outputPath));
+      const fileBuffer = await import('fs').then(fs => fs.promises.readFile(outputPath));
 
-      // Handle both Buffer and ArrayBuffer
-      if (audioBuffer instanceof ArrayBuffer) {
-        return audioBuffer.slice(0);
+      // Convert to ArrayBuffer regardless of input type
+      let audioBuffer: ArrayBuffer;
+      if (fileBuffer instanceof ArrayBuffer) {
+        audioBuffer = fileBuffer;
       } else {
-        // Buffer case
-        return audioBuffer.buffer.slice(audioBuffer.byteOffset, audioBuffer.byteOffset + audioBuffer.byteLength);
+        // Buffer case - create new ArrayBuffer from Buffer data
+        audioBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
       }
+
+      return audioBuffer;
 
     } finally {
       // Clean up temp file
