@@ -178,9 +178,13 @@ interface SearchCacheEntry {
   hitCount: number;
 }
 
+// Enhanced search result cache with better performance
 const searchResultCache = new Map<string, SearchCacheEntry>();
-const SEARCH_CACHE_TTL = 7200000; // 2 hours in milliseconds (increased from 30 min)
-const MAX_CACHE_ENTRIES = 500; // Increased cache size for better hit rate
+const SEARCH_CACHE_TTL = 14400000; // 4 hours in milliseconds (increased from 2 hours)
+const MAX_CACHE_ENTRIES = 1000; // Increased cache size for better hit rate
+
+// Pre-computed common search results for instant loading
+const INSTANT_RESULTS_CACHE = new Map<string, SearchCacheEntry>();
 
 // Cache performance tracking
 let cacheHitCount = 0;
@@ -190,6 +194,23 @@ function generateCacheKey(query: string, scope: string, includeRelated: boolean,
   // Create a more efficient cache key by normalizing query first
   const normalizedQuery = query.trim().toLowerCase();
   return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}`;
+}
+
+// Enhanced cache key that includes more context for better hit rates
+function generateEnhancedCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string, translation?: string): string {
+  const normalizedQuery = query.trim().toLowerCase();
+  const translationKey = translation || 'afghan2023';
+  return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}:${translationKey}`;
+}
+
+// Check instant cache first (for common queries)
+function getInstantCachedSearch(cacheKey: string): SearchCacheEntry | null {
+  const cached = INSTANT_RESULTS_CACHE.get(cacheKey);
+  if (cached) {
+    cacheHitCount++;
+    return cached;
+  }
+  return null;
 }
 
 function getCachedSearch(cacheKey: string): SearchCacheEntry | null {
@@ -230,6 +251,44 @@ function setCachedSearch(cacheKey: string, results: any[], relatedForms: any, pr
     timestamp: Date.now(),
     hitCount: 1,
   });
+}
+
+// Preload common search results for instant loading
+async function preloadCommonSearches(): Promise<void> {
+  console.log('🚀 Preloading common search results...');
+
+  const commonQueries = [
+    'خدا', 'عيسی', 'روح', 'ايمان', 'محبت', 'صلاة', 'كتاب', 'مسيح', 'انجيل', 'رب',
+    'dodu', 'khuda', 'jesus', 'god', 'love', 'faith', 'prayer', 'bible', 'christ'
+  ];
+
+  for (const query of commonQueries) {
+    try {
+      const cacheKey = generateEnhancedCacheKey(query, 'all', false, false, 'pashto');
+
+      // Only preload if not already cached
+      if (!getInstantCachedSearch(cacheKey) && !getCachedSearch(cacheKey)) {
+        console.log(`📚 Preloading: ${query}`);
+
+        // This would trigger a search and cache the result
+        await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            scope: 'all',
+            includeRelated: false,
+            enableFuzzy: false,
+            language: 'pashto'
+          }),
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to preload ${query}:`, error);
+    }
+  }
+
+  console.log('✅ Common searches preloaded');
 }
 
 // Prioritize results for Anki export (focus on dictionary entries with audio)
@@ -956,15 +1015,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check cache after related forms processing (use search terms hash for cache key)
+    // Check cache after related forms processing (use enhanced cache key)
     const searchTermsHash = searchTerms.sort().join('|');
-    const cacheKey = generateCacheKey(
+    const cacheKey = generateEnhancedCacheKey(
       searchTermsHash,
       scope,
       includeRelated,
       enableFuzzy,
-      searchLanguage
+      searchLanguage,
+      translation
     );
+
+    // Check instant cache first (for ultra-fast responses)
+    const instantResult = getInstantCachedSearch(cacheKey);
+    if (instantResult) {
+      const hitRate = cacheHitCount / (cacheHitCount + cacheMissCount) * 100;
+      console.log(`⚡ Instant cache hit for "${searchTermsHash}" (${instantResult.hitCount} hits, ${hitRate.toFixed(1)}% hit rate)`);
+      return NextResponse.json({
+        results: normalizeVerses(instantResult.results),
+        relatedForms: instantResult.relatedForms,
+        processed: instantResult.processed,
+        count: instantResult.results.length,
+        ms: 0, // Instant result
+        cached: true,
+        instant: true,
+      });
+    }
 
     const cachedResult = getCachedSearch(cacheKey);
     if (cachedResult) {
@@ -1058,8 +1134,20 @@ export async function POST(request: NextRequest) {
         root: romanizedDictionaryMatch?.pashto,
       };
 
+      // Cache the results (both in regular and instant cache for high-frequency queries)
       setCachedSearch(cacheKey, transformed, relatedForms, processedData);
-      console.log(`💾 Cached search results (${transformed.length} results)`);
+
+      // Also store in instant cache if this is a high-value result (more than 5 results)
+      if (transformed.length > 5) {
+        INSTANT_RESULTS_CACHE.set(cacheKey, {
+          results: transformed,
+          relatedForms,
+          processed: processedData,
+          timestamp: Date.now(),
+          hitCount: 1,
+        });
+        console.log(`⚡ Stored in instant cache (${transformed.length} results)`);
+      }
 
       return NextResponse.json({
         results: normalizeVerses(transformed),
@@ -1119,13 +1207,40 @@ export async function POST(request: NextRequest) {
 }
 
 // Cache status endpoint for monitoring
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get('action');
+
+  if (action === 'preload') {
+    // Preload common searches on demand
+    await preloadCommonSearches();
+    return NextResponse.json({
+      message: 'Common searches preloaded',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (action === 'clear') {
+    // Clear all caches
+    searchResultCache.clear();
+    INSTANT_RESULTS_CACHE.clear();
+    audioMapCache = null;
+    audioMapCacheTime = 0;
+    helperVariantCache.clear();
+
+    return NextResponse.json({
+      message: 'All caches cleared',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   return NextResponse.json({
     cache: {
       searchResults: {
         size: searchResultCache.size,
         maxSize: MAX_CACHE_ENTRIES,
         ttl: SEARCH_CACHE_TTL,
+        instantCacheSize: INSTANT_RESULTS_CACHE.size,
       },
       audioMap: {
         cached: audioMapCache !== null,
@@ -1134,6 +1249,11 @@ export async function GET() {
       },
       helperVariants: {
         size: helperVariantCache.size,
+      },
+      performance: {
+        hitRate: cacheHitCount / (cacheHitCount + cacheMissCount) * 100,
+        totalHits: cacheHitCount,
+        totalMisses: cacheMissCount,
       },
     },
   });

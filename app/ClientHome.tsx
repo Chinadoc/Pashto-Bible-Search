@@ -650,6 +650,30 @@ export default function ClientHome() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Client-side cache for instant loading
+  const clientCacheRef = useRef<Map<string, any>>(new Map());
+
+  // Client-side cache functions
+  const getClientCachedSearch = useCallback((cacheKey: string) => {
+    const cached = clientCacheRef.current.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < 3600000) { // 1 hour TTL
+      console.log('⚡ Client cache hit:', cacheKey);
+      return cached.data;
+    }
+    if (cached) {
+      clientCacheRef.current.delete(cacheKey);
+    }
+    return null;
+  }, []);
+
+  const setClientCachedSearch = useCallback((cacheKey: string, data: any) => {
+    clientCacheRef.current.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    console.log('💾 Stored in client cache:', cacheKey);
+  }, []);
   const [processed, setProcessed] = useState<{
     original: string;
     normalized: string;
@@ -1083,6 +1107,40 @@ export default function ClientHome() {
       variants: variantsPayload,
     });
 
+    // Generate cache key for client-side caching
+    const searchParams = {
+      query: normalizedQuery,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      bookFilter,
+      language: languageOverride ?? searchLanguage,
+      translation: activeTranslation,
+    };
+
+    if (variantsPayload) {
+      searchParams.variants = variantsPayload;
+    }
+
+    const cacheKey = `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${languageOverride ?? searchLanguage}:${activeTranslation}`;
+
+    // Check client-side cache first (ultra-fast)
+    const clientCachedResult = getClientCachedSearch(cacheKey);
+    if (clientCachedResult) {
+      console.log('⚡ Client cache hit, returning instantly');
+      setResults(clientCachedResult.results || []);
+      setRelatedForms(clientCachedResult.relatedForms ? {
+        ...clientCachedResult.relatedForms,
+        searchedForm: clientCachedResult.searchedForm,
+      } : null);
+      setProcessed(clientCachedResult.processed ? {
+        ...clientCachedResult.processed,
+        searchedForm: clientCachedResult.searchedForm,
+      } : null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     if (!preserveResults) {
@@ -1163,6 +1221,11 @@ export default function ClientHome() {
       variantKeyRef.current = processedVariants.length ? processedVariants.join('|') : '__all__';
 
       console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
+
+      // Cache the successful result in client cache for instant future loading
+      setClientCachedSearch(cacheKey, searchData);
+      console.log('💾 Cached result in client cache for future instant loading');
+
     } catch (err) {
       // Don't show error for aborted searches
       if (err instanceof Error && err.name === 'AbortError') {
