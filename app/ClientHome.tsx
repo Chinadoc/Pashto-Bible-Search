@@ -8,6 +8,8 @@ import VideosPanel from "../components/VideosPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
+import ChapterNavigator from "../components/ChapterNavigator";
+import ChapterView from "../components/ChapterView";
 import type {
   Verse,
   Scope,
@@ -80,7 +82,7 @@ const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   gender: 'all',
 };
 
-const MAIN_TABS = ['search', 'lexicon', 'videos', 'poems'] as const;
+const MAIN_TABS = ['search', 'chapters', 'lexicon', 'videos', 'poems'] as const;
 type MainTab = typeof MAIN_TABS[number];
 
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
@@ -639,6 +641,8 @@ export default function ClientHome() {
   const [activeMainTab, setActiveMainTab] = useState<MainTab>(() =>
     loadPersisted<MainTab>('activeMainTab', 'search')
   );
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [poems, setPoems] = useState<any[]>([]);
 
   const [loadingPoems, setLoadingPoems] = useState(false);
@@ -1726,6 +1730,16 @@ export default function ClientHome() {
             🔍 Search
           </button>
           <button
+            onClick={() => setActiveMainTab('chapters')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'chapters'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📖 Chapters
+          </button>
+          <button
             onClick={() => setActiveMainTab('lexicon')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'lexicon'
@@ -2370,6 +2384,33 @@ export default function ClientHome() {
         </div>
       </div>
         </>
+      )}
+
+      {/* Chapters Tab */}
+      {activeMainTab === 'chapters' && (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              📖 Browse by Chapter
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Select a book and chapter to view all verses with audio
+            </p>
+
+            <ChapterNavigator
+              onChapterSelect={(book, chapter) => {
+                setSelectedBook(book);
+                setSelectedChapter(chapter);
+              }}
+            />
+
+            {selectedBook && selectedChapter && (
+              <div className="mt-6">
+                <ChapterView book={selectedBook} chapter={selectedChapter} />
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Lexicon Tab */}
