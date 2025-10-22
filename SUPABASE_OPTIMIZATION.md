@@ -25,8 +25,8 @@ These tables contain static Bible data that won't change:
 | `form_occurrences` | 7,405 | 8.2 MB | Word form → verse mappings |
 | `form_roots` | 7,275 | 2.1 MB | Word form → root mappings |
 | `word_forms_master` | - | 72 KB | Master table with all word data |
-| `audio_mappings` | 6,831 | 4.8 MB | Verse → audio URL mappings |
-| `audio_files` | 58,313 | 26 MB | Audio file metadata |
+| `audio_mappings` | 6,831 | 4.8 MB | Verse → Google Drive URL mappings |
+| `audio_files` | 58,313 | 26 MB | Audio file metadata (files in Google Drive) |
 
 ### Dynamic Content Tables
 
@@ -74,17 +74,32 @@ POST /api/search-indexed
 **Performance:** ~80% faster than loading all verses
 
 #### 3. `/api/audio-batch` - Batch Audio URLs
-**Before:** Individual lookups or loading entire audio map
+**Before:** Individual lookups or loading entire audio map JSON file
 **After:** Single query: `SELECT * FROM audio_mappings WHERE verse_ref IN (...)`
+
+**Audio Architecture:**
+- 🎵 **Audio files**: Stored in Google Drive (~26 MB of actual MP3 files)
+- 📊 **Audio mappings**: Stored in Supabase `audio_mappings` table (just URLs)
+- ⚡ **Lookup**: Query Supabase for URLs → Browser loads from Google Drive
 
 ```typescript
 POST /api/audio-batch
 {
   "refs": ["Mark 1:1", "Mark 1:2", "Mark 1:3"]
 }
+
+Response:
+{
+  "audioUrls": {
+    "Mark 1:1": "https://drive.google.com/uc?id=...",
+    "Mark 1:2": "https://drive.google.com/uc?id=...",
+    "Mark 1:3": "https://drive.google.com/uc?id=..."
+  }
+}
 ```
 
 **Performance:** ~90% faster for batch requests
+**Note:** Supabase stores the URL mappings only, not the actual audio files
 
 ## Chapter Navigation Optimization
 
@@ -150,8 +165,10 @@ POST /api/audio-batch
 - No need to scan all verses
 
 ### 3. Audio Playback (🔊)
-- Audio URLs stored in database
-- Batch fetching for chapters
+- **Audio files**: Stored in Google Drive (actual MP3s)
+- **Audio mappings**: Stored in Supabase (verse → Google Drive URL)
+- Batch URL fetching from Supabase (2-5ms)
+- Browser streams audio directly from Google Drive
 - Cache-friendly architecture
 
 ## Static vs Dynamic Content Strategy
