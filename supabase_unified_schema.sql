@@ -304,51 +304,106 @@ LEFT JOIN audio_files af ON (
 )
 WHERE v.book IS NOT NULL AND v.chapter IS NOT NULL AND v.verse IS NOT NULL;
 
--- Migration script to populate audio_files table from JSON data
--- This should be run after creating the audio_files table
-/*
-INSERT INTO audio_files (verse_reference, translation_key, book, chapter, verse, google_drive_file_id, google_drive_url)
-SELECT
-  verse_ref,
-  'afghan2023' as translation_key,
-  split_part(verse_ref, ' ', 1) as book,
-  split_part(split_part(verse_ref, ' ', 2), ':', 1)::INTEGER as chapter,
-  split_part(split_part(verse_ref, ' ', 2), ':', 2)::INTEGER as verse,
-  google_drive_file_id,
-  google_drive_url
-FROM json_populate_recordset(
-  null::audio_files,
-  (SELECT json_agg(
-    json_build_object(
-      'verse_ref', key,
-      'google_drive_file_id', value->>'google_drive_file_id',
-      'google_drive_url', value->>'google_drive_url'
-    )
-  ) FROM json_each((SELECT content FROM pg_read_file('google_drive_audio_urls.json', 0, 100000000)::json)))
-) data
-WHERE google_drive_file_id IS NOT NULL;
+-- ========================================
+-- OPTIMIZED SEARCH INDEXES FOR ULTRA-FAST SEARCHES
+-- ========================================
 
--- Also populate Yousafzai entries
-INSERT INTO audio_files (verse_reference, translation_key, book, chapter, verse, google_drive_file_id, google_drive_url)
+-- High-performance word index table for instant word lookups
+CREATE TABLE IF NOT EXISTS word_index (
+  word TEXT PRIMARY KEY,
+  verse_refs TEXT[], -- Array of verse references containing this word
+  frequency INTEGER, -- How many verses contain this word
+  tf_idf_score FLOAT, -- TF-IDF score for relevance ranking
+  testament TEXT, -- 'OT' or 'NT' for faster filtering
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes for ultra-fast lookups
+CREATE INDEX IF NOT EXISTS idx_word_index_frequency ON word_index(frequency DESC);
+CREATE INDEX IF NOT EXISTS idx_word_index_testament ON word_index(testament);
+CREATE INDEX IF NOT EXISTS idx_word_index_tf_idf ON word_index(tf_idf_score DESC);
+-- GIN index for fast array operations
+CREATE INDEX IF NOT EXISTS idx_word_index_verse_refs ON word_index USING gin(verse_refs);
+
+-- Search index for less common words (fallback)
+CREATE TABLE IF NOT EXISTS search_index (
+  term TEXT PRIMARY KEY,
+  verse_ids INTEGER[], -- Array of verse IDs
+  tf_idf_scores FLOAT[], -- Corresponding TF-IDF scores
+  frequency INTEGER,
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes for search_index
+CREATE INDEX IF NOT EXISTS idx_search_index_frequency ON search_index(frequency DESC);
+CREATE INDEX IF NOT EXISTS idx_search_index_tf_idf ON search_index USING gin(tf_idf_scores);
+CREATE INDEX IF NOT EXISTS idx_search_index_verse_ids ON search_index USING gin(verse_ids);
+
+-- Pre-computed lemma expansions for morphological search
+CREATE TABLE IF NOT EXISTS lemma_search_expansions (
+  lemma TEXT PRIMARY KEY,
+  pos TEXT, -- Part of speech
+  all_forms TEXT[], -- All inflected forms of this lemma
+  verse_refs TEXT[], -- All verse references containing any form
+  occurrence_count INTEGER, -- Total occurrences across all forms
+  frequency_rank INTEGER, -- Rank by frequency (1 = most common)
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for lemma_search_expansions
+CREATE INDEX IF NOT EXISTS idx_lemma_search_pos ON lemma_search_expansions(pos);
+CREATE INDEX IF NOT EXISTS idx_lemma_search_frequency ON lemma_search_expansions(frequency_rank);
+CREATE INDEX IF NOT EXISTS idx_lemma_search_occurrences ON lemma_search_expansions(occurrence_count DESC);
+CREATE INDEX IF NOT EXISTS idx_lemma_search_forms ON lemma_search_expansions USING gin(all_forms);
+CREATE INDEX IF NOT EXISTS idx_lemma_search_verse_refs ON lemma_search_expansions USING gin(verse_refs);
+
+-- Migration script to populate word_index table from existing data
+-- This should be run after creating the tables
+/*
+-- Populate word_index from existing verses and word frequency data
+INSERT INTO word_index (word, verse_refs, frequency, tf_idf_score, testament)
 SELECT
-  verse_ref,
-  'yousafzai2019' as translation_key,
-  split_part(verse_ref, ' ', 1) as book,
-  split_part(split_part(verse_ref, ' ', 2), ':', 1)::INTEGER as chapter,
-  split_part(split_part(verse_ref, ' ', 2), ':', 2)::INTEGER as verse,
-  google_drive_file_id,
-  google_drive_url
-FROM json_populate_recordset(
-  null::audio_files,
-  (SELECT json_agg(
-    json_build_object(
-      'verse_ref', key,
-      'google_drive_file_id', value->>'google_drive_file_id',
-      'google_drive_url', value->>'google_drive_url'
-    )
-  ) FROM json_each((SELECT content FROM pg_read_file('yousafzai_google_drive_audio_urls.json', 0, 100000000)::json)))
-) data
-WHERE google_drive_file_id IS NOT NULL;
+  LOWER(wf.form_pashto) as word,
+  ARRAY_AGG(DISTINCT wo.verse_ref ORDER BY wo.verse_ref) as verse_refs,
+  COUNT(DISTINCT wo.verse_ref) as frequency,
+  -- Calculate basic TF-IDF score (word frequency / total verses)
+  COUNT(DISTINCT wo.verse_ref)::FLOAT / 31102::FLOAT as tf_idf_score,
+  CASE
+    WHEN v.book IN ('Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+                   'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings',
+                   '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job',
+                   'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah',
+                   'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel',
+                   'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
+                   'Zephaniah', 'Haggai', 'Zechariah', 'Malachi') THEN 'OT'
+    ELSE 'NT'
+  END as testament
+FROM word_forms wf
+JOIN word_occurrences wo ON wo.word_form_id = wf.id
+JOIN verses v ON v.id = wo.verse_id
+WHERE wf.form_pashto IS NOT NULL
+  AND LENGTH(wf.form_pashto) > 0
+  AND wf.form_pashto !~ '[0-9]'
+GROUP BY LOWER(wf.form_pashto), v.book
+HAVING COUNT(DISTINCT wo.verse_ref) > 0
+ORDER BY frequency DESC;
+
+-- Populate lemma_search_expansions from existing data
+INSERT INTO lemma_search_expansions (lemma, pos, all_forms, verse_refs, occurrence_count, frequency_rank)
+SELECT
+  COALESCE(wf.lemma_root, wf.form_pashto) as lemma,
+  COALESCE(wf.pos, 'unknown') as pos,
+  ARRAY_AGG(DISTINCT LOWER(wf.form_pashto) ORDER BY LOWER(wf.form_pashto)) as all_forms,
+  ARRAY_AGG(DISTINCT wo.verse_ref ORDER BY wo.verse_ref) as verse_refs,
+  COUNT(DISTINCT wo.verse_ref) as occurrence_count,
+  ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT wo.verse_ref) DESC) as frequency_rank
+FROM word_forms wf
+JOIN word_occurrences wo ON wo.word_form_id = wf.id
+WHERE wf.form_pashto IS NOT NULL
+  AND LENGTH(wf.form_pashto) > 0
+GROUP BY COALESCE(wf.lemma_root, wf.form_pashto), wf.pos
+HAVING COUNT(DISTINCT wo.verse_ref) > 0
+ORDER BY occurrence_count DESC;
 */
 
 -- ========================================
