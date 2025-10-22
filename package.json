@@ -13,7 +13,8 @@
     "preload-searches": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search?action=preload\" && echo \"✅ Common searches preloaded\"",
     "clear-caches": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search?action=clear\" && echo \"✅ All caches cleared\"",
     "cache-status": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search\" | jq '.'",
-    "postdeploy": "npm run warm-caches"
+    "migrate-indexes": "node migrate_optimized_indexes.js",
+    "postdeploy": "npm run warm-caches && npm run preload-searches"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
