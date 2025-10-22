@@ -1108,7 +1108,7 @@ export default function ClientHome() {
     });
 
     // Generate cache key for client-side caching
-    const searchParams = {
+    const searchParams: any = {
       query: normalizedQuery,
       scope,
       includeRelated,
@@ -1122,7 +1122,8 @@ export default function ClientHome() {
       searchParams.variants = variantsPayload;
     }
 
-    const cacheKey = `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${languageOverride ?? searchLanguage}:${activeTranslation}`;
+    const variantsString = variantsPayload ? variantsPayload.sort().join(',') : 'none';
+    const cacheKey = `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${languageOverride ?? searchLanguage}:${activeTranslation}:${variantsString}`;
 
     // Check client-side cache first (ultra-fast)
     const clientCachedResult = getClientCachedSearch(cacheKey);
