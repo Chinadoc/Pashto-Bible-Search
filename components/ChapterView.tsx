@@ -16,9 +16,10 @@ interface Verse {
 interface Props {
   book: string;
   chapter: number;
+  translation?: 'afghan2023' | 'yousafzai2019';
 }
 
-export default function ChapterView({ book, chapter }: Props) {
+export default function ChapterView({ book, chapter, translation = 'afghan2023' }: Props) {
   const [verses, setVerses] = useState<Verse[]>([]);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -30,8 +31,8 @@ export default function ChapterView({ book, chapter }: Props) {
       setError(null);
 
       try {
-        // Fetch chapter verses
-        const response = await fetch(`/api/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}`);
+        // Fetch chapter verses from Supabase via API
+        const response = await fetch(`/api/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}&translation=${translation}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch chapter verses');
@@ -63,7 +64,7 @@ export default function ChapterView({ book, chapter }: Props) {
     }
 
     fetchChapter();
-  }, [book, chapter]);
+  }, [book, chapter, translation]);
 
   if (loading) {
     return (

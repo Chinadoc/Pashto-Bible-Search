@@ -2388,16 +2388,43 @@ export default function ClientHome() {
 
       {/* Chapters Tab */}
       {activeMainTab === 'chapters' && (
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              📖 Browse by Chapter
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Select a book and chapter to view all verses with audio
-            </p>
+        <>
+          {/* Translation Tabs */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+              <button
+                onClick={() => setActiveTranslation('afghan2023')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'afghan2023'
+                    ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🇦🇫 Afghan 2023
+              </button>
+              <button
+                onClick={() => setActiveTranslation('yousafzai2019')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'yousafzai2019'
+                    ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🕌 Yousafzai 2019
+              </button>
+            </div>
+          </div>
 
-            <ChapterNavigator
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                📖 Browse by Chapter
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Select a book and chapter to view all verses with audio
+              </p>
+
+              <ChapterNavigator
               onChapterSelect={(book, chapter) => {
                 setSelectedBook(book);
                 setSelectedChapter(chapter);
@@ -2406,11 +2433,16 @@ export default function ClientHome() {
 
             {selectedBook && selectedChapter && (
               <div className="mt-6">
-                <ChapterView book={selectedBook} chapter={selectedChapter} />
+                <ChapterView
+                  book={selectedBook}
+                  chapter={selectedChapter}
+                  translation={activeTranslation}
+                />
               </div>
             )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Lexicon Tab */}

@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLazyLoadedSearchData } from '@/app/lib/data/load';
+import { supabase } from '@/utils/supabase';
+
+// Type definition for verse from Supabase
+interface VerseRow {
+  book: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  testament?: string;
+  dialect?: string | null;
+  translation?: string | null;
+}
 
 // Define chapter counts for each book
 const CHAPTER_COUNTS: Record<string, number> = {
@@ -26,6 +37,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const book = searchParams.get('book');
     const chapterParam = searchParams.get('chapter');
+    const translation = searchParams.get('translation') || 'afghan2023'; // Default to Afghan 2023
 
     if (!book) {
       return NextResponse.json({ error: 'Book parameter is required' }, { status: 400 });
@@ -42,32 +54,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid chapter number' }, { status: 400 });
     }
 
-    // Load verses data
-    const { verses } = await getLazyLoadedSearchData();
+    // Query Supabase verses table directly - much faster than loading all verses
+    const tableName = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
 
-    // Filter verses by book and chapter
-    const chapterVerses = verses
-      .filter(v => v.book === book && v.chapter === chapter)
-      .sort((a, b) => (a.verse || 0) - (b.verse || 0));
+    const { data: verses, error } = await supabase
+      .from(tableName)
+      .select('book, chapter, verse, text, testament, dialect, translation')
+      .eq('book', book)
+      .eq('chapter', chapter)
+      .order('verse', { ascending: true })
+      .returns<VerseRow[]>();
 
-    if (chapterVerses.length === 0) {
+    if (error) {
+      console.error('Supabase query error:', error);
+      return NextResponse.json(
+        { error: 'Database query failed', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    if (!verses || verses.length === 0) {
       return NextResponse.json({ error: 'No verses found for this chapter' }, { status: 404 });
     }
 
     // Format verses for response
-    const formattedVerses = chapterVerses.map(v => ({
-      ref: v.ref,
+    const formattedVerses = verses.map(v => ({
+      ref: `${v.book} ${v.chapter}:${v.verse}`,
       book: v.book,
       chapter: v.chapter,
       verse: v.verse,
       text: v.text,
       testament: v.testament,
-      dialect: v.dialect,
+      dialect: v.dialect || (translation === 'yousafzai2019' ? 'yousafzai' : 'afghan'),
+      translation: v.translation,
     }));
 
     return NextResponse.json({
       book,
       chapter,
+      translation,
       verses: formattedVerses,
       totalVerses: formattedVerses.length,
     });
