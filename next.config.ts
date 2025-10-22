@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP']
   },
+  turbopack: {},
   // Optimize for large JSON files
   images: {
     unoptimized: true,
