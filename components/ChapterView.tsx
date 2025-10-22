@@ -41,9 +41,9 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
         const data = await response.json();
         setVerses(data.verses || []);
 
-        // Fetch audio URLs for all verses
+        // Fetch audio URLs from Supabase audio_mappings table (much faster)
         const refs = data.verses.map((v: Verse) => v.ref);
-        const audioResponse = await fetch('/api/audio_url', {
+        const audioResponse = await fetch('/api/audio-batch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
 
         if (audioResponse.ok) {
           const audioData = await audioResponse.json();
-          setAudioUrls(audioData.urls || {});
+          setAudioUrls(audioData.audioUrls || {});
         }
       } catch (err) {
         console.error('Error fetching chapter:', err);
