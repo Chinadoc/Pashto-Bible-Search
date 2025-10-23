@@ -63,27 +63,27 @@ export async function POST(request: NextRequest) {
       .from(freqTable)
       .select('word, frequency, testament')
       .eq('word', searchTerm)
-      .returns<WordFrequency>()
       .single();
 
     if (freqError && freqError.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Frequency lookup error:', freqError);
     }
 
-    if (frequencyData) {
-      console.log(`✅ Found in word_frequencies: ${frequencyData.frequency} occurrences`);
+    const typedFrequencyData = frequencyData as WordFrequency | null;
+    if (typedFrequencyData) {
+      console.log(`✅ Found in word_frequencies: ${typedFrequencyData.frequency} occurrences`);
     }
 
     // Step 2: Get verse references from form_occurrences
     const { data: occurrences, error: occError } = await supabase
       .from('form_occurrences')
       .select('form, verse_refs, occurrence_count')
-      .eq('form', searchTerm)
-      .returns<FormOccurrence[]>();
+      .eq('form', searchTerm);
 
+    const typedOccurrences = occurrences as FormOccurrence[] | null;
     let verseRefs: string[] = [];
-    if (occurrences && occurrences.length > 0) {
-      verseRefs = occurrences[0].verse_refs || [];
+    if (typedOccurrences && typedOccurrences.length > 0) {
+      verseRefs = typedOccurrences[0].verse_refs || [];
       console.log(`✅ Found ${verseRefs.length} verse references in form_occurrences`);
     }
 
@@ -91,15 +91,15 @@ export async function POST(request: NextRequest) {
     let relatedForms: string[] = [];
     if (includeRelated) {
       const { data: rootData } = await supabase
-        .from('form_roots')
+        .form_roots')
         .select('root, related_forms')
         .eq('form', searchTerm)
-        .returns<FormRoot>()
         .single();
 
-      if (rootData && rootData.related_forms) {
-        relatedForms = Array.isArray(rootData.related_forms)
-          ? rootData.related_forms
+      const typedRootData = rootData as FormRoot | null;
+      if (typedRootData && typedRootData.related_forms) {
+        relatedForms = Array.isArray(typedRootData.related_forms)
+          ? typedRootData.related_forms
           : [];
         console.log(`✅ Found ${relatedForms.length} related forms`);
 
@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
             .from('form_occurrences')
             .select('verse_refs')
             .eq('form', relatedForm)
-            .returns<Pick<FormOccurrence, 'verse_refs'>>()
             .single();
 
-          if (relatedOcc && relatedOcc.verse_refs) {
-            verseRefs.push(...relatedOcc.verse_refs);
+          const typedRelatedOcc = relatedOcc as Pick<FormOccurrence, 'verse_refs'> | null;
+          if (typedRelatedOcc && typedRelatedOcc.verse_refs) {
+            verseRefs.push(...typedRelatedOcc.verse_refs);
           }
         }
       }
@@ -144,20 +144,20 @@ export async function POST(request: NextRequest) {
         .eq('book', book)
         .eq('chapter', chapter)
         .eq('verse', verse)
-        .returns<VerseRow>()
         .single();
 
-      if (verseData) {
+      const typedVerseData = verseData as VerseRow | null;
+      if (typedVerseData) {
         // Apply scope filter
         if (scope !== 'all') {
-          const testament = verseData.testament?.toLowerCase();
+          const testament = typedVerseData.testament?.toLowerCase();
           if (scope === 'ot' && testament !== 'ot') continue;
           if (scope === 'nt' && testament !== 'nt') continue;
         }
 
         verses.push({
           ref,
-          ...verseData
+          ...typedVerseData
         });
       }
     }
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         query: searchTerm,
         scope,
         translation,
-        frequency: frequencyData?.frequency || 0,
+        frequency: typedFrequencyData?.frequency || 0,
         totalMatches: verseRefs.length,
         returnedResults: verses.length,
         relatedFormsCount: relatedForms.length,
