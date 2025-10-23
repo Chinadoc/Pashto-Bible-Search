@@ -79,13 +79,14 @@ export async function getAudioUrl(verseRef: string): Promise<string | null> {
     .from('audio_mappings')
     .select('audio_url')
     .eq('verse_ref', normalizedRef)
-    .returns<Pick<AudioMappingRow, 'audio_url'>>()
     .single();
 
-  if (data && data.audio_url) {
+  const typedData = data as Pick<AudioMappingRow, 'audio_url'> | null;
+
+  if (typedData && typedData.audio_url) {
     // Add to cache
-    audioCache.set(normalizedRef, data.audio_url);
-    return data.audio_url;
+    audioCache.set(normalizedRef, typedData.audio_url);
+    return typedData.audio_url;
   }
 
   return null;

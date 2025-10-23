@@ -11,6 +11,7 @@ interface Verse {
   text: string;
   testament?: string;
   dialect?: string;
+  audioUrl?: string | null;
 }
 
 interface Props {
@@ -21,7 +22,6 @@ interface Props {
 
 export default function ChapterView({ book, chapter, translation = 'afghan2023' }: Props) {
   const [verses, setVerses] = useState<Verse[]>([]);
-  const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +31,7 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
       setError(null);
 
       try {
-        // Fetch chapter verses from Supabase via API
+        // Fetch chapter verses from Supabase via API (includes audio URLs)
         const response = await fetch(`/api/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}&translation=${translation}`);
 
         if (!response.ok) {
@@ -39,22 +39,9 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
         }
 
         const data = await response.json();
+
+        // Verses now include audioUrl directly - no need for separate audio-batch call
         setVerses(data.verses || []);
-
-        // Fetch audio URLs from Supabase audio_mappings table (much faster)
-        const refs = data.verses.map((v: Verse) => v.ref);
-        const audioResponse = await fetch('/api/audio-batch', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refs }),
-        });
-
-        if (audioResponse.ok) {
-          const audioData = await audioResponse.json();
-          setAudioUrls(audioData.audioUrls || {});
-        }
       } catch (err) {
         console.error('Error fetching chapter:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -101,47 +88,43 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
 
       {/* Verses List */}
       <div className="space-y-3">
-        {verses.map((verse) => {
-          const audioUrl = audioUrls[verse.ref];
+        {verses.map((verse) => (
+          <div
+            key={verse.ref}
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            {/* Verse Number */}
+            <div className="flex items-start gap-3">
+              <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold rounded-full flex-shrink-0">
+                {verse.verse}
+              </span>
 
-          return (
-            <div
-              key={verse.ref}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              {/* Verse Number */}
-              <div className="flex items-start gap-3">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold rounded-full flex-shrink-0">
-                  {verse.verse}
-                </span>
+              <div className="flex-1">
+                {/* Verse Text */}
+                <p className="text-lg text-gray-900 dark:text-gray-100 leading-relaxed mb-3" dir="rtl">
+                  {verse.text}
+                </p>
 
-                <div className="flex-1">
-                  {/* Verse Text */}
-                  <p className="text-lg text-gray-900 dark:text-gray-100 leading-relaxed mb-3" dir="rtl">
-                    {verse.text}
-                  </p>
-
-                  {/* Audio Player */}
-                  {audioUrl && (
-                    <div className="mt-2">
-                      <AudioPlayer audioUrl={audioUrl} verseRef={verse.ref} />
-                    </div>
-                  )}
-
-                  {/* Verse Reference (small) */}
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {verse.ref}
-                    {verse.dialect && (
-                      <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
-                        {verse.dialect}
-                      </span>
-                    )}
+                {/* Audio Player - uses audioUrl directly from verse */}
+                {verse.audioUrl && (
+                  <div className="mt-2">
+                    <AudioPlayer audioUrl={verse.audioUrl} verseRef={verse.ref} />
                   </div>
+                )}
+
+                {/* Verse Reference (small) */}
+                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {verse.ref}
+                  {verse.dialect && (
+                    <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+                      {verse.dialect}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

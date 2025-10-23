@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     let relatedForms: string[] = [];
     if (includeRelated) {
       const { data: rootData } = await supabase
-        .form_roots')
+        .from('form_roots')
         .select('root, related_forms')
         .eq('form', searchTerm)
         .single();
