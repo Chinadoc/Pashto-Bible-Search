@@ -168,3 +168,16 @@ export interface LexiconEntry {
   pos_family?: string;
   [key: string]: any;
 }
+
+// Chapter browsing types
+export interface ChapterInfo {
+  book: string;
+  chapter: number;
+  verseCount: number;
+}
+
+export interface BookChapterInfo {
+  book: string;
+  chapters: ChapterInfo[];
+  totalVerses: number;
+}

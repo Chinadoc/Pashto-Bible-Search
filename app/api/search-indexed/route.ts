@@ -68,14 +68,14 @@ export async function POST(request: NextRequest) {
       .eq('word', searchTerm)
       .single();
 
-    const frequencyData = rawFrequencyData as WordFrequency | null;
+    const frequencyData: WordFrequency | null = rawFrequencyData;
 
     if (freqError && freqError.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Frequency lookup error:', freqError);
     }
 
     if (frequencyData) {
-      console.log(`✅ Found in word_frequencies: ${frequencyData.frequency} occurrences`);
+      console.log(`✅ Found in word_frequencies: ${frequencyData?.frequency} occurrences`);
     }
 
     // Step 2: Get verse references from form_occurrences
