@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
 import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariantsUtil } from '@/app/utils/verb_variants';
+import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
@@ -40,7 +40,7 @@ async function supabaseSearch(
 
     if (wordError || !wordData?.verse_refs?.length) {
       console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (no results)`);
-      return [];
+      return { results: [], frequency: 0 };
     }
 
     console.log(`✅ Word lookup: ${Date.now() - startTime}ms (${wordData.verse_refs.length} verses)`);
@@ -54,7 +54,7 @@ async function supabaseSearch(
 
     if (versesError || !verses) {
       console.log(`⏱️  Supabase search: ${Date.now() - startTime}ms (error fetching verses)`);
-      return [];
+      return { results: [], frequency: 0 };
     }
 
     // Step 3: Apply scope filter
@@ -77,11 +77,11 @@ async function supabaseSearch(
     const elapsed = Date.now() - startTime;
     console.log(`⏱️  Supabase search: ${elapsed}ms (${scored.length} results)`);
 
-    return scored;
+    return { results: scored, frequency: wordData.frequency || 0 };
 
   } catch (error) {
     console.error('Supabase search error:', error);
-    return [];
+    return { results: [], frequency: 0 };
   }
 }
 
@@ -476,7 +476,7 @@ async function getHelperVariants(helper: string): Promise<string[]> {
   if (helperVariantCache.has(helper)) return helperVariantCache.get(helper)!;
 
   try {
-    const variants = await generateVerbVariantsUtil(helper, { cap: 60, includeCompound: true });
+    const variants = await generateVerbVariants(helper, { cap: 60, includeCompound: true });
     const forms = Array.from(new Set(variants.map(v => v.form).filter(Boolean)));
     helperVariantCache.set(helper, forms);
     return forms;
@@ -723,7 +723,48 @@ export async function POST(request: NextRequest) {
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
-    // English search mode: find ALL Pashto words with this English term
+// ============================================================================
+// TRY SUPABASE SEARCH FIRST (NEW - fast path for indexed words)
+// ============================================================================
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+  console.log(`\n🚀 SUPABASE SEARCH FIRST: "${searchQuery}" (${translation})`);
+  try {
+    const supabaseResults = await supabaseSearch(searchQuery, scope, translation, limit);
+    
+    if (supabaseResults.results.length > 0) {
+      const queryTimeMs = Date.now() - startedAt;
+      console.log(`✅ Supabase hit! ${supabaseResults.results.length} results in ${queryTimeMs}ms`);
+      
+      // Format Supabase results to match expected format
+      const formattedResults = supabaseResults.results.map((verse: any) => ({
+        ref: verse.ref,
+        text: verse.text,
+        testament: verse.testament,
+        translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+        audio_verse_url: verse.audio_url || null,
+        id: verse.id,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        results: formattedResults.slice(0, limit),
+        processed: {
+          original: originalQuery,
+          normalized: searchQuery,
+          variants: [],
+          searchType: 'supabase',
+          frequency: supabaseResults.frequency || undefined,
+        },
+        queryTime: queryTimeMs,
+        source: 'supabase',
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️  Supabase search failed, falling back to JSON:', error);
+  }
+}
+
+// English search mode: find ALL Pashto words with this English term
     if (searchLanguage === 'english') {
       console.log('🇬🇧 English search mode enabled for query:', originalQuery);
       
@@ -1000,7 +1041,7 @@ export async function POST(request: NextRequest) {
         } else if (isVerb) {
           // It's a verb - only generate verb conjugations
           console.log('✅ Detected as VERB - generating conjugations');
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'verb';
         } else if (isAdjective) {
@@ -1009,13 +1050,13 @@ export async function POST(request: NextRequest) {
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           allVariants.push(...nounVariants);
           // Also check for stative compounds (adj + کېدل/کول)
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 20, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 20, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'adjective';
         } else {
           // Unknown - try both but prioritize by what generates more results
           console.log('⚠️ Unknown POS - trying both');
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           
           if (verbVariants.length > nounVariants.length) {
