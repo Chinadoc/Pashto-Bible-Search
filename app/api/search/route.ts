@@ -761,8 +761,36 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
       });
     }
   } catch (error) {
-    console.warn('⚠️  Supabase search failed, falling back to JSON:', error);
+    console.error('❌ Supabase search error:', error);
+    // Don't fall back to JSON anymore - all inflections are indexed
+    // If Supabase fails, return error instead of slow JSON search
+    return NextResponse.json({
+      success: false,
+      error: 'Search service temporarily unavailable',
+      results: [],
+      queryTime: Date.now() - startedAt,
+      source: 'supabase-error',
+    }, { status: 503 });
   }
+}
+
+// If we reach here with Supabase enabled and no results, return empty (not found)
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+  console.log(`ℹ️  Word not found in Supabase index: "${searchQuery}"`);
+  return NextResponse.json({
+    success: true,
+    results: [],
+    processed: {
+      original: originalQuery,
+      normalized: searchQuery,
+      variants: [],
+      searchType: 'supabase',
+      frequency: 0,
+    },
+    queryTime: Date.now() - startedAt,
+    source: 'supabase',
+    message: 'Word not found in index (all inflections indexed)',
+  });
 }
 
 // English search mode: find ALL Pashto words with this English term

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   // If full URL provided, extract file ID
   if (fullUrl && !fileId) {
     const match = fullUrl.match(/id=([a-zA-Z0-9_-]+)/);
-    fileId = match?.[1];
+    fileId = match?.[1] ?? null;
   }
 
   if (!fileId) {
