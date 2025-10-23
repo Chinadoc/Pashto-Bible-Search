@@ -120,7 +120,35 @@ TRUNCATE public.verses RESTART IDENTITY CASCADE
 
 ## 🚀 How to Run (For Your First Production Ingestion)
 
-### Step 1: Verify Frequency Data
+### ⚠️ CRITICAL FIRST STEP: Preprocess Frequencies
+
+**Your frequency files are in legacy format and MUST be preprocessed first.**
+
+```bash
+# This takes 15-20 minutes (one-time, offline)
+node precompute_word_frequencies.js > app/data/word_frequency_list_enriched.json
+mv app/data/word_frequency_list_enriched.json app/data/word_frequency_list.json
+
+node precompute_word_frequencies.js --yousafzai > app/data/yousafzai_word_frequency_list_enriched.json
+mv app/data/yousafzai_word_frequency_list_enriched.json app/data/yousafzai_word_frequency_list.json
+```
+
+**Why?** Without this:
+- ⚠️ All 12,500 words will be skipped
+- ⚠️ Word index will be empty
+- ⚠️ Search won't work
+- ✅ But you'll see clear warning: "12500 words skipped - missing verse_refs"
+
+**After preprocessing, verify:**
+```bash
+jq 'to_entries | length' app/data/word_frequency_list.json  # Should be ~12,400
+```
+
+See: `FREQUENCY_PREPROCESSING_GUIDE.md` for detailed instructions.
+
+---
+
+### Step 1: Verify Frequency Data (After Preprocessing)
 ```bash
 # Check if you have verse_refs:
 head -20 app/data/word_frequency_list.json
@@ -212,11 +240,12 @@ node ingest_to_production_schema.js
 
 ## 📊 Expected Timeline
 
+- **Preprocessing:** ~15-20 mins (MUST DO FIRST)
 - **Data loading:** ~5 secs
 - **Verse insertion:** ~5 mins (8000 verses)
 - **Word indexing:** ~5 mins (12500 words)
 - **Verification:** ~1 min
-- **Total:** ~15 mins
+- **Total (after preprocessing):** ~17 mins
 
 ---
 
@@ -231,6 +260,12 @@ node ingest_to_production_schema.js
 
 ## 📝 Production Checklist
 
+- [ ] **CRITICAL: Preprocess frequencies** (15-20 mins first)
+  ```bash
+  node precompute_word_frequencies.js > app/data/word_frequency_list_enriched.json
+  mv app/data/word_frequency_list_enriched.json app/data/word_frequency_list.json
+  ```
+- [ ] Verify enriched frequencies have verse_refs: `jq 'to_entries | length' app/data/word_frequency_list.json`
 - [ ] Frequency JSON has `verse_refs` and `tf_idf_scores`
 - [ ] Supabase tables created (3 SQL blocks)
 - [ ] SERVICE_ROLE_KEY in `.env`
