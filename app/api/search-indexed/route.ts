@@ -59,12 +59,16 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Check word_frequencies to see if this word exists
     const freqTable = translation === 'yousafzai2019' ? 'word_frequencies' : 'word_frequencies';
-    const { data: frequencyData, error: freqError } = await supabase
+    const {
+      data: rawFrequencyData,
+      error: freqError
+    } = await supabase
       .from(freqTable)
       .select('word, frequency, testament')
       .eq('word', searchTerm)
-      .returns<WordFrequency>()
       .single();
+
+    const frequencyData = rawFrequencyData as WordFrequency | null;
 
     if (freqError && freqError.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Frequency lookup error:', freqError);
@@ -75,11 +79,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Get verse references from form_occurrences
-    const { data: occurrences, error: occError } = await supabase
+    const { data: rawOccurrences, error: occError } = await supabase
       .from('form_occurrences')
       .select('form, verse_refs, occurrence_count')
-      .eq('form', searchTerm)
-      .returns<FormOccurrence[]>();
+      .eq('form', searchTerm);
+
+    const occurrences = rawOccurrences as FormOccurrence[] | null;
 
     let verseRefs: string[] = [];
     if (occurrences && occurrences.length > 0) {
@@ -90,12 +95,13 @@ export async function POST(request: NextRequest) {
     // Step 3: Get related forms if requested
     let relatedForms: string[] = [];
     if (includeRelated) {
-      const { data: rootData } = await supabase
+      const { data: rawRootData } = await supabase
         .from('form_roots')
         .select('root, related_forms')
         .eq('form', searchTerm)
-        .returns<FormRoot>()
         .single();
+
+      const rootData = rawRootData as FormRoot | null;
 
       if (rootData && rootData.related_forms) {
         relatedForms = Array.isArray(rootData.related_forms)
@@ -105,12 +111,13 @@ export async function POST(request: NextRequest) {
 
         // Get occurrences for related forms too
         for (const relatedForm of relatedForms.slice(0, 10)) { // Limit to avoid too many queries
-          const { data: relatedOcc } = await supabase
+          const { data: rawRelatedOcc } = await supabase
             .from('form_occurrences')
             .select('verse_refs')
             .eq('form', relatedForm)
-            .returns<Pick<FormOccurrence, 'verse_refs'>>()
             .single();
+
+          const relatedOcc = rawRelatedOcc as Pick<FormOccurrence, 'verse_refs'> | null;
 
           if (relatedOcc && relatedOcc.verse_refs) {
             verseRefs.push(...relatedOcc.verse_refs);
@@ -138,14 +145,15 @@ export async function POST(request: NextRequest) {
       const chapter = parseInt(chapterStr, 10);
       const verse = parseInt(verseStr, 10);
 
-      const { data: verseData } = await supabase
+      const { data: rawVerseData } = await supabase
         .from(versesTable)
         .select('book, chapter, verse, text, testament, dialect, translation')
         .eq('book', book)
         .eq('chapter', chapter)
         .eq('verse', verse)
-        .returns<VerseRow>()
         .single();
+
+      const verseData = rawVerseData as VerseRow | null;
 
       if (verseData) {
         // Apply scope filter
@@ -172,7 +180,7 @@ export async function POST(request: NextRequest) {
         query: searchTerm,
         scope,
         translation,
-        frequency: frequencyData?.frequency || 0,
+        frequency: frequencyData?.frequency ?? 0,
         totalMatches: verseRefs.length,
         returnedResults: verses.length,
         relatedFormsCount: relatedForms.length,

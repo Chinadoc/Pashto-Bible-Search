@@ -27,10 +27,11 @@ async function initializeAudioCache(): Promise<void> {
 
   try {
     // Load from audio_mappings table
-    const { data: mappings, error } = await supabase
+    const { data: rawMappings, error } = await supabase
       .from('audio_mappings')
-      .select('verse_ref, audio_url, source')
-      .returns<AudioMappingRow[]>();
+      .select('verse_ref, audio_url, source');
+
+    const mappings = rawMappings as AudioMappingRow[] | null;
 
     if (error) {
       console.error('Error loading audio mappings:', error);
@@ -75,12 +76,13 @@ export async function getAudioUrl(verseRef: string): Promise<string | null> {
   }
 
   // If not in cache, query database directly
-  const { data, error } = await supabase
+  const { data: rawMapping, error } = await supabase
     .from('audio_mappings')
     .select('audio_url')
     .eq('verse_ref', normalizedRef)
-    .returns<Pick<AudioMappingRow, 'audio_url'>>()
     .single();
+
+  const data = rawMapping as Pick<AudioMappingRow, 'audio_url'> | null;
 
   if (data && data.audio_url) {
     // Add to cache
