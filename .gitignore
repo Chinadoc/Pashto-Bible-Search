@@ -177,3 +177,6 @@ videos/
 # Note: Git doesn't support size-based filtering, so we ignore common large media formats
 *.{mp4,mkv,avi,mov,webm,flv}
 # Allow smaller audio files like .wav, .mp3, .m4a under 40MB
+
+# Ingestion progress tracking (don't commit run history)
+.ingestion_progress.json

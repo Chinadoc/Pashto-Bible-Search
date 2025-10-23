@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (frequencyData) {
-      console.log(`✅ Found in word_frequencies: ${frequencyData?.frequency} occurrences`);
+      console.log(`✅ Found in word_frequencies: ${frequencyData.frequency} occurrences`);
     }
 
     // Step 2: Get verse references from form_occurrences

@@ -1081,8 +1081,8 @@ export async function POST(request: NextRequest) {
     if (searchTerms.length === 1 && !includeRelated && searchLanguage === 'pashto') {
       console.log('🚀 Using ultra-fast Supabase word_index lookup for standard search');
       try {
-        // First try the ultra-fast Supabase optimized search
-        const supabaseResults = await supabaseOptimizedSearch(convertedQuery, scope, limit);
+          // First try the ultra-fast Supabase optimized search
+          const supabaseResults = await supabaseOptimizedSearch(convertedQuery, scope, limit, translation);
 
         if (supabaseResults && supabaseResults.length > 0) {
           searchResults = supabaseResults;
@@ -1323,82 +1323,103 @@ export async function POST(request: NextRequest) {
     });
   }
 
-// Optimized ultra-fast search using Supabase word_index tables
+// Ultra-fast search using pre-computed word occurrence index
 async function supabaseOptimizedSearch(
   query: string,
   scope: Scope,
-  limit: number = 100
+  limit: number = 100,
+  translation: string = 'afghan2023'
 ): Promise<any[]> {
+  const startTime = Date.now();
   try {
+    logDebug('🚀 Starting ultra-fast word occurrence search', { query, scope, limit, translation });
+
     const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     ));
 
-    // Check word_index table first (for common words)
-    const { data: wordData, error: wordError } = await supabase
-      .from('word_index')
-      .select('verse_refs, frequency, tf_idf_score')
-      .eq('word', query.toLowerCase())
+    // Use word_occurrence_index for ultra-fast lookups
+    const { data: occurrenceData, error: occurrenceError } = await supabase
+      .from('word_occurrence_index')
+      .select('verse_refs, tf_idf_scores, frequency')
+      .eq('word', query)
+      .eq('translation_key', translation)
       .single();
 
-    if (wordData && !wordError && wordData.verse_refs && wordData.verse_refs.length > 0) {
-      console.log(`⚡ Ultra-fast word_index lookup: found ${wordData.verse_refs.length} results`);
+    if (occurrenceData && !occurrenceError && occurrenceData.verse_refs && occurrenceData.verse_refs.length > 0) {
+      logDebug(`⚡ Word occurrence index hit`, {
+        results: occurrenceData.verse_refs.length,
+        frequency: occurrenceData.frequency
+      });
 
-      // Get actual verse objects
-      const { data: verses } = await supabase
-        .from('verses')
-        .select('id, ref, text, testament, book, chapter, verse')
-        .in('ref', wordData.verse_refs.slice(0, limit));
+      // Get verse details using the fast function (with audio URLs)
+      const { data: verses, error: versesError } = await supabase
+        .rpc('search_verses_by_word_fast', {
+          search_word: query,
+          search_translation: translation,
+          max_results: limit
+        });
 
-      if (verses) {
-        // Sort by TF-IDF score if available
-        if (wordData.tf_idf_score && Array.isArray(wordData.tf_idf_score)) {
-          const scoredVerses = verses.map((verse, index) => ({
-            ...verse,
-            score: wordData.tf_idf_score[index] || 0
-          })).sort((a, b) => (b.score || 0) - (a.score || 0));
-
-          return scoredVerses.slice(0, limit);
-        }
-
+      if (verses && !versesError) {
+        logPerformance(`Ultra-fast Word Occurrence Search`, Date.now() - startTime, {
+          results: verses.length,
+          method: 'word_occurrence_index',
+          translation
+        });
         return verses;
+      } else if (!versesError) {
+        // Fallback: manually fetch verses by refs (with audio URLs)
+        const { data: fallbackVerses } = await supabase
+          .from(translation === 'afghan2023' ? 'verses' : 'verses_yousafzai')
+          .select('id, ref, text, testament, book, chapter, verse, audio_url')
+          .in('ref', occurrenceData.verse_refs.slice(0, limit));
+
+        if (fallbackVerses) {
+          // Sort by TF-IDF scores if available
+          let sortedVerses = fallbackVerses;
+          if (occurrenceData.tf_idf_scores && Array.isArray(occurrenceData.tf_idf_scores)) {
+            sortedVerses = fallbackVerses
+              .map((verse, index) => ({
+                ...verse,
+                score: occurrenceData.tf_idf_scores[index] || 0
+              }))
+              .sort((a, b) => (b.score || 0) - (a.score || 0));
+          }
+
+          logPerformance(`Ultra-fast Word Occurrence Search (Fallback)`, Date.now() - startTime, {
+            results: sortedVerses.length,
+            method: 'manual_fetch',
+            translation
+          });
+          return sortedVerses;
+        }
       }
     }
 
-    // Fallback to search_index for less common words
-    const { data: searchData } = await supabase
-      .from('search_index')
-      .select('verse_ids, tf_idf_scores')
-      .eq('term', query.toLowerCase())
-      .single();
+    // Fallback to cross-translation search if no specific match
+    if (scope === 'all') {
+      logDebug('🔄 Falling back to cross-translation search');
+      const { data: crossResults } = await supabase
+        .rpc('search_verses_cross_translation', {
+          search_word: query,
+          max_results: limit
+        });
 
-    if (searchData && searchData.verse_ids) {
-      console.log(`⚡ Fast search_index lookup: found ${searchData.verse_ids.length} results`);
-
-      const { data: verses } = await supabase
-        .from('verses')
-        .select('id, ref, text, testament, book, chapter, verse')
-        .in('id', searchData.verse_ids.slice(0, limit));
-
-      if (verses) {
-        // Sort by TF-IDF scores
-        if (searchData.tf_idf_scores && Array.isArray(searchData.tf_idf_scores)) {
-          const scoredVerses = verses.map((verse, index) => ({
-            ...verse,
-            score: searchData.tf_idf_scores[index] || 0
-          })).sort((a, b) => (b.score || 0) - (a.score || 0));
-
-          return scoredVerses.slice(0, limit);
-        }
-
-        return verses;
+      if (crossResults) {
+        logPerformance(`Cross-translation Search`, Date.now() - startTime, {
+          results: crossResults.length,
+          method: 'cross_translation'
+        });
+        return crossResults;
       }
     }
 
+    logPerformance(`Word Occurrence Search (No Results)`, Date.now() - startTime, { translation });
     return [];
   } catch (error) {
-    console.warn('Supabase optimized search failed:', error);
+    logDebug('⚠️ Ultra-fast word occurrence search failed', { error: error instanceof Error ? error.message : error });
+    logPerformance(`Word Occurrence Search (Error)`, Date.now() - startTime, { error: true, translation });
     return [];
   }
 }
