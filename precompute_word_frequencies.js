@@ -237,15 +237,19 @@ async function main() {
 
     console.log(`\r   Progress: ${processed}/${totalWords} words\n`);
 
-    // Step 4: Output JSON
-    console.log('💾 Writing output...');
+    // Step 4: Output JSON to file (don't mix with console output)
+    console.log('💾 Writing output to file...');
+    const outputFile = isYousafzai 
+      ? 'app/data/yousafzai_word_frequency_list_enriched.json'
+      : 'app/data/word_frequency_list_enriched.json';
     const output = JSON.stringify(richFrequencies, null, 2);
-    console.log(output);
+    await fs.writeFile(outputFile, output, 'utf8');
 
-    console.log(`\n✅ Preprocessing complete!`, {
+    console.log(`✅ Preprocessing complete!`, {
       words: Object.keys(richFrequencies).length,
       verses: verses.length,
-      translation: CONFIG.translation
+      translation: CONFIG.translation,
+      outputFile
     });
   } catch (error) {
     console.error('\n❌ Preprocessing failed:', error.message);

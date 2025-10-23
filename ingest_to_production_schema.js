@@ -39,8 +39,8 @@ const CONFIG = {
       i > 3 && !arg.startsWith('--')) || 'app/data/yousafzai_all_verses.json',
     audioMap: process.argv[4] || 'google_drive_audio_urls.json',
     frequencies: {
-      afghan: process.argv[5] || 'app/data/word_frequency_list.json',
-      yousafzai: process.argv[6] || 'app/data/yousafzai_word_frequency_list.json'
+      afghan: process.argv[5] || 'app/data/word_frequency_list_enriched.json',
+      yousafzai: process.argv[6] || 'app/data/yousafzai_word_frequency_list_enriched.json'
     }
   },
 
@@ -121,22 +121,14 @@ async function clearTables(supabase) {
     return;
   }
 
-  console.log('🧹 Clearing existing data with TRUNCATE...');
+  console.log('🧹 Clearing existing data...');
 
   try {
-    // Try RPC first, fall back to manual delete
-    const { error } = await supabase.rpc('exec_sql', {
-      sql: `TRUNCATE public.word_occurrence_index, public.verses_yousafzai, public.verses RESTART IDENTITY CASCADE;`
-    });
-
-    if (error && error.code === '42883') {
-      console.log('   ⚠️  exec_sql RPC not available, using sequential delete...');
-      await supabase.from('word_occurrence_index').delete().gte('id', 0);
-      await supabase.from('verses_yousafzai').delete().gte('id', 0);
-      await supabase.from('verses').delete().gte('id', 0);
-    } else if (error) {
-      throw error;
-    }
+    // Skip exec_sql RPC, go straight to sequential delete (which works)
+    console.log('   Using sequential delete (more compatible)...');
+    await supabase.from('word_occurrence_index').delete().gte('id', 0);
+    await supabase.from('verses_yousafzai').delete().gte('id', 0);
+    await supabase.from('verses').delete().gte('id', 0);
 
     console.log('   ✅ Tables cleared\n');
     await markStepCompleted('clear_tables');
