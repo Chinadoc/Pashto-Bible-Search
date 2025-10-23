@@ -6,11 +6,84 @@ import { createClient } from '@supabase/supabase-js';
 import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
 import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
+import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
+
+// ============================================================================
+// SUPABASE SEARCH (NEW - Optimized for speed)
+// ============================================================================
+
+async function supabaseSearch(
+  query: string,
+  scope: Scope = 'all',
+  translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023',
+  limit: number = 100
+) {
+  const startTime = Date.now();
+  
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Step 1: Look up word in word_occurrence_index (2-5ms)
+    const { data: wordData, error: wordError } = await supabase
+      .from('word_occurrence_index')
+      .select('verse_refs, tf_idf_scores, frequency')
+      .eq('word', query)
+      .eq('translation_key', translation)
+      .single();
+
+    if (wordError || !wordData?.verse_refs?.length) {
+      console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (no results)`);
+      return { results: [], frequency: 0 };
+    }
+
+    console.log(`✅ Word lookup: ${Date.now() - startTime}ms (${wordData.verse_refs.length} verses)`);
+
+    // Step 2: Fetch verse details (10-50ms)
+    const versesTable = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
+    const { data: verses, error: versesError } = await supabase
+      .from(versesTable)
+      .select('id, ref, book, chapter, verse, text, testament, audio_url, translation_key')
+      .in('ref', wordData.verse_refs.slice(0, limit));
+
+    if (versesError || !verses) {
+      console.log(`⏱️  Supabase search: ${Date.now() - startTime}ms (error fetching verses)`);
+      return { results: [], frequency: 0 };
+    }
+
+    // Step 3: Apply scope filter
+    let filtered = verses;
+    if (scope === 'ot') {
+      filtered = verses.filter(v => v.testament?.toLowerCase() === 'ot');
+    } else if (scope === 'nt') {
+      filtered = verses.filter(v => v.testament?.toLowerCase() === 'nt');
+    }
+
+    // Step 4: Sort by TF-IDF scores
+    const scored = filtered.map((verse, idx) => {
+      const verseRefIndex = wordData.verse_refs.indexOf(verse.ref);
+      return {
+        ...verse,
+        score: wordData.tf_idf_scores?.[verseRefIndex] ?? 0
+      };
+    }).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️  Supabase search: ${elapsed}ms (${scored.length} results)`);
+
+    return { results: scored, frequency: wordData.frequency || 0 };
+
+  } catch (error) {
+    console.error('Supabase search error:', error);
+    return { results: [], frequency: 0 };
+  }
+}
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
@@ -403,7 +476,7 @@ async function getHelperVariants(helper: string): Promise<string[]> {
   if (helperVariantCache.has(helper)) return helperVariantCache.get(helper)!;
 
   try {
-    const variants = await generateVerbVariantsUtil(helper, { cap: 60, includeCompound: true });
+    const variants = await generateVerbVariants(helper, { cap: 60, includeCompound: true });
     const forms = Array.from(new Set(variants.map(v => v.form).filter(Boolean)));
     helperVariantCache.set(helper, forms);
     return forms;
@@ -468,7 +541,8 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
     // Get audio URL for this verse
     let audioUrl = null;
     try {
-      audioUrl = audioUrlFromRef(result.ref, audioMap);
+      const driveUrl = audioUrlFromRef(result.ref, audioMap);
+      audioUrl = convertAudioUrlToProxy(driveUrl);
     } catch (error) {
       console.warn(`Failed to get audio URL for ${result.ref}:`, error);
     }
@@ -650,7 +724,76 @@ export async function POST(request: NextRequest) {
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
-    // English search mode: find ALL Pashto words with this English term
+// ============================================================================
+// TRY SUPABASE SEARCH FIRST (NEW - fast path for indexed words)
+// ============================================================================
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+  console.log(`\n🚀 SUPABASE SEARCH FIRST: "${searchQuery}" (${translation})`);
+  try {
+    const supabaseResults = await supabaseSearch(searchQuery, scope, translation, limit);
+    
+    if (supabaseResults.results.length > 0) {
+      const queryTimeMs = Date.now() - startedAt;
+      console.log(`✅ Supabase hit! ${supabaseResults.results.length} results in ${queryTimeMs}ms`);
+      
+      // Format Supabase results to match expected format
+      const formattedResults = supabaseResults.results.map((verse: any) => ({
+        ref: verse.ref,
+        text: verse.text,
+        testament: verse.testament,
+        translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+        audio_verse_url: convertAudioUrlToProxy(verse.audio_url),
+        id: verse.id,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        results: formattedResults.slice(0, limit),
+        processed: {
+          original: originalQuery,
+          normalized: searchQuery,
+          variants: [],
+          searchType: 'supabase',
+          frequency: supabaseResults.frequency || undefined,
+        },
+        queryTime: queryTimeMs,
+        source: 'supabase',
+      });
+    }
+  } catch (error) {
+    console.error('❌ Supabase search error:', error);
+    // Don't fall back to JSON anymore - all inflections are indexed
+    // If Supabase fails, return error instead of slow JSON search
+    return NextResponse.json({
+      success: false,
+      error: 'Search service temporarily unavailable',
+      results: [],
+      queryTime: Date.now() - startedAt,
+      source: 'supabase-error',
+    }, { status: 503 });
+  }
+}
+
+// If we reach here with Supabase enabled and no results, return empty (not found)
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+  console.log(`ℹ️  Word not found in Supabase index: "${searchQuery}"`);
+  return NextResponse.json({
+    success: true,
+    results: [],
+    processed: {
+      original: originalQuery,
+      normalized: searchQuery,
+      variants: [],
+      searchType: 'supabase',
+      frequency: 0,
+    },
+    queryTime: Date.now() - startedAt,
+    source: 'supabase',
+    message: 'Word not found in index (all inflections indexed)',
+  });
+}
+
+// English search mode: find ALL Pashto words with this English term
     if (searchLanguage === 'english') {
       console.log('🇬🇧 English search mode enabled for query:', originalQuery);
       
@@ -927,7 +1070,7 @@ export async function POST(request: NextRequest) {
         } else if (isVerb) {
           // It's a verb - only generate verb conjugations
           console.log('✅ Detected as VERB - generating conjugations');
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'verb';
         } else if (isAdjective) {
@@ -936,13 +1079,13 @@ export async function POST(request: NextRequest) {
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           allVariants.push(...nounVariants);
           // Also check for stative compounds (adj + کېدل/کول)
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 20, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 20, includeCompound: true });
           allVariants.push(...verbVariants);
           posGuess = 'adjective';
         } else {
           // Unknown - try both but prioritize by what generates more results
           console.log('⚠️ Unknown POS - trying both');
-            const verbVariants = await generateVerbVariantsUtil(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           
           if (verbVariants.length > nounVariants.length) {
@@ -1170,7 +1313,7 @@ export async function POST(request: NextRequest) {
           translation: null,
           dialect: null,
           tags: [] as any[][],
-          audio_verse_url: audioMap[result.ref] || null,
+          audio_verse_url: convertAudioUrlToProxy(audioMap[result.ref] || null),
           id: index + 1,
         }));
 
@@ -1429,4 +1572,19 @@ function matchesScope(verse: any, scope: Scope): boolean {
   if (scope === 'all') return true;
   const testament = verse.testament?.toLowerCase();
   return testament === scope;
+}
+
+// ============================================================================
+// AUDIO PROXY HELPER
+// ============================================================================
+
+function convertAudioUrlToProxy(googleDriveUrl: string | null): string | null {
+  if (!googleDriveUrl) return null;
+  
+  // Extract file ID from Google Drive URL
+  const match = googleDriveUrl.match(/id=([a-zA-Z0-9_-]+)/);
+  if (!match || !match[1]) return null;
+  
+  // Return proxy URL
+  return `/api/audio/proxy?id=${match[1]}`;
 }
