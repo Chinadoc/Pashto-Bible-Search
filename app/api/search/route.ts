@@ -541,7 +541,8 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
     // Get audio URL for this verse
     let audioUrl = null;
     try {
-      audioUrl = audioUrlFromRef(result.ref, audioMap);
+      const driveUrl = audioUrlFromRef(result.ref, audioMap);
+      audioUrl = convertAudioUrlToProxy(driveUrl);
     } catch (error) {
       console.warn(`Failed to get audio URL for ${result.ref}:`, error);
     }
@@ -741,7 +742,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         text: verse.text,
         testament: verse.testament,
         translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-        audio_verse_url: verse.audio_url || null,
+        audio_verse_url: convertAudioUrlToProxy(verse.audio_url),
         id: verse.id,
       }));
 
@@ -1284,7 +1285,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
           translation: null,
           dialect: null,
           tags: [] as any[][],
-          audio_verse_url: audioMap[result.ref] || null,
+          audio_verse_url: convertAudioUrlToProxy(audioMap[result.ref] || null),
           id: index + 1,
         }));
 
@@ -1522,4 +1523,19 @@ function matchesScope(verse: any, scope: Scope): boolean {
   if (scope === 'all') return true;
   const testament = verse.testament?.toLowerCase();
   return testament === scope;
+}
+
+// ============================================================================
+// AUDIO PROXY HELPER
+// ============================================================================
+
+function convertAudioUrlToProxy(googleDriveUrl: string | null): string | null {
+  if (!googleDriveUrl) return null;
+  
+  // Extract file ID from Google Drive URL
+  const match = googleDriveUrl.match(/id=([a-zA-Z0-9_-]+)/);
+  if (!match || !match[1]) return null;
+  
+  // Return proxy URL
+  return `/api/audio/proxy?id=${match[1]}`;
 }
