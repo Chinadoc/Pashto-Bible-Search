@@ -6,11 +6,84 @@ import { createClient } from '@supabase/supabase-js';
 import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
 import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
+import { generateVerbVariantsUtil } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
+
+// ============================================================================
+// SUPABASE SEARCH (NEW - Optimized for speed)
+// ============================================================================
+
+async function supabaseSearch(
+  query: string,
+  scope: Scope = 'all',
+  translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023',
+  limit: number = 100
+) {
+  const startTime = Date.now();
+  
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Step 1: Look up word in word_occurrence_index (2-5ms)
+    const { data: wordData, error: wordError } = await supabase
+      .from('word_occurrence_index')
+      .select('verse_refs, tf_idf_scores, frequency')
+      .eq('word', query)
+      .eq('translation_key', translation)
+      .single();
+
+    if (wordError || !wordData?.verse_refs?.length) {
+      console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (no results)`);
+      return [];
+    }
+
+    console.log(`✅ Word lookup: ${Date.now() - startTime}ms (${wordData.verse_refs.length} verses)`);
+
+    // Step 2: Fetch verse details (10-50ms)
+    const versesTable = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
+    const { data: verses, error: versesError } = await supabase
+      .from(versesTable)
+      .select('id, ref, book, chapter, verse, text, testament, audio_url, translation_key')
+      .in('ref', wordData.verse_refs.slice(0, limit));
+
+    if (versesError || !verses) {
+      console.log(`⏱️  Supabase search: ${Date.now() - startTime}ms (error fetching verses)`);
+      return [];
+    }
+
+    // Step 3: Apply scope filter
+    let filtered = verses;
+    if (scope === 'ot') {
+      filtered = verses.filter(v => v.testament?.toLowerCase() === 'ot');
+    } else if (scope === 'nt') {
+      filtered = verses.filter(v => v.testament?.toLowerCase() === 'nt');
+    }
+
+    // Step 4: Sort by TF-IDF scores
+    const scored = filtered.map((verse, idx) => {
+      const verseRefIndex = wordData.verse_refs.indexOf(verse.ref);
+      return {
+        ...verse,
+        score: wordData.tf_idf_scores?.[verseRefIndex] ?? 0
+      };
+    }).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️  Supabase search: ${elapsed}ms (${scored.length} results)`);
+
+    return scored;
+
+  } catch (error) {
+    console.error('Supabase search error:', error);
+    return [];
+  }
+}
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
