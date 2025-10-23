@@ -154,64 +154,71 @@ Your LingDocs data includes:
 - **Linguistic analysis:** Extract gender, tense, case
 - **Search UI improvements:** Show POS/definitions in results
 
-### Three Approaches
+### The Right Approach: Reuse Existing LingDocs Toolchain
 
-#### Option A: Enrich word_occurrence_index (Simplest)
-Add columns to existing table:
-```sql
-ALTER TABLE public.word_occurrence_index ADD COLUMN IF NOT EXISTS (
-  lemma TEXT,                 -- Base form
-  pos TEXT,                   -- Part of speech
-  definition_short TEXT,      -- First definition
-  forms_count INTEGER         -- How many inflected forms exist
-);
-```
+Instead of building anything new, leverage code you already have:
 
-**Pros:** Single table, minimal schema change
-**Cons:** Data duplication (same lemma appears once per surface form)
+**Existing in your codebase:**
+- ✅ `full_dictionary_enriched.json` (20K+ entries)
+- ✅ `form_to_root_map.json` (surface → lemma mappings)
+- ✅ `app/lib/data/load.ts` (extractRomanized, extractEnglish)
+- ✅ `app/utils/{noun,verb}_variants.ts` (inflection generators)
+- ✅ `app/lib/variants/index.ts` (collectRelatedForms function)
 
-#### Option B: Create separate dictionary table (Recommended)
+**New table:** `word_dictionary` (reusing extractors)
 ```sql
 CREATE TABLE public.word_dictionary (
   word TEXT NOT NULL,
   translation_key TEXT NOT NULL,
-  lemma TEXT,                 -- Base form
-  pos TEXT,                   -- Noun, Verb, Adj, etc.
-  definition TEXT,
+  lemma TEXT,                         -- Base form
+  pos TEXT,                           -- Part of speech
   definition_short TEXT,
+  definition_full TEXT,
   romanization TEXT,
-  examples TEXT[],            -- Example sentences
-  morphology JSONB,           -- Tense, gender, case, etc.
-  created_at TIMESTAMPTZ,
+  morphology JSONB,                   -- {"gender": "m", "number": "s"}
+  related_forms TEXT[],
+  root_word TEXT,
   PRIMARY KEY (word, translation_key)
 );
+CREATE INDEX idx_word_dictionary_lemma ON word_dictionary (lemma, translation_key);
+CREATE INDEX idx_word_dictionary_pos ON word_dictionary (pos, translation_key);
 ```
 
-**Pros:** Normalized, avoids duplication, query-time lookup
-**Cons:** Extra join required (word_occurrence_index → word_dictionary)
+**Integration:** Extend `ingest_to_production_schema.js` with optional flag:
+```bash
+# MVP (no LingDocs)
+node ingest_to_production_schema.js
 
-#### Option C: Embedded JSONB (Most Flexible)
-Store morphological data as JSONB in word_occurrence_index:
+# With LingDocs enrichment
+node ingest_to_production_schema.js --with-lingdocs
+```
+
+### Query Examples
+
 ```sql
-ALTER TABLE public.word_occurrence_index ADD COLUMN IF NOT EXISTS
-  metadata JSONB DEFAULT '{}';
+-- POS filtering (word + part of speech)
+SELECT w.verse_refs FROM word_occurrence_index w
+JOIN word_dictionary d ON w.word = d.word
+WHERE w.word = 'خدا'
+  AND d.pos = 'Noun'
+  AND w.translation_key = 'afghan2023'
+LIMIT 100;
 
--- Stores:
-{
-  "lemma": "خدا",
-  "pos": "noun",
-  "definition": "God",
-  "romanization": "khuda",
-  "forms": ["خدا", "خدائی", "خدائې"],
-  "morphology": {
-    "gender": "masculine",
-    "number": "singular"
-  }
-}
+-- Lemma-based (find all forms)
+SELECT word, verse_refs FROM word_dictionary
+WHERE root_word = 'خود'
+  AND translation_key = 'afghan2023';
+
+-- Morphological filter
+SELECT verse_refs FROM word_dictionary
+WHERE root_word = 'خود'
+  AND morphology->>'gender' = 'm'
+  AND translation_key = 'afghan2023';
 ```
 
-**Pros:** Flexible, no joins, all data in one record
-**Cons:** Larger row size, harder to filter by POS
+**Effort:** 4-6 hours (minimal new code, mostly reusing existing adapters)
+
+**See:** `LINGDOCS_SUPABASE_INTEGRATION.md` for full implementation guide
 
 ---
 
