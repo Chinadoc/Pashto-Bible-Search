@@ -760,6 +760,70 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         source: 'supabase',
       });
     }
+    
+    // FALLBACK: If direct search failed, try to generate related forms
+    console.log(`⏱️  Direct word not found, generating related forms...`);
+    const convertedQuery = romanizedToPashto(searchQuery);
+    
+    try {
+      // Try to generate verb conjugations and noun inflections
+      const verbVariants = await generateVerbVariants(convertedQuery, { cap: 50, includeCompound: true });
+      const nounVariants = await generateNounVariants(convertedQuery, { cap: 50 });
+      
+      const allVariants = [...verbVariants, ...nounVariants];
+      
+      if (allVariants.length > 0) {
+        console.log(`✅ Generated ${allVariants.length} related forms, searching...`);
+        
+        // Search for each variant and collect results
+        let allResults: any[] = [];
+        const uniqueRefs = new Set();
+        
+        for (const variant of allVariants.slice(0, 40)) {
+          const variantResults = await supabaseSearch(variant.form, scope, translation, 100);
+          
+          for (const result of variantResults.results) {
+            if (!uniqueRefs.has(result.ref)) {
+              uniqueRefs.add(result.ref);
+              allResults.push(result);
+            }
+          }
+          
+          if (allResults.length >= limit) break;
+        }
+        
+        if (allResults.length > 0) {
+          console.log(`✅ Found ${allResults.length} results via related forms`);
+          
+          const formattedResults = allResults.slice(0, limit).map((verse: any) => ({
+            ref: verse.ref,
+            text: verse.text,
+            testament: verse.testament,
+            translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+            audio_verse_url: convertAudioUrlToProxy(verse.audio_url),
+            id: verse.id,
+          }));
+
+          return NextResponse.json({
+            success: true,
+            results: formattedResults,
+            processed: {
+              original: originalQuery,
+              normalized: searchQuery,
+              variants: allVariants.map(v => v.form),
+              searchType: 'supabase-with-variants',
+              frequency: allResults.length,
+            },
+            queryTime: Date.now() - startedAt,
+            source: 'supabase-variants',
+            note: `Searched for related forms/conjugations of "${convertedQuery}"`,
+          });
+        }
+      }
+    } catch (variantError) {
+      console.warn('Failed to generate variants:', variantError);
+    }
+    
   } catch (error) {
     console.error('❌ Supabase search error:', error);
     // Don't fall back to JSON anymore - all inflections are indexed
@@ -776,7 +840,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
 
 // If we reach here with Supabase enabled and no results, return empty (not found)
 if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
-  console.log(`ℹ️  Word not found in Supabase index: "${searchQuery}"`);
+  console.log(`ℹ️  Word not found in Supabase index or related forms: "${searchQuery}"`);
   return NextResponse.json({
     success: true,
     results: [],
@@ -789,7 +853,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
     },
     queryTime: Date.now() - startedAt,
     source: 'supabase',
-    message: 'Word not found in index (all inflections indexed)',
+    message: 'Word not found in index or related forms',
   });
 }
 
