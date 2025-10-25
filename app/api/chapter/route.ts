@@ -99,10 +99,11 @@ export async function GET(request: NextRequest) {
 
     // DEBUG: Check audio data in first verse
     if (verses && verses.length > 0) {
+      const firstVerse = verses[0] as VerseRow;
       console.log(`📝 First verse audio data:`, {
-        ref: `${verses[0].book} ${verses[0].chapter}:${verses[0].verse}`,
-        audio_storage_path: verses[0].audio_storage_path,
-        audio_public_url: verses[0].audio_public_url
+        ref: `${firstVerse.book} ${firstVerse.chapter}:${firstVerse.verse}`,
+        audio_storage_path: firstVerse.audio_storage_path,
+        audio_public_url: firstVerse.audio_public_url
       });
     }
 
