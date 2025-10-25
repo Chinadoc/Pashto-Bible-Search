@@ -1581,7 +1581,7 @@ async function supabaseOptimizedSearch(
 ): Promise<any[]> {
   const startTime = Date.now();
   try {
-    logDebug('🚀 Starting ultra-fast word occurrence search', { query, scope, limit, translation });
+    console.log('🚀 Starting ultra-fast word occurrence search', { query, scope, limit, translation });
 
     const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1597,7 +1597,7 @@ async function supabaseOptimizedSearch(
       .single();
 
     if (occurrenceData && !occurrenceError && occurrenceData.verse_refs && occurrenceData.verse_refs.length > 0) {
-      logDebug(`⚡ Word occurrence index hit`, {
+      console.log(`⚡ Word occurrence index hit`, {
         results: occurrenceData.verse_refs.length,
         frequency: occurrenceData.frequency
       });
@@ -1611,7 +1611,7 @@ async function supabaseOptimizedSearch(
         });
 
       if (verses && !versesError) {
-        logPerformance(`Ultra-fast Word Occurrence Search`, Date.now() - startTime, {
+        console.log(`⚡ Ultra-fast Word Occurrence Search`, {
           results: verses.length,
           method: 'word_occurrence_index',
           translation
@@ -1636,7 +1636,7 @@ async function supabaseOptimizedSearch(
               .sort((a, b) => (b.score || 0) - (a.score || 0));
           }
 
-          logPerformance(`Ultra-fast Word Occurrence Search (Fallback)`, Date.now() - startTime, {
+          console.log(`⚡ Ultra-fast Word Occurrence Search (Fallback)`, {
             results: sortedVerses.length,
             method: 'manual_fetch',
             translation
@@ -1648,7 +1648,7 @@ async function supabaseOptimizedSearch(
 
     // Fallback to cross-translation search if no specific match
     if (scope === 'all') {
-      logDebug('🔄 Falling back to cross-translation search');
+      console.log('🔄 Falling back to cross-translation search');
       const { data: crossResults } = await supabase
         .rpc('search_verses_cross_translation', {
           search_word: query,
@@ -1656,7 +1656,7 @@ async function supabaseOptimizedSearch(
         });
 
       if (crossResults) {
-        logPerformance(`Cross-translation Search`, Date.now() - startTime, {
+        console.log(`⚡ Cross-translation Search`, {
           results: crossResults.length,
           method: 'cross_translation'
         });
@@ -1664,11 +1664,11 @@ async function supabaseOptimizedSearch(
       }
     }
 
-    logPerformance(`Word Occurrence Search (No Results)`, Date.now() - startTime, { translation });
+    console.log(`⚡ Word Occurrence Search (No Results)`, { translation });
     return [];
   } catch (error) {
-    logDebug('⚠️ Ultra-fast word occurrence search failed', { error: error instanceof Error ? error.message : error });
-    logPerformance(`Word Occurrence Search (Error)`, Date.now() - startTime, { error: true, translation });
+    console.log(`⚠️ Ultra-fast word occurrence search failed`, { error: error instanceof Error ? error.message : error });
+    console.log(`⚡ Word Occurrence Search (Error)`, { error: true, translation });
     return [];
   }
 }
