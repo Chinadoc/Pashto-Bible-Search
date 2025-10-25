@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     const { data: verses, error } = await supabase
       .from(tableName)
-      .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url')
+      .select('book, chapter, verse, text, testament')
       .eq('book', book)
       .eq('chapter', chapter)
       .order('verse', { ascending: true });
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
         console.log(`⚠️  No verses found in ${tableName}, trying verses_yousafzai as fallback...`);
         const { data: fallbackVerses, error: fallbackError } = await supabase
           .from('verses_yousafzai')
-          .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url')
+          .select('book, chapter, verse, text, testament')
           .eq('book', book)
           .eq('chapter', chapter)
           .order('verse', { ascending: true });
@@ -123,8 +123,6 @@ export async function GET(request: NextRequest) {
             text: decodeHtmlEntities(v.text),
             testament: v.testament,
             dialect: 'yousafzai',
-            audioUrl: v.audio_public_url || null,
-            audioStoragePath: v.audio_storage_path || null,
           }));
 
           return NextResponse.json({
@@ -150,8 +148,6 @@ export async function GET(request: NextRequest) {
       text: decodeHtmlEntities(v.text),
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-      audioUrl: v.audio_public_url || null, // Include audio URL (may be null for some OT books in Afghan 2023)
-      audioStoragePath: v.audio_storage_path || null, // Fallback if public URL not available
     }));
 
     return NextResponse.json({

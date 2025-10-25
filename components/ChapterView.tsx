@@ -11,7 +11,6 @@ interface Verse {
   text: string;
   testament?: string;
   dialect?: string;
-  audioUrl?: string | null;
 }
 
 interface Props {
@@ -104,20 +103,6 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
                 <p className="text-lg text-gray-900 dark:text-gray-100 leading-relaxed mb-3" dir="rtl">
                   {verse.text}
                 </p>
-
-                {/* Audio Player - uses audioUrl directly from verse */}
-                {verse.audioUrl && (
-                  <div className="mt-2">
-                    <AudioPlayer audioUrl={verse.audioUrl} verseRef={verse.ref} />
-                  </div>
-                )}
-
-                {/* No Audio Available Message */}
-                {!verse.audioUrl && (
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
-                    🔇 Audio not available for this verse
-                  </div>
-                )}
 
                 {/* Verse Reference (small) */}
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
