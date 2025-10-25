@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     
     let verseRefs: string[] = [];
+    let frequencyData: WordFrequency | null = null;
     
     // Try each potential Pashto word variant
     for (const pashtoWord of pashtoWordsToLookup) {
@@ -119,16 +120,20 @@ export async function POST(request: NextRequest) {
         .eq('translation_key', translation)
         .single();
 
-      const frequencyData = (rawFrequencyData as WordFrequency | null);
+      const currentFrequencyData = (rawFrequencyData as WordFrequency | null);
 
       if (freqError && freqError.code !== 'PGRST116') {
         console.error(`Frequency lookup error for "${pashtoWord}":`, freqError);
       }
 
-      if (frequencyData) {
-        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}": ${frequencyData.frequency} occurrences`);
-        if (frequencyData.verse_refs) {
-          verseRefs.push(...frequencyData.verse_refs);
+      if (currentFrequencyData) {
+        // Keep the first match for metadata
+        if (!frequencyData) {
+          frequencyData = currentFrequencyData;
+        }
+        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}": ${currentFrequencyData.frequency} occurrences`);
+        if (currentFrequencyData.verse_refs) {
+          verseRefs.push(...currentFrequencyData.verse_refs);
         }
       }
     }
