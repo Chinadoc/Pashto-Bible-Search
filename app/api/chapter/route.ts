@@ -14,6 +14,25 @@ interface VerseRow {
   audio_public_url?: string | null;
 }
 
+// Helper function to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  
+  let decoded = text;
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.replace(new RegExp(entity, 'g'), char);
+  }
+  return decoded;
+}
+
 // Define chapter counts for each book
 const CHAPTER_COUNTS: Record<string, number> = {
   // Old Testament
@@ -101,7 +120,7 @@ export async function GET(request: NextRequest) {
             book: v.book,
             chapter: v.chapter,
             verse: v.verse,
-            text: v.text,
+            text: decodeHtmlEntities(v.text),
             testament: v.testament,
             dialect: 'yousafzai',
           }));
@@ -126,7 +145,7 @@ export async function GET(request: NextRequest) {
       book: v.book,
       chapter: v.chapter,
       verse: v.verse,
-      text: v.text,
+      text: decodeHtmlEntities(v.text),
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
     }));
