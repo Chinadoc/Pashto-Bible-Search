@@ -180,3 +180,9 @@ videos/
 
 # Ingestion progress tracking (don't commit run history)
 .ingestion_progress.json
+
+# Google Drive API credentials (never commit)
+credentials.json
+drive_token.json
+audio_mapping.csv
+APPLY_AUDIO_IDS.sql
