@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/utils/supabase';
 
+type WordOccurrence = {
+  word: string;
+  frequency: number | null;
+  translation_key: string;
+  verse_refs: string[] | null;
+};
+
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
         .select('word, frequency, translation_key, verse_refs')
         .eq('word', word)
         .eq('translation_key', translation)
-        .single();
+        .single<WordOccurrence>();
 
       if (direct) {
         console.log(`✅ Direct match found:`, {
@@ -57,8 +64,10 @@ export async function POST(request: NextRequest) {
         .eq('translation_key', translation)
         .limit(5);
 
-      if (sample && sample.length > 0) {
-        console.log(`Found ${sample.length} entries. Sample words:`, sample.map(s => s.word));
+      const sampleEntries = (sample ?? []) as Array<Pick<WordOccurrence, 'word' | 'translation_key'>>;
+
+      if (sampleEntries.length > 0) {
+        console.log(`Found ${sampleEntries.length} entries. Sample words:`, sampleEntries.map(s => s.word));
       } else {
         console.log(`No entries found for translation: ${translation}`);
         if (sampleError) {
