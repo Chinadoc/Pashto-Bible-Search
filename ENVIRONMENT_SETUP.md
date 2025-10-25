@@ -69,3 +69,6 @@ For Vercel deployment:
 1. Set environment variables in Vercel dashboard
 2. Or ensure `vercel.json` contains the correct public variables
 3. The build process will validate all required variables
+
+
+

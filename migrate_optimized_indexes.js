@@ -186,3 +186,6 @@ async function migrateOptimizedIndexes() {
 
 // Run the migration
 migrateOptimizedIndexes();
+
+
+

@@ -181,3 +181,6 @@ async function ingestInflectionsWithVerses() {
 }
 
 ingestInflectionsWithVerses().catch(console.error);
+
+
+
