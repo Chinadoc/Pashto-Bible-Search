@@ -61,14 +61,13 @@ export async function GET(request: NextRequest) {
 
     const { data: verses, error } = await supabase
       .from(tableName)
-      .select('book, chapter, verse, text, testament, dialect, translation_key, audio_storage_path, audio_public_url')
+      .select('book, chapter, verse, text, testament')
       .eq('book', book)
       .eq('chapter', chapter)
-      .order('verse', { ascending: true })
-      .returns<VerseRow[]>();
+      .order('verse', { ascending: true });
 
     if (error) {
-      console.error('Supabase query error:', error);
+      console.error(`Supabase query error for ${tableName}:`, error);
       return NextResponse.json(
         { error: 'Database query failed', details: error.message },
         { status: 500 }
@@ -80,16 +79,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Format verses for response
-    const formattedVerses = verses.map(v => ({
+    const formattedVerses = verses.map((v: any) => ({
       ref: `${v.book} ${v.chapter}:${v.verse}`,
       book: v.book,
       chapter: v.chapter,
       verse: v.verse,
       text: v.text,
       testament: v.testament,
-      dialect: v.dialect || (translation === 'yousafzai2019' ? 'yousafzai' : 'afghan'),
-      translation: v.translation_key, // Assuming translation_key is the correct field for the translation
-      audioUrl: v.audio_public_url || null, // Include audio URL directly from verses table
+      dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
     }));
 
     return NextResponse.json({
