@@ -9,8 +9,9 @@ interface VerseRow {
   text: string;
   testament?: string;
   dialect?: string | null;
-  translation?: string | null;
-  audio_url?: string | null;
+  translation_key?: string | null;
+  audio_storage_path?: string | null;
+  audio_public_url?: string | null;
 }
 
 // Define chapter counts for each book
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     const { data: verses, error } = await supabase
       .from(tableName)
-      .select('book, chapter, verse, text, testament, dialect, translation, audio_url')
+      .select('book, chapter, verse, text, testament, dialect, translation_key, audio_storage_path, audio_public_url')
       .eq('book', book)
       .eq('chapter', chapter)
       .order('verse', { ascending: true })
@@ -87,8 +88,8 @@ export async function GET(request: NextRequest) {
       text: v.text,
       testament: v.testament,
       dialect: v.dialect || (translation === 'yousafzai2019' ? 'yousafzai' : 'afghan'),
-      translation: v.translation,
-      audioUrl: v.audio_url || null, // Include audio URL directly from verses table
+      translation: v.translation_key, // Assuming translation_key is the correct field for the translation
+      audioUrl: v.audio_public_url || null, // Include audio URL directly from verses table
     }));
 
     return NextResponse.json({
