@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       const currentFrequencyData = (rawFrequencyData as WordFrequency | null);
 
       if (freqError && freqError.code !== 'PGRST116') {
-        console.error(`Frequency lookup error for "${pashtoWord}":`, freqError);
+        console.error(`Frequency lookup error for "${pashtoWord}" (translation: ${translation}):`, freqError);
       }
 
       if (currentFrequencyData) {
@@ -131,12 +131,17 @@ export async function POST(request: NextRequest) {
         if (!frequencyData) {
           frequencyData = currentFrequencyData;
         }
-        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}": ${currentFrequencyData.frequency} occurrences`);
+        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}" (${translation}): ${currentFrequencyData.frequency} occurrences`);
         if (currentFrequencyData.verse_refs) {
           verseRefs.push(...currentFrequencyData.verse_refs);
+          console.log(`📍 Added ${currentFrequencyData.verse_refs.length} verse refs, total now: ${verseRefs.length}`);
         }
+      } else {
+        console.log(`❌ No match in word_occurrence_index for "${pashtoWord}" with translation "${translation}"`);
       }
     }
+    
+    console.log(`📊 Total unique verse refs found: ${verseRefs.length}`);
 
     // ============================================================================
     // STEP 3: GET RELATED FORMS/INFLECTIONS (SECONDARY)
