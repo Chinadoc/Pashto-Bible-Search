@@ -97,6 +97,15 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Query returned ${verses?.length || 0} verses from ${tableName}`);
 
+    // DEBUG: Check audio data in first verse
+    if (verses && verses.length > 0) {
+      console.log(`📝 First verse audio data:`, {
+        ref: `${verses[0].book} ${verses[0].chapter}:${verses[0].verse}`,
+        audio_storage_path: verses[0].audio_storage_path,
+        audio_public_url: verses[0].audio_public_url
+      });
+    }
+
     if (!verses || verses.length === 0) {
       // If Afghan 2023 is empty, try Yousafzai as fallback
       if (translation === 'afghan2023') {
