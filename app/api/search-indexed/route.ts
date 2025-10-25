@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     
     let dictionaryMatches: any[] = [];
+    let pashtoWordsToLookup: string[] = [];
     
     // Try exact romanization match first
     const { data: exactRomanMatch, error: romanError } = await supabase
@@ -78,7 +79,9 @@ export async function POST(request: NextRequest) {
       
     if (exactRomanMatch && exactRomanMatch.length > 0) {
       dictionaryMatches = exactRomanMatch;
+      pashtoWordsToLookup = exactRomanMatch.map((m: any) => m.pashto).filter(Boolean);
       console.log(`✅ Found ${exactRomanMatch.length} romanization matches in dictionary`);
+      console.log(`📝 Pashto words to lookup: ${pashtoWordsToLookup.join(', ')}`);
     } else {
       // Try exact Pashto match
       const { data: pashtoMatch, error: pashtoError } = await supabase
@@ -89,7 +92,12 @@ export async function POST(request: NextRequest) {
         
       if (pashtoMatch && pashtoMatch.length > 0) {
         dictionaryMatches = pashtoMatch;
+        pashtoWordsToLookup = pashtoMatch.map((m: any) => m.pashto).filter(Boolean);
         console.log(`✅ Found ${pashtoMatch.length} exact Pashto matches in dictionary`);
+      } else {
+        // Fallback: treat search term as-is (might be Pashto already)
+        pashtoWordsToLookup = [searchTerm];
+        console.log(`ℹ️  No dictionary matches, searching word_occurrence_index directly for: "${searchTerm}"`);
       }
     }
 
@@ -97,31 +105,32 @@ export async function POST(request: NextRequest) {
     // STEP 2: GET VERSE REFERENCES FROM WORD_OCCURRENCE_INDEX
     // ============================================================================
     
-    const {
-      data: rawFrequencyData,
-      error: freqError
-    } = await supabase
-      .from('word_occurrence_index')
-      .select('word, frequency, translation_key, verse_refs')
-      .eq('word', searchTerm)
-      .eq('translation_key', translation)
-      .single();
-
-    const frequencyData = (rawFrequencyData as WordFrequency | null);
-
-    if (freqError && freqError.code !== 'PGRST116') {
-      console.error('Frequency lookup error:', freqError);
-    }
-
-    if (frequencyData) {
-      console.log(`✅ Found in word_occurrence_index: ${frequencyData.frequency} occurrences`);
-    }
-
-    // Step 2: Get verse references from word_occurrence_index (already have this data)
     let verseRefs: string[] = [];
-    if (frequencyData) {
-      verseRefs = frequencyData.verse_refs || [];
-      console.log(`✅ Found ${verseRefs.length} verse references in word_occurrence_index`);
+    
+    // Try each potential Pashto word variant
+    for (const pashtoWord of pashtoWordsToLookup) {
+      const {
+        data: rawFrequencyData,
+        error: freqError
+      } = await supabase
+        .from('word_occurrence_index')
+        .select('word, frequency, translation_key, verse_refs')
+        .eq('word', pashtoWord)
+        .eq('translation_key', translation)
+        .single();
+
+      const frequencyData = (rawFrequencyData as WordFrequency | null);
+
+      if (freqError && freqError.code !== 'PGRST116') {
+        console.error(`Frequency lookup error for "${pashtoWord}":`, freqError);
+      }
+
+      if (frequencyData) {
+        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}": ${frequencyData.frequency} occurrences`);
+        if (frequencyData.verse_refs) {
+          verseRefs.push(...frequencyData.verse_refs);
+        }
+      }
     }
 
     // ============================================================================
