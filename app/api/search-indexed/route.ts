@@ -137,8 +137,10 @@ export async function POST(request: NextRequest) {
         .eq('translation_key', translation)
         .single();
 
-      if (rawVariantData && rawVariantData.variants) {
-        const variants = rawVariantData.variants as any[];
+      const variantData = (rawVariantData as any);
+
+      if (variantData && variantData.variants) {
+        const variants = variantData.variants as any[];
         if (Array.isArray(variants)) {
           relatedForms = variants.map(v => v.form || v).filter(Boolean);
           console.log(`✅ Found ${relatedForms.length} related forms in variant_index`);
