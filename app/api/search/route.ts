@@ -766,11 +766,42 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
     
     try {
       // Try to generate verb conjugations and noun inflections
+      console.log(`Attempting to generate verb variants for: "${searchQuery}"`);
       const verbVariants = await generateVerbVariants(searchQuery, { cap: 50, includeCompound: true });
+      console.log(`✅ Verb variants generated: ${verbVariants.length} forms`);
+      
+      console.log(`Attempting to generate noun variants for: "${searchQuery}"`);
       const nounVariants = await generateNounVariants(searchQuery, { cap: 50 });
+      console.log(`✅ Noun variants generated: ${nounVariants.length} forms`);
       
       const allVariants = [...verbVariants, ...nounVariants];
-      console.log(`Generated ${allVariants.length} variants for "${searchQuery}": ${allVariants.map(v => v.form).join(', ')}`);
+      console.log(`Generated ${allVariants.length} total variants for "${searchQuery}": ${allVariants.map(v => v.form).join(', ')}`);
+      
+      // If no variants generated, try basic synthetic generation based on Pashto morphology
+      if (allVariants.length === 0) {
+        console.log(`⚠️ No variants generated, trying synthetic generation for "${searchQuery}"`);
+        
+        // Generate common Pashto verb suffixes for the base form
+        const syntheticsToTry = [
+          searchQuery,  // base form itself
+          searchQuery + 'ی',  // past participle
+          searchQuery + 'وی',  // subjunctive
+          searchQuery + 'ل',  // past simple
+          searchQuery.replace(/ی$/, '') + 'و',  // present plural
+          'و' + searchQuery,  // prefixed past
+        ];
+        
+        for (const form of syntheticsToTry) {
+          if (form.trim()) {
+            allVariants.push({
+              form: form.trim(),
+              label: 'Synthetic Form',
+              pos: 'verb',
+            });
+          }
+        }
+        console.log(`Generated ${syntheticsToTry.length} synthetic forms`);
+      }
       
       if (allVariants.length > 0) {
         console.log(`✅ Generated ${allVariants.length} related forms, searching...`);
@@ -781,7 +812,9 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         const searchedVariants: string[] = [];
         
         for (const variant of allVariants.slice(0, 40)) {
+          console.log(`Searching for variant: "${variant.form}"`);
           const variantResults = await supabaseSearch(variant.form, scope, translation, 100);
+          console.log(`Variant "${variant.form}": ${variantResults.results.length} results`);
           
           if (variantResults.results.length > 0) {
             searchedVariants.push(variant.form);
@@ -824,10 +857,13 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
             source: 'supabase-variants',
             note: `Searched for related forms/conjugations of "${searchQuery}"`,
           });
+        } else {
+          console.log(`⚠️ Generated ${allVariants.length} variants but none found in index: ${allVariants.map(v => v.form).join(', ')}`);
         }
       }
     } catch (variantError) {
-      console.warn('Failed to generate variants:', variantError);
+      console.error('❌ Failed to generate variants:', variantError instanceof Error ? variantError.message : variantError);
+      console.error('Stack:', variantError instanceof Error ? variantError.stack : 'N/A');
     }
     
   } catch (error) {
