@@ -763,14 +763,14 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
     
     // FALLBACK: If direct search failed, try to generate related forms
     console.log(`⏱️  Direct word not found, generating related forms...`);
-    const convertedQuery = romanizedToPashto(searchQuery);
     
     try {
       // Try to generate verb conjugations and noun inflections
-      const verbVariants = await generateVerbVariants(convertedQuery, { cap: 50, includeCompound: true });
-      const nounVariants = await generateNounVariants(convertedQuery, { cap: 50 });
+      const verbVariants = await generateVerbVariants(searchQuery, { cap: 50, includeCompound: true });
+      const nounVariants = await generateNounVariants(searchQuery, { cap: 50 });
       
       const allVariants = [...verbVariants, ...nounVariants];
+      console.log(`Generated ${allVariants.length} variants for "${searchQuery}": ${allVariants.map(v => v.form).join(', ')}`);
       
       if (allVariants.length > 0) {
         console.log(`✅ Generated ${allVariants.length} related forms, searching...`);
@@ -778,14 +778,19 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         // Search for each variant and collect results
         let allResults: any[] = [];
         const uniqueRefs = new Set();
+        const searchedVariants: string[] = [];
         
         for (const variant of allVariants.slice(0, 40)) {
           const variantResults = await supabaseSearch(variant.form, scope, translation, 100);
           
-          for (const result of variantResults.results) {
-            if (!uniqueRefs.has(result.ref)) {
-              uniqueRefs.add(result.ref);
-              allResults.push(result);
+          if (variantResults.results.length > 0) {
+            searchedVariants.push(variant.form);
+            
+            for (const result of variantResults.results) {
+              if (!uniqueRefs.has(result.ref)) {
+                uniqueRefs.add(result.ref);
+                allResults.push(result);
+              }
             }
           }
           
@@ -793,7 +798,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         }
         
         if (allResults.length > 0) {
-          console.log(`✅ Found ${allResults.length} results via related forms`);
+          console.log(`✅ Found ${allResults.length} results via related forms (${searchedVariants.length} variants searched)`);
           
           const formattedResults = allResults.slice(0, limit).map((verse: any) => ({
             ref: verse.ref,
@@ -811,12 +816,13 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
               original: originalQuery,
               normalized: searchQuery,
               variants: allVariants.map(v => v.form),
+              variantsSearched: searchedVariants,
               searchType: 'supabase-with-variants',
               frequency: allResults.length,
             },
             queryTime: Date.now() - startedAt,
             source: 'supabase-variants',
-            note: `Searched for related forms/conjugations of "${convertedQuery}"`,
+            note: `Searched for related forms/conjugations of "${searchQuery}"`,
           });
         }
       }
