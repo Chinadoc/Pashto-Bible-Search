@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
     // Query Supabase verses table directly - much faster than loading all verses
     const tableName = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
 
+    console.log(`📖 Fetching ${book} ${chapter} from ${tableName} (translation: ${translation})`);
+
     const { data: verses, error } = await supabase
       .from(tableName)
       .select('book, chapter, verse, text, testament')
@@ -67,14 +69,54 @@ export async function GET(request: NextRequest) {
       .order('verse', { ascending: true });
 
     if (error) {
-      console.error(`Supabase query error for ${tableName}:`, error);
+      console.error(`❌ Supabase query error for ${tableName}:`, error);
       return NextResponse.json(
         { error: 'Database query failed', details: error.message },
         { status: 500 }
       );
     }
 
+    console.log(`✅ Query returned ${verses?.length || 0} verses from ${tableName}`);
+
     if (!verses || verses.length === 0) {
+      // If Afghan 2023 is empty, try Yousafzai as fallback
+      if (translation === 'afghan2023') {
+        console.log(`⚠️  No verses found in ${tableName}, trying verses_yousafzai as fallback...`);
+        const { data: fallbackVerses, error: fallbackError } = await supabase
+          .from('verses_yousafzai')
+          .select('book, chapter, verse, text, testament')
+          .eq('book', book)
+          .eq('chapter', chapter)
+          .order('verse', { ascending: true });
+
+        if (fallbackError) {
+          console.error('❌ Fallback query also failed:', fallbackError);
+          return NextResponse.json({ error: 'No verses found for this chapter in any translation' }, { status: 404 });
+        }
+
+        if (fallbackVerses && fallbackVerses.length > 0) {
+          console.log(`✅ Found ${fallbackVerses.length} verses in Yousafzai as fallback`);
+          const formattedVerses = fallbackVerses.map((v: any) => ({
+            ref: `${v.book} ${v.chapter}:${v.verse}`,
+            book: v.book,
+            chapter: v.chapter,
+            verse: v.verse,
+            text: v.text,
+            testament: v.testament,
+            dialect: 'yousafzai',
+          }));
+
+          return NextResponse.json({
+            book,
+            chapter,
+            translation: 'yousafzai2019',
+            verses: formattedVerses,
+            totalVerses: formattedVerses.length,
+            note: 'Afghan 2023 not available, showing Yousafzai 2019 instead'
+          });
+        }
+      }
+
       return NextResponse.json({ error: 'No verses found for this chapter' }, { status: 404 });
     }
 
