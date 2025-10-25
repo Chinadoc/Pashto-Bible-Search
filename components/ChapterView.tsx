@@ -11,6 +11,8 @@ interface Verse {
   text: string;
   testament?: string;
   dialect?: string;
+  audio_storage_path?: string | null;
+  audio_public_url?: string | null;
 }
 
 interface Props {
@@ -113,6 +115,17 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
                     </span>
                   )}
                 </div>
+
+                {/* Audio Player */}
+                {verse.audio_public_url ? (
+                  <div className="mt-3 flex items-center gap-2">
+                    <AudioPlayer audioUrl={verse.audio_public_url} />
+                  </div>
+                ) : (
+                  <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                    🔇 Audio not available
+                  </div>
+                )}
               </div>
             </div>
           </div>

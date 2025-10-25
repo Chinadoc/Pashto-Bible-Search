@@ -40,6 +40,8 @@ export interface Verse {
   tags?: any[][]; // Timing segments for audio playback (jktags data) - added for Yousafzai audio seeking
   audio_verse_url?: string | null; // Individual verse audio clip URL for Yousafzai
   testament?: 'OT' | 'NT'; // Old Testament or New Testament
+  audio_storage_path?: string | null; // Storage path for verse audio file
+  audio_public_url?: string | null; // Public URL for verse audio playback
 }
 
 export interface CoverageItem {
