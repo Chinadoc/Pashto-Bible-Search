@@ -112,6 +112,13 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
                   </div>
                 )}
 
+                {/* No Audio Available Message */}
+                {!verse.audioUrl && (
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                    🔇 Audio not available for this verse
+                  </div>
+                )}
+
                 {/* Verse Reference (small) */}
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                   {verse.ref}
