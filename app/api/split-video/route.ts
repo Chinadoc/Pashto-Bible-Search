@@ -1,171 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
 
-const execAsync = promisify(exec);
+const DEFAULT_BACKEND_BASE_URL = 'http://localhost:8000';
 
-async function downloadYouTubeVideo(youtubeUrl: string): Promise<string | null> {
-  try {
-    // Extract video ID from YouTube URL
-    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-    if (!videoIdMatch) {
-      throw new Error('Invalid YouTube URL');
-    }
-    const videoId = videoIdMatch[1];
-
-    // Create temporary directory for processing
-    const tempDir = join(process.cwd(), 'temp');
-    const tempVideoPath = join(tempDir, `${videoId}_video.mp4`);
-
-    try {
-      // Download video using yt-dlp
-      console.log(`Downloading YouTube video: ${videoId}`);
-      const downloadCmd = `yt-dlp --output "${tempVideoPath}" "${youtubeUrl}"`;
-      await execAsync(downloadCmd, { timeout: 600000 }); // 10 minute timeout for video
-
-      return tempVideoPath;
-
-    } catch (error) {
-      // Clean up temp file if it exists
-      try {
-        await unlink(tempVideoPath);
-      } catch {
-        // File might not exist
-      }
-      throw error;
-    }
-
-  } catch (error) {
-    console.error('Error downloading YouTube video:', error);
-    return null;
-  }
-}
-
-async function extractAudioSegment(videoPath: string, startTime: number, endTime: number): Promise<ArrayBuffer | null> {
-  try {
-    const tempDir = join(process.cwd(), 'temp');
-    const outputPath = join(tempDir, `segment_${randomUUID()}.mp3`);
-
-    // Extract audio segment using ffmpeg
-    const duration = endTime - startTime;
-    const extractCmd = `ffmpeg -i "${videoPath}" -ss ${startTime} -t ${duration} -b:a 128k -y "${outputPath}"`;
-
-    await execAsync(extractCmd, { timeout: 120000 });
-
-    try {
-      // Read the extracted audio file
-      const fileBuffer = await import('fs').then(fs => fs.promises.readFile(outputPath));
-
-      // Convert to ArrayBuffer regardless of input type
-      let audioBuffer: ArrayBuffer;
-      if (fileBuffer instanceof ArrayBuffer) {
-        audioBuffer = fileBuffer;
-      } else {
-        // Buffer case - create new ArrayBuffer from Buffer data
-        const buffer = fileBuffer.buffer;
-        const byteOffset = fileBuffer.byteOffset;
-        const byteLength = fileBuffer.byteLength;
-
-        // Create a new ArrayBuffer and copy the data
-        audioBuffer = new ArrayBuffer(byteLength);
-        const view = new Uint8Array(audioBuffer);
-        const sourceView = new Uint8Array(buffer, byteOffset, byteLength);
-        view.set(sourceView);
-      }
-
-      return audioBuffer;
-
-    } finally {
-      // Clean up temp file
-      try {
-        await unlink(outputPath);
-      } catch (error) {
-        console.warn('Failed to clean up temp audio segment:', error);
-      }
-    }
-
-  } catch (error) {
-    console.error('Error extracting audio segment:', error);
-    return null;
-  }
+function getBackendUrl(path: string): string {
+  const base = process.env.BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL;
+  const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  return `${normalizedBase}${path}`;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { youtubeUrl, selectedSegments } = await request.json();
-
-    if (!youtubeUrl) {
-      return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
-    }
+    const { youtubeUrl, selectedSegments, driveFileId, videoId } = await request.json();
 
     if (!selectedSegments || !Array.isArray(selectedSegments) || selectedSegments.length === 0) {
       return NextResponse.json({ error: 'Selected segments are required' }, { status: 400 });
     }
 
-    // Validate YouTube URL
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-    if (!youtubeRegex.test(youtubeUrl)) {
-      return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
+    const payload: Record<string, unknown> = {
+      selectedSegments,
+      driveFileId,
+      videoId,
+    };
+
+    if (youtubeUrl) {
+      payload.youtubeUrl = youtubeUrl;
     }
 
-    // Download YouTube video
-    const videoPath = await downloadYouTubeVideo(youtubeUrl);
-    if (!videoPath) {
-      return NextResponse.json({ error: 'Failed to download YouTube video' }, { status: 500 });
+    const backendResponse = await fetch(getBackendUrl('/videos/segments'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await backendResponse.json().catch(() => ({}));
+
+    if (!backendResponse.ok || !result?.success) {
+      const message =
+        typeof result?.detail === 'string'
+          ? result.detail
+          : typeof result?.error === 'string'
+            ? result.error
+            : 'Failed to extract audio segments';
+      return NextResponse.json({ error: message }, { status: backendResponse.status || 500 });
     }
 
-    try {
-      const extractedSegments: Array<{
-        segmentIndex: number;
-        start: number;
-        end: number;
-        duration: number;
-        audioBuffer: ArrayBuffer;
-        size: number;
-      }> = [];
+    const segments = Array.isArray(result.segments) ? result.segments : [];
 
-      // Extract each selected segment
-      for (let i = 0; i < selectedSegments.length; i++) {
-        const segment = selectedSegments[i];
-        const audioBuffer = await extractAudioSegment(videoPath, segment.start, segment.end);
-
-        if (audioBuffer) {
-          extractedSegments.push({
-            segmentIndex: i,
-            start: segment.start,
-            end: segment.end,
-            duration: segment.end - segment.start,
-            audioBuffer,
-            size: audioBuffer.byteLength
-          });
-        }
-      }
-
-      if (extractedSegments.length === 0) {
-        return NextResponse.json({ error: 'Failed to extract any audio segments' }, { status: 500 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        extractedSegments,
-        totalSegments: extractedSegments.length,
-        videoId: youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1] || 'unknown'
-      });
-
-    } finally {
-      // Clean up temporary video file
-      try {
-        await unlink(videoPath);
-      } catch (error) {
-        console.warn('Failed to clean up temp video file:', error);
-      }
-    }
-
+    return NextResponse.json({
+      success: true,
+      videoId: result.videoId ?? videoId ?? null,
+      totalSegments: result.totalSegments ?? segments.length,
+      extractedSegments: segments.map((segment: Record<string, unknown>) => ({
+        segmentIndex: segment.segmentIndex ?? 0,
+        start: segment.start ?? 0,
+        end: segment.end ?? 0,
+        duration: segment.duration ?? 0,
+        size: segment.size ?? 0,
+        audioBase64: typeof segment.audioBase64 === 'string' ? segment.audioBase64 : null,
+        driveFileId: segment.driveFileId ?? null,
+        driveUrl: segment.driveUrl ?? null,
+      })),
+    });
   } catch (error) {
-    console.error('Video splitting error:', error);
+    console.error('Segment extraction proxy error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

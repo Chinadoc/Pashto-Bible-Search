@@ -26,7 +26,10 @@ interface AudioAnalysis {
     sampleRate: number;
     channels: number;
   };
-  videoId: string;
+  videoId: string | null;
+  driveFileId: string | null;
+  driveUrl: string | null;
+  youtubeUrl?: string | null;
 }
 
 interface NormalizedClip {
@@ -72,6 +75,11 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [transcribingSegments, setTranscribingSegments] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const extractVideoId = (url: string): string | null => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
+  };
 
   const loadVideos = async () => {
     setLoading(true);
@@ -208,7 +216,22 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setAudioAnalysis(result);
+        const audioInfo = result.audioInfo ?? {
+          duration: 0,
+          size: 0,
+          bitrate: 0,
+          sampleRate: 0,
+          channels: 0,
+        };
+
+        setAudioAnalysis({
+          segments: Array.isArray(result.segments) ? result.segments : [],
+          audioInfo,
+          videoId: result.videoId ?? extractVideoId(youtubeUrl.trim()),
+          driveFileId: result.driveFileId ?? null,
+          driveUrl: result.driveUrl ?? null,
+          youtubeUrl: youtubeUrl.trim(),
+        });
       } else {
         setElevenLabsError(result.error || 'Audio analysis failed');
       }
@@ -228,9 +251,23 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     );
   };
 
+  const base64ToUint8Array = (base64: string) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  };
+
   const transcribeSelectedSegments = async () => {
     if (!audioAnalysis || selectedSegments.length === 0) {
       setElevenLabsError('Please select audio segments to transcribe');
+      return;
+    }
+
+    if (!audioAnalysis.driveFileId) {
+      setElevenLabsError('Original audio is not stored in Google Drive. Please analyze the video again.');
       return;
     }
 
@@ -239,14 +276,16 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
     try {
       const segmentsToTranscribe = selectedSegments.map(index => audioAnalysis.segments[index]);
-      const videoId = audioAnalysis.videoId;
+      const videoId = audioAnalysis.videoId ?? extractVideoId(youtubeUrl.trim());
 
       const response = await fetch('/api/split-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           youtubeUrl: youtubeUrl.trim(),
-          selectedSegments: segmentsToTranscribe
+          selectedSegments: segmentsToTranscribe,
+          driveFileId: audioAnalysis.driveFileId,
+          videoId,
         }),
       });
 
@@ -261,7 +300,13 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
           try {
             // Send each segment to ElevenLabs for transcription
             const formData = new FormData();
-            const audioBlob = new Blob([segment.audioBuffer], { type: 'audio/mp3' });
+            if (!segment.audioBase64) {
+              transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Missing audio data]`);
+              continue;
+            }
+
+            const audioBytes = base64ToUint8Array(segment.audioBase64);
+            const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
             formData.append('audio', audioBlob, `segment_${segment.segmentIndex}.mp3`);
 
             const transResponse = await fetch('/api/transcribe-audio', {
@@ -282,11 +327,11 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                 duration: segment.duration,
                 size: segment.size,
                 transcript: transResult.transcript,
-                validation: transResult.validation
+                validation: transResult.validation,
+                driveFileId: segment.driveFileId,
+                driveUrl: segment.driveUrl,
               });
 
-              // TODO: Upload audio segment to Google Drive and get file ID
-              // This would involve calling the Google Drive API helper
             } else {
               transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] [Transcription failed: ${transResult.error || 'Unknown error'}]`);
             }
@@ -309,7 +354,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
               metadata: {
                 totalSegments: selectedSegments.length,
                 audioInfo: audioAnalysis.audioInfo,
-                processingDate: new Date().toISOString()
+                processingDate: new Date().toISOString(),
+                sourceDriveFileId: audioAnalysis.driveFileId,
+                sourceDriveUrl: audioAnalysis.driveUrl,
+                youtubeUrl: audioAnalysis.youtubeUrl ?? youtubeUrl.trim(),
               }
             }),
           });

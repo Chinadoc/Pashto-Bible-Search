@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import os
+import tempfile
 import time
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, List
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .models import (
@@ -24,6 +27,18 @@ from .services.search_phrase import phrase_search
 from .services.search_grammar import grammar_search
 from .services.audio import audio_url_for
 from .services.search import simple_search, handle_grammatical_search, lookup_lexicon
+from .services.google_drive_client import (
+    upload_file,
+    download_file,
+    encode_file_base64,
+    GoogleDriveAuthError,
+)
+from .services.video_processing import (
+    download_youtube_audio,
+    analyze_audio_segments,
+    extract_segments,
+    VideoProcessingError,
+)
 
 
 app = FastAPI(title="Pashto Bible Search API", version="0.1.0")
@@ -36,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+GOOGLE_DRIVE_AUDIO_FOLDER_ID = os.getenv("GOOGLE_DRIVE_AUDIO_FOLDER_ID")
+GOOGLE_DRIVE_SEGMENTS_FOLDER_ID = os.getenv("GOOGLE_DRIVE_SEGMENTS_FOLDER_ID")
 
 
 @app.on_event("startup")
@@ -119,6 +137,116 @@ def ep_audio_url(ref: str = Query(..., description="Reference like 'John 3:16'")
     url = audio_url_for(ref, amap)
     return AudioResponse(url=url)
 
+
+@app.post("/videos/analyze")
+def ep_videos_analyze(payload: Dict[str, Any]) -> Dict[str, Any]:
+    youtube_url = (payload or {}).get("youtube_url")
+    if not youtube_url:
+        raise HTTPException(status_code=400, detail="youtube_url is required")
+
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_dir = Path(tmpdir)
+            video_id, audio_path = download_youtube_audio(youtube_url, temp_dir)
+            audio_info, segments = analyze_audio_segments(audio_path)
+
+            file_id, file_url = upload_file(
+                audio_path,
+                filename=f"{video_id}_full.wav",
+                folder_id=GOOGLE_DRIVE_AUDIO_FOLDER_ID,
+            )
+
+        return {
+            "success": True,
+            "videoId": video_id,
+            "youtubeUrl": youtube_url,
+            "audioInfo": audio_info,
+            "segments": segments,
+            "driveFileId": file_id,
+            "driveUrl": file_url,
+        }
+
+    except VideoProcessingError as exc:
+        raise HTTPException(status_code=500, detail=f"Audio analysis failed: {exc}") from exc
+    except GoogleDriveAuthError as exc:
+        raise HTTPException(status_code=500, detail=f"Google Drive authentication failed: {exc}") from exc
+    except Exception as exc:  # pragma: no cover - safeguard
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
+
+
+@app.post("/videos/segments")
+def ep_videos_segments(payload: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid request payload")
+
+    drive_file_id = payload.get("driveFileId")
+    youtube_url = payload.get("youtubeUrl")
+    video_id = payload.get("videoId")
+    segments_input = payload.get("selectedSegments") or payload.get("segments")
+
+    if not segments_input or not isinstance(segments_input, list):
+        raise HTTPException(status_code=400, detail="segments are required")
+
+    if not drive_file_id and not youtube_url:
+        raise HTTPException(
+            status_code=400,
+            detail="driveFileId or youtubeUrl must be provided",
+        )
+
+    segments_folder = GOOGLE_DRIVE_SEGMENTS_FOLDER_ID or GOOGLE_DRIVE_AUDIO_FOLDER_ID
+
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_dir = Path(tmpdir)
+
+            source_video_id = video_id
+            if drive_file_id:
+                source_audio = download_file(drive_file_id, temp_dir / "source.wav")
+                if not source_video_id:
+                    source_video_id = source_audio.stem
+            else:
+                source_video_id, source_audio = download_youtube_audio(youtube_url, temp_dir)
+
+            extracted = extract_segments(source_audio, segments_input, temp_dir / "clips")
+
+            clip_results: List[Dict[str, Any]] = []
+            for meta, file_path in extracted:
+                clip_index = int(meta.get("segmentIndex", 0))
+                clip_name = f"{(source_video_id or 'video')}_segment_{clip_index + 1:03d}.mp3"
+                file_id, file_url = upload_file(
+                    file_path,
+                    filename=clip_name,
+                    folder_id=segments_folder,
+                )
+
+                clip_results.append(
+                    {
+                        "segmentIndex": clip_index,
+                        "start": meta.get("start"),
+                        "end": meta.get("end"),
+                        "duration": meta.get("duration"),
+                        "driveFileId": file_id,
+                        "driveUrl": file_url,
+                        "size": file_path.stat().st_size,
+                        "audioBase64": encode_file_base64(file_path),
+                    }
+                )
+
+        return {
+            "success": True,
+            "videoId": video_id or source_video_id,
+            "segments": clip_results,
+            "totalSegments": len(clip_results),
+        }
+
+    except VideoProcessingError as exc:
+        raise HTTPException(status_code=500, detail=f"Segment extraction failed: {exc}") from exc
+    except GoogleDriveAuthError as exc:
+        raise HTTPException(status_code=500, detail=f"Google Drive authentication failed: {exc}") from exc
+    except Exception as exc:  # pragma: no cover - safeguard
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
+
+
 @app.get("/lexicon/frequency")
 def ep_lexicon_frequency(
     scope: str = Query("all", pattern=r"^(nt|ot|all)$"),
@@ -150,4 +278,3 @@ def ep_dictionary_lookup(form: str = Query(..., min_length=1)):
     # Hook: can load dictionary_fast_index.json and romanized_dictionary.json when present
     f = (form or "").strip()
     return {"form": f}
-
