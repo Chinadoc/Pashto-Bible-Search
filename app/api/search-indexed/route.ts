@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       .eq('translation_key', translation)
       .single();
 
-    const frequencyData: WordFrequency | null = (rawFrequencyData as WordFrequency) || null;
+    const frequencyData = (rawFrequencyData as WordFrequency | null);
 
     if (freqError && freqError.code !== 'PGRST116') {
       console.error('Frequency lookup error:', freqError);
