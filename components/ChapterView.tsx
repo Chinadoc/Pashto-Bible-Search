@@ -119,7 +119,7 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
                 {/* Audio Player */}
                 {verse.audio_public_url ? (
                   <div className="mt-3 flex items-center gap-2">
-                    <AudioPlayer audioUrl={verse.audio_public_url} />
+                    <AudioPlayer audioUrl={verse.audio_public_url} verseRef={verse.ref} />
                   </div>
                 ) : (
                   <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
