@@ -154,8 +154,10 @@ export async function POST(request: NextRequest) {
               .eq('translation_key', translation)
               .single();
 
-            if (rawRelatedOcc && rawRelatedOcc.verse_refs) {
-              verseRefs.push(...rawRelatedOcc.verse_refs);
+            const relatedOccData = (rawRelatedOcc as any);
+
+            if (relatedOccData && relatedOccData.verse_refs) {
+              verseRefs.push(...relatedOccData.verse_refs);
             }
           }
         }
