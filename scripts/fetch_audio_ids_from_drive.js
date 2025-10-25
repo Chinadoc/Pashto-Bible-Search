@@ -17,7 +17,7 @@ const readline = require('readline');
 
 // Configuration
 const YOUSAFZAI_FOLDER_ID = '1m-Mv7r01GHTqXkz2FxAXfANn_7sSHRSUC';
-const AFGHAN_FOLDER_ID = '1Im-Mv7r01GHTqXkz2FxAXfANn_7sSHRSUC'; // Update with actual folder ID
+const AFGHAN_FOLDER_ID = '1m-Mv7r01GHTgXkzFxAXfANn_7sSHRSUC'; // OT Afghan 2023
 
 const BOOK_MAPPING = {
   'genesis': 'Genesis', 'exodus': 'Exodus', 'leviticus': 'Leviticus', 'numbers': 'Numbers',
@@ -167,7 +167,8 @@ async function authenticateAndFetch() {
     // Get new token
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/drive.readonly']
+      scope: ['https://www.googleapis.com/auth/drive.readonly'],
+      redirect_uri: 'urn:ietf:wg:oauth:2.0:oob'
     });
     
     console.log('🔗 Visit this URL to authorize:\n', authUrl, '\n');
