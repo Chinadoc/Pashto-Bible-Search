@@ -167,8 +167,7 @@ async function authenticateAndFetch() {
     // Get new token
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/drive.readonly'],
-      redirect_uri: 'urn:ietf:wg:oauth:2.0:oob'
+      scope: ['https://www.googleapis.com/auth/drive.readonly']
     });
     
     console.log('🔗 Visit this URL to authorize:\n', authUrl, '\n');
@@ -295,5 +294,83 @@ function generateSQL(mappings) {
 
 // Run
 if (require.main === module) {
-  authenticateAndFetch().catch(console.error);
+  const authCode = process.argv[2];
+  if (authCode) {
+    // If code provided as argument, use it directly
+    const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'credentials.json'), 'utf8'));
+    const { client_id, client_secret, redirect_uris } = credentials.installed;
+    const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+    
+    oauth2Client.getToken(authCode, async (err, tokens) => {
+      if (err) {
+        console.error('❌ Error getting token:', err.message);
+        process.exit(1);
+      }
+      oauth2Client.setCredentials(tokens);
+      fs.writeFileSync(path.join(__dirname, '..', 'drive_token.json'), JSON.stringify(tokens, null, 2));
+      console.log('✅ Token saved!\n');
+      
+      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      
+      // Continue with fetching files...
+      const yousafzaiFiles = await listFilesInFolder(drive, YOUSAFZAI_FOLDER_ID, 'Yousafzai 2019');
+      const afghanFiles = await listFilesInFolder(drive, AFGHAN_FOLDER_ID, 'Afghan 2023');
+      
+      // Process files...
+      const mappings = [];
+      
+      console.log('\n📝 Processing Yousafzai files...');
+      for (const file of yousafzaiFiles) {
+        const parsed = parseYousafzaiFilename(file.name);
+        if (parsed) {
+          mappings.push({
+            translation: 'yousafzai',
+            book: parsed.bookName,
+            chapter: parsed.chapter,
+            verse: parsed.verse,
+            file_id: file.id,
+            file_name: file.name
+          });
+        }
+      }
+      console.log(`✅ Mapped ${mappings.filter(m => m.translation === 'yousafzai').length} Yousafzai files`);
+      
+      console.log('\n📝 Processing Afghan 2023 files...');
+      for (const file of afghanFiles) {
+        const parsed = parseAfghan2023Filename(file.name);
+        if (parsed) {
+          mappings.push({
+            translation: 'afghan2023',
+            book: parsed.bookName,
+            chapter: parsed.chapter,
+            verse: parsed.verse,
+            file_id: file.id,
+            file_name: file.name
+          });
+        }
+      }
+      console.log(`✅ Mapped ${mappings.filter(m => m.translation === 'afghan2023').length} Afghan 2023 files`);
+      
+      // Generate output
+      const csvFile = path.join(__dirname, '..', 'audio_mapping.csv');
+      const csvContent = [
+        'translation,book,chapter,verse,file_id,file_name',
+        ...mappings.map(m => `${m.translation},${m.book},${m.chapter},${m.verse},${m.file_id},"${m.file_name}"`)
+      ].join('\n');
+      fs.writeFileSync(csvFile, csvContent);
+      console.log(`\n✅ Saved mapping to: ${csvFile}`);
+      
+      const sqlFile = path.join(__dirname, '..', 'APPLY_AUDIO_IDS.sql');
+      const sqlStatements = generateSQL(mappings);
+      fs.writeFileSync(sqlFile, sqlStatements);
+      console.log(`✅ Generated SQL: ${sqlFile}\n`);
+      
+      console.log('🎉 Next steps:');
+      console.log('   1. Review the mappings in audio_mapping.csv');
+      console.log('   2. Run the SQL from APPLY_AUDIO_IDS.sql in Supabase');
+      console.log('   3. Test audio playback\n');
+    });
+  } else {
+    authenticateAndFetch().catch(console.error);
+  }
 }
