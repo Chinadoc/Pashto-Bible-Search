@@ -16,10 +16,16 @@ export async function GET(request: NextRequest) {
     // Construct the Google Drive URL
     const driveUrl = `https://drive.google.com/uc?id=${fileId}&export=${export_type}`;
 
-    // Fetch the file from Google Drive
-    const response = await fetch(driveUrl);
+    // Fetch the file from Google Drive with redirect following
+    const response = await fetch(driveUrl, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+      },
+    });
 
     if (!response.ok) {
+      console.error(`Google Drive returned ${response.status} for file ${fileId}`);
       return NextResponse.json(
         { error: `Google Drive returned ${response.status}` },
         { status: response.status }
@@ -29,13 +35,15 @@ export async function GET(request: NextRequest) {
     // Get the audio blob
     const audioBlob = await response.blob();
 
+    console.log(`✅ Successfully proxied audio file ${fileId}, size: ${audioBlob.size} bytes`);
+
     // Return with proper CORS and audio headers
     return new NextResponse(audioBlob, {
       status: 200,
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioBlob.size.toString(),
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Cache-Control': 'public, max-age=86400', // Cache for 1 day
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
         'Accept-Ranges': 'bytes',
@@ -44,7 +52,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Audio proxy error:', error);
     return NextResponse.json(
-      { error: 'Failed to proxy audio file' },
+      { error: 'Failed to proxy audio file', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -8,39 +8,16 @@ interface AudioPlayerProps {
 }
 
 export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
-  const [showIframe, setShowIframe] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Convert Google Drive URL to preview URL for iframe embedding
-  const getPreviewUrl = (url: string): string => {
-    // Extract file ID from various Google Drive URL formats
+  // Extract file ID from Google Drive URL
+  const getFileId = (url: string): string | null => {
     let fileId: string | null = null;
     
-    // Format 1: https://drive.google.com/file/d/{ID}/view
-    let match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
-    if (match) {
-      fileId = match[1];
-    }
-    
-    // Format 2: https://drive.google.com/uc?id={ID}&export=...
-    if (!fileId) {
-      match = url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
-      if (match) {
-        fileId = match[1];
-      }
-    }
-    
-    if (!fileId) return url;
-    
-    // Return Google Drive preview URL (works in iframe)
-    return `https://drive.google.com/file/d/${fileId}/preview`;
-  };
-
-  const previewUrl = getPreviewUrl(audioUrl);
-
-  // Also get direct download URL for fallback
-  const getDownloadUrl = (url: string): string => {
-    let fileId: string | null = null;
+    // Extract file ID from various formats
     let match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
     if (match) {
       fileId = match[1];
@@ -51,42 +28,97 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
         fileId = match[1];
       }
     }
-    if (!fileId) return url;
-    return `https://drive.google.com/uc?id=${fileId}&export=download`;
+    
+    return fileId;
   };
 
-  const downloadUrl = getDownloadUrl(audioUrl);
+  const fileId = getFileId(audioUrl);
+  
+  // Use proxy for streaming, direct link for download
+  const streamingUrl = fileId ? `/api/audio-proxy?id=${fileId}&export=download` : audioUrl;
+  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
+
+  const handlePlayClick = () => {
+    setShowPlayer(true);
+    setLoading(true);
+    setError(null);
+    
+    // Try to load the audio
+    if (audioRef.current) {
+      audioRef.current.load();
+    }
+  };
+
+  const handleAudioLoaded = () => {
+    setLoading(false);
+    setError(null);
+  };
+
+  const handleAudioError = () => {
+    setLoading(false);
+    setError('Audio could not be loaded. Please try downloading instead.');
+  };
 
   return (
     <div className="flex flex-col gap-2">
-      {showIframe ? (
-        <div className="bg-gray-100 dark:bg-gray-800 rounded p-2">
-          <iframe
-            src={previewUrl}
-            width="100%"
-            height="80"
-            frameBorder="0"
-            allow="autoplay"
-            className="rounded"
-          />
-          <button
-            onClick={() => setShowIframe(false)}
-            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mt-1"
-          >
-            Hide player
-          </button>
+      {showPlayer ? (
+        <div className="bg-gray-100 dark:bg-gray-800 rounded p-3 border border-gray-300 dark:border-gray-600">
+          {loading && (
+            <div className="text-xs text-gray-500 mb-2">Loading audio...</div>
+          )}
+          
+          {error ? (
+            <div className="text-xs text-red-500 mb-2">{error}</div>
+          ) : (
+            <audio
+              ref={audioRef}
+              controls
+              controlsList="nodownload"
+              className="w-full h-10"
+              onLoadedData={handleAudioLoaded}
+              onError={handleAudioError}
+            >
+              <source src={streamingUrl} type="audio/mpeg" />
+              Your browser does not support the audio element.
+            </audio>
+          )}
+          
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={() => setShowPlayer(false)}
+              className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              Hide player
+            </button>
+            <span className="text-gray-400">|</span>
+            <a
+              href={downloadUrl}
+              download
+              className="text-xs text-blue-300 hover:text-blue-200 underline"
+            >
+              Download
+            </a>
+            <span className="text-gray-400">|</span>
+            <a
+              href={audioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-300 hover:text-blue-200 underline"
+            >
+              Open in Drive
+            </a>
+          </div>
         </div>
       ) : (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowIframe(true)}
-            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handlePlayClick}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             title="Play audio inline"
           >
             ▶ Play Audio
           </button>
           
-          {/* Download link */}
           <a
             href={downloadUrl}
             download
@@ -96,7 +128,6 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
             Download
           </a>
           
-          {/* Open in Google Drive */}
           <a
             href={audioUrl}
             target="_blank"
