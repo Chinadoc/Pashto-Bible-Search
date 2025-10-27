@@ -1,88 +1,61 @@
 #!/usr/bin/env node
 
-/**
- * Manual Audio File Mapping Generator
- * 
- * Since OAuth is having redirect issues, this script lets you:
- * 1. Manually list files from Google Drive
- * 2. Extract file IDs from shared links
- * 3. Generate the SQL to update Supabase
- */
-
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 
 const BOOK_MAPPING = {
-  'genesis': 'Genesis', 'exodus': 'Exodus', 'leviticus': 'Leviticus', 'numbers': 'Numbers',
-  'deuteronomy': 'Deuteronomy', 'joshua': 'Joshua', 'judges': 'Judges', 'ruth': 'Ruth',
-  '1samuel': '1 Samuel', '2samuel': '2 Samuel', '1kings': '1 Kings', '2kings': '2 Kings',
-  '1chronicles': '1 Chronicles', '2chronicles': '2 Chronicles', 'ezra': 'Ezra',
-  'nehemiah': 'Nehemiah', 'esther': 'Esther', 'job': 'Job', 'psalms': 'Psalms',
-  'proverbs': 'Proverbs', 'ecclesiastes': 'Ecclesiastes', 'songofsolomon': 'Song of Solomon',
-  'isaiah': 'Isaiah', 'jeremiah': 'Jeremiah', 'lamentations': 'Lamentations',
-  'ezekiel': 'Ezekiel', 'daniel': 'Daniel', 'hosea': 'Hosea', 'joel': 'Joel',
-  'amos': 'Amos', 'obadiah': 'Obadiah', 'jonah': 'Jonah', 'micah': 'Micah',
-  'nahum': 'Nahum', 'habakkuk': 'Habakkuk', 'zephaniah': 'Zephaniah', 'haggai': 'Haggai',
-  'zechariah': 'Zechariah', 'malachi': 'Malachi', 'matthew': 'Matthew', 'mark': 'Mark',
-  'luke': 'Luke', 'john': 'John', 'acts': 'Acts', 'romans': 'Romans',
-  '1corinthians': '1 Corinthians', '2corinthians': '2 Corinthians', 'galatians': 'Galatians',
-  'ephesians': 'Ephesians', 'philippians': 'Philippians', 'colossians': 'Colossians',
-  '1thessalonians': '1 Thessalonians', '2thessalonians': '2 Thessalonians',
-  '1timothy': '1 Timothy', '2timothy': '2 Timothy', 'titus': 'Titus', 'philemon': 'Philemon',
-  'hebrews': 'Hebrews', 'james': 'James', '1peter': '1 Peter', '2peter': '2 Peter',
-  '1john': '1 John', '2john': '2 John', '3john': '3 John', 'jude': 'Jude', 'revelation': 'Revelation'
+  'Genesis': 'Genesis', 'Exodus': 'Exodus', 'Leviticus': 'Leviticus', 'Numbers': 'Numbers',
+  'Deuteronomy': 'Deuteronomy', 'Joshua': 'Joshua', 'Judges': 'Judges', 'Ruth': 'Ruth',
+  '1 Samuel': '1 Samuel', '2 Samuel': '2 Samuel', '1 Kings': '1 Kings', '2 Kings': '2 Kings',
+  '1 Chronicles': '1 Chronicles', '2 Chronicles': '2 Chronicles', 'Ezra': 'Ezra', 'Nehemiah': 'Nehemiah',
+  'Esther': 'Esther', 'Job': 'Job', 'Psalm': 'Psalms', 'Psalms': 'Psalms', 'Proverbs': 'Proverbs',
+  'Ecclesiastes': 'Ecclesiastes', 'Isaiah': 'Isaiah', 'Jeremiah': 'Jeremiah', 'Lamentations': 'Lamentations',
+  'Ezekiel': 'Ezekiel', 'Daniel': 'Daniel', 'Hosea': 'Hosea', 'Joel': 'Joel', 'Amos': 'Amos',
+  'Obadiah': 'Obadiah', 'Jonah': 'Jonah', 'Micah': 'Micah', 'Nahum': 'Nahum', 'Habakkuk': 'Habakkuk',
+  'Zephaniah': 'Zephaniah', 'Haggai': 'Haggai', 'Zechariah': 'Zechariah', 'Malachi': 'Malachi',
+  'Matthew': 'Matthew', 'Mark': 'Mark', 'Luke': 'Luke', 'John': 'John', 'Acts': 'Acts',
+  'Romans': 'Romans', '1 Corinthians': '1 Corinthians', '2 Corinthians': '2 Corinthians',
+  'Galatians': 'Galatians', 'Ephesians': 'Ephesians', 'Philippians': 'Philippians',
+  'Colossians': 'Colossians', '1 Thessalonians': '1 Thessalonians', '2 Thessalonians': '2 Thessalonians',
+  '1 Timothy': '1 Timothy', '2 Timothy': '2 Timothy', 'Titus': 'Titus', 'Philemon': 'Philemon',
+  'Hebrews': 'Hebrews', 'James': 'James', '1 Peter': '1 Peter', '2 Peter': '2 Peter',
+  '1 John': '1 John', '2 John': '2 John', '3 John': '3 John', 'Jude': 'Jude', 'Revelation': 'Revelation'
 };
 
 function parseYousafzaiFilename(filename) {
-  const match = filename.match(/yousafzai_(\w+?)(\d{2,3})_verse_(\d{3})\.mp3/i);
+  // Example: yousafzai_genesis001_verse_001.mp3
+  const match = filename.match(/yousafzai_([a-z0-9]+)_verse_(\d+)\.mp3/i);
   if (!match) return null;
   
-  const bookNameLower = match[1].toLowerCase();
-  const chapter = parseInt(match[2], 10);
-  const verse = parseInt(match[3], 10);
+  const bookPart = match[1];
+  const verseNum = parseInt(match[2]);
   
-  const bookName = BOOK_MAPPING[bookNameLower];
-  if (!bookName) {
-    console.warn(`⚠️  Could not map book: ${bookNameLower}`);
-    return null;
-  }
+  // Parse "genesis001" -> chapter 1, book "Genesis"
+  const bookMatch = bookPart.match(/([a-z]+)(\d+)/i);
+  if (!bookMatch) return null;
   
-  return { bookName, chapter, verse };
+  const bookNameRaw = bookMatch[1];
+  const chapter = parseInt(bookMatch[2]);
+  
+  const bookName = Object.keys(BOOK_MAPPING).find(k => k.toLowerCase().replace(/ /g, '') === bookNameRaw.toLowerCase()) 
+    || bookNameRaw.charAt(0).toUpperCase() + bookNameRaw.slice(1);
+  
+  return { bookName, chapter, verse: verseNum };
 }
 
 function parseAfghan2023Filename(filename) {
-  let match = filename.match(/afghan_(\w+?)_(\d{1,3})_(\d{1,3})\.mp3/i);
-  if (match) {
-    const bookNameLower = match[1].toLowerCase();
-    const chapter = parseInt(match[2], 10);
-    const verse = parseInt(match[3], 10);
-    
-    const bookName = BOOK_MAPPING[bookNameLower];
-    if (!bookName) {
-      console.warn(`⚠️  Could not map book: ${bookNameLower}`);
-      return null;
-    }
-    
-    return { bookName, chapter, verse };
-  }
+  // Example: afghan_genesis01_01.mp3 or ot_genesis_01_01.mp3
+  const match = filename.match(/(?:afghan|ot)_([a-z0-9]+)_(\d+)_(\d+)\.mp3/i);
+  if (!match) return null;
   
-  match = filename.match(/(\w+?)_(\d{1,3})_(\d{1,3})\.mp3/i);
-  if (match) {
-    const bookNameLower = match[1].toLowerCase();
-    const chapter = parseInt(match[2], 10);
-    const verse = parseInt(match[3], 10);
-    
-    const bookName = BOOK_MAPPING[bookNameLower];
-    if (!bookName) {
-      console.warn(`⚠️  Could not map book: ${bookNameLower}`);
-      return null;
-    }
-    
-    return { bookName, chapter, verse };
-  }
+  const bookPart = match[1];
+  const chapter = parseInt(match[2]);
+  const verse = parseInt(match[3]);
   
-  return null;
+  const bookName = Object.keys(BOOK_MAPPING).find(k => k.toLowerCase().replace(/ /g, '') === bookPart.toLowerCase())
+    || bookPart.charAt(0).toUpperCase() + bookPart.slice(1);
+  
+  return { bookName, chapter, verse };
 }
 
 async function processAudioMappingCSV() {
@@ -93,14 +66,13 @@ async function processAudioMappingCSV() {
   console.log('3. Copy the link and extract the FILE_ID');
   console.log('   Link format: https://drive.google.com/file/d/{FILE_ID}/view?usp=drive_link\n');
   
-  console.log('4. Create a file named: audio_files.txt');
+  console.log('4. Create a file named: audio_files.txt in this directory');
   console.log('5. Put one line per file in this format:');
   console.log('   filename.mp3,FILE_ID\n');
   console.log('Example:');
   console.log('   yousafzai_genesis001_verse_001.mp3,1C33n0QfM_Vfboiit6ePXmVbvn05eGcm2');
   console.log('   yousafzai_genesis001_verse_002.mp3,1dGh5_7kL9mN2oPq3rSt4uVw5xYz6aB7\n');
   
-  // Check if audio_files.txt exists
   const audioFilesPath = path.join(__dirname, '..', 'audio_files.txt');
   
   if (!fs.existsSync(audioFilesPath)) {
@@ -126,7 +98,7 @@ async function processAudioMappingCSV() {
     const [filename, fileId] = parts;
     
     let parsed;
-    if (filename.startsWith('yousafzai_')) {
+    if (filename.toLowerCase().startsWith('yousafzai')) {
       parsed = parseYousafzaiFilename(filename);
       if (parsed) {
         mappings.push({
@@ -160,13 +132,10 @@ async function processAudioMappingCSV() {
     process.exit(1);
   }
   
-  // Generate SQL
   const sqlFile = path.join(__dirname, '..', 'APPLY_AUDIO_IDS.sql');
   const statements = [
     '-- Auto-generated SQL to update audio IDs in Supabase',
     '-- Generated from manual audio file mapping\n',
-    '-- First, clear all placeholder/incorrect audio',
-    `UPDATE public.verses SET audio_public_url = NULL, audio_storage_path = NULL WHERE audio_public_url LIKE '%1_v_gsp-7e90or0oB7fEzUpqKwm2WPDYY%';\n`,
   ];
   
   const yousafzaiMappings = mappings.filter(m => m.translation === 'yousafzai');
@@ -196,6 +165,9 @@ async function processAudioMappingCSV() {
   fs.writeFileSync(sqlFile, statements.join('\n'));
   
   console.log(`✅ Generated SQL: ${sqlFile}`);
+  console.log('\n📊 Summary:');
+  console.log(`   - Yousafzai files: ${yousafzaiMappings.length}`);
+  console.log(`   - Afghan 2023 files: ${afghanMappings.length}`);
   console.log('\n🎉 Next steps:');
   console.log('1. Review the mappings above');
   console.log('2. Copy entire contents of APPLY_AUDIO_IDS.sql');

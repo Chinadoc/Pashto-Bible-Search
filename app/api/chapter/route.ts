@@ -33,6 +33,33 @@ function decodeHtmlEntities(text: string): string {
   return decoded;
 }
 
+// Helper function to convert Google Drive URL to proxy URL
+function convertToProxyUrl(googleDriveUrl: string | null): string | null {
+  if (!googleDriveUrl) return null;
+  
+  // Extract file ID from various Google Drive URL formats
+  let fileId: string | null = null;
+  
+  // Format 1: https://drive.google.com/file/d/{ID}/preview
+  let match = googleDriveUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+  if (match) {
+    fileId = match[1];
+  }
+  
+  // Format 2: https://drive.google.com/uc?id={ID}&export=...
+  if (!fileId) {
+    match = googleDriveUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+    if (match) {
+      fileId = match[1];
+    }
+  }
+  
+  if (!fileId) return googleDriveUrl; // Return original if we can't parse
+  
+  // Return proxy URL
+  return `/api/audio-proxy?id=${fileId}&export=download`;
+}
+
 // Define chapter counts for each book
 const CHAPTER_COUNTS: Record<string, number> = {
   // Old Testament
@@ -134,7 +161,7 @@ export async function GET(request: NextRequest) {
             testament: v.testament,
             dialect: 'yousafzai',
             audio_storage_path: v.audio_storage_path,
-            audio_public_url: v.audio_public_url,
+            audio_public_url: convertToProxyUrl(v.audio_public_url), // Convert to proxy URL
           }));
 
           return NextResponse.json({
@@ -161,7 +188,7 @@ export async function GET(request: NextRequest) {
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
       audio_storage_path: v.audio_storage_path,
-      audio_public_url: v.audio_public_url,
+      audio_public_url: convertToProxyUrl(v.audio_public_url), // Convert to proxy URL
     }));
 
     return NextResponse.json({
