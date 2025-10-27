@@ -10,16 +10,29 @@ interface AudioPlayerProps {
 export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const [error, setError] = useState<string | null>(null);
 
-  // Convert Google Drive viewer URL to download URL for audio element
+  // Convert Google Drive viewer URL to direct play URL for audio element
   const getAudioSrc = (url: string): string => {
-    // Extract file ID from viewer URL: https://drive.google.com/file/d/{ID}/view
-    const match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+    // Extract file ID from various Google Drive URL formats
+    let fileId: string | null = null;
+    
+    // Format 1: https://drive.google.com/file/d/{ID}/view
+    let match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
     if (match) {
-      const fileId = match[1];
-      // Return Google Drive download URL
-      return `https://drive.google.com/uc?id=${fileId}&export=download`;
+      fileId = match[1];
     }
-    return url;
+    
+    // Format 2: https://drive.google.com/uc?id={ID}&export=...
+    if (!fileId) {
+      match = url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+      if (match) {
+        fileId = match[1];
+      }
+    }
+    
+    if (!fileId) return url;
+    
+    // Use docs.google.com format for public files (works with HTML5 audio)
+    return `https://docs.google.com/uc?export=download&id=${fileId}`;
   };
 
   const audioSrc = getAudioSrc(audioUrl);
