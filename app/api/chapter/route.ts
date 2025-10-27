@@ -33,8 +33,8 @@ function decodeHtmlEntities(text: string): string {
   return decoded;
 }
 
-// Helper function to convert Google Drive URL to proxy URL
-function convertToProxyUrl(googleDriveUrl: string | null): string | null {
+// Helper function to convert Google Drive URL to viewer URL (works in browsers)
+function convertToViewerUrl(googleDriveUrl: string | null): string | null {
   if (!googleDriveUrl) return null;
   
   // Extract file ID from various Google Drive URL formats
@@ -56,8 +56,8 @@ function convertToProxyUrl(googleDriveUrl: string | null): string | null {
   
   if (!fileId) return googleDriveUrl; // Return original if we can't parse
   
-  // Return proxy URL
-  return `/api/audio-proxy?id=${fileId}&export=download`;
+  // Return Google Drive viewer URL (works in browsers)
+  return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
 // Define chapter counts for each book
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
             testament: v.testament,
             dialect: 'yousafzai',
             audio_storage_path: v.audio_storage_path,
-            audio_public_url: convertToProxyUrl(v.audio_public_url), // Convert to proxy URL
+            audio_public_url: convertToViewerUrl(v.audio_public_url), // Convert to viewer URL
           }));
 
           return NextResponse.json({
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
       audio_storage_path: v.audio_storage_path,
-      audio_public_url: convertToProxyUrl(v.audio_public_url), // Convert to proxy URL
+      audio_public_url: convertToViewerUrl(v.audio_public_url), // Convert to viewer URL
     }));
 
     return NextResponse.json({

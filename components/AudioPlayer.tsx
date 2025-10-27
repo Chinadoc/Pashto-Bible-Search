@@ -1,10 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-
-// Client-side cache for audio URLs
-const audioUrlCache = new Map<string, { url: string; timestamp: number }>();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+import { useState } from 'react';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -12,155 +8,63 @@ interface AudioPlayerProps {
 }
 
 export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [duration, setDuration] = useState<number | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
-  const [src, setSrc] = useState<string>(audioUrl);
-  const [triedAlt, setTriedAlt] = useState<boolean>(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Reset source when incoming URL changes
-  useEffect(() => {
-    // Check cache first
-    const cached = audioUrlCache.get(verseRef);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setSrc(cached.url);
-      setDebugInfo('Using cached URL');
-    } else {
-      setSrc(audioUrl);
+  // Convert Google Drive viewer URL to download URL for audio element
+  const getAudioSrc = (url: string): string => {
+    // Extract file ID from viewer URL: https://drive.google.com/file/d/{ID}/view
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+    if (match) {
+      const fileId = match[1];
+      // Return Google Drive download URL
+      return `https://drive.google.com/uc?id=${fileId}&export=download`;
     }
+    return url;
+  };
 
-    setTriedAlt(false);
-    setIsLoading(true);
-    setError(null);
-    setDebugInfo('');
-  }, [audioUrl, verseRef]);
+  const audioSrc = getAudioSrc(audioUrl);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-      setIsLoading(false);
-
-      // Cache the successful URL
-      audioUrlCache.set(verseRef, {
-        url: src,
-        timestamp: Date.now()
-      });
-
-      console.log(`✅ Audio loaded for ${verseRef}: ${audio.duration}s`);
-    };
-
-    const handleError = async (e: Event) => {
-      const target = e.target as HTMLAudioElement;
-      const errorCode = target.error?.code;
-      const errorMessage = target.error?.message || 'Unknown error';
-      
-      let friendlyError = 'Audio could not be loaded';
-      if (errorCode === MediaError.MEDIA_ERR_NETWORK) {
-        friendlyError = 'Network error (possibly CORS)';
-      } else if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        friendlyError = 'Audio format not supported';
-      }
-      
-      // Try one-time server-side signed URL fallback for private buckets
-      let attemptedFallback = false;
-      const primary = src;
-      if (!triedAlt) {
-        try {
-          attemptedFallback = true;
-          const q = encodeURIComponent(verseRef);
-          const resp = await fetch(`/api/audio_url?ref=${q}`, { cache: 'no-store' });
-          if (resp.ok) {
-            const { url } = await resp.json();
-            if (url && typeof url === 'string') {
-              setTriedAlt(true);
-              setSrc(url);
-              setIsLoading(true);
-              setError(null);
-              setDebugInfo('Using signed URL fallback');
-              return; // let audio retry load
-            }
-          }
-        } catch {
-          // ignore and fall through to error display
-        }
-      }
-
-      console.error(`❌ Audio error for ${verseRef}:`, {
-        code: errorCode,
-        message: errorMessage,
-        url: primary,
-        attemptedFallback,
-      });
-      
-      setError(friendlyError);
-      setDebugInfo(`Error ${errorCode}: ${errorMessage}`);
-      setIsLoading(false);
-    };
-
-    const handleCanPlay = () => {
-      setIsLoading(false);
-    };
-
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('canplay', handleCanPlay);
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('canplay', handleCanPlay);
-    };
-  }, [src, verseRef, triedAlt]);
+  const handleError = () => {
+    setError('Audio playback failed. Try downloading instead.');
+  };
 
   return (
     <div className="flex items-center gap-2">
-      <audio 
-        ref={audioRef}
-        controls 
-        preload="metadata"
-        crossOrigin="anonymous"
-        className="h-8 w-48"
-        src={src}
-      >
-        <source src={src} type="audio/mpeg" />
-        Your browser does not support the audio element.
-      </audio>
-      
-      {isLoading && (
-        <div className="text-xs text-gray-500">Loading...</div>
+      {error ? (
+        <div className="text-xs text-red-500">{error}</div>
+      ) : (
+        <audio 
+          controls 
+          preload="metadata"
+          className="h-8 w-48"
+          src={audioSrc}
+          onError={handleError}
+        >
+          <source src={audioSrc} type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
       )}
       
-      {duration && (
-        <div className="text-xs text-gray-500">
-          {Math.round(duration)}s
-        </div>
-      )}
-
-      {/* Download + Open links */}
+      {/* Download link */}
       <a
-        href={src}
+        href={audioSrc}
         download
         className="text-xs text-blue-300 hover:text-blue-200 underline"
+        title="Download audio"
       >
         Download
       </a>
-      <a href={src} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:text-blue-200 underline">Open</a>
       
-      {/* Debug info - remove in production */}
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-400">🔧</summary>
-        <div className="mt-1 text-gray-500 space-y-1">
-          <div>Ref: {verseRef}</div>
-          <div>URL: {src.substring(0, 50)}...</div>
-          {debugInfo && <div>Debug: {debugInfo}</div>}
-          {error && <div className="text-yellow-500">Status: {error}</div>}
-        </div>
-      </details>
+      {/* Open in Google Drive */}
+      <a
+        href={audioUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-blue-300 hover:text-blue-200 underline"
+        title="Open in Google Drive"
+      >
+        Open
+      </a>
     </div>
   );
 }
