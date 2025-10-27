@@ -58,10 +58,10 @@ function parseYousafzaiFilename(filename) {
   return { bookName, chapter, verse };
 }
 
-// Parse Afghan 2023 filename (needs to determine pattern)
+// Parse Afghan 2023 filename (supports multiple patterns)
 function parseAfghan2023Filename(filename) {
-  // Try pattern: afghan_{bookname}_{chapter}_{verse}.mp3
-  let match = filename.match(/afghan_(\w+?)_(\d{1,3})_(\d{1,3})\.mp3/i);
+  // Pattern 1: jonah001_verse_014.mp3 (most common)
+  let match = filename.match(/(\w+?)(\d{2,3})_verse_(\d{2,3})\.mp3/i);
   if (match) {
     const bookNameLower = match[1].toLowerCase();
     const chapter = parseInt(match[2], 10);
@@ -76,7 +76,23 @@ function parseAfghan2023Filename(filename) {
     return { bookName, chapter, verse };
   }
   
-  // Try pattern: {bookname}_{chapter}_{verse}.mp3
+  // Pattern 2: afghan_{bookname}_{chapter}_{verse}.mp3
+  match = filename.match(/afghan_(\w+?)_(\d{1,3})_(\d{1,3})\.mp3/i);
+  if (match) {
+    const bookNameLower = match[1].toLowerCase();
+    const chapter = parseInt(match[2], 10);
+    const verse = parseInt(match[3], 10);
+    
+    const bookName = BOOK_MAPPING[bookNameLower];
+    if (!bookName) {
+      console.warn(`⚠️  Could not map book: ${bookNameLower}`);
+      return null;
+    }
+    
+    return { bookName, chapter, verse };
+  }
+  
+  // Pattern 3: {bookname}_{chapter}_{verse}.mp3
   match = filename.match(/(\w+?)_(\d{1,3})_(\d{1,3})\.mp3/i);
   if (match) {
     const bookNameLower = match[1].toLowerCase();
@@ -95,28 +111,45 @@ function parseAfghan2023Filename(filename) {
   return null;
 }
 
-async function listFilesInFolder(drive, folderId, folderName) {
-  console.log(`\n📂 Fetching files from ${folderName}...`);
-  
+async function getAllAudioFilesRecursive(drive, folderId) {
   const results = [];
-  let pageToken = null;
   
-  try {
+  async function traverseFolder(currentFolderId) {
+    // Get all files in current folder
+    let pageToken = null;
     do {
       const response = await drive.files.list({
-        q: `'${folderId}' in parents and mimeType = 'audio/mpeg' and trashed = false`,
+        q: `'${currentFolderId}' in parents and trashed = false`,
         spaces: 'drive',
-        fields: 'nextPageToken, files(id, name, webViewLink)',
+        fields: 'nextPageToken, files(id, name, mimeType, webViewLink)',
         pageSize: 1000,
         pageToken: pageToken
       });
       
-      const files = response.data.files || [];
-      results.push(...files);
+      const items = response.data.files || [];
+      
+      for (const item of items) {
+        if (item.mimeType === 'audio/mpeg') {
+          results.push(item);
+        } else if (item.mimeType === 'application/vnd.google-apps.folder') {
+          // Recursively search subfolders
+          await traverseFolder(item.id);
+        }
+      }
       
       pageToken = response.data.nextPageToken;
     } while (pageToken);
-    
+  }
+  
+  await traverseFolder(folderId);
+  return results;
+}
+
+async function listFilesInFolder(drive, folderId, folderName) {
+  console.log(`\n📂 Fetching files from ${folderName}...`);
+  
+  try {
+    const results = await getAllAudioFilesRecursive(drive, folderId);
     console.log(`✅ Found ${results.length} audio files`);
     return results;
   } catch (error) {
@@ -148,7 +181,7 @@ async function authenticateAndFetch() {
   }
   
   const credentials = JSON.parse(fs.readFileSync(keyFile, 'utf8'));
-  const { client_id, client_secret, redirect_uris } = credentials.installed;
+  const { client_id, client_secret, redirect_uris } = credentials.web || credentials.installed;
   
   const oauth2Client = new google.auth.OAuth2(
     client_id,
@@ -167,7 +200,8 @@ async function authenticateAndFetch() {
     // Get new token
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/drive.readonly']
+      scope: ['https://www.googleapis.com/auth/drive.readonly'],
+      redirect_uri: 'http://localhost:8080'
     });
     
     console.log('🔗 Visit this URL to authorize:\n', authUrl, '\n');
@@ -298,7 +332,7 @@ if (require.main === module) {
   if (authCode) {
     // If code provided as argument, use it directly
     const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'credentials.json'), 'utf8'));
-    const { client_id, client_secret, redirect_uris } = credentials.installed;
+    const { client_id, client_secret, redirect_uris } = credentials.web || credentials.installed;
     const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
     
     oauth2Client.getToken(authCode, async (err, tokens) => {
