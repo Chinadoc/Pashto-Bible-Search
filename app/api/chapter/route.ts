@@ -127,13 +127,16 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Query returned ${verses?.length || 0} verses from ${tableName}`);
 
-    // DEBUG: Check audio data in first verse
+    // DEBUG: Check audio data in multiple verses
     if (verses && verses.length > 0) {
-      const firstVerse = verses[0] as VerseRow;
-      console.log(`📝 First verse audio data:`, {
-        ref: `${firstVerse.book} ${firstVerse.chapter}:${firstVerse.verse}`,
-        audio_storage_path: firstVerse.audio_storage_path,
-        audio_public_url: firstVerse.audio_public_url
+      console.log(`📝 Sample verse audio data (first 5 verses):`);
+      verses.slice(0, 5).forEach((v: any, idx: number) => {
+        console.log(`  Verse ${idx + 1}: ${v.book} ${v.chapter}:${v.verse}`, {
+          audio_url: v.audio_url,
+          audio_public_url: v.audio_public_url,
+          audio_storage_path: v.audio_storage_path,
+          normalizedUrl: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url)
+        });
       });
     }
 
@@ -175,7 +178,7 @@ export async function GET(request: NextRequest) {
             totalVerses: formattedVerses.length,
             note: 'Afghan 2023 not available, showing Yousafzai 2019 instead'
           });
-          // Cache verse data for 24 hours (Bible content doesn't change often)
+          // Cache verse data for 24 hours + serve stale for 7 days
           response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
           return response;
         }
@@ -205,7 +208,7 @@ export async function GET(request: NextRequest) {
       totalVerses: formattedVerses.length,
     });
     
-    // Cache verse data for 24 hours (Bible content doesn't change often)
+    // Cache verse data for 24 hours + serve stale for 7 days
     response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     return response;
   } catch (error) {
