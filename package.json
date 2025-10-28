@@ -20,7 +20,8 @@
     "organize-yousafzai": "node scripts/organize_yousafzai_folder.js",
     "make-folder-public": "node scripts/make_folder_public.js",
     "make-files-public": "node scripts/make_all_files_in_folder_public.js",
-    "find-all-yousafzai": "node scripts/find_and_move_all_yousafzai.js"
+    "find-all-yousafzai": "node scripts/find_and_move_all_yousafzai.js",
+    "benchmark-speed": "node scripts/benchmark_move_speed.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
