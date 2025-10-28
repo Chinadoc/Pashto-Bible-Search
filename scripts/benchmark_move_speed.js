@@ -60,26 +60,46 @@ async function moveFileToFolder(drive, fileId, folderId) {
   }
 }
 
-async function benchmark(batchSize, delayMs, sampleFiles, folderId, drive) {
+async function benchmark(batchSize, delayMs, numAgents, sampleFiles, folderId, drive) {
   const startTime = Date.now();
   let successCount = 0;
   let failCount = 0;
   
-  // Test with sample files
-  const testBatch = sampleFiles.slice(0, batchSize);
+  // Split files across agents
+  const filesPerAgent = Math.ceil(batchSize / numAgents);
+  const agentBatches = [];
   
-  const results = await Promise.allSettled(
-    testBatch.map(async (file) => {
-      const success = await moveFileToFolder(drive, file.id, folderId);
-      return success;
-    })
+  for (let i = 0; i < numAgents; i++) {
+    const start = i * filesPerAgent;
+    const end = Math.min(start + filesPerAgent, batchSize);
+    agentBatches.push(sampleFiles.slice(start, end));
+  }
+  
+  // Create multiple agents (each with its own drive instance)
+  const agents = Array(numAgents).fill(null).map(() => 
+    google.drive({ version: 'v3', auth: drive.auth })
   );
   
-  for (const result of results) {
-    if (result.status === 'fulfilled' && result.value) {
-      successCount++;
-    } else {
-      failCount++;
+  // Each agent processes its batch in parallel
+  const agentPromises = agentBatches.map((batch, index) => 
+    Promise.allSettled(
+      batch.map(async (file) => {
+        const success = await moveFileToFolder(agents[index], file.id, folderId);
+        return success;
+      })
+    )
+  );
+  
+  const allResults = await Promise.all(agentPromises);
+  
+  // Count results
+  for (const agentResults of allResults) {
+    for (const result of agentResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        successCount++;
+      } else {
+        failCount++;
+      }
     }
   }
   
@@ -89,6 +109,7 @@ async function benchmark(batchSize, delayMs, sampleFiles, folderId, drive) {
   return {
     batchSize,
     delayMs,
+    numAgents,
     elapsed,
     successCount,
     failCount,
@@ -132,26 +153,28 @@ async function main() {
   
   console.log('🧪 Testing different configurations...\n');
   
-  // Test configurations
+  // Test configurations with different batch sizes, delays, and number of agents
   const configs = [
-    { batchSize: 100, delayMs: 0 },
-    { batchSize: 500, delayMs: 0 },
-    { batchSize: 1000, delayMs: 0 },
-    { batchSize: 500, delayMs: 50 },
-    { batchSize: 1000, delayMs: 50 },
-    { batchSize: 1000, delayMs: 100 },
+    { batchSize: 100, delayMs: 0, numAgents: 1 },
+    { batchSize: 500, delayMs: 0, numAgents: 1 },
+    { batchSize: 1000, delayMs: 0, numAgents: 1 },
+    { batchSize: 1000, delayMs: 0, numAgents: 2 },
+    { batchSize: 1000, delayMs: 0, numAgents: 5 },
+    { batchSize: 1000, delayMs: 0, numAgents: 10 },
+    { batchSize: 1000, delayMs: 50, numAgents: 10 },
+    { batchSize: 2000, delayMs: 0, numAgents: 10 },
   ];
   
   const results = [];
   
   for (const config of configs) {
-    console.log(`Testing: ${config.batchSize} files/batch, ${config.delayMs}ms delay...`);
-    const result = await benchmark(config.batchSize, config.delayMs, sampleFiles, folderId, drive);
+    console.log(`Testing: ${config.batchSize} files, ${config.numAgents} agents, ${config.delayMs}ms delay...`);
+    const result = await benchmark(config.batchSize, config.delayMs, config.numAgents, sampleFiles, folderId, drive);
     results.push(result);
     console.log(`   ⏱️  ${result.elapsed}ms | ✅ ${result.successCount} | ❌ ${result.failCount} | ⚡ ${result.filesPerSecond.toFixed(1)} files/sec\n`);
     
     // Wait between tests
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   
   // Find fastest
@@ -161,9 +184,10 @@ async function main() {
   console.log('='.repeat(80));
   console.log('🏆 FASTEST CONFIGURATION:');
   console.log(`   Batch Size: ${fastest.batchSize}`);
+  console.log(`   Number of Agents: ${fastest.numAgents}`);
   console.log(`   Delay: ${fastest.delayMs}ms`);
   console.log(`   Speed: ${fastest.filesPerSecond.toFixed(1)} files/second`);
-  console.log(`   Estimated time for 40,000 files: ${Math.round(40000 / fastest.filesPerSecond)} seconds`);
+  console.log(`   Estimated time for 40,000 files: ${Math.round(40000 / fastest.filesPerSecond)} seconds (${Math.round(40000 / fastest.filesPerSecond / 60)} minutes)`);
   console.log('='.repeat(80));
 }
 
