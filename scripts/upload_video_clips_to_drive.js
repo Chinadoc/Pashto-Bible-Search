@@ -2,8 +2,19 @@ import { google } from 'googleapis';
 import { readFileSync, statSync, readdirSync, createReadStream } from 'fs';
 import { join } from 'path';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config({ path: '.env.local' });
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing Supabase credentials');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function initializeAuth() {
   try {
@@ -108,6 +119,66 @@ async function makeFilePublic(drive, fileId) {
   }
 }
 
+function parseFilename(filename) {
+  // Extract info from filename like: "Afghanistan - Pakistan War ｜ Torkham Durand Line  ｜ د افغانستان پاکستان جنګ_segment_001_sentence_001.wav"
+  const parts = filename.replace('.wav', '').split('_');
+  
+  let videoId = 'unknown';
+  let segmentNumber = 0;
+  let sentenceNumber = 0;
+  
+  // Try to extract segment and sentence numbers
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === 'segment' && i + 1 < parts.length) {
+      segmentNumber = parseInt(parts[i + 1]) || 0;
+    }
+    if (parts[i] === 'sentence' && i + 1 < parts.length) {
+      sentenceNumber = parseInt(parts[i + 1]) || 0;
+    }
+  }
+  
+  // Extract video title (everything before the first underscore with "segment")
+  const segmentIndex = filename.indexOf('_segment_');
+  const videoTitle = segmentIndex > 0 ? filename.substring(0, segmentIndex) : filename;
+  
+  return {
+    videoId,
+    videoTitle,
+    segmentNumber,
+    sentenceNumber,
+    filename
+  };
+}
+
+async function saveToSupabase(metadata) {
+  try {
+    const { data, error } = await supabase
+      .from('video_transcripts')
+      .insert({
+        video_id: metadata.videoId,
+        video_title: metadata.videoTitle,
+        segment_number: metadata.segmentNumber,
+        start_time_seconds: Math.floor(metadata.startTime),
+        end_time_seconds: Math.floor(metadata.endTime),
+        transcript_text: metadata.transcript || '',
+        audio_file_path: `https://drive.google.com/file/d/${metadata.googleDriveId}/view`,
+        transcript_file_path: metadata.filename,
+        google_drive_file_id: metadata.googleDriveId,
+        google_drive_url: `https://drive.google.com/uc?id=${metadata.googleDriveId}&export=download`
+      });
+    
+    if (error) {
+      console.error(`   ⚠️ Failed to save to Supabase:`, error.message);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`   ⚠️ Supabase error:`, error.message);
+    return false;
+  }
+}
+
 async function main() {
   console.log('📤 Uploading Video Clips to Google Drive\n');
   
@@ -130,6 +201,7 @@ async function main() {
   const BATCH_SIZE = 50;
   let uploadedCount = 0;
   let publicCount = 0;
+  let savedCount = 0;
   let failCount = 0;
   let progress = 0;
   
@@ -143,7 +215,20 @@ async function main() {
         
         if (fileId) {
           const isPublic = await makeFilePublic(drive, fileId);
-          return { success: true, fileId, isPublic, fileName };
+          
+          // Parse filename and save to Supabase
+          const fileInfo = parseFilename(fileName);
+          const metadata = {
+            ...fileInfo,
+            googleDriveId: fileId,
+            startTime: 0, // Default, will be updated if available
+            endTime: 0,  // Default, will be updated if available
+            transcript: '' // Will be filled if available
+          };
+          
+          const savedToDb = await saveToSupabase(metadata);
+          
+          return { success: true, fileId, isPublic, fileName, savedToDb };
         }
         return { success: false, fileName };
       })
@@ -156,6 +241,9 @@ async function main() {
         uploadedCount++;
         if (result.isPublic) {
           publicCount++;
+        }
+        if (result.savedToDb) {
+          savedCount++;
         }
       } else {
         failCount++;
@@ -172,10 +260,12 @@ async function main() {
   console.log('\n\n✅ Done!\n');
   console.log(`   ✅ Successfully uploaded ${uploadedCount} files`);
   console.log(`   🔓 Made ${publicCount} files public`);
+  console.log(`   💾 Saved ${savedCount} metadata records to Supabase`);
   console.log(`   ❌ Failed to upload ${failCount} files`);
   console.log(`   📊 Total files processed: ${files.length}\n`);
   console.log(`📁 Folder "${folderName}" now contains all video clips`);
   console.log(`🔗 Folder URL: https://drive.google.com/drive/folders/${folderId}\n`);
+  console.log(`📊 All audio metadata saved to Supabase for easy recovery!`);
 }
 
 main().catch(console.error);
