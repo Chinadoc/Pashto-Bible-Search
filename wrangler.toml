@@ -1,0 +1,9 @@
+name = "pashtobiblesearch"
+main = "cloudflare-worker.js"
+compatibility_date = "2024-10-27"
+
+# This is your workers.dev subdomain
+# After deployment, your worker will be available at:
+# https://pashtobiblesearch.YOUR_SUBDOMAIN.workers.dev
+# You can find YOUR_SUBDOMAIN in the Cloudflare dashboard (shown in screenshot)
+
