@@ -16,7 +16,8 @@
     "migrate-indexes": "node migrate_optimized_indexes.js",
     "postdeploy": "npm run warm-caches && npm run preload-searches",
     "make-drive-public": "node scripts/make_drive_files_public.js",
-    "auth-google": "node scripts/auth_google_drive.js"
+    "auth-google": "node scripts/auth_google_drive.js",
+    "organize-yousafzai": "node scripts/organize_yousafzai_folder.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
