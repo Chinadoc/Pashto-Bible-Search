@@ -37,11 +37,19 @@ async function main() {
     console.log('📄 No existing token.json found\n');
   }
 
+  // Handle both 'web' and 'installed' credential formats
+  const credData = credentials.web || credentials.installed;
+  if (!credData) {
+    console.error('❌ Invalid credentials.json format');
+    console.error('Expected "web" or "installed" object');
+    process.exit(1);
+  }
+
   // Create OAuth2 client
   const oauth2Client = new google.auth.OAuth2(
-    credentials.installed.client_id,
-    credentials.installed.client_secret,
-    credentials.installed.redirect_uris[0]
+    credData.client_id,
+    credData.client_secret,
+    credData.redirect_uris[0]
   );
 
   // Try to refresh if we have a refresh token
@@ -107,8 +115,8 @@ async function main() {
         token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_uri: 'https://oauth2.googleapis.com/token',
-        client_id: credentials.installed.client_id,
-        client_secret: credentials.installed.client_secret,
+        client_id: credData.client_id,
+        client_secret: credData.client_secret,
         scopes: tokens.scope ? [tokens.scope] : SCOPES,
         universe_domain: 'googleapis.com',
         account: '',
