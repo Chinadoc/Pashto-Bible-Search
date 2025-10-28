@@ -175,7 +175,16 @@ export async function POST(request: NextRequest) {
       hasAssemblyAIKey: !!ASSEMBLYAI_API_KEY
     });
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.error('Failed to parse request body:', error);
+      return NextResponse.json(
+        { error: 'Invalid request body', details: String(error) },
+        { status: 400 }
+      );
+    }
     const { youtubeUrl } = body;
 
     if (!youtubeUrl) {
@@ -200,7 +209,19 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Transcribe with AssemblyAI
     console.log('Step 1️⃣: Transcribing with AssemblyAI...');
-    const transcriptionResult = await transcribeWithAssemblyAI(youtubeUrl);
+    let transcriptionResult;
+    try {
+      transcriptionResult = await transcribeWithAssemblyAI(youtubeUrl);
+    } catch (error) {
+      console.error('AssemblyAI transcription error:', error);
+      return NextResponse.json(
+        { 
+          error: 'AssemblyAI transcription failed',
+          details: String(error)
+        },
+        { status: 500 }
+      );
+    }
     
     if (!transcriptionResult) {
       return NextResponse.json(
