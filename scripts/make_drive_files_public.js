@@ -88,7 +88,10 @@ async function makeFilePublic(drive, fileId) {
     
     return true;
   } catch (error) {
-    console.error(`   ❌ Failed to make file ${fileId} public:`, error.message);
+    // Only log specific errors, not "alreadyExists" errors
+    if (!error.message.includes('alreadyExists')) {
+      console.error(`\n   ❌ Failed: ${fileId} - ${error.message}`);
+    }
     return false;
   }
 }
@@ -126,23 +129,43 @@ async function main() {
   console.log(`📦 Found ${fileIds.size} unique Google Drive files\n`);
   console.log('🔓 Making files publicly accessible...\n');
 
+  // Process files in parallel batches (24 at a time)
+  const BATCH_SIZE = 24;
+  const fileIdsArray = Array.from(fileIds);
   let successCount = 0;
   let failCount = 0;
   let progress = 0;
 
-  for (const fileId of fileIds) {
-    progress++;
-    process.stdout.write(`\r   Progress: ${progress}/${fileIds.size} (${Math.round(progress/fileIds.size*100)}%)`);
+  for (let i = 0; i < fileIdsArray.length; i += BATCH_SIZE) {
+    const batch = fileIdsArray.slice(i, i + BATCH_SIZE);
     
-    const success = await makeFilePublic(drive, fileId);
-    if (success) {
-      successCount++;
-    } else {
-      failCount++;
+    // Process batch in parallel
+    const results = await Promise.all(
+      batch.map(async (fileId) => {
+        const success = await makeFilePublic(drive, fileId);
+        return { success, fileId };
+      })
+    );
+
+    // Update progress after batch completes
+    progress += batch.length;
+
+    // Count successes and failures
+    for (const result of results) {
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
     }
 
-    // Rate limiting - be nice to Google API
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Update progress
+    process.stdout.write(`\r   Progress: ${progress}/${fileIds.size} (${Math.round(progress/fileIds.size*100)}%)`);
+
+    // Rate limiting between batches
+    if (i + BATCH_SIZE < fileIdsArray.length) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
   }
 
   console.log('\n\n✅ Done!\n');
