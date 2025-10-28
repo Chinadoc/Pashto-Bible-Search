@@ -74,7 +74,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [analyzingAudio, setAnalyzingAudio] = useState(false);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [transcribingSegments, setTranscribingSegments] = useState(false);
-  const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('assemblyai');
+  const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const extractVideoId = (url: string): string | null => {
