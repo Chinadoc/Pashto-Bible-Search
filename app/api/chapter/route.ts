@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
       audio_storage_path: v.audio_storage_path,
-      audio_public_url: convertToViewerUrl(v.audio_public_url), // Convert to viewer URL
+      audio_public_url: normalizeGoogleDriveUrl(v.audio_public_url), // Normalize Google Drive URL
     }));
 
     return NextResponse.json({
