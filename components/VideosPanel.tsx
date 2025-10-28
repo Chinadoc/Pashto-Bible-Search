@@ -74,6 +74,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [analyzingAudio, setAnalyzingAudio] = useState(false);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [transcribingSegments, setTranscribingSegments] = useState(false);
+  const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('assemblyai');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const extractVideoId = (url: string): string | null => {
@@ -169,6 +170,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       }
 
       formData.append('audio', file);
+      formData.append('service', transcriptionService);
 
       const response = await fetch('/api/transcribe-audio', {
         method: 'POST',
@@ -184,11 +186,14 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         if (result.source === 'youtube' && result.originalSize && result.compressedSize) {
           console.log(`YouTube video compressed from ${result.originalSize} to ${result.compressedSize} bytes`);
         }
+        
+        // Show which service was used
+        console.log(`Transcription completed with ${result.service}`);
       } else {
         setElevenLabsError(result.error || 'Transcription failed');
       }
     } catch (error) {
-      console.error('ElevenLabs transcription error:', error);
+      console.error('Transcription error:', error);
       setElevenLabsError('Failed to transcribe audio');
     } finally {
       setElevenLabsLoading(false);
@@ -516,6 +521,27 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     <span>{analyzingAudio ? 'Analyzing...' : 'Analyze Audio'}</span>
                   </button>
                 </div>
+                
+                {/* Service Selector */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🎯 Transcription Service
+                  </label>
+                  <select
+                    value={transcriptionService}
+                    onChange={(e) => setTranscriptionService(e.target.value as 'assemblyai' | 'elevenlabs')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="assemblyai">⚡ AssemblyAI (Cloud, Faster)</option>
+                    <option value="elevenlabs">🎙️ ElevenLabs (Higher Quality)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {transcriptionService === 'assemblyai'
+                      ? 'Fast cloud-based transcription, processes entirely on servers'
+                      : 'High-quality transcription, downloads locally then processes'}
+                  </p>
+                </div>
+                
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   YouTube videos will be analyzed for speech segments before transcription
                 </p>

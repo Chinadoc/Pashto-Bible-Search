@@ -9,6 +9,8 @@ const execAsync = promisify(exec);
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
+const ASSEMBLYAI_API_URL = "https://api.assemblyai.com/v2/transcript";
 
 function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
   if (data instanceof ArrayBuffer) {
@@ -18,6 +20,84 @@ function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
   const view = new Uint8Array(arrayBuffer);
   view.set(data);
   return arrayBuffer;
+}
+
+// AssemblyAI cloud transcription (YouTube URL directly)
+async function transcribeWithAssemblyAI(youtubeUrl: string): Promise<{ text: string; confidence: number } | null> {
+  try {
+    if (!ASSEMBLYAI_API_KEY) {
+      console.warn('AssemblyAI API key not configured');
+      return null;
+    }
+
+    console.log('Sending to AssemblyAI for transcription...');
+    
+    // AssemblyAI can process YouTube URLs directly
+    const requestBody = {
+      audio_url: youtubeUrl,
+      language_code: 'ps', // Pashto
+      language_detection: true
+    };
+
+    // Start transcription
+    const startResponse = await fetch(ASSEMBLYAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': ASSEMBLYAI_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!startResponse.ok) {
+      console.error('AssemblyAI start error:', startResponse.status, await startResponse.text());
+      return null;
+    }
+
+    const job = await startResponse.json();
+    const transcriptId = job.id;
+    console.log(`Transcription job started: ${transcriptId}`);
+
+    // Poll for completion (with timeout)
+    let attempt = 0;
+    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    
+    while (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      
+      const statusResponse = await fetch(`${ASSEMBLYAI_API_URL}/${transcriptId}`, {
+        headers: { 'Authorization': ASSEMBLYAI_API_KEY }
+      });
+
+      if (!statusResponse.ok) {
+        console.error('AssemblyAI status error:', statusResponse.status);
+        return null;
+      }
+
+      const status = await statusResponse.json();
+      
+      if (status.status === 'completed') {
+        console.log('Transcription completed!');
+        return {
+          text: status.text || '',
+          confidence: 0.75 // AssemblyAI doesn't provide word-level confidence
+        };
+      } else if (status.status === 'error') {
+        console.error('AssemblyAI transcription error:', status.error);
+        return null;
+      }
+
+      attempt++;
+      console.log(`Waiting for transcription... (${attempt}/${maxAttempts})`);
+    }
+
+    console.error('Transcription timeout');
+    return null;
+
+  } catch (error) {
+    console.error('Error with AssemblyAI:', error);
+    return null;
+  }
 }
 
 async function downloadAndCompressYouTubeAudio(youtubeUrl: string): Promise<{ audioBuffer: ArrayBuffer; originalSize: number; compressedSize: number } | null> {
@@ -180,12 +260,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('audio') as File | null;
     const youtubeUrl = formData.get('youtubeUrl') as string | null;
+    const service = formData.get('service') as string | null; // 'assemblyai' or 'elevenlabs'
 
-    let audioBuffer: ArrayBuffer;
-    let fileSize: number;
-    let fileType: string;
+    let transcript: string | null = null;
+    let confidence = 0.5;
+    let fileSize = 0;
+    let fileType = 'audio/mp3';
     let originalSize: number | undefined;
     let compressedSize: number | undefined;
+    let usedService = 'elevenlabs';
 
     if (youtubeUrl) {
       // Handle YouTube URL
@@ -193,16 +276,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
       }
 
-      const result = await downloadAndCompressYouTubeAudio(youtubeUrl);
-      if (!result) {
-        return NextResponse.json({ error: 'Failed to download and compress YouTube audio' }, { status: 500 });
+      // Try AssemblyAI first if requested or available
+      if (service === 'assemblyai' || !service) {
+        const result = await transcribeWithAssemblyAI(youtubeUrl);
+        if (result) {
+          transcript = result.text;
+          confidence = result.confidence;
+          usedService = 'assemblyai';
+          fileSize = 0; // AssemblyAI handles everything
+        }
       }
 
-      audioBuffer = result.audioBuffer;
-      fileSize = result.compressedSize;
-      fileType = 'audio/mp3';
-      originalSize = result.originalSize;
-      compressedSize = result.compressedSize;
+      // Fallback to ElevenLabs if AssemblyAI fails or not available
+      if (!transcript) {
+        const audioResult = await downloadAndCompressYouTubeAudio(youtubeUrl);
+        if (!audioResult) {
+          return NextResponse.json({ error: 'Failed to download and compress YouTube audio' }, { status: 500 });
+        }
+
+        transcript = await transcribeWithElevenLabs(audioResult.audioBuffer);
+        if (!transcript) {
+          return NextResponse.json({ error: 'Transcription failed with both services' }, { status: 500 });
+        }
+
+        fileSize = audioResult.compressedSize;
+        originalSize = audioResult.originalSize;
+        compressedSize = audioResult.compressedSize;
+        usedService = 'elevenlabs';
+      }
 
     } else if (file) {
       // Handle file upload
@@ -214,19 +315,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'File size must be less than 25MB' }, { status: 400 });
       }
 
-      audioBuffer = await file.arrayBuffer();
+      const audioBuffer = await file.arrayBuffer();
       fileSize = file.size;
       fileType = file.type;
 
+      transcript = await transcribeWithElevenLabs(toArrayBuffer(audioBuffer));
+      if (!transcript) {
+        return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 });
+      }
+
+      usedService = 'elevenlabs';
+
     } else {
       return NextResponse.json({ error: 'No audio file or YouTube URL provided' }, { status: 400 });
-    }
-
-    // Transcribe with ElevenLabs
-    const transcript = await transcribeWithElevenLabs(toArrayBuffer(audioBuffer));
-
-    if (!transcript) {
-      return NextResponse.json({ error: 'Failed to transcribe audio' }, { status: 500 });
     }
 
     // Validate that it's Pashto
@@ -246,6 +347,7 @@ export async function POST(request: NextRequest) {
       validation: validation,
       fileSize,
       fileType,
+      service: usedService,
       ...(youtubeUrl && { originalSize, compressedSize, source: 'youtube' }),
       ...(file && { source: 'upload' })
     });
