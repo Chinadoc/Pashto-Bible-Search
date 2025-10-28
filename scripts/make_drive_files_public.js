@@ -130,8 +130,8 @@ async function main() {
   console.log(`📦 Found ${fileIds.size} unique Google Drive files\n`);
   console.log('🔓 Making files publicly accessible...\n');
 
-  // Process files in parallel batches (300 at a time)
-  const BATCH_SIZE = 300;
+  // Process files in parallel batches (50 at a time)
+  const BATCH_SIZE = 50;
   const fileIdsArray = Array.from(fileIds);
   let successCount = 0;
   let failCount = 0;
