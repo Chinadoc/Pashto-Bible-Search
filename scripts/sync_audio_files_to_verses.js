@@ -117,13 +117,25 @@ async function syncTranslation(tableName, audioFiles, translationKey) {
 
     for (const audioFile of batch) {
       try {
+        // Normalize book name from lowercase to proper case
+        // Examples: "isaiah" → "Isaiah", "1john" → "1 John", "2corinthians" → "2 Corinthians"
+        let bookName = audioFile.book;
+        
+        // Convert common patterns
+        bookName = bookName
+          .replace(/^(\d+)([a-z])/, (match, num, letter) => num + ' ' + letter.toUpperCase())  // "1john" → "1 John"
+          .replace(/([a-z])([A-Z])/g, '$1 $2')  // "someBook" → "some Book"
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
         const { data, error } = await supabase
           .from(tableName)
           .update({
             audio_public_url: audioFile.google_drive_url,
             audio_storage_path: `audio/${translationKey}/${audioFile.book}_${audioFile.chapter}_${audioFile.verse}.mp3`
           })
-          .eq('book', audioFile.book)
+          .eq('book', bookName)
           .eq('chapter', audioFile.chapter)
           .eq('verse', audioFile.verse)
           .select('id');
@@ -131,7 +143,7 @@ async function syncTranslation(tableName, audioFiles, translationKey) {
         if (error) {
           errorCount++;
           errors.push({
-            verse: `${audioFile.book} ${audioFile.chapter}:${audioFile.verse}`,
+            verse: `${bookName} ${audioFile.chapter}:${audioFile.verse}`,
             error: error.message
           });
         } else if (data && data.length > 0) {
