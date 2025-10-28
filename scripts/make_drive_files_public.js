@@ -17,34 +17,49 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Load token.json for OAuth credentials
-let oauth2Client;
-try {
-  const tokenPath = join(process.cwd(), 'token.json');
-  const tokenFileContent = readFileSync(tokenPath, 'utf8');
-  // Token.json is stored as stringified JSON, so parse twice
-  const tokenData = JSON.parse(tokenFileContent);
-  
-  oauth2Client = new google.auth.OAuth2(
-    tokenData.client_id,
-    tokenData.client_secret,
-    tokenData.redirect_uris?.[0]
-  );
-  
-  oauth2Client.setCredentials({
-    access_token: tokenData.token,
-    refresh_token: tokenData.refresh_token,
-    expiry_date: new Date(tokenData.expiry).getTime(),
-  });
-  
-  console.log('✅ Loaded Google Drive credentials from token.json\n');
-} catch (error) {
-  console.error('❌ Failed to load token.json:', error.message);
-  console.error('Please make sure token.json exists in the project root');
-  process.exit(1);
+// Load and initialize OAuth credentials
+async function initializeAuth() {
+  try {
+    const tokenPath = join(process.cwd(), 'token.json');
+    const tokenFileContent = readFileSync(tokenPath, 'utf8');
+    // Token.json is stored as stringified JSON, so parse twice
+    const tokenData = JSON.parse(tokenFileContent);
+    
+    const oauth2Client = new google.auth.OAuth2(
+      tokenData.client_id,
+      tokenData.client_secret,
+      tokenData.redirect_uris?.[0]
+    );
+    
+    oauth2Client.setCredentials({
+      access_token: tokenData.token,
+      refresh_token: tokenData.refresh_token,
+      expiry_date: new Date(tokenData.expiry).getTime(),
+    });
+    
+    // Refresh token if expired
+    if (oauth2Client.isTokenExpiring()) {
+      console.log('🔄 Token expired, refreshing...');
+      try {
+        const { credentials } = await oauth2Client.refreshAccessToken();
+        oauth2Client.setCredentials(credentials);
+        console.log('✅ Token refreshed successfully\n');
+      } catch (error) {
+        console.error('❌ Failed to refresh token:', error.message);
+        console.error('You may need to re-authenticate. Check token.json');
+        process.exit(1);
+      }
+    } else {
+      console.log('✅ Loaded Google Drive credentials from token.json\n');
+    }
+    
+    return oauth2Client;
+  } catch (error) {
+    console.error('❌ Failed to load token.json:', error.message);
+    console.error('Please make sure token.json exists in the project root');
+    process.exit(1);
+  }
 }
-
-const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 // Extract file ID from Google Drive URL
 function extractFileId(url) {
@@ -60,7 +75,7 @@ function extractFileId(url) {
 }
 
 // Make a file publicly accessible
-async function makeFilePublic(fileId) {
+async function makeFilePublic(drive, fileId) {
   try {
     // Add "anyone" permission (can view)
     await drive.permissions.create({
@@ -79,6 +94,10 @@ async function makeFilePublic(fileId) {
 }
 
 async function main() {
+  // Initialize Google Drive auth
+  const oauth2Client = await initializeAuth();
+  const drive = google.drive({ version: 'v3', auth: oauth2Client });
+  
   console.log('🔍 Fetching all Google Drive URLs from database...\n');
 
   // Get all verses with Google Drive URLs
@@ -115,7 +134,7 @@ async function main() {
     progress++;
     process.stdout.write(`\r   Progress: ${progress}/${fileIds.size} (${Math.round(progress/fileIds.size*100)}%)`);
     
-    const success = await makeFilePublic(fileId);
+    const success = await makeFilePublic(drive, fileId);
     if (success) {
       successCount++;
     } else {
