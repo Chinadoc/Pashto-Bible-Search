@@ -150,8 +150,44 @@ function parseFilename(filename) {
   };
 }
 
+function validateTranscription(text) {
+  if (!text || text.trim().length === 0) {
+    return { isValid: false, confidence: 0, needsRetry: true };
+  }
+  
+  let score = 0;
+  
+  // Check Pashto script
+  if (/[\u0600-\u06FF]/.test(text)) score += 0.3;
+  
+  // Check Pashto words
+  const commonWords = ['او', 'چې', 'څه', 'خدای', 'عیسی', 'پیغمبر', 'کتاب'];
+  if (commonWords.some(word => text.includes(word))) score += 0.3;
+  
+  // Check character ratio
+  const pashtoChars = text.match(/[\u0600-\u06FF]/g) || [];
+  const pashtoRatio = pashtoChars.length / text.replace(/\s/g, '').length;
+  if (pashtoRatio > 0.5) score += 0.2;
+  else if (pashtoRatio > 0.3) score += 0.1;
+  
+  // Check length
+  if (text.trim().split(/\s+/).length >= 2) score += 0.1;
+  
+  // Check for suspicious patterns
+  if (!/\[.*?\]|\(.*?\)|speaker|foreign language/i.test(text)) score += 0.1;
+  
+  return {
+    isValid: score >= 0.5,
+    confidence: score,
+    needsRetry: score < 0.6
+  };
+}
+
 async function saveToSupabase(metadata) {
   try {
+    // Validate transcription
+    const validation = validateTranscription(metadata.transcript);
+    
     const { data, error } = await supabase
       .from('video_transcripts')
       .insert({
@@ -164,7 +200,10 @@ async function saveToSupabase(metadata) {
         audio_file_path: `https://drive.google.com/file/d/${metadata.googleDriveId}/view`,
         transcript_file_path: metadata.filename,
         google_drive_file_id: metadata.googleDriveId,
-        google_drive_url: `https://drive.google.com/uc?id=${metadata.googleDriveId}&export=download`
+        google_drive_url: `https://drive.google.com/uc?id=${metadata.googleDriveId}&export=download`,
+        needs_retry: validation.needsRetry,
+        validation_score: validation.confidence,
+        transcription_service: 'elevenlabs'
       });
     
     if (error) {

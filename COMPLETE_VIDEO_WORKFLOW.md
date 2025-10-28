@@ -61,6 +61,10 @@ npm run upload-video-clips
   - `end_time_seconds` - Clip end time
   - `audio_file_path` - View URL
   - `transcript_file_path` - Filename
+  - `needs_retry` - Whether transcription needs retry
+  - `validation_score` - Confidence score (0-1)
+  - `retry_reason` - Why retry is needed
+  - `retry_count` - Number of retry attempts
 
 ## 🔍 Verify Results
 
@@ -72,6 +76,18 @@ WHERE google_drive_file_id IS NOT NULL
 GROUP BY video_id;
 ```
 
+### Validate Transcriptions
+```bash
+# Check transcription quality
+npm run validate-transcription ZmM_DQ0aRvk
+```
+
+### Retry Low-Quality Transcriptions
+```bash
+# Re-transcribe clips that failed validation
+npm run retry-transcription ZmM_DQ0aRvk
+```
+
 ### Check Google Drive
 Visit: https://drive.google.com/drive/folders/1Wb09vyqP2HqEMRQ2B-SViEgxmVkuKMgN
 
@@ -79,9 +95,11 @@ Visit: https://drive.google.com/drive/folders/1Wb09vyqP2HqEMRQ2B-SViEgxmVkuKMgN
 
 1. **Transcript Data**: The upload script reads from `processed_videos/{video_id}_results.json` to get transcript text
 2. **Audio Size**: Eleven Labs has a 25MB limit - clips are automatically segmented
-3. **Pashto Validation**: The system validates that transcripts contain Pashto characters
-4. **Rate Limits**: Uploads process in batches of 50 to avoid Google API limits
-5. **Recovery**: If clips are lost, you can recover them from Supabase using `google_drive_file_id`
+3. **Pashto Validation**: Automatically validates transcriptions for Pashto content
+4. **Quality Scoring**: Each transcription gets a confidence score (0-1)
+5. **Auto-Retry**: Low quality transcriptions (< 60% confidence) are marked for retry
+6. **Rate Limits**: Uploads process in batches of 50 to avoid Google API limits
+7. **Recovery**: If clips are lost, you can recover them from Supabase using `google_drive_file_id`
 
 ## 🐛 Troubleshooting
 
@@ -102,7 +120,33 @@ Ensure migration `add_google_drive_to_video_transcripts.sql` has been applied.
 - ✅ Google Drive upload script fixed
 - ✅ Supabase integration working
 - ✅ Metadata includes transcripts
+- ✅ Automatic Pashto validation
+- ✅ Auto-retry for low quality transcriptions
 - ✅ Complete workflow tested end-to-end
 
-Ready to process videos! 🎬
+## 🔄 Quality Assurance Workflow
+
+After processing a video:
+
+1. **Validate** transcriptions for Pashto content:
+   ```bash
+   npm run validate-transcription ZmM_DQ0aRvk
+   ```
+
+2. **Review** low-confidence transcriptions (marked with `needs_retry = true`)
+
+3. **Retry** if needed:
+   ```bash
+   npm run retry-transcription ZmM_DQ0aRvk
+   ```
+
+4. **Check** final quality:
+   ```sql
+   SELECT AVG(validation_score) as avg_confidence, 
+          COUNT(*) FILTER (WHERE needs_retry) as needs_retry_count
+   FROM video_transcripts 
+   WHERE video_id = 'ZmM_DQ0aRvk';
+   ```
+
+Ready to process videos with quality assurance! 🎬
 

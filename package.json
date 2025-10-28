@@ -23,7 +23,9 @@
     "find-all-yousafzai": "node scripts/find_and_move_all_yousafzai.js",
     "check-folder": "node scripts/check_folder_contents.js",
     "upload-video-clips": "node scripts/upload_video_clips_to_drive.js",
-    "process-video": "node process_and_upload_video.js"
+    "process-video": "node process_and_upload_video.js",
+    "validate-transcription": "node scripts/validate_pashto_transcription.js",
+    "retry-transcription": "node scripts/retry_transcription.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
