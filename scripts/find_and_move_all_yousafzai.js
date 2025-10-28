@@ -52,6 +52,7 @@ async function getAllMP3Files(drive) {
         fields: 'nextPageToken, files(id, name, parents)',
         pageSize: 1000,
         pageToken: pageToken,
+        orderBy: 'name',
       });
       
       files.push(...response.data.files);
@@ -142,8 +143,8 @@ async function main() {
   
   console.log('📦 Moving files to folder...\n');
   
-  // Process in batches of 1000 for maximum speed
-  const BATCH_SIZE = 1000;
+  // Process in batches of 100 for maximum speed
+  const BATCH_SIZE = 100;
   let successCount = 0;
   let failCount = 0;
   let progress = 0;
@@ -151,7 +152,7 @@ async function main() {
   for (let i = 0; i < allFiles.length; i += BATCH_SIZE) {
     const batch = allFiles.slice(i, i + BATCH_SIZE);
     
-    const results = await Promise.allSettled(
+    const results = await Promise.all(
       batch.map(async (file) => {
         const success = await moveFileToFolder(drive, file.id, folderId);
         return { success, file };
@@ -161,7 +162,7 @@ async function main() {
     progress += batch.length;
     
     for (const result of results) {
-      if (result.status === 'fulfilled' && result.value.success) {
+      if (result.success) {
         successCount++;
       } else {
         failCount++;
@@ -170,7 +171,7 @@ async function main() {
     
     process.stdout.write(`\r   Progress: ${progress}/${allFiles.length} (${Math.round(progress/allFiles.length*100)}%)`);
     
-    // Minimal delay - only 50ms between batches for speed
+    // Minimal delay for rate limiting
     if (i + BATCH_SIZE < allFiles.length) {
       await new Promise(resolve => setTimeout(resolve, 50));
     }
