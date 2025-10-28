@@ -131,12 +131,13 @@ async function main() {
   
   console.log('🔍 Fetching all Yousafzai Google Drive URLs from database...\n');
 
-  // Get all verses with Google Drive URLs
+  // Get all verses with Google Drive URLs (no limit)
   const { data: verses, error } = await supabase
     .from('verses_yousafzai')
     .select('book, chapter, verse, audio_public_url')
     .not('audio_public_url', 'is', null)
-    .ilike('audio_public_url', '%drive.google.com%');
+    .ilike('audio_public_url', '%drive.google.com%')
+    .limit(50000); // Allow up to 50k files
 
   if (error) {
     console.error('❌ Database error:', error);
@@ -163,8 +164,8 @@ async function main() {
 
   console.log('📦 Moving files to folder...\n');
 
-  // Process files in parallel batches (24 at a time)
-  const BATCH_SIZE = 24;
+  // Process files in parallel batches (300 at a time)
+  const BATCH_SIZE = 300;
   const fileIdsArray = Array.from(fileIds);
   let successCount = 0;
   let failCount = 0;
