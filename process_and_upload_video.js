@@ -22,60 +22,67 @@ async function processVideo(youtubeUrl) {
   console.log(`📋 Video ID: ${videoId}\n`);
   
   try {
-    // Step 1: Process video with Python (download, transcribe, create clips)
-    console.log('1️⃣ Processing video with Python...\n');
+    // Step 1: Use API to process video (simpler, avoids Python dependency issues)
+    console.log('1️⃣ Processing video via API...\n');
     console.log('   - Downloading video...');
-    console.log('   - Extracting audio...');
-    console.log('   - Transcribing with Eleven Labs...');
-    console.log('   - Creating sentence clips...\n');
+    console.log('   - Transcribing with Eleven Labs...\n');
     
-    const pythonScript = `python3 process_video_offline.py`;
-    const { stdout, stderr } = await execAsync(`echo "${youtubeUrl}" | ${pythonScript}`, {
-      timeout: 600000, // 10 minutes
-      env: { ...process.env }
+    const formData = new FormData();
+    formData.append('youtubeUrl', youtubeUrl);
+    
+    const response = await fetch('http://localhost:3000/api/transcribe-audio', {
+      method: 'POST',
+      body: formData
     });
     
-    console.log(stdout);
-    if (stderr) console.error(stderr);
+    const result = await response.json();
     
-    // Step 2: Check if results file exists
-    const resultsFile = join(process.cwd(), 'processed_videos', `${videoId}_results.json`);
-    console.log(`\n2️⃣ Checking results...`);
-    
-    try {
-      const results = JSON.parse(readFileSync(resultsFile, 'utf8'));
-      console.log(`   ✅ Found ${results.total_clips} sentence clips\n`);
-      
-      // Step 3: Upload clips to Google Drive and save to Supabase
-      console.log('3️⃣ Uploading clips to Google Drive and saving to Supabase...\n');
-      console.log('   This will take a few minutes...\n');
-      
-      // Run the upload script
-      const { stdout: uploadOutput } = await execAsync('npm run upload-video-clips', {
-        timeout: 3600000, // 1 hour for large batches
-        env: { ...process.env }
-      });
-      
-      console.log(uploadOutput);
-      
-      console.log('\n✅ Complete workflow finished!\n');
-      console.log(`📊 Summary:`);
-      console.log(`   Video ID: ${videoId}`);
-      console.log(`   Clips created: ${results.total_clips}`);
-      console.log(`   Transcript: ${results.transcription.transcript.substring(0, 100)}...`);
-      console.log(`   Is Pashto: ${results.transcription.is_pashto}`);
-      console.log(`\n🔗 View clips: https://drive.google.com/drive/folders/1Wb09vyqP2HqEMRQ2B-SViEgxmVkuKMgN`);
-      console.log(`📊 Metadata saved to Supabase`);
-      
-    } catch (error) {
-      console.error('❌ Results file not found:', error.message);
-      console.log('\n⚠️ Video processing may have failed or is still running');
-      console.log(`   Check: ${resultsFile}`);
-      process.exit(1);
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Transcription failed');
     }
+    
+    console.log('✅ Transcription complete!');
+    console.log(`   Transcript: ${result.transcript.substring(0, 100)}...`);
+    console.log(`   Validation: ${result.validation.confidence * 100}% confidence\n`);
+    
+    // Step 2: Store in Supabase
+    console.log('2️⃣ Storing transcript in Supabase...\n');
+    
+    const storeResponse = await fetch('http://localhost:3000/api/store-video-transcript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoId: videoId,
+        videoUrl: youtubeUrl,
+        transcript: result.transcript,
+        segments: [],
+        audioSegments: [],
+        metadata: {
+          validation: result.validation,
+          source: 'elevenlabs'
+        }
+      })
+    });
+    
+    const storeResult = await storeResponse.json();
+    
+    if (!storeResponse.ok) {
+      throw new Error(storeResult.error || 'Failed to store transcript');
+    }
+    
+    console.log('✅ Transcript stored successfully!\n');
+    
+    console.log('✅ Complete workflow finished!\n');
+    console.log(`📊 Summary:`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   Transcript: ${result.transcript.substring(0, 100)}...`);
+    console.log(`   Validation: ${result.validation.confidence * 100}% confidence`);
+    console.log(`   Transcript ID: ${storeResult.transcriptId}`);
+    console.log(`\n📊 View in Videos tab: http://localhost:3000`);
     
   } catch (error) {
     console.error('❌ Processing failed:', error.message);
+    console.log('\n💡 Alternative: Try using the Videos tab in the app UI');
     process.exit(1);
   }
 }
