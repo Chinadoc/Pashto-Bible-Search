@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
-  audioUrl: string;
+  audioUrl: string | null | undefined;
   verseRef: string;
 }
 
@@ -14,7 +14,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Extract file ID from Google Drive URL
-  const getFileId = (url: string): string | null => {
+  const getFileId = (url: string | null | undefined): string | null => {
     if (!url) return null;
     
     let fileId: string | null = null;
@@ -79,6 +79,15 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     
     setError(`Audio could not be loaded (Error ${errorCode}). Try downloading instead.`);
   };
+
+  // Return early if no audio URL after all hooks
+  if (!audioUrl) {
+    return (
+      <div className="text-xs text-gray-400 dark:text-gray-500">
+        🔇 Audio not available
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
