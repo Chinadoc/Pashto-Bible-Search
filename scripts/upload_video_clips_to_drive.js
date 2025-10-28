@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { readFileSync, statSync, readdirSync } from 'fs';
+import { readFileSync, statSync, readdirSync, createReadStream } from 'fs';
 import { join } from 'path';
 import dotenv from 'dotenv';
 
@@ -65,16 +65,16 @@ async function getOrCreateFolder(drive, folderName) {
   }
 }
 
-async function uploadFile(drive, filePath, fileName, folderId) {
+async function uploadFile(drive, filePath, fileName, myfolderId) {
   try {
     const fileMetadata = {
       name: fileName,
-      parents: [folderId],
+      parents: [myfolderId],
     };
 
     const media = {
       mimeType: 'audio/wav',
-      body: readFileSync(filePath),
+      body: createReadStream(filePath),
     };
 
     const file = await drive.files.create({
