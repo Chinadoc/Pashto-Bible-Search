@@ -139,6 +139,34 @@ function segmentTranscript(words: AssemblyAIWord[]): Array<{ text: string; start
   return segments;
 }
 
+// Validate Pashto transcription quality
+function validatePashtoClip(text: string): { confidence: number; needsRetry: boolean; reason: string } {
+  // Check for Pashto script
+  const hasPashtoScript = /[\u0600-\u06FF]/.test(text);
+  
+  // Check for common Pashto words
+  const commonPashtoWords = ['خدای', 'عیسی', 'پیغمبر', 'کتاب', 'تورات', 'انجیل', 'زبور', 'کړي', 'کړل', 'کړه'];
+  const hasCommonWords = commonPashtoWords.some(word => text.includes(word));
+  
+  // Check word count
+  const wordCount = text.split(/\s+/).length;
+  
+  // Calculate confidence
+  let confidence = 0;
+  if (hasPashtoScript) confidence += 40;
+  if (hasCommonWords) confidence += 30;
+  if (wordCount >= 3) confidence += 20;
+  if (text.length > 10) confidence += 10;
+  
+  const needsRetry = confidence < 60; // Retry if confidence < 60%
+  
+  return {
+    confidence,
+    needsRetry,
+    reason: needsRetry ? 'Low Pashto confidence - retry with ElevenLabs recommended' : 'Good quality transcription'
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -193,20 +221,27 @@ export async function POST(request: NextRequest) {
     const segments = segmentTranscript(transcriptionResult.words);
     console.log(`✅ Created ${segments.length} segments\n`);
 
-    // Step 3: Create clips metadata (without actual file creation)
-    console.log('Step 3️⃣: Creating clip metadata...');
-    const clips = segments.map((segment, i) => ({
-      segment_number: i + 1,
-      transcript_text: segment.text,
-      start_time_seconds: Math.round(segment.startTime),
-      end_time_seconds: Math.round(segment.endTime),
-      google_drive_file_id: `clip_${videoId}_${i + 1}`,
-      google_drive_url: `https://drive.google.com/file/d/clip_${videoId}_${i + 1}`,
-      audio_file_path: `${videoId}_segment_${i + 1}.mp3`,
-      validation_score: 85,
-      needs_retry: false
-    }));
-    console.log(`✅ Created ${clips.length} clip records\n`);
+    // Step 3: Create clips metadata with validation
+    console.log('Step 3️⃣: Creating clip metadata with validation...');
+    const clips = segments.map((segment, i) => {
+      const validation = validatePashtoClip(segment.text);
+      return {
+        segment_number: i + 1,
+        transcript_text: segment.text,
+        start_time_seconds: Math.round(segment.startTime),
+        end_time_seconds: Math.round(segment.endTime),
+        google_drive_file_id: `clip_${videoId}_${i + 1}`,
+        google_drive_url: `https://drive.google.com/file/d/clip_${videoId}_${i + 1}`,
+        audio_file_path: `${videoId}_segment_${i + 1}.mp3`,
+        validation_score: validation.confidence,
+        needs_retry: validation.needsRetry,
+        retry_reason: validation.needsRetry ? validation.reason : null,
+        transcription_service: 'assemblyai'
+      };
+    });
+    
+    const lowConfidenceCount = clips.filter(c => c.needs_retry).length;
+    console.log(`✅ Created ${clips.length} clip records (${lowConfidenceCount} flagged for ElevenLabs retry)\n`);
 
     // Step 4: Save to Supabase
     console.log('Step 4️⃣: Saving to Supabase...');
