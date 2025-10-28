@@ -17,13 +17,15 @@ const fs = require('fs');
 // CONFIGURATION
 // ============================================================
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nkombdutnjvaasxrbmdn.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('❌ Missing environment variables:');
-  console.error('   - NEXT_PUBLIC_SUPABASE_URL');
-  console.error('   - SUPABASE_SERVICE_ROLE_KEY');
+if (!SUPABASE_KEY) {
+  console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+  console.error('\n📝 Set it with:');
+  console.error('   export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"');
+  console.error('\n💡 Get it from: Supabase Dashboard → Settings → API → Service Role Secret');
+  console.error('\n📚 Your Supabase URL: ' + SUPABASE_URL);
   process.exit(1);
 }
 
