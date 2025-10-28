@@ -22,7 +22,8 @@
     "make-files-public": "node scripts/make_all_files_in_folder_public.js",
     "find-all-yousafzai": "node scripts/find_and_move_all_yousafzai.js",
     "check-folder": "node scripts/check_folder_contents.js",
-    "upload-video-clips": "node scripts/upload_video_clips_to_drive.js"
+    "upload-video-clips": "node scripts/upload_video_clips_to_drive.js",
+    "process-video": "node process_and_upload_video.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

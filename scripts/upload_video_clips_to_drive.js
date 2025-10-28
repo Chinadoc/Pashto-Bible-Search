@@ -155,11 +155,11 @@ async function saveToSupabase(metadata) {
     const { data, error } = await supabase
       .from('video_transcripts')
       .insert({
-        video_id: metadata.videoId,
-        video_title: metadata.videoTitle,
-        segment_number: metadata.segmentNumber,
-        start_time_seconds: Math.floor(metadata.startTime),
-        end_time_seconds: Math.floor(metadata.endTime),
+        video_id: metadata.videoId || 'unknown',
+        video_title: metadata.videoTitle || metadata.filename,
+        segment_number: metadata.segmentNumber || 0,
+        start_time_seconds: Math.floor(metadata.startTime || 0),
+        end_time_seconds: Math.floor(metadata.endTime || 0),
         transcript_text: metadata.transcript || '',
         audio_file_path: `https://drive.google.com/file/d/${metadata.googleDriveId}/view`,
         transcript_file_path: metadata.filename,
@@ -168,7 +168,10 @@ async function saveToSupabase(metadata) {
       });
     
     if (error) {
-      console.error(`   ⚠️ Failed to save to Supabase:`, error.message);
+      // Don't log duplicate key errors (file already exists)
+      if (!error.message.includes('duplicate')) {
+        console.error(`   ⚠️ Failed to save to Supabase:`, error.message);
+      }
       return false;
     }
     
@@ -189,6 +192,36 @@ async function main() {
   const folderName = 'Pashto Video Clips';
   const folderId = await getOrCreateFolder(drive, folderName);
   console.log(`📁 Target folder ID: ${folderId}\n`);
+  
+  // Load transcript data from results file if available
+  let transcriptData = {};
+  try {
+    const resultsFiles = readdirSync(join(process.cwd(), 'processed_videos'))
+      .filter(f => f.endsWith('_results.json'));
+    
+    if (resultsFiles.length > 0) {
+      const latestResults = resultsFiles[resultsFiles.length - 1];
+      const resultsPath = join(process.cwd(), 'processed_videos', latestResults);
+      const results = JSON.parse(readFileSync(resultsPath, 'utf8'));
+      
+      // Create lookup by filename
+      if (results.clips) {
+        results.clips.forEach(clip => {
+          transcriptData[clip.filename] = {
+            transcript: clip.sentence,
+            startTime: clip.start_time,
+            endTime: clip.end_time,
+            videoId: results.video_id,
+            videoTitle: results.youtube_url
+          };
+        });
+      }
+      
+      console.log(`📝 Loaded transcript data for ${Object.keys(transcriptData).length} clips\n`);
+    }
+  } catch (error) {
+    console.log('⚠️ Could not load transcript data:', error.message);
+  }
   
   // Get all audio files from sentence_clips directory
   const clipsDir = join(process.cwd(), 'sentence_clips');
@@ -218,12 +251,16 @@ async function main() {
           
           // Parse filename and save to Supabase
           const fileInfo = parseFilename(fileName);
+          const clipData = transcriptData[fileName] || {};
+          
           const metadata = {
             ...fileInfo,
             googleDriveId: fileId,
-            startTime: 0, // Default, will be updated if available
-            endTime: 0,  // Default, will be updated if available
-            transcript: '' // Will be filled if available
+            startTime: clipData.startTime || 0,
+            endTime: clipData.endTime || 0,
+            transcript: clipData.transcript || '',
+            videoId: clipData.videoId || fileInfo.videoId,
+            videoTitle: clipData.videoTitle || fileInfo.videoTitle
           };
           
           const savedToDb = await saveToSupabase(metadata);

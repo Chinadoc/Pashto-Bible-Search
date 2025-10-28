@@ -347,8 +347,14 @@ class OfflineVideoProcessor:
         }
 
 def main():
-    """Main function to process the specific video"""
-    video_url = "https://www.youtube.com/watch?v=0tvvnixN7iw&t=724s"
+    """Main function to process a video"""
+    import sys
+    
+    # Get video URL from command line or use default
+    if len(sys.argv) > 1:
+        video_url = sys.argv[1]
+    else:
+        video_url = "https://www.youtube.com/watch?v=0tvvnixN7iw&t=724s"
     
     processor = OfflineVideoProcessor()
     
