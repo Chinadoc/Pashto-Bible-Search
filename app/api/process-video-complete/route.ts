@@ -169,6 +169,12 @@ function validatePashtoClip(text: string): { confidence: number; needsRetry: boo
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasAssemblyAIKey: !!ASSEMBLYAI_API_KEY
+    });
+
     const body = await request.json();
     const { youtubeUrl } = body;
 
