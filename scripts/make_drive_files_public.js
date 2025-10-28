@@ -1,37 +1,49 @@
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase credentials');
   process.exit(1);
 }
 
-if (!googleClientEmail || !googlePrivateKey) {
-  console.error('❌ Missing Google Drive API credentials');
-  console.error('Please set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY in your .env file');
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Load token.json for OAuth credentials
+let oauth2Client;
+try {
+  const tokenPath = join(process.cwd(), 'token.json');
+  const tokenFileContent = readFileSync(tokenPath, 'utf8');
+  // Token.json is stored as stringified JSON, so parse twice
+  const tokenData = JSON.parse(tokenFileContent);
+  
+  oauth2Client = new google.auth.OAuth2(
+    tokenData.client_id,
+    tokenData.client_secret,
+    tokenData.redirect_uris?.[0]
+  );
+  
+  oauth2Client.setCredentials({
+    access_token: tokenData.token,
+    refresh_token: tokenData.refresh_token,
+    expiry_date: new Date(tokenData.expiry).getTime(),
+  });
+  
+  console.log('✅ Loaded Google Drive credentials from token.json\n');
+} catch (error) {
+  console.error('❌ Failed to load token.json:', error.message);
+  console.error('Please make sure token.json exists in the project root');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Set up Google Drive API client
-const auth = new google.auth.JWT(
-  googleClientEmail,
-  null,
-  googlePrivateKey,
-  ['https://www.googleapis.com/auth/drive'],
-  null
-);
-
-const drive = google.drive({ version: 'v3', auth });
+const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 // Extract file ID from Google Drive URL
 function extractFileId(url) {
