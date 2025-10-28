@@ -13,10 +13,17 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Return early if no audio URL (all hooks must be called before any returns)
+  if (!audioUrl) {
+    return (
+      <div className="text-xs text-gray-400 dark:text-gray-500">
+        🔇 Audio not available
+      </div>
+    );
+  }
+
   // Extract file ID from Google Drive URL
-  const getFileId = (url: string | null | undefined): string | null => {
-    if (!url) return null;
-    
+  const getFileId = (url: string): string | null => {
     let fileId: string | null = null;
     
     // Extract file ID from various formats
@@ -79,15 +86,6 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     
     setError(`Audio could not be loaded (Error ${errorCode}). Try downloading instead.`);
   };
-
-  // Return early if no audio URL after all hooks
-  if (!audioUrl) {
-    return (
-      <div className="text-xs text-gray-400 dark:text-gray-500">
-        🔇 Audio not available
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-2">
