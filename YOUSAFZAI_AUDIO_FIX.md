@@ -43,21 +43,30 @@ audio_verse_url: convertAudioUrlToProxy(verse.audio_url || verse.audio_public_ur
 
 **Changes:**
 - Updated SELECT queries to fetch both `audio_url` and `audio_public_url` fields
-- Modified audio URL normalization to use `v.audio_url || v.audio_public_url` as fallback
+- **CRITICAL**: Replaced `normalizeGoogleDriveUrl()` with `convertAudioUrlToProxy()` function
+- The new function:
+  - Keeps Supabase URLs as-is (for afghan2023 audio)
+  - Converts Google Drive URLs to `/api/audio/proxy?id=...` format (for yousafzai audio)
+  - Handles CORS issues with Google Drive
 - Applied fix in 3 locations:
-  - Line 112: Main query
-  - Line 143: Fallback query for yousafzai
-  - Line 164: Fallback result formatting
-  - Line 191: Main result formatting
+  - Line 37-66: New proxy conversion function
+  - Line 172: Fallback result formatting
+  - Line 202: Main result formatting
 
 **Code Example:**
 ```typescript
-// Before
+// Before - This caused CORS issues with Google Drive
 audio_public_url: normalizeGoogleDriveUrl(v.audio_public_url)
 
-// After
-audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url)
+// After - Properly handles both storage types
+audio_public_url: convertAudioUrlToProxy(v.audio_url || v.audio_public_url)
 ```
+
+**Why This Matters:**
+- Afghan 2023 audio is stored in Supabase storage: `https://nkombdutnjvaasxrbmdn.supabase.co/storage/...`
+- Yousafzai audio is stored in Google Drive: `https://drive.google.com/uc?id=...`
+- Google Drive URLs require a proxy due to CORS restrictions
+- Supabase URLs work directly without proxy
 
 ## Result
 
@@ -77,7 +86,7 @@ To verify the fix works:
 ## Files Modified
 
 - `app/api/search/route.ts` - Updated search API to handle both audio URL fields
-- `app/api/chapter/route.ts` - Updated chapter API to handle both audio URL fields
+- `app/api/chapter/route.ts` - Updated chapter API to handle both audio URL fields AND convert Google Drive URLs to proxy URLs
 
 ## Future Recommendation
 
