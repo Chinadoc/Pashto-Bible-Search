@@ -33,14 +33,14 @@ function decodeHtmlEntities(text: string): string {
   return decoded;
 }
 
-// Helper function to convert Google Drive URL to viewer URL (works in browsers)
-function convertToViewerUrl(googleDriveUrl: string | null): string | null {
+// Helper function to ensure URL is in Google Drive download format
+function normalizeGoogleDriveUrl(googleDriveUrl: string | null): string | null {
   if (!googleDriveUrl) return null;
   
   // Extract file ID from various Google Drive URL formats
   let fileId: string | null = null;
   
-  // Format 1: https://drive.google.com/file/d/{ID}/preview
+  // Format 1: https://drive.google.com/file/d/{ID}/preview or /view
   let match = googleDriveUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
   if (match) {
     fileId = match[1];
@@ -56,7 +56,7 @@ function convertToViewerUrl(googleDriveUrl: string | null): string | null {
   
   if (!fileId) return googleDriveUrl; // Return original if we can't parse
   
-  // Return Google Drive viewer URL (works in browsers)
+  // Return Google Drive file URL in a format that can be used for downloads
   return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
             testament: v.testament,
             dialect: 'yousafzai',
             audio_storage_path: v.audio_storage_path,
-            audio_public_url: convertToViewerUrl(v.audio_public_url), // Convert to viewer URL
+            audio_public_url: normalizeGoogleDriveUrl(v.audio_public_url), // Normalize Google Drive URL
           }));
 
           return NextResponse.json({

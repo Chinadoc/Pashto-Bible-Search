@@ -15,6 +15,8 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
 
   // Extract file ID from Google Drive URL
   const getFileId = (url: string): string | null => {
+    if (!url) return null;
+    
     let fileId: string | null = null;
     
     // Extract file ID from various formats
@@ -38,6 +40,13 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   // This endpoint is already set up and working
   const streamingUrl = fileId ? `/api/audio-proxy?id=${fileId}&export=download` : audioUrl;
   const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
+
+  // Debug logging
+  console.log(`🎵 AudioPlayer for ${verseRef}:`, {
+    audioUrl,
+    fileId,
+    streamingUrl,
+  });
 
   const handlePlayClick = () => {
     setShowPlayer(true);
