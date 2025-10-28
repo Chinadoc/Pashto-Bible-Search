@@ -30,9 +30,10 @@ export async function GET(request: NextRequest) {
       headers['Range'] = rangeHeader;
     }
 
-    // Fetch the file from Google Drive
+    // Fetch the file from Google Drive (follow redirects)
     const response = await fetch(driveUrl, {
       headers,
+      redirect: 'follow',
     });
 
     if (!response.ok) {
