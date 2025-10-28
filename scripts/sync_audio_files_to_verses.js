@@ -106,79 +106,99 @@ async function syncTranslation(tableName, audioFiles, translationKey) {
   const errors = [];
 
   const BATCH_SIZE = 50;
+  const CONCURRENT_BATCHES = 5; // Process 5 batches concurrently
   const totalBatches = Math.ceil(audioFiles.length / BATCH_SIZE);
 
-  console.log(`   Processing ${audioFiles.length} files in ${totalBatches} batches...\n`);
+  console.log(`   Processing ${audioFiles.length} files in ${totalBatches} batches (${CONCURRENT_BATCHES} concurrent)...\n`);
 
-  for (let i = 0; i < totalBatches; i++) {
-    const start = i * BATCH_SIZE;
-    const end = Math.min(start + BATCH_SIZE, audioFiles.length);
-    const batch = audioFiles.slice(start, end);
+  for (let i = 0; i < totalBatches; i += CONCURRENT_BATCHES) {
+    const batchPromises = [];
+    const startBatch = i;
+    const endBatch = Math.min(i + CONCURRENT_BATCHES, totalBatches);
 
-    for (const audioFile of batch) {
-      try {
-        // Normalize book name from lowercase to proper case
-        // Examples: "isaiah" → "Isaiah", "1john" → "1 John", "2corinthians" → "2 Corinthians"
-        let bookName = audioFile.book;
-        
-        // Convert common patterns
-        bookName = bookName
-          .replace(/^(\d+)([a-z])/, (match, num, letter) => num + ' ' + letter.toUpperCase())  // "1john" → "1 John"
-          .replace(/([a-z])([A-Z])/g, '$1 $2')  // "someBook" → "some Book"
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+    // Create concurrent batch promises
+    for (let j = startBatch; j < endBatch; j++) {
+      const start = j * BATCH_SIZE;
+      const end = Math.min(start + BATCH_SIZE, audioFiles.length);
+      const batch = audioFiles.slice(start, end);
 
-        const { data, error } = await supabase
-          .from(tableName)
-          .update({
-            audio_public_url: audioFile.google_drive_url,
-            audio_storage_path: `audio/${translationKey}/${audioFile.book}_${audioFile.chapter}_${audioFile.verse}.mp3`
-          })
-          .eq('book', bookName)
-          .eq('chapter', audioFile.chapter)
-          .eq('verse', audioFile.verse)
-          .select('id');
-
-        if (error) {
-          errorCount++;
-          errors.push({
-            verse: `${bookName} ${audioFile.chapter}:${audioFile.verse}`,
-            error: error.message
-          });
-        } else if (data && data.length > 0) {
-          successCount++;
-        }
-      } catch (err) {
-        errorCount++;
-        errors.push({
-          verse: `${audioFile.book} ${audioFile.chapter}:${audioFile.verse}`,
-          error: err.message
-        });
-      }
+      const batchPromise = processBatch(batch, tableName, translationKey, j, totalBatches);
+      batchPromises.push(batchPromise);
     }
 
-    const progress = ((i + 1) / totalBatches * 100).toFixed(1);
-    console.log(`   [${progress}%] Batch ${i + 1}/${totalBatches}: ${successCount} synced, ${errorCount} errors`);
+    // Wait for all concurrent batches to complete
+    const results = await Promise.all(batchPromises);
 
-    // Small delay to avoid rate limiting
-    if (i < totalBatches - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    // Aggregate results
+    for (const result of results) {
+      successCount += result.successCount;
+      errorCount += result.errorCount;
+      errors.push(...result.errors);
     }
   }
 
   // Log any errors
-  if (errors.length > 0) {
+  if (errors.length > 0 && errors.length <= 10) {
     console.log(`\n   ⚠️  Errors encountered:`);
-    errors.slice(0, 5).forEach(err => {
+    errors.slice(0, 10).forEach(err => {
       console.log(`      - ${err.verse}: ${err.error}`);
     });
-    if (errors.length > 5) {
-      console.log(`      ... and ${errors.length - 5} more errors`);
+    if (errors.length > 10) {
+      console.log(`      ... and ${errors.length - 10} more errors`);
     }
   }
 
   return { success: successCount, errors: errorCount };
+}
+
+async function processBatch(batch, tableName, translationKey, batchIndex, totalBatches) {
+  let batchSuccess = 0;
+  let batchErrors = 0;
+  const errors = [];
+
+  for (const audioFile of batch) {
+    try {
+      // Normalize book name from lowercase to proper case
+      let bookName = audioFile.book;
+      bookName = bookName
+        .replace(/^(\d+)([a-z])/, (match, num, letter) => num + ' ' + letter.toUpperCase())
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .update({
+          audio_public_url: audioFile.google_drive_url,
+          audio_storage_path: `audio/${translationKey}/${audioFile.book}_${audioFile.chapter}_${audioFile.verse}.mp3`
+        })
+        .eq('book', bookName)
+        .eq('chapter', audioFile.chapter)
+        .eq('verse', audioFile.verse)
+        .select('id');
+
+      if (error) {
+        batchErrors++;
+        errors.push({
+          verse: `${bookName} ${audioFile.chapter}:${audioFile.verse}`,
+          error: error.message
+        });
+      } else if (data && data.length > 0) {
+        batchSuccess++;
+      }
+    } catch (err) {
+      batchErrors++;
+      errors.push({
+        verse: `${audioFile.book} ${audioFile.chapter}:${audioFile.verse}`,
+        error: err.message
+      });
+    }
+  }
+
+  const progress = ((batchIndex + 1) / totalBatches * 100).toFixed(1);
+  console.log(`   [${progress}%] Batch ${batchIndex + 1}/${totalBatches}: ${batchSuccess} synced, ${batchErrors} errors`);
+
+  return { successCount: batchSuccess, errorCount: batchErrors, errors };
 }
 
 // ============================================================
