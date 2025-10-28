@@ -125,6 +125,35 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     }
   };
 
+  const retryLowConfidenceClips = async (videoId: string) => {
+    setRetrying(videoId);
+    try {
+      console.log(`🔄 Retrying low-confidence clips for video: ${videoId}`);
+      
+      const response = await fetch('/api/retry-clips-elevenlabs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(`✅ Retried ${result.retried} clips with ElevenLabs`);
+        alert(`Successfully retried ${result.retried} clips with ElevenLabs for better quality!`);
+        // Reload videos to get updated results
+        await loadVideos();
+      } else {
+        alert(`Retry failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error retrying clips:', error);
+      alert('Retry failed. Please try again.');
+    } finally {
+      setRetrying(null);
+    }
+  };
+
   useEffect(() => {
     loadVideos();
   }, []);
@@ -823,6 +852,15 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                             {retrying === (video.video_id || '') ? 'Retrying...' : 'Re-send'}
                           </button>
                         )}
+                        {/* Retry low-confidence clips with ElevenLabs */}
+                        <button
+                          onClick={() => retryLowConfidenceClips(video.video_id || '')}
+                          disabled={retrying === (video.video_id || '')}
+                          className="ml-2 px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                          title="Retry low-confidence clips with ElevenLabs for better quality"
+                        >
+                          {retrying === (video.video_id || '') ? 'Retrying...' : '🔄 Improve Quality'}
+                        </button>
                       </>
                     ) : (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
