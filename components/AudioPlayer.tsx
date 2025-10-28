@@ -43,9 +43,10 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
 
   const fileId = getFileId(audioUrl);
   
-  // Use Vercel API route as CORS proxy for Google Drive audio
-  // This endpoint is already set up and working
-  const streamingUrl = fileId ? `/api/audio-proxy?id=${fileId}&export=download` : audioUrl;
+  // Use Cloudflare Worker as CORS proxy for Google Drive audio
+  // This provides better reliability and CORS handling
+  const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+  const streamingUrl = fileId ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` : audioUrl;
   const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
 
   // Debug logging
