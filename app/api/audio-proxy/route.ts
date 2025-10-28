@@ -43,6 +43,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if we got HTML instead of audio (Google sign-in page)
+    const contentType = response.headers.get('Content-Type') || '';
+    if (contentType.includes('text/html')) {
+      console.error(`Google Drive returned HTML (sign-in page) for file ${fileId}`);
+      return NextResponse.json(
+        { error: 'File is not publicly accessible or requires authentication' },
+        { status: 403 }
+      );
+    }
+
     // Get response headers
     const responseHeaders = new Headers({
       'Content-Type': 'audio/mpeg',
