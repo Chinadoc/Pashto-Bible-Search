@@ -14,7 +14,8 @@
     "clear-caches": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search?action=clear\" && echo \"✅ All caches cleared\"",
     "cache-status": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search\" | jq '.'",
     "migrate-indexes": "node migrate_optimized_indexes.js",
-    "postdeploy": "npm run warm-caches && npm run preload-searches"
+    "postdeploy": "npm run warm-caches && npm run preload-searches",
+    "make-drive-public": "node scripts/make_drive_files_public.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
