@@ -94,7 +94,10 @@ export async function GET(request: NextRequest) {
     // Get all chapter counts if no chapter specified
     if (!chapterParam) {
       const chapterCount = CHAPTER_COUNTS[book] || 0;
-      return NextResponse.json({ book, chapterCount, chapters: Array.from({ length: chapterCount }, (_, i) => i + 1) });
+      const response = NextResponse.json({ book, chapterCount, chapters: Array.from({ length: chapterCount }, (_, i) => i + 1) });
+      // Cache chapter counts for 1 week (they don't change)
+      response.headers.set('Cache-Control', 'public, max-age=604800, immutable');
+      return response;
     }
 
     const chapter = parseInt(chapterParam, 10);
@@ -164,7 +167,7 @@ export async function GET(request: NextRequest) {
             audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
           }));
 
-          return NextResponse.json({
+          const response = NextResponse.json({
             book,
             chapter,
             translation: 'yousafzai2019',
@@ -172,6 +175,9 @@ export async function GET(request: NextRequest) {
             totalVerses: formattedVerses.length,
             note: 'Afghan 2023 not available, showing Yousafzai 2019 instead'
           });
+          // Cache verse data for 24 hours (Bible content doesn't change often)
+          response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+          return response;
         }
       }
 
@@ -191,13 +197,17 @@ export async function GET(request: NextRequest) {
       audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       book,
       chapter,
       translation,
       verses: formattedVerses,
       totalVerses: formattedVerses.length,
     });
+    
+    // Cache verse data for 24 hours (Bible content doesn't change often)
+    response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    return response;
   } catch (error) {
     console.error('Error fetching chapter verses:', error);
     return NextResponse.json(

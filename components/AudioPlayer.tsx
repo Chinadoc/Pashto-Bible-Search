@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 interface AudioPlayerProps {
   audioUrl: string | null | undefined;
@@ -22,26 +22,24 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     );
   }
 
-  // Extract file ID from Google Drive URL
-  const getFileId = (url: string): string | null => {
-    let fileId: string | null = null;
+  // Extract file ID from Google Drive URL (memoized to avoid recalculation)
+  const fileId = useMemo(() => {
+    let id: string | null = null;
     
     // Extract file ID from various formats
-    let match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+    let match = audioUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
     if (match) {
-      fileId = match[1];
+      id = match[1];
     }
-    if (!fileId) {
-      match = url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+    if (!id) {
+      match = audioUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
       if (match) {
-        fileId = match[1];
+        id = match[1];
       }
     }
     
-    return fileId;
-  };
-
-  const fileId = getFileId(audioUrl);
+    return id;
+  }, [audioUrl]);
   
   // Use Cloudflare Worker as CORS proxy for Google Drive audio
   // This provides better reliability and CORS handling
@@ -49,21 +47,20 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
   const streamingUrl = fileId ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` : audioUrl;
   const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
 
-  // Debug logging
-  console.log(`🎵 AudioPlayer for ${verseRef}:`, {
-    audioUrl,
-    fileId,
-    streamingUrl,
-  });
-
   const handlePlayClick = () => {
     setShowPlayer(true);
     setLoading(true);
     setError(null);
     
-    // Try to load the audio
+    // Automatically play after a brief delay to ensure source is loaded
     if (audioRef.current) {
       audioRef.current.load();
+      // Schedule play after load is initiated
+      setTimeout(() => {
+        audioRef.current?.play().catch(err => {
+          console.warn('Auto-play failed (likely due to browser policy):', err);
+        });
+      }, 100);
     }
   };
 
@@ -104,8 +101,11 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
               controls
               controlsList="nodownload"
               className="w-full h-10"
+              preload="none"
+              crossOrigin="anonymous"
               onLoadedData={handleAudioLoaded}
               onError={handleAudioError}
+              onCanPlay={() => setLoading(false)}
             >
               <source src={streamingUrl} type="audio/mpeg" />
               Your browser does not support the audio element.
