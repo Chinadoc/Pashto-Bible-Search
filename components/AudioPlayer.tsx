@@ -34,7 +34,8 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
 
   const fileId = getFileId(audioUrl);
   
-  // Use proxy for streaming, direct link for download
+  // Use Vercel API route as CORS proxy for Google Drive audio
+  // This endpoint is already set up and working
   const streamingUrl = fileId ? `/api/audio-proxy?id=${fileId}&export=download` : audioUrl;
   const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
 
@@ -54,9 +55,20 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     setError(null);
   };
 
-  const handleAudioError = () => {
+  const handleAudioError = (e: any) => {
     setLoading(false);
-    setError('Audio could not be loaded. Please try downloading instead.');
+    const audio = audioRef.current;
+    const errorCode = audio?.error?.code;
+    const errorMessage = audio?.error?.message || 'Unknown error';
+    
+    console.error(`❌ Audio error for ${verseRef}:`, {
+      code: errorCode,
+      message: errorMessage,
+      url: streamingUrl,
+      fileId,
+    });
+    
+    setError(`Audio could not be loaded (Error ${errorCode}). Try downloading instead.`);
   };
 
   return (

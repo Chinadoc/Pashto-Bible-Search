@@ -13,15 +13,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Construct the Google Drive URL
-    const driveUrl = `https://drive.google.com/uc?id=${fileId}&export=${export_type}`;
+    // Construct the Google Drive URL - use direct download endpoint
+    const driveUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&uuid=&at=`;
 
-    // Fetch the file from Google Drive with redirect following
+    // Check for Range header (for audio seeking)
+    const rangeHeader = request.headers.get('Range');
+    
+    const headers: HeadersInit = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.8',
+      'Referer': 'https://drive.google.com/',
+    };
+
+    // Add Range header if present
+    if (rangeHeader) {
+      headers['Range'] = rangeHeader;
+    }
+
+    // Fetch the file from Google Drive
     const response = await fetch(driveUrl, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -32,22 +43,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get the audio blob
-    const audioBlob = await response.blob();
+    // Get response headers
+    const responseHeaders = new Headers({
+      'Content-Type': 'audio/mpeg',
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Range',
+      'Accept-Ranges': 'bytes',
+    });
 
-    console.log(`✅ Successfully proxied audio file ${fileId}, size: ${audioBlob.size} bytes`);
+    // If partial content, pass through Content-Range and Content-Length
+    if (response.status === 206) {
+      const contentRange = response.headers.get('Content-Range');
+      const contentLength = response.headers.get('Content-Length');
+      if (contentRange) responseHeaders.set('Content-Range', contentRange);
+      if (contentLength) responseHeaders.set('Content-Length', contentLength);
+    } else {
+      // For full content, set Content-Length from response
+      const contentLength = response.headers.get('Content-Length');
+      if (contentLength) responseHeaders.set('Content-Length', contentLength);
+    }
 
-    // Return with proper CORS and audio headers
-    return new NextResponse(audioBlob, {
-      status: 200,
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBlob.size.toString(),
-        'Cache-Control': 'public, max-age=86400', // Cache for 1 day
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-        'Accept-Ranges': 'bytes',
-      },
+    console.log(`✅ Successfully proxied audio file ${fileId}, status: ${response.status}`);
+
+    // Return the response body with streaming
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error('Audio proxy error:', error);
