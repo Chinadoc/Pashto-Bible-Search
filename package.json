@@ -15,7 +15,8 @@
     "cache-status": "curl -X GET \"https://pashto-bible-search.vercel.app/api/search\" | jq '.'",
     "migrate-indexes": "node migrate_optimized_indexes.js",
     "postdeploy": "npm run warm-caches && npm run preload-searches",
-    "make-drive-public": "node scripts/make_drive_files_public.js"
+    "make-drive-public": "node scripts/make_drive_files_public.js",
+    "auth-google": "node scripts/auth_google_drive.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
