@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     const { data: verses, error } = await supabase
       .from(tableName)
-      .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url')
+      .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
       .eq('book', book)
       .eq('chapter', chapter)
       .order('verse', { ascending: true });
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         console.log(`⚠️  No verses found in ${tableName}, trying verses_yousafzai as fallback...`);
         const { data: fallbackVerses, error: fallbackError } = await supabase
           .from('verses_yousafzai')
-          .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url')
+          .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
           .eq('book', book)
           .eq('chapter', chapter)
           .order('verse', { ascending: true });
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
             testament: v.testament,
             dialect: 'yousafzai',
             audio_storage_path: v.audio_storage_path,
-            audio_public_url: normalizeGoogleDriveUrl(v.audio_public_url), // Normalize Google Drive URL
+            audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
           }));
 
           return NextResponse.json({
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       testament: v.testament,
       dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
       audio_storage_path: v.audio_storage_path,
-      audio_public_url: normalizeGoogleDriveUrl(v.audio_public_url), // Normalize Google Drive URL
+      audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
     }));
 
     return NextResponse.json({

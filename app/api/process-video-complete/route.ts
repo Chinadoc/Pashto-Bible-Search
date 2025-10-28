@@ -205,8 +205,8 @@ export async function POST(request: NextRequest) {
     if (!transcriptionResult) {
       return NextResponse.json(
         { 
-          error: 'Failed to transcribe video. Check AssemblyAI API key and YouTube URL.',
-          details: 'Make sure the API key is valid and the YouTube video is accessible.'
+          error: 'Failed to transcribe video with AssemblyAI.',
+          details: `AssemblyAI API key present: ${!!ASSEMBLYAI_API_KEY}. URL: ${youtubeUrl}. Check Vercel logs for details.`
         },
         { status: 500 }
       );

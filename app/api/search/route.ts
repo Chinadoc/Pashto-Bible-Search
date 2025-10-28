@@ -49,7 +49,7 @@ async function supabaseSearch(
     const versesTable = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
     const { data: verses, error: versesError } = await supabase
       .from(versesTable)
-      .select('id, ref, book, chapter, verse, text, testament, audio_url, translation_key')
+      .select('id, ref, book, chapter, verse, text, testament, audio_url, audio_public_url, translation_key')
       .in('ref', wordData.verse_refs.slice(0, limit));
 
     if (versesError || !verses) {
@@ -742,7 +742,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         text: verse.text,
         testament: verse.testament,
         translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-        audio_verse_url: convertAudioUrlToProxy(verse.audio_url),
+        audio_verse_url: convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url),
         id: verse.id,
       }));
 
@@ -838,7 +838,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
             text: verse.text,
             testament: verse.testament,
             translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-            audio_verse_url: convertAudioUrlToProxy(verse.audio_url),
+            audio_verse_url: convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url),
             id: verse.id,
           }));
 
@@ -1621,7 +1621,7 @@ async function supabaseOptimizedSearch(
         // Fallback: manually fetch verses by refs (with audio URLs)
         const { data: fallbackVerses } = await supabase
           .from(translation === 'afghan2023' ? 'verses' : 'verses_yousafzai')
-          .select('id, ref, text, testament, book, chapter, verse, audio_url')
+          .select('id, ref, text, testament, book, chapter, verse, audio_url, audio_public_url')
           .in('ref', occurrenceData.verse_refs.slice(0, limit));
 
         if (fallbackVerses) {
