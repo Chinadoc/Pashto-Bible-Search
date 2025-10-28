@@ -21,7 +21,7 @@
     "make-folder-public": "node scripts/make_folder_public.js",
     "make-files-public": "node scripts/make_all_files_in_folder_public.js",
     "find-all-yousafzai": "node scripts/find_and_move_all_yousafzai.js",
-    "organize-fast": "node scripts/find_and_move_all_yousafzai_optimized.js"
+    "check-folder": "node scripts/check_folder_contents.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
