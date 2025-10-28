@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Construct the Google Drive URL - use direct download endpoint
-    const driveUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&uuid=&at=`;
+    // Construct the Google Drive URL - use standard uc endpoint
+    const driveUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
 
     // Check for Range header (for audio seeking)
     const rangeHeader = request.headers.get('Range');
