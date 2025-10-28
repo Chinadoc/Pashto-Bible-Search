@@ -248,6 +248,48 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     }
   };
 
+  const processCompleteVideo = async () => {
+    if (!youtubeUrl.trim()) {
+      setElevenLabsError('Please enter a YouTube URL');
+      return;
+    }
+
+    setElevenLabsLoading(true);
+    setElevenLabsError(null);
+    setElevenLabsResult(null);
+
+    try {
+      console.log('Starting complete video processing...');
+      const response = await fetch('/api/process-video-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtubeUrl: youtubeUrl.trim() })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setElevenLabsResult(result.transcript);
+        console.log(`✅ Video processed: ${result.clipsCreated} clips created`);
+        console.log(`📊 Saved to Supabase with video ID: ${result.videoId}`);
+        
+        // Reload videos to show the new one
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await loadVideos();
+        
+        // Clear the form
+        setYoutubeUrl('');
+      } else {
+        setElevenLabsError(result.error || 'Video processing failed');
+      }
+    } catch (error) {
+      console.error('Video processing error:', error);
+      setElevenLabsError('Failed to process video. Please check console for details.');
+    } finally {
+      setElevenLabsLoading(false);
+    }
+  };
+
   const handleSegmentSelection = (segmentIndex: number) => {
     setSelectedSegments(prev =>
       prev.includes(segmentIndex)
@@ -541,6 +583,24 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                       : 'High-quality transcription, downloads locally then processes'}
                   </p>
                 </div>
+
+                {/* Complete Video Processing Button */}
+                <button
+                  onClick={processCompleteVideo}
+                  disabled={elevenLabsLoading || !youtubeUrl.trim()}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>
+                    {elevenLabsLoading ? '⏳ Processing Video...' : '🚀 Process Complete Video'}
+                  </span>
+                </button>
+                
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  ✨ Creates audio clips, uploads to Google Drive, saves to Supabase, shows in Videos tab
+                </p>
                 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   YouTube videos will be analyzed for speech segments before transcription
