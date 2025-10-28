@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       book,
       chapter,
-      verses: verses?.map(v => ({
+      verses: verses?.map((v: any) => ({
         ref: `${v.book} ${v.chapter}:${v.verse}`,
         audio_public_url: v.audio_public_url,
         audio_storage_path: v.audio_storage_path,
