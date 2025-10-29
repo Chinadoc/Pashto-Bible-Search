@@ -188,17 +188,34 @@ export async function GET(request: NextRequest) {
     }
 
     // Format verses for response
-    const formattedVerses = verses.map((v: any) => ({
-      ref: `${v.book} ${v.chapter}:${v.verse}`,
-      book: v.book,
-      chapter: v.chapter,
-      verse: v.verse,
-      text: decodeHtmlEntities(v.text),
-      testament: v.testament,
-      dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-      audio_storage_path: v.audio_storage_path,
-      audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
-    }));
+    const formattedVerses = verses.map((v: any) => {
+      // Use audio_url first, then fall back to audio_public_url
+      // Only normalize if we have a Google Drive URL - preserve Supabase URLs as-is
+      const rawAudioUrl = v.audio_url || v.audio_public_url;
+      let finalAudioUrl: string | null = null;
+      
+      if (rawAudioUrl) {
+        // If it's a Supabase URL, use it directly without normalization
+        if (rawAudioUrl.includes('supabase.co')) {
+          finalAudioUrl = rawAudioUrl;
+        } else {
+          // For Google Drive URLs, normalize them
+          finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
+        }
+      }
+      
+      return {
+        ref: `${v.book} ${v.chapter}:${v.verse}`,
+        book: v.book,
+        chapter: v.chapter,
+        verse: v.verse,
+        text: decodeHtmlEntities(v.text),
+        testament: v.testament,
+        dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
+        audio_storage_path: v.audio_storage_path,
+        audio_public_url: finalAudioUrl,
+      };
+    });
 
     const response = NextResponse.json({
       book,
