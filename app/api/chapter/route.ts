@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Query Supabase verses table directly - much faster than loading all verses
-    const tableName = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
+    const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
 
     console.log(`📖 Fetching ${book} ${chapter} from ${tableName} (translation: ${translation})`);
 
@@ -143,9 +143,9 @@ export async function GET(request: NextRequest) {
     if (!verses || verses.length === 0) {
       // If Afghan 2023 is empty, try Yousafzai as fallback
       if (translation === 'afghan2023') {
-        console.log(`⚠️  No verses found in ${tableName}, trying verses_yousafzai as fallback...`);
+        console.log(`⚠️  No verses found in ${tableName}, trying Yousafzai Verses as fallback...`);
         const { data: fallbackVerses, error: fallbackError } = await supabase
-          .from('verses_yousafzai')
+          .from('Yousafzai Verses')
           .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
           .eq('book', book)
           .eq('chapter', chapter)

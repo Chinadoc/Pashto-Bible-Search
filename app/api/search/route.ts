@@ -30,54 +30,33 @@ async function supabaseSearch(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Step 1: Look up word in word_occurrence_index (2-5ms)
-    const { data: wordData, error: wordError } = await supabase
-      .from('word_occurrence_index')
-      .select('verse_refs, tf_idf_scores, frequency')
-      .eq('word', query)
-      .eq('translation_key', translation)
-      .single();
+    // Map translation to table name
+    const versesTable = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
 
-    if (wordError || !wordData?.verse_refs?.length) {
-      console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (no results)`);
-      return { results: [], frequency: 0 };
-    }
-
-    console.log(`✅ Word lookup: ${Date.now() - startTime}ms (${wordData.verse_refs.length} verses)`);
-
-    // Step 2: Fetch verse details (10-50ms)
-    const versesTable = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
-    const { data: verses, error: versesError } = await supabase
+    // Try full-text search first
+    const { data: verses, error: searchError } = await supabase
       .from(versesTable)
       .select('id, ref, book, chapter, verse, text, testament, audio_url, audio_public_url, translation_key')
-      .in('ref', wordData.verse_refs.slice(0, limit));
+      .ilike('text', `%${query}%`)
+      .limit(limit);
 
-    if (versesError || !verses) {
-      console.log(`⏱️  Supabase search: ${Date.now() - startTime}ms (error fetching verses)`);
+    if (searchError) {
+      console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (error)`);
       return { results: [], frequency: 0 };
     }
 
-    // Step 3: Apply scope filter
-    let filtered = verses;
+    // Apply scope filter
+    let filtered = verses || [];
     if (scope === 'ot') {
-      filtered = verses.filter(v => v.testament?.toLowerCase() === 'ot');
+      filtered = filtered.filter(v => v.testament?.toLowerCase() === 'ot');
     } else if (scope === 'nt') {
-      filtered = verses.filter(v => v.testament?.toLowerCase() === 'nt');
+      filtered = filtered.filter(v => v.testament?.toLowerCase() === 'nt');
     }
 
-    // Step 4: Sort by TF-IDF scores
-    const scored = filtered.map((verse, idx) => {
-      const verseRefIndex = wordData.verse_refs.indexOf(verse.ref);
-      return {
-        ...verse,
-        score: wordData.tf_idf_scores?.[verseRefIndex] ?? 0
-      };
-    }).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
     const elapsed = Date.now() - startTime;
-    console.log(`⏱️  Supabase search: ${elapsed}ms (${scored.length} results)`);
+    console.log(`⏱️  Supabase search: ${elapsed}ms (${filtered.length} results)`);
 
-    return { results: scored, frequency: wordData.frequency || 0 };
+    return { results: filtered, frequency: filtered.length };
 
   } catch (error) {
     console.error('Supabase search error:', error);
