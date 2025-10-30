@@ -854,13 +854,45 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         
         for (const variant of allVariants.slice(0, 40)) {
           console.log(`Searching for variant: "${variant.form}"`);
-          const variantResults = await supabaseSearch(variant.form, scope, translation, 100);
-          console.log(`Variant "${variant.form}": ${variantResults.results.length} results`);
           
-          if (variantResults.results.length > 0) {
+          // Try D1 first for variants too
+          let variantResults: any[] = [];
+          if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL) {
+            try {
+              const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
+              const d1VariantVerses = await searchVersesD1(variant.form, {
+                translation: translation as 'afghan2023' | 'yousafzai2019',
+                testament: testamentFilter,
+                limit: 100,
+              });
+              
+              if (d1VariantVerses && d1VariantVerses.length > 0) {
+                variantResults = d1VariantVerses.map((v: any, idx: number) => ({
+                  ref: `${v.book} ${v.chapter}:${v.verse}`,
+                  text: v.text,
+                  testament: v.testament,
+                  audio_url: v.audio_r2_key ? getAudioStreamUrl(v.audio_r2_key) : v.audio_public_url,
+                  audio_r2_key: v.audio_r2_key,
+                  id: v.id || idx + 1,
+                }));
+              }
+            } catch (d1Error) {
+              console.warn(`D1 variant search failed for "${variant.form}", trying Supabase:`, d1Error);
+            }
+          }
+          
+          // Fallback to Supabase if D1 didn't return results
+          if (variantResults.length === 0) {
+            const supabaseVariantResults = await supabaseSearch(variant.form, scope, translation, 100);
+            variantResults = supabaseVariantResults.results;
+          }
+          
+          console.log(`Variant "${variant.form}": ${variantResults.length} results`);
+          
+          if (variantResults.length > 0) {
             searchedVariants.push(variant.form);
             
-            for (const result of variantResults.results) {
+            for (const result of variantResults) {
               if (!uniqueRefs.has(result.ref)) {
                 uniqueRefs.add(result.ref);
                 allResults.push(result);
@@ -874,14 +906,25 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         if (allResults.length > 0) {
           console.log(`✅ Found ${allResults.length} results via related forms (${searchedVariants.length} variants searched)`);
           
-          const formattedResults = allResults.slice(0, limit).map((verse: any) => ({
-            ref: verse.ref,
-            text: verse.text,
-            testament: verse.testament,
-            translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-            audio_verse_url: convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url),
-            id: verse.id,
-          }));
+          const formattedResults = allResults.slice(0, limit).map((verse: any) => {
+            // Use R2 audio URL if available, otherwise fallback to Supabase URL
+            let audioUrl = null;
+            if (verse.audio_r2_key) {
+              audioUrl = getAudioStreamUrl(verse.audio_r2_key);
+            } else if (verse.audio_url || verse.audio_public_url) {
+              audioUrl = convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url);
+            }
+            
+            return {
+              ref: verse.ref,
+              text: verse.text,
+              testament: verse.testament,
+              translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+              audio_verse_url: audioUrl,
+              audio_r2_key: verse.audio_r2_key || null,
+              id: verse.id,
+            };
+          });
 
           return NextResponse.json({
             success: true,
@@ -891,11 +934,11 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
               normalized: searchQuery,
               variants: allVariants.map(v => v.form),
               variantsSearched: searchedVariants,
-              searchType: 'supabase-with-variants',
+              searchType: 'd1-with-variants',
               frequency: allResults.length,
             },
             queryTime: Date.now() - startedAt,
-            source: 'supabase-variants',
+            source: 'd1-r2-variants',
             note: `Searched for related forms/conjugations of "${searchQuery}"`,
           });
         } else {
