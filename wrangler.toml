@@ -1,6 +1,17 @@
 name = "pashtobiblesearch"
-main = "cloudflare-worker.js"
+main = "cloudflare/worker-api.ts"
 compatibility_date = "2024-10-27"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "pashto-bible-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "pashto-bible-audio"
 
 # This is your workers.dev subdomain
 # After deployment, your worker will be available at:
