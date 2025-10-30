@@ -6,7 +6,7 @@ compatibility_date = "2024-10-27"
 [[d1_databases]]
 binding = "DB"
 database_name = "pashto-bible-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "54a972b6-897a-4ae0-ba19-ecf4a6edc3b0"
 
 # R2 Bucket binding
 [[r2_buckets]]
