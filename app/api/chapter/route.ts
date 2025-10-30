@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
     if (!verses || verses.length === 0) {
       // If Afghan 2023 is empty, try Yousafzai as fallback
       if (translation === 'afghan2023') {
-        console.log(`⚠️  No verses found in ${tableName}, trying Yousafzai Verses as fallback...`);
+        console.log(`⚠️  No verses found in D1 for ${book} ${chapter}, trying Yousafzai Verses as fallback...`);
         const { data: fallbackVerses, error: fallbackError } = await supabase
           .from('Yousafzai Verses')
           .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
