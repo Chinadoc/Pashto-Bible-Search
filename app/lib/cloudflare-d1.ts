@@ -11,7 +11,7 @@ import type {
   GetVersesByChapterResponse,
   GetVerseByRefResponse,
   SearchWordOccurrencesResponse,
-} from './cloudflare-types';
+} from '../../cloudflare/types';
 
 const CLOUDFLARE_WORKER_URL =
   process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL ||
@@ -127,4 +127,55 @@ export async function searchWordOccurrences(
     limit: String(limit),
   });
 
-  const response = await fetch(`
+  const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/word-occurrences?${params}`);
+  
+  if (!response.ok) {
+    throw new Error(`Search failed: ${response.statusText}`);
+  }
+
+  const data: SearchWordOccurrencesResponse = await response.json();
+  return data.occurrences;
+}
+
+/**
+ * Get audio URL from R2
+ */
+export async function getAudioUrl(r2Key: string): Promise<string> {
+  const encodedKey = encodeURIComponent(r2Key);
+  const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/audio/url/${encodedKey}`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to get audio URL: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.url;
+}
+
+/**
+ * Get audio stream URL from R2
+ * Use this URL directly in <audio> tag
+ */
+export function getAudioStreamUrl(r2Key: string): string {
+  const encodedKey = encodeURIComponent(r2Key);
+  return `${CLOUDFLARE_WORKER_URL}/api/audio/stream/${encodedKey}`;
+}
+
+/**
+ * Resolve audio URL from verse R2 key
+ */
+export async function resolveAudioUrlFromVerse(verse: Verse): Promise<string | null> {
+  if (!verse.audio_r2_key) {
+    return verse.audio_public_url || null;
+  }
+
+  try {
+    return getAudioStreamUrl(verse.audio_r2_key);
+  } catch (error) {
+    console.warn(`Failed to resolve audio URL for verse ${verse.ref}:`, error);
+    return verse.audio_public_url || null;
+  }
+}
+
+
+
