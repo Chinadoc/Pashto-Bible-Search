@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AudioMap } from '@/types';
 
+// Helper function to ensure URL is in Google Drive download format
+function normalizeGoogleDriveUrl(googleDriveUrl: string | null): string | null {
+  if (!googleDriveUrl) return null;
+  
+  // Extract file ID from various Google Drive URL formats
+  let fileId: string | null = null;
+  
+  // Format 1: https://drive.google.com/file/d/{ID}/preview or /view
+  let match = googleDriveUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+  if (match) {
+    fileId = match[1];
+  }
+  
+  // Format 2: https://drive.google.com/uc?id={ID}&export=...
+  if (!fileId) {
+    match = googleDriveUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+    if (match) {
+      fileId = match[1];
+    }
+  }
+  
+  if (!fileId) return googleDriveUrl; // Return original if we can't parse
+  
+  // Return Google Drive file URL in a format that can be used for downloads
+  return `https://drive.google.com/file/d/${fileId}/view`;
+}
+
 // Replicate the audio map loading logic from /api/get_audio_map
 async function loadAudioMapFromSource(): Promise<AudioMap> {
   const audioMap: AudioMap = {};
@@ -239,11 +266,57 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (d1Error) {
-        console.warn(`⚠️ D1 audio resolution failed for ${ref}, falling back to audio map:`, d1Error);
+        console.warn(`⚠️ D1 audio resolution failed for ${ref}, trying Supabase fallback:`, d1Error);
       }
     }
 
-    // Fallback to existing audio map (Supabase/Google Drive)
+    // Fallback 2: Try querying Supabase directly for the verse
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const refParts = ref.match(/^(\w+)\s+(\d+):(\d+)$/i);
+        
+        if (refParts) {
+          const [, book, chapter, verse] = refParts;
+          const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
+          
+          const { data: verseData, error: supabaseError } = await supabase
+            .from(tableName)
+            .select('audio_url, audio_public_url, audio_storage_path')
+            .eq('book', book)
+            .eq('chapter', parseInt(chapter, 10))
+            .eq('verse', parseInt(verse, 10))
+            .single();
+          
+          if (!supabaseError && verseData) {
+            const audioUrl = verseData.audio_public_url || verseData.audio_url;
+            if (audioUrl) {
+              // Normalize Google Drive URL if needed
+              let finalUrl = audioUrl;
+              if (audioUrl.includes('drive.google.com')) {
+                finalUrl = normalizeGoogleDriveUrl(audioUrl);
+              }
+              
+              console.log(`✅ Audio URL resolved from Supabase for ${ref}`);
+              return NextResponse.json({
+                ref,
+                url: finalUrl,
+                source: 'supabase',
+                storage_path: verseData.audio_storage_path || null,
+              });
+            }
+          }
+        }
+      }
+    } catch (supabaseError) {
+      console.warn(`⚠️ Supabase audio resolution failed for ${ref}, falling back to audio map:`, supabaseError);
+    }
+
+    // Fallback 3: Use existing audio map (Supabase/Google Drive)
     const audioMap = await loadAudioMapFromSource();
     console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
 
