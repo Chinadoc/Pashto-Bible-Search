@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/utils/supabase';
+import { getVersesByChapter } from '@/app/lib/cloudflare-d1';
 
 // Type definition for verse from Supabase
 interface VerseRow {
@@ -105,27 +106,61 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid chapter number' }, { status: 400 });
     }
 
-    // Query Supabase verses table directly - much faster than loading all verses
-    const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
+    // Try D1 first (Cloudflare), fallback to Supabase if unavailable
+    let verses: any[] | null = null;
+    let useD1 = false;
 
-    console.log(`📖 Fetching ${book} ${chapter} from ${tableName} (translation: ${translation})`);
-
-    const { data: verses, error } = await supabase
-      .from(tableName)
-      .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
-      .eq('book', book)
-      .eq('chapter', chapter)
-      .order('verse', { ascending: true });
-
-    if (error) {
-      console.error(`❌ Supabase query error for ${tableName}:`, error);
-      return NextResponse.json(
-        { error: 'Database query failed', details: error.message },
-        { status: 500 }
-      );
+    // Check if Cloudflare Worker URL is configured
+    const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+    
+    if (cloudflareWorkerUrl) {
+      try {
+        console.log(`📖 Fetching ${book} ${chapter} from D1 (translation: ${translation})`);
+        const d1Verses = await getVersesByChapter(book, chapter, translation as 'afghan2023' | 'yousafzai2019');
+        
+        if (d1Verses && d1Verses.length > 0) {
+          verses = d1Verses.map((v) => ({
+            book: v.book,
+            chapter: v.chapter,
+            verse: v.verse,
+            text: v.text,
+            testament: v.testament,
+            audio_storage_path: v.audio_r2_key,
+            audio_public_url: v.audio_public_url,
+            audio_url: v.audio_public_url, // For compatibility
+            audio_r2_key: v.audio_r2_key,
+          }));
+          useD1 = true;
+          console.log(`✅ D1 query returned ${verses.length} verses`);
+        }
+      } catch (d1Error) {
+        console.warn(`⚠️ D1 query failed, falling back to Supabase:`, d1Error);
+      }
     }
 
-    console.log(`✅ Query returned ${verses?.length || 0} verses from ${tableName}`);
+    // Fallback to Supabase if D1 didn't return results
+    if (!verses || verses.length === 0) {
+      const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
+      console.log(`📖 Fetching ${book} ${chapter} from ${tableName} (translation: ${translation})`);
+
+      const { data: supabaseVerses, error } = await supabase
+        .from(tableName)
+        .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
+        .eq('book', book)
+        .eq('chapter', chapter)
+        .order('verse', { ascending: true });
+
+      if (error) {
+        console.error(`❌ Supabase query error for ${tableName}:`, error);
+        return NextResponse.json(
+          { error: 'Database query failed', details: error.message },
+          { status: 500 }
+        );
+      }
+
+      verses = supabaseVerses;
+      console.log(`✅ Supabase query returned ${verses?.length || 0} verses from ${tableName}`);
+    }
 
     // DEBUG: Check audio data in multiple verses
     if (verses && verses.length > 0) {
@@ -189,18 +224,24 @@ export async function GET(request: NextRequest) {
 
     // Format verses for response
     const formattedVerses = verses.map((v: any) => {
-      // Use audio_url first, then fall back to audio_public_url
-      // Only normalize if we have a Google Drive URL - preserve Supabase URLs as-is
-      const rawAudioUrl = v.audio_url || v.audio_public_url;
       let finalAudioUrl: string | null = null;
       
-      if (rawAudioUrl) {
-        // If it's a Supabase URL, use it directly without normalization
-        if (rawAudioUrl.includes('supabase.co')) {
-          finalAudioUrl = rawAudioUrl;
-        } else {
-          // For Google Drive URLs, normalize them
-          finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
+      if (useD1 && v.audio_r2_key) {
+        // Use R2 audio URL via Cloudflare Worker
+        const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+        finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
+      } else {
+        // Fallback to existing audio URL handling (Supabase/Google Drive)
+        const rawAudioUrl = v.audio_url || v.audio_public_url;
+        
+        if (rawAudioUrl) {
+          // If it's a Supabase URL, use it directly without normalization
+          if (rawAudioUrl.includes('supabase.co')) {
+            finalAudioUrl = rawAudioUrl;
+          } else {
+            // For Google Drive URLs, normalize them
+            finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
+          }
         }
       }
       
@@ -212,8 +253,9 @@ export async function GET(request: NextRequest) {
         text: decodeHtmlEntities(v.text),
         testament: v.testament,
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-        audio_storage_path: v.audio_storage_path,
+        audio_storage_path: v.audio_storage_path || v.audio_r2_key,
         audio_public_url: finalAudioUrl,
+        audio_r2_key: v.audio_r2_key || null, // Include R2 key for D1 verses
       };
     });
 

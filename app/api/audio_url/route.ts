@@ -212,19 +212,44 @@ function audioEntryToUrl(entry: string): string {
 
 export async function GET(request: NextRequest) {
   const ref = request.nextUrl.searchParams.get('ref');
+  const translation = (request.nextUrl.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019') || 'afghan2023';
+  
   if (!ref) {
     return NextResponse.json({ error: 'Missing ref parameter' }, { status: 400 });
   }
 
   try {
-    // Load audio map directly instead of making internal API call
+    // Try D1/R2 first if Cloudflare Worker is configured
+    const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+    
+    if (cloudflareWorkerUrl) {
+      try {
+        const d1Response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio?ref=${encodeURIComponent(ref)}&translation=${translation}`);
+        
+        if (d1Response.ok) {
+          const d1Data = await d1Response.json();
+          if (d1Data.url) {
+            console.log(`✅ Audio URL resolved from D1/R2 for ${ref}`);
+            return NextResponse.json({
+              ref,
+              url: d1Data.url,
+              source: 'd1-r2',
+              r2_key: d1Data.r2_key || null,
+            });
+          }
+        }
+      } catch (d1Error) {
+        console.warn(`⚠️ D1 audio resolution failed for ${ref}, falling back to audio map:`, d1Error);
+      }
+    }
+
+    // Fallback to existing audio map (Supabase/Google Drive)
     const audioMap = await loadAudioMapFromSource();
     console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
 
     const candidates = getLookupCandidates(ref);
     console.log(`Looking for ref: ${ref}`);
     console.log(`Candidates:`, candidates);
-    console.log(`Available keys in map:`, Object.keys(audioMap).filter(k => k.includes('1corinthians')).slice(0, 5));
 
     const match = lookupAudioEntry(ref, audioMap);
     console.log(`Lookup result for ${ref}:`, match);
