@@ -11,7 +11,7 @@ import type {
   GetVersesByChapterResponse,
   GetVerseByRefResponse,
   SearchWordOccurrencesResponse,
-} from '@/cloudflare/types';
+} from '../../cloudflare/types';
 
 const CLOUDFLARE_WORKER_URL =
   process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL ||
