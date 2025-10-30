@@ -8,6 +8,7 @@ import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
+import { searchVerses as searchVersesD1, getAudioStreamUrl } from '@/app/lib/cloudflare-d1';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
@@ -704,10 +705,71 @@ export async function POST(request: NextRequest) {
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
 // ============================================================================
-// TRY SUPABASE SEARCH FIRST (NEW - fast path for indexed words)
+// TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
+// ============================================================================
+if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+  console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
+  try {
+    // Map scope to testament filter
+    const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
+    
+    const d1Verses = await searchVersesD1(searchQuery, {
+      translation: translation as 'afghan2023' | 'yousafzai2019',
+      testament: testamentFilter,
+      limit: limit,
+    });
+    
+    if (d1Verses && d1Verses.length > 0) {
+      const queryTimeMs = Date.now() - startedAt;
+      console.log(`✅ D1 hit! ${d1Verses.length} results in ${queryTimeMs}ms`);
+      
+      // Format D1 results to match expected format with R2 audio support
+      const formattedResults = d1Verses.map((verse: any, index: number) => {
+        // Generate R2 audio URL if audio_r2_key exists
+        let audioUrl = null;
+        if (verse.audio_r2_key) {
+          audioUrl = getAudioStreamUrl(verse.audio_r2_key);
+        } else if (verse.audio_public_url) {
+          audioUrl = convertAudioUrlToProxy(verse.audio_public_url);
+        }
+        
+        return {
+          ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+          text: verse.text,
+          testament: verse.testament,
+          translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+          audio_verse_url: audioUrl,
+          audio_r2_key: verse.audio_r2_key || null, // Include R2 key for future use
+          id: verse.id || index + 1,
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        results: formattedResults.slice(0, limit),
+        processed: {
+          original: originalQuery,
+          normalized: searchQuery,
+          variants: [],
+          searchType: 'd1',
+          frequency: d1Verses.length,
+        },
+        queryTime: queryTimeMs,
+        source: 'd1-r2',
+      });
+    } else {
+      console.log(`⚠️ D1 search returned ${d1Verses?.length || 0} results, falling back to Supabase`);
+    }
+  } catch (d1Error) {
+    console.warn(`⚠️ D1 search failed, falling back to Supabase:`, d1Error);
+  }
+}
+
+// ============================================================================
+// FALLBACK TO SUPABASE SEARCH (if D1 unavailable or no results)
 // ============================================================================
 if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
-  console.log(`\n🚀 SUPABASE SEARCH FIRST: "${searchQuery}" (${translation})`);
+  console.log(`\n🚀 SUPABASE SEARCH (fallback): "${searchQuery}" (${translation})`);
   try {
     const supabaseResults = await supabaseSearch(searchQuery, scope, translation, limit);
     
