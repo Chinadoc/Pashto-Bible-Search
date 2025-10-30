@@ -36,6 +36,7 @@
     "utils/**/*.tsx",
     "types/**/*.ts",
     "types/**/*.tsx",
+    "cloudflare/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", "supabase", "supabase/**"]
