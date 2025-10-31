@@ -2,68 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
   import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
-import { createClient } from '@supabase/supabase-js';
-import { loadAudioMap as loadDriveAudioMap } from '@/app/lib/audio-map';
-import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef } from '@/app/lib/cloudflare-d1';
-// Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
-
-// ============================================================================
-// SUPABASE SEARCH (NEW - Optimized for speed)
-// ============================================================================
-
-async function supabaseSearch(
-  query: string,
-  scope: Scope = 'all',
-  translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023',
-  limit: number = 100
-) {
-  const startTime = Date.now();
-  
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Map translation to table name
-    const versesTable = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
-
-    // Try full-text search first
-    const { data: verses, error: searchError } = await supabase
-      .from(versesTable)
-      .select('id, ref, book, chapter, verse, text, testament, audio_url, audio_public_url, audio_verse_url, translation_key')
-      .ilike('text', `%${query}%`)
-      .limit(limit);
-
-    if (searchError) {
-      console.log(`⏱️  Supabase search for "${query}": ${Date.now() - startTime}ms (error)`);
-      return { results: [], frequency: 0 };
-    }
-
-    // Apply scope filter
-    let filtered = verses || [];
-    if (scope === 'ot') {
-      filtered = filtered.filter(v => v.testament?.toLowerCase() === 'ot');
-    } else if (scope === 'nt') {
-      filtered = filtered.filter(v => v.testament?.toLowerCase() === 'nt');
-    }
-
-    const elapsed = Date.now() - startTime;
-    console.log(`⏱️  Supabase search: ${elapsed}ms (${filtered.length} results)`);
-
-    return { results: filtered, frequency: filtered.length };
-
-  } catch (error) {
-    console.error('Supabase search error:', error);
-    return { results: [], frequency: 0 };
-  }
-}
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
@@ -421,34 +365,11 @@ async function getAudioMap(): Promise<Record<string, string>> {
 }
 
 async function loadAudioMapData(): Promise<Record<string, string>> {
-  try {
-    const [driveMap, supabaseMap] = await Promise.all([
-      loadDriveAudioMap(),
-      loadSupabaseAudioMap(),
-    ]);
-
-    const merged: Record<string, string> = { ...driveMap };
-    let supabaseAdded = 0;
-    for (const [key, value] of Object.entries(supabaseMap)) {
-      if (!merged[key]) {
-        merged[key] = value;
-        supabaseAdded++;
-      }
-    }
-
-    audioMapCache = merged;
-    audioMapCacheTime = Date.now();
-    console.log(
-      `✅ Audio map cached: ${Object.keys(merged).length} entries (Drive ${Object.keys(driveMap).length}, Supabase added ${supabaseAdded})`,
-    );
-
-    return merged;
-  } catch (error) {
-    console.error('Failed to load audio map data:', error);
-    audioMapCache = {};
-    audioMapCacheTime = Date.now();
-    return {};
-  }
+  // Audio is now handled entirely by D1/R2 via Cloudflare Worker
+  // No need for local audio map caching
+  audioMapCache = {};
+  audioMapCacheTime = Date.now();
+  return {};
 }
 
 async function getHelperVariants(helper: string): Promise<string[]> {
@@ -518,15 +439,7 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
     const book = result.book;
     const usesYousafzai = YOUSAFZAI_BOOKS.has(book);
 
-    // Get audio URL for this verse
-    let audioUrl = null;
-    try {
-      const driveUrl = audioUrlFromRef(result.ref, audioMap);
-      audioUrl = convertAudioUrlToProxy(driveUrl);
-    } catch (error) {
-      console.warn(`Failed to get audio URL for ${result.ref}:`, error);
-    }
-
+    // Audio URLs are now handled directly in search results from D1/R2
     return {
       ref: result.ref,
       text: result.text,
@@ -534,7 +447,7 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
       translation: usesYousafzai ? 'Yousafzai 2019' : null,
       dialect: usesYousafzai ? 'Yousafzai' : null,
       tags: [] as any[][],
-      audio_verse_url: audioUrl,
+      audio_verse_url: null, // Audio handled via D1/R2 in search results
       id: index + 1,
     };
   });
@@ -766,8 +679,6 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         let audioUrl = null;
         if (verse.audio_r2_key) {
           audioUrl = getAudioStreamUrl(verse.audio_r2_key);
-        } else if (verse.audio_public_url) {
-          audioUrl = convertAudioUrlToProxy(verse.audio_public_url);
         }
         
         return {
@@ -795,260 +706,11 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         source: 'd1-r2',
       });
     } else {
-      console.log(`⚠️ D1 search returned ${d1Verses?.length || 0} results, falling back to Supabase`);
+      console.log(`⚠️ D1 search returned ${d1Verses?.length || 0} results`);
     }
   } catch (d1Error) {
-    console.warn(`⚠️ D1 search failed, falling back to Supabase:`, d1Error);
+    console.warn(`⚠️ D1 search failed:`, d1Error);
   }
-}
-
-// ============================================================================
-// FALLBACK TO SUPABASE SEARCH (if D1 unavailable or no results)
-// ============================================================================
-if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
-  console.log(`\n🚀 SUPABASE SEARCH (fallback): "${searchQuery}" (${translation})`);
-  try {
-    const supabaseResults = await supabaseSearch(searchQuery, scope, translation, limit);
-    
-    if (supabaseResults.results.length > 0) {
-      const queryTimeMs = Date.now() - startedAt;
-      console.log(`✅ Supabase hit! ${supabaseResults.results.length} results in ${queryTimeMs}ms`);
-      
-      // Format Supabase results to match expected format
-      // Try to enrich with audio_r2_key from D1 if available
-      const enrichedResults = await Promise.all(
-        supabaseResults.results.map(async (verse: any) => {
-          let audioUrl = null;
-          let audioR2Key = null;
-          
-          // Try to get audio_r2_key from D1 for this verse
-          if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL) {
-            try {
-              const d1Verse = await getVerseByRef(verse.ref, translation as 'afghan2023' | 'yousafzai2019');
-              if (d1Verse?.audio_r2_key) {
-                audioR2Key = d1Verse.audio_r2_key;
-                audioUrl = getAudioStreamUrl(d1Verse.audio_r2_key);
-              }
-            } catch (error) {
-              // D1 lookup failed, continue with Supabase audio
-              console.debug(`Could not fetch audio_r2_key from D1 for ${verse.ref}`);
-            }
-          }
-          
-          // Fallback to Supabase audio if no R2 key found
-          if (!audioUrl) {
-            audioUrl = convertAudioUrlToProxy(verse.audio_verse_url || verse.audio_url || verse.audio_public_url);
-          }
-          
-          return {
-            ref: verse.ref,
-            text: verse.text,
-            testament: verse.testament,
-            translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-            audio_verse_url: audioUrl,
-            audio_r2_key: audioR2Key,
-            id: verse.id,
-          };
-        })
-      );
-      
-      const formattedResults = enrichedResults;
-
-      return NextResponse.json({
-        success: true,
-        results: formattedResults.slice(0, limit),
-        processed: {
-          original: originalQuery,
-          normalized: searchQuery,
-          variants: [],
-          searchType: 'supabase',
-          frequency: supabaseResults.frequency || undefined,
-        },
-        queryTime: queryTimeMs,
-        source: 'supabase',
-      });
-    }
-    
-    // FALLBACK: If direct search failed, try to generate related forms
-    console.log(`⏱️  Direct word not found, generating related forms...`);
-    
-    try {
-      // Try to generate verb conjugations and noun inflections
-      console.log(`Attempting to generate verb variants for: "${searchQuery}"`);
-      const verbVariants = await generateVerbVariants(searchQuery, { cap: 50, includeCompound: true });
-      console.log(`✅ Verb variants generated: ${verbVariants.length} forms`);
-      
-      console.log(`Attempting to generate noun variants for: "${searchQuery}"`);
-      const nounVariants = await generateNounVariants(searchQuery, { cap: 50 });
-      console.log(`✅ Noun variants generated: ${nounVariants.length} forms`);
-      
-      const allVariants = [...verbVariants, ...nounVariants];
-      console.log(`Generated ${allVariants.length} total variants for "${searchQuery}": ${allVariants.map(v => v.form).join(', ')}`);
-      
-      // If no variants generated, try basic synthetic generation based on Pashto morphology
-      if (allVariants.length === 0) {
-        console.log(`⚠️ No variants generated, trying synthetic generation for "${searchQuery}"`);
-        
-        // Generate common Pashto verb suffixes for the base form
-        const syntheticsToTry = [
-          searchQuery,  // base form itself
-          searchQuery + 'ی',  // past participle
-          searchQuery + 'وی',  // subjunctive
-          searchQuery + 'ل',  // past simple
-          searchQuery.replace(/ی$/, '') + 'و',  // present plural
-          'و' + searchQuery,  // prefixed past
-        ];
-        
-        for (const form of syntheticsToTry) {
-          if (form.trim()) {
-            allVariants.push({
-              form: form.trim(),
-              label: 'Synthetic Form',
-              pos: 'verb',
-            });
-          }
-        }
-        console.log(`Generated ${syntheticsToTry.length} synthetic forms`);
-      }
-      
-      if (allVariants.length > 0) {
-        console.log(`✅ Generated ${allVariants.length} related forms, searching...`);
-        
-        // Search for each variant and collect results
-        let allResults: any[] = [];
-        const uniqueRefs = new Set();
-        const searchedVariants: string[] = [];
-        
-        for (const variant of allVariants.slice(0, 40)) {
-          console.log(`Searching for variant: "${variant.form}"`);
-          
-          // Try D1 first for variants too
-          let variantResults: any[] = [];
-          if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL) {
-            try {
-              const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
-              const d1VariantVerses = await searchVersesD1(variant.form, {
-                translation: translation as 'afghan2023' | 'yousafzai2019',
-                testament: testamentFilter,
-                limit: 100,
-              });
-              
-              if (d1VariantVerses && d1VariantVerses.length > 0) {
-                variantResults = d1VariantVerses.map((v: any, idx: number) => ({
-                  ref: `${v.book} ${v.chapter}:${v.verse}`,
-                  text: v.text,
-                  testament: v.testament,
-                  audio_url: v.audio_r2_key ? getAudioStreamUrl(v.audio_r2_key) : v.audio_public_url,
-                  audio_r2_key: v.audio_r2_key,
-                  id: v.id || idx + 1,
-                }));
-              }
-            } catch (d1Error) {
-              console.warn(`D1 variant search failed for "${variant.form}", trying Supabase:`, d1Error);
-            }
-          }
-          
-          // Fallback to Supabase if D1 didn't return results
-          if (variantResults.length === 0) {
-            const supabaseVariantResults = await supabaseSearch(variant.form, scope, translation, 100);
-            variantResults = supabaseVariantResults.results;
-          }
-          
-          console.log(`Variant "${variant.form}": ${variantResults.length} results`);
-          
-          if (variantResults.length > 0) {
-            searchedVariants.push(variant.form);
-            
-            for (const result of variantResults) {
-              if (!uniqueRefs.has(result.ref)) {
-                uniqueRefs.add(result.ref);
-                allResults.push(result);
-              }
-            }
-          }
-          
-          if (allResults.length >= limit) break;
-        }
-        
-        if (allResults.length > 0) {
-          console.log(`✅ Found ${allResults.length} results via related forms (${searchedVariants.length} variants searched)`);
-          
-          const formattedResults = allResults.slice(0, limit).map((verse: any) => {
-            // Use R2 audio URL if available, otherwise fallback to Supabase URL
-            // For yousafzai, audio_verse_url is the primary field
-            let audioUrl = null;
-            if (verse.audio_r2_key) {
-              audioUrl = getAudioStreamUrl(verse.audio_r2_key);
-            } else if (verse.audio_verse_url || verse.audio_url || verse.audio_public_url) {
-              audioUrl = convertAudioUrlToProxy(verse.audio_verse_url || verse.audio_url || verse.audio_public_url);
-            }
-            
-            return {
-              ref: verse.ref,
-              text: verse.text,
-              testament: verse.testament,
-              translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-              audio_verse_url: audioUrl,
-              audio_r2_key: verse.audio_r2_key || null,
-              id: verse.id,
-            };
-          });
-
-          return NextResponse.json({
-            success: true,
-            results: formattedResults,
-            processed: {
-              original: originalQuery,
-              normalized: searchQuery,
-              variants: allVariants.map(v => v.form),
-              variantsSearched: searchedVariants,
-              searchType: 'd1-with-variants',
-              frequency: allResults.length,
-            },
-            queryTime: Date.now() - startedAt,
-            source: 'd1-r2-variants',
-            note: `Searched for related forms/conjugations of "${searchQuery}"`,
-          });
-        } else {
-          console.log(`⚠️ Generated ${allVariants.length} variants but none found in index: ${allVariants.map(v => v.form).join(', ')}`);
-        }
-      }
-    } catch (variantError) {
-      console.error('❌ Failed to generate variants:', variantError instanceof Error ? variantError.message : variantError);
-      console.error('Stack:', variantError instanceof Error ? variantError.stack : 'N/A');
-    }
-    
-  } catch (error) {
-    console.error('❌ Supabase search error:', error);
-    // Don't fall back to JSON anymore - all inflections are indexed
-    // If Supabase fails, return error instead of slow JSON search
-    return NextResponse.json({
-      success: false,
-      error: 'Search service temporarily unavailable',
-      results: [],
-      queryTime: Date.now() - startedAt,
-      source: 'supabase-error',
-    }, { status: 503 });
-  }
-}
-
-// If we reach here with Supabase enabled and no results, return empty (not found)
-if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
-  console.log(`ℹ️  Word not found in Supabase index or related forms: "${searchQuery}"`);
-  return NextResponse.json({
-    success: true,
-    results: [],
-    processed: {
-      original: originalQuery,
-      normalized: searchQuery,
-      variants: [],
-      searchType: 'supabase',
-      frequency: 0,
-    },
-    queryTime: Date.now() - startedAt,
-    source: 'supabase',
-    message: 'Word not found in index or related forms',
-  });
 }
 
 // English search mode: find ALL Pashto words with this English term
@@ -1607,7 +1269,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
           translation: null,
           dialect: null,
           tags: [] as any[][],
-          audio_verse_url: convertAudioUrlToProxy(audioMap[result.ref] || null),
+          audio_verse_url: null, // Audio handled via D1/R2
           id: index + 1,
         }));
 
@@ -1905,19 +1567,4 @@ function matchesScope(verse: any, scope: Scope): boolean {
   if (scope === 'all') return true;
   const testament = verse.testament?.toLowerCase();
   return testament === scope;
-}
-
-// ============================================================================
-// AUDIO PROXY HELPER
-// ============================================================================
-
-function convertAudioUrlToProxy(googleDriveUrl: string | null): string | null {
-  if (!googleDriveUrl) return null;
-  
-  // Extract file ID from Google Drive URL
-  const match = googleDriveUrl.match(/id=([a-zA-Z0-9_-]+)/);
-  if (!match || !match[1]) return null;
-  
-  // Return proxy URL
-  return `/api/audio/proxy?id=${match[1]}`;
 }

@@ -830,54 +830,12 @@ export default function ClientHome() {
   }, []);
 
   // Load audio map data for both translations
+  // Audio is now handled entirely by D1/R2 via Cloudflare Worker
+  // No need to load audio maps anymore
   useEffect(() => {
-    const loadAudioMaps = async () => {
-      try {
-        // Load Afghan 2023 audio map
-        const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-        if (afghanResponse.ok) {
-          const afghanData = await afghanResponse.json();
-          const afghanAudioMap = afghanData || {};
-          const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
-          setAudioMap(afghanAudioMap);
-
-          if (driveUrls > 0) {
-            console.warn(`⚠️ Afghan 2023 audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Afghan 2023 audio map API returned error:', afghanResponse.status, afghanResponse.statusText);
-          setAudioMap({});
-        }
-
-        // Load Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
-        if (yousafzaiResponse.ok) {
-          const yousafzaiData = await yousafzaiResponse.json();
-          const yousafzaiAudioMap = yousafzaiData || {};
-          const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
-          setYousafzaiAudioMap(yousafzaiAudioMap);
-
-          if (yousafzaiDriveUrls > 0) {
-            console.warn(`⚠️ Yousafzai 2019 audio map contains ${yousafzaiDriveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Yousafzai 2019 audio map API returned error:', yousafzaiResponse.status, yousafzaiResponse.statusText);
-          setYousafzaiAudioMap({});
-        }
-      } catch (error) {
-        console.error('Failed to load audio maps:', error);
-        // Audio maps are optional, so we can continue without them
-        setAudioMap({});
-        setYousafzaiAudioMap({});
-      }
-    };
-    loadAudioMaps();
+    // Audio maps are no longer needed - all audio comes from D1/R2
+    setAudioMap({});
+    setYousafzaiAudioMap({});
   }, []);
 
   // Fetch poems when poems tab is active

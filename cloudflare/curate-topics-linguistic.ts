@@ -18,23 +18,31 @@ const execAsync = promisify(exec);
 // Known problematic word-category mismatches
 // These are words that should NEVER appear in certain categories regardless of context
 const KNOWN_MISMATCHES: Record<string, string[]> = {
-  'activities_social': ['ټول', 'تول', 'د', 'په', 'او', 'چې', 'کې'], // "all" and common particles don't belong in social activities
-  'measurement': ['ټول', 'تول'], // "all" is not a measurement term
-  'actions_communication': ['ټول', 'تول'], // "all" is not a communication verb
-  'actions_move': ['ټول', 'تول'], // "all" is not a movement verb
-  'actions_see': ['ټول', 'تول'], // "all" is not a sight verb
-  'body_parts_head': ['ټول', 'تول'], // "all" is not a body part
-  'body_parts_torso': ['ټول', 'تول'], // "all" is not a body part
-  'body_parts_legs': ['ټول', 'تول'], // "all" is not a body part
-  'food': ['ټول', 'تول'], // "all" is not food
-  'clothing': ['ټول', 'تول'], // "all" is not clothing
-  'buildings': ['ټول', 'تول'], // "all" is not a building
-  'nature_animals': ['ټول', 'تول'], // "all" is not an animal
-  'weather': ['ټول', 'تول'], // "all" is not weather
+  // Common particles excluded from most categories
+  'activities_social': ['ټول', 'تول', 'د', 'په', 'او', 'چې', 'کې'],
+  'measurement': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" don't belong
+  'actions_communication': ['ټول', 'تول'],
+  'actions_move': ['ټول', 'تول'],
+  'actions_see': ['ټول', 'تول'],
+  'body_parts_head': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'body_parts_torso': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'body_parts_legs': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'body_parts': ['ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" are not body parts
+  'food': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'clothing': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان'], // "bandage" might be clothing, but not "harm"
+  'buildings': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'nature_animals': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'weather': ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'],
+  'time': ['ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" are NOT time-related
+  'age_stages': ['ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" are NOT age stages
+  'grammar': ['ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" are NOT grammar
+  'states': ['پټۍ'], // "bandage" is not a state (but "harm"/"damage" might be in abstract_bad)
+  'spatial': ['ضرر', 'تاوان', 'نقصان', 'پټۍ'], // "harm", "damage", "bandage" are NOT spatial
+  'fire_related': ['پټۍ'], // "bandage" is not fire-related
 };
 
 // Words that require extra context verification even if translation matches
-const CONTEXT_REQUIRED_WORDS: string[] = ['ټول', 'تول']; // "all" needs verse context to verify semantic fit
+const CONTEXT_REQUIRED_WORDS: string[] = ['ټول', 'تول', 'ضرر', 'تاوان', 'نقصان', 'پټۍ']; // Common words that need verse context
 
 // Comprehensive category definitions with keywords (from create-word-categories.ts)
 const CATEGORIES: Record<string, string[]> = {
@@ -155,6 +163,104 @@ const CATEGORIES: Record<string, string[]> = {
   
   // Other Categories
   'miscellaneous': ['thing', 'object', 'item', 'stuff', 'matter', 'affair', 'business', 'event', 'happening', 'occasion', 'time', 'moment', 'chance', 'opportunity'],
+  
+  // Merged Categories (combine keywords from granular categories)
+  'time': [
+    // From time_periods
+    'day', 'night', 'morning', 'evening', 'noon', 'midnight', 'dawn', 'dusk', 'hour', 'minute', 'moment', 'time', 'period', 'generation',
+    // From time_days
+    'today', 'yesterday', 'tomorrow', 'week', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+    // From time_months
+    'month', 'year', 'season', 'spring', 'summer', 'autumn', 'winter', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
+    // From time_concepts
+    'past', 'present', 'future', 'forever', 'eternity', 'beginning', 'end', 'now', 'then', 'before', 'after', 'while', 'during'
+  ],
+  'body_parts': [
+    // From body_parts_head
+    'head', 'hair', 'face', 'forehead', 'eye', 'ear', 'nose', 'mouth', 'lip', 'tooth', 'tongue', 'chin', 'cheek', 'neck', 'throat',
+    // From body_parts_torso
+    'chest', 'breast', 'back', 'shoulder', 'arm', 'hand', 'finger', 'palm', 'wrist', 'elbow', 'stomach', 'belly', 'waist', 'side', 'rib',
+    // From body_parts_legs
+    'leg', 'foot', 'toe', 'knee', 'thigh', 'ankle', 'heel', 'shin',
+    // From body_parts_internal
+    'heart', 'blood', 'bone', 'flesh', 'skin', 'vein', 'liver', 'kidney', 'lung', 'brain', 'soul', 'spirit'
+  ],
+  'family': [
+    // From family_male
+    'father', 'son', 'brother', 'husband', 'uncle', 'nephew', 'grandfather', 'grandson', 'father-in-law', 'son-in-law', 'brother-in-law',
+    // From family_female
+    'mother', 'daughter', 'sister', 'wife', 'aunt', 'niece', 'grandmother', 'granddaughter', 'mother-in-law', 'daughter-in-law', 'sister-in-law',
+    // From family_general
+    'family', 'relative', 'parent', 'child', 'children', 'offspring', 'descendant', 'ancestor', 'lineage', 'tribe', 'clan'
+  ],
+  'numbers': [
+    // From numbers_cardinal
+    'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred', 'thousand', 'million',
+    // From numbers_ordinal
+    'first', 'second', 'third', 'fourth', 'fifth', 'last', 'next', 'previous',
+    // From numbers_quantities
+    'all', 'many', 'much', 'few', 'little', 'some', 'several', 'whole', 'half', 'double', 'triple', 'single', 'pair', 'couple'
+  ],
+  'nature': [
+    // From nature_land
+    'earth', 'land', 'ground', 'soil', 'dust', 'dirt', 'mountain', 'hill', 'valley', 'plain', 'desert', 'field', 'garden', 'forest', 'tree', 'grass', 'plant', 'flower', 'fruit',
+    // From nature_water
+    'water', 'river', 'sea', 'ocean', 'lake', 'pond', 'well', 'stream', 'spring', 'flood', 'wave', 'ice', 'snow',
+    // From nature_animals
+    'animal', 'beast', 'bird', 'fish', 'snake', 'lion', 'bear', 'wolf', 'fox', 'deer', 'sheep', 'goat', 'cow', 'ox', 'donkey', 'horse', 'camel', 'dog', 'cat', 'pig', 'chicken', 'cock', 'hen', 'eagle', 'dove', 'crow'
+  ],
+  'actions': [
+    // From actions_move
+    'go', 'come', 'walk', 'run', 'flee', 'escape', 'return', 'enter', 'exit', 'leave', 'depart', 'arrive', 'reach', 'approach', 'pass', 'cross', 'climb', 'fall', 'rise', 'stand', 'sit', 'lie', 'rest',
+    // From actions_hand
+    'take', 'give', 'put', 'place', 'set', 'throw', 'cast', 'lift', 'raise', 'lower', 'hold', 'grasp', 'grab', 'catch', 'release', 'send', 'bring', 'carry', 'bear', 'stretch', 'touch', 'feel',
+    // From actions_build
+    'build', 'make', 'create', 'form', 'shape', 'construct', 'destroy', 'break', 'tear', 'cut', 'divide', 'separate', 'join', 'unite', 'repair', 'fix'
+  ],
+  'emotions': [
+    // From emotions_positive
+    'love', 'joy', 'happiness', 'glad', 'gladness', 'rejoice', 'peace', 'hope', 'comfort', 'mercy', 'grace', 'kindness', 'delight', 'pleasure', 'satisfaction',
+    // From emotions_negative
+    'fear', 'afraid', 'angry', 'anger', 'hate', 'sorrow', 'sad', 'sadness', 'grief', 'pain', 'suffering', 'trouble', 'distress', 'anxiety', 'worry', 'shame', 'guilt', 'regret'
+  ],
+  'states': [
+    // From states_life
+    'live', 'life', 'alive', 'dead', 'death', 'die', 'birth', 'born', 'grow', 'old', 'young', 'new', 'fresh',
+    // From states_health
+    'healthy', 'sick', 'ill', 'disease', 'wound', 'injury', 'heal', 'cure', 'pain', 'suffer', 'weak', 'strong', 'strength', 'power',
+    // From states_size
+    'big', 'large', 'great', 'small', 'little', 'tiny', 'huge', 'enormous', 'giant', 'short', 'long', 'tall', 'high', 'low', 'wide', 'narrow', 'thick', 'thin', 'deep', 'shallow',
+    // From states_quality
+    'good', 'bad', 'evil', 'right', 'wrong', 'true', 'false', 'real', 'fake', 'pure', 'clean', 'dirty', 'holy', 'sacred', 'unholy', 'sinful'
+  ],
+  'grammar': [
+    // From grammar_pronouns
+    'pronoun', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'this', 'that', 'these', 'those', 'who', 'what', 'which', 'my', 'your', 'his', 'her', 'our', 'their',
+    // From grammar_prepositions
+    'preposition', 'in', 'on', 'at', 'by', 'with', 'from', 'to', 'for', 'of', 'about', 'under', 'over', 'through', 'between', 'among', 'against', 'toward', 'until', 'since', 'during',
+    // From grammar_conjunctions
+    'conjunction', 'and', 'or', 'but', 'if', 'when', 'because', 'since', 'although', 'though', 'however', 'therefore', 'so', 'then',
+    // From grammar_adverbs
+    'adverb', 'very', 'much', 'more', 'most', 'less', 'least', 'well', 'badly', 'quickly', 'slowly', 'soon', 'now', 'then', 'here', 'there', 'always', 'never', 'often', 'sometimes', 'usually',
+    // From grammar_adjectives
+    'adjective', 'big', 'small', 'good', 'bad', 'new', 'old', 'young', 'hot', 'cold', 'long', 'short', 'high', 'low', 'right', 'left', 'east', 'west', 'north', 'south'
+  ],
+  'religious': [
+    // From religious_concepts
+    'god', 'lord', 'jesus', 'christ', 'messiah', 'holy', 'sacred', 'divine', 'heaven', 'heavenly', 'angels', 'angel', 'devil', 'satan', 'demon', 'spirit', 'ghost', 'soul', 'eternal', 'immortal',
+    // From religious_actions
+    'pray', 'prayer', 'worship', 'praise', 'bless', 'blessing', 'curse', 'sacrifice', 'offer', 'offering', 'anoint', 'baptize', 'baptism', 'preach', 'prophesy', 'prophecy',
+    // From religious_places
+    'temple', 'church', 'synagogue', 'altar', 'sanctuary', 'holy place', 'heaven', 'paradise', 'hell', 'judgment',
+    // From religious_objects
+    'ark', 'covenant', 'law', 'commandment', 'scripture', 'book', 'scroll', 'idol', 'image', 'statue'
+  ],
+  'spatial': [
+    // From direction
+    'up', 'down', 'left', 'right', 'forward', 'backward', 'front', 'back', 'behind', 'before', 'after', 'above', 'below', 'under', 'over', 'inside', 'outside', 'north', 'south', 'east', 'west',
+    // From position
+    'position', 'place', 'location', 'here', 'there', 'where', 'near', 'far', 'close', 'distant', 'beside', 'next to', 'between', 'among', 'within', 'without'
+  ],
 };
 
 interface CategoryVerseMapping {
@@ -202,7 +308,7 @@ function wordInVerseContext(verseText: string, pashtoWord: string): boolean {
 
 /**
  * Calculate semantic relevance using Pashto word analysis
- * Returns score 0-1, where >0.9 = acceptable fit
+ * Returns score 0-1, where >0.95 = acceptable fit (stricter threshold)
  */
 function calculatePashtoSemanticRelevance(
   pashtoWord: string,
@@ -232,52 +338,60 @@ function calculatePashtoSemanticRelevance(
   }
 
   let totalScore = 0;
-  let matches = 0;
+  let exactMatches = 0;
+  let partialMatches = 0;
 
-  // Exact word matches
+  // STRICT: Exact word matches only (highest priority)
   for (const word of words) {
     for (const keyword of categoryKeywords) {
       if (word === keyword.toLowerCase()) {
         totalScore += 1.0;
-        matches++;
+        exactMatches++;
         break;
       }
     }
   }
 
-  // Word boundary matches
-  for (const word of words) {
-    if (matches >= words.length) break;
-
-    for (const keyword of categoryKeywords) {
-      const keywordLower = keyword.toLowerCase();
-      const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
-      if (regex.test(word) && !words.some(w => w === keywordLower)) {
-        totalScore += 0.8;
-        matches++;
-        break;
+  // STRICT: Word boundary matches (only if no exact match found yet)
+  if (exactMatches === 0) {
+    for (const word of words) {
+      for (const keyword of categoryKeywords) {
+        const keywordLower = keyword.toLowerCase();
+        const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
+        if (regex.test(word) && !words.some(w => w === keywordLower)) {
+          totalScore += 0.7; // Lower score for partial matches
+          partialMatches++;
+          break;
+        }
       }
     }
   }
 
   // If no matches found, reject - we need explicit semantic match
-  if (matches === 0) {
+  if (exactMatches === 0 && partialMatches === 0) {
     return 0; // Very conservative - reject if no translation match
   }
 
-  // Normalize score
-  const normalizedScore = Math.min(totalScore / Math.max(words.length, 1), 1.0);
+  // Normalize score (prioritize exact matches)
+  const normalizedScore = exactMatches > 0
+    ? Math.min(totalScore / Math.max(words.length, 1), 1.0)
+    : Math.min(totalScore / Math.max(words.length, 1), 0.85); // Cap partial matches at 0.85
 
   // Additional penalty for common words that might be false positives
-  const commonWords = ['ټول', 'تول', 'د', 'په', 'او', 'چې', 'کې']; // Common Pashto words
+  const commonWords = ['ټول', 'تول', 'د', 'په', 'او', 'چې', 'کې', 'ضرر', 'تاوان', 'نقصان', 'پټۍ'];
   if (commonWords.includes(pashtoWord)) {
     // For common words, require perfect match AND context verification
-    if (normalizedScore < 0.95) {
-      return 0; // Reject if not perfect match
+    if (normalizedScore < 0.98) {
+      return 0; // Reject if not near-perfect match
     }
     if (!verseText) {
       return 0; // Reject if no context available
     }
+  }
+
+  // Require at least 95% match for inclusion (stricter than before)
+  if (normalizedScore < 0.95) {
+    return 0; // Reject if below threshold
   }
 
   return normalizedScore;
@@ -356,20 +470,17 @@ async function curateWithLinguisticAnalysis(
       continue; // Skip this word entirely - it's explicitly excluded
     }
 
-    // Fetch verse texts only for context-required words or when needed for verification
+    // Fetch verse texts for ALL words to verify context (stricter curation)
+    // Also randomize translation selection for diversity
     const mappingsWithText = await Promise.all(
       wordMappings.map(async (mapping) => {
-        // Only fetch verse text if word requires context verification
-        const needsContext = CONTEXT_REQUIRED_WORDS.includes(pashtoWord) || 
-                           ['ټول', 'تول', 'د', 'په', 'او', 'چې', 'کې'].includes(pashtoWord);
-        const verseText = needsContext 
-          ? await fetchVerseText(
-              mapping.book,
-              mapping.chapter,
-              mapping.verse,
-              mapping.translation_key
-            )
-          : null;
+        // Fetch verse text for all words to ensure proper context verification
+        const verseText = await fetchVerseText(
+          mapping.book,
+          mapping.chapter,
+          mapping.verse,
+          mapping.translation_key
+        );
         return { ...mapping, verse_text: verseText };
       })
     );
@@ -393,8 +504,18 @@ async function curateWithLinguisticAnalysis(
         context_verified: contextVerified,
         total_score: relevanceScore * (contextVerified ? 1.1 : 1.0) // Bonus for context verification
       };
-    }).filter(m => m.relevance_score >= 0.9) // Only >90% matches
-      .sort((a, b) => b.total_score - a.total_score);
+    }).filter(m => m.relevance_score >= 0.95) // Only >95% matches (stricter threshold)
+      .sort((a, b) => {
+        // Sort by: 1) total_score (desc), 2) context_verified (desc), 3) translation_key (randomize)
+        if (Math.abs(b.total_score - a.total_score) > 0.01) {
+          return b.total_score - a.total_score;
+        }
+        if (b.context_verified !== a.context_verified) {
+          return b.context_verified ? 1 : -1;
+        }
+        // Randomize translation selection for diversity
+        return Math.random() - 0.5;
+      });
 
     // Take top 1-2 entries per word (as requested)
     const entriesToTake = Math.min(scoredMappings.length, 2);
@@ -509,10 +630,12 @@ async function curateTopicsWithLinguistics(): Promise<void> {
         const avgRelevance = curated.reduce((sum, e) => sum + e.relevance_score, 0) / curated.length;
         const uniqueWords = new Set(curated.map(e => e.pashto_word)).size;
         const contextVerified = curated.filter(e => e.context_verified).length;
+        const translations = new Set(curated.map(e => e.translation_key));
         console.log(`   → Curated: ${curated.length} entries from ${uniqueWords} unique words (target: 100)`);
         console.log(`   → Avg relevance: ${(avgRelevance * 100).toFixed(1)}%, Context verified: ${contextVerified}`);
+        console.log(`   → Translations: ${Array.from(translations).join(', ')}`);
       } else {
-        console.log(`   → No entries passed >90% threshold`);
+        console.log(`   → No entries passed >95% threshold`);
       }
       console.log('');
     }

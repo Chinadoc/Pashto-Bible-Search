@@ -1,242 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { AudioMap } from '@/types';
-
-// Helper function to ensure URL is in Google Drive download format
-function normalizeGoogleDriveUrl(googleDriveUrl: string | null): string | null {
-  if (!googleDriveUrl) return null;
-  
-  // Extract file ID from various Google Drive URL formats
-  let fileId: string | null = null;
-  
-  // Format 1: https://drive.google.com/file/d/{ID}/preview or /view
-  let match = googleDriveUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
-  if (match) {
-    fileId = match[1];
-  }
-  
-  // Format 2: https://drive.google.com/uc?id={ID}&export=...
-  if (!fileId) {
-    match = googleDriveUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
-    if (match) {
-      fileId = match[1];
-    }
-  }
-  
-  if (!fileId) return googleDriveUrl; // Return original if we can't parse
-  
-  // Return Google Drive file URL in a format that can be used for downloads
-  return `https://drive.google.com/file/d/${fileId}/view`;
-}
-
-// Replicate the audio map loading logic from /api/get_audio_map
-async function loadAudioMapFromSource(): Promise<AudioMap> {
-  const audioMap: AudioMap = {};
-
-  // For now, just return a hardcoded map with known working entries
-  // This ensures the audio URL resolution works while we debug the loading issues
-  audioMap['1corinthians 10:16'] = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/1corinthians10_verse_16.mp3';
-  audioMap['1corinthians 11:17'] = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/1corinthians11_verse_17.mp3';
-
-  // Load Supabase audio (NT only, OT removed as requested)
-  const supabaseAudioMap = await loadSupabaseAudioMap();
-  Object.assign(audioMap, supabaseAudioMap);
-
-  // Load Google Drive audio
-  const googleDriveAudioMap = await loadGoogleDriveAudioMaps();
-  Object.assign(audioMap, googleDriveAudioMap);
-
-  return audioMap;
-}
-
-async function loadSupabaseAudioMap(): Promise<AudioMap> {
-  try {
-    // Load NT audio files from Supabase public storage (OT portion removed as requested)
-    // Using direct URLs since the storage API requires different authentication
-    const audioMap: Record<string, string> = {};
-    const baseUrl = 'https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio';
-
-    // NT books only (OT books removed as per user request)
-    const ntBooks = new Set([
-      'matthew', 'mark', 'luke', 'john', 'acts', 'romans',
-      '1corinthians', '2corinthians', 'galatians', 'ephesians',
-      'philippians', 'colossians', '1thessalonians', '2thessalonians',
-      '1timothy', '2timothy', 'titus', 'philemon', 'hebrews',
-      'james', '1peter', '2peter', '1john', '2john', '3john',
-      'jude', 'revelation'
-    ]);
-
-    // Helper function to add a range of verses for a book/chapter
-    const addVerses = (book: string, chapter: number, startVerse: number, endVerse: number) => {
-      for (let verse = startVerse; verse <= endVerse; verse++) {
-        const filename = `${book.toLowerCase()}${chapter}_verse_${verse}.mp3`;
-        const bookName = book.toLowerCase(); // Keep lowercase to match existing format
-        const verseRef = `${bookName} ${chapter}:${verse}`;
-        audioMap[verseRef] = `${baseUrl}/${filename}`;
-      }
-    };
-
-    // Add Mark (confirmed exists in Supabase storage)
-    if (ntBooks.has('mark')) {
-      addVerses('Mark', 1, 1, 45);
-    }
-
-    // The existing NT books (1corinthians, 1john, 1peter, 1thessalonians, 1timothy)
-    // are already being loaded by the Google Drive portion, so we don't need to duplicate them here
-
-    console.log(`Loaded ${Object.keys(audioMap).length} NT audio entries from Supabase (OT removed)`);
-    return audioMap;
-  } catch (error) {
-    console.error('Error loading Supabase audio map:', error);
-    return {};
-  }
-}
-
-async function loadGoogleDriveAudioMaps(): Promise<AudioMap> {
-  const audioMap: AudioMap = {};
-
-  try {
-    // Load Afghan 2023 OT audio from Google Drive
-    const afghanOtData = await loadGoogleDriveFolder('1m-Mv7r01GHTgXkzFxAXfANn_7sSHRSUC');
-    Object.assign(audioMap, afghanOtData);
-
-    // Load Yousafzai audio from Google Drive (search for files)
-    const yousafzaiData = await loadYousafzaiAudioFromDrive();
-    Object.assign(audioMap, yousafzaiData);
-
-    console.log(`Loaded ${Object.keys(audioMap).length} Google Drive audio entries`);
-    return audioMap;
-  } catch (error) {
-    console.error('Error loading Google Drive audio maps:', error);
-    return {};
-  }
-}
-
-async function loadGoogleDriveFolder(folderId: string): Promise<Record<string, string>> {
-  // For now, return empty - would need Google Drive API integration
-  console.log(`Google Drive folder ${folderId} loading not implemented yet`);
-  return {};
-}
-
-async function loadYousafzaiAudioFromDrive(): Promise<Record<string, string>> {
-  // For now, return empty - would need Google Drive API integration
-  console.log('Yousafzai Google Drive audio loading not implemented yet');
-  return {};
-}
 
 export const runtime = 'nodejs';
 
-// Helper functions (already defined later in the file)
-function normalizeRef(ref: string): string {
-  return ref.trim().replace(/\s+/g, ' ');
-}
-
-function normalizeBookNameToSlug(bookName: string): string {
-  return bookName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
-}
-
-function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
-  if (!ref || typeof ref !== 'string') return null;
-  const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
-  if (!match) return null;
-  const book = match[1].trim();
-  const chapter = Number(match[2]);
-  const verse = Number(match[3]);
-  if (!book || Number.isNaN(chapter) || Number.isNaN(verse)) return null;
-  return { book, chapter, verse };
-}
-
-function refToFilename(ref: string): string | null {
-  const parsed = parseRef(ref);
-  if (!parsed) return null;
-  const { book, chapter, verse } = parsed;
-  const slug = normalizeBookNameToSlug(book);
-  return `${slug}${chapter}_verse_${verse}.mp3`;
-}
-
-function filenameVariants(ref: string): string[] {
-  const parsed = parseRef(ref);
-  if (!parsed) return [ref];
-  const { book, chapter, verse } = parsed;
-  const slug = normalizeBookNameToSlug(book);
-  const chapterStr = String(chapter);
-  const verseStr = String(verse);
-  const chapterPad3 = chapterStr.padStart(3, '0');
-  const versePad3 = verseStr.padStart(3, '0');
-  const chapterPad2 = chapterStr.padStart(2, '0');
-  const versePad2 = verseStr.padStart(2, '0');
-  const variants = new Set<string>([
-    ref,
-    `${slug}${chapterStr}_verse_${verseStr}.mp3`,
-    `${slug}${chapterPad3}_verse_${versePad3}.mp3`,
-    `${slug}${chapterPad2}_verse_${versePad2}.mp3`,
-  ]);
-  const numericMatch = slug.match(/^(\d)([a-z].*)$/);
-  if (numericMatch) {
-    const [, leading, rest] = numericMatch;
-    variants.add(`${rest}${leading}${chapterStr}_verse_${verseStr}.mp3`);
-    variants.add(`${rest}${leading}${chapterPad3}_verse_${versePad3}.mp3`);
-    variants.add(`${rest}${leading}${chapterPad2}_verse_${versePad2}.mp3`);
-  }
-  return Array.from(variants);
-}
-
-function getLookupCandidates(ref: string): string[] {
-  const candidates = new Set<string>();
-  candidates.add(ref);
-
-  const trimmed = normalizeRef(ref);
-  candidates.add(trimmed);
-  candidates.add(trimmed.toLowerCase());
-
-  const filename = refToFilename(trimmed);
-  if (filename) {
-    candidates.add(filename);
-    candidates.add(filename.toLowerCase());
-    for (const variant of filenameVariants(trimmed)) {
-      candidates.add(variant);
-      candidates.add(variant.toLowerCase());
-    }
-  }
-
-  return Array.from(candidates);
-}
-
-function lookupAudioEntry(ref: string, audioMap: AudioMap): { key: string; value: string } | null {
-  const candidates = getLookupCandidates(ref);
-
-  for (const key of candidates) {
-    const value = audioMap[key];
-    if (typeof value === 'string' && value.length > 0) {
-      return { key, value };
-    }
-  }
-
-  return null;
-}
-
-function audioEntryToUrl(entry: string): string {
-  if (!entry) return '';
-  if (entry.startsWith('http://') || entry.startsWith('https://')) {
-    return entry;
-  }
-  if (entry.startsWith('gs://')) {
-    const publicBase = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE;
-    if (publicBase) {
-      const withoutScheme = entry.replace(/^gs:\/\//, '');
-      const [bucket, ...rest] = withoutScheme.split('/');
-      const pathPart = rest.join('/');
-      if (!bucket) {
-        return `${publicBase.replace(/\/$/, '')}/${pathPart}`;
-      }
-      if (publicBase.includes(bucket)) {
-        return `${publicBase.replace(/\/$/, '')}/${pathPart}`;
-      }
-      return `${publicBase.replace(/\/$/, '')}/${bucket}/${pathPart}`;
-    }
-  }
-  return `https://drive.google.com/uc?export=download&id=${entry}`;
-}
-
+/**
+ * GET /api/audio_url?ref={verseRef}&translation={translation}
+ * Resolve audio URL for a verse reference from Cloudflare D1/R2
+ */
 export async function GET(request: NextRequest) {
   const ref = request.nextUrl.searchParams.get('ref');
   const translation = (request.nextUrl.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019') || 'afghan2023';
@@ -246,88 +15,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Try D1/R2 first if Cloudflare Worker is configured
+    // Get audio URL from D1/R2 via Cloudflare Worker
     const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
     
-    if (cloudflareWorkerUrl) {
-      try {
-        const d1Response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio?ref=${encodeURIComponent(ref)}&translation=${translation}`);
-        
-        if (d1Response.ok) {
-          const d1Data = await d1Response.json();
-          if (d1Data.url) {
-            console.log(`✅ Audio URL resolved from D1/R2 for ${ref}`);
-            return NextResponse.json({
-              ref,
-              url: d1Data.url,
-              source: 'd1-r2',
-              r2_key: d1Data.r2_key || null,
-            });
-          }
-        }
-      } catch (d1Error) {
-        console.warn(`⚠️ D1 audio resolution failed for ${ref}, trying Supabase fallback:`, d1Error);
-      }
+    if (!cloudflareWorkerUrl) {
+      return NextResponse.json(
+        {
+          error: 'Cloudflare Worker not configured',
+          ref,
+        },
+        { status: 503 },
+      );
     }
 
-    // Fallback 2: Try querying Supabase directly for the verse
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const d1Response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio?ref=${encodeURIComponent(ref)}&translation=${translation}`);
       
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const refParts = ref.match(/^(\w+)\s+(\d+):(\d+)$/i);
-        
-        if (refParts) {
-          const [, book, chapter, verse] = refParts;
-          const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
-          
-          const { data: verseData, error: supabaseError } = await supabase
-            .from(tableName)
-            .select('audio_url, audio_public_url, audio_storage_path, audio_verse_url')
-            .eq('book', book)
-            .eq('chapter', parseInt(chapter, 10))
-            .eq('verse', parseInt(verse, 10))
-            .single();
-          
-          if (!supabaseError && verseData) {
-            // For yousafzai, audio_verse_url is the primary field
-            const audioUrl = verseData.audio_verse_url || verseData.audio_public_url || verseData.audio_url;
-            if (audioUrl) {
-              // Normalize Google Drive URL if needed
-              let finalUrl = audioUrl;
-              if (audioUrl.includes('drive.google.com')) {
-                finalUrl = normalizeGoogleDriveUrl(audioUrl);
-              }
-              
-              console.log(`✅ Audio URL resolved from Supabase for ${ref}`);
-              return NextResponse.json({
-                ref,
-                url: finalUrl,
-                source: 'supabase',
-                storage_path: verseData.audio_storage_path || null,
-              });
-            }
-          }
+      if (d1Response.ok) {
+        const d1Data = await d1Response.json();
+        if (d1Data.url) {
+          console.log(`✅ Audio URL resolved from D1/R2 for ${ref}`);
+          return NextResponse.json({
+            ref,
+            url: d1Data.url,
+            source: 'd1-r2',
+            r2_key: d1Data.r2_key || null,
+          });
         }
       }
-    } catch (supabaseError) {
-      console.warn(`⚠️ Supabase audio resolution failed for ${ref}, falling back to audio map:`, supabaseError);
-    }
-
-    // Fallback 3: Use existing audio map (Supabase/Google Drive)
-    const audioMap = await loadAudioMapFromSource();
-    console.log(`Loaded audio map with ${Object.keys(audioMap).length} entries`);
-
-    const candidates = getLookupCandidates(ref);
-    console.log(`Looking for ref: ${ref}`);
-    console.log(`Candidates:`, candidates);
-
-    const match = lookupAudioEntry(ref, audioMap);
-    console.log(`Lookup result for ${ref}:`, match);
-    if (!match) {
+      
+      // If D1 doesn't have the verse or audio, return not found
       return NextResponse.json(
         {
           error: 'Audio not found',
@@ -335,27 +52,16 @@ export async function GET(request: NextRequest) {
         },
         { status: 404 },
       );
-    }
-
-    const url = audioEntryToUrl(match.value);
-    if (!url) {
+    } catch (d1Error) {
+      console.error(`❌ D1 audio resolution failed for ${ref}:`, d1Error);
       return NextResponse.json(
         {
-          error: 'Unable to resolve audio URL',
-          ref,
-          key: match.key,
+          error: 'Failed to resolve audio URL',
+          details: d1Error instanceof Error ? d1Error.message : String(d1Error),
         },
-        { status: 502 },
+        { status: 500 },
       );
     }
-
-    return NextResponse.json({
-      ref,
-      url,
-      key: match.key,
-      source: 'audio-map',
-      isSigned: false,
-    });
   } catch (error) {
     console.error('Failed to resolve audio URL:', error);
     return NextResponse.json(
@@ -368,10 +74,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST /api/audio_url
+ * Batch resolve audio URLs for multiple verse references
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const refs: unknown = body?.refs;
+    const translation = (body?.translation as 'afghan2023' | 'yousafzai2019') || 'afghan2023';
+    
     if (!Array.isArray(refs) || refs.length === 0) {
       return NextResponse.json({ error: 'Expected refs array with at least one item' }, { status: 400 });
     }
@@ -381,20 +93,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Refs array contained no usable values' }, { status: 400 });
     }
 
-    // Load audio map directly instead of making internal API call
-    const audioMap = await loadAudioMapFromSource();
-    const urls: Record<string, string | null> = {};
-
-    for (const ref of stringRefs) {
-      const match = lookupAudioEntry(ref, audioMap);
-      if (!match) {
-        urls[ref] = null;
-        continue;
-      }
-      const url = audioEntryToUrl(match.value);
-      urls[ref] = url || null;
+    // Use batch endpoint from d1-audio API
+    const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+    if (!cloudflareWorkerUrl) {
+      return NextResponse.json({ error: 'Cloudflare Worker not configured' }, { status: 503 });
     }
 
+    try {
+      const batchResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refs: stringRefs, translation }),
+      });
+
+      if (batchResponse.ok) {
+        const batchData = await batchResponse.json();
+        return NextResponse.json({ urls: batchData.urls || {} });
+      }
+    } catch (error) {
+      console.error('Batch audio resolution failed:', error);
+    }
+
+    // Fallback: return null for all if batch fails
+    const urls: Record<string, string | null> = {};
+    for (const ref of stringRefs) {
+      urls[ref] = null;
+    }
     return NextResponse.json({ urls });
   } catch (error) {
     console.error('Failed to batch resolve audio URLs:', error);

@@ -117,6 +117,7 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
 
 /**
  * Segment transcript by sentences with proper duration distribution
+ * Ensures segments cover the full video duration
  */
 async function segmentTranscriptBySentences(text, videoDuration) {
   const segments = [];
@@ -129,6 +130,7 @@ async function segmentTranscriptBySentences(text, videoDuration) {
     const totalWords = sentences.reduce((sum, s) => sum + s.split(/\s+/).length, 0);
     let currentTime = 0;
     
+    // First pass: distribute proportionally
     for (const sentence of sentences) {
       if (!sentence.trim()) continue;
       
@@ -145,9 +147,46 @@ async function segmentTranscriptBySentences(text, videoDuration) {
       currentTime += duration;
     }
     
-    // Ensure last segment ends at video duration
+    // Normalize: ensure segments cover full video duration
     if (segments.length > 0) {
+      const lastEndTime = segments[segments.length - 1].endTime;
+      const actualDuration = lastEndTime;
+      
+      // If segments don't cover full duration, scale them
+      if (actualDuration < videoDuration - 1) {
+        const scaleFactor = videoDuration / actualDuration;
+        let normalizedTime = 0;
+        
+        for (let i = 0; i < segments.length; i++) {
+          const originalDuration = segments[i].endTime - segments[i].startTime;
+          const scaledDuration = originalDuration * scaleFactor;
+          
+          segments[i].startTime = Math.round(normalizedTime * 10) / 10;
+          segments[i].endTime = Math.round((normalizedTime + scaledDuration) * 10) / 10;
+          normalizedTime += scaledDuration;
+        }
+      }
+      
+      // Ensure last segment ends exactly at video duration
       segments[segments.length - 1].endTime = Math.round(videoDuration * 10) / 10;
+      
+      // If segments exceed duration, compress them
+      if (segments[segments.length - 1].endTime > videoDuration) {
+        const compressionFactor = videoDuration / segments[segments.length - 1].endTime;
+        let compressedTime = 0;
+        
+        for (let i = 0; i < segments.length; i++) {
+          const originalDuration = segments[i].endTime - segments[i].startTime;
+          const compressedDuration = originalDuration * compressionFactor;
+          
+          segments[i].startTime = Math.round(compressedTime * 10) / 10;
+          segments[i].endTime = Math.round((compressedTime + compressedDuration) * 10) / 10;
+          compressedTime += compressedDuration;
+        }
+        
+        // Ensure last segment ends at video duration
+        segments[segments.length - 1].endTime = Math.round(videoDuration * 10) / 10;
+      }
     }
   } else {
     // Fallback to estimated duration

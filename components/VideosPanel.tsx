@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 
-// YouTube Player Component with synchronization
+// YouTube Player Component - Simplified direct embed approach
 function YouTubePlayer({ 
   videoId, 
   segments, 
@@ -13,115 +13,54 @@ function YouTubePlayer({
   onTimeUpdate?: (time: number) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const playerRef = useRef<any>(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load YouTube IFrame API script
-    if (!(window as any).YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      tag.async = true;
-      tag.onerror = () => {
-        console.error('Failed to load YouTube IFrame API');
-        setError('Failed to load YouTube player');
-      };
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    if (!videoId) {
+      setError('No video ID provided');
+      return;
     }
 
-    let intervalId: NodeJS.Timeout | null = null;
+    // Clean video ID (remove any invalid characters)
+    const cleanVideoId = videoId.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    
+    if (cleanVideoId.length < 11) {
+      setError(`Invalid video ID: ${videoId}`);
+      return;
+    }
 
-    const initializePlayer = () => {
-      if (!iframeRef.current || playerRef.current) return;
+    console.log(`Initializing YouTube player with videoId: ${cleanVideoId}`);
+
+    // Set up message listener for YouTube iframe API
+    const handleMessage = (event: MessageEvent) => {
+      // YouTube iframe API sends messages with video progress
+      if (event.origin !== 'https://www.youtube.com') return;
       
-      // Wait a bit for iframe to be ready
-      setTimeout(() => {
-        try {
-          if (!iframeRef.current) return;
-          
-          // Check if YT.Player is available
-          if (!(window as any).YT || !(window as any).YT.Player) {
-            console.warn('YouTube API not ready, using iframe fallback');
-            setPlayerReady(true);
-            return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'onVideoProgress' && data.info) {
+          const currentTime = data.info.currentTime;
+          if (typeof currentTime === 'number' && onTimeUpdate) {
+            onTimeUpdate(currentTime);
           }
-          
-          playerRef.current = new (window as any).YT.Player(iframeRef.current.id, {
-            videoId: videoId,
-            playerVars: {
-              enablejsapi: 1,
-              origin: typeof window !== 'undefined' ? window.location.origin : '',
-              controls: 1,
-              rel: 0,
-            },
-            events: {
-              onReady: () => {
-                setPlayerReady(true);
-                setError(null);
-                console.log('YouTube player ready');
-                
-                // Start polling for time updates
-                intervalId = setInterval(() => {
-                  if (playerRef.current && playerRef.current.getCurrentTime) {
-                    try {
-                      const time = playerRef.current.getCurrentTime();
-                      onTimeUpdate?.(time);
-                    } catch (e) {
-                      // Player may not be ready
-                    }
-                  }
-                }, 250); // Update every 250ms for smooth scrolling
-              },
-              onError: (event: any) => {
-                console.error('YouTube player error:', event);
-                setError('Failed to load video');
-              },
-              onStateChange: (event: any) => {
-                // Track playback state changes if needed
-                if (event.data === (window as any).YT.PlayerState.PLAYING) {
-                  console.log('Video is playing');
-                }
-              },
-            },
-          });
-        } catch (error) {
-          console.error('Failed to initialize YouTube player:', error);
-          setError('Failed to initialize YouTube player');
-          // Fallback: just mark as ready so iframe shows
-          setPlayerReady(true);
         }
-      }, 100);
+      } catch (e) {
+        // Ignore parsing errors
+      }
     };
 
-    // Wait for YouTube API to be ready
-    if ((window as any).YT?.Player) {
-      initializePlayer();
-    } else {
-      // Set up callback for when API is ready
-      (window as any).onYouTubeIframeAPIReady = initializePlayer;
-      
-      // Fallback: if API doesn't load after 3 seconds, just show the iframe
-      setTimeout(() => {
-        if (!playerRef.current && iframeRef.current) {
-          console.warn('YouTube API not loaded, using iframe fallback');
-          setPlayerReady(true);
-        }
-      }, 3000);
-    }
+    window.addEventListener('message', handleMessage);
+
+    // Mark as ready after a short delay
+    const timer = setTimeout(() => {
+      setPlayerReady(true);
+      setError(null);
+    }, 1000);
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-      if (playerRef.current && playerRef.current.destroy) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(timer);
     };
   }, [videoId, onTimeUpdate]);
 
@@ -133,31 +72,49 @@ function YouTubePlayer({
     );
   }
 
-  // Validate video ID format (YouTube IDs are typically 11 characters)
-  if (videoId.length < 11) {
-    console.warn(`Invalid video ID format: ${videoId} (expected 11 characters)`);
+  // Clean video ID
+  const cleanVideoId = videoId.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  
+  if (cleanVideoId.length < 11) {
+    return (
+      <div className="w-full h-full bg-red-100 dark:bg-red-900/20 rounded flex items-center justify-center">
+        <p className="text-red-700 dark:text-red-300">Invalid video ID: {videoId}</p>
+      </div>
+    );
   }
 
+  // Build YouTube embed URL with proper parameters
+  const embedUrl = `https://www.youtube.com/embed/${cleanVideoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : ''}&rel=0&modestbranding=1`;
+
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-black rounded overflow-hidden">
       {error && (
         <div className="absolute top-2 left-2 right-2 bg-red-500 text-white text-sm p-2 rounded z-10">
           {error}
         </div>
       )}
+      {!playerReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+          <div className="text-white">Loading video...</div>
+        </div>
+      )}
       <iframe
         ref={iframeRef}
-        id={`youtube-player-${videoId}`}
-        src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+        id={`youtube-player-${cleanVideoId}`}
+        src={embedUrl}
         title="YouTube video player"
         frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
-        className="w-full h-full rounded"
-        onError={() => setError('Failed to load YouTube video')}
+        className="w-full h-full absolute inset-0"
         onLoad={() => {
-          console.log('YouTube iframe loaded successfully');
+          console.log('YouTube iframe loaded');
+          setPlayerReady(true);
           setError(null);
+        }}
+        onError={() => {
+          console.error('YouTube iframe failed to load');
+          setError('Failed to load YouTube video');
         }}
       />
     </div>
@@ -1248,11 +1205,23 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     // Construct audio URL - prefer audio_url from API, fallback to constructed URL
                     let audioUrl = clip.audio_url || clip.server_url;
                     
-                    // If no audio_url from API, try to construct it (shouldn't happen, but fallback)
-                    if (!audioUrl && video.video_id && clip.r2_key) {
-                      // Use the R2 key to construct worker URL
+                    // If no audio_url from API, try to construct it
+                    if (!audioUrl && video.video_id) {
+                      // Use the correct video ID (try to extract from URL if video_id looks wrong)
+                      let correctVideoId = video.video_id;
+                      
+                      // If video_id looks invalid or doesn't match URL, extract from URL
+                      if (video.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
+                        const extracted = extractVideoId(video.youtube_url);
+                        if (extracted) {
+                          correctVideoId = extracted;
+                          console.log(`Using extracted video ID for audio: ${correctVideoId}`);
+                        }
+                      }
+                      
+                      // Construct worker URL
                       const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-                      audioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${video.video_id}/audio?segment=${segmentNum}`;
+                      audioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${correctVideoId}/audio?segment=${segmentNum}`;
                     }
                     
                     // Debug: log audio URL construction for first few segments
