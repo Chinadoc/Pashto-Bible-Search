@@ -272,6 +272,8 @@ async function uploadToR2(env: Env, request: Request): Promise<Response> {
 
     // Decode base64 data
     const buffer = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+    
+    console.log(`Uploading to R2: key=${key}, size=${buffer.length} bytes`);
 
     // Upload to R2
     await env.AUDIO_BUCKET.put(key, buffer, {
@@ -279,9 +281,19 @@ async function uploadToR2(env: Env, request: Request): Promise<Response> {
         contentType: 'audio/mpeg',
       },
     });
+    
+    // Verify the upload by trying to get it back
+    const verify = await env.AUDIO_BUCKET.get(key);
+    if (verify === null) {
+      console.error(`❌ Upload verification failed: file not found after upload`);
+      return errorResponse('Upload verification failed', 500);
+    }
+    
+    console.log(`✅ Successfully uploaded and verified: ${key} (${verify.size} bytes)`);
 
-    return jsonResponse({ success: true, key });
+    return jsonResponse({ success: true, key, size: buffer.length });
   } catch (error: any) {
+    console.error(`Upload error: ${error.message}`, error);
     return errorResponse(`Failed to upload to R2: ${error.message}`, 500);
   }
 }
@@ -804,13 +816,16 @@ async function getVideoAudio(env: Env, videoId: string, segment: number, request
         console.log(`Trying R2 path: ${r2Key}`);
         const object = await env.AUDIO_BUCKET.get(r2Key);
         
-        if (object) {
+        // Check if object exists (get() returns null if not found)
+        if (object !== null) {
           console.log(`✅ Found audio at: ${r2Key}`);
           return streamAudio(env, r2Key, request);
+        } else {
+          console.log(`Path ${r2Key} not found (null), trying next...`);
         }
       } catch (pathError) {
         // Continue to next path
-        console.log(`Path ${r2Key} not found, trying next...`);
+        console.log(`Path ${r2Key} error: ${pathError.message}, trying next...`);
       }
     }
     

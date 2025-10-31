@@ -8,7 +8,7 @@ import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
-import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms } from '@/app/lib/cloudflare-d1';
+import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef } from '@/app/lib/cloudflare-d1';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
@@ -37,7 +37,7 @@ async function supabaseSearch(
     // Try full-text search first
     const { data: verses, error: searchError } = await supabase
       .from(versesTable)
-      .select('id, ref, book, chapter, verse, text, testament, audio_url, audio_public_url, translation_key')
+      .select('id, ref, book, chapter, verse, text, testament, audio_url, audio_public_url, audio_verse_url, translation_key')
       .ilike('text', `%${query}%`)
       .limit(limit);
 
@@ -815,14 +815,44 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
       console.log(`✅ Supabase hit! ${supabaseResults.results.length} results in ${queryTimeMs}ms`);
       
       // Format Supabase results to match expected format
-      const formattedResults = supabaseResults.results.map((verse: any) => ({
-        ref: verse.ref,
-        text: verse.text,
-        testament: verse.testament,
-        translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-        audio_verse_url: convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url),
-        id: verse.id,
-      }));
+      // Try to enrich with audio_r2_key from D1 if available
+      const enrichedResults = await Promise.all(
+        supabaseResults.results.map(async (verse: any) => {
+          let audioUrl = null;
+          let audioR2Key = null;
+          
+          // Try to get audio_r2_key from D1 for this verse
+          if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL) {
+            try {
+              const d1Verse = await getVerseByRef(verse.ref, translation as 'afghan2023' | 'yousafzai2019');
+              if (d1Verse?.audio_r2_key) {
+                audioR2Key = d1Verse.audio_r2_key;
+                audioUrl = getAudioStreamUrl(d1Verse.audio_r2_key);
+              }
+            } catch (error) {
+              // D1 lookup failed, continue with Supabase audio
+              console.debug(`Could not fetch audio_r2_key from D1 for ${verse.ref}`);
+            }
+          }
+          
+          // Fallback to Supabase audio if no R2 key found
+          if (!audioUrl) {
+            audioUrl = convertAudioUrlToProxy(verse.audio_verse_url || verse.audio_url || verse.audio_public_url);
+          }
+          
+          return {
+            ref: verse.ref,
+            text: verse.text,
+            testament: verse.testament,
+            translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+            audio_verse_url: audioUrl,
+            audio_r2_key: audioR2Key,
+            id: verse.id,
+          };
+        })
+      );
+      
+      const formattedResults = enrichedResults;
 
       return NextResponse.json({
         success: true,
@@ -945,11 +975,12 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
           
           const formattedResults = allResults.slice(0, limit).map((verse: any) => {
             // Use R2 audio URL if available, otherwise fallback to Supabase URL
+            // For yousafzai, audio_verse_url is the primary field
             let audioUrl = null;
             if (verse.audio_r2_key) {
               audioUrl = getAudioStreamUrl(verse.audio_r2_key);
-            } else if (verse.audio_url || verse.audio_public_url) {
-              audioUrl = convertAudioUrlToProxy(verse.audio_url || verse.audio_public_url);
+            } else if (verse.audio_verse_url || verse.audio_url || verse.audio_public_url) {
+              audioUrl = convertAudioUrlToProxy(verse.audio_verse_url || verse.audio_url || verse.audio_public_url);
             }
             
             return {
@@ -1817,7 +1848,7 @@ async function supabaseOptimizedSearch(
         // Fallback: manually fetch verses by refs (with audio URLs)
         const { data: fallbackVerses } = await supabase
           .from(translation === 'afghan2023' ? 'verses' : 'verses_yousafzai')
-          .select('id, ref, text, testament, book, chapter, verse, audio_url, audio_public_url')
+          .select('id, ref, text, testament, book, chapter, verse, audio_url, audio_public_url, audio_verse_url')
           .in('ref', occurrenceData.verse_refs.slice(0, limit));
 
         if (fallbackVerses) {

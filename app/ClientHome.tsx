@@ -1550,12 +1550,20 @@ export default function ClientHome() {
     // Only trigger if includeRelated actually changed (not on initial mount)
     if (previousIncludeRelated.current !== includeRelated && query.trim()) {
       console.log('DEBUG: Related Forms Mode toggled, triggering new search');
-      handleSearch();
+      // Reset variant override and filters when toggling related forms mode
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+      setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
+      setNounFilters({ ...DEFAULT_NOUN_FILTER });
+      setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+      // Trigger search with updated includeRelated setting
+      executeSearch({ overrideVariants: null, preserveResults: false, reason: 'include-related-toggle' });
     }
     previousIncludeRelated.current = includeRelated;
     // NOTE: Intentionally NOT including results.length to prevent infinite loop!
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeRelated]);
+  }, [includeRelated, query, executeSearch]);
 
   // Re-run search automatically when language switches (if query present)
   const previousLanguage = useRef<SearchLanguage>(searchLanguage);

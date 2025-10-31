@@ -286,14 +286,15 @@ export async function GET(request: NextRequest) {
           
           const { data: verseData, error: supabaseError } = await supabase
             .from(tableName)
-            .select('audio_url, audio_public_url, audio_storage_path')
+            .select('audio_url, audio_public_url, audio_storage_path, audio_verse_url')
             .eq('book', book)
             .eq('chapter', parseInt(chapter, 10))
             .eq('verse', parseInt(verse, 10))
             .single();
           
           if (!supabaseError && verseData) {
-            const audioUrl = verseData.audio_public_url || verseData.audio_url;
+            // For yousafzai, audio_verse_url is the primary field
+            const audioUrl = verseData.audio_verse_url || verseData.audio_public_url || verseData.audio_url;
             if (audioUrl) {
               // Normalize Google Drive URL if needed
               let finalUrl = audioUrl;
