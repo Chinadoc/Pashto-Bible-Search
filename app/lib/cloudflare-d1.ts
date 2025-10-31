@@ -165,16 +165,31 @@ export function getAudioStreamUrl(r2Key: string): string {
  * Resolve audio URL from verse R2 key
  */
 export async function resolveAudioUrlFromVerse(verse: Verse): Promise<string | null> {
-  if (!verse.audio_r2_key) {
-    return verse.audio_public_url || null;
+  // For Yousafzai: Audio files are still in Supabase, not R2 yet
+  // Generate Supabase URL from R2 key pattern
+  if (verse.audio_r2_key && verse.audio_r2_key.startsWith('yousafzai/')) {
+    const filename = verse.audio_r2_key.split('/').pop();
+    if (filename) {
+      return `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`;
+    }
   }
-
-  try {
-    return getAudioStreamUrl(verse.audio_r2_key);
-  } catch (error) {
-    console.warn(`Failed to resolve audio URL for verse ${verse.ref}:`, error);
-    return verse.audio_public_url || null;
+  
+  // If verse has audio_r2_key, try R2 first (for Afghan 2023)
+  if (verse.audio_r2_key && !verse.audio_r2_key.startsWith('yousafzai/')) {
+    try {
+      const r2Url = getAudioStreamUrl(verse.audio_r2_key);
+      return r2Url;
+    } catch (error) {
+      console.warn(`Failed to generate R2 URL for verse ${verse.ref}:`, error);
+    }
   }
+  
+  // Fallback to audio_public_url if available
+  if (verse.audio_public_url) {
+    return verse.audio_public_url;
+  }
+  
+  return null;
 }
 
 /**

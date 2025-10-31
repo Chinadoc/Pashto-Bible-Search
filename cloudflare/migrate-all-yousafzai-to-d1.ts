@@ -45,10 +45,12 @@ function getTestament(book: string): 'OT' | 'NT' {
 function normalizeBookSlug(book: string): string {
   let cleaned = book.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
   
+  // For numbered books like "1chronicles", keep the number first: "1chronicles"
+  // This matches R2 naming convention (e.g., "1chronicles008" not "chronicles1008")
   const numberedMatch = cleaned.match(/^(\d+)([a-z]+)$/);
   if (numberedMatch) {
     const [, num, name] = numberedMatch;
-    return `${name}${num}`;
+    return `${num}${name}`; // Keep number first, not reversed
   }
   
   return cleaned;
@@ -57,7 +59,8 @@ function normalizeBookSlug(book: string): string {
 function getR2AudioKey(book: string, chapter: number, verse: number): string {
   const cleanBook = normalizeBookSlug(book);
   const testament = getTestament(book).toLowerCase();
-  return `yousafzai/${testament}/yousafzai_${cleanBook}${chapter}_verse_${verse.toString().padStart(3, '0')}.mp3`;
+  // Chapter numbers must be zero-padded to 3 digits to match R2 naming convention
+  return `yousafzai/${testament}/yousafzai_${cleanBook}${chapter.toString().padStart(3, '0')}_verse_${verse.toString().padStart(3, '0')}.mp3`;
 }
 
 function escapeSql(str: string | null | undefined): string {

@@ -227,9 +227,18 @@ export async function GET(request: NextRequest) {
       let finalAudioUrl: string | null = null;
       
       if (useD1 && v.audio_r2_key) {
-        // Use R2 audio URL via Cloudflare Worker
-        const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
-        finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
+        // For Yousafzai: Audio files are still in Supabase, not R2 yet
+        // Generate Supabase URL from R2 key pattern as fallback
+        if (translation === 'yousafzai2019' && v.audio_r2_key.startsWith('yousafzai/')) {
+          const filename = v.audio_r2_key.split('/').pop();
+          if (filename) {
+            finalAudioUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`;
+          }
+        } else {
+          // For Afghan 2023: Use R2 audio URL via Cloudflare Worker
+          const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+          finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
+        }
       } else {
         // Fallback to existing audio URL handling (Supabase/Google Drive)
         const rawAudioUrl = v.audio_url || v.audio_public_url;
@@ -241,6 +250,12 @@ export async function GET(request: NextRequest) {
           } else {
             // For Google Drive URLs, normalize them
             finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
+          }
+        } else if (translation === 'yousafzai2019' && v.audio_r2_key) {
+          // Yousafzai: Generate Supabase URL from R2 key as fallback
+          const filename = v.audio_r2_key.split('/').pop();
+          if (filename) {
+            finalAudioUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`;
           }
         }
       }
