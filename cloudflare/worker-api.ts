@@ -648,14 +648,16 @@ async function getTopicsCategories(env: Env): Promise<Response> {
 async function getTopicsVerses(
   env: Env,
   categoryKey: string,
-  limit: number = 200
+  limit: number = 200,
+  request?: Request
 ): Promise<Response> {
   try {
     if (!categoryKey) {
       return errorResponse('Missing category parameter', 400);
     }
 
-    // Get verses for the category, joining with verse tables to get text
+    // Get verses for the category, joining with verse tables to get text and audio,
+    // and word_frequencies to get English translation and romanization
     const result = await env.DB.prepare(
       `SELECT DISTINCT
         cvm.verse_ref,
@@ -669,7 +671,19 @@ async function getTopicsVerses(
           WHEN cvm.translation_key = 'afghan2023' THEN v_afghan.text
           WHEN cvm.translation_key = 'yousafzai2019' THEN v_yousafzai.text
           ELSE NULL
-        END as text
+        END as text,
+        CASE 
+          WHEN cvm.translation_key = 'afghan2023' THEN v_afghan.audio_r2_key
+          WHEN cvm.translation_key = 'yousafzai2019' THEN v_yousafzai.audio_r2_key
+          ELSE NULL
+        END as audio_r2_key,
+        CASE 
+          WHEN cvm.translation_key = 'afghan2023' THEN v_afghan.audio_public_url
+          WHEN cvm.translation_key = 'yousafzai2019' THEN v_yousafzai.audio_public_url
+          ELSE NULL
+        END as audio_public_url,
+        wf.english_translation,
+        wf.romanization
       FROM category_verse_mappings cvm
       LEFT JOIN verses_afghan2023 v_afghan ON 
         cvm.translation_key = 'afghan2023' AND 
@@ -681,6 +695,9 @@ async function getTopicsVerses(
         cvm.book = v_yousafzai.book AND 
         cvm.chapter = v_yousafzai.chapter AND 
         cvm.verse = v_yousafzai.verse
+      LEFT JOIN word_frequencies wf ON 
+        cvm.pashto_word = wf.pashto_word AND
+        (wf.translation_key = cvm.translation_key OR wf.translation_key IS NULL)
       WHERE cvm.category_key = ?
       ORDER BY cvm.book, cvm.chapter, cvm.verse
       LIMIT ?`
@@ -688,16 +705,34 @@ async function getTopicsVerses(
       .bind(categoryKey, limit)
       .all();
 
-    const verses = result.results?.map((verse: any) => ({
-      verse_ref: verse.verse_ref,
-      book: verse.book,
-      chapter: verse.chapter,
-      verse: verse.verse,
-      pashto_word: verse.pashto_word,
-      translation_key: verse.translation_key,
-      testament: verse.testament,
-      text: verse.text || null,
-    })) || [];
+    // Build base URL for audio streaming
+    const baseUrl = request 
+      ? new URL(request.url).origin 
+      : 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
+    const verses = result.results?.map((verse: any) => {
+      // Build audio URL from R2 key if available
+      let audioUrl = verse.audio_public_url || null;
+      if (!audioUrl && verse.audio_r2_key) {
+        // Use the worker's audio streaming endpoint
+        audioUrl = `${baseUrl}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}`;
+      }
+
+      return {
+        verse_ref: verse.verse_ref,
+        book: verse.book,
+        chapter: verse.chapter,
+        verse: verse.verse,
+        pashto_word: verse.pashto_word,
+        english_translation: verse.english_translation || null,
+        romanization: verse.romanization || null,
+        translation_key: verse.translation_key,
+        testament: verse.testament,
+        text: verse.text || null,
+        audio_r2_key: verse.audio_r2_key || null,
+        audio_url: audioUrl,
+      };
+    }) || [];
 
     return jsonResponse({
       category: categoryKey,
@@ -858,7 +893,7 @@ export default {
       if (!category) {
         return errorResponse('Missing category parameter', 400);
       }
-      return getTopicsVerses(env, category, limit);
+      return getTopicsVerses(env, category, limit, request);
     }
 
     return errorResponse('Not found', 404);

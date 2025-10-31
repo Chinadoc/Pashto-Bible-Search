@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryKey = searchParams.get('category');
-    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '50')));
+    const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '200')));
 
     if (!categoryKey) {
       return NextResponse.json(
