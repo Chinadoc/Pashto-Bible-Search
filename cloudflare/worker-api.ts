@@ -599,6 +599,175 @@ async function getRelatedForms(env: Env, query: string): Promise<Response> {
 }
 
 // ========================================
+// Video Processing Functions
+// ========================================
+
+/**
+ * Process YouTube video: download, transcribe, store in R2/D1
+ */
+async function processVideo(env: Env, request: Request): Promise<Response> {
+  try {
+    const body = await request.json();
+    const { youtubeUrl, videoId, apiKeys, transcript, words, segments, transcription_service } = body;
+
+    if (!youtubeUrl || !videoId) {
+      return errorResponse('Missing youtubeUrl or videoId', 400);
+    }
+
+    console.log(`Processing video ${videoId}...`);
+
+    let finalTranscript: string;
+    let finalWords: Array<{ start: number; end: number; text: string }>;
+    let finalSegments: Array<{ text: string; startTime: number; endTime: number }>;
+    let service = transcription_service || 'elevenlabs';
+
+    // If transcript and segments are already provided (from Next.js API polling), use them
+    if (transcript && segments) {
+      console.log('Using provided transcript and segments');
+      finalTranscript = transcript;
+      finalWords = words || [];
+      finalSegments = segments;
+    } else {
+      // Otherwise, return error (transcription should happen in Next.js API)
+      return errorResponse('Transcription must be done in Next.js API, then send transcript and segments here', 400);
+    }
+
+    // Store metadata in D1
+    const metadata = {
+      video_id: videoId,
+      youtube_url: youtubeUrl,
+      transcript: finalTranscript,
+      segments: finalSegments,
+      transcription_service: service,
+      created_at: new Date().toISOString(),
+    };
+
+    // Store in D1 (table should already exist, but create if needed)
+    try {
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS video_transcripts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          video_id TEXT UNIQUE NOT NULL,
+          youtube_url TEXT NOT NULL,
+          transcript TEXT,
+          segments TEXT,
+          transcription_service TEXT,
+          r2_audio_key TEXT,
+          created_at TEXT,
+          updated_at TEXT
+        )
+      `).run();
+
+      // Ensure segments JSON is properly stringified (don't truncate!)
+      const segmentsJson = JSON.stringify(finalSegments);
+      
+      // Generate R2 keys for all segments (comma-separated)
+      const r2Keys = finalSegments.map((_, index) => `videos/${videoId}/segment_${index + 1}.mp3`).join(',');
+      
+      await env.DB.prepare(`
+        INSERT OR REPLACE INTO video_transcripts 
+        (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        videoId,
+        youtubeUrl,
+        finalTranscript,
+        segmentsJson, // Properly stringified JSON - full length
+        service,
+        r2Keys, // Store R2 keys as comma-separated string
+        metadata.created_at,
+        metadata.created_at
+      ).run();
+      
+      console.log(`✅ Stored ${finalSegments.length} segments in D1`);
+      console.log(`✅ Segments JSON length: ${segmentsJson.length} characters`);
+    } catch (dbError: any) {
+      console.error('D1 database error:', dbError);
+      return errorResponse(`Database error: ${dbError.message}`, 500);
+    }
+
+    // Generate audio clips metadata
+    const audioClips = finalSegments.map((segment, index) => ({
+      segment_number: index + 1,
+      text: segment.text,
+      start_time: segment.startTime,
+      end_time: segment.endTime,
+      duration: segment.endTime - segment.startTime,
+      r2_key: `videos/${videoId}/segment_${index + 1}.mp3`,
+    }));
+
+    return jsonResponse({
+      success: true,
+      videoId,
+      transcript: finalTranscript,
+      segments: finalSegments,
+      audioClips: audioClips,
+      r2Keys: audioClips.map(clip => clip.r2_key),
+      message: `Processed ${finalSegments.length} segments`,
+    });
+
+  } catch (error: any) {
+    console.error('Video processing error:', error);
+    return errorResponse(`Video processing failed: ${error.message}`, 500);
+  }
+}
+
+/**
+ * List all processed videos
+ */
+async function listVideos(env: Env): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM video_transcripts ORDER BY created_at DESC LIMIT 100`
+    ).all();
+
+    const videos = result.results?.map((video: any) => {
+      // Parse segments JSON properly
+      let segments: any[] = [];
+      try {
+        if (video.segments) {
+          if (typeof video.segments === 'string') {
+            segments = JSON.parse(video.segments);
+          } else {
+            segments = video.segments;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse segments:', e);
+        segments = [];
+      }
+
+      return {
+        video_id: video.video_id,
+        youtube_url: video.youtube_url,
+        transcript: video.transcript,
+        segments: segments,
+        transcription_service: video.transcription_service,
+        r2_audio_key: video.r2_audio_key,
+        created_at: video.created_at,
+        updated_at: video.updated_at,
+      };
+    }) || [];
+
+    return jsonResponse({ videos, count: videos.length });
+  } catch (error: any) {
+    return errorResponse(`Failed to list videos: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get video audio stream from R2
+ */
+async function getVideoAudio(env: Env, videoId: string, segment: number, request: Request): Promise<Response> {
+  try {
+    const r2Key = `videos/${videoId}/segment_${segment}.mp3`;
+    return streamAudio(env, r2Key, request);
+  } catch (error: any) {
+    return errorResponse(`Failed to get video audio: ${error.message}`, 500);
+  }
+}
+
+// ========================================
 // Topics API Routes
 // ========================================
 
@@ -893,6 +1062,27 @@ export default {
         return errorResponse('Missing category parameter', 400);
       }
       return getTopicsVerses(env, category, limit, request);
+    }
+
+    // Video processing routes
+    if (path === '/api/video/process' && request.method === 'POST') {
+      return processVideo(env, request);
+    }
+
+    if (path === '/api/video/list' && request.method === 'GET') {
+      return listVideos(env);
+    }
+
+    if (path.startsWith('/api/video/') && path.endsWith('/audio') && request.method === 'GET') {
+      // Path format: /api/video/{videoId}/audio?segment={segmentNumber}
+      const pathParts = path.split('/');
+      const videoId = pathParts[pathParts.length - 2];
+      const segment = parseInt(url.searchParams.get('segment') || '1');
+      
+      if (!videoId) {
+        return errorResponse('Missing video ID', 400);
+      }
+      return getVideoAudio(env, videoId, segment, request);
     }
 
     return errorResponse('Not found', 404);

@@ -33,15 +33,21 @@ interface AudioAnalysis {
 }
 
 interface NormalizedClip {
-  sentence_number: number;
-  sentence: string;
-  start_time: number;
-  end_time: number;
+  sentence_number?: number;
+  segment_number?: number;
+  sentence?: string;
+  transcript_text?: string;
+  start_time?: number;
+  start_time_seconds?: number;
+  end_time?: number;
+  end_time_seconds?: number;
   duration: number;
-  filename: string;
-  file_path: string;
-  server_url: string | null;
-  exists: boolean | null;
+  filename?: string;
+  file_path?: string;
+  server_url?: string | null;
+  audio_url?: string;
+  r2_key?: string;
+  exists?: boolean | null;
 }
 
 interface NormalizedVideo {
@@ -49,12 +55,15 @@ interface NormalizedVideo {
   video_id?: string;
   youtube_url?: string;
   audio_file?: string;
+  transcript?: string;
   transcription?: TranscriptionAttempt;
   transcription_attempts?: TranscriptionAttempt[];
   clips: NormalizedClip[];
   total_clips: number;
   total_duration: number;
   updated_at: string | null;
+  source?: 'cloudflare' | 'supabase';
+  transcription_service?: string;
 }
 
 interface VideosPanelProps {
@@ -75,7 +84,9 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [transcribingSegments, setTranscribingSegments] = useState(false);
   const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   const extractVideoId = (url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
@@ -822,135 +833,148 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                   </a>
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <div>Clips: {video.total_clips}</div>
-                  <div>Duration: {formatDuration(video.total_duration)}</div>
+                  <div>Segments: {video.total_clips}</div>
+                  {video.total_duration && <div>Duration: {formatDuration(video.total_duration)}</div>}
                 </div>
               </div>
 
-              {/* Transcription Section */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                    Transcription {video.transcription ? `(Attempt ${video.transcription.attempt})` : '(No transcription)'}
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    {video.transcription ? (
-                      <>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          video.transcription.is_pashto
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {video.transcription.is_pashto ? 'Pashto ✓' : 'Not Pashto ✗'}
-                        </span>
-                        {!video.transcription.is_pashto && (
-                          <button
-                            onClick={() => retryTranscription(video.video_id || '')}
-                            disabled={retrying === (video.video_id || '')}
-                            className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
-                          >
-                            {retrying === (video.video_id || '') ? 'Retrying...' : 'Re-send'}
-                          </button>
-                        )}
-                        {/* Retry low-confidence clips with ElevenLabs */}
-                        <button
-                          onClick={() => retryLowConfidenceClips(video.video_id || '')}
-                          disabled={retrying === (video.video_id || '')}
-                          className="ml-2 px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-                          title="Retry low-confidence clips with ElevenLabs for better quality"
-                        >
-                          {retrying === (video.video_id || '') ? 'Retrying...' : '🔄 Improve Quality'}
-                        </button>
-                      </>
-                    ) : (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                        No transcription available
-                      </span>
-                    )}
+              {/* YouTube Embed */}
+              {video.youtube_url && video.video_id && (
+                <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${video.video_id}`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full rounded"
+                    />
                   </div>
                 </div>
-                
-                {video.transcription ? (
-                  <div className="bg-white dark:bg-gray-800 rounded border p-4">
-                    <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
-                      {video.transcription.transcript}
-                    </p>
+              )}
+
+              {/* Transcript */}
+              {(video.transcript || video.transcription) && (
+                <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    Transcript
+                    {video.transcription_service && (
+                      <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {video.transcription_service}
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed" dir="rtl">
+                    {video.transcript || video.transcription?.transcript}
+                  </p>
+                  {video.transcription && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Generated: {formatTimestamp(video.transcription.timestamp)}
                     </p>
-                  </div>
-                ) : (
-                  <div className="bg-white dark:bg-gray-800 rounded border p-4">
-                    <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-gray-500 italic">
-                      No transcription available for this video.
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
 
-                {/* Previous Attempts */}
-                {video.transcription_attempts && video.transcription_attempts.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Previous Attempts
-                    </h5>
-                    <div className="space-y-2">
-                      {video.transcription_attempts.map((attempt, index) => (
-                        <div key={index} className="bg-gray-100 dark:bg-gray-600 rounded p-3 text-sm">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium">Attempt {attempt.attempt}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              attempt.is_pashto 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {attempt.is_pashto ? 'Pashto' : 'Not Pashto'}
-                            </span>
-                          </div>
-                          <p className="text-gray-700 dark:text-gray-300 text-xs">
-                            {attempt.transcript.substring(0, 100)}...
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {formatTimestamp(attempt.timestamp)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Audio Clips */}
               <div>
                 <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                  Audio Clips ({video.clips.length})
+                  Audio Segments ({video.clips.length})
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                  {video.clips.map((clip) => (
-                    <div
-                      key={clip.sentence_number}
-                      className="bg-white dark:bg-gray-800 rounded border p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => onSelectClip?.({
-                        query: clip.sentence,
-                        startTime: clip.start_time,
-                        endTime: clip.end_time
-                      })}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
-                          Clip {clip.sentence_number}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatDuration(clip.duration)}
-                        </span>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {video.clips.map((clip, index) => {
+                    const segmentNum = clip.segment_number || clip.sentence_number || (index + 1);
+                    const text = clip.transcript_text || clip.sentence || '';
+                    const startTime = clip.start_time_seconds || clip.start_time || 0;
+                    const endTime = clip.end_time_seconds || clip.end_time || 0;
+                    const duration = clip.duration || (endTime - startTime);
+                    const audioKey = `${video.video_id}-${segmentNum}`;
+                    const isPlaying = playingAudio === audioKey;
+                    const audioUrl = clip.audio_url || clip.server_url;
+
+                    return (
+                      <div
+                        key={segmentNum}
+                        className="bg-white dark:bg-gray-800 rounded border p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Audio Player */}
+                          {audioUrl && (
+                            <button
+                              onClick={() => {
+                                const audio = audioRefs.current.get(audioKey);
+                                if (audio) {
+                                  if (isPlaying) {
+                                    audio.pause();
+                                    setPlayingAudio(null);
+                                  } else {
+                                    // Pause other audios
+                                    audioRefs.current.forEach((a, k) => {
+                                      if (k !== audioKey) a.pause();
+                                    });
+                                    audio.play();
+                                    setPlayingAudio(audioKey);
+                                  }
+                                }
+                              }}
+                              className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors"
+                            >
+                              {isPlaying ? (
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
+                          
+                          {/* Clip Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                                Segment {segmentNum}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatDuration(startTime)} - {formatDuration(endTime)} ({formatDuration(duration)})
+                              </span>
+                            </div>
+                            <p 
+                              className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed cursor-pointer"
+                              dir="rtl"
+                              onClick={() => onSelectClip?.({
+                                query: text,
+                                startTime: startTime,
+                                endTime: endTime
+                              })}
+                            >
+                              {text}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Hidden Audio Element */}
+                        {audioUrl && (
+                          <audio
+                            ref={(el) => {
+                              if (el) {
+                                audioRefs.current.set(audioKey, el);
+                                el.onended = () => setPlayingAudio(null);
+                                el.onpause = () => {
+                                  if (!el.ended) setPlayingAudio(null);
+                                };
+                              }
+                            }}
+                            src={audioUrl}
+                            preload="none"
+                          />
+                        )}
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {clip.sentence}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {formatDuration(clip.start_time)} - {formatDuration(clip.end_time)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
