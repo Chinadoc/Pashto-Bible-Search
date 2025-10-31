@@ -2375,15 +2375,12 @@ export default function ClientHome() {
               📚 Browse by Topics
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Explore words and verses organized by semantic categories. Click on a category to see all words and Bible verses in that topic.
+              Click on a topic to see all Bible verses in that category.
             </p>
             
             <TopicsBrowser
               onCategorySelect={(categoryKey) => {
-                // Switch to search tab and search for the category
-                setQuery(categoryKey);
-                setSearchLanguage('topics');
-                setActiveMainTab('search');
+                // Category selection is handled internally by TopicsBrowser
               }}
             />
           </div>
