@@ -210,12 +210,6 @@ export default function TopicsBrowser({ onCategorySelect }: TopicsBrowserProps) 
                       onError={(e) => {
                         console.error('Audio playback error:', e);
                         setPlayingAudio(null);
-                        // Check if the error is due to missing audio file
-                        const audioElement = e.target as HTMLAudioElement;
-                        if (audioElement.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
-                            audioElement.error?.code === MediaError.MEDIA_ERR_ABORTED) {
-                          console.warn(`Audio file not available for ${verse.verse_ref}`);
-                        }
                       }}
                       preload="none"
                       crossOrigin="anonymous"

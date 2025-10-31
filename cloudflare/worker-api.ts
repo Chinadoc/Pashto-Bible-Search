@@ -714,10 +714,7 @@ async function getTopicsVerses(
       let audioUrl = verse.audio_public_url || null;
       if (!audioUrl && verse.audio_r2_key) {
         // Use the worker's audio streaming endpoint
-        // The audio_r2_key format is like "afghan2023/nt/john21_verse_001.mp3"
-        // We need to encode it properly for the URL
-        const encodedKey = encodeURIComponent(verse.audio_r2_key);
-        audioUrl = `${baseUrl}/api/audio/stream/${encodedKey}`;
+        audioUrl = `${baseUrl}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}`;
       }
 
       return {

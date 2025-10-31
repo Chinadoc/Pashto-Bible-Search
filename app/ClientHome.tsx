@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
@@ -663,20 +661,9 @@ export default function ClientHome() {
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
-  const pathname = usePathname();
-  const router = useRouter();
-  
-  // Determine active tab from pathname
-  const getActiveTabFromPath = (path: string): MainTab => {
-    if (path === '/topics') return 'topics';
-    if (path === '/chapters') return 'chapters';
-    if (path === '/lexicon') return 'lexicon';
-    if (path === '/videos') return 'videos';
-    if (path === '/poems') return 'poems';
-    return 'search'; // default to search
-  };
-  
-  const activeMainTab = getActiveTabFromPath(pathname || '/search');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>(() =>
+    loadPersisted<MainTab>('activeMainTab', 'search')
+  );
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [poems, setPoems] = useState<any[]>([]);
@@ -800,7 +787,8 @@ export default function ClientHome() {
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : savedLanguage === 'topics' ? 'topics' : 'pashto');
-    // Tab is now determined by URL, no need to restore from localStorage
+    const savedTab = loadPersisted<MainTab>('activeMainTab', 'search');
+    setActiveMainTab(MAIN_TABS.includes(savedTab) ? savedTab : 'search');
   }, []);
 
   // Persist preferences when they change
@@ -818,8 +806,8 @@ export default function ClientHome() {
     savePersisted('nounFilters', nounFilters);
     savePersisted('adjectiveFilters', adjectiveFilters);
     savePersisted('searchLanguage', searchLanguage);
-    // Tab state is now in URL, no need to persist
-  }, [scope, includeRelated, verbFilters, nounFilters, adjectiveFilters, searchLanguage]);
+    savePersisted('activeMainTab', activeMainTab);
+  }, [scope, includeRelated, verbFilters, nounFilters, adjectiveFilters, searchLanguage, activeMainTab]);
 
 
   // Clear any problematic initial values on mount
@@ -1685,8 +1673,8 @@ export default function ClientHome() {
       {/* Main Tabs */}
       <div className="flex justify-center mb-6">
         <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
-          <Link
-            href="/search"
+          <button
+            onClick={() => setActiveMainTab('search')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'search'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1694,9 +1682,9 @@ export default function ClientHome() {
             }`}
           >
             🔍 Search
-          </Link>
-          <Link
-            href="/topics"
+          </button>
+          <button
+            onClick={() => setActiveMainTab('topics')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'topics'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1704,9 +1692,9 @@ export default function ClientHome() {
             }`}
           >
             📚 Topics
-          </Link>
-          <Link
-            href="/chapters"
+          </button>
+          <button
+            onClick={() => setActiveMainTab('chapters')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'chapters'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1714,9 +1702,9 @@ export default function ClientHome() {
             }`}
           >
             📖 Chapters
-          </Link>
-          <Link
-            href="/lexicon"
+          </button>
+          <button
+            onClick={() => setActiveMainTab('lexicon')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'lexicon'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1724,9 +1712,9 @@ export default function ClientHome() {
             }`}
           >
             📚 Lexicon
-          </Link>
-          <Link
-            href="/videos"
+          </button>
+          <button
+            onClick={() => setActiveMainTab('videos')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'videos'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1734,9 +1722,9 @@ export default function ClientHome() {
             }`}
           >
             🎬 Videos
-          </Link>
-          <Link
-            href="/poems"
+          </button>
+          <button
+            onClick={() => setActiveMainTab('poems')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'poems'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -1744,7 +1732,7 @@ export default function ClientHome() {
             }`}
           >
             📝 Poems
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -2463,7 +2451,7 @@ export default function ClientHome() {
         <div className="max-w-4xl mx-auto">
           <LexiconPanel onPickForm={(form) => {
             setQuery(form);
-            router.push('/search');
+            setActiveMainTab('search');
           }} />
         </div>
       )}
@@ -2475,7 +2463,7 @@ export default function ClientHome() {
             onSelectClip={(clip) => {
               if (clip?.query) {
                 setQuery(clip.query);
-                router.push('/search');
+                setActiveMainTab('search');
               }
             }}
           />
