@@ -307,73 +307,194 @@ async function storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 
  * Main video processing endpoint
  */
 app.post('/process-video', async (req, res) => {
+  const startTime = Date.now();
   let audioFile = null;
   let segmentFiles = [];
+  
+  console.log(`\n🎬 ========== VIDEO PROCESSING STARTED ==========`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
+  console.log(`Request body keys: ${Object.keys(req.body).join(', ')}`);
   
   try {
     const { youtubeUrl, apiKeys } = req.body;
     
+    console.log(`\n📥 Parsing request:`);
+    console.log(`   YouTube URL: ${youtubeUrl || 'MISSING'}`);
+    console.log(`   Has API keys object: ${!!apiKeys}`);
+    console.log(`   ElevenLabs in request: ${!!apiKeys?.elevenlabs}`);
+    console.log(`   ElevenLabs in env: ${!!process.env.ELEVENLABS_API_KEY}`);
+    
     if (!youtubeUrl) {
+      console.error(`❌ Missing YouTube URL`);
       return res.status(400).json({ error: 'YouTube URL is required' });
     }
     
     // Extract video ID
-    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
     if (!videoIdMatch) {
+      console.error(`❌ Invalid YouTube URL format: ${youtubeUrl}`);
       return res.status(400).json({ error: 'Invalid YouTube URL' });
     }
     const videoId = videoIdMatch[1];
+    console.log(`🎯 Extracted video ID: ${videoId}`);
     
     const elevenlabsKey = apiKeys?.elevenlabs || process.env.ELEVENLABS_API_KEY;
     
     if (!elevenlabsKey) {
-      return res.status(400).json({ error: 'ElevenLabs API key is required' });
+      console.error(`❌ ElevenLabs API key not found`);
+      console.error(`   Checked: apiKeys.elevenlabs=${!!apiKeys?.elevenlabs}, env.ELEVENLABS_API_KEY=${!!process.env.ELEVENLABS_API_KEY}`);
+      return res.status(400).json({ 
+        error: 'ElevenLabs API key is required',
+        details: 'Please provide apiKeys.elevenlabs in request or set ELEVENLABS_API_KEY environment variable'
+      });
     }
     
-    console.log(`🎬 Processing video ${videoId}...`);
+    console.log(`\n✅ Configuration validated:`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   ElevenLabs key: ${elevenlabsKey.substring(0, 10)}...${elevenlabsKey.substring(elevenlabsKey.length - 4)}`);
+    console.log(`   Cloudflare Worker URL: ${CLOUDFLARE_WORKER_URL}`);
     
     // Step 1: Download video audio
-    console.log('📥 Downloading video audio...');
-    audioFile = await downloadVideoAudio(youtubeUrl, videoId);
-    console.log('✅ Audio downloaded');
+    console.log(`\n📥 Step 1: Downloading video audio...`);
+    const downloadStartTime = Date.now();
+    try {
+      audioFile = await downloadVideoAudio(youtubeUrl, videoId);
+      const downloadDuration = ((Date.now() - downloadStartTime) / 1000).toFixed(2);
+      const fileStats = await stat(audioFile);
+      console.log(`✅ Audio downloaded successfully:`);
+      console.log(`   File: ${audioFile}`);
+      console.log(`   Size: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`   Duration: ${downloadDuration}s`);
+    } catch (error) {
+      console.error(`❌ Download failed:`, error.message);
+      throw error;
+    }
     
     // Step 2: Transcribe with ElevenLabs
-    console.log('🎤 Transcribing with ElevenLabs...');
-    const transcript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-    console.log('✅ Transcription completed');
+    console.log(`\n🎤 Step 2: Transcribing with ElevenLabs...`);
+    const transcribeStartTime = Date.now();
+    let transcript;
+    try {
+      transcript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+      const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
+      console.log(`✅ Transcription completed:`);
+      console.log(`   Duration: ${transcribeDuration}s`);
+      console.log(`   Transcript length: ${transcript.length} characters`);
+      console.log(`   First 100 chars: ${transcript.substring(0, 100)}...`);
+    } catch (error) {
+      console.error(`❌ Transcription failed:`, error.message);
+      throw error;
+    }
     
     // Step 2.5: Get actual video duration
-    console.log('⏱️ Getting video duration...');
-    const videoDuration = await getVideoDuration(audioFile);
-    console.log(`✅ Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
+    console.log(`\n⏱️ Step 2.5: Getting video duration...`);
+    const durationStartTime = Date.now();
+    let videoDuration;
+    try {
+      videoDuration = await getVideoDuration(audioFile);
+      const durationDuration = ((Date.now() - durationStartTime) / 1000).toFixed(2);
+      console.log(`✅ Video duration retrieved:`);
+      console.log(`   Duration: ${durationDuration}s`);
+      console.log(`   Video length: ${videoDuration}s (${formatDuration(videoDuration)})`);
+      if (videoDuration === 0) {
+        console.warn(`⚠️ Could not get video duration, will use estimated duration`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to get duration:`, error.message);
+      videoDuration = 0;
+    }
     
     // Step 3: Segment transcript with proper duration
-    console.log('✂️ Segmenting transcript...');
-    const segments = await segmentTranscriptBySentences(transcript, videoDuration);
-    console.log(`✅ Created ${segments.length} segments covering ${formatDuration(segments[segments.length - 1]?.endTime || 0)}`);
+    console.log(`\n✂️ Step 3: Segmenting transcript...`);
+    const segmentStartTime = Date.now();
+    let segments;
+    try {
+      segments = await segmentTranscriptBySentences(transcript, videoDuration);
+      const segmentDuration = ((Date.now() - segmentStartTime) / 1000).toFixed(2);
+      const lastSegmentEnd = segments[segments.length - 1]?.endTime || 0;
+      console.log(`✅ Segmentation completed:`);
+      console.log(`   Duration: ${segmentDuration}s`);
+      console.log(`   Total segments: ${segments.length}`);
+      console.log(`   Coverage: ${formatDuration(lastSegmentEnd)} / ${formatDuration(videoDuration)}`);
+      console.log(`   First segment: ${segments[0]?.startTime}s - ${segments[0]?.endTime}s`);
+      console.log(`   Last segment: ${segments[segments.length - 1]?.startTime}s - ${segments[segments.length - 1]?.endTime}s`);
+      if (segments.length > 0) {
+        console.log(`   Sample text: ${segments[0]?.text?.substring(0, 50)}...`);
+      }
+    } catch (error) {
+      console.error(`❌ Segmentation failed:`, error.message);
+      throw error;
+    }
     
     // Step 4: Extract audio segments
-    console.log('🎵 Extracting audio segments...');
-    segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
-    console.log(`✅ Extracted ${segmentFiles.length} audio segments`);
+    console.log(`\n🎵 Step 4: Extracting audio segments...`);
+    const extractStartTime = Date.now();
+    try {
+      segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
+      const extractDuration = ((Date.now() - extractStartTime) / 1000).toFixed(2);
+      console.log(`✅ Audio extraction completed:`);
+      console.log(`   Duration: ${extractDuration}s`);
+      console.log(`   Segments extracted: ${segmentFiles.length}/${segments.length}`);
+      if (segmentFiles.length < segments.length) {
+        console.warn(`⚠️ Some segments failed to extract`);
+      }
+    } catch (error) {
+      console.error(`❌ Audio extraction failed:`, error.message);
+      throw error;
+    }
     
     // Step 5: Upload to R2
-    console.log('☁️ Uploading to Cloudflare R2...');
-    const r2Keys = await uploadToR2(segmentFiles, videoId);
-    console.log(`✅ Uploaded ${r2Keys.length} segments to R2`);
+    console.log(`\n☁️ Step 5: Uploading to Cloudflare R2...`);
+    const uploadStartTime = Date.now();
+    let r2Keys;
+    try {
+      r2Keys = await uploadToR2(segmentFiles, videoId);
+      const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+      console.log(`✅ Upload completed:`);
+      console.log(`   Duration: ${uploadDuration}s`);
+      console.log(`   Segments uploaded: ${r2Keys.length}/${segmentFiles.length}`);
+      if (r2Keys.length > 0) {
+        console.log(`   First R2 key: ${r2Keys[0]}`);
+        console.log(`   Last R2 key: ${r2Keys[r2Keys.length - 1]}`);
+      }
+      if (r2Keys.length < segmentFiles.length) {
+        console.warn(`⚠️ Some segments failed to upload`);
+      }
+    } catch (error) {
+      console.error(`❌ Upload failed:`, error.message);
+      throw error;
+    }
     
     // Step 6: Store metadata in D1
-    console.log('💾 Storing metadata in D1...');
-    await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 'elevenlabs');
-    console.log('✅ Metadata stored in D1');
+    console.log(`\n💾 Step 6: Storing metadata in D1...`);
+    const storeStartTime = Date.now();
+    try {
+      await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 'elevenlabs');
+      const storeDuration = ((Date.now() - storeStartTime) / 1000).toFixed(2);
+      console.log(`✅ Metadata stored:`);
+      console.log(`   Duration: ${storeDuration}s`);
+    } catch (error) {
+      console.error(`❌ Metadata storage failed:`, error.message);
+      throw error;
+    }
     
     // Cleanup
+    console.log(`\n🧹 Cleaning up temporary files...`);
     if (audioFile) {
       await unlink(audioFile).catch(() => {});
     }
     for (const file of segmentFiles) {
       await unlink(file).catch(() => {});
     }
+    console.log(`✅ Cleanup completed`);
+    
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`\n✅ ========== VIDEO PROCESSING SUCCESS ==========`);
+    console.log(`   Total duration: ${totalDuration}s`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   Segments: ${segments.length}`);
+    console.log(`   R2 keys: ${r2Keys.length}`);
+    console.log(`========================================\n`);
     
     res.json({
       success: true,
@@ -385,7 +506,12 @@ app.post('/process-video', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Video processing error:', error);
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`\n❌ ========== VIDEO PROCESSING ERROR ==========`);
+    console.error(`   Duration: ${totalDuration}s`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
+    console.error(`==========================================\n`);
     
     // Cleanup on error
     if (audioFile) {
@@ -398,6 +524,7 @@ app.post('/process-video', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error',
       details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 });

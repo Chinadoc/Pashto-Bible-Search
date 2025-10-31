@@ -260,45 +260,123 @@ async function uploadToR2(segmentFiles: string[], videoId: string): Promise<void
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  console.log(`\n🎬 ========== VIDEO PROCESSING REQUEST STARTED ==========`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
+  
   try {
     const body: VideoProcessingRequest = await request.json();
     const { youtubeUrl, apiKeys } = body;
 
+    console.log(`📥 Received request:`);
+    console.log(`   YouTube URL: ${youtubeUrl}`);
+    console.log(`   Has API keys: ${!!apiKeys}`);
+    console.log(`   ElevenLabs key: ${apiKeys?.elevenlabs ? '✅ Set' : '❌ Missing'}`);
+
     if (!youtubeUrl) {
+      console.error(`❌ Missing YouTube URL`);
       return NextResponse.json(
         { error: 'YouTube URL is required' },
         { status: 400 }
       );
     }
 
+    // Extract video ID for logging
+    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : 'unknown';
+    console.log(`🎯 Extracted video ID: ${videoId}`);
+
     // Check if processing service URL is configured
     const processingServiceUrl = process.env.PROCESSING_SERVICE_URL;
     
+    console.log(`\n🔍 Checking processing service configuration:`);
+    console.log(`   PROCESSING_SERVICE_URL: ${processingServiceUrl ? '✅ Set' : '❌ Not set'}`);
+    
     if (processingServiceUrl) {
       // Use external processing service (Railway/Render/etc.)
-      console.log(`🎬 Forwarding to processing service: ${processingServiceUrl}`);
+      console.log(`\n📡 Forwarding to processing service:`);
+      console.log(`   Service URL: ${processingServiceUrl}`);
+      console.log(`   Endpoint: ${processingServiceUrl}/process-video`);
       
-      const response = await fetch(`${processingServiceUrl}/process-video`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl, apiKeys }),
-        signal: AbortSignal.timeout(600000), // 10 minute timeout
-      });
+      const requestBody = { youtubeUrl, apiKeys };
+      console.log(`   Request body keys: ${Object.keys(requestBody).join(', ')}`);
+      
+      try {
+        const requestStartTime = Date.now();
+        const response = await fetch(`${processingServiceUrl}/process-video`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'User-Agent': 'Pashto-Bible-Search/1.0'
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(600000), // 10 minute timeout
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
+        const requestDuration = ((Date.now() - requestStartTime) / 1000).toFixed(2);
+        console.log(`\n📨 Processing service response:`);
+        console.log(`   Status: ${response.status} ${response.statusText}`);
+        console.log(`   Duration: ${requestDuration}s`);
+        console.log(`   Headers:`, Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`\n❌ Processing service error:`);
+          console.error(`   Status: ${response.status}`);
+          console.error(`   Error text: ${errorText}`);
+          console.error(`   This usually means:`);
+          console.error(`   - The service is not running`);
+          console.error(`   - The service encountered an error`);
+          console.error(`   - Network connectivity issue`);
+          
+          return NextResponse.json(
+            { 
+              error: 'Processing service error', 
+              details: errorText,
+              status: response.status,
+              serviceUrl: processingServiceUrl
+            },
+            { status: response.status }
+          );
+        }
+
+        const result = await response.json();
+        const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+        
+        console.log(`\n✅ ========== VIDEO PROCESSING SUCCESS ==========`);
+        console.log(`   Total duration: ${totalDuration}s`);
+        console.log(`   Video ID: ${result.videoId || videoId}`);
+        console.log(`   Segments created: ${result.segments?.length || 0}`);
+        console.log(`   Transcript length: ${result.transcript?.length || 0} chars`);
+        console.log(`========================================\n`);
+        
+        return NextResponse.json(result);
+      } catch (fetchError: any) {
+        const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.error(`\n❌ ========== FETCH ERROR ==========`);
+        console.error(`   Duration: ${totalDuration}s`);
+        console.error(`   Error: ${fetchError.message}`);
+        console.error(`   Type: ${fetchError.name}`);
+        console.error(`   Stack: ${fetchError.stack}`);
+        console.error(`==================================\n`);
+        
         return NextResponse.json(
-          { error: 'Processing service error', details: errorText },
-          { status: response.status }
+          { 
+            error: 'Failed to connect to processing service',
+            details: fetchError.message,
+            type: fetchError.name,
+            serviceUrl: processingServiceUrl
+          },
+          { status: 500 }
         );
       }
-
-      const result = await response.json();
-      return NextResponse.json(result);
     } else {
       // Fallback to local processing (for development)
-      console.log('⚠️ PROCESSING_SERVICE_URL not set, using local processing');
-      console.log('⚠️ This will only work if yt-dlp and ffmpeg are available locally');
+      console.warn(`\n⚠️ ========== PROCESSING SERVICE NOT CONFIGURED ==========`);
+      console.warn(`   PROCESSING_SERVICE_URL environment variable is not set`);
+      console.warn(`   This endpoint requires an external processing service (Railway/Render)`);
+      console.warn(`   See video-processor-service/RAILWAY_SETUP.md for setup instructions`);
+      console.warn(`==========================================================\n`);
       
       return NextResponse.json(
         { 
@@ -310,7 +388,14 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Video processing error:', error);
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`\n❌ ========== INTERNAL SERVER ERROR ==========`);
+    console.error(`   Duration: ${totalDuration}s`);
+    console.error(`   Error:`, error);
+    console.error(`   Message: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`   Stack: ${error instanceof Error ? error.stack : 'N/A'}`);
+    console.error(`==========================================\n`);
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
