@@ -571,7 +571,12 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         // Clear the form
         setYoutubeUrl('');
       } else {
-        setElevenLabsError(result.error || result.details || 'Video processing failed');
+        // Show detailed error information
+        const errorMsg = result.error || result.details || 'Video processing failed';
+        const fullError = result.details ? `${result.error}: ${result.details}` : errorMsg;
+        console.error('❌ Processing error:', fullError);
+        console.error('Full response:', result);
+        setElevenLabsError(fullError);
       }
     } catch (error) {
       console.error('Video processing error:', error);

@@ -86,18 +86,24 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
   const audioBuffer = await readFile(finalAudioFile);
   
   const formData = new FormData();
+  // Use a Blob-like object or pass the buffer with proper options
+  // For Node.js form-data, we need to pass the buffer with proper options
   formData.append('file', audioBuffer, {
     filename: 'audio.mp3',
     contentType: 'audio/mpeg',
+    knownLength: audioBuffer.length, // Specify the length for better compatibility
   });
   formData.append('language', 'ps');
   formData.append('model_id', 'scribe_v1');
+  
+  console.log(`📤 Sending to ElevenLabs: ${(audioBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`   Language: ps, Model: scribe_v1`);
   
   const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
     method: 'POST',
     headers: {
       'xi-api-key': apiKey,
-      ...formData.getHeaders(),
+      ...formData.getHeaders(), // This sets Content-Type with boundary
     },
     body: formData,
   });
