@@ -186,3 +186,4 @@ credentials.json
 drive_token.json
 audio_mapping.csv
 APPLY_AUDIO_IDS.sql
+.temp-*.sql
