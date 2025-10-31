@@ -269,12 +269,14 @@ function matchWordToCategories(
 /**
  * Fetch verses for a word by searching verse text directly
  * Uses word_frequencies as source of truth, then queries verses containing the word
+ * ONLY includes verses that have audio (audio_r2_key IS NOT NULL)
  */
 async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promise<VerseMapping[]> {
   try {
     const escapedWord = pashtoWord.replace(/'/g, "''");
     
     // Try both afghan2023 and yousafzai2019 translations
+    // IMPORTANT: Only include verses with audio_r2_key
     const queries = [
       // Afghan 2023
       `
@@ -288,6 +290,7 @@ async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promis
           verse
         FROM verses_afghan2023
         WHERE text LIKE '%${escapedWord}%'
+          AND audio_r2_key IS NOT NULL
         ORDER BY RANDOM()
         LIMIT 10
       `,
@@ -303,6 +306,7 @@ async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promis
           verse
         FROM verses_yousafzai
         WHERE text LIKE '%${escapedWord}%'
+          AND audio_r2_key IS NOT NULL
         ORDER BY RANDOM()
         LIMIT 10
       `
@@ -352,6 +356,7 @@ async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promis
             verse
           FROM verses_afghan2023
           WHERE text LIKE '%${escapedBaseForm}%'
+            AND audio_r2_key IS NOT NULL
           ORDER BY RANDOM()
           LIMIT 10
         `,
@@ -366,6 +371,7 @@ async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promis
             verse
           FROM verses_yousafzai
           WHERE text LIKE '%${escapedBaseForm}%'
+            AND audio_r2_key IS NOT NULL
           ORDER BY RANDOM()
           LIMIT 10
         `
