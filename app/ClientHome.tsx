@@ -10,7 +10,7 @@ import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import ChapterNavigator from "../components/ChapterNavigator";
 import ChapterView from "../components/ChapterView";
-import TopicsBrowser from "./components/TopicsBrowser";
+import TopicsBrowser from "../components/TopicsBrowser";
 import type {
   Verse,
   Scope,
