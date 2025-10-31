@@ -7,7 +7,7 @@ RUN apt-get update && \
     python3 \
     python3-pip \
     curl \
-    && pip3 install yt-dlp \
+    && pip3 install --break-system-packages yt-dlp \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
