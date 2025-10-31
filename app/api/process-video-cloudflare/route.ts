@@ -221,9 +221,6 @@ async function uploadToR2(segmentFiles: string[], videoId: string): Promise<void
 }
 
 export async function POST(request: NextRequest) {
-  let audioFile: string | null = null;
-  let segmentFiles: string[] = [];
-  
   try {
     const body: VideoProcessingRequest = await request.json();
     const { youtubeUrl, apiKeys } = body;
@@ -235,116 +232,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract video ID
-    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    if (!videoIdMatch) {
-      return NextResponse.json(
-        { error: 'Invalid YouTube URL' },
-        { status: 400 }
-      );
-    }
-    const videoId = videoIdMatch[1];
+    // Check if processing service URL is configured
+    const processingServiceUrl = process.env.PROCESSING_SERVICE_URL;
+    
+    if (processingServiceUrl) {
+      // Use external processing service (Railway/Render/etc.)
+      console.log(`🎬 Forwarding to processing service: ${processingServiceUrl}`);
+      
+      const response = await fetch(`${processingServiceUrl}/process-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtubeUrl, apiKeys }),
+        signal: AbortSignal.timeout(600000), // 10 minute timeout
+      });
 
-    console.log(`🎬 Processing video ${videoId} with ElevenLabs...`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json(
+          { error: 'Processing service error', details: errorText },
+          { status: response.status }
+        );
+      }
 
-    const elevenlabsKey = apiKeys?.elevenlabs || process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
-
-    if (!elevenlabsKey) {
-      return NextResponse.json(
-        { error: 'ElevenLabs API key is required' },
-        { status: 400 }
-      );
-    }
-
-    // Step 1: Download video audio
-    console.log('📥 Downloading video audio...');
-    audioFile = await downloadVideoAudio(youtubeUrl, videoId);
-    console.log('✅ Audio downloaded');
-
-    // Step 2: Transcribe with ElevenLabs
-    console.log('🎤 Transcribing with ElevenLabs...');
-    const transcript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-    console.log('✅ Transcription completed');
-
-    // Step 2.5: Get actual video duration
-    console.log('⏱️ Getting video duration...');
-    const videoDuration = await getVideoDuration(audioFile);
-    console.log(`✅ Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
-
-    // Step 3: Segment transcript with proper duration
-    console.log('✂️ Segmenting transcript...');
-    const segments = await segmentTranscriptBySentences(transcript, videoDuration);
-    console.log(`✅ Created ${segments.length} segments covering ${formatDuration(segments[segments.length - 1]?.endTime || 0)}`);
-
-    // Step 4: Extract audio segments
-    console.log('🎵 Extracting audio segments...');
-    segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
-    console.log(`✅ Extracted ${segmentFiles.length} audio segments`);
-
-    // Step 5: Upload to R2
-    console.log('☁️ Uploading to Cloudflare R2...');
-    await uploadToR2(segmentFiles, videoId);
-    console.log('✅ Uploaded to R2');
-
-    // Step 6: Store metadata in D1
-    console.log('💾 Storing metadata in D1...');
-    const storeResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/process`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        youtubeUrl,
-        videoId,
-        transcript,
-        segments,
-        transcription_service: 'elevenlabs',
-        apiKeys: { elevenlabs: elevenlabsKey },
-      }),
-    });
-
-    if (!storeResponse.ok) {
-      const errorText = await storeResponse.text();
-      console.error('Failed to store in D1:', errorText);
-      // Continue anyway - R2 uploads succeeded
+      const result = await response.json();
+      return NextResponse.json(result);
     } else {
-      console.log('✅ Metadata stored in D1');
+      // Fallback to local processing (for development)
+      console.log('⚠️ PROCESSING_SERVICE_URL not set, using local processing');
+      console.log('⚠️ This will only work if yt-dlp and ffmpeg are available locally');
+      
+      return NextResponse.json(
+        { 
+          error: 'Processing service not configured',
+          message: 'Please set PROCESSING_SERVICE_URL environment variable to your Railway/Render service URL',
+          instructions: 'See video-processor-service/RAILWAY_SETUP.md for setup instructions'
+        },
+        { status: 500 }
+      );
     }
-
-    // Cleanup
-    if (audioFile) {
-      await unlink(audioFile).catch(() => {});
-    }
-    for (const file of segmentFiles) {
-      await unlink(file).catch(() => {});
-    }
-
-    return NextResponse.json({
-      success: true,
-      videoId,
-      transcript,
-      segments,
-      audioClips: segments.map((segment, index) => ({
-        segment_number: index + 1,
-        text: segment.text,
-        start_time: segment.startTime,
-        end_time: segment.endTime,
-        duration: segment.endTime - segment.startTime,
-        r2_key: `videos/${videoId}/segment_${index + 1}.mp3`,
-      })),
-      r2Keys: segments.map((_, index) => `videos/${videoId}/segment_${index + 1}.mp3`),
-      message: `✅ Video processed successfully! ${segments.length} segments created.`,
-    });
-
   } catch (error) {
     console.error('Video processing error:', error);
-    
-    // Cleanup on error
-    if (audioFile) {
-      await unlink(audioFile).catch(() => {});
-    }
-    for (const file of segmentFiles) {
-      await unlink(file).catch(() => {});
-    }
-    
     return NextResponse.json(
       { 
         error: 'Internal server error',

@@ -1085,6 +1085,11 @@ export default {
       return getVideoAudio(env, videoId, segment, request);
     }
 
+    // R2 upload endpoint
+    if (path === '/api/r2/upload' && request.method === 'POST') {
+      return uploadToR2(env, request);
+    }
+
     return errorResponse('Not found', 404);
   },
 };
