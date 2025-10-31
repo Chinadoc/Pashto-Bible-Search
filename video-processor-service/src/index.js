@@ -1,7 +1,8 @@
 const express = require('express');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { writeFile, unlink, readFile, stat, mkdir, createReadStream } = require('fs');
+const { createReadStream } = require('fs');
+const { writeFile, unlink, readFile, stat, mkdir } = require('fs/promises');
 const { join } = require('path');
 const FormData = require('form-data');
 const cors = require('cors');
