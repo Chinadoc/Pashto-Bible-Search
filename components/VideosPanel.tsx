@@ -118,6 +118,11 @@ function YouTubePlayer({
     );
   }
 
+  // Validate video ID format (YouTube IDs are typically 11 characters)
+  if (videoId.length < 11) {
+    console.warn(`Invalid video ID format: ${videoId} (expected 11 characters)`);
+  }
+
   return (
     <div className="w-full h-full relative">
       {error && (
@@ -135,6 +140,10 @@ function YouTubePlayer({
         allowFullScreen
         className="w-full h-full rounded"
         onError={() => setError('Failed to load YouTube video')}
+        onLoad={() => {
+          console.log('YouTube iframe loaded successfully');
+          setError(null);
+        }}
       />
     </div>
   );
@@ -1095,37 +1104,57 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
               </div>
 
               {/* YouTube Embed */}
-              {video.youtube_url && video.video_id && (
+              {video.youtube_url && video.video_id ? (
                 <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
-                  <div className="aspect-video w-full">
-                    <YouTubePlayer
-                      videoId={video.video_id}
-                      segments={video.clips}
-                      onTimeUpdate={(currentTime) => {
-                        setVideoCurrentTime(prev => ({ ...prev, [video.video_id || '']: currentTime }));
-                        
-                        // Find active segment
-                        const activeSegment = video.clips.findIndex((clip) => {
-                          const startTime = clip.start_time_seconds || clip.start_time || 0;
-                          const endTime = clip.end_time_seconds || clip.end_time || 0;
-                          return currentTime >= startTime && currentTime < endTime;
-                        });
-                        
-                        if (activeSegment !== -1) {
-                          setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: activeSegment }));
-                          
-                          // Auto-scroll to active segment
-                          const segmentKey = `${video.video_id}-${activeSegment + 1}`;
-                          const segmentElement = segmentRefs.current.get(segmentKey);
-                          if (segmentElement) {
-                            segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }
-                        } else {
-                          setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: null }));
+                  <div className="aspect-video w-full min-h-[400px]">
+                    {(() => {
+                      // Extract video ID from URL if video_id is not valid
+                      let videoId = video.video_id;
+                      if (!videoId || videoId.length < 11) {
+                        const extracted = extractVideoId(video.youtube_url);
+                        if (extracted) {
+                          videoId = extracted;
+                          console.log(`Extracted video ID from URL: ${videoId}`);
                         }
-                      }}
-                    />
+                      }
+                      console.log(`Rendering YouTube player with videoId: ${videoId}, youtube_url: ${video.youtube_url}`);
+                      return (
+                        <YouTubePlayer
+                          videoId={videoId}
+                          segments={video.clips}
+                          onTimeUpdate={(currentTime) => {
+                            setVideoCurrentTime(prev => ({ ...prev, [video.video_id || '']: currentTime }));
+                            
+                            // Find active segment
+                            const activeSegment = video.clips.findIndex((clip) => {
+                              const startTime = clip.start_time_seconds || clip.start_time || 0;
+                              const endTime = clip.end_time_seconds || clip.end_time || 0;
+                              return currentTime >= startTime && currentTime < endTime;
+                            });
+                            
+                            if (activeSegment !== -1) {
+                              setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: activeSegment }));
+                              
+                              // Auto-scroll to active segment
+                              const segmentKey = `${video.video_id}-${activeSegment + 1}`;
+                              const segmentElement = segmentRefs.current.get(segmentKey);
+                              if (segmentElement) {
+                                segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            } else {
+                              setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: null }));
+                            }
+                          }}
+                        />
+                      );
+                    })()}
                   </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-4 mb-4">
+                  <p className="text-yellow-800 dark:text-yellow-300">
+                    Missing video ID or YouTube URL. Video ID: {video.video_id || 'N/A'}, YouTube URL: {video.youtube_url || 'N/A'}
+                  </p>
                 </div>
               )}
 
@@ -1200,13 +1229,26 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     const duration = clip.duration || (endTime - startTime);
                     const audioKey = `${video.video_id}-${segmentNum}`;
                     const isPlaying = playingAudio === audioKey;
-                    // Use audio_url from API, or fallback to server_url or r2_key-based URL
-                    const audioUrl = clip.audio_url || clip.server_url;
                     
-                    // Debug: log audio URL for first segment
-                    if (audioUrl && index === 0) {
-                      console.log(`Audio URL for video ${video.video_id}, segment ${segmentNum}:`, audioUrl);
-                      console.log('Clip data:', { audio_url: clip.audio_url, server_url: clip.server_url, r2_key: clip.r2_key });
+                    // Construct audio URL - prefer audio_url from API, fallback to constructed URL
+                    let audioUrl = clip.audio_url || clip.server_url;
+                    
+                    // If no audio_url from API, try to construct it (shouldn't happen, but fallback)
+                    if (!audioUrl && video.video_id && clip.r2_key) {
+                      // Use the R2 key to construct worker URL
+                      const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+                      audioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${video.video_id}/audio?segment=${segmentNum}`;
+                    }
+                    
+                    // Debug: log audio URL construction for first few segments
+                    if (index < 3) {
+                      console.log(`Segment ${segmentNum} audio URL:`, audioUrl);
+                      console.log('Clip data:', { 
+                        audio_url: clip.audio_url, 
+                        server_url: clip.server_url, 
+                        r2_key: clip.r2_key,
+                        video_id: video.video_id 
+                      });
                     }
 
                     return (

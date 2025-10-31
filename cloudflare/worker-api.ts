@@ -790,8 +790,32 @@ async function listVideos(env: Env): Promise<Response> {
 async function getVideoAudio(env: Env, videoId: string, segment: number, request: Request): Promise<Response> {
   try {
     const r2Key = `videos/${videoId}/segment_${segment}.mp3`;
+    console.log(`Requesting audio for video ${videoId}, segment ${segment}, R2 key: ${r2Key}`);
+    
+    const object = await env.AUDIO_BUCKET.get(r2Key);
+    
+    if (!object) {
+      console.error(`Audio file not found in R2: ${r2Key}`);
+      // Try alternative paths
+      const altPaths = [
+        `pashto-bible-audio/${r2Key}`,
+        `videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,
+      ];
+      
+      for (const altPath of altPaths) {
+        const altObject = await env.AUDIO_BUCKET.get(altPath);
+        if (altObject) {
+          console.log(`Found audio at alternative path: ${altPath}`);
+          return streamAudio(env, altPath, request);
+        }
+      }
+      
+      return errorResponse(`Audio file not found: ${r2Key}`, 404);
+    }
+    
     return streamAudio(env, r2Key, request);
   } catch (error: any) {
+    console.error(`Error getting video audio: ${error.message}`, error);
     return errorResponse(`Failed to get video audio: ${error.message}`, 500);
   }
 }
