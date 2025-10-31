@@ -850,12 +850,8 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                   </span>
                 </button>
                 
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ✨ Creates audio clips, uploads to Google Drive, saves to Supabase, shows in Videos tab
-                </p>
-                
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  YouTube videos will be analyzed for speech segments before transcription
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  Downloads audio → Transcribes with ElevenLabs → Creates segments → Uploads to Cloudflare R2 → Saves to D1
                 </p>
               </div>
             )}
