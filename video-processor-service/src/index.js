@@ -85,11 +85,10 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
     fileStats = await stat(finalAudioFile);
   }
   
-  // Create FormData using file stream (more reliable for ElevenLabs API)
+  // Create FormData - use file path directly (form-data handles this better)
   const formData = new FormData();
   
-  // Use createReadStream instead of reading entire file into buffer
-  // This is more memory efficient and works better with ElevenLabs API
+  // Use createReadStream - form-data library handles streams correctly
   const fileStream = createReadStream(finalAudioFile);
   
   formData.append('file', fileStream, {
@@ -102,28 +101,57 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
   
   console.log(`📤 Sending to ElevenLabs: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
   console.log(`   Language: ps, Model: scribe_v1`);
-  console.log(`   Using file stream (more reliable for ElevenLabs API)`);
+  console.log(`   File: ${finalAudioFile}`);
   
-  const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
-    method: 'POST',
-    headers: {
-      'xi-api-key': apiKey,
-      ...formData.getHeaders(), // This sets Content-Type with boundary
-    },
-    body: formData,
+  // Get form headers and calculate Content-Length
+  const formHeaders = formData.getHeaders();
+  
+  // Get Content-Length for better compatibility
+  const contentLength = await new Promise((resolve, reject) => {
+    formData.getLength((err, length) => {
+      if (err) {
+        // If getLength fails, use knownLength
+        resolve(fileStats.size + 1000); // Approximate with some buffer
+      } else {
+        resolve(length);
+      }
+    });
   });
   
-  if (finalAudioFile !== audioFile) {
-    await unlink(finalAudioFile).catch(() => {});
-  }
+  console.log(`   Content-Length: ${contentLength} bytes`);
+  console.log(`   Content-Type: ${formHeaders['content-type']}`);
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`ElevenLabs error: ${response.status} - ${errorText}`);
+  try {
+    const headers = {
+      'xi-api-key': apiKey,
+      ...formHeaders,
+      'Content-Length': contentLength.toString(),
+    };
+    
+    const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+      method: 'POST',
+      headers: headers,
+      body: formData,
+    });
+    
+    if (finalAudioFile !== audioFile) {
+      await unlink(finalAudioFile).catch(() => {});
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ ElevenLabs API Error:`);
+      console.error(`   Status: ${response.status}`);
+      console.error(`   Response: ${errorText}`);
+      throw new Error(`ElevenLabs error: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    return result.text || '';
+  } catch (error) {
+    console.error(`❌ Request failed:`, error.message);
+    throw error;
   }
-  
-  const result = await response.json();
-  return result.text || '';
 }
 
 /**
