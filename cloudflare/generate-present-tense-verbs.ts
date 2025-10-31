@@ -182,15 +182,20 @@ function generatePresentTenseByPattern(verbRoot: string): PresentTenseForm[] {
   // کول → کو, کېدل → کې, تلل → ت, etc.
   let stem = verbRoot;
   
-  // Remove infinitive endings
-  if (verbRoot.endsWith('ول')) {
-    stem = verbRoot.slice(0, -2); // کول → کو
-  } else if (verbRoot.endsWith('ېدل')) {
-    stem = verbRoot.slice(0, -3); // کېدل → کې
-  } else if (verbRoot.endsWith('یدل')) {
-    stem = verbRoot.slice(0, -3); // Alternate ending
+  // Remove infinitive endings - check longest first!
+  // Special handling: "کول" ends with "ول" but removing 2 chars from 3-char string gives wrong result
+  // So we use substring(0, length - 1) to get the stem "کو" from "کول"
+  
+  if (verbRoot.length >= 3 && verbRoot.endsWith('ېدل')) {
+    stem = verbRoot.substring(0, verbRoot.length - 3); // کېدل → کې
+  } else if (verbRoot.length >= 3 && verbRoot.endsWith('یدل')) {
+    stem = verbRoot.substring(0, verbRoot.length - 3); // Alternate ending
+  } else if (verbRoot.endsWith('ول')) {
+    // Special case: for verbs ending in "ول", remove just the "ل" to get stem
+    // کول (3 chars) → کو (2 chars) by removing last char, not last 2
+    stem = verbRoot.substring(0, verbRoot.length - 1); // کول → کو
   } else if (verbRoot.endsWith('ل')) {
-    stem = verbRoot.slice(0, -1); // تلل → تل
+    stem = verbRoot.substring(0, verbRoot.length - 1); // تلل → تل
   }
   
   // Present tense endings match your example:
