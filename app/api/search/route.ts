@@ -1448,7 +1448,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
       console.log('🔍 Executing optimized search for:', convertedQuery, 'with', searchTerms.length, 'terms');
 
       let searchResults: any[] = [];
-      let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results' = 'fast';
+      let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results' | 'video_transcript' = 'fast';
 
     // ULTRA-FAST STANDARD SEARCH: Use Supabase word_index for instant results
     if (searchTerms.length === 1 && !includeRelated && searchLanguage === 'pashto') {
