@@ -1,6 +1,6 @@
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
-export type SearchLanguage = "pashto" | "english" | "anki";
+export type SearchLanguage = "pashto" | "english" | "topics";
 
 export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
 export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
@@ -14,6 +14,9 @@ export interface VerbFilterState {
   mood: VerbFilterMood;
 }
 
+// Inflection reason filters
+export type InflectionReasonFilter = 'all' | 'plural' | 'sandwich' | 'transitive_past';
+
 // Noun inflection filters
 export type NounInflectionType = 'all' | 'plain' | '1st' | '2nd' | 'plural' | 'vocative' | 'bundled';
 export type NounGender = 'all' | 'masculine' | 'feminine';
@@ -21,6 +24,7 @@ export type NounGender = 'all' | 'masculine' | 'feminine';
 export interface NounFilterState {
   inflectionType: NounInflectionType;
   gender: NounGender;
+  inflectionReason?: InflectionReasonFilter; // Filter by why word is inflected
 }
 
 // Adjective inflection filters (same as nouns)
@@ -61,6 +65,12 @@ export interface RelatedFormVariant {
   score?: number;
   romanized?: string;
   flags?: string[];
+  inflectionReasons?: {
+    plural: number;
+    sandwich: number;
+    transitive_past: number;
+    sandwich_types: string[];
+  };
 }
 
 export interface RelatedFormsData {

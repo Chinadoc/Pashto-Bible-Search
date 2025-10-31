@@ -32,6 +32,7 @@ import type {
   AdjectiveFilterState,
   AdjectiveInflectionType,
   AdjectiveGender,
+  InflectionReasonFilter,
   SearchLanguage,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
@@ -75,11 +76,13 @@ const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
 const DEFAULT_NOUN_FILTER: NounFilterState = {
   inflectionType: 'all',
   gender: 'all',
+  inflectionReason: 'all',
 };
 
 const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
+  inflectionReason: 'all',
 };
 
 const MAIN_TABS = ['search', 'chapters', 'lexicon', 'videos', 'poems'] as const;
@@ -92,6 +95,7 @@ const MOOD_VALUES: VerbFilterMood[] = ['all', 'indicative', 'subjunctive', 'impe
 
 const NOUN_INFLECTION_VALUES: NounInflectionType[] = ['all', 'plain', '1st', '2nd', 'plural', 'vocative', 'bundled'];
 const GENDER_VALUES: NounGender[] = ['all', 'masculine', 'feminine'];
+const INFLECTION_REASON_VALUES: InflectionReasonFilter[] = ['all', 'plural', 'sandwich', 'transitive_past'];
 
 function sanitizeVerbFilter(candidate: any): VerbFilterState {
   if (!candidate || typeof candidate !== 'object') {
@@ -335,6 +339,22 @@ function matchesGender(label: string, gender: NounGender): boolean {
   return true;
 }
 
+function matchesInflectionReason(
+  variant: RelatedFormVariant,
+  reason: InflectionReasonFilter
+): boolean {
+  if (reason === 'all') return true;
+  if (!variant.inflectionReasons) return false;
+  
+  const reasons = variant.inflectionReasons;
+  
+  if (reason === 'plural') return reasons.plural > 0;
+  if (reason === 'sandwich') return reasons.sandwich > 0;
+  if (reason === 'transitive_past') return reasons.transitive_past > 0;
+  
+  return true;
+}
+
 function filterNounVariants(
   nouns: RelatedFormVariant[] | undefined,
   filters: NounFilterState
@@ -343,10 +363,13 @@ function filterNounVariants(
   
   const filtered = nouns.filter((variant) => {
     const label = normalizeLabel(variant.label);
-    return (
-      matchesNounInflectionType(label, filters.inflectionType) &&
-      matchesGender(label, filters.gender)
-    );
+    const inflectionTypeMatch = matchesNounInflectionType(label, filters.inflectionType);
+    const genderMatch = matchesGender(label, filters.gender);
+    const reasonMatch = filters.inflectionReason 
+      ? matchesInflectionReason(variant, filters.inflectionReason)
+      : true;
+    
+    return inflectionTypeMatch && genderMatch && reasonMatch;
   });
 
   return filtered;
@@ -360,21 +383,24 @@ function filterAdjectiveVariants(
   
   const filtered = adjectives.filter((variant) => {
     const label = normalizeLabel(variant.label);
-    return (
-      matchesNounInflectionType(label, filters.inflectionType) &&
-      matchesGender(label, filters.gender)
-    );
+    const inflectionTypeMatch = matchesNounInflectionType(label, filters.inflectionType);
+    const genderMatch = matchesGender(label, filters.gender);
+    const reasonMatch = filters.inflectionReason 
+      ? matchesInflectionReason(variant, filters.inflectionReason)
+      : true;
+    
+    return inflectionTypeMatch && genderMatch && reasonMatch;
   });
 
   return filtered;
 }
 
 function isDefaultNounFilter(filters: NounFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all';
+  return filters.inflectionType === 'all' && filters.gender === 'all' && (filters.inflectionReason === 'all' || !filters.inflectionReason);
 }
 
 function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all';
+  return filters.inflectionType === 'all' && filters.gender === 'all' && (filters.inflectionReason === 'all' || !filters.inflectionReason);
 }
 
 // Enhanced search controls component with all filters
@@ -527,15 +553,15 @@ function SearchControls({
             🇬🇧 English
           </button>
           <button
-            onClick={() => setSearchLanguage('anki')}
+            onClick={() => setSearchLanguage('topics')}
             className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'anki'
+              searchLanguage === 'topics'
                 ? 'bg-green-500 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
-            title="Anki Export Mode - search for words and export to Anki flashcards with audio"
+            title="Topics - Browse words and verses by semantic categories"
           >
-            📚 Anki
+            📚 Topics
           </button>
         </div>
 
@@ -1603,81 +1629,12 @@ export default function ClientHome() {
   const resultsCount = results.length;
 
   const isEnglishMode = searchLanguage === 'english';
-  const isAnkiMode = searchLanguage === 'anki';
+  const isTopicsMode = searchLanguage === 'topics';
 
-  // Anki export state
-  const [isExportingAnki, setIsExportingAnki] = useState(false);
-
-  // Anki export function
-  const exportToAnki = useCallback(async () => {
-    if (!results.length || !isAnkiMode) return;
-
-    setIsExportingAnki(true);
-    try {
-      console.log(`🔄 Exporting ${results.length} results to Anki deck...`);
-
-      const response = await fetch('/api/anki-export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          results: results.slice(0, 50), // Limit to 50 cards for performance
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Generate and download Anki deck file
-      await generateAnkiDeckFile(data.deck, data.cards);
-
-      console.log(`✅ Successfully exported ${data.count} cards to Anki`);
-    } catch (error) {
-      console.error('❌ Failed to export to Anki:', error);
-      alert(`Failed to export to Anki: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsExportingAnki(false);
-    }
-  }, [results, query, isAnkiMode]);
-
-  // Generate Anki deck file for download
-  const generateAnkiDeckFile = async (deck: any, cards: any[]) => {
-    const deckName = deck.name;
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-
-    // Create CSV content for Anki import with enhanced formatting
-    const csvContent = [
-      'Front,Back,Tags',
-      ...cards.map(card => `"${card.front.replace(/"/g, '""')}","${card.back.replace(/"/g, '""')}","${card.tags?.join(' ') || ''}"`)
-    ].join('\n');
-
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${deckName}_${timestamp}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Show success message with card count
-    alert(`✅ Successfully exported ${cards.length} cards to Anki!\n\nDeck: ${deckName}\nFile: ${deckName}_${timestamp}.csv`);
-  };
+  // Topics mode - will be used for category browsing
 
   return (
-    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
+    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isTopicsMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1692,14 +1649,14 @@ export default function ClientHome() {
         </div>
       )}
 
-      {/* Anki Mode Banner */}
-      {isAnkiMode && (
+      {/* Topics Mode Banner */}
+      {isTopicsMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
           <div className="flex items-center justify-center gap-3">
             <span className="text-2xl">📚</span>
             <div className="text-center">
-              <p className="font-bold text-lg">Anki Export Mode Active</p>
-              <p className="text-sm opacity-90">Search for words and create flashcards with audio</p>
+              <p className="font-bold text-lg">Topics Mode Active</p>
+              <p className="text-sm opacity-90">Browse words and verses by semantic categories</p>
             </div>
             <span className="text-2xl">📚</span>
           </div>
@@ -1708,11 +1665,11 @@ export default function ClientHome() {
 
       {/* Header */}
       <header className="text-center mb-6">
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isAnkiMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isTopicsMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isAnkiMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isTopicsMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isTopicsMode ? 'Topics - Browse words and verses by semantic categories' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -1825,8 +1782,8 @@ export default function ClientHome() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder={
-            isAnkiMode
-              ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
+            isTopicsMode
+              ? "Browse topics (e.g., 'body parts', 'colors', 'animals', 'family')..."
               : isEnglishMode
                 ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
                 : "Enter Pashto text to search..."
@@ -1834,24 +1791,24 @@ export default function ClientHome() {
           variant="outlined"
           fullWidth
           inputProps={{
-            dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
-            style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
+            dir: isEnglishMode || isTopicsMode ? 'ltr' : 'rtl',
+            style: { textAlign: isEnglishMode || isTopicsMode ? 'left' : 'right', padding: '12px 16px' }
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
-              borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
+              backgroundColor: isEnglishMode ? '#FFF7ED' : isTopicsMode ? '#ECFDF5' : '#374151',
+              borderColor: isEnglishMode ? '#F97316' : isTopicsMode ? '#10B981' : '#4B5563',
               color: isEnglishMode ? '#9A3412' : '#F9FAFB',
               '&:hover': {
-                borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
+                borderColor: isEnglishMode ? '#EA580C' : isTopicsMode ? '#059669' : '#6B7280'
               },
               '&.Mui-focused': {
-                borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
-                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                borderColor: isEnglishMode ? '#F97316' : isTopicsMode ? '#10B981' : '#3B82F6',
+                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isTopicsMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
               }
             },
             '& .MuiInputBase-input::placeholder': {
-              color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
+              color: isEnglishMode ? '#C2410C' : isTopicsMode ? '#065F46' : '#9CA3AF'
             }
           }}
           InputProps={{
@@ -2224,6 +2181,36 @@ export default function ClientHome() {
                   </div>
                 </div>
 
+                {/* Inflection Reason Filter */}
+                <div className="mt-4">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Inflection Reason (Why inflected?):
+                  </label>
+                  <div className="space-y-1">
+                    {INFLECTION_REASON_VALUES.map((reason) => (
+                      <label key={reason} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="noun-inflection-reason"
+                          checked={(nounFilters.inflectionReason || 'all') === reason}
+                          onChange={() => {
+                            if ((nounFilters.inflectionReason || 'all') !== reason) {
+                              applyNounFiltersAndSearch({ ...nounFilters, inflectionReason: reason });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="capitalize">
+                          {reason === 'all' ? 'All Reasons' : 
+                           reason === 'plural' ? 'Plural' :
+                           reason === 'sandwich' ? 'In Sandwich' :
+                           reason === 'transitive_past' ? 'Subject of Transitive Past' : reason}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {activeVariantForms.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -2302,6 +2289,36 @@ export default function ClientHome() {
                   </div>
                 </div>
 
+                {/* Inflection Reason Filter */}
+                <div className="mt-4">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Inflection Reason (Why inflected?):
+                  </label>
+                  <div className="space-y-1">
+                    {INFLECTION_REASON_VALUES.map((reason) => (
+                      <label key={reason} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="radio"
+                          name="adjective-inflection-reason"
+                          checked={(adjectiveFilters.inflectionReason || 'all') === reason}
+                          onChange={() => {
+                            if ((adjectiveFilters.inflectionReason || 'all') !== reason) {
+                              applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionReason: reason });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="capitalize">
+                          {reason === 'all' ? 'All Reasons' : 
+                           reason === 'plural' ? 'Plural' :
+                           reason === 'sandwich' ? 'In Sandwich' :
+                           reason === 'transitive_past' ? 'Subject of Transitive Past' : reason}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {activeVariantForms.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -2315,29 +2332,16 @@ export default function ClientHome() {
             )}
           </div>
 
-          {/* Anki Export Button */}
-          {isAnkiMode && results.length > 0 && (
+          {/* Topics Info */}
+          {isTopicsMode && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-green-800 dark:text-green-300">
-                    📚 Export to Anki
-                  </h3>
-                  <p className="text-sm text-green-600 dark:text-green-400">
-                    Create flashcards with audio for {results.length} results
-                  </p>
-                </div>
-                <button
-                  onClick={exportToAnki}
-                  disabled={isExportingAnki || results.length === 0}
-                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                    isExportingAnki
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
-                </button>
+              <div>
+                <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
+                  📚 Browse by Topics
+                </h3>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Search for a topic to see words and verses in that category. Examples: body parts, family, colors, numbers, weather, animals, food, etc.
+                </p>
               </div>
             </div>
           )}
