@@ -145,19 +145,42 @@ Object.keys(CATEGORIES).forEach(key => {
 
 /**
  * Classify a word into categories based on its English translation
+ * Uses word boundary matching to prevent false positives (e.g., "beginning" matching "inside")
  */
 function classifyWord(englishTranslation: string, pos?: string): string[] {
   const categories: Set<string> = new Set();
   const englishLower = englishTranslation.toLowerCase();
   
+  // Split translation into words (handle commas, semicolons, spaces)
+  // This allows us to match whole words instead of substrings
+  const words = englishLower.split(/[,;]\s*|\s+/).map(w => w.trim()).filter(w => w.length > 0);
+  
   // Check each category's keywords
   for (const [category, keywords] of Object.entries(CATEGORIES)) {
     for (const keyword of keywords) {
-      // Check if keyword appears in translation
-      if (englishLower.includes(keyword.toLowerCase())) {
-        categories.add(category);
-        break; // Word can belong to multiple categories, but only add once per category
+      const keywordLower = keyword.toLowerCase();
+      
+      // Check if keyword appears as a whole word in any of the translation words
+      // Use word boundary matching to prevent substring matches
+      for (const word of words) {
+        // Check exact match first (most common case)
+        if (word === keywordLower) {
+          categories.add(category);
+          break;
+        }
+        
+        // Check if keyword appears at word boundaries (handles compound words)
+        // Escape special regex characters in keyword
+        const escapedKeyword = keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
+        if (regex.test(word)) {
+          categories.add(category);
+          break;
+        }
       }
+      
+      // If we found a match for this category, move to next category
+      if (categories.has(category)) break;
     }
   }
   

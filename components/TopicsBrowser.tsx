@@ -152,14 +152,31 @@ export default function TopicsBrowser({ onCategorySelect }: TopicsBrowserProps) 
                     <div className="flex items-center gap-2">
                       {verse.audio_url && (
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const audio = document.getElementById(`audio-${idx}`) as HTMLAudioElement;
                             if (audio) {
-                              if (isPlaying) {
-                                audio.pause();
-                                audio.currentTime = 0;
-                              } else {
-                                audio.play();
+                              try {
+                                if (isPlaying) {
+                                  audio.pause();
+                                  audio.currentTime = 0;
+                                  setPlayingAudio(null);
+                                } else {
+                                  // Stop any currently playing audio
+                                  if (playingAudio) {
+                                    const prevAudio = document.querySelector(`audio[id^="audio-"]`) as HTMLAudioElement;
+                                    if (prevAudio && prevAudio !== audio) {
+                                      prevAudio.pause();
+                                      prevAudio.currentTime = 0;
+                                    }
+                                  }
+                                  
+                                  // Play the new audio
+                                  await audio.play();
+                                  // setPlayingAudio will be called by onPlay event
+                                }
+                              } catch (error) {
+                                console.error('Error playing audio:', error);
+                                alert('Unable to play audio. Please check your browser console for details.');
                               }
                             }
                           }}
@@ -190,7 +207,12 @@ export default function TopicsBrowser({ onCategorySelect }: TopicsBrowserProps) 
                       onPlay={() => handleAudioPlay(verse.verse_ref)}
                       onEnded={handleAudioEnd}
                       onPause={handleAudioEnd}
+                      onError={(e) => {
+                        console.error('Audio playback error:', e);
+                        setPlayingAudio(null);
+                      }}
                       preload="none"
+                      crossOrigin="anonymous"
                       className="hidden"
                     />
                   )}

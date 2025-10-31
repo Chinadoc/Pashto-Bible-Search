@@ -52,12 +52,31 @@ function classifyWord(englishTranslation: string): string[] {
   const categories: Set<string> = new Set();
   const englishLower = englishTranslation.toLowerCase();
   
+  // Split translation into words (handle commas, semicolons, spaces)
+  const words = englishLower.split(/[,;]\s*|\s+/).map(w => w.trim()).filter(w => w.length > 0);
+  
   for (const [category, keywords] of Object.entries(ADDITIONAL_CATEGORIES)) {
     for (const keyword of keywords) {
-      if (englishLower.includes(keyword.toLowerCase())) {
-        categories.add(category);
-        break;
+      const keywordLower = keyword.toLowerCase();
+      
+      // Check if keyword appears as a whole word
+      for (const word of words) {
+        // Check exact match first
+        if (word === keywordLower) {
+          categories.add(category);
+          break;
+        }
+        
+        // Check word boundary matching
+        const escapedKeyword = keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
+        if (regex.test(word)) {
+          categories.add(category);
+          break;
+        }
       }
+      
+      if (categories.has(category)) break;
     }
   }
   
