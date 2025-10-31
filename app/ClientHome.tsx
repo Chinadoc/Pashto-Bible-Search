@@ -82,7 +82,6 @@ const DEFAULT_NOUN_FILTER: NounFilterState = {
 const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
-  inflectionReason: 'all',
 };
 
 const MAIN_TABS = ['search', 'chapters', 'lexicon', 'videos', 'poems'] as const;
@@ -400,7 +399,7 @@ function isDefaultNounFilter(filters: NounFilterState): boolean {
 }
 
 function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all' && (filters.inflectionReason === 'all' || !filters.inflectionReason);
+  return filters.inflectionType === 'all' && filters.gender === 'all';
 }
 
 // Enhanced search controls component with all filters
@@ -2286,36 +2285,6 @@ export default function ClientHome() {
                         </label>
                       ))}
                     </div>
-                  </div>
-                </div>
-
-                {/* Inflection Reason Filter */}
-                <div className="mt-4">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Inflection Reason (Why inflected?):
-                  </label>
-                  <div className="space-y-1">
-                    {INFLECTION_REASON_VALUES.map((reason) => (
-                      <label key={reason} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                        <input
-                          type="radio"
-                          name="adjective-inflection-reason"
-                          checked={(adjectiveFilters.inflectionReason || 'all') === reason}
-                          onChange={() => {
-                            if ((adjectiveFilters.inflectionReason || 'all') !== reason) {
-                              applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionReason: reason });
-                            }
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="capitalize">
-                          {reason === 'all' ? 'All Reasons' : 
-                           reason === 'plural' ? 'Plural' :
-                           reason === 'sandwich' ? 'In Sandwich' :
-                           reason === 'transitive_past' ? 'Subject of Transitive Past' : reason}
-                        </span>
-                      </label>
-                    ))}
                   </div>
                 </div>
 
