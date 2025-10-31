@@ -288,7 +288,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [analyzingAudio, setAnalyzingAudio] = useState(false);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [transcribingSegments, setTranscribingSegments] = useState(false);
-  const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
+  const [transcriptionService, setTranscriptionService] = useState<'elevenlabs'>('elevenlabs');
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeTabs, setActiveTabs] = useState<Record<string, 'segments' | 'frequency'>>({});
   const [videoCurrentTime, setVideoCurrentTime] = useState<Record<string, number>>({});
@@ -516,32 +516,37 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     setElevenLabsResult(null);
 
     try {
-      console.log('Starting complete video processing...');
-      const response = await fetch('/api/process-video-complete', {
+      console.log('🎬 Starting complete video processing with Cloudflare...');
+      const response = await fetch('/api/process-video-cloudflare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: youtubeUrl.trim() })
+        body: JSON.stringify({ 
+          youtubeUrl: youtubeUrl.trim(),
+          apiKeys: {
+            elevenlabs: process.env.ELEVENLABS_API_KEY || 'sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543'
+          }
+        })
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setElevenLabsResult(result.transcript);
-        console.log(`✅ Video processed: ${result.clipsCreated} clips created`);
-        console.log(`📊 Saved to Supabase with video ID: ${result.videoId}`);
+        setElevenLabsResult(result.transcript || 'Video processed successfully!');
+        console.log(`✅ Video processed: ${result.segments?.length || 0} segments created`);
+        console.log(`📊 Video ID: ${result.videoId}`);
         
         // Reload videos to show the new one
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         await loadVideos();
         
         // Clear the form
         setYoutubeUrl('');
       } else {
-        setElevenLabsError(result.error || 'Video processing failed');
+        setElevenLabsError(result.error || result.details || 'Video processing failed');
       }
     } catch (error) {
       console.error('Video processing error:', error);
-      setElevenLabsError('Failed to process video. Please check console for details.');
+      setElevenLabsError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setElevenLabsLoading(false);
     }
@@ -821,23 +826,13 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                   </button>
                 </div>
                 
-                {/* Service Selector */}
+                {/* Service Info */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    🎯 Transcription Service
-                  </label>
-                  <select
-                    value={transcriptionService}
-                    onChange={(e) => setTranscriptionService(e.target.value as 'assemblyai' | 'elevenlabs')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="assemblyai">⚡ AssemblyAI (Cloud, Faster)</option>
-                    <option value="elevenlabs">🎙️ ElevenLabs (Higher Quality)</option>
-                  </select>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    🎙️ Using <strong>ElevenLabs</strong> for high-quality Pashto transcription
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {transcriptionService === 'assemblyai'
-                      ? 'Fast cloud-based transcription, processes entirely on servers'
-                      : 'High-quality transcription, downloads locally then processes'}
+                    Downloads audio locally, transcribes with ElevenLabs, then splits into segments
                   </p>
                 </div>
 
