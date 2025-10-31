@@ -384,11 +384,8 @@ function filterAdjectiveVariants(
     const label = normalizeLabel(variant.label);
     const inflectionTypeMatch = matchesNounInflectionType(label, filters.inflectionType);
     const genderMatch = matchesGender(label, filters.gender);
-    const reasonMatch = filters.inflectionReason 
-      ? matchesInflectionReason(variant, filters.inflectionReason)
-      : true;
     
-    return inflectionTypeMatch && genderMatch && reasonMatch;
+    return inflectionTypeMatch && genderMatch;
   });
 
   return filtered;
