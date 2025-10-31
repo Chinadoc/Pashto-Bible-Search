@@ -97,6 +97,32 @@ CREATE INDEX IF NOT EXISTS idx_form_occurrences_frequency ON form_occurrences (f
 CREATE INDEX IF NOT EXISTS idx_form_occurrences_translation ON form_occurrences (translation_key);
 
 -- ========================================
+-- INFLECTION REASONS ANALYSIS
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS inflection_reasons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pashto_form TEXT NOT NULL,
+  base_word TEXT NOT NULL,
+  verse_ref TEXT NOT NULL,
+  inflection_type TEXT NOT NULL, -- "1st" or "2nd"
+  is_plural INTEGER DEFAULT 0,
+  is_in_sandwich INTEGER DEFAULT 0,
+  sandwich_type TEXT,
+  is_subject_transitive_past INTEGER DEFAULT 0,
+  context_sentence TEXT,
+  word_position INTEGER,
+  translation_key TEXT, -- 'afghan2023' or 'yousafzai2019'
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_form ON inflection_reasons (pashto_form);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_base ON inflection_reasons (base_word);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_verse ON inflection_reasons (verse_ref);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_translation ON inflection_reasons (translation_key);
+
+-- ========================================
 -- 5. FORM TO ROOT MAPPING
 -- ========================================
 
@@ -183,6 +209,7 @@ CREATE TABLE IF NOT EXISTS nouns_lexicon (
   gender TEXT NOT NULL,
   number TEXT NOT NULL,
   plural_forms TEXT, -- JSON string
+  inflection_pattern INTEGER DEFAULT 1, -- 0=None, 1=Basic, 2=Unstressed ی, 3=Stressed ی, 4=Pashtoon, 5=Squish, 6=Feminine Inanimate ي
   frequency INTEGER DEFAULT 0,
   examples TEXT, -- JSON string
   created_at INTEGER DEFAULT (strftime('%s', 'now')),

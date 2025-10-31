@@ -8,7 +8,7 @@ import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
-import { searchVerses as searchVersesD1, getAudioStreamUrl } from '@/app/lib/cloudflare-d1';
+import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms } from '@/app/lib/cloudflare-d1';
 // Removed supabase import due to file corruption
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
@@ -1095,7 +1095,10 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
               const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ form: convertedQuery }),
+                body: JSON.stringify({ 
+                  form: convertedQuery,
+                  translation: translation, // Include translation for demarcation
+                }),
               });
 
               if (relatedResponse.ok) {
@@ -1104,7 +1107,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
               }
               return null;
             } catch (error) {
-              console.error('Error in LingDocs-style inflection search:', error);
+              console.error('Error in D1/LingDocs inflection search:', error);
               return null;
             }
           })
@@ -1479,6 +1482,39 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
 
           searchResults = Array.from(candidateVerses).slice(0, limit);
           searchType = 'fast';
+        }
+      } else if (searchTerms.length > 1 && includeRelated) {
+        // Multiple terms from inflections/conjugations - use D1 form_occurrences
+        console.log(`🌩️  Using D1 form_occurrences for ${searchTerms.length} inflected forms`);
+        try {
+          const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
+          const d1Verses = await searchVersesByForms(searchTerms, {
+            translation: translation as 'afghan2023' | 'yousafzai2019',
+            testament: testamentFilter,
+            limit: limit,
+          });
+          
+          if (d1Verses && d1Verses.length > 0) {
+            searchResults = d1Verses.map((verse: any) => ({
+              ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+              text: verse.text,
+              testament: verse.testament,
+              book: verse.book,
+              chapter: verse.chapter,
+              verse: verse.verse,
+            }));
+            searchType = 'enhanced';
+            console.log(`✅ D1 form_occurrences search: found ${searchResults.length} results`);
+          } else {
+            // Fallback to multiple terms search
+            console.log('⚠️ D1 form_occurrences returned no results, falling back');
+            searchResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
+            searchType = 'enhanced';
+          }
+        } catch (d1Error) {
+          console.warn('⚠️ D1 form_occurrences search failed, falling back:', d1Error);
+          searchResults = await searchWithMultipleTerms(searchTerms, scope, 'auto');
+          searchType = 'enhanced';
         }
       } else if (searchTerms.length > 1) {
         // Multiple terms - use optimized multiple terms search

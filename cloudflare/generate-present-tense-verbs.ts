@@ -168,34 +168,48 @@ async function generatePresentTenseForms(verbRoot: string, dictionaryEntry?: any
   }
   
   // Final fallback: pattern-based generation
-  return generatePresentTenseByPattern(verbRoot);
+  // Use psp (imperfective stem) from dictionary entry if available
+  const psp = dictionaryEntry?.psp;
+  return generatePresentTenseByPattern(verbRoot, psp);
 }
 
 /**
  * Fallback: Generate present tense by pattern
  * For کول (kawul): stem is "کو", add endings: کوم, کوو, کوې, کوئ, کوي, کوي
+ * 
+ * If `psp` (imperfective stem) is provided from dictionary, use that directly.
+ * Otherwise, infer stem from infinitive.
  */
-function generatePresentTenseByPattern(verbRoot: string): PresentTenseForm[] {
+function generatePresentTenseByPattern(verbRoot: string, psp?: string): PresentTenseForm[] {
   const forms: PresentTenseForm[] = [];
   
-  // Get stem from infinitive
-  // کول → کو, کېدل → کې, تلل → ت, etc.
-  let stem = verbRoot;
+  // Use explicit stem from dictionary if available (most accurate)
+  let stem = psp;
   
-  // Remove infinitive endings - check longest first!
-  // Special handling: "کول" ends with "ول" but removing 2 chars from 3-char string gives wrong result
-  // So we use substring(0, length - 1) to get the stem "کو" from "کول"
+  // Otherwise, infer stem from infinitive
+  if (!stem) {
+    stem = verbRoot;
+    
+    // Remove infinitive endings - check longest first!
+    // Special handling: "کول" ends with "ول" but removing 2 chars from 3-char string gives wrong result
+    // So we use substring(0, length - 1) to get the stem "کو" from "کول"
+    
+    if (verbRoot.length >= 3 && verbRoot.endsWith('ېدل')) {
+      stem = verbRoot.substring(0, verbRoot.length - 3); // کېدل → کې
+    } else if (verbRoot.length >= 3 && verbRoot.endsWith('یدل')) {
+      stem = verbRoot.substring(0, verbRoot.length - 3); // Alternate ending
+    } else if (verbRoot.endsWith('ول')) {
+      // Special case: for verbs ending in "ول", remove just the "ل" to get stem
+      // کول (3 chars) → کو (2 chars) by removing last char, not last 2
+      stem = verbRoot.substring(0, verbRoot.length - 1); // کول → کو
+    } else if (verbRoot.endsWith('ل')) {
+      stem = verbRoot.substring(0, verbRoot.length - 1); // تلل → تل
+    }
+  }
   
-  if (verbRoot.length >= 3 && verbRoot.endsWith('ېدل')) {
-    stem = verbRoot.substring(0, verbRoot.length - 3); // کېدل → کې
-  } else if (verbRoot.length >= 3 && verbRoot.endsWith('یدل')) {
-    stem = verbRoot.substring(0, verbRoot.length - 3); // Alternate ending
-  } else if (verbRoot.endsWith('ول')) {
-    // Special case: for verbs ending in "ول", remove just the "ل" to get stem
-    // کول (3 chars) → کو (2 chars) by removing last char, not last 2
-    stem = verbRoot.substring(0, verbRoot.length - 1); // کول → کو
-  } else if (verbRoot.endsWith('ل')) {
-    stem = verbRoot.substring(0, verbRoot.length - 1); // تلل → تل
+  if (!stem) {
+    console.warn(`⚠️  Could not determine stem for "${verbRoot}"`);
+    return [];
   }
   
   // Present tense endings match your example:
@@ -211,18 +225,79 @@ function generatePresentTenseByPattern(verbRoot: string): PresentTenseForm[] {
 }
 
 /**
+ * Load verb data from D1 via Cloudflare Worker API
+ */
+async function loadVerbsFromD1(workerUrl?: string): Promise<Array<{ root: string; entry: any }>> {
+  const verbs: Array<{ root: string; entry: any }> = [];
+  
+  if (!workerUrl) {
+    workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+  }
+  
+  try {
+    console.log(`🌩️  Attempting to load verbs from D1 via ${workerUrl}...`);
+    
+    // Query all verbs from D1
+    // Note: We'll need to fetch all verbs, which might require pagination
+    // For now, we'll try to get verbs via the API endpoints
+    
+    // Since there's no "list all verbs" endpoint, we'll fall back to dictionary
+    console.log('⚠️  D1 API does not support listing all verbs, falling back to dictionary');
+    return [];
+  } catch (error) {
+    console.warn('⚠️  Could not load from D1:', error);
+    return [];
+  }
+}
+
+/**
+ * Convert D1 verb entry to dictionary entry format
+ */
+function convertD1VerbToDictEntry(d1Verb: any): any {
+  const stems = typeof d1Verb.stems === 'string' ? JSON.parse(d1Verb.stems) : d1Verb.stems;
+  const roots = typeof d1Verb.roots === 'string' ? JSON.parse(d1Verb.roots) : d1Verb.roots;
+  
+  return {
+    p: d1Verb.verb_root,
+    f: roots?.imperfective?.f || stems?.imperfective?.f,
+    c: 'verb',
+    pos_family: 'verb',
+    psp: stems?.imperfective?.p,
+    psf: stems?.imperfective?.f,
+    ssp: stems?.perfective?.p,
+    ssf: stems?.perfective?.f,
+    prp: roots?.perfective?.p,
+    prf: roots?.perfective?.f,
+    pprtp: d1Verb.past_participle,
+  };
+}
+
+/**
  * Load verbs from dictionary with proper LingDocs entry format
  */
 async function loadVerbsWithEntries(): Promise<Array<{ root: string; entry: any }>> {
   const verbs: Array<{ root: string; entry: any }> = [];
   
-  // Try to load from dictionary
+  // Try to load from D1 first (if configured)
+  const d1Verbs = await loadVerbsFromD1();
+  if (d1Verbs.length > 0) {
+    console.log(`✅ Loaded ${d1Verbs.length} verbs from D1`);
+    return d1Verbs;
+  }
+  
+  // Fallback: Try to load from dictionary
   try {
-    const dictPath = join(process.cwd(), 'app/lib/data/full_dictionary_enriched.json');
+    const dictPath = join(process.cwd(), 'app/data/full_dictionary_enriched.json');
     if (require('fs').existsSync(dictPath)) {
-      const dict = JSON.parse(readFileSync(dictPath, 'utf-8'));
-      const verbEntries = dict.filter((entry: any) => 
-        entry.c === 'verb' || entry.c?.includes('verb') || entry.pos_family === 'verb'
+      const dictData = JSON.parse(readFileSync(dictPath, 'utf-8'));
+      const entries = dictData.entries || (Array.isArray(dictData) ? dictData : []);
+      
+      // Filter for verbs
+      const verbEntries = entries.filter((entry: any) => 
+        entry.pos_family === 'verb' || 
+        entry.c === 'verb' || 
+        entry.c?.includes('verb') ||
+        entry.c?.startsWith('v.')
       );
       
       for (const entry of verbEntries) {
@@ -232,7 +307,9 @@ async function loadVerbsWithEntries(): Promise<Array<{ root: string; entry: any 
         }
       }
       
+      const withStems = verbEntries.filter((e: any) => e.psp).length;
       console.log(`✅ Loaded ${verbs.length} verbs from dictionary`);
+      console.log(`   ${withStems} verbs have explicit stem data (psp)`);
       return verbs;
     }
   } catch (error) {
@@ -323,7 +400,8 @@ async function main() {
   const verbEntries: VerbEntry[] = [];
   
   for (const { root, entry } of verbData) {
-    console.log(`   Processing: ${root}`);
+    const hasStem = entry?.psp ? ' (has psp)' : '';
+    console.log(`   Processing: ${root}${hasStem}`);
     const presentTense = await generatePresentTenseForms(root, entry);
     
     if (presentTense.length > 0) {
@@ -332,10 +410,13 @@ async function main() {
         presentTense,
       });
       
-      console.log(`     ✅ Generated ${presentTense.length} present tense forms`);
-      presentTense.forEach(f => {
-        console.log(`        ${f.person} ${f.number}: ${f.form}${f.romanization ? ` (${f.romanization})` : ''}`);
-      });
+      const method = entry?.psp ? 'using dictionary stem' : 'inferred from pattern';
+      console.log(`     ✅ Generated ${presentTense.length} present tense forms (${method})`);
+      if (verbEntries.length <= 10) { // Only show details for first 10
+        presentTense.forEach(f => {
+          console.log(`        ${f.person} ${f.number}: ${f.form}${f.romanization ? ` (${f.romanization})` : ''}`);
+        });
+      }
     } else {
       console.log(`     ⚠️  No forms generated`);
     }

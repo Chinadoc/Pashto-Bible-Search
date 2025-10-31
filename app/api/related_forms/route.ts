@@ -1,85 +1,251 @@
+/**
+ * Get Related Forms (Inflections/Conjugations) from D1
+ * 
+ * This endpoint queries D1 for inflections, handling:
+ * - Verbs (using verbs_lexicon/irregular_verbs)
+ * - Nouns (using nouns_lexicon + LingDocs patterns)
+ * - Adjectives (using LingDocs inflection patterns)
+ * - Translation demarcation (Afghan 2023 vs Yousafzai)
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-
 import { getLightweightData } from '@/app/lib/data/load';
+import { generateNounVariantsLingDocs, generateVerbVariantsLingDocs } from '@/app/utils/lingdocs_integration';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants as generateVerbVariantsUtil } from '@/app/utils/verb_variants';
-import { generateEnhancedVerbVariants } from '@/app/utils/lingdocs_adapter';
+import { generateVerbVariants } from '@/app/utils/verb_variants';
 
-type DictionaryEntry = {
-  pashto: string;
-  romanized: string;
-  pos?: string;
-  c?: string;
-  english?: string;
-};
-
-export const runtime = 'nodejs';
-
-type Payload = {
-  form?: string;
-  word?: string;
-  lemma?: string;
-  root?: string;
-  query?: string;
-};
+const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 type Variant = {
   form: string;
   label: string;
-  pos: 'noun'|'verb'|'adjective'|'other';
+  pos: 'noun' | 'verb' | 'adjective' | 'other';
   score?: number;
   count?: number;
   romanized?: string;
   flags?: string[];
+  inflectionReasons?: {
+    plural: number;
+    sandwich: number;
+    transitive_past: number;
+    sandwich_types: string[];
+  };
 };
 
 type RelatedFormsResponse = {
   root: string;
-  searchedForm?: string; // The original form that was searched (for conjugated forms)
-  forms: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
+  searchedForm?: string;
+  forms: { nouns?: Variant[]; verbs?: Variant[]; adjectives?: Variant[]; other?: Variant[] };
   total: number;
   variantDetails?: any;
   ms: number;
   posGuess?: string;
+  translation?: 'afghan2023' | 'yousafzai2019';
   metadata?: {
     hasMultiplePos: boolean;
     primaryPos: string;
     totalFormsByPos: {
       nouns: number;
       verbs: number;
+      adjectives: number;
       other: number;
     };
     generationStrategy: string;
-    reverseLookup?: boolean; // Whether we found a root verb for a conjugated form
+    reverseLookup?: boolean;
+    source: 'd1' | 'lingdocs' | 'fallback';
   };
 };
 
-const CACHE = new Map<string, { value: RelatedFormsResponse; until: number }>();
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+/**
+ * Query D1 for inflections via Cloudflare Worker API
+ */
+async function getInflectionsFromD1(
+  baseWord: string,
+  translation?: 'afghan2023' | 'yousafzai2019'
+): Promise<Variant[]> {
+  try {
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/inflections?base_word=${encodeURIComponent(baseWord)}`
+    );
 
-function getCache(key: string): RelatedFormsResponse | null {
-  const c = CACHE.get(key);
-  if (c && Date.now() < c.until) return c.value;
-  CACHE.delete(key);
-  return null;
-}
+    if (!response.ok) {
+      return [];
+    }
 
-function setCache(key: string, value: RelatedFormsResponse) {
-  CACHE.set(key, { value, until: Date.now() + CACHE_TTL_MS });
-}
+    const data = await response.json();
+    const inflections = data.inflections || [];
 
-function isLatinOnly(s: string): boolean {
-  return !/[ا-ی]/u.test(s);
+    return inflections.map((inf: any) => {
+      const grammaticalInfo = typeof inf.grammatical_info === 'string' 
+        ? JSON.parse(inf.grammatical_info) 
+        : inf.grammatical_info || {};
+
+      // Determine POS from grammatical_info
+      let pos: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
+      if (grammaticalInfo.category === 'verb') pos = 'verb';
+      else if (grammaticalInfo.category === 'noun') pos = 'noun';
+      else if (grammaticalInfo.category === 'adjective') pos = 'adjective';
+
+      // Build label from grammatical_info
+      let label = inf.inflected_form;
+      if (grammaticalInfo.tense) {
+        label = `${grammaticalInfo.person || ''} ${grammaticalInfo.tense}`.trim();
+      } else if (grammaticalInfo.label) {
+        label = grammaticalInfo.label;
+      }
+
+      return {
+        form: inf.inflected_form,
+        label,
+        pos,
+        count: inf.frequency || 0,
+        score: inf.frequency || 0,
+        flags: ['d1'],
+      };
+    });
+  } catch (error) {
+    console.warn(`⚠️ D1 inflections query failed for "${baseWord}":`, error);
+    return [];
+  }
 }
 
 /**
- * Generate simple adjective forms for Pashto adjectives
- * This avoids the LingDocs verb conjugation issue for adjectives like مفرد
+ * Get base word from inflected form using D1
  */
-async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]> {
-  const forms: Variant[] = [];
+async function getBaseWordFromD1(form: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/inflections/reverse?form=${encodeURIComponent(form)}`
+    );
 
-  // Add base form
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.base_word || null;
+  } catch (error) {
+    console.warn(`⚠️ D1 reverse lookup failed for "${form}":`, error);
+    return null;
+  }
+}
+
+/**
+ * Get verb data from D1
+ */
+async function getVerbDataFromD1(root: string): Promise<any> {
+  try {
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/verbs/${encodeURIComponent(root)}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.verb || null;
+  } catch (error) {
+    console.warn(`⚠️ D1 verb data query failed for "${root}":`, error);
+    return null;
+  }
+}
+
+/**
+ * Get noun data from D1
+ */
+async function getNounDataFromD1(word: string): Promise<any> {
+  try {
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/nouns/${encodeURIComponent(word)}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.noun || null;
+  } catch (error) {
+    console.warn(`⚠️ D1 noun data query failed for "${word}":`, error);
+    return null;
+  }
+}
+
+/**
+ * Get verse references for a form from D1
+ */
+async function getVerseRefsFromD1(form: string): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/form-occurrences?form=${encodeURIComponent(form)}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    const verseRefs = typeof data.verse_refs === 'string' 
+      ? JSON.parse(data.verse_refs) 
+      : data.verse_refs || [];
+    
+    return Array.isArray(verseRefs) ? verseRefs : [];
+  } catch (error) {
+    console.warn(`⚠️ D1 verse refs query failed for "${form}":`, error);
+    return [];
+  }
+}
+
+/**
+ * Get inflection reasons for a form from D1
+ */
+async function getInflectionReasonsFromD1(
+  form: string,
+  translation?: 'afghan2023' | 'yousafzai2019'
+): Promise<{
+  plural: number;
+  sandwich: number;
+  transitive_past: number;
+  sandwich_types: string[];
+} | null> {
+  try {
+    const params = new URLSearchParams({
+      form,
+    });
+    if (translation) {
+      params.append('translation', translation);
+    }
+
+    const response = await fetch(
+      `${CLOUDFLARE_WORKER_URL}/api/inflection-reasons?${params}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.reasons && data.reasons.length > 0) {
+      const aggregated = data.reasons[0];
+      return aggregated.reasons;
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn(`⚠️ D1 inflection reasons query failed for "${form}":`, error);
+    return null;
+  }
+}
+
+/**
+ * Generate adjective inflections using LingDocs patterns
+ * Based on: https://grammar.lingdocs.com/inflection/inflection-patterns/
+ */
+async function generateAdjectiveInflections(baseWord: string): Promise<Variant[]> {
+  const forms: Variant[] = [];
+  
+  // Base form
   forms.push({
     form: baseWord,
     label: 'Base',
@@ -88,48 +254,34 @@ async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]
     score: 0,
   });
 
-  // Generate typical Pashto adjective inflections for مفرد
-  // Based on the LingDocs interface, مفرد should have these forms:
-  const adjectiveInflections: Record<string, Array<{ form: string; label: string; pos: string }>> = {
-    'مفرد': [
-      { form: 'مفرد', label: 'Base', pos: 'adjective' },
-      { form: 'مفرده', label: 'Feminine', pos: 'adjective' },
-      { form: 'مفردې', label: 'Oblique', pos: 'adjective' },
-      { form: 'مفردو', label: 'Plural', pos: 'adjective' },
-    ]
-  };
+  // Pattern 1: Basic consonant ending (masculine)
+  // Example: مفرد → مفرده (feminine), مفردې (oblique), مفردو (plural)
+  if (!baseWord.endsWith('ه') && !baseWord.endsWith('ی') && !baseWord.endsWith('ې')) {
+    forms.push(
+      { form: baseWord + 'ه', label: 'Feminine', pos: 'adjective', count: 0, score: 0 },
+      { form: baseWord + 'ې', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
+      { form: baseWord + 'و', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+    );
+  }
 
-  const specificInflections = adjectiveInflections[baseWord as keyof typeof adjectiveInflections];
-  if (specificInflections) {
-    for (const inflection of specificInflections) {
-      forms.push({
-        form: inflection.form,
-        label: inflection.label,
-        pos: inflection.pos as 'noun'|'verb'|'adjective'|'other',
-        count: 0,
-        score: 0,
-        flags: ['inflected'],
-      });
-    }
-  } else {
-    // Fallback for other adjectives
-    const adjectivePatterns = [
-      { suffix: 'ه', label: 'Feminine' },      // base → baseه
-      { suffix: 'ې', label: 'Oblique' },      // base → baseې
-      { suffix: 'و', label: 'Plural' },       // base → baseو
-    ];
+  // Pattern 1: Feminine ending in ه
+  // Example: اندازه → اندازه (base), اندازې (oblique), اندازو (plural)
+  if (baseWord.endsWith('ه')) {
+    const stem = baseWord.slice(0, -1);
+    forms.push(
+      { form: stem + 'ې', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
+      { form: stem + 'و', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+    );
+  }
 
-    for (const pattern of adjectivePatterns) {
-      const inflectedForm = baseWord + pattern.suffix;
-      forms.push({
-        form: inflectedForm,
-        label: pattern.label,
-        pos: 'adjective',
-        count: 0,
-        score: 0,
-        flags: ['inflected'],
-      });
-    }
+  // Pattern 3: Stressed ی ending
+  // Example: سوری → سوري (oblique), سوریو (plural)
+  if (baseWord.endsWith('ی')) {
+    const stem = baseWord.slice(0, -1);
+    forms.push(
+      { form: stem + 'ي', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
+      { form: stem + 'یو', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+    );
   }
 
   return forms;
@@ -138,392 +290,251 @@ async function generateSimpleAdjectiveForms(baseWord: string): Promise<Variant[]
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   try {
-    const body = (await req.json().catch(() => ({}))) as Payload;
-    const input = body.form ?? body.word ?? body.lemma ?? body.root ?? body.query ?? '';
-    const root = input.trim();
+    const body = (await req.json().catch(() => ({}))) as {
+      form?: string;
+      word?: string;
+      lemma?: string;
+      root?: string;
+      query?: string;
+      translation?: 'afghan2023' | 'yousafzai2019';
+    };
 
-    if (!root) {
+    const input = body.form ?? body.word ?? body.lemma ?? body.root ?? body.query ?? '';
+    const translation = body.translation || 'afghan2023';
+    const normalized = input.trim();
+
+    if (!normalized) {
       return NextResponse.json({ error: 'form is required' }, { status: 400 });
     }
 
-    const { dictionaryByRomanized, dictionaryByPashto, frequencyMap } = await getLightweightData();
+    console.log(`🔍 Related forms query: "${normalized}" (translation: ${translation})`);
 
-    // Normalization (local)
-    let normalized = root;
-    if (isLatinOnly(root)) {
-      // Try exact match first
-      let pick = dictionaryByRomanized.get(root.toLowerCase())?.[0];
+    // Step 1: Try to find base word from D1
+    let baseWord = normalized;
+    let reverseLookup = false;
 
-      // If no exact match, try accent-normalized match
-      if (!pick) {
-        const normalizedRoot = root.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        for (const [key, entries] of dictionaryByRomanized.entries()) {
-          const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          if (normalizedKey === normalizedRoot) {
-            pick = entries[0];
-            break;
-          }
-        }
-      }
-
-      normalized = pick?.pashto ?? root;
+    const d1BaseWord = await getBaseWordFromD1(normalized);
+    if (d1BaseWord && d1BaseWord !== normalized) {
+      baseWord = d1BaseWord;
+      reverseLookup = true;
+      console.log(`✅ Found base word from D1: "${baseWord}" (searched: "${normalized}")`);
     }
 
-    // POS guess from dictionary
+    // Step 2: Get inflections from D1
+    const d1Inflections = await getInflectionsFromD1(baseWord, translation);
+    console.log(`✅ D1 inflections: ${d1Inflections.length} forms`);
+
+    // Step 3: Determine POS and get lexicon data
+    const { dictionaryByPashto, frequencyMap } = await getLightweightData();
+    const dictEntry = dictionaryByPashto.get(baseWord);
+
+    // Check verb data from D1
+    const verbData = await getVerbDataFromD1(baseWord);
+    const nounData = await getNounDataFromD1(baseWord);
+
+    // Determine POS
     let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
-    const dictEntry = dictionaryByPashto.get(normalized);
-    
-    if (dictEntry?.pos) {
+    if (verbData) {
+      posGuess = 'verb';
+    } else if (nounData) {
+      posGuess = 'noun';
+    } else if (dictEntry?.pos) {
       const posLower = dictEntry.pos.toLowerCase();
-      console.log(`🔍 Checking pos field: "${posLower}"`);
-      if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
-      else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
-      else if (posLower.startsWith("adj")) posGuess = "adjective";
-      else posGuess = "other";
+      if (posLower.startsWith('v.') || posLower.includes('verb')) posGuess = 'verb';
+      else if (posLower.startsWith('n.') || posLower.includes('noun')) posGuess = 'noun';
+      else if (posLower.includes('adj')) posGuess = 'adjective';
+    } else if (dictEntry?.c) {
+      const cLower = dictEntry.c.toLowerCase();
+      if (cLower.startsWith('v.')) posGuess = 'verb';
+      else if (cLower.startsWith('n.')) posGuess = 'noun';
+      else if (cLower.includes('adj')) posGuess = 'adjective';
     }
 
-    // Try to find root verb for conjugated forms
-    let rootVerb = normalized;
-    if (posGuess === "verb" && !dictionaryByPashto.has(normalized)) {
-      // This might be a conjugated form, try to find the root verb
-      console.log(`🔍 "${normalized}" not found in dictionary, trying reverse conjugation lookup`);
+    console.log(`🔍 POS guess: ${posGuess}`);
 
-      // Check if this is a conjugated form of a known verb
-      for (const [verb, entry] of dictionaryByPashto.entries()) {
-        if (entry.pos?.includes('verb') || entry.c?.includes('v.')) {
-          try {
-            // Generate some forms for this verb and see if our input matches
-            const variants = await generateEnhancedVerbVariants(verb, { cap: 20, includeCompound: false });
-            const formMatches = variants.some(v => v.form === normalized);
+    // Step 4: Generate comprehensive forms using LingDocs
+    const groups: { nouns?: Variant[]; verbs?: Variant[]; adjectives?: Variant[]; other?: Variant[] } = {};
 
-            if (formMatches) {
-              console.log(`✅ Found root verb "${verb}" for conjugated form "${normalized}"`);
-              rootVerb = verb;
-              break;
-            }
-          } catch (error) {
-            // Continue checking other verbs
+    // Group D1 inflections by POS
+    const d1VerbForms = d1Inflections.filter(f => f.pos === 'verb');
+    const d1NounForms = d1Inflections.filter(f => f.pos === 'noun');
+    const d1AdjForms = d1Inflections.filter(f => f.pos === 'adjective');
+
+    // Verbs: Use LingDocs + D1 data
+    if (posGuess === 'verb' || verbData || d1VerbForms.length > 0) {
+      try {
+        // Try LingDocs first
+        const lingdocsVerbs = await generateVerbVariantsLingDocs(baseWord, { cap: 50 });
+        
+        // Merge with D1 forms
+        const allVerbForms = new Map<string, Variant>();
+        lingdocsVerbs.forEach(v => {
+          allVerbForms.set(v.form, {
+            form: v.form,
+            label: v.label || 'Verb Form',
+            pos: 'verb',
+            count: v.count || 0,
+            score: v.score || 0,
+            romanized: v.romanized,
+            flags: ['lingdocs'],
+          });
+        });
+        
+        d1VerbForms.forEach(v => {
+          const existing = allVerbForms.get(v.form);
+          if (existing) {
+            // Merge counts
+            existing.count = Math.max(existing.count || 0, v.count || 0);
+            existing.score = existing.count;
+            existing.flags = [...(existing.flags || []), 'd1'];
+          } else {
+            allVerbForms.set(v.form, { ...v, flags: ['d1'] });
           }
-        }
-      }
-    }
+        });
 
-    // Check cache first (use root verb for consistency)
-    const cacheKey = JSON.stringify({ root: rootVerb });
-    const cached = getCache(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
-    // Update dictionary entry lookup to use rootVerb
-    const rootDictEntry = dictionaryByPashto.get(rootVerb);
-
-    console.log(`🔍 Dictionary lookup for "${rootVerb}" (searched for "${normalized}"):`, {
-      found: !!rootDictEntry,
-      pos: rootDictEntry?.pos,
-      c: rootDictEntry?.c,
-      pashto: rootDictEntry?.pashto,
-      originalSearch: normalized,
-    });
-
-    if (!rootDictEntry) {
-      console.log(`❌ Dictionary entry not found for "${rootVerb}"`);
-      // Check if the word exists in the dictionary at all
-      const allKeys = Array.from(dictionaryByPashto.keys());
-      const similarKeys = allKeys.filter(key => key.includes('نوم') || key.includes('دل') || key.includes('ودل'));
-      console.log(`🔍 Similar keys found:`, similarKeys.slice(0, 10));
-
-      // Check if the root verb exists in raw dictionary data
-      const rawData = await getLightweightData();
-      const rawEntry = (rawData as any).dictionaryRaw?.entries?.find((e: any) => e.p === rootVerb || e.p_norm === rootVerb);
-      console.log(`🔍 Raw dictionary entry for "${rootVerb}":`, rawEntry ? 'found' : 'not found');
-    }
-
-    if (rootDictEntry?.pos) {
-      const posLower = rootDictEntry.pos.toLowerCase();
-      console.log(`🔍 Checking pos field: "${posLower}"`);
-      if (posLower.startsWith("v.") || posLower.startsWith("verb")) posGuess = "verb";
-      else if (posLower.startsWith("n.") || posLower.startsWith("noun")) posGuess = "noun";
-      else if (posLower.startsWith("adj")) posGuess = "adjective";
-      else posGuess = "other";
-    } else if (rootDictEntry?.c) {
-      // Check the 'c' field which contains values like "n. m.", "v.", "adj."
-      const cLower = rootDictEntry.c.toLowerCase();
-      console.log(`🔍 Checking c field: "${cLower}"`);
-      if (cLower.startsWith("v.")) posGuess = "verb";
-      else if (cLower.startsWith("n.")) posGuess = "noun";
-      else if (cLower.startsWith("adj")) posGuess = "adjective";
-      else posGuess = "other";
-    }
-    
-    console.log(`🔍 Final posGuess: "${posGuess}"`);
-
-    // Enhanced POS detection for irregular verbs (check BEFORE other pattern detection)
-    try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const irregularVerbsPath = path.join(process.cwd(), 'irregular_verbs.json');
-      const irregularVerbsData = JSON.parse(fs.readFileSync(irregularVerbsPath, 'utf8'));
-      const irregularEntry = Object.entries(irregularVerbsData).find(([infinitive, _]: [string, any]) =>
-        infinitive === normalized || infinitive === normalized.replace(/ل$/, '')
-      );
-
-      if (irregularEntry) {
-        posGuess = "verb";
-        console.log(`✅ Enhanced POS detection: "${normalized}" identified as irregular verb`);
-      }
-    } catch (error) {
-      console.warn('Failed to load irregular verbs for POS detection:', error);
-    }
-
-    // Special pattern-based detection for verbs ending in ېدل (like نومېدل)
-    if (posGuess === "other" && normalized.endsWith('ېدل')) {
-      posGuess = "verb";
-      console.log(`✅ Pattern-based POS detection: "${normalized}" identified as verb (ends with ېدل)`);
-    }
-
-    // Enhanced POS detection for Pattern 1 masculine words ending in consonants
-    console.log(`🔍 Pattern 1 masculine check for "${normalized}": posGuess=${posGuess}, endsWith consonant=${!normalized.endsWith('ه') && !normalized.endsWith('ی') && !normalized.endsWith('ې') && !normalized.endsWith('و')}`);
-    if (posGuess === "other" && !normalized.endsWith('ه') && !normalized.endsWith('ی') && !normalized.endsWith('ې') && !normalized.endsWith('و')) {
-      // Check if it's a Pattern 1 masculine word (like اتفاق, کور, برګ)
-      const pattern1Words = ['اتفاق', 'کور', 'برګ', 'ښار', 'خون', 'درو', 'کور', 'کور'];
-      console.log(`🔍 Pattern 1 masculine words check: pattern1Words.includes("${normalized}")=${pattern1Words.includes(normalized)}, dictEntry?.romanized?.includes('áaq')=${dictEntry?.romanized?.includes('áaq')}`);
-      if (pattern1Words.includes(normalized) || dictEntry?.romanized?.includes('áaq')) {
-        posGuess = "noun";
-        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 1 masculine noun`);
-      }
-    }
-
-    // Enhanced POS detection for Pattern 1 feminine words ending in ه
-    if (posGuess === "other" && normalized.endsWith('ه')) {
-      // Check if it's a Pattern 1 feminine word (like اندازه, کور, ښځه)
-      const pattern1Words = ['اندازه', 'کور', 'ښځه', 'ښځه', 'خون', 'ښار', 'کور', 'کور'];
-      if (pattern1Words.includes(normalized) || dictEntry?.romanized?.includes('á')) {
-        posGuess = "noun";
-        console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 1 feminine noun`);
-      }
-    }
-
-// Enhanced POS detection for Pattern 3 stressed áy words
-  if (posGuess === "other" && normalized.endsWith('ی')) {
-    // Check if it's a Pattern 3 stressed áy word (like سوری, ځلمی, لومړی)
-    const pattern3Words = ['سوری', 'ځلمی', 'لومړی', 'ګران', 'نږدې', 'لرې', 'پورته', 'ښکته'];
-    if (pattern3Words.includes(normalized) || dictEntry?.romanized?.includes('áy')) {
-      posGuess = "noun";
-      console.log(`✅ Enhanced POS detection: "${normalized}" identified as Pattern 3 noun`);
-    }
-  }
-
-// Simple pattern-based verb conjugation generator
-async function generateVerbConjugations(rootVerb: string): Promise<Variant[]> {
-  const variants: Variant[] = [];
-
-  // Add the infinitive form
-  variants.push({
-    form: rootVerb,
-    label: "Infinitive",
-    pos: "verb",
-    count: 0,
-    score: 0
-  });
-
-  // Generate basic conjugations using patterns
-  const patterns = {
-    present: { '1sg': 'م', '2sg': 'ې', '3sg': 'ي', '1pl': 'و', '2pl': 'ئ' },
-    subjunctive: { '1sg': 'وم', '2sg': 'وې', '3sg': 'وي', '1pl': 'وو', '2pl': 'وئ' },
-    past: { '1sg': 'لم', '2sg': 'لې', '3sg': 'ل', '1pl': 'لو', '2pl': 'لئ' },
-    imperative: { '2sg': 'ه', '2pl': 'ئ' }
-  };
-
-  for (const [tense, persons] of Object.entries(patterns)) {
-    for (const [person, suffix] of Object.entries(persons)) {
-      const conjugated = rootVerb + suffix;
-      variants.push({
-        form: conjugated,
-        label: `${person} ${tense}`,
-        pos: "verb",
-        count: 0,
-        score: 0
-      });
-    }
-  }
-
-  // Generate participles
-  variants.push({
-    form: rootVerb + 'لی',
-    label: "Past Participle",
-    pos: "verb",
-    count: 0,
-    score: 0
-  });
-
-  return variants.slice(0, 20); // Limit to prevent too many results
-}
-
-    console.log(`✅ POS guess for "${normalized}": ${posGuess}`);
-
-    // Generate comprehensive variants (LingDocs-style exhaustive search)
-    const groups: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] } = {};
-
-    console.log(`🔍 Generating comprehensive variants for "${rootVerb}" (POS: ${posGuess}, searched for: "${normalized}")`);
-
-    // Generate variants based on POS (prevent incorrect verb generation for adjectives)
-    if (posGuess === "noun") {
-      try {
-        groups.nouns = await generateNounVariants(rootVerb, { cap: 30 });
-        console.log(`✅ Generated ${groups.nouns?.length || 0} noun forms`);
+        groups.verbs = Array.from(allVerbForms.values()).sort((a, b) => (b.count || 0) - (a.count || 0));
+        console.log(`✅ Generated ${groups.verbs.length} verb forms`);
       } catch (error) {
-        console.error(`❌ Noun generation failed for "${rootVerb}":`, error);
-        groups.nouns = [];
+        console.error(`❌ Verb generation failed:`, error);
+        groups.verbs = d1VerbForms;
       }
-    } else if (posGuess === "verb") {
-      // Generate verb conjugations using pattern-based approach
+    }
+
+    // Nouns: Use LingDocs + D1 data
+    if (posGuess === 'noun' || nounData || d1NounForms.length > 0) {
       try {
-        groups.verbs = await generateVerbConjugations(rootVerb);
-        console.log(`✅ Generated ${groups.verbs?.length || 0} verb conjugations for "${rootVerb}"`);
-      } catch (error) {
-        console.error(`❌ Verb conjugation generation failed for "${rootVerb}":`, error);
-        groups.verbs = [];
-      }
-    } else if (posGuess === "adjective") {
-      // Adjectives should NOT generate verb conjugations - only generate adjective forms
-      // Use our simple adjective inflection generator to avoid LingDocs verb confusion
-      try {
-        const adjectiveForms = await generateSimpleAdjectiveForms(normalized);
-        if (adjectiveForms.length > 0) {
-          groups.other = adjectiveForms;
-          console.log(`✅ Generated ${adjectiveForms.length} adjective forms for ${normalized}`);
-        } else {
-          // Fallback to noun generation if adjective generation fails
-          try {
-            const nounForms = await generateNounVariants(normalized, { cap: 15 });
-            if (nounForms.length > 0) {
-              groups.nouns = nounForms.filter(f => f.pos === 'noun');
-              console.log(`✅ Fallback: Generated ${groups.nouns?.length || 0} noun forms for adjective ${normalized}`);
-            }
-          } catch (nounError) {
-            console.error(`❌ Noun fallback failed for "${normalized}":`, nounError);
+        // Try LingDocs first
+        const lingdocsNouns = await generateNounVariantsLingDocs(baseWord, { cap: 50 });
+        
+        // Merge with D1 forms
+        const allNounForms = new Map<string, Variant>();
+        lingdocsNouns.forEach(v => {
+          allNounForms.set(v.form, {
+            form: v.form,
+            label: v.label || 'Noun Form',
+            pos: 'noun',
+            count: v.count || 0,
+            score: v.score || 0,
+            romanized: v.romanized,
+            flags: ['lingdocs'],
+          });
+        });
+        
+        d1NounForms.forEach(v => {
+          const existing = allNounForms.get(v.form);
+          if (existing) {
+            existing.count = Math.max(existing.count || 0, v.count || 0);
+            existing.score = existing.count;
+            existing.flags = [...(existing.flags || []), 'd1'];
+          } else {
+            allNounForms.set(v.form, { ...v, flags: ['d1'] });
           }
-        }
-      } catch (adjError) {
-        console.error(`❌ Adjective generation failed for "${normalized}":`, adjError);
-      }
-    } else {
-      // For unknown/ambiguous terms, try limited generation
-      try {
-        const nouns = await generateNounVariants(normalized, { cap: 15 });
-        if (nouns.length) groups.nouns = nouns;
+        });
+
+        groups.nouns = Array.from(allNounForms.values()).sort((a, b) => (b.count || 0) - (a.count || 0));
+        console.log(`✅ Generated ${groups.nouns.length} noun forms`);
       } catch (error) {
-        console.error(`❌ Unknown POS generation failed for "${normalized}":`, error);
-      }
-
-      // Only try verbs if the word looks like it could be a verb
-      if (normalized.endsWith('ل') || normalized.endsWith('ول') || normalized.endsWith('ېدل')) {
-        try {
-          const verbs = await generateVerbConjugations(normalized);
-          if (verbs.length) groups.verbs = verbs;
-        } catch (verbError) {
-          console.error(`❌ Verb conjugation generation failed for "${normalized}":`, verbError);
-        }
-      }
-
-      console.log(`✅ Generated ${groups.nouns?.length || 0} nouns, ${groups.verbs?.length || 0} verbs for ambiguous term`);
-    }
-
-    // For truly ambiguous terms, try limited alternative approaches
-    if (posGuess === "other" && (!groups.nouns?.length && !groups.verbs?.length)) {
-      console.log(`🔄 Ambiguous term detected, trying conservative approach...`);
-
-      // Only try noun generation for ambiguous terms to avoid false verb conjugations
-      const altNouns = await generateNounVariants(normalized, { cap: 15 });
-      if (altNouns.length) {
-        groups.nouns = altNouns;
-        console.log(`✅ Alternative generation: ${altNouns.length} noun forms`);
+        console.error(`❌ Noun generation failed:`, error);
+        groups.nouns = d1NounForms;
       }
     }
 
-    // Build forms array and enrich with frequency data
-    let forms: Variant[] = [];
+    // Adjectives: Use LingDocs patterns
+    if (posGuess === 'adjective' || d1AdjForms.length > 0) {
+      try {
+        const adjForms = await generateAdjectiveInflections(baseWord);
+        
+        // Merge with D1 forms
+        const allAdjForms = new Map<string, Variant>();
+        adjForms.forEach(v => {
+          allAdjForms.set(v.form, { ...v, flags: ['pattern'] });
+        });
+        
+        d1AdjForms.forEach(v => {
+          const existing = allAdjForms.get(v.form);
+          if (existing) {
+            existing.count = Math.max(existing.count || 0, v.count || 0);
+            existing.score = existing.count;
+            existing.flags = [...(existing.flags || []), 'd1'];
+          } else {
+            allAdjForms.set(v.form, { ...v, flags: ['d1'] });
+          }
+        });
+
+        groups.adjectives = Array.from(allAdjForms.values()).sort((a, b) => (b.count || 0) - (a.count || 0));
+        console.log(`✅ Generated ${groups.adjectives.length} adjective forms`);
+      } catch (error) {
+        console.error(`❌ Adjective generation failed:`, error);
+        groups.adjectives = d1AdjForms;
+      }
+    }
+
+    // Enrich all forms with frequency data, verse references, and inflection reasons
+    const allForms: Variant[] = [];
     for (const group of Object.values(groups)) {
       if (group) {
-        forms.push(...group);
+        allForms.push(...group);
       }
     }
 
-    // Filter out incorrect verb conjugations for known adjectives
-    // Some adjectives like مفرد are incorrectly processed as verbs by LingDocs
-    const knownAdjectives = ['مفرد', 'وقفه', 'صادق', 'خوب', 'بد']; // Add more as needed
-    if (knownAdjectives.includes(normalized) && posGuess === 'adjective') {
-      forms = forms.filter(f => f.pos !== 'verb');
-      console.log(`🔧 Filtered out verb conjugations for adjective ${normalized}`);
+    // Enrich with frequency counts and inflection reasons
+    for (const form of allForms) {
+      const freq = frequencyMap.get(form.form) || 0;
+      if (freq > 0) {
+        form.count = freq;
+        form.score = freq;
+      }
+      
+      // Get inflection reasons from D1
+      const reasons = await getInflectionReasonsFromD1(form.form, translation);
+      if (reasons) {
+        form.inflectionReasons = reasons;
+      }
     }
 
-    // Enrich with frequency counts from Bible occurrences
-    console.log(`📊 Enriching ${forms.length} forms with occurrence data...`);
-    forms = forms.map(f => {
-      const occurrenceCount = frequencyMap.get(f.form) ?? 0;
-      if (occurrenceCount > 0) {
-        console.log(`  ✅ ${f.form} found ${occurrenceCount} times in Bible`);
-      }
-      return {
-        ...f,
-        count: occurrenceCount || f.count || 0,
-        score: occurrenceCount || f.score || 0,
-      };
-    });
+    // Sort by frequency
+    allForms.sort((a, b) => (b.count || 0) - (a.count || 0));
 
-    // Sort by frequency (most common first)
-    forms = forms.sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
-
-    const total = forms.length;
-
-    // Update groups with enriched counts
+    // Update groups with enriched data
     const enrichedGroups: typeof groups = {};
-    if (groups.nouns) enrichedGroups.nouns = forms.filter(f => f.pos === 'noun');
-    if (groups.verbs) enrichedGroups.verbs = forms.filter(f => f.pos === 'verb');
-    if (groups.other) enrichedGroups.other = forms.filter(f => f.pos !== 'noun' && f.pos !== 'verb');
+    if (groups.nouns) enrichedGroups.nouns = allForms.filter(f => f.pos === 'noun');
+    if (groups.verbs) enrichedGroups.verbs = allForms.filter(f => f.pos === 'verb');
+    if (groups.adjectives) enrichedGroups.adjectives = allForms.filter(f => f.pos === 'adjective');
+    if (groups.other) enrichedGroups.other = allForms.filter(f => f.pos === 'other');
 
-    const variantDetails = {
-      root: rootVerb,
-      searchedForm: normalized, // The original form that was searched
+    const total = allForms.length;
+
+    const response: RelatedFormsResponse = {
+      root: baseWord,
+      searchedForm: normalized,
       forms: enrichedGroups,
       total,
-    };
-
-    // LingDocs-style comprehensive response
-    const payload: RelatedFormsResponse = {
-      root: rootVerb,
-      searchedForm: normalized, // Include the original searched form for context
-      forms: enrichedGroups,
-      total,
-      variantDetails,
       ms: Date.now() - startedAt,
       posGuess,
-      // Enhanced LingDocs-style metadata
+      translation,
       metadata: {
         hasMultiplePos: Object.keys(enrichedGroups).length > 1,
         primaryPos: posGuess,
         totalFormsByPos: {
           nouns: enrichedGroups.nouns?.length || 0,
           verbs: enrichedGroups.verbs?.length || 0,
+          adjectives: enrichedGroups.adjectives?.length || 0,
           other: enrichedGroups.other?.length || 0,
         },
-        generationStrategy: posGuess === "other" ? "ambiguous_exhaustive" : "pos_specific",
-        reverseLookup: rootVerb !== normalized, // Whether we found a root verb for a conjugated form
+        generationStrategy: d1Inflections.length > 0 ? 'd1-lingdocs-hybrid' : 'lingdocs-fallback',
+        reverseLookup,
+        source: d1Inflections.length > 0 ? 'd1' : 'lingdocs',
       },
     };
 
-    console.log(`✅ Returning ${total} forms with occurrence counts (${Date.now() - startedAt}ms)`);
+    console.log(`✅ Returning ${total} forms (${Date.now() - startedAt}ms)`);
 
-    // Cache the result
-    setCache(cacheKey, payload);
-
-    return NextResponse.json(payload);
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Related forms error', error);
+    console.error('❌ Related forms error:', error);
     return NextResponse.json(
       { error: 'Related forms failed', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

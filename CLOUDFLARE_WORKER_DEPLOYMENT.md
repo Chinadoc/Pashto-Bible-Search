@@ -95,3 +95,4 @@ If Vercel still shows fallback to Supabase:
 3. Test worker directly to ensure it's responding
 4. Check browser console for fetch errors
 
+
