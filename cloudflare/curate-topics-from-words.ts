@@ -267,85 +267,144 @@ function matchWordToCategories(
 }
 
 /**
- * Fetch verses for a word from word_verse_mapping
+ * Fetch verses for a word by searching verse text directly
+ * Uses word_frequencies as source of truth, then queries verses containing the word
  */
 async function fetchVersesForWord(pashtoWord: string, baseForm?: string): Promise<VerseMapping[]> {
   try {
-    // Try exact match first
-    let query = `
-      SELECT DISTINCT
-        verse_id,
-        verse_ref,
-        translation_key,
-        testament,
-        book,
-        chapter,
-        verse
-      FROM word_verse_mapping
-      WHERE pashto_word = '${pashtoWord.replace(/'/g, "''")}'
-      ORDER BY RANDOM()
-      LIMIT 10
-    `;
-
-    const { stdout } = await execAsync(
-      `npx wrangler d1 execute pashto-bible-db --remote --command="${query.replace(/"/g, '\\"')}" --json`,
-      { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }
-    );
-
-    const result = JSON.parse(stdout);
-    const data = Array.isArray(result) ? result[0] : result;
-    const rows = data.results || [];
-
-    if (rows.length > 0) {
-      return rows.map((row: any) => ({
-        verse_id: row.verse_id,
-        verse_ref: row.verse_ref,
-        translation_key: row.translation_key,
-        testament: row.testament,
-        book: row.book,
-        chapter: row.chapter,
-        verse: row.verse
-      }));
-    }
-
-    // If no exact match and we have base_form, try that
-    if (baseForm && baseForm !== pashtoWord) {
-      query = `
+    const escapedWord = pashtoWord.replace(/'/g, "''");
+    
+    // Try both afghan2023 and yousafzai2019 translations
+    const queries = [
+      // Afghan 2023
+      `
         SELECT DISTINCT
-          verse_id,
-          verse_ref,
-          translation_key,
+          id as verse_id,
+          ref as verse_ref,
+          'afghan2023' as translation_key,
           testament,
           book,
           chapter,
           verse
-        FROM word_verse_mapping
-        WHERE pashto_word = '${baseForm.replace(/'/g, "''")}'
+        FROM verses_afghan2023
+        WHERE text LIKE '%${escapedWord}%'
         ORDER BY RANDOM()
         LIMIT 10
-      `;
+      `,
+      // Yousafzai 2019
+      `
+        SELECT DISTINCT
+          id as verse_id,
+          ref as verse_ref,
+          'yousafzai2019' as translation_key,
+          testament,
+          book,
+          chapter,
+          verse
+        FROM verses_yousafzai
+        WHERE text LIKE '%${escapedWord}%'
+        ORDER BY RANDOM()
+        LIMIT 10
+      `
+    ];
 
-      const { stdout: stdout2 } = await execAsync(
-        `npx wrangler d1 execute pashto-bible-db --remote --command="${query.replace(/"/g, '\\"')}" --json`,
-        { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }
-      );
+    const allVerses: VerseMapping[] = [];
 
-      const result2 = JSON.parse(stdout2);
-      const data2 = Array.isArray(result2) ? result2[0] : result2;
-      const rows2 = data2.results || [];
+    for (const query of queries) {
+      try {
+        const { stdout } = await execAsync(
+          `npx wrangler d1 execute pashto-bible-db --remote --command="${query.replace(/"/g, '\\"')}" --json`,
+          { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }
+        );
 
-      return rows2.map((row: any) => ({
-        verse_id: row.verse_id,
-        verse_ref: row.verse_ref,
-        translation_key: row.translation_key,
-        testament: row.testament,
-        book: row.book,
-        chapter: row.chapter,
-        verse: row.verse
-      }));
+        const result = JSON.parse(stdout);
+        const data = Array.isArray(result) ? result[0] : result;
+        const rows = data.results || [];
+
+        for (const row of rows) {
+          allVerses.push({
+            verse_id: row.verse_id,
+            verse_ref: row.verse_ref,
+            translation_key: row.translation_key,
+            testament: row.testament,
+            book: row.book,
+            chapter: row.chapter,
+            verse: row.verse
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching verses for ${pashtoWord} from ${query.includes('afghan2023') ? 'afghan2023' : 'yousafzai2019'}:`, error);
+      }
     }
 
-    return [];
+    // If no results and we have base_form, try that
+    if (allVerses.length === 0 && baseForm && baseForm !== pashtoWord) {
+      const escapedBaseForm = baseForm.replace(/'/g, "''");
+      const baseQueries = [
+        `
+          SELECT DISTINCT
+            id as verse_id,
+            ref as verse_ref,
+            'afghan2023' as translation_key,
+            testament,
+            book,
+            chapter,
+            verse
+          FROM verses_afghan2023
+          WHERE text LIKE '%${escapedBaseForm}%'
+          ORDER BY RANDOM()
+          LIMIT 10
+        `,
+        `
+          SELECT DISTINCT
+            id as verse_id,
+            ref as verse_ref,
+            'yousafzai2019' as translation_key,
+            testament,
+            book,
+            chapter,
+            verse
+          FROM verses_yousafzai
+          WHERE text LIKE '%${escapedBaseForm}%'
+          ORDER BY RANDOM()
+          LIMIT 10
+        `
+      ];
+
+      for (const query of baseQueries) {
+        try {
+          const { stdout } = await execAsync(
+            `npx wrangler d1 execute pashto-bible-db --remote --command="${query.replace(/"/g, '\\"')}" --json`,
+            { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }
+          );
+
+          const result = JSON.parse(stdout);
+          const data = Array.isArray(result) ? result[0] : result;
+          const rows = data.results || [];
+
+          for (const row of rows) {
+            allVerses.push({
+              verse_id: row.verse_id,
+              verse_ref: row.verse_ref,
+              translation_key: row.translation_key,
+              testament: row.testament,
+              book: row.book,
+              chapter: row.chapter,
+              verse: row.verse
+            });
+          }
+        } catch (error) {
+          // Continue if one query fails
+        }
+      }
+    }
+
+    // Remove duplicates and randomize
+    const uniqueVerses = Array.from(
+      new Map(allVerses.map(v => [`${v.verse_ref}-${v.translation_key}`, v])).values()
+    );
+    
+    return uniqueVerses.sort(() => Math.random() - 0.5).slice(0, 10);
   } catch (error) {
     console.error(`Error fetching verses for ${pashtoWord}:`, error);
     return [];

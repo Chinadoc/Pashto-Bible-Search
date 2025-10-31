@@ -1,7 +1,7 @@
 const express = require('express');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { writeFile, unlink, readFile, stat, mkdir } = require('fs/promises');
+const { writeFile, unlink, readFile, stat, mkdir, createReadStream } = require('fs');
 const { join } = require('path');
 const FormData = require('form-data');
 const cors = require('cors');
@@ -82,22 +82,25 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
     finalAudioFile = compressedPath;
   }
   
-  // Read file and create FormData for ElevenLabs
-  const audioBuffer = await readFile(finalAudioFile);
-  
+  // Create FormData using file stream (more reliable for ElevenLabs API)
+  const fileStats = await stat(finalAudioFile);
   const formData = new FormData();
-  // Use a Blob-like object or pass the buffer with proper options
-  // For Node.js form-data, we need to pass the buffer with proper options
-  formData.append('file', audioBuffer, {
+  
+  // Use createReadStream instead of reading entire file into buffer
+  // This is more memory efficient and works better with ElevenLabs API
+  const fileStream = createReadStream(finalAudioFile);
+  
+  formData.append('file', fileStream, {
     filename: 'audio.mp3',
     contentType: 'audio/mpeg',
-    knownLength: audioBuffer.length, // Specify the length for better compatibility
+    knownLength: fileStats.size,
   });
   formData.append('language', 'ps');
   formData.append('model_id', 'scribe_v1');
   
-  console.log(`📤 Sending to ElevenLabs: ${(audioBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`📤 Sending to ElevenLabs: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
   console.log(`   Language: ps, Model: scribe_v1`);
+  console.log(`   Using file stream (more reliable for ElevenLabs API)`);
   
   const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
     method: 'POST',
