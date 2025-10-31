@@ -1442,7 +1442,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
     }
 
       // Get audio map now that we need it for result transformation
-      const audioMap = await audioMapPromise;
+      const audioMap = await getAudioMap();
 
       // Optimized search execution - use the most efficient approach based on query characteristics
       console.log('🔍 Executing optimized search for:', convertedQuery, 'with', searchTerms.length, 'terms');
