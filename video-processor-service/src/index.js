@@ -395,22 +395,35 @@ app.post('/process-video', async (req, res) => {
       throw error;
     }
     
-    // Step 2.5: Get actual video duration
-    console.log(`\n⏱️ Step 2.5: Getting video duration...`);
+    // Step 2.5: Get actual video duration BEFORE segmentation
+    // This is critical - we need accurate duration to properly segment
+    console.log(`\n⏱️ Step 2.5: Getting video duration (CRITICAL for accurate timestamps)...`);
     const durationStartTime = Date.now();
     let videoDuration;
     try {
       videoDuration = await getVideoDuration(audioFile);
       const durationDuration = ((Date.now() - durationStartTime) / 1000).toFixed(2);
       console.log(`✅ Video duration retrieved:`);
-      console.log(`   Duration: ${durationDuration}s`);
+      console.log(`   Processing time: ${durationDuration}s`);
       console.log(`   Video length: ${videoDuration}s (${formatDuration(videoDuration)})`);
-      if (videoDuration === 0) {
-        console.warn(`⚠️ Could not get video duration, will use estimated duration`);
+      
+      if (videoDuration === 0 || !videoDuration) {
+        console.error(`❌ CRITICAL: Could not get video duration!`);
+        console.error(`   This will cause incorrect segment timestamps.`);
+        console.error(`   Aborting to prevent incorrect data.`);
+        throw new Error('Failed to get video duration - cannot proceed without accurate timestamps');
       }
+      
+      // Verify duration is reasonable (at least 1 second)
+      if (videoDuration < 1) {
+        console.error(`❌ CRITICAL: Video duration seems incorrect: ${videoDuration}s`);
+        throw new Error(`Invalid video duration: ${videoDuration}s`);
+      }
+      
+      console.log(`✅ Duration validated: ${videoDuration}s (${formatDuration(videoDuration)})`);
     } catch (error) {
-      console.error(`❌ Failed to get duration:`, error.message);
-      videoDuration = 0;
+      console.error(`❌ CRITICAL ERROR: Failed to get duration:`, error.message);
+      throw error; // Don't proceed without accurate duration
     }
     
     // Step 3: Segment transcript with proper duration

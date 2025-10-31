@@ -797,6 +797,113 @@ async function listVideos(env: Env): Promise<Response> {
 }
 
 /**
+ * Delete video from D1 and R2
+ * DELETE /api/video/:videoId
+ */
+async function deleteVideo(env: Env, videoId: string): Promise<Response> {
+  try {
+    // First, get the video to find segment count
+    const videoResult = await env.DB.prepare(
+      `SELECT * FROM video_transcripts WHERE video_id = ?`
+    ).bind(videoId).first();
+
+    if (!videoResult) {
+      return errorResponse('Video not found', 404);
+    }
+
+    // Delete R2 audio files
+    const r2Keys = videoResult.r2_audio_key ? videoResult.r2_audio_key.split(',') : [];
+    let deletedCount = 0;
+    let failedCount = 0;
+
+    for (const r2Key of r2Keys) {
+      try {
+        const key = r2Key.trim();
+        if (!key) continue;
+
+        // Try multiple possible paths
+        const possiblePaths = [
+          key,
+          `pashto-bible-audio/${key}`,
+          key.toLowerCase(),
+          `pashto-bible-audio/${key.toLowerCase()}`,
+        ];
+
+        let deleted = false;
+        for (const path of possiblePaths) {
+          const object = await env.AUDIO_BUCKET.get(path);
+          if (object !== null) {
+            await env.AUDIO_BUCKET.delete(path);
+            deleted = true;
+            deletedCount++;
+            break;
+          }
+        }
+
+        if (!deleted) {
+          failedCount++;
+        }
+      } catch (error) {
+        failedCount++;
+        console.warn(`Failed to delete R2 key ${r2Key}:`, error);
+      }
+    }
+
+    // Delete from D1
+    await env.DB.prepare(`DELETE FROM video_transcripts WHERE video_id = ?`)
+      .bind(videoId)
+      .run();
+
+    return jsonResponse({
+      success: true,
+      videoId,
+      deletedFromD1: true,
+      r2FilesDeleted: deletedCount,
+      r2FilesFailed: failedCount,
+      message: `Video ${videoId} deleted. ${deletedCount} R2 files deleted.`,
+    });
+  } catch (error: any) {
+    console.error(`Error deleting video: ${error.message}`, error);
+    return errorResponse(`Failed to delete video: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Delete R2 object
+ * POST /api/r2/delete
+ */
+async function deleteR2Object(env: Env, request: Request): Promise<Response> {
+  try {
+    const body = await request.json();
+    const { key } = body;
+
+    if (!key) {
+      return errorResponse('Missing key', 400);
+    }
+
+    // Try multiple possible paths
+    const possiblePaths = [
+      key,
+      `pashto-bible-audio/${key}`,
+      key.toLowerCase(),
+      `pashto-bible-audio/${key.toLowerCase()}`,
+    ];
+
+    for (const path of possiblePaths) {
+      const object = await env.AUDIO_BUCKET.get(path);
+      if (object !== null) {
+        await env.AUDIO_BUCKET.delete(path);
+        return jsonResponse({ success: true, key: path, deleted: true });
+      }
+    }
+
+    return errorResponse(`Object not found: ${key}`, 404);
+  } catch (error: any) {
+    return errorResponse(`Failed to delete R2 object: ${error.message}`, 500);
+  }
+}
+
+/**
  * Get video audio stream from R2
  */
 async function getVideoAudio(env: Env, videoId: string, segment: number, request: Request): Promise<Response> {
@@ -1157,9 +1264,26 @@ export default {
       return getVideoAudio(env, videoId, segment, request);
     }
 
+    // Delete video endpoint
+    if (path.startsWith('/api/video/') && !path.endsWith('/audio') && request.method === 'DELETE') {
+      // Path format: /api/video/{videoId}
+      const pathParts = path.split('/');
+      const videoId = pathParts[pathParts.length - 1];
+      
+      if (!videoId) {
+        return errorResponse('Missing video ID', 400);
+      }
+      return deleteVideo(env, videoId);
+    }
+
     // R2 upload endpoint
     if (path === '/api/r2/upload' && request.method === 'POST') {
       return uploadToR2(env, request);
+    }
+
+    // R2 delete endpoint
+    if (path === '/api/r2/delete' && request.method === 'POST') {
+      return deleteR2Object(env, request);
     }
 
     return errorResponse('Not found', 404);
