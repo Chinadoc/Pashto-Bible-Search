@@ -177,7 +177,7 @@ type Processed = {
   original: string;
   normalized: string;
   variants: string[];
-    searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results';
+    searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results' | 'video_transcript';
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   variantGroups?: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   variantDetails?: any;
