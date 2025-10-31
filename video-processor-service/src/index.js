@@ -211,7 +211,7 @@ async function segmentTranscriptBySentences(text, videoDuration) {
 }
 
 /**
- * Extract audio segments using ffmpeg
+ * Extract audio segments using ffmpeg with precise timing and padding
  */
 async function extractAudioSegments(audioFile, segments, videoId) {
   const tempDir = join('/tmp', 'video-processing');
@@ -222,13 +222,22 @@ async function extractAudioSegments(audioFile, segments, videoId) {
     const outputPath = join(tempDir, `${videoId}_segment_${i + 1}.mp3`);
     
     try {
-      const start = Math.floor(segment.startTime);
-      const duration = Math.floor(segment.endTime - segment.startTime);
+      // Use precise decimal times (not Math.floor)
+      // Add small padding before start to avoid clipping words
+      const paddingStart = 0.15; // 150ms before
+      const paddingEnd = 0.25;   // 250ms after
       
-      await execAsync(
-        `ffmpeg -i "${audioFile}" -ss ${start} -t ${duration} -acodec copy "${outputPath}" -y`,
-        { timeout: 60000 }
-      );
+      const start = Math.max(0, segment.startTime - paddingStart);
+      const end = segment.endTime + paddingEnd;
+      const duration = end - start;
+      
+      // Use precise decimal format for ffmpeg
+      // Re-encode instead of copy to get precise cuts (not just keyframe cuts)
+      const ffmpegCmd = `ffmpeg -ss ${start.toFixed(3)} -i "${audioFile}" -t ${duration.toFixed(3)} -c:a libmp3lame -ar 44100 -ac 1 -q:a 4 -af aresample=async=1:first_pts=0 "${outputPath}" -y`;
+      
+      console.log(`   Extracting segment ${i + 1}: ${segment.startTime.toFixed(2)}s - ${segment.endTime.toFixed(2)}s (duration: ${duration.toFixed(2)}s)`);
+      
+      await execAsync(ffmpegCmd, { timeout: 60000 });
       
       segmentFiles.push(outputPath);
     } catch (error) {
