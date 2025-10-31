@@ -561,8 +561,45 @@ export async function POST(request: NextRequest) {
     let disambiguationResult: any = null;
     let disambiguationAnalysis: DisambiguationResult | null = null;
 
-      // Load audio map for assigning audio URLs (now cached) - do this in parallel with other operations
-      const audioMapPromise = getAudioMap();
+      // Search video transcripts from Cloudflare D1
+    const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+    let videoTranscriptResults: any[] = [];
+    
+    try {
+      const videoResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/list`);
+      if (videoResponse.ok) {
+        const videoData = await videoResponse.json();
+        const videos = videoData.videos || [];
+        
+        // Search in video transcripts
+        videos.forEach((video: any) => {
+          const transcript = video.transcript || '';
+          const segments = video.segments || [];
+          
+          // Check if query matches transcript or any segment
+          const transcriptMatch = transcript.toLowerCase().includes(query.toLowerCase());
+          const segmentMatches = segments.filter((seg: any) => 
+            seg.text?.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          if (transcriptMatch || segmentMatches.length > 0) {
+            videoTranscriptResults.push({
+              ref: `video:${video.video_id}`,
+              text: transcript,
+              video_id: video.video_id,
+              youtube_url: video.youtube_url,
+              segments: segmentMatches.length > 0 ? segmentMatches : [],
+              source: 'video_transcript',
+              translation: null,
+              dialect: null,
+              testament: null,
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to search video transcripts:', error);
+    }
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -1543,6 +1580,26 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
           id: index + 1,
         }));
 
+        // Add video transcript results to the search results
+        if (videoTranscriptResults.length > 0) {
+          console.log(`📹 Adding ${videoTranscriptResults.length} video transcript results`);
+          const videoTransformed = videoTranscriptResults.map((video: any, index: number) => ({
+            ref: video.ref,
+            text: video.text,
+            testament: null,
+            translation: null,
+            dialect: null,
+            tags: [['video_transcript']] as any[][],
+            audio_verse_url: null,
+            id: transformed.length + index + 1,
+            video_id: video.video_id,
+            youtube_url: video.youtube_url,
+            segments: video.segments,
+            source: 'video_transcript',
+          }));
+          transformed.push(...videoTransformed);
+        }
+
         // Cache the results
         const processedData = {
           original: originalQuery,
@@ -1596,30 +1653,49 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
 
 
 
-      // If no results found, return empty result set
-      console.log(`🔄 No results found for query: "${convertedQuery}"`);
+      // If no results found, check video transcripts and return them
+      console.log(`🔄 No Bible results found for query: "${convertedQuery}"`);
+      
+      // Return video transcript results if available
+      if (videoTranscriptResults.length > 0) {
+        console.log(`📹 Found ${videoTranscriptResults.length} video transcript matches`);
+        const transformed = videoTranscriptResults.map((video: any, index: number) => ({
+          ref: video.ref,
+          text: video.text,
+          testament: null,
+          translation: null,
+          dialect: null,
+          tags: [['video_transcript']] as any[][],
+          audio_verse_url: null,
+          id: index + 1,
+          video_id: video.video_id,
+          youtube_url: video.youtube_url,
+          segments: video.segments,
+          source: 'video_transcript',
+        }));
 
-      const processed: Processed = {
-        original: originalQuery,
-        normalized: convertedQuery,
-        variants: searchTerms,
-        disambiguation: disambiguationResult,
-        searchType: 'no_results',
-        language: searchLanguage,
-        englishMatches: englishMatches.length ? englishMatches : undefined,
-        variantsSearched: searchTerms,
-        romanization: romanizedDictionaryMatch?.romanized,
-        root: romanizedDictionaryMatch?.pashto,
-      };
+        const processed: Processed = {
+          original: originalQuery,
+          normalized: convertedQuery,
+          variants: searchTerms,
+          disambiguation: disambiguationResult,
+          searchType: 'video_transcript',
+          language: searchLanguage,
+          englishMatches: englishMatches.length ? englishMatches : undefined,
+          variantsSearched: searchTerms,
+          romanization: romanizedDictionaryMatch?.romanized,
+          root: romanizedDictionaryMatch?.pashto,
+        };
 
-      return NextResponse.json({
-        results: [],
-        relatedForms,
-        processed,
-        count: 0,
-        ms: Date.now() - startedAt,
-        cached: false,
-      });
+        return NextResponse.json({
+          results: normalizeVerses(transformed),
+          relatedForms,
+          processed,
+          count: transformed.length,
+          ms: Date.now() - startedAt,
+          cached: false,
+        });
+      }
     } catch (error) {
       console.error('Search API error:', error);
       return NextResponse.json(

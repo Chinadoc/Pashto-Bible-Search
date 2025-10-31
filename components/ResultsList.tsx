@@ -142,8 +142,9 @@ function VerseItem({
   handlePause?: () => void;
 }) {
   // Parse verse number from ref only (never from text)
-  const refParts = parseRef(verse.ref);
+  const refParts = verse.ref?.startsWith('video:') ? null : parseRef(verse.ref);
   const verseNo = refParts?.verse ?? null;
+  const isVideoResult = verse.ref?.startsWith('video:') || (verse as any).source === 'video_transcript';
 
   // Safely extract book name for highlighting
   let verseBook = '';

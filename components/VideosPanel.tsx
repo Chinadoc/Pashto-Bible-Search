@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface TranscriptionAttempt {
   attempt: number;
@@ -70,6 +70,120 @@ interface VideosPanelProps {
   onSelectClip?: (clip: { query: string; startTime: number; endTime: number }) => void;
 }
 
+interface WordFrequencyItem {
+  word: string;
+  count: number;
+  segments: number[];
+}
+
+/**
+ * Word Frequency Component for Video Transcript
+ */
+function VideoWordFrequency({ transcript, videoId }: { transcript: string; videoId: string }) {
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  // Extract words and count frequency
+  const wordFrequency = useMemo(() => {
+    if (!transcript) return [];
+    
+    // Split by spaces and filter out punctuation
+    const words = transcript
+      .split(/\s+/)
+      .map(w => w.replace(/[.!?؟،,;:()[\]{}""''«»]/g, '').trim())
+      .filter(w => w.length > 0);
+
+    const freqMap = new Map<string, { count: number; segments: number[] }>();
+    
+    words.forEach((word, index) => {
+      const normalized = word;
+      if (!freqMap.has(normalized)) {
+        freqMap.set(normalized, { count: 0, segments: [] });
+      }
+      const entry = freqMap.get(normalized)!;
+      entry.count++;
+      // Track which segment this word appears in (rough estimate)
+      const segmentIndex = Math.floor(index / 10); // Approximate segments
+      if (!entry.segments.includes(segmentIndex)) {
+        entry.segments.push(segmentIndex);
+      }
+    });
+
+    return Array.from(freqMap.entries())
+      .map(([word, data]) => ({ word, count: data.count, segments: data.segments }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 100); // Top 100 words
+  }, [transcript]);
+
+  // Fetch translations for words
+  useEffect(() => {
+    if (wordFrequency.length === 0) return;
+    
+    const fetchTranslations = async () => {
+      setLoading(true);
+      try {
+        // Fetch translations for top 20 words
+        const topWords = wordFrequency.slice(0, 20).map(w => w.word);
+        const response = await fetch('/api/word-translations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ words: topWords }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setTranslations(data.translations || {});
+        }
+      } catch (error) {
+        console.error('Failed to fetch translations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTranslations();
+  }, [wordFrequency]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Top {wordFrequency.length} words from transcript
+        </p>
+        {loading && (
+          <span className="text-xs text-gray-500 dark:text-gray-400">Loading translations...</span>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+        {wordFrequency.map((item, index) => (
+          <div
+            key={item.word}
+            className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-6">
+                {index + 1}
+              </span>
+              <span className="font-medium text-gray-900 dark:text-gray-100" dir="rtl">
+                {item.word}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                ({item.count}x)
+              </span>
+            </div>
+            {translations[item.word] && (
+              <span className="text-xs text-gray-600 dark:text-gray-400 ml-2">
+                {translations[item.word]}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [videos, setVideos] = useState<NormalizedVideo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,8 +199,17 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [transcribingSegments, setTranscribingSegments] = useState(false);
   const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [activeTabs, setActiveTabs] = useState<Record<string, 'segments' | 'frequency'>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  const setActiveTab = (videoId: string, tab: 'segments' | 'frequency') => {
+    setActiveTabs(prev => ({ ...prev, [videoId]: tab }));
+  };
+
+  const getActiveTab = (videoId: string): 'segments' | 'frequency' => {
+    return activeTabs[videoId] || 'segments';
+  };
 
   const extractVideoId = (url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
@@ -854,24 +977,58 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                 </div>
               )}
 
-              {/* Transcript */}
+              {/* Transcript with Word Frequency Tab */}
               {(video.transcript || video.transcription) && (
                 <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                    Transcript
+                  {/* Tabs */}
+                  <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+                    <button
+                      onClick={() => setActiveTab(video.video_id || '', 'segments')}
+                      className={`px-4 py-2 font-medium text-sm transition-colors ${
+                        getActiveTab(video.video_id || '') === 'segments'
+                          ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Transcript
+                    </button>
+                    <button
+                      onClick={() => setActiveTab(video.video_id || '', 'frequency')}
+                      className={`px-4 py-2 font-medium text-sm transition-colors ${
+                        getActiveTab(video.video_id || '') === 'frequency'
+                          ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Word Frequency
+                    </button>
                     {video.transcription_service && (
-                      <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <span className="ml-auto text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 self-center">
                         {video.transcription_service}
                       </span>
                     )}
-                  </h4>
-                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed" dir="rtl">
-                    {video.transcript || video.transcription?.transcript}
-                  </p>
-                  {video.transcription && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Generated: {formatTimestamp(video.transcription.timestamp)}
-                    </p>
+                  </div>
+
+                  {/* Transcript Tab */}
+                  {getActiveTab(video.video_id || '') === 'segments' && (
+                    <div>
+                      <p className="text-gray-900 dark:text-gray-100 leading-relaxed" dir="rtl">
+                        {video.transcript || video.transcription?.transcript}
+                      </p>
+                      {video.transcription && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          Generated: {formatTimestamp(video.transcription.timestamp)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Word Frequency Tab */}
+                  {getActiveTab(video.video_id || '') === 'frequency' && (
+                    <VideoWordFrequency 
+                      transcript={video.transcript || video.transcription?.transcript || ''}
+                      videoId={video.video_id || ''}
+                    />
                   )}
                 </div>
               )}
@@ -902,7 +1059,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                           {/* Audio Player */}
                           {audioUrl && (
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const audio = audioRefs.current.get(audioKey);
                                 if (audio) {
                                   if (isPlaying) {
@@ -913,8 +1070,37 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                                     audioRefs.current.forEach((a, k) => {
                                       if (k !== audioKey) a.pause();
                                     });
-                                    audio.play();
+                                    try {
+                                      // Ensure audio is loaded
+                                      if (audio.readyState === 0) {
+                                        audio.load();
+                                      }
+                                      await audio.play();
+                                      setPlayingAudio(audioKey);
+                                    } catch (error) {
+                                      console.error('Audio playback error:', error);
+                                      // Try loading the audio URL directly
+                                      if (audioUrl) {
+                                        const newAudio = new Audio(audioUrl);
+                                        newAudio.play().catch(err => {
+                                          console.error('Failed to play audio:', err);
+                                          alert(`Failed to play audio: ${err.message}`);
+                                        });
+                                      }
+                                    }
+                                  }
+                                } else if (audioUrl) {
+                                  // Fallback: create new audio element
+                                  const newAudio = new Audio(audioUrl);
+                                  newAudio.onended = () => setPlayingAudio(null);
+                                  newAudio.onpause = () => setPlayingAudio(null);
+                                  try {
+                                    await newAudio.play();
                                     setPlayingAudio(audioKey);
+                                    audioRefs.current.set(audioKey, newAudio);
+                                  } catch (error) {
+                                    console.error('Audio playback error:', error);
+                                    alert(`Failed to play audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
                                   }
                                 }
                               }}
@@ -945,11 +1131,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                             <p 
                               className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed cursor-pointer"
                               dir="rtl"
-                              onClick={() => onSelectClip?.({
-                                query: text,
-                                startTime: startTime,
-                                endTime: endTime
-                              })}
+                              onClick={(e) => {
+                                // Don't navigate to search, just show transcript text
+                                e.stopPropagation();
+                              }}
                             >
                               {text}
                             </p>
