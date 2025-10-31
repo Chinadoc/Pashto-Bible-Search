@@ -2,6 +2,97 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 
+// YouTube Player Component with synchronization
+function YouTubePlayer({ 
+  videoId, 
+  segments, 
+  onTimeUpdate 
+}: { 
+  videoId: string; 
+  segments: NormalizedClip[]; 
+  onTimeUpdate?: (time: number) => void;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
+  const [playerReady, setPlayerReady] = useState(false);
+
+  useEffect(() => {
+    // Load YouTube IFrame API script
+    if (!(window as any).YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const initializePlayer = () => {
+      if (!iframeRef.current || playerRef.current) return;
+      
+      try {
+        playerRef.current = new (window as any).YT.Player(iframeRef.current.id, {
+          videoId: videoId,
+          events: {
+            onReady: () => {
+              setPlayerReady(true);
+              
+              // Start polling for time updates
+              intervalId = setInterval(() => {
+                if (playerRef.current && playerRef.current.getCurrentTime) {
+                  try {
+                    const time = playerRef.current.getCurrentTime();
+                    onTimeUpdate?.(time);
+                  } catch (e) {
+                    // Player may not be ready
+                  }
+                }
+              }, 250); // Update every 250ms for smooth scrolling
+            },
+            onStateChange: (event: any) => {
+              // Track playback state changes if needed
+            },
+          },
+        });
+      } catch (error) {
+        console.error('Failed to initialize YouTube player:', error);
+      }
+    };
+
+    if ((window as any).YT?.Player) {
+      initializePlayer();
+    } else {
+      (window as any).onYouTubeIframeAPIReady = initializePlayer;
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      if (playerRef.current && playerRef.current.destroy) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    };
+  }, [videoId, onTimeUpdate]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      id={`youtube-player-${videoId}`}
+      src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+      title="YouTube video player"
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      className="w-full h-full rounded"
+    />
+  );
+}
+
 interface TranscriptionAttempt {
   attempt: number;
   transcript: string;
@@ -200,8 +291,11 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeTabs, setActiveTabs] = useState<Record<string, 'segments' | 'frequency'>>({});
+  const [videoCurrentTime, setVideoCurrentTime] = useState<Record<string, number>>({});
+  const [activeSegmentIds, setActiveSegmentIds] = useState<Record<string, number | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const segmentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const setActiveTab = (videoId: string, tab: 'segments' | 'frequency') => {
     setActiveTabs(prev => ({ ...prev, [videoId]: tab }));
@@ -965,13 +1059,32 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
               {video.youtube_url && video.video_id && (
                 <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
                   <div className="aspect-video w-full">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${video.video_id}`}
-                      title="YouTube video player"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full rounded"
+                    <YouTubePlayer
+                      videoId={video.video_id}
+                      segments={video.clips}
+                      onTimeUpdate={(currentTime) => {
+                        setVideoCurrentTime(prev => ({ ...prev, [video.video_id || '']: currentTime }));
+                        
+                        // Find active segment
+                        const activeSegment = video.clips.findIndex((clip) => {
+                          const startTime = clip.start_time_seconds || clip.start_time || 0;
+                          const endTime = clip.end_time_seconds || clip.end_time || 0;
+                          return currentTime >= startTime && currentTime < endTime;
+                        });
+                        
+                        if (activeSegment !== -1) {
+                          setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: activeSegment }));
+                          
+                          // Auto-scroll to active segment
+                          const segmentKey = `${video.video_id}-${activeSegment + 1}`;
+                          const segmentElement = segmentRefs.current.get(segmentKey);
+                          if (segmentElement) {
+                            segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        } else {
+                          setActiveSegmentIds(prev => ({ ...prev, [video.video_id || '']: null }));
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -1053,7 +1166,16 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     return (
                       <div
                         key={segmentNum}
-                        className="bg-white dark:bg-gray-800 rounded border p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        ref={(el) => {
+                          if (el) {
+                            segmentRefs.current.set(`${video.video_id}-${segmentNum}`, el);
+                          }
+                        }}
+                        className={`bg-white dark:bg-gray-800 rounded border p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                          activeSegmentIds[video.video_id || ''] === index
+                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/30 border-blue-500'
+                            : ''
+                        }`}
                       >
                         <div className="flex items-start gap-3">
                           {/* Audio Player */}

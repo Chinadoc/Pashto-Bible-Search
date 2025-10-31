@@ -8,6 +8,12 @@ import FormData from 'form-data';
 const execAsync = promisify(exec);
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 interface VideoProcessingRequest {
   youtubeUrl: string;
   apiKeys?: {
@@ -88,26 +94,75 @@ async function transcribeWithElevenLabs(audioFile: string, apiKey: string): Prom
 }
 
 /**
- * Segment transcript by sentences
+ * Get video duration using ffprobe
  */
-function segmentTranscriptBySentences(text: string): Array<{ text: string; startTime: number; endTime: number }> {
+async function getVideoDuration(audioFile: string): Promise<number> {
+  try {
+    const { stdout } = await execAsync(
+      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`,
+      { timeout: 30000 }
+    );
+    return parseFloat(stdout.trim()) || 0;
+  } catch (error) {
+    console.warn('Failed to get video duration, using estimated:', error);
+    return 0;
+  }
+}
+
+/**
+ * Segment transcript by sentences with proper duration distribution
+ */
+async function segmentTranscriptBySentences(
+  text: string,
+  videoDuration: number
+): Promise<Array<{ text: string; startTime: number; endTime: number }>> {
   const segments: Array<{ text: string; startTime: number; endTime: number }> = [];
   const sentences = text.split(/[.!?؟]+\s+/).filter(s => s.trim());
   
-  let currentTime = 0;
-  for (const sentence of sentences) {
-    if (!sentence.trim()) continue;
+  if (sentences.length === 0) return segments;
+  
+  // If we have video duration, distribute time proportionally
+  if (videoDuration > 0) {
+    const totalWords = sentences.reduce((sum, s) => sum + s.split(/\s+/).length, 0);
+    let currentTime = 0;
     
-    const wordCount = sentence.split(/\s+/).length;
-    const estimatedDuration = Math.max(3, Math.min(15, wordCount * 0.4));
+    for (const sentence of sentences) {
+      if (!sentence.trim()) continue;
+      
+      const wordCount = sentence.split(/\s+/).length;
+      const proportion = totalWords > 0 ? wordCount / totalWords : 1 / sentences.length;
+      const duration = Math.max(2, videoDuration * proportion);
+      
+      segments.push({
+        text: sentence.trim(),
+        startTime: Math.round(currentTime * 10) / 10,
+        endTime: Math.round((currentTime + duration) * 10) / 10,
+      });
+      
+      currentTime += duration;
+    }
     
-    segments.push({
-      text: sentence.trim(),
-      startTime: currentTime,
-      endTime: currentTime + estimatedDuration,
-    });
-    
-    currentTime += estimatedDuration;
+    // Ensure last segment ends at video duration
+    if (segments.length > 0) {
+      segments[segments.length - 1].endTime = Math.round(videoDuration * 10) / 10;
+    }
+  } else {
+    // Fallback to estimated duration
+    let currentTime = 0;
+    for (const sentence of sentences) {
+      if (!sentence.trim()) continue;
+      
+      const wordCount = sentence.split(/\s+/).length;
+      const estimatedDuration = Math.max(3, Math.min(15, wordCount * 0.4));
+      
+      segments.push({
+        text: sentence.trim(),
+        startTime: currentTime,
+        endTime: currentTime + estimatedDuration,
+      });
+      
+      currentTime += estimatedDuration;
+    }
   }
   
   return segments;
@@ -211,10 +266,15 @@ export async function POST(request: NextRequest) {
     const transcript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
     console.log('✅ Transcription completed');
 
-    // Step 3: Segment transcript
+    // Step 2.5: Get actual video duration
+    console.log('⏱️ Getting video duration...');
+    const videoDuration = await getVideoDuration(audioFile);
+    console.log(`✅ Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
+
+    // Step 3: Segment transcript with proper duration
     console.log('✂️ Segmenting transcript...');
-    const segments = segmentTranscriptBySentences(transcript);
-    console.log(`✅ Created ${segments.length} segments`);
+    const segments = await segmentTranscriptBySentences(transcript, videoDuration);
+    console.log(`✅ Created ${segments.length} segments covering ${formatDuration(segments[segments.length - 1]?.endTime || 0)}`);
 
     // Step 4: Extract audio segments
     console.log('🎵 Extracting audio segments...');
