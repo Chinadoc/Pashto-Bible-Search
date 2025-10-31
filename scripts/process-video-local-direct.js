@@ -37,24 +37,6 @@ try {
 
 // Import timestamp alignment functions
 const { transcribeWithWhisper, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
-const formDataPath = path.join(servicePath, 'node_modules/form-data');
-const axiosPath = path.join(servicePath, 'node_modules/axios');
-
-try {
-  // First try local (when running from video-processor-service directory)
-  FormData = require('form-data');
-  axios = require('axios');
-} catch (e) {
-  // Try from video-processor-service node_modules
-  try {
-    FormData = require(formDataPath);
-    axios = require(axiosPath);
-  } catch (e2) {
-    console.error('Could not find form-data or axios.');
-    console.error('Please run: cd video-processor-service && npm install');
-    process.exit(1);
-  }
-}
 
 const execAsync = promisify(exec);
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
