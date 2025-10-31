@@ -696,8 +696,7 @@ async function getTopicsVerses(
         cvm.chapter = v_yousafzai.chapter AND 
         cvm.verse = v_yousafzai.verse
       LEFT JOIN word_frequencies wf ON 
-        cvm.pashto_word = wf.pashto_word AND
-        (wf.translation_key = cvm.translation_key OR wf.translation_key IS NULL)
+        cvm.pashto_word = wf.pashto_word
       WHERE cvm.category_key = ?
       ORDER BY cvm.book, cvm.chapter, cvm.verse
       LIMIT ?`
