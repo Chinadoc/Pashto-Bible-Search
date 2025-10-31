@@ -218,7 +218,7 @@ function matchWordToCategories(
     let exactMatches = 0;
     const matchedKeywords: string[] = [];
 
-    // Check for exact matches
+    // Check for exact matches (highest priority)
     for (const word of words) {
       for (const keyword of keywords) {
         if (word === keyword.toLowerCase()) {
@@ -230,17 +230,16 @@ function matchWordToCategories(
       }
     }
 
-    // Check for partial matches (word boundaries)
-    if (exactMatches === 0) {
-      for (const word of words) {
-        for (const keyword of keywords) {
-          const keywordLower = keyword.toLowerCase();
-          const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
-          if (regex.test(word) && !matchedKeywords.includes(keyword)) {
-            totalScore += 0.7;
-            matchedKeywords.push(keyword);
-            break;
-          }
+    // Check for partial matches (word boundaries) - even if we have exact matches
+    // This handles cases like "hand, arm" where both words match
+    for (const word of words) {
+      for (const keyword of keywords) {
+        const keywordLower = keyword.toLowerCase();
+        const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
+        if (regex.test(word) && !matchedKeywords.includes(keyword)) {
+          totalScore += exactMatches > 0 ? 0.8 : 0.7; // Higher score if we already have exact matches
+          matchedKeywords.push(keyword);
+          break;
         }
       }
     }
@@ -252,7 +251,11 @@ function matchWordToCategories(
         : Math.min(totalScore / Math.max(words.length, 1), 0.85);
       
       // Require at least 90% match for inclusion (allow multiple categories)
-      if (normalizedScore >= 0.9) {
+      // Lower threshold (85%) for specific categories that need more words
+      const lowerThresholdCategories = ['body_parts', 'body_parts_head', 'body_parts_torso', 'body_parts_legs', 'body_parts_internal'];
+      const threshold = lowerThresholdCategories.includes(categoryKey) ? 0.85 : 0.9;
+      
+      if (normalizedScore >= threshold) {
         categoryMatches.push({
           category_key: categoryKey,
           relevance_score: normalizedScore,
