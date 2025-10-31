@@ -789,7 +789,7 @@ export default function ClientHome() {
     setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
-    setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
+    setSearchLanguage(savedLanguage === 'english' ? 'english' : savedLanguage === 'topics' ? 'topics' : 'pashto');
     const savedTab = loadPersisted<MainTab>('activeMainTab', 'search');
     setActiveMainTab(MAIN_TABS.includes(savedTab) ? savedTab : 'search');
   }, []);
