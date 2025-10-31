@@ -15,12 +15,18 @@ function YouTubePlayer({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<any>(null);
   const [playerReady, setPlayerReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load YouTube IFrame API script
     if (!(window as any).YT) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
+      tag.async = true;
+      tag.onerror = () => {
+        console.error('Failed to load YouTube IFrame API');
+        setError('Failed to load YouTube player');
+      };
       const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
     }
@@ -30,39 +36,64 @@ function YouTubePlayer({
     const initializePlayer = () => {
       if (!iframeRef.current || playerRef.current) return;
       
-      try {
-        playerRef.current = new (window as any).YT.Player(iframeRef.current.id, {
-          videoId: videoId,
-          events: {
-            onReady: () => {
-              setPlayerReady(true);
-              
-              // Start polling for time updates
-              intervalId = setInterval(() => {
-                if (playerRef.current && playerRef.current.getCurrentTime) {
-                  try {
-                    const time = playerRef.current.getCurrentTime();
-                    onTimeUpdate?.(time);
-                  } catch (e) {
-                    // Player may not be ready
+      // Wait a bit for iframe to be ready
+      setTimeout(() => {
+        try {
+          if (!iframeRef.current) return;
+          
+          playerRef.current = new (window as any).YT.Player(iframeRef.current.id, {
+            videoId: videoId,
+            playerVars: {
+              enablejsapi: 1,
+              origin: typeof window !== 'undefined' ? window.location.origin : '',
+            },
+            events: {
+              onReady: () => {
+                setPlayerReady(true);
+                setError(null);
+                
+                // Start polling for time updates
+                intervalId = setInterval(() => {
+                  if (playerRef.current && playerRef.current.getCurrentTime) {
+                    try {
+                      const time = playerRef.current.getCurrentTime();
+                      onTimeUpdate?.(time);
+                    } catch (e) {
+                      // Player may not be ready
+                    }
                   }
-                }
-              }, 250); // Update every 250ms for smooth scrolling
+                }, 250); // Update every 250ms for smooth scrolling
+              },
+              onError: (event: any) => {
+                console.error('YouTube player error:', event);
+                setError('Failed to load video');
+              },
+              onStateChange: (event: any) => {
+                // Track playback state changes if needed
+              },
             },
-            onStateChange: (event: any) => {
-              // Track playback state changes if needed
-            },
-          },
-        });
-      } catch (error) {
-        console.error('Failed to initialize YouTube player:', error);
-      }
+          });
+        } catch (error) {
+          console.error('Failed to initialize YouTube player:', error);
+          setError('Failed to initialize YouTube player');
+        }
+      }, 100);
     };
 
+    // Wait for YouTube API to be ready
     if ((window as any).YT?.Player) {
       initializePlayer();
     } else {
+      // Set up callback for when API is ready
       (window as any).onYouTubeIframeAPIReady = initializePlayer;
+      
+      // Fallback: if API doesn't load after 5 seconds, just show the iframe
+      setTimeout(() => {
+        if (!playerRef.current && iframeRef.current) {
+          console.warn('YouTube API not loaded, using iframe fallback');
+          setPlayerReady(true);
+        }
+      }, 5000);
     }
 
     return () => {
@@ -79,17 +110,33 @@ function YouTubePlayer({
     };
   }, [videoId, onTimeUpdate]);
 
+  if (!videoId) {
+    return (
+      <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+        <p className="text-gray-500 dark:text-gray-400">No video ID provided</p>
+      </div>
+    );
+  }
+
   return (
-    <iframe
-      ref={iframeRef}
-      id={`youtube-player-${videoId}`}
-      src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
-      title="YouTube video player"
-      frameBorder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowFullScreen
-      className="w-full h-full rounded"
-    />
+    <div className="w-full h-full relative">
+      {error && (
+        <div className="absolute top-2 left-2 right-2 bg-red-500 text-white text-sm p-2 rounded z-10">
+          {error}
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        id={`youtube-player-${videoId}`}
+        src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full rounded"
+        onError={() => setError('Failed to load YouTube video')}
+      />
+    </div>
   );
 }
 
@@ -293,6 +340,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [activeTabs, setActiveTabs] = useState<Record<string, 'segments' | 'frequency'>>({});
   const [videoCurrentTime, setVideoCurrentTime] = useState<Record<string, number>>({});
   const [activeSegmentIds, setActiveSegmentIds] = useState<Record<string, number | null>>({});
+  const [audioErrors, setAudioErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const segmentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -1152,7 +1200,14 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     const duration = clip.duration || (endTime - startTime);
                     const audioKey = `${video.video_id}-${segmentNum}`;
                     const isPlaying = playingAudio === audioKey;
+                    // Use audio_url from API, or fallback to server_url or r2_key-based URL
                     const audioUrl = clip.audio_url || clip.server_url;
+                    
+                    // Debug: log audio URL for first segment
+                    if (audioUrl && index === 0) {
+                      console.log(`Audio URL for video ${video.video_id}, segment ${segmentNum}:`, audioUrl);
+                      console.log('Clip data:', { audio_url: clip.audio_url, server_url: clip.server_url, r2_key: clip.r2_key });
+                    }
 
                     return (
                       <div
@@ -1170,65 +1225,92 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                       >
                         <div className="flex items-start gap-3">
                           {/* Audio Player */}
-                          {audioUrl && (
-                            <button
-                              onClick={async () => {
-                                const audio = audioRefs.current.get(audioKey);
-                                if (audio) {
-                                  if (isPlaying) {
-                                    audio.pause();
-                                    setPlayingAudio(null);
-                                  } else {
-                                    // Pause other audios
-                                    audioRefs.current.forEach((a, k) => {
-                                      if (k !== audioKey) a.pause();
-                                    });
-                                    try {
-                                      // Ensure audio is loaded
-                                      if (audio.readyState === 0) {
-                                        audio.load();
-                                      }
-                                      await audio.play();
-                                      setPlayingAudio(audioKey);
-                                    } catch (error) {
-                                      console.error('Audio playback error:', error);
-                                      // Try loading the audio URL directly
-                                      if (audioUrl) {
-                                        const newAudio = new Audio(audioUrl);
-                                        newAudio.play().catch(err => {
-                                          console.error('Failed to play audio:', err);
-                                          alert(`Failed to play audio: ${err.message}`);
-                                        });
+                          {audioUrl ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <button
+                                onClick={async () => {
+                                  const audio = audioRefs.current.get(audioKey);
+                                  if (audio) {
+                                    if (isPlaying) {
+                                      audio.pause();
+                                      setPlayingAudio(null);
+                                    } else {
+                                      // Pause other audios
+                                      audioRefs.current.forEach((a, k) => {
+                                        if (k !== audioKey) a.pause();
+                                      });
+                                      setAudioErrors(prev => ({ ...prev, [audioKey]: '' }));
+                                      try {
+                                        // Ensure audio is loaded
+                                        if (audio.readyState === 0) {
+                                          audio.load();
+                                          // Wait for audio to load
+                                          await new Promise((resolve, reject) => {
+                                            const timeout = setTimeout(() => reject(new Error('Audio load timeout')), 10000);
+                                            audio.oncanplay = () => {
+                                              clearTimeout(timeout);
+                                              resolve(undefined);
+                                            };
+                                            audio.onerror = () => {
+                                              clearTimeout(timeout);
+                                              reject(new Error('Audio failed to load'));
+                                            };
+                                          });
+                                        }
+                                        await audio.play();
+                                        setPlayingAudio(audioKey);
+                                      } catch (error) {
+                                        console.error('Audio playback error:', error);
+                                        const errorMsg = error instanceof Error ? error.message : 'Failed to play audio';
+                                        setAudioErrors(prev => ({ ...prev, [audioKey]: errorMsg }));
+                                        setPlayingAudio(null);
                                       }
                                     }
+                                  } else if (audioUrl) {
+                                    // Fallback: create new audio element
+                                    const newAudio = new Audio(audioUrl);
+                                    newAudio.onended = () => setPlayingAudio(null);
+                                    newAudio.onpause = () => setPlayingAudio(null);
+                                    newAudio.onerror = (e) => {
+                                      console.error('Audio element error:', e);
+                                      setAudioErrors(prev => ({ ...prev, [audioKey]: 'Failed to load audio source' }));
+                                      setPlayingAudio(null);
+                                    };
+                                    setAudioErrors(prev => ({ ...prev, [audioKey]: '' }));
+                                    try {
+                                      await newAudio.play();
+                                      setPlayingAudio(audioKey);
+                                      audioRefs.current.set(audioKey, newAudio);
+                                    } catch (error) {
+                                      console.error('Audio playback error:', error);
+                                      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                                      setAudioErrors(prev => ({ ...prev, [audioKey]: errorMsg }));
+                                    }
                                   }
-                                } else if (audioUrl) {
-                                  // Fallback: create new audio element
-                                  const newAudio = new Audio(audioUrl);
-                                  newAudio.onended = () => setPlayingAudio(null);
-                                  newAudio.onpause = () => setPlayingAudio(null);
-                                  try {
-                                    await newAudio.play();
-                                    setPlayingAudio(audioKey);
-                                    audioRefs.current.set(audioKey, newAudio);
-                                  } catch (error) {
-                                    console.error('Audio playback error:', error);
-                                    alert(`Failed to play audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                                  }
-                                }
-                              }}
-                              className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors"
-                            >
-                              {isPlaying ? (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                </svg>
+                                }}
+                                className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors disabled:opacity-50"
+                                disabled={!!audioErrors[audioKey]}
+                              >
+                                {isPlaying ? (
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                  </svg>
+                                )}
+                              </button>
+                              {audioErrors[audioKey] && (
+                                <p className="text-xs text-red-500 max-w-[80px] text-center">{audioErrors[audioKey]}</p>
                               )}
-                            </button>
+                            </div>
+                          ) : (
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
                           )}
                           
                           {/* Clip Info */}
@@ -1264,11 +1346,37 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                                 el.onpause = () => {
                                   if (!el.ended) setPlayingAudio(null);
                                 };
+                                el.onerror = (e) => {
+                                  console.error(`Audio error for ${audioKey}:`, el.error);
+                                  const errorCode = el.error?.code;
+                                  let errorMsg = 'Failed to load audio';
+                                  if (errorCode === 4) {
+                                    errorMsg = 'Audio source not found';
+                                  } else if (errorCode === 3) {
+                                    errorMsg = 'Audio decoding failed';
+                                  } else if (errorCode === 2) {
+                                    errorMsg = 'Network error';
+                                  }
+                                  setAudioErrors(prev => ({ ...prev, [audioKey]: errorMsg }));
+                                  setPlayingAudio(null);
+                                };
+                                el.onloadstart = () => {
+                                  setAudioErrors(prev => {
+                                    const newErrors = { ...prev };
+                                    delete newErrors[audioKey];
+                                    return newErrors;
+                                  });
+                                };
                               }
                             }}
                             src={audioUrl}
                             preload="none"
-                          />
+                            crossOrigin="anonymous"
+                          >
+                            <source src={audioUrl} type="audio/mpeg" />
+                            <source src={audioUrl} type="audio/mp3" />
+                            Your browser does not support the audio element.
+                          </audio>
                         )}
                       </div>
                     );
