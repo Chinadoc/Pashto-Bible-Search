@@ -37,11 +37,6 @@ try {
 
 // Import timestamp alignment functions
 const { transcribeWithWhisper, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
-
-// Try to use video-processor-service dependencies, fallback to local
-let FormData, axios;
-const path = require('path');
-const servicePath = path.join(__dirname, '../video-processor-service');
 const formDataPath = path.join(servicePath, 'node_modules/form-data');
 const axiosPath = path.join(servicePath, 'node_modules/axios');
 
