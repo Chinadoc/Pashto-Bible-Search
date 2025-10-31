@@ -789,31 +789,35 @@ async function listVideos(env: Env): Promise<Response> {
  */
 async function getVideoAudio(env: Env, videoId: string, segment: number, request: Request): Promise<Response> {
   try {
-    const r2Key = `videos/${videoId}/segment_${segment}.mp3`;
-    console.log(`Requesting audio for video ${videoId}, segment ${segment}, R2 key: ${r2Key}`);
+    // Try multiple possible paths - the bucket name might be included in the path
+    const possiblePaths = [
+      `videos/${videoId}/segment_${segment}.mp3`,  // Standard path
+      `pashto-bible-audio/videos/${videoId}/segment_${segment}.mp3`,  // With bucket prefix
+      `videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,  // Lowercase video ID
+      `pashto-bible-audio/videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,  // Lowercase with prefix
+    ];
     
-    const object = await env.AUDIO_BUCKET.get(r2Key);
+    console.log(`Requesting audio for video ${videoId}, segment ${segment}`);
     
-    if (!object) {
-      console.error(`Audio file not found in R2: ${r2Key}`);
-      // Try alternative paths
-      const altPaths = [
-        `pashto-bible-audio/${r2Key}`,
-        `videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,
-      ];
-      
-      for (const altPath of altPaths) {
-        const altObject = await env.AUDIO_BUCKET.get(altPath);
-        if (altObject) {
-          console.log(`Found audio at alternative path: ${altPath}`);
-          return streamAudio(env, altPath, request);
+    for (const r2Key of possiblePaths) {
+      try {
+        console.log(`Trying R2 path: ${r2Key}`);
+        const object = await env.AUDIO_BUCKET.get(r2Key);
+        
+        if (object) {
+          console.log(`✅ Found audio at: ${r2Key}`);
+          return streamAudio(env, r2Key, request);
         }
+      } catch (pathError) {
+        // Continue to next path
+        console.log(`Path ${r2Key} not found, trying next...`);
       }
-      
-      return errorResponse(`Audio file not found: ${r2Key}`, 404);
     }
     
-    return streamAudio(env, r2Key, request);
+    // None of the paths worked
+    console.error(`❌ Audio file not found for video ${videoId}, segment ${segment}`);
+    console.error(`Tried paths: ${possiblePaths.join(', ')}`);
+    return errorResponse(`Audio file not found for segment ${segment}. Tried paths: ${possiblePaths.join(', ')}`, 404);
   } catch (error: any) {
     console.error(`Error getting video audio: ${error.message}`, error);
     return errorResponse(`Failed to get video audio: ${error.message}`, 500);

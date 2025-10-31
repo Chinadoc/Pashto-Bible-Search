@@ -41,16 +41,26 @@ function YouTubePlayer({
         try {
           if (!iframeRef.current) return;
           
+          // Check if YT.Player is available
+          if (!(window as any).YT || !(window as any).YT.Player) {
+            console.warn('YouTube API not ready, using iframe fallback');
+            setPlayerReady(true);
+            return;
+          }
+          
           playerRef.current = new (window as any).YT.Player(iframeRef.current.id, {
             videoId: videoId,
             playerVars: {
               enablejsapi: 1,
               origin: typeof window !== 'undefined' ? window.location.origin : '',
+              controls: 1,
+              rel: 0,
             },
             events: {
               onReady: () => {
                 setPlayerReady(true);
                 setError(null);
+                console.log('YouTube player ready');
                 
                 // Start polling for time updates
                 intervalId = setInterval(() => {
@@ -70,12 +80,17 @@ function YouTubePlayer({
               },
               onStateChange: (event: any) => {
                 // Track playback state changes if needed
+                if (event.data === (window as any).YT.PlayerState.PLAYING) {
+                  console.log('Video is playing');
+                }
               },
             },
           });
         } catch (error) {
           console.error('Failed to initialize YouTube player:', error);
           setError('Failed to initialize YouTube player');
+          // Fallback: just mark as ready so iframe shows
+          setPlayerReady(true);
         }
       }, 100);
     };
@@ -87,13 +102,13 @@ function YouTubePlayer({
       // Set up callback for when API is ready
       (window as any).onYouTubeIframeAPIReady = initializePlayer;
       
-      // Fallback: if API doesn't load after 5 seconds, just show the iframe
+      // Fallback: if API doesn't load after 3 seconds, just show the iframe
       setTimeout(() => {
         if (!playerRef.current && iframeRef.current) {
           console.warn('YouTube API not loaded, using iframe fallback');
           setPlayerReady(true);
         }
-      }, 5000);
+      }, 3000);
     }
 
     return () => {
