@@ -11,6 +11,32 @@ const { promisify } = require('util');
 const { createReadStream } = require('fs');
 const { writeFile, unlink, readFile, stat, mkdir } = require('fs/promises');
 const { join } = require('path');
+const path = require('path');
+
+// Try to use video-processor-service dependencies, fallback to local
+let FormData, axios;
+const servicePath = path.join(__dirname, '../video-processor-service');
+const formDataPath = path.join(servicePath, 'node_modules/form-data');
+const axiosPath = path.join(servicePath, 'node_modules/axios');
+
+try {
+  // First try local (when running from video-processor-service directory)
+  FormData = require('form-data');
+  axios = require('axios');
+} catch (e) {
+  // Try from video-processor-service node_modules
+  try {
+    FormData = require(formDataPath);
+    axios = require(axiosPath);
+  } catch (e2) {
+    console.error('Could not find form-data or axios.');
+    console.error('Please run: cd video-processor-service && npm install');
+    process.exit(1);
+  }
+}
+
+// Import timestamp alignment functions
+const { transcribeWithWhisper, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
 
 // Try to use video-processor-service dependencies, fallback to local
 let FormData, axios;
@@ -289,24 +315,64 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
     const fileStats = await stat(audioFile);
     console.log(`✅ Audio downloaded: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
     
-    console.log(`\n🎤 Step 2: Transcribing with ElevenLabs...`);
-    const transcript = await transcribeWithElevenLabs(audioFile, elevenlabsApiKey);
-    console.log(`✅ Transcription completed: ${transcript.length} characters`);
-    console.log(`   First 200 chars: ${transcript.substring(0, 200)}...`);
+    // Step 2: Two-pass transcription
+    console.log(`\n🎤 Step 2: Two-pass transcription for accurate timestamps...`);
+    let whisperData = null;
+    let elevenLabsTranscript = null;
+    let segments = [];
     
-    console.log(`\n⏱️ Step 3: Getting video duration...`);
-    const videoDuration = await getVideoDuration(audioFile);
-    if (!videoDuration || videoDuration < 1) {
-      throw new Error(`Invalid video duration: ${videoDuration}s`);
+    try {
+      // Pass 1: Whisper for timestamps
+      console.log(`\n   📍 Pass 1: Whisper transcription (for timestamps)...`);
+      try {
+        const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
+        whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
+        
+        const videoDuration = whisperData.segments.length > 0 
+          ? Math.max(...whisperData.segments.map(s => s.end || 0))
+          : await getVideoDuration(audioFile);
+        
+        console.log(`   ✅ Whisper transcription completed:`);
+        console.log(`      Text length: ${whisperData.text.length} chars`);
+        console.log(`      Words with timestamps: ${whisperData.words.length}`);
+        console.log(`      Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
+        
+        // Pass 2: ElevenLabs for quality
+        console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
+        elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsApiKey);
+        console.log(`   ✅ ElevenLabs transcription completed:`);
+        console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
+        console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+        
+        // Pass 3: Align
+        console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
+        segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        
+        console.log(`✅ Two-pass transcription completed:`);
+        console.log(`   Segments: ${segments.length}`);
+        if (segments.length > 0) {
+          console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+          console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+        }
+        
+      } catch (whisperError) {
+        console.warn(`⚠️ Whisper transcription failed: ${whisperError.message}`);
+        console.log(`   Falling back to single-pass (ElevenLabs + proportional timing)...`);
+        
+        // Fallback: use ElevenLabs only with proportional timing
+        elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsApiKey);
+        const videoDuration = await getVideoDuration(audioFile);
+        segments = await segmentTranscriptBySentences(elevenLabsTranscript, videoDuration);
+        
+        console.log(`✅ Fallback transcription completed:`);
+        console.log(`   Using proportional timing (less accurate)`);
+      }
+    } catch (error) {
+      console.error(`❌ Transcription failed:`, error.message);
+      throw error;
     }
-    console.log(`✅ Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
     
-    console.log(`\n✂️ Step 4: Segmenting transcript...`);
-    const segments = await segmentTranscriptBySentences(transcript, videoDuration);
-    const lastSegmentEnd = segments[segments.length - 1]?.endTime || 0;
-    console.log(`✅ Created ${segments.length} segments covering ${formatDuration(lastSegmentEnd)} / ${formatDuration(videoDuration)}`);
-    console.log(`   First segment: ${segments[0]?.startTime}s - ${segments[0]?.endTime}s`);
-    console.log(`   Last segment: ${segments[segments.length - 1]?.startTime}s - ${segments[segments.length - 1]?.endTime}s`);
+    const transcript = elevenLabsTranscript || (whisperData ? whisperData.text : '');
     
     console.log(`\n🎵 Step 5: Extracting audio segments...`);
     segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
