@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const CLOUDFLARE_WORKER_URL =
+  process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL ||
+  'https://pashtobiblesearch.workers.dev';
+
 /**
  * GET /api/topics/verses?category=CATEGORY_KEY&limit=50
  * Returns verses for a specific category
@@ -17,61 +21,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query Cloudflare D1 for verses in this category
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
+    // Try Cloudflare Worker first
+    try {
+      const params = new URLSearchParams({
+        category: categoryKey,
+        limit: String(limit),
+      });
+      const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/topics/verses?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        return NextResponse.json(data);
+      }
+    } catch (workerError) {
+      console.warn('Cloudflare Worker not available, using fallback:', workerError);
+    }
 
-    const { stdout } = await execAsync(
-      `npx wrangler d1 execute pashto-bible-db --remote --command="
-        SELECT DISTINCT
-          cvm.verse_ref,
-          cvm.book,
-          cvm.chapter,
-          cvm.verse,
-          cvm.pashto_word,
-          cvm.translation_key,
-          cvm.testament,
-          CASE 
-            WHEN cvm.translation_key = 'afghan2023' THEN af.text
-            WHEN cvm.translation_key = 'yousafzai2019' THEN yz.text
-            ELSE NULL
-          END as text
-        FROM category_verse_mappings cvm
-        LEFT JOIN verses_afghan2023 af ON 
-          cvm.translation_key = 'afghan2023' 
-          AND cvm.book = af.book 
-          AND cvm.chapter = af.chapter 
-          AND cvm.verse = af.verse
-        LEFT JOIN verses_yousafzai yz ON 
-          cvm.translation_key = 'yousafzai2019' 
-          AND cvm.book = yz.book 
-          AND cvm.chapter = yz.chapter 
-          AND cvm.verse = yz.verse
-        WHERE cvm.category_key = '${categoryKey.replace(/'/g, "''")}'
-        ORDER BY cvm.book, cvm.chapter, cvm.verse
-        LIMIT ${limit};
-      " --json`,
-      { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }
-    );
-
-    const result = JSON.parse(stdout);
-    const data = Array.isArray(result) ? result[0] : result;
-    const verses = data.results || [];
-
+    // Fallback: Return empty array for now (worker endpoints need to be added)
+    // TODO: Add topics endpoints to Cloudflare Worker
     return NextResponse.json({
       category: categoryKey,
-      verses: verses.map((v: any) => ({
-        verse_ref: v.verse_ref,
-        book: v.book,
-        chapter: v.chapter,
-        verse: v.verse,
-        pashto_word: v.pashto_word,
-        translation_key: v.translation_key,
-        testament: v.testament,
-        text: v.text,
-      })),
-      count: verses.length,
+      verses: [],
+      count: 0,
+      message: 'Topics endpoints need to be added to Cloudflare Worker',
     });
   } catch (error: any) {
     console.error('Topics verses API error:', error);
