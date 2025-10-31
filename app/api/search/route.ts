@@ -592,7 +592,7 @@ export async function POST(request: NextRequest) {
               source: 'video_transcript',
               translation: null,
               dialect: null,
-              testament: null,
+              testament: undefined,
             });
           }
         });
@@ -1586,7 +1586,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
           const videoTransformed = videoTranscriptResults.map((video: any, index: number) => ({
             ref: video.ref,
             text: video.text,
-            testament: null,
+            testament: undefined,
             translation: null,
             dialect: null,
             tags: [['video_transcript']] as any[][],
@@ -1662,7 +1662,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && searchLanguage === 'pashto' && !isLa
         const transformed = videoTranscriptResults.map((video: any, index: number) => ({
           ref: video.ref,
           text: video.text,
-          testament: null,
+          testament: undefined,
           translation: null,
           dialect: null,
           tags: [['video_transcript']] as any[][],
