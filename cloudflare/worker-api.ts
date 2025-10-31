@@ -258,6 +258,198 @@ async function streamAudio(env: Env, r2Key: string, request: Request): Promise<R
 }
 
 // ========================================
+// Lexicon API Routes
+// ========================================
+
+/**
+ * Get all inflections for a base word
+ * GET /api/inflections?base_word={word}
+ */
+async function getInflections(env: Env, baseWord: string): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM inflections WHERE base_word = ? ORDER BY frequency DESC`
+    )
+      .bind(baseWord)
+      .all();
+
+    const inflections = result.results?.map((inf: any) => ({
+      id: inf.id,
+      base_word: inf.base_word,
+      inflected_form: inf.inflected_form,
+      grammatical_info: parseJsonSafe(inf.grammatical_info, {}),
+      frequency: inf.frequency,
+      examples: parseJsonSafe(inf.examples, []),
+      created_at: inf.created_at ? new Date(inf.created_at * 1000).toISOString() : null,
+      updated_at: inf.updated_at ? new Date(inf.updated_at * 1000).toISOString() : null,
+    })) || [];
+
+    return jsonResponse({ inflections, count: inflections.length });
+  } catch (error: any) {
+    return errorResponse(`Failed to get inflections: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Find base word from inflected form (reverse lookup)
+ * GET /api/inflections/reverse?form={form}
+ */
+async function getInflectionBase(env: Env, form: string): Promise<Response> {
+  try {
+    // First try form_to_root table
+    const rootResult = await env.DB.prepare(
+      `SELECT root_word FROM form_to_root WHERE word_form = ? ORDER BY frequency DESC LIMIT 1`
+    )
+      .bind(form)
+      .first();
+
+    if (rootResult) {
+      return jsonResponse({ base_word: rootResult.root_word, form, source: 'form_to_root' });
+    }
+
+    // Fallback to inflections table
+    const inflectionResult = await env.DB.prepare(
+      `SELECT base_word FROM inflections WHERE inflected_form = ? ORDER BY frequency DESC LIMIT 1`
+    )
+      .bind(form)
+      .first();
+
+    if (inflectionResult) {
+      return jsonResponse({ base_word: inflectionResult.base_word, form, source: 'inflections' });
+    }
+
+    return errorResponse('Base word not found', 404);
+  } catch (error: any) {
+    return errorResponse(`Failed to get base word: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get verb conjugation data
+ * GET /api/verbs/{root}
+ */
+async function getVerbData(env: Env, root: string): Promise<Response> {
+  try {
+    // Try irregular_verbs first
+    let result = await env.DB.prepare(
+      `SELECT * FROM irregular_verbs WHERE verb_root = ? LIMIT 1`
+    )
+      .bind(root)
+      .first();
+
+    if (result) {
+      return jsonResponse({
+        verb: {
+          ...result,
+          stems: parseJsonSafe(result.stems, null),
+          roots: parseJsonSafe(result.roots, null),
+          romanization: parseJsonSafe(result.romanization, null),
+          examples: parseJsonSafe(result.examples, []),
+          created_at: result.created_at ? new Date(result.created_at * 1000).toISOString() : null,
+          updated_at: result.updated_at ? new Date(result.updated_at * 1000).toISOString() : null,
+        },
+        type: 'irregular',
+      });
+    }
+
+    // Try regular verbs_lexicon
+    result = await env.DB.prepare(
+      `SELECT * FROM verbs_lexicon WHERE verb_root = ? LIMIT 1`
+    )
+      .bind(root)
+      .first();
+
+    if (result) {
+      return jsonResponse({
+        verb: {
+          ...result,
+          stems: parseJsonSafe(result.stems, null),
+          roots: parseJsonSafe(result.roots, null),
+          romanization: parseJsonSafe(result.romanization, null),
+          examples: parseJsonSafe(result.examples, []),
+          created_at: result.created_at ? new Date(result.created_at * 1000).toISOString() : null,
+          updated_at: result.updated_at ? new Date(result.updated_at * 1000).toISOString() : null,
+        },
+        type: 'regular',
+      });
+    }
+
+    return errorResponse('Verb not found', 404);
+  } catch (error: any) {
+    return errorResponse(`Failed to get verb data: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get noun lexicon data
+ * GET /api/nouns/{word}
+ */
+async function getNounData(env: Env, word: string): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM nouns_lexicon WHERE pashto_word = ? LIMIT 1`
+    )
+      .bind(word)
+      .first();
+
+    if (!result) {
+      return errorResponse('Noun not found', 404);
+    }
+
+    return jsonResponse({
+      noun: {
+        ...result,
+        plural_forms: parseJsonSafe(result.plural_forms, null),
+        examples: parseJsonSafe(result.examples, []),
+        created_at: result.created_at ? new Date(result.created_at * 1000).toISOString() : null,
+        updated_at: result.updated_at ? new Date(result.updated_at * 1000).toISOString() : null,
+      },
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get noun data: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get related forms for a query
+ * GET /api/related-forms?query={query}
+ */
+async function getRelatedForms(env: Env, query: string): Promise<Response> {
+  try {
+    // First, try to find base word from query
+    const baseWordResult = await env.DB.prepare(
+      `SELECT root_word FROM form_to_root WHERE word_form = ? ORDER BY frequency DESC LIMIT 1`
+    )
+      .bind(query)
+      .first();
+
+    const baseWord = baseWordResult ? baseWordResult.root_word : query;
+
+    // Get all inflections for base word
+    const inflectionsResult = await env.DB.prepare(
+      `SELECT * FROM inflections WHERE base_word = ? ORDER BY frequency DESC`
+    )
+      .bind(baseWord)
+      .all();
+
+    const inflections = inflectionsResult.results?.map((inf: any) => ({
+      form: inf.inflected_form,
+      grammatical_info: parseJsonSafe(inf.grammatical_info, {}),
+      frequency: inf.frequency,
+    })) || [];
+
+    return jsonResponse({
+      query,
+      base_word: baseWord,
+      inflections,
+      count: inflections.length,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get related forms: ${error.message}`, 500);
+  }
+}
+
+// ========================================
 // Main Request Handler
 // ========================================
 
@@ -330,6 +522,47 @@ export default {
     if (path.startsWith('/api/audio/stream/') && request.method === 'GET') {
       const r2Key = path.replace('/api/audio/stream/', '');
       return streamAudio(env, decodeURIComponent(r2Key), request);
+    }
+
+    // Lexicon API routes
+    if (path === '/api/inflections' && request.method === 'GET') {
+      const baseWord = url.searchParams.get('base_word');
+      if (!baseWord) {
+        return errorResponse('Missing base_word parameter', 400);
+      }
+      return getInflections(env, baseWord);
+    }
+
+    if (path === '/api/inflections/reverse' && request.method === 'GET') {
+      const form = url.searchParams.get('form');
+      if (!form) {
+        return errorResponse('Missing form parameter', 400);
+      }
+      return getInflectionBase(env, form);
+    }
+
+    if (path.startsWith('/api/verbs/') && request.method === 'GET') {
+      const root = path.replace('/api/verbs/', '');
+      if (!root) {
+        return errorResponse('Missing verb root', 400);
+      }
+      return getVerbData(env, decodeURIComponent(root));
+    }
+
+    if (path.startsWith('/api/nouns/') && request.method === 'GET') {
+      const word = path.replace('/api/nouns/', '');
+      if (!word) {
+        return errorResponse('Missing noun word', 400);
+      }
+      return getNounData(env, decodeURIComponent(word));
+    }
+
+    if (path === '/api/related-forms' && request.method === 'GET') {
+      const query = url.searchParams.get('query');
+      if (!query) {
+        return errorResponse('Missing query parameter', 400);
+      }
+      return getRelatedForms(env, query);
     }
 
     return errorResponse('Not found', 404);
