@@ -1,42 +1,58 @@
 -- =========================================
--- REORGANIZE TOPICS TO 100 UNIQUE WORDS PER CATEGORY
--- This script ensures each category has up to 100 unique words
--- with 1-2 verses per word (maximum diversity)
+-- REORGANIZE TO 100 UNIQUE WORDS PER CATEGORY (FIXED)
+-- Ensures each category has exactly 100 unique words (or fewer if less available)
+-- with 1-2 verses max per word
 -- =========================================
 
--- Create temporary table with ranked entries
-CREATE TEMP TABLE IF NOT EXISTS ranked_entries AS
-SELECT 
-  cvm.*,
-  ROW_NUMBER() OVER (
-    PARTITION BY cvm.category_key, cvm.pashto_word 
-    ORDER BY cvm.verse_ref
-  ) as word_rank
-FROM category_verse_mappings cvm;
-
--- Create temporary table with word rankings per category
-CREATE TEMP TABLE IF NOT EXISTS category_word_ranks AS
-SELECT 
-  category_key,
-  pashto_word,
-  MIN(word_rank) as min_rank,
-  COUNT(*) as verse_count,
-  DENSE_RANK() OVER (
-    PARTITION BY category_key 
-    ORDER BY MIN(word_rank)
-  ) as word_rank_in_category
-FROM ranked_entries
-WHERE word_rank <= 2  -- Max 2 verses per word
-GROUP BY category_key, pashto_word;
-
--- Clear existing mappings
+-- Delete and rebuild with proper ranking
 DELETE FROM category_verse_mappings;
 
--- Reinsert top 100 unique words per category (1-2 verses each)
+-- Reinsert with ranking: select top 100 unique words per category, max 2 verses per word
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 )
-SELECT 
+WITH source_data AS (
+  SELECT 
+    wcm.category_key,
+    wvm.pashto_word,
+    wvm.verse_id,
+    wvm.verse_ref,
+    wvm.translation_key,
+    wvm.testament,
+    wvm.book,
+    wvm.chapter,
+    wvm.verse
+  FROM word_verse_mapping wvm
+  INNER JOIN word_category_mappings wcm ON wvm.pashto_word = wcm.pashto_word
+),
+ranked_entries AS (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER (
+      PARTITION BY category_key, pashto_word 
+      ORDER BY verse_ref
+    ) as word_rank
+  FROM source_data
+),
+category_word_ranks AS (
+  SELECT 
+    category_key,
+    pashto_word,
+    MIN(word_rank) as min_rank,
+    ROW_NUMBER() OVER (
+      PARTITION BY category_key 
+      ORDER BY MIN(word_rank)
+    ) as word_rank_in_category
+  FROM ranked_entries
+  WHERE word_rank <= 2
+  GROUP BY category_key, pashto_word
+),
+top_100_words AS (
+  SELECT category_key, pashto_word, min_rank
+  FROM category_word_ranks
+  WHERE word_rank_in_category <= 100
+)
+SELECT DISTINCT
   re.category_key,
   re.pashto_word,
   re.verse_id,
@@ -47,17 +63,12 @@ SELECT
   re.chapter,
   re.verse
 FROM ranked_entries re
-INNER JOIN category_word_ranks cwr ON 
-  re.category_key = cwr.category_key AND 
-  re.pashto_word = cwr.pashto_word AND
-  re.word_rank = cwr.min_rank
-WHERE cwr.word_rank_in_category <= 100  -- Top 100 unique words per category
-  AND re.word_rank <= 2  -- Max 2 verses per word
-ORDER BY re.category_key, cwr.word_rank_in_category, re.word_rank;
-
--- Clean up temporary tables
-DROP TABLE IF EXISTS ranked_entries;
-DROP TABLE IF EXISTS category_word_ranks;
+INNER JOIN top_100_words t100 ON 
+  re.category_key = t100.category_key AND 
+  re.pashto_word = t100.pashto_word AND
+  re.word_rank = t100.min_rank
+WHERE re.word_rank <= 2
+ORDER BY re.category_key, re.word_rank;
 
 -- Show summary
 SELECT 
