@@ -257,6 +257,35 @@ async function streamAudio(env: Env, r2Key: string, request: Request): Promise<R
   }
 }
 
+/**
+ * Upload file to R2
+ * POST /api/r2/upload
+ */
+async function uploadToR2(env: Env, request: Request): Promise<Response> {
+  try {
+    const body = await request.json();
+    const { key, data } = body;
+
+    if (!key || !data) {
+      return errorResponse('Missing key or data', 400);
+    }
+
+    // Decode base64 data
+    const buffer = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+
+    // Upload to R2
+    await env.AUDIO_BUCKET.put(key, buffer, {
+      httpMetadata: {
+        contentType: 'audio/mpeg',
+      },
+    });
+
+    return jsonResponse({ success: true, key });
+  } catch (error: any) {
+    return errorResponse(`Failed to upload to R2: ${error.message}`, 500);
+  }
+}
+
 // ========================================
 // Lexicon API Routes
 // ========================================
