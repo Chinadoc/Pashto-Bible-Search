@@ -8,785 +8,1362 @@
 DELETE FROM category_verse_mappings;
 
 -- Insert curated entries
--- grammar_conjunctions (4 entries from 2 unique words)
+-- grammar_conjunctions (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar_conjunctions', 'نو', 1040, 'Genesis 36:24', 'yousafzai2019', 'OT', 'Genesis', 36, 24),
-('grammar_conjunctions', 'نو', 625, 'Genesis 24:47', 'yousafzai2019', 'OT', 'Genesis', 24, 47),
-('grammar_conjunctions', 'اګر', 1420, 'Genesis 48:14', 'yousafzai2019', 'OT', 'Genesis', 48, 14),
-('grammar_conjunctions', 'اګر', 1217, 'Genesis 42:8', 'yousafzai2019', 'OT', 'Genesis', 42, 8);
+('grammar_conjunctions', 'نو', 9588, 'Deuteronomy 23:20', 'yousafzai2019', 'OT', 'Deuteronomy', 23, 20),
+('grammar_conjunctions', 'نو', 16713, 'Job 14:14', 'yousafzai2019', 'OT', 'Job', 14, 14),
+('grammar_conjunctions', 'یا', 12259, 'Isaiah 42:11', 'afghan2023', 'OT', 'Isaiah', 42, 11),
+('grammar_conjunctions', 'یا', 33741, '2 Chronicles 1:16', 'yousafzai2019', 'OT', '2 Chronicles', 1, 16),
+('grammar_conjunctions', 'که', 19167, 'Proverbs 2:3', 'afghan2023', 'OT', 'Proverbs', 2, 3),
+('grammar_conjunctions', 'که', 30492, 'Romans 8:3', 'yousafzai2019', 'NT', 'Romans', 8, 3),
+('grammar_conjunctions', 'اګر', 4713, 'Mark 9:28', 'afghan2023', 'NT', 'Mark', 9, 28),
+('grammar_conjunctions', 'اګر', 16038, 'Nehemiah 6:1', 'yousafzai2019', 'OT', 'Nehemiah', 6, 1);
 
--- grammar (28 entries from 14 unique words)
+-- grammar (48 entries from 24 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar', 'نو', 1788, 'Exodus 12:33', 'yousafzai2019', 'OT', 'Exodus', 12, 33),
-('grammar', 'نو', 1040, 'Genesis 36:24', 'yousafzai2019', 'OT', 'Genesis', 36, 24),
-('grammar', 'له', 1103, 'Genesis 38:25', 'yousafzai2019', 'OT', 'Genesis', 38, 25),
-('grammar', 'له', 1065, 'Genesis 37:23', 'yousafzai2019', 'OT', 'Genesis', 37, 23),
-('grammar', 'زما', 586, 'Genesis 24:8', 'yousafzai2019', 'OT', 'Genesis', 24, 8),
-('grammar', 'زما', 323, 'Genesis 13:8', 'yousafzai2019', 'OT', 'Genesis', 13, 8),
-('grammar', 'ستا', 1086, 'Genesis 38:8', 'yousafzai2019', 'OT', 'Genesis', 38, 8),
-('grammar', 'ستا', 1074, 'Genesis 37:32', 'yousafzai2019', 'OT', 'Genesis', 37, 32),
-('grammar', 'کله', 2407, 'Exodus 33:8', 'yousafzai2019', 'OT', 'Exodus', 33, 8),
-('grammar', 'کله', 1404, 'Genesis 47:29', 'yousafzai2019', 'OT', 'Genesis', 47, 29),
-('grammar', 'مونږ', 1192, 'Genesis 41:38', 'yousafzai2019', 'OT', 'Genesis', 41, 38),
-('grammar', 'مونږ', 1544, 'Exodus 3:18', 'yousafzai2019', 'OT', 'Exodus', 3, 18),
-('grammar', 'زمونږ', 2431, 'Exodus 34:9', 'yousafzai2019', 'OT', 'Exodus', 34, 9),
-('grammar', 'زمونږ', 972, 'Genesis 34:10', 'yousafzai2019', 'OT', 'Genesis', 34, 10),
-('grammar', 'هلته', 1754, 'Exodus 11:7', 'yousafzai2019', 'OT', 'Exodus', 11, 7),
-('grammar', 'هلته', 1368, 'Genesis 46:27', 'yousafzai2019', 'OT', 'Genesis', 46, 27),
-('grammar', 'اوس', 1224, 'Genesis 42:15', 'yousafzai2019', 'OT', 'Genesis', 42, 15),
-('grammar', 'اوس', 1371, 'Genesis 46:30', 'yousafzai2019', 'OT', 'Genesis', 46, 30),
-('grammar', 'دومره', 683, 'Genesis 26:4', 'yousafzai2019', 'OT', 'Genesis', 26, 4),
-('grammar', 'دومره', 992, 'Genesis 34:30', 'yousafzai2019', 'OT', 'Genesis', 34, 30),
-('grammar', 'دلته', 1321, 'Genesis 45:8', 'yousafzai2019', 'OT', 'Genesis', 45, 8),
-('grammar', 'دلته', 1139, 'Genesis 40:8', 'yousafzai2019', 'OT', 'Genesis', 40, 8),
-('grammar', 'ته', 1738, 'Exodus 10:20', 'yousafzai2019', 'OT', 'Exodus', 10, 20),
-('grammar', 'ته', 2272, 'Exodus 29:10', 'yousafzai2019', 'OT', 'Exodus', 29, 10),
-('grammar', 'اګر', 1217, 'Genesis 42:8', 'yousafzai2019', 'OT', 'Genesis', 42, 8),
-('grammar', 'اګر', 1420, 'Genesis 48:14', 'yousafzai2019', 'OT', 'Genesis', 48, 14),
-('grammar', 'درسره', 927, 'Genesis 32:17', 'yousafzai2019', 'OT', 'Genesis', 32, 17),
-('grammar', 'درسره', 956, 'Genesis 33:14', 'yousafzai2019', 'OT', 'Genesis', 33, 14);
+('grammar', 'نو', 24236, 'Daniel 4:8', 'yousafzai2019', 'OT', 'Daniel', 4, 8),
+('grammar', 'نو', 9588, 'Deuteronomy 23:20', 'yousafzai2019', 'OT', 'Deuteronomy', 23, 20),
+('grammar', 'له', 13791, '2 Kings 11:18', 'yousafzai2019', 'OT', '2 Kings', 11, 18),
+('grammar', 'له', 28758, 'John 7:51', 'yousafzai2019', 'NT', 'John', 7, 51),
+('grammar', 'زما', 11799, '1 Samuel 22:13', 'yousafzai2019', 'OT', '1 Samuel', 22, 13),
+('grammar', 'زما', 12088, 'Isaiah 36:16', 'afghan2023', 'OT', 'Isaiah', 36, 16),
+('grammar', 'ستا', 15465, '2 Chronicles 25:16', 'yousafzai2019', 'OT', '2 Chronicles', 25, 16),
+('grammar', 'ستا', 5753, 'Genesis 42:38', 'yousafzai2019', 'OT', 'Genesis', 42, 38),
+('grammar', 'کله', 5516, 'Genesis 35:17', 'yousafzai2019', 'OT', 'Genesis', 35, 17),
+('grammar', 'کله', 12215, '2 Samuel 8:13', 'yousafzai2019', 'OT', '2 Samuel', 8, 13),
+('grammar', 'مونږ', 16142, 'Judges 16:2', 'afghan2023', 'OT', 'Judges', 16, 2),
+('grammar', 'مونږ', 16686, 'Lamentations 3:43', 'afghan2023', 'OT', 'Lamentations', 3, 43),
+('grammar', 'څخه', 2120, 'John 12:17', 'afghan2023', 'NT', 'John', 12, 17),
+('grammar', 'څخه', 33597, '1 Chronicles 12:31', 'yousafzai2019', 'OT', '1 Chronicles', 12, 31),
+('grammar', 'زمونږ', 2836, 'John 8:53', 'afghan2023', 'NT', 'John', 8, 53),
+('grammar', 'زمونږ', 8254, 'Numbers 12:11', 'yousafzai2019', 'OT', 'Numbers', 12, 11),
+('grammar', 'هلته', 9398, 'Deuteronomy 9:22', 'afghan2023', 'OT', 'Deuteronomy', 9, 22),
+('grammar', 'هلته', 4927, 'Genesis 18:2', 'yousafzai2019', 'OT', 'Genesis', 18, 2),
+('grammar', 'یا', 22536, '1 Corinthians 8:13', 'afghan2023', 'NT', '1 Corinthians', 8, 13),
+('grammar', 'یا', 644, 'Acts 21:24', 'afghan2023', 'NT', 'Acts', 21, 24),
+('grammar', 'اوس', 13909, 'Jeremiah 50:3', 'afghan2023', 'OT', 'Jeremiah', 50, 3),
+('grammar', 'اوس', 12576, 'Isaiah 59:2', 'afghan2023', 'OT', 'Isaiah', 59, 2),
+('grammar', 'څه', 1263, 'Colossians 3:17', 'afghan2023', 'NT', 'Colossians', 3, 17),
+('grammar', 'څه', 9111, 'Deuteronomy 31:21', 'afghan2023', 'OT', 'Deuteronomy', 31, 21),
+('grammar', 'که', 30492, 'Romans 8:3', 'yousafzai2019', 'NT', 'Romans', 8, 3),
+('grammar', 'که', 11923, '1 Samuel 26:21', 'yousafzai2019', 'OT', '1 Samuel', 26, 21),
+('grammar', 'دومره', 7462, '2 Kings 24:20', 'afghan2023', 'OT', '2 Kings', 24, 20),
+('grammar', 'دومره', 22804, '2 Corinthians 1:8', 'afghan2023', 'NT', '2 Corinthians', 1, 8),
+('grammar', 'دلته', 25922, 'Matthew 12:42', 'yousafzai2019', 'NT', 'Matthew', 12, 42),
+('grammar', 'دلته', 11496, '1 Samuel 13:12', 'yousafzai2019', 'OT', '1 Samuel', 13, 12),
+('grammar', 'ته', 20214, 'Psalms 139:7', 'afghan2023', 'OT', 'Psalms', 139, 7),
+('grammar', 'ته', 6219, 'Exodus 9:30', 'yousafzai2019', 'OT', 'Exodus', 9, 30),
+('grammar', 'هېڅکله', 8555, 'Deuteronomy 11:28', 'afghan2023', 'OT', 'Deuteronomy', 11, 28),
+('grammar', 'هېڅکله', 2834, 'John 8:51', 'afghan2023', 'NT', 'John', 8, 51),
+('grammar', 'ورڅخه', 33765, '2 Kings 22:6', 'yousafzai2019', 'OT', '2 Kings', 22, 6),
+('grammar', 'ورڅخه', 10091, 'Ezekiel 20:4', 'afghan2023', 'OT', 'Ezekiel', 20, 4),
+('grammar', 'اګر', 4713, 'Mark 9:28', 'afghan2023', 'NT', 'Mark', 9, 28),
+('grammar', 'اګر', 16038, 'Nehemiah 6:1', 'yousafzai2019', 'OT', 'Nehemiah', 6, 1),
+('grammar', 'ترمنځ', 10709, 'Ezekiel 40:7', 'afghan2023', 'OT', 'Ezekiel', 40, 7),
+('grammar', 'ترمنځ', 33771, 'Exodus 39:25', 'yousafzai2019', 'OT', 'Exodus', 39, 25),
+('grammar', 'درسره', 21003, 'Isaiah 47:9', 'yousafzai2019', 'OT', 'Isaiah', 47, 9),
+('grammar', 'درسره', 13963, '2 Kings 17:38', 'yousafzai2019', 'OT', '2 Kings', 17, 38),
+('grammar', 'همدا', 5279, 'Matthew 23:18', 'afghan2023', 'NT', 'Matthew', 23, 18),
+('grammar', 'همدا', 7558, '2 Kings 7:10', 'afghan2023', 'OT', '2 Kings', 7, 10),
+('grammar', 'درڅخه', 8885, 'Deuteronomy 24:19', 'afghan2023', 'OT', 'Deuteronomy', 24, 19),
+('grammar', 'درڅخه', 17927, 'Numbers 22:20', 'afghan2023', 'OT', 'Numbers', 22, 20),
+('grammar', 'هغومره', 10718, 'Ezekiel 40:18', 'afghan2023', 'OT', 'Ezekiel', 40, 18),
+('grammar', 'هغومره', 6075, 'Revelation 18:7', 'afghan2023', 'NT', 'Revelation', 18, 7);
 
--- grammar_prepositions (4 entries from 2 unique words)
+-- numbers_cardinal (44 entries from 22 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar_prepositions', 'له', 1103, 'Genesis 38:25', 'yousafzai2019', 'OT', 'Genesis', 38, 25),
-('grammar_prepositions', 'له', 2495, 'Exodus 36:3', 'yousafzai2019', 'OT', 'Exodus', 36, 3),
-('grammar_prepositions', 'ته', 367, 'Genesis 15:10', 'yousafzai2019', 'OT', 'Genesis', 15, 10),
-('grammar_prepositions', 'ته', 1212, 'Genesis 42:3', 'yousafzai2019', 'OT', 'Genesis', 42, 3);
+('numbers_cardinal', 'یو', 33561, 'Genesis 31:18', 'yousafzai2019', 'OT', 'Genesis', 31, 18),
+('numbers_cardinal', 'یو', 33880, '1 Chronicles 11:43', 'yousafzai2019', 'OT', '1 Chronicles', 11, 43),
+('numbers_cardinal', 'دوه', 6647, 'Exodus 25:16', 'yousafzai2019', 'OT', 'Exodus', 25, 16),
+('numbers_cardinal', 'دوه', 26384, 'Matthew 24:40', 'yousafzai2019', 'NT', 'Matthew', 24, 40),
+('numbers_cardinal', 'درې', 6942, '2 Chronicles 20:22', 'afghan2023', 'OT', '2 Chronicles', 20, 22),
+('numbers_cardinal', 'درې', 5364, 'Matthew 25:13', 'afghan2023', 'NT', 'Matthew', 25, 13),
+('numbers_cardinal', 'څلور', 15734, 'Joshua 21:31', 'afghan2023', 'OT', 'Joshua', 21, 31),
+('numbers_cardinal', 'څلور', 14513, '1 Chronicles 8:35', 'yousafzai2019', 'OT', '1 Chronicles', 8, 35),
+('numbers_cardinal', 'لس', 9773, 'Esther 9:15', 'afghan2023', 'OT', 'Esther', 9, 15),
+('numbers_cardinal', 'لس', 16123, 'Judges 15:3', 'afghan2023', 'OT', 'Judges', 15, 3),
+('numbers_cardinal', 'شپږ', 25246, 'Haggai 1:15', 'yousafzai2019', 'OT', 'Haggai', 1, 15),
+('numbers_cardinal', 'شپږ', 7054, 'Exodus 37:18', 'yousafzai2019', 'OT', 'Exodus', 37, 18),
+('numbers_cardinal', 'اووه', 5066, 'Matthew 18:21', 'afghan2023', 'NT', 'Matthew', 18, 21),
+('numbers_cardinal', 'اووه', 16851, 'Leviticus 23:6', 'afghan2023', 'OT', 'Leviticus', 23, 6),
+('numbers_cardinal', 'څلوېښت', 8515, 'Deuteronomy 10:10', 'afghan2023', 'OT', 'Deuteronomy', 10, 10),
+('numbers_cardinal', 'څلوېښت', 16078, 'Judges 12:14', 'afghan2023', 'OT', 'Judges', 12, 14),
+('numbers_cardinal', 'دېرش', 15255, '2 Chronicles 16:1', 'yousafzai2019', 'OT', '2 Chronicles', 16, 1),
+('numbers_cardinal', 'دېرش', 13369, '1 Kings 20:15', 'yousafzai2019', 'OT', '1 Kings', 20, 15),
+('numbers_cardinal', 'پنځه', 33680, 'Genesis 22:22', 'yousafzai2019', 'OT', 'Genesis', 22, 22),
+('numbers_cardinal', 'پنځه', 11976, 'Isaiah 30:17', 'afghan2023', 'OT', 'Isaiah', 30, 17),
+('numbers_cardinal', 'اویا', 17598, 'Numbers 11:30', 'afghan2023', 'OT', 'Numbers', 11, 30),
+('numbers_cardinal', 'اویا', 18478, 'Numbers 8:6', 'afghan2023', 'OT', 'Numbers', 8, 6),
+('numbers_cardinal', 'پنځوس', 7089, 'Exodus 38:26', 'yousafzai2019', 'OT', 'Exodus', 38, 26),
+('numbers_cardinal', 'پنځوس', 7852, 'Leviticus 25:8', 'yousafzai2019', 'OT', 'Leviticus', 25, 8),
+('numbers_cardinal', 'څوارلس', 10703, 'Ezekiel 40:1', 'afghan2023', 'OT', 'Ezekiel', 40, 1),
+('numbers_cardinal', 'څوارلس', 15838, 'Ezra 6:19', 'yousafzai2019', 'OT', 'Ezra', 6, 19),
+('numbers_cardinal', 'اتیا', 3745, 'Luke 3:26', 'afghan2023', 'NT', 'Luke', 3, 26),
+('numbers_cardinal', 'اتیا', 17555, 'Numbers 10:21', 'afghan2023', 'OT', 'Numbers', 10, 21),
+('numbers_cardinal', 'اته', 20672, 'Psalms 32:5', 'afghan2023', 'OT', 'Psalms', 32, 5),
+('numbers_cardinal', 'اته', 20784, 'Psalms 37:22', 'afghan2023', 'OT', 'Psalms', 37, 22),
+('numbers_cardinal', 'شپاړس', 15555, 'Joshua 15:41', 'afghan2023', 'OT', 'Joshua', 15, 41),
+('numbers_cardinal', 'شپاړس', 15480, '2 Chronicles 26:3', 'yousafzai2019', 'OT', '2 Chronicles', 26, 3),
+('numbers_cardinal', 'یوولس', 33726, '1 Chronicles 27:14', 'yousafzai2019', 'OT', '1 Chronicles', 27, 14),
+('numbers_cardinal', 'یوولس', 15565, 'Joshua 15:51', 'afghan2023', 'OT', 'Joshua', 15, 51),
+('numbers_cardinal', 'شپېته', 17262, 'Nehemiah 11:6', 'afghan2023', 'OT', 'Nehemiah', 11, 6),
+('numbers_cardinal', 'شپېته', 4478, 'Mark 4:8', 'afghan2023', 'NT', 'Mark', 4, 8),
+('numbers_cardinal', 'پنځلس', 33579, '1 Chronicles 25:22', 'yousafzai2019', 'OT', '1 Chronicles', 25, 22),
+('numbers_cardinal', 'پنځلس', 18081, 'Numbers 28:17', 'afghan2023', 'OT', 'Numbers', 28, 17),
+('numbers_cardinal', 'دیارلس', 15709, 'Joshua 21:4', 'afghan2023', 'OT', 'Joshua', 21, 4),
+('numbers_cardinal', 'دیارلس', 15637, 'Joshua 19:6', 'afghan2023', 'OT', 'Joshua', 19, 6),
+('numbers_cardinal', 'نولس', 12076, '2 Samuel 2:30', 'yousafzai2019', 'OT', '2 Samuel', 2, 30),
+('numbers_cardinal', 'نولس', 7470, '2 Kings 25:8', 'afghan2023', 'OT', '2 Kings', 25, 8),
+('numbers_cardinal', 'میلیون', 6904, '2 Chronicles 14:9', 'afghan2023', 'OT', '2 Chronicles', 14, 9),
+('numbers_cardinal', 'میلیون', 6335, 'Revelation 9:16', 'afghan2023', 'NT', 'Revelation', 9, 16);
 
--- grammar_pronouns (8 entries from 4 unique words)
+-- numbers (62 entries from 31 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar_pronouns', 'زما', 219, 'Genesis 9:17', 'yousafzai2019', 'OT', 'Genesis', 9, 17),
-('grammar_pronouns', 'زما', 1538, 'Exodus 3:12', 'yousafzai2019', 'OT', 'Exodus', 3, 12),
-('grammar_pronouns', 'ستا', 1086, 'Genesis 38:8', 'yousafzai2019', 'OT', 'Genesis', 38, 8),
-('grammar_pronouns', 'ستا', 529, 'Genesis 21:25', 'yousafzai2019', 'OT', 'Genesis', 21, 25),
-('grammar_pronouns', 'مونږ', 59, 'Genesis 3:3', 'yousafzai2019', 'OT', 'Genesis', 3, 3),
-('grammar_pronouns', 'مونږ', 689, 'Genesis 26:10', 'yousafzai2019', 'OT', 'Genesis', 26, 10),
-('grammar_pronouns', 'زمونږ', 2431, 'Exodus 34:9', 'yousafzai2019', 'OT', 'Exodus', 34, 9),
-('grammar_pronouns', 'زمونږ', 1494, 'Exodus 1:9', 'yousafzai2019', 'OT', 'Exodus', 1, 9);
+('numbers', 'یو', 33880, '1 Chronicles 11:43', 'yousafzai2019', 'OT', '1 Chronicles', 11, 43),
+('numbers', 'یو', 33496, 'Deuteronomy 16:6', 'yousafzai2019', 'OT', 'Deuteronomy', 16, 6),
+('numbers', 'دوه', 3930, 'Luke 7:41', 'afghan2023', 'NT', 'Luke', 7, 41),
+('numbers', 'دوه', 6647, 'Exodus 25:16', 'yousafzai2019', 'OT', 'Exodus', 25, 16),
+('numbers', 'درې', 21829, 'Psalms 95:1', 'afghan2023', 'OT', 'Psalms', 95, 1),
+('numbers', 'درې', 7129, '2 Chronicles 36:3', 'afghan2023', 'OT', '2 Chronicles', 36, 3),
+('numbers', 'څلور', 33229, 'Revelation 9:15', 'yousafzai2019', 'NT', 'Revelation', 9, 15),
+('numbers', 'څلور', 15734, 'Joshua 21:31', 'afghan2023', 'OT', 'Joshua', 21, 31),
+('numbers', 'کم', 17598, 'Numbers 11:30', 'afghan2023', 'OT', 'Numbers', 11, 30),
+('numbers', 'کم', 9875, 'Deuteronomy 33:3', 'yousafzai2019', 'OT', 'Deuteronomy', 33, 3),
+('numbers', 'ځینې', 958, 'Acts 4:1', 'afghan2023', 'NT', 'Acts', 4, 1),
+('numbers', 'ځینې', 5771, 'Matthew 9:3', 'afghan2023', 'NT', 'Matthew', 9, 3),
+('numbers', 'لږ', 9030, 'Deuteronomy 2:9', 'yousafzai2019', 'OT', 'Deuteronomy', 2, 9),
+('numbers', 'لږ', 17574, 'Numbers 11:4', 'afghan2023', 'OT', 'Numbers', 11, 4),
+('numbers', 'لس', 14998, '2 Chronicles 3:8', 'yousafzai2019', 'OT', '2 Chronicles', 3, 8),
+('numbers', 'لس', 9773, 'Esther 9:15', 'afghan2023', 'OT', 'Esther', 9, 15),
+('numbers', 'شپږ', 17589, 'Numbers 11:21', 'afghan2023', 'OT', 'Numbers', 11, 21),
+('numbers', 'شپږ', 18465, 'Numbers 7:3', 'afghan2023', 'OT', 'Numbers', 7, 3),
+('numbers', 'اووه', 33628, 'Judges 14:12', 'yousafzai2019', 'OT', 'Judges', 14, 12),
+('numbers', 'اووه', 21597, 'Jeremiah 10:3', 'yousafzai2019', 'OT', 'Jeremiah', 10, 3),
+('numbers', 'نیم', 33746, '1 Kings 7:2', 'yousafzai2019', 'OT', '1 Kings', 7, 2),
+('numbers', 'نیم', 18739, 'Proverbs 16:19', 'afghan2023', 'OT', 'Proverbs', 16, 19),
+('numbers', 'څلوېښت', 7577, '2 Kings 8:9', 'afghan2023', 'OT', '2 Kings', 8, 9),
+('numbers', 'څلوېښت', 5171, 'Genesis 25:20', 'yousafzai2019', 'OT', 'Genesis', 25, 20),
+('numbers', 'دېرش', 13875, '2 Kings 15:8', 'yousafzai2019', 'OT', '2 Kings', 15, 8),
+('numbers', 'دېرش', 10938, 'Ezekiel 4:10', 'afghan2023', 'OT', 'Ezekiel', 4, 10),
+('numbers', 'پنځه', 7481, '2 Kings 25:19', 'afghan2023', 'OT', '2 Kings', 25, 19),
+('numbers', 'پنځه', 11976, 'Isaiah 30:17', 'afghan2023', 'OT', 'Isaiah', 30, 17),
+('numbers', 'اویا', 18138, 'Numbers 2:17', 'afghan2023', 'OT', 'Numbers', 2, 17),
+('numbers', 'اویا', 16547, 'Judges 9:2', 'afghan2023', 'OT', 'Judges', 9, 2),
+('numbers', 'پنځوس', 534, 'Acts 19:19', 'afghan2023', 'NT', 'Acts', 19, 19),
+('numbers', 'پنځوس', 18202, 'Numbers 31:47', 'afghan2023', 'OT', 'Numbers', 31, 47),
+('numbers', 'لومړی', 33914, 'Joshua 6:13', 'yousafzai2019', 'OT', 'Joshua', 6, 13),
+('numbers', 'لومړی', 3221, 'Luke 17:25', 'afghan2023', 'NT', 'Luke', 17, 25),
+('numbers', 'لومړنی', 17626, 'Numbers 13:20', 'afghan2023', 'OT', 'Numbers', 13, 20),
+('numbers', 'لومړنی', 2431, 'John 1:41', 'afghan2023', 'NT', 'John', 1, 41),
+('numbers', 'څلورم', 8288, 'Daniel 2:40', 'afghan2023', 'OT', 'Daniel', 2, 40),
+('numbers', 'څلورم', 24331, 'Daniel 7:7', 'yousafzai2019', 'OT', 'Daniel', 7, 7),
+('numbers', 'څوارلس', 15838, 'Ezra 6:19', 'yousafzai2019', 'OT', 'Ezra', 6, 19),
+('numbers', 'څوارلس', 15631, 'Joshua 18:28', 'afghan2023', 'OT', 'Joshua', 18, 28),
+('numbers', 'اتیا', 15723, 'Joshua 21:20', 'afghan2023', 'OT', 'Joshua', 21, 20),
+('numbers', 'اتیا', 3745, 'Luke 3:26', 'afghan2023', 'NT', 'Luke', 3, 26),
+('numbers', 'اته', 25609, 'Matthew 4:9', 'yousafzai2019', 'NT', 'Matthew', 4, 9),
+('numbers', 'اته', 27157, 'Mark 14:22', 'yousafzai2019', 'NT', 'Mark', 14, 22),
+('numbers', 'شپاړس', 15480, '2 Chronicles 26:3', 'yousafzai2019', 'OT', '2 Chronicles', 26, 3),
+('numbers', 'شپاړس', 15653, 'Joshua 19:22', 'afghan2023', 'OT', 'Joshua', 19, 22),
+('numbers', 'یوولس', 10422, 'Ezekiel 30:20', 'afghan2023', 'OT', 'Ezekiel', 30, 20),
+('numbers', 'یوولس', 582, 'Acts 1:26', 'afghan2023', 'NT', 'Acts', 1, 26),
+('numbers', 'شپېته', 7166, '2 Chronicles 4:5', 'afghan2023', 'OT', '2 Chronicles', 4, 5),
+('numbers', 'شپېته', 4880, 'Matthew 13:23', 'afghan2023', 'NT', 'Matthew', 13, 23),
+('numbers', 'نیمایي', 17341, 'Nehemiah 13:24', 'afghan2023', 'OT', 'Nehemiah', 13, 24),
+('numbers', 'نیمایي', 7754, '2 Samuel 18:3', 'afghan2023', 'OT', '2 Samuel', 18, 3),
+('numbers', 'پنځلس', 1462, 'Galatians 1:18', 'afghan2023', 'NT', 'Galatians', 1, 18),
+('numbers', 'پنځلس', 33579, '1 Chronicles 25:22', 'yousafzai2019', 'OT', '1 Chronicles', 25, 22),
+('numbers', 'پنځم', 10499, 'Ezekiel 33:21', 'afghan2023', 'OT', 'Ezekiel', 33, 21),
+('numbers', 'پنځم', 7470, '2 Kings 25:8', 'afghan2023', 'OT', '2 Kings', 25, 8),
+('numbers', 'دیارلس', 15722, 'Joshua 21:19', 'afghan2023', 'OT', 'Joshua', 21, 19),
+('numbers', 'دیارلس', 15709, 'Joshua 21:4', 'afghan2023', 'OT', 'Joshua', 21, 4),
+('numbers', 'نولس', 22681, 'Jeremiah 52:12', 'yousafzai2019', 'OT', 'Jeremiah', 52, 12),
+('numbers', 'نولس', 15669, 'Joshua 19:38', 'afghan2023', 'OT', 'Joshua', 19, 38),
+('numbers', 'میلیون', 6269, 'Revelation 5:11', 'afghan2023', 'NT', 'Revelation', 5, 11),
+('numbers', 'میلیون', 6335, 'Revelation 9:16', 'afghan2023', 'NT', 'Revelation', 9, 16);
+
+-- grammar_prepositions (8 entries from 4 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('grammar_prepositions', 'له', 28758, 'John 7:51', 'yousafzai2019', 'NT', 'John', 7, 51),
+('grammar_prepositions', 'له', 9018, 'Deuteronomy 29:7', 'afghan2023', 'OT', 'Deuteronomy', 29, 7),
+('grammar_prepositions', 'څخه', 2120, 'John 12:17', 'afghan2023', 'NT', 'John', 12, 17),
+('grammar_prepositions', 'څخه', 33863, '1 Chronicles 11:26', 'yousafzai2019', 'OT', '1 Chronicles', 11, 26),
+('grammar_prepositions', 'ته', 21665, 'Jeremiah 13:6', 'yousafzai2019', 'OT', 'Jeremiah', 13, 6),
+('grammar_prepositions', 'ته', 26589, 'Matthew 28:7', 'yousafzai2019', 'NT', 'Matthew', 28, 7),
+('grammar_prepositions', 'ترمنځ', 33767, 'Exodus 28:34', 'yousafzai2019', 'OT', 'Exodus', 28, 34),
+('grammar_prepositions', 'ترمنځ', 8761, 'Deuteronomy 1:39', 'afghan2023', 'OT', 'Deuteronomy', 1, 39);
+
+-- grammar_pronouns (10 entries from 5 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('grammar_pronouns', 'زما', 11351, 'Haggai 2:23', 'afghan2023', 'OT', 'Haggai', 2, 23),
+('grammar_pronouns', 'زما', 10148, 'Ezekiel 21:12', 'afghan2023', 'OT', 'Ezekiel', 21, 12),
+('grammar_pronouns', 'ستا', 11152, 'Ezra 6:19', 'afghan2023', 'OT', 'Ezra', 6, 19),
+('grammar_pronouns', 'ستا', 10376, 'Ezekiel 29:5', 'afghan2023', 'OT', 'Ezekiel', 29, 5),
+('grammar_pronouns', 'مونږ', 9783, 'Deuteronomy 30:13', 'yousafzai2019', 'OT', 'Deuteronomy', 30, 13),
+('grammar_pronouns', 'مونږ', 8245, 'Numbers 12:2', 'yousafzai2019', 'OT', 'Numbers', 12, 2),
+('grammar_pronouns', 'زمونږ', 17506, 'Nehemiah 9:10', 'afghan2023', 'OT', 'Nehemiah', 9, 10),
+('grammar_pronouns', 'زمونږ', 5976, 'Revelation 12:11', 'afghan2023', 'NT', 'Revelation', 12, 11),
+('grammar_pronouns', 'څه', 1263, 'Colossians 3:17', 'afghan2023', 'NT', 'Colossians', 3, 17),
+('grammar_pronouns', 'څه', 6204, 'Exodus 9:13', 'yousafzai2019', 'OT', 'Exodus', 9, 13);
+
+-- miscellaneous (10 entries from 5 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('miscellaneous', 'شی', 33609, '2 Chronicles 4:8', 'yousafzai2019', 'OT', '2 Chronicles', 4, 8),
+('miscellaneous', 'شی', 33668, 'Leviticus 13:48', 'yousafzai2019', 'OT', 'Leviticus', 13, 48),
+('miscellaneous', 'وخت', 7197, '2 Chronicles 6:3', 'afghan2023', 'OT', '2 Chronicles', 6, 3),
+('miscellaneous', 'وخت', 12374, 'Isaiah 47:7', 'afghan2023', 'OT', 'Isaiah', 47, 7),
+('miscellaneous', 'امر', 5010, 'Matthew 16:20', 'afghan2023', 'NT', 'Matthew', 16, 20),
+('miscellaneous', 'امر', 13744, '2 Kings 10:7', 'yousafzai2019', 'OT', '2 Kings', 10, 7),
+('miscellaneous', 'موقع', 12958, 'Jeremiah 15:15', 'afghan2023', 'OT', 'Jeremiah', 15, 15),
+('miscellaneous', 'موقع', 8553, 'Deuteronomy 11:26', 'afghan2023', 'OT', 'Deuteronomy', 11, 26),
+('miscellaneous', 'فرصت', 21524, 'Psalms 78:61', 'afghan2023', 'OT', 'Psalms', 78, 61),
+('miscellaneous', 'فرصت', 20408, 'Psalms 17:11', 'afghan2023', 'OT', 'Psalms', 17, 11);
 
 -- states_quality (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('states_quality', 'پاک', 2436, 'Exodus 34:14', 'yousafzai2019', 'OT', 'Exodus', 34, 14),
-('states_quality', 'پاک', 1721, 'Exodus 10:3', 'yousafzai2019', 'OT', 'Exodus', 10, 3),
-('states_quality', 'ښه', 1517, 'Exodus 2:14', 'yousafzai2019', 'OT', 'Exodus', 2, 14),
-('states_quality', 'ښه', 913, 'Genesis 31:55', 'yousafzai2019', 'OT', 'Genesis', 31, 55),
-('states_quality', 'بد', 48, 'Genesis 2:17', 'yousafzai2019', 'OT', 'Genesis', 2, 17),
-('states_quality', 'بد', 2067, 'Exodus 22:22', 'yousafzai2019', 'OT', 'Exodus', 22, 22),
-('states_quality', 'مقدس', 2250, 'Exodus 28:29', 'yousafzai2019', 'OT', 'Exodus', 28, 29),
-('states_quality', 'مقدس', 2476, 'Exodus 35:19', 'yousafzai2019', 'OT', 'Exodus', 35, 19);
+('states_quality', 'پاک', 14618, 'Job 27:8', 'afghan2023', 'OT', 'Job', 27, 8),
+('states_quality', 'پاک', 9516, 'Deuteronomy 21:1', 'yousafzai2019', 'OT', 'Deuteronomy', 21, 1),
+('states_quality', 'ښه', 7507, '2 Kings 2:15', 'afghan2023', 'OT', '2 Kings', 2, 15),
+('states_quality', 'ښه', 8451, 'Numbers 18:18', 'yousafzai2019', 'OT', 'Numbers', 18, 18),
+('states_quality', 'بد', 11183, 'Ezra 8:6', 'afghan2023', 'OT', 'Ezra', 8, 6),
+('states_quality', 'بد', 6399, 'Romans 12:2', 'afghan2023', 'NT', 'Romans', 12, 2),
+('states_quality', 'مقدس', 8340, 'Daniel 4:13', 'afghan2023', 'OT', 'Daniel', 4, 13),
+('states_quality', 'مقدس', 7632, 'Leviticus 17:6', 'yousafzai2019', 'OT', 'Leviticus', 17, 6);
 
--- states (27 entries from 14 unique words)
+-- states (40 entries from 20 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('states', 'پاک', 18, 'Genesis 1:18', 'yousafzai2019', 'OT', 'Genesis', 1, 18),
-('states', 'پاک', 1573, 'Exodus 4:27', 'yousafzai2019', 'OT', 'Exodus', 4, 27),
-('states', 'لوی', 1193, 'Genesis 41:39', 'yousafzai2019', 'OT', 'Genesis', 41, 39),
-('states', 'لوی', 522, 'Genesis 21:18', 'yousafzai2019', 'OT', 'Genesis', 21, 18),
-('states', 'ژوند', 2042, 'Exodus 21:30', 'yousafzai2019', 'OT', 'Exodus', 21, 30),
-('states', 'ژوند', 390, 'Genesis 16:12', 'yousafzai2019', 'OT', 'Genesis', 16, 12),
-('states', 'مړ', 1222, 'Genesis 42:13', 'yousafzai2019', 'OT', 'Genesis', 42, 13),
-('states', 'مړ', 497, 'Genesis 20:7', 'yousafzai2019', 'OT', 'Genesis', 20, 7),
-('states', 'مرګ', 1735, 'Exodus 10:17', 'yousafzai2019', 'OT', 'Exodus', 10, 17),
-('states', 'مرګ', 1427, 'Genesis 48:21', 'yousafzai2019', 'OT', 'Genesis', 48, 21),
-('states', 'ښه', 435, 'Genesis 18:16', 'yousafzai2019', 'OT', 'Genesis', 18, 16),
-('states', 'ښه', 913, 'Genesis 31:55', 'yousafzai2019', 'OT', 'Genesis', 31, 55),
-('states', 'بد', 2067, 'Exodus 22:22', 'yousafzai2019', 'OT', 'Exodus', 22, 22),
-('states', 'بد', 2755, 'Leviticus 5:4', 'yousafzai2019', 'OT', 'Leviticus', 5, 4),
-('states', 'مقدس', 2250, 'Exodus 28:29', 'yousafzai2019', 'OT', 'Exodus', 28, 29),
-('states', 'مقدس', 2295, 'Exodus 29:33', 'yousafzai2019', 'OT', 'Exodus', 29, 33),
-('states', 'لږ', 1285, 'Genesis 44:4', 'yousafzai2019', 'OT', 'Genesis', 44, 4),
-('states', 'لږ', 1317, 'Genesis 45:4', 'yousafzai2019', 'OT', 'Genesis', 45, 4),
-('states', 'لوړ', 2540, 'Exodus 37:10', 'yousafzai2019', 'OT', 'Exodus', 37, 10),
-('states', 'لوړ', 175, 'Genesis 7:19', 'yousafzai2019', 'OT', 'Genesis', 7, 19),
-('states', 'نوی', 1493, 'Exodus 1:8', 'yousafzai2019', 'OT', 'Exodus', 1, 8),
-('states', 'اوږد', 2135, 'Exodus 25:10', 'yousafzai2019', 'OT', 'Exodus', 25, 10),
-('states', 'اوږد', 1730, 'Exodus 10:12', 'yousafzai2019', 'OT', 'Exodus', 10, 12),
-('states', 'زوړ', 409, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17),
-('states', 'زوړ', 513, 'Genesis 21:7', 'yousafzai2019', 'OT', 'Genesis', 21, 7),
-('states', 'وړوکی', 472, 'Genesis 19:20', 'yousafzai2019', 'OT', 'Genesis', 19, 20),
-('states', 'وړوکی', 1092, 'Genesis 38:14', 'yousafzai2019', 'OT', 'Genesis', 38, 14);
+('states', 'پاک', 33348, 'Revelation 16:19', 'yousafzai2019', 'NT', 'Revelation', 16, 19),
+('states', 'پاک', 3809, 'Luke 5:8', 'afghan2023', 'NT', 'Luke', 5, 8),
+('states', 'لوی', 33558, '1 Samuel 6:14', 'yousafzai2019', 'OT', '1 Samuel', 6, 14),
+('states', 'لوی', 5161, 'Matthew 20:26', 'afghan2023', 'NT', 'Matthew', 20, 26),
+('states', 'ژوند', 22903, '2 Corinthians 6:13', 'afghan2023', 'NT', '2 Corinthians', 6, 13),
+('states', 'ژوند', 23144, 'Ezekiel 14:22', 'yousafzai2019', 'OT', 'Ezekiel', 14, 22),
+('states', 'مړ', 746, 'Acts 24:21', 'afghan2023', 'NT', 'Acts', 24, 21),
+('states', 'مړ', 1966, 'James 3:17', 'afghan2023', 'NT', 'James', 3, 17),
+('states', 'مرګ', 8619, 'Deuteronomy 14:21', 'afghan2023', 'OT', 'Deuteronomy', 14, 21),
+('states', 'مرګ', 23379, 'Ezekiel 22:12', 'yousafzai2019', 'OT', 'Ezekiel', 22, 12),
+('states', 'ښه', 21057, 'Isaiah 49:26', 'yousafzai2019', 'OT', 'Isaiah', 49, 26),
+('states', 'ښه', 14068, '2 Kings 21:7', 'yousafzai2019', 'OT', '2 Kings', 21, 7),
+('states', 'بد', 18715, 'Proverbs 15:28', 'afghan2023', 'OT', 'Proverbs', 15, 28),
+('states', 'بد', 6399, 'Romans 12:2', 'afghan2023', 'NT', 'Romans', 12, 2),
+('states', 'مقدس', 6850, 'Exodus 30:36', 'yousafzai2019', 'OT', 'Exodus', 30, 36),
+('states', 'مقدس', 13686, 'Jeremiah 42:2', 'afghan2023', 'OT', 'Jeremiah', 42, 2),
+('states', 'لږ', 2180, 'John 13:27', 'afghan2023', 'NT', 'John', 13, 27),
+('states', 'لږ', 17574, 'Numbers 11:4', 'afghan2023', 'OT', 'Numbers', 11, 4),
+('states', 'لوړ', 23219, 'Ezekiel 17:3', 'yousafzai2019', 'OT', 'Ezekiel', 17, 3),
+('states', 'لوړ', 9240, 'Deuteronomy 9:2', 'yousafzai2019', 'OT', 'Deuteronomy', 9, 2),
+('states', 'نوی', 6237, 'Revelation 3:12', 'afghan2023', 'NT', 'Revelation', 3, 12),
+('states', 'نوی', 8103, 'Amos 7:1', 'afghan2023', 'OT', 'Amos', 7, 1),
+('states', 'اوږد', 22610, '1 Corinthians 11:14', 'afghan2023', 'NT', '1 Corinthians', 11, 14),
+('states', 'اوږد', 10851, 'Ezekiel 45:5', 'afghan2023', 'OT', 'Ezekiel', 45, 5),
+('states', 'تازه', 5826, 'Philemon 1:20', 'afghan2023', 'NT', 'Philemon', 1, 20),
+('states', 'تازه', 3838, 'Luke 5:37', 'afghan2023', 'NT', 'Luke', 5, 37),
+('states', 'زوړ', 13369, 'Jeremiah 30:18', 'afghan2023', 'OT', 'Jeremiah', 30, 18),
+('states', 'زوړ', 30447, 'Romans 6:6', 'yousafzai2019', 'NT', 'Romans', 6, 6),
+('states', 'وړوکی', 12424, 'Isaiah 49:20', 'afghan2023', 'OT', 'Isaiah', 49, 20),
+('states', 'وړوکی', 8003, '2 Samuel 9:12', 'afghan2023', 'OT', '2 Samuel', 9, 12),
+('states', 'مړینه', 7676, '2 Samuel 12:15', 'afghan2023', 'OT', '2 Samuel', 12, 15),
+('states', 'مړینه', 5516, 'Matthew 27:44', 'afghan2023', 'NT', 'Matthew', 27, 44),
+('states', 'دېو', 6356, 'Exodus 14:22', 'yousafzai2019', 'OT', 'Exodus', 14, 22),
+('states', 'دېو', 23397, 'Ezekiel 22:30', 'yousafzai2019', 'OT', 'Ezekiel', 22, 30),
+('states', 'زېږېدنه', 5127, 'Matthew 1:17', 'afghan2023', 'NT', 'Matthew', 1, 17),
+('states', 'زېږېدنه', 3380, 'Luke 1:56', 'afghan2023', 'NT', 'Luke', 1, 56),
+('states', 'زېږون', 6805, 'Titus 3:5', 'afghan2023', 'NT', 'Titus', 3, 5),
+('states', 'زېږون', 20960, 'Psalms 48:6', 'afghan2023', 'OT', 'Psalms', 48, 6),
+('states', 'جګ', 6435, 'Exodus 17:7', 'yousafzai2019', 'OT', 'Exodus', 17, 7),
+('states', 'جګ', 18172, 'Numbers 31:3', 'afghan2023', 'OT', 'Numbers', 31, 3);
 
--- buildings (13 entries from 7 unique words)
+-- religious_concepts (12 entries from 6 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('buildings', 'کور', 1113, 'Genesis 39:5', 'yousafzai2019', 'OT', 'Genesis', 39, 5),
-('buildings', 'کور', 454, 'Genesis 19:2', 'yousafzai2019', 'OT', 'Genesis', 19, 2),
-('buildings', 'ښار', 468, 'Genesis 19:16', 'yousafzai2019', 'OT', 'Genesis', 19, 16),
-('buildings', 'ښار', 267, 'Genesis 11:4', 'yousafzai2019', 'OT', 'Genesis', 11, 4),
-('buildings', 'دېوال', 1450, 'Genesis 49:22', 'yousafzai2019', 'OT', 'Genesis', 49, 22),
-('buildings', 'تخت', 1784, 'Exodus 12:29', 'yousafzai2019', 'OT', 'Exodus', 12, 29),
-('buildings', 'تخت', 2539, 'Exodus 37:9', 'yousafzai2019', 'OT', 'Exodus', 37, 9),
-('buildings', 'دروازه', 462, 'Genesis 19:10', 'yousafzai2019', 'OT', 'Genesis', 19, 10),
-('buildings', 'دروازه', 2215, 'Exodus 27:13', 'yousafzai2019', 'OT', 'Exodus', 27, 13),
-('buildings', 'خېمه', 2510, 'Exodus 36:18', 'yousafzai2019', 'OT', 'Exodus', 36, 18),
-('buildings', 'خېمه', 2219, 'Exodus 27:19', 'yousafzai2019', 'OT', 'Exodus', 27, 19),
-('buildings', 'کړکۍ', 687, 'Genesis 26:8', 'yousafzai2019', 'OT', 'Genesis', 26, 8),
-('buildings', 'کړکۍ', 186, 'Genesis 8:6', 'yousafzai2019', 'OT', 'Genesis', 8, 6);
+('religious_concepts', 'خدای', 6486, 'Romans 15:31', 'afghan2023', 'NT', 'Romans', 15, 31),
+('religious_concepts', 'خدای', 33495, 'Deuteronomy 16:5', 'yousafzai2019', 'OT', 'Deuteronomy', 16, 5),
+('religious_concepts', 'مقدس', 8494, 'Daniel 9:16', 'afghan2023', 'OT', 'Daniel', 9, 16),
+('religious_concepts', 'مقدس', 6850, 'Exodus 30:36', 'yousafzai2019', 'OT', 'Exodus', 30, 36),
+('religious_concepts', 'فرښته', 1660, 'Hebrews 11:28', 'afghan2023', 'NT', 'Hebrews', 11, 28),
+('religious_concepts', 'فرښته', 33319, 'Revelation 14:18', 'yousafzai2019', 'NT', 'Revelation', 14, 18),
+('religious_concepts', 'مَلِک', 15251, '2 Chronicles 15:16', 'yousafzai2019', 'OT', '2 Chronicles', 15, 16),
+('religious_concepts', 'مَلِک', 10846, 'Judges 9:55', 'yousafzai2019', 'OT', 'Judges', 9, 55),
+('religious_concepts', 'ملکه', 9645, 'Esther 1:17', 'afghan2023', 'OT', 'Esther', 1, 17),
+('religious_concepts', 'ملکه', 9941, 'Ezekiel 16:13', 'afghan2023', 'OT', 'Ezekiel', 16, 13),
+('religious_concepts', 'الهي', 5867, 'Philippians 2:6', 'afghan2023', 'NT', 'Philippians', 2, 6),
+('religious_concepts', 'الهي', 23255, '2 Peter 1:4', 'afghan2023', 'NT', '2 Peter', 1, 4);
+
+-- religious (36 entries from 18 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('religious', 'خدای', 33495, 'Deuteronomy 16:5', 'yousafzai2019', 'OT', 'Deuteronomy', 16, 5),
+('religious', 'خدای', 21131, 'Psalms 59:13', 'afghan2023', 'OT', 'Psalms', 59, 13),
+('religious', 'برکت', 1834, 'Hebrews 7:7', 'afghan2023', 'NT', 'Hebrews', 7, 7),
+('religious', 'برکت', 12304, 'Isaiah 44:3', 'afghan2023', 'OT', 'Isaiah', 44, 3),
+('religious', 'مقدس', 13719, 'Jeremiah 43:13', 'afghan2023', 'OT', 'Jeremiah', 43, 13),
+('religious', 'مقدس', 8322, 'Daniel 3:25', 'afghan2023', 'OT', 'Daniel', 3, 25),
+('religious', 'دعا', 4204, 'Mark 13:18', 'afghan2023', 'NT', 'Mark', 13, 18),
+('religious', 'دعا', 33644, '1 Samuel 1:10', 'yousafzai2019', 'OT', '1 Samuel', 1, 10),
+('religious', 'فرښته', 17938, 'Numbers 22:31', 'afghan2023', 'OT', 'Numbers', 22, 31),
+('religious', 'فرښته', 6181, 'Revelation 22:6', 'afghan2023', 'NT', 'Revelation', 22, 6),
+('religious', 'قضاوت', 6764, 'Romans 9:28', 'afghan2023', 'NT', 'Romans', 9, 28),
+('religious', 'قضاوت', 23236, 'Ezekiel 17:20', 'yousafzai2019', 'OT', 'Ezekiel', 17, 20),
+('religious', 'بپتسمه', 26240, 'Matthew 21:25', 'yousafzai2019', 'NT', 'Matthew', 21, 25),
+('religious', 'بپتسمه', 27411, 'Luke 3:7', 'yousafzai2019', 'NT', 'Luke', 3, 7),
+('religious', 'کلیسا', 22614, '1 Corinthians 11:18', 'afghan2023', 'NT', '1 Corinthians', 11, 18),
+('religious', 'کلیسا', 23375, '1 Timothy 4:14', 'afghan2023', 'NT', '1 Timothy', 4, 14),
+('religious', 'کتاب', 14957, '1 Chronicles 29:30', 'yousafzai2019', 'OT', '1 Chronicles', 29, 30),
+('religious', 'کتاب', 21303, 'Psalms 69:28', 'afghan2023', 'OT', 'Psalms', 69, 28),
+('religious', 'بت', 32115, '1 Timothy 3:11', 'yousafzai2019', 'NT', '1 Timothy', 3, 11),
+('religious', 'بت', 21386, 'Jeremiah 2:28', 'yousafzai2019', 'OT', 'Jeremiah', 2, 28),
+('religious', 'مَلِک', 15251, '2 Chronicles 15:16', 'yousafzai2019', 'OT', '2 Chronicles', 15, 16),
+('religious', 'مَلِک', 10816, 'Judges 9:25', 'yousafzai2019', 'OT', 'Judges', 9, 25),
+('religious', 'قربان', 32630, 'Hebrews 13:16', 'yousafzai2019', 'NT', 'Hebrews', 13, 16),
+('religious', 'قربان', 10868, 'Ezekiel 45:24', 'afghan2023', 'OT', 'Ezekiel', 45, 24),
+('religious', 'دوزخ', 32698, 'James 3:6', 'yousafzai2019', 'NT', 'James', 3, 6),
+('religious', 'دوزخ', 5652, 'Matthew 5:29', 'afghan2023', 'NT', 'Matthew', 5, 29),
+('religious', 'ملکه', 17365, 'Nehemiah 2:6', 'afghan2023', 'OT', 'Nehemiah', 2, 6),
+('religious', 'ملکه', 12374, 'Isaiah 47:7', 'afghan2023', 'OT', 'Isaiah', 47, 7),
+('religious', 'مجسمه', 8279, 'Daniel 2:31', 'afghan2023', 'OT', 'Daniel', 2, 31),
+('religious', 'مجسمه', 24180, 'Daniel 2:31', 'yousafzai2019', 'OT', 'Daniel', 2, 31),
+('religious', 'کنیسه', 513, 'Acts 18:26', 'afghan2023', 'NT', 'Acts', 18, 26),
+('religious', 'کنیسه', 470, 'Acts 17:17', 'afghan2023', 'NT', 'Acts', 17, 17),
+('religious', 'جنت', 2928, 'Luke 10:20', 'afghan2023', 'NT', 'Luke', 10, 20),
+('religious', 'جنت', 23014, '2 Corinthians 12:2', 'afghan2023', 'NT', '2 Corinthians', 12, 2),
+('religious', 'الهي', 857, 'Acts 28:4', 'afghan2023', 'NT', 'Acts', 28, 4),
+('religious', 'الهي', 5867, 'Philippians 2:6', 'afghan2023', 'NT', 'Philippians', 2, 6);
+
+-- buildings (22 entries from 11 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('buildings', 'کور', 7141, '2 Chronicles 36:15', 'afghan2023', 'OT', '2 Chronicles', 36, 15),
+('buildings', 'کور', 26228, 'Matthew 21:13', 'yousafzai2019', 'NT', 'Matthew', 21, 13),
+('buildings', 'ښار', 23355, 'Ezekiel 21:20', 'yousafzai2019', 'OT', 'Ezekiel', 21, 20),
+('buildings', 'ښار', 3614, 'Luke 23:56', 'afghan2023', 'NT', 'Luke', 23, 56),
+('buildings', 'دېوال', 12826, '1 Kings 4:13', 'yousafzai2019', 'OT', '1 Kings', 4, 13),
+('buildings', 'دېوال', 14999, '2 Chronicles 3:9', 'yousafzai2019', 'OT', '2 Chronicles', 3, 9),
+('buildings', 'تخت', 7204, '2 Chronicles 6:10', 'afghan2023', 'OT', '2 Chronicles', 6, 10),
+('buildings', 'تخت', 18895, 'Proverbs 20:28', 'afghan2023', 'OT', 'Proverbs', 20, 28),
+('buildings', 'دروازه', 15430, '2 Chronicles 24:8', 'yousafzai2019', 'OT', '2 Chronicles', 24, 8),
+('buildings', 'دروازه', 9714, 'Esther 5:9', 'afghan2023', 'OT', 'Esther', 5, 9),
+('buildings', 'خېمه', 7940, '2 Samuel 6:17', 'afghan2023', 'OT', '2 Samuel', 6, 17),
+('buildings', 'خېمه', 18663, 'Proverbs 14:11', 'afghan2023', 'OT', 'Proverbs', 14, 11),
+('buildings', 'کلی', 20857, 'Psalms 40:12', 'afghan2023', 'OT', 'Psalms', 40, 12),
+('buildings', 'کلی', 19924, 'Psalms 119:71', 'afghan2023', 'OT', 'Psalms', 119, 71),
+('buildings', 'کلیسا', 22693, '1 Corinthians 14:19', 'afghan2023', 'NT', '1 Corinthians', 14, 19),
+('buildings', 'کلیسا', 23358, '1 Timothy 3:13', 'afghan2023', 'NT', '1 Timothy', 3, 13),
+('buildings', 'کړکۍ', 7310, '2 Kings 13:17', 'afghan2023', 'OT', '2 Kings', 13, 17),
+('buildings', 'کړکۍ', 30010, 'Acts 20:9', 'yousafzai2019', 'NT', 'Acts', 20, 9),
+('buildings', 'بام', 14231, '1 Chronicles 1:52', 'yousafzai2019', 'OT', '1 Chronicles', 1, 52),
+('buildings', 'بام', 15485, 'Joshua 13:17', 'afghan2023', 'OT', 'Joshua', 13, 17),
+('buildings', 'تمبو', 29935, 'Acts 18:3', 'yousafzai2019', 'NT', 'Acts', 18, 3),
+('buildings', 'تمبو', 7657, '2 Samuel 11:23', 'afghan2023', 'OT', '2 Samuel', 11, 23);
 
 -- family_male (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('family_male', 'زوی', 118, 'Genesis 5:12', 'yousafzai2019', 'OT', 'Genesis', 5, 12),
-('family_male', 'زوی', 664, 'Genesis 25:19', 'yousafzai2019', 'OT', 'Genesis', 25, 19),
-('family_male', 'پلار', 1020, 'Genesis 35:27', 'yousafzai2019', 'OT', 'Genesis', 35, 27),
-('family_male', 'پلار', 1033, 'Genesis 36:15', 'yousafzai2019', 'OT', 'Genesis', 36, 15),
-('family_male', 'ورور', 1317, 'Genesis 45:4', 'yousafzai2019', 'OT', 'Genesis', 45, 4),
-('family_male', 'ورور', 1229, 'Genesis 42:20', 'yousafzai2019', 'OT', 'Genesis', 42, 20);
+('family_male', 'زوی', 7485, '2 Kings 25:23', 'afghan2023', 'OT', '2 Kings', 25, 23),
+('family_male', 'زوی', 33796, 'Numbers 2:25', 'yousafzai2019', 'OT', 'Numbers', 2, 25),
+('family_male', 'پلار', 23313, 'Ezekiel 20:27', 'yousafzai2019', 'OT', 'Ezekiel', 20, 27),
+('family_male', 'پلار', 31835, 'Philippians 4:20', 'yousafzai2019', 'NT', 'Philippians', 4, 20),
+('family_male', 'ورور', 11381, 'Hosea 12:3', 'afghan2023', 'OT', 'Hosea', 12, 3),
+('family_male', 'ورور', 31161, '1 Corinthians 16:12', 'yousafzai2019', 'NT', '1 Corinthians', 16, 12);
 
--- family (14 entries from 7 unique words)
+-- family (22 entries from 11 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('family', 'زوی', 2580, 'Exodus 38:23', 'yousafzai2019', 'OT', 'Exodus', 38, 23),
-('family', 'زوی', 664, 'Genesis 25:19', 'yousafzai2019', 'OT', 'Genesis', 25, 19),
-('family', 'پلار', 1020, 'Genesis 35:27', 'yousafzai2019', 'OT', 'Genesis', 35, 27),
-('family', 'پلار', 1415, 'Genesis 48:9', 'yousafzai2019', 'OT', 'Genesis', 48, 9),
-('family', 'ورور', 1301, 'Genesis 44:20', 'yousafzai2019', 'OT', 'Genesis', 44, 20),
-('family', 'ورور', 1222, 'Genesis 42:13', 'yousafzai2019', 'OT', 'Genesis', 42, 13),
-('family', 'لور', 1356, 'Genesis 46:15', 'yousafzai2019', 'OT', 'Genesis', 46, 15),
-('family', 'لور', 490, 'Genesis 19:38', 'yousafzai2019', 'OT', 'Genesis', 19, 38),
-('family', 'بچی', 1503, 'Exodus 1:22', 'yousafzai2019', 'OT', 'Exodus', 1, 22),
-('family', 'بچی', 1760, 'Exodus 12:3', 'yousafzai2019', 'OT', 'Exodus', 12, 3),
-('family', 'خپلوان', 296, 'Genesis 12:1', 'yousafzai2019', 'OT', 'Genesis', 12, 1),
-('family', 'خپلوان', 1566, 'Exodus 4:18', 'yousafzai2019', 'OT', 'Exodus', 4, 18),
-('family', 'نمسۍ', 1032, 'Genesis 36:14', 'yousafzai2019', 'OT', 'Genesis', 36, 14),
-('family', 'نمسۍ', 1348, 'Genesis 46:7', 'yousafzai2019', 'OT', 'Genesis', 46, 7);
+('family', 'زوی', 18844, 'Proverbs 1:10', 'afghan2023', 'OT', 'Proverbs', 1, 10),
+('family', 'زوی', 33793, 'Numbers 2:22', 'yousafzai2019', 'OT', 'Numbers', 2, 22),
+('family', 'پلار', 15044, '2 Chronicles 6:15', 'yousafzai2019', 'OT', '2 Chronicles', 6, 15),
+('family', 'پلار', 15510, '2 Chronicles 28:1', 'yousafzai2019', 'OT', '2 Chronicles', 28, 1),
+('family', 'ورور', 12754, '1 Kings 2:15', 'yousafzai2019', 'OT', '1 Kings', 2, 15),
+('family', 'ورور', 16203, 'Judges 18:23', 'afghan2023', 'OT', 'Judges', 18, 23),
+('family', 'لور', 29666, 'Acts 10:30', 'yousafzai2019', 'NT', 'Acts', 10, 30),
+('family', 'لور', 18286, 'Numbers 34:11', 'afghan2023', 'OT', 'Numbers', 34, 11),
+('family', 'بچی', 2186, 'John 13:33', 'afghan2023', 'NT', 'John', 13, 33),
+('family', 'بچی', 5294, 'Matthew 23:33', 'afghan2023', 'NT', 'Matthew', 23, 33),
+('family', 'قبیله', 33800, 'Numbers 2:29', 'yousafzai2019', 'OT', 'Numbers', 2, 29),
+('family', 'قبیله', 33595, '1 Chronicles 12:29', 'yousafzai2019', 'OT', '1 Chronicles', 12, 29),
+('family', 'خپلوان', 5396, 'Genesis 31:32', 'yousafzai2019', 'OT', 'Genesis', 31, 32),
+('family', 'خپلوان', 7870, 'Leviticus 25:26', 'yousafzai2019', 'OT', 'Leviticus', 25, 26),
+('family', 'نیا', 16005, 'Joshua 9:26', 'afghan2023', 'OT', 'Joshua', 9, 26),
+('family', 'نیا', 33708, 'Numbers 1:11', 'yousafzai2019', 'OT', 'Numbers', 1, 11),
+('family', 'نمسۍ', 15391, '2 Chronicles 22:2', 'yousafzai2019', 'OT', '2 Chronicles', 22, 2),
+('family', 'نمسۍ', 7652, 'Leviticus 18:10', 'yousafzai2019', 'OT', 'Leviticus', 18, 10),
+('family', 'خېل', 14313, '1 Chronicles 4:8', 'yousafzai2019', 'OT', '1 Chronicles', 4, 8),
+('family', 'خېل', 8020, 'Numbers 3:35', 'yousafzai2019', 'OT', 'Numbers', 3, 35),
+('family', 'لمسۍ', 6852, '2 Chronicles 11:18', 'afghan2023', 'OT', '2 Chronicles', 11, 18),
+('family', 'لمسۍ', 7594, '2 Kings 8:26', 'afghan2023', 'OT', '2 Kings', 8, 26);
 
--- time_periods (10 entries from 5 unique words)
+-- time_periods (12 entries from 6 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('time_periods', 'وخت', 1179, 'Genesis 41:25', 'yousafzai2019', 'OT', 'Genesis', 41, 25),
-('time_periods', 'وخت', 2582, 'Exodus 38:25', 'yousafzai2019', 'OT', 'Exodus', 38, 25),
-('time_periods', 'ورځ', 1771, 'Exodus 12:14', 'yousafzai2019', 'OT', 'Exodus', 12, 14),
-('time_periods', 'ورځ', 542, 'Genesis 22:4', 'yousafzai2019', 'OT', 'Genesis', 22, 4),
-('time_periods', 'شپه', 493, 'Genesis 20:3', 'yousafzai2019', 'OT', 'Genesis', 20, 3),
-('time_periods', 'شپه', 1751, 'Exodus 11:4', 'yousafzai2019', 'OT', 'Exodus', 11, 4),
-('time_periods', 'ماښام', 453, 'Genesis 19:1', 'yousafzai2019', 'OT', 'Genesis', 19, 1),
-('time_periods', 'ماښام', 1455, 'Genesis 49:27', 'yousafzai2019', 'OT', 'Genesis', 49, 27),
-('time_periods', 'موده', 558, 'Genesis 22:20', 'yousafzai2019', 'OT', 'Genesis', 22, 20),
-('time_periods', 'موده', 994, 'Genesis 35:1', 'yousafzai2019', 'OT', 'Genesis', 35, 1);
+('time_periods', 'وخت', 8037, 'Numbers 4:5', 'yousafzai2019', 'OT', 'Numbers', 4, 5),
+('time_periods', 'وخت', 4120, 'Mark 11:11', 'afghan2023', 'NT', 'Mark', 11, 11),
+('time_periods', 'ورځ', 23632, '2 Thessalonians 3:8', 'afghan2023', 'NT', '2 Thessalonians', 3, 8),
+('time_periods', 'ورځ', 12801, 'Isaiah 8:15', 'afghan2023', 'OT', 'Isaiah', 8, 15),
+('time_periods', 'شپه', 16494, 'Judges 7:9', 'afghan2023', 'OT', 'Judges', 7, 9),
+('time_periods', 'شپه', 11716, '1 Samuel 19:11', 'yousafzai2019', 'OT', '1 Samuel', 19, 11),
+('time_periods', 'ماښام', 4570, 'Genesis 3:8', 'yousafzai2019', 'OT', 'Genesis', 3, 8),
+('time_periods', 'ماښام', 22810, 'Lamentations 3:63', 'yousafzai2019', 'OT', 'Lamentations', 3, 63),
+('time_periods', 'سهار', 16217, 'Judges 19:8', 'afghan2023', 'OT', 'Judges', 19, 8),
+('time_periods', 'سهار', 17430, 'Nehemiah 4:21', 'afghan2023', 'OT', 'Nehemiah', 4, 21),
+('time_periods', 'موده', 9113, 'Deuteronomy 4:26', 'yousafzai2019', 'OT', 'Deuteronomy', 4, 26),
+('time_periods', 'موده', 18906, 'Psalms 90:10', 'yousafzai2019', 'OT', 'Psalms', 90, 10);
 
--- time (19 entries from 11 unique words)
+-- time (32 entries from 16 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('time', 'وخت', 1370, 'Genesis 46:29', 'yousafzai2019', 'OT', 'Genesis', 46, 29),
-('time', 'وخت', 1105, 'Genesis 38:27', 'yousafzai2019', 'OT', 'Genesis', 38, 27),
-('time', 'ورځ', 194, 'Genesis 8:14', 'yousafzai2019', 'OT', 'Genesis', 8, 14),
-('time', 'ورځ', 542, 'Genesis 22:4', 'yousafzai2019', 'OT', 'Genesis', 22, 4),
-('time', 'اوس', 1582, 'Exodus 5:5', 'yousafzai2019', 'OT', 'Exodus', 5, 5),
-('time', 'اوس', 1010, 'Genesis 35:17', 'yousafzai2019', 'OT', 'Genesis', 35, 17),
-('time', 'کال', 2095, 'Exodus 23:19', 'yousafzai2019', 'OT', 'Exodus', 23, 19),
-('time', 'کال', 2448, 'Exodus 34:26', 'yousafzai2019', 'OT', 'Exodus', 34, 26),
-('time', 'شپه', 493, 'Genesis 20:3', 'yousafzai2019', 'OT', 'Genesis', 20, 3),
-('time', 'شپه', 380, 'Genesis 16:2', 'yousafzai2019', 'OT', 'Genesis', 16, 2),
-('time', 'ماښام', 453, 'Genesis 19:1', 'yousafzai2019', 'OT', 'Genesis', 19, 1),
-('time', 'ماښام', 2221, 'Exodus 27:21', 'yousafzai2019', 'OT', 'Exodus', 27, 21),
-('time', 'موده', 1115, 'Genesis 39:7', 'yousafzai2019', 'OT', 'Genesis', 39, 7),
-('time', 'موده', 994, 'Genesis 35:1', 'yousafzai2019', 'OT', 'Genesis', 35, 1),
-('time', 'سبا', 2424, 'Exodus 34:2', 'yousafzai2019', 'OT', 'Exodus', 34, 2),
-('time', 'سبا', 1703, 'Exodus 9:18', 'yousafzai2019', 'OT', 'Exodus', 9, 18),
-('time', 'اوړی', 202, 'Genesis 8:22', 'yousafzai2019', 'OT', 'Genesis', 8, 22),
-('time', 'هفته', 2088, 'Exodus 23:12', 'yousafzai2019', 'OT', 'Exodus', 23, 12),
-('time', 'ژمی', 202, 'Genesis 8:22', 'yousafzai2019', 'OT', 'Genesis', 8, 22);
+('time', 'وخت', 7197, '2 Chronicles 6:3', 'afghan2023', 'OT', '2 Chronicles', 6, 3),
+('time', 'وخت', 5335, 'Matthew 24:35', 'afghan2023', 'NT', 'Matthew', 24, 35),
+('time', 'ورځ', 12055, 'Isaiah 34:10', 'afghan2023', 'OT', 'Isaiah', 34, 10),
+('time', 'ورځ', 25922, 'Matthew 12:42', 'yousafzai2019', 'NT', 'Matthew', 12, 42),
+('time', 'اوس', 24652, 'Hosea 12:9', 'yousafzai2019', 'OT', 'Hosea', 12, 9),
+('time', 'اوس', 22442, '1 Corinthians 4:13', 'afghan2023', 'NT', '1 Corinthians', 4, 13),
+('time', 'کال', 16930, 'Leviticus 25:22', 'afghan2023', 'OT', 'Leviticus', 25, 22),
+('time', 'کال', 16941, 'Leviticus 25:33', 'afghan2023', 'OT', 'Leviticus', 25, 33),
+('time', 'شپه', 11716, '1 Samuel 19:11', 'yousafzai2019', 'OT', '1 Samuel', 19, 11),
+('time', 'شپه', 12055, 'Isaiah 34:10', 'afghan2023', 'OT', 'Isaiah', 34, 10),
+('time', 'ماښام', 4570, 'Genesis 3:8', 'yousafzai2019', 'OT', 'Genesis', 3, 8),
+('time', 'ماښام', 22579, '1 Corinthians 10:16', 'afghan2023', 'NT', '1 Corinthians', 10, 16),
+('time', 'سهار', 15378, 'Jonah 4:7', 'afghan2023', 'OT', 'Jonah', 4, 7),
+('time', 'سهار', 16286, 'Judges 20:19', 'afghan2023', 'OT', 'Judges', 20, 19),
+('time', 'موده', 9590, 'Ecclesiastes 7:27', 'afghan2023', 'OT', 'Ecclesiastes', 7, 27),
+('time', 'موده', 14329, 'Job 15:19', 'afghan2023', 'OT', 'Job', 15, 19),
+('time', 'سبا', 16473, 'Judges 6:28', 'afghan2023', 'OT', 'Judges', 6, 28),
+('time', 'سبا', 6209, 'Exodus 9:18', 'yousafzai2019', 'OT', 'Exodus', 9, 18),
+('time', 'اوړی', 33861, 'Numbers 14:36', 'yousafzai2019', 'OT', 'Numbers', 14, 36),
+('time', 'اوړی', 23565, '1 Thessalonians 4:16', 'afghan2023', 'NT', '1 Thessalonians', 4, 16),
+('time', 'پسه', 33527, 'Leviticus 8:20', 'yousafzai2019', 'OT', 'Leviticus', 8, 20),
+('time', 'پسه', 17962, 'Numbers 23:14', 'afghan2023', 'OT', 'Numbers', 23, 14),
+('time', 'موسم', 27906, 'Luke 13:9', 'yousafzai2019', 'NT', 'Luke', 13, 9),
+('time', 'موسم', 363, 'Acts 14:17', 'afghan2023', 'NT', 'Acts', 14, 17),
+('time', 'نهه', 4320, 'Mark 15:25', 'afghan2023', 'NT', 'Mark', 15, 25),
+('time', 'نهه', 15719, 'Joshua 21:16', 'afghan2023', 'OT', 'Joshua', 21, 16),
+('time', 'هفته', 588, 'Acts 20:6', 'afghan2023', 'NT', 'Acts', 20, 6),
+('time', 'هفته', 6594, 'Exodus 23:12', 'yousafzai2019', 'OT', 'Exodus', 23, 12),
+('time', 'مستقبل', 22039, 'Jeremiah 29:11', 'yousafzai2019', 'OT', 'Jeremiah', 29, 11),
+('time', 'مستقبل', 29359, 'Acts 2:31', 'yousafzai2019', 'NT', 'Acts', 2, 31),
+('time', 'ژمی', 22778, '1 Corinthians 16:6', 'afghan2023', 'NT', '1 Corinthians', 16, 6),
+('time', 'ژمی', 21415, 'Psalms 74:17', 'afghan2023', 'OT', 'Psalms', 74, 17);
 
--- miscellaneous (2 entries from 1 unique words)
+-- questions (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('miscellaneous', 'وخت', 526, 'Genesis 21:22', 'yousafzai2019', 'OT', 'Genesis', 21, 22),
-('miscellaneous', 'وخت', 2582, 'Exodus 38:25', 'yousafzai2019', 'OT', 'Exodus', 38, 25);
+('questions', 'څنګه', 20700, 'Psalms 33:22', 'afghan2023', 'OT', 'Psalms', 33, 22),
+('questions', 'څنګه', 22337, 'Jeremiah 40:3', 'yousafzai2019', 'OT', 'Jeremiah', 40, 3),
+('questions', 'څه', 9111, 'Deuteronomy 31:21', 'afghan2023', 'OT', 'Deuteronomy', 31, 21),
+('questions', 'څه', 3844, 'Luke 6:4', 'afghan2023', 'NT', 'Luke', 6, 4),
+('questions', 'ولې', 7662, '2 Samuel 12:1', 'afghan2023', 'OT', '2 Samuel', 12, 1),
+('questions', 'ولې', 7213, '2 Chronicles 6:19', 'afghan2023', 'OT', '2 Chronicles', 6, 19),
+('questions', 'پوښتنه', 18184, 'Numbers 31:15', 'afghan2023', 'OT', 'Numbers', 31, 15),
+('questions', 'پوښتنه', 7414, 'Leviticus 10:16', 'yousafzai2019', 'OT', 'Leviticus', 10, 16);
 
--- questions (6 entries from 3 unique words)
+-- grammar_adverbs (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('questions', 'څنګه', 1337, 'Genesis 45:24', 'yousafzai2019', 'OT', 'Genesis', 45, 24),
-('questions', 'څنګه', 2297, 'Exodus 29:35', 'yousafzai2019', 'OT', 'Exodus', 29, 35),
-('questions', 'ولې', 1253, 'Genesis 43:6', 'yousafzai2019', 'OT', 'Genesis', 43, 6),
-('questions', 'ولې', 609, 'Genesis 24:31', 'yousafzai2019', 'OT', 'Genesis', 24, 31),
-('questions', 'پوښتنه', 1237, 'Genesis 42:28', 'yousafzai2019', 'OT', 'Genesis', 42, 28),
-('questions', 'پوښتنه', 1274, 'Genesis 43:27', 'yousafzai2019', 'OT', 'Genesis', 43, 27);
+('grammar_adverbs', 'هلته', 10540, 'Joshua 24:25', 'yousafzai2019', 'OT', 'Joshua', 24, 25),
+('grammar_adverbs', 'هلته', 16211, 'Judges 19:2', 'afghan2023', 'OT', 'Judges', 19, 2),
+('grammar_adverbs', 'اوس', 22442, '1 Corinthians 4:13', 'afghan2023', 'NT', '1 Corinthians', 4, 13),
+('grammar_adverbs', 'اوس', 17570, 'Numbers 10:36', 'afghan2023', 'OT', 'Numbers', 10, 36),
+('grammar_adverbs', 'دلته', 5022, 'Matthew 17:4', 'afghan2023', 'NT', 'Matthew', 17, 4),
+('grammar_adverbs', 'دلته', 26108, 'Matthew 17:17', 'yousafzai2019', 'NT', 'Matthew', 17, 17),
+('grammar_adverbs', 'هېڅکله', 33664, '1 Kings 1:6', 'yousafzai2019', 'OT', '1 Kings', 1, 6),
+('grammar_adverbs', 'هېڅکله', 1594, 'Hebrews 10:1', 'afghan2023', 'NT', 'Hebrews', 10, 1);
 
--- grammar_adverbs (6 entries from 3 unique words)
+-- position (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar_adverbs', 'هلته', 2020, 'Exodus 21:6', 'yousafzai2019', 'OT', 'Exodus', 21, 6),
-('grammar_adverbs', 'هلته', 655, 'Genesis 25:10', 'yousafzai2019', 'OT', 'Genesis', 25, 10),
-('grammar_adverbs', 'اوس', 486, 'Genesis 19:34', 'yousafzai2019', 'OT', 'Genesis', 19, 34),
-('grammar_adverbs', 'اوس', 1371, 'Genesis 46:30', 'yousafzai2019', 'OT', 'Genesis', 46, 30),
-('grammar_adverbs', 'دلته', 1599, 'Exodus 5:22', 'yousafzai2019', 'OT', 'Exodus', 5, 22),
-('grammar_adverbs', 'دلته', 1139, 'Genesis 40:8', 'yousafzai2019', 'OT', 'Genesis', 40, 8);
+('position', 'هلته', 9398, 'Deuteronomy 9:22', 'afghan2023', 'OT', 'Deuteronomy', 9, 22),
+('position', 'هلته', 16211, 'Judges 19:2', 'afghan2023', 'OT', 'Judges', 19, 2),
+('position', 'دلته', 5958, 'Revelation 11:12', 'afghan2023', 'NT', 'Revelation', 11, 12),
+('position', 'دلته', 25922, 'Matthew 12:42', 'yousafzai2019', 'NT', 'Matthew', 12, 42),
+('position', 'لرې', 21502, 'Jeremiah 6:20', 'yousafzai2019', 'OT', 'Jeremiah', 6, 20),
+('position', 'لرې', 6349, 'Romans 10:9', 'afghan2023', 'NT', 'Romans', 10, 9),
+('position', 'ترمنځ', 33767, 'Exodus 28:34', 'yousafzai2019', 'OT', 'Exodus', 28, 34),
+('position', 'ترمنځ', 10723, 'Ezekiel 40:23', 'afghan2023', 'OT', 'Ezekiel', 40, 23);
 
--- position (6 entries from 3 unique words)
+-- spatial (28 entries from 14 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('position', 'هلته', 691, 'Genesis 26:12', 'yousafzai2019', 'OT', 'Genesis', 26, 12),
-('position', 'هلته', 2020, 'Exodus 21:6', 'yousafzai2019', 'OT', 'Exodus', 21, 6),
-('position', 'دلته', 585, 'Genesis 24:7', 'yousafzai2019', 'OT', 'Genesis', 24, 7),
-('position', 'دلته', 1321, 'Genesis 45:8', 'yousafzai2019', 'OT', 'Genesis', 45, 8),
-('position', 'لرې', 2433, 'Exodus 34:11', 'yousafzai2019', 'OT', 'Exodus', 34, 11),
-('position', 'لرې', 145, 'Genesis 6:7', 'yousafzai2019', 'OT', 'Genesis', 6, 7);
+('spatial', 'هلته', 16211, 'Judges 19:2', 'afghan2023', 'OT', 'Judges', 19, 2),
+('spatial', 'هلته', 14794, '1 Chronicles 21:26', 'yousafzai2019', 'OT', '1 Chronicles', 21, 26),
+('spatial', 'دلته', 13655, 'Jeremiah 40:5', 'afghan2023', 'OT', 'Jeremiah', 40, 5),
+('spatial', 'دلته', 4255, 'Mark 14:32', 'afghan2023', 'NT', 'Mark', 14, 32),
+('spatial', 'لرې', 14065, 'Jeremiah 5:15', 'afghan2023', 'OT', 'Jeremiah', 5, 15),
+('spatial', 'لرې', 14637, 'Job 28:4', 'afghan2023', 'OT', 'Job', 28, 4),
+('spatial', 'بهر', 26689, 'Mark 3:14', 'yousafzai2019', 'NT', 'Mark', 3, 14),
+('spatial', 'بهر', 27513, 'Luke 5:27', 'yousafzai2019', 'NT', 'Luke', 5, 27),
+('spatial', 'وروستو', 13670, 'Jeremiah 41:4', 'afghan2023', 'OT', 'Jeremiah', 41, 4),
+('spatial', 'وروستو', 22140, 'Jeremiah 32:16', 'yousafzai2019', 'OT', 'Jeremiah', 32, 16),
+('spatial', 'شا', 13394, '1 Kings 20:40', 'yousafzai2019', 'OT', '1 Kings', 20, 40),
+('spatial', 'شا', 27742, 'Luke 9:62', 'yousafzai2019', 'NT', 'Luke', 9, 62),
+('spatial', 'جنوب', 10557, 'Judges 1:9', 'yousafzai2019', 'OT', 'Judges', 1, 9),
+('spatial', 'جنوب', 24055, 'Ezekiel 46:9', 'yousafzai2019', 'OT', 'Ezekiel', 46, 9),
+('spatial', 'ترمنځ', 33771, 'Exodus 39:25', 'yousafzai2019', 'OT', 'Exodus', 39, 25),
+('spatial', 'ترمنځ', 33767, 'Exodus 28:34', 'yousafzai2019', 'OT', 'Exodus', 28, 34),
+('spatial', 'ختیځ', 10908, 'Ezekiel 47:17', 'afghan2023', 'OT', 'Ezekiel', 47, 17),
+('spatial', 'ختیځ', 9200, 'Deuteronomy 34:1', 'afghan2023', 'OT', 'Deuteronomy', 34, 1),
+('spatial', 'پاس', 18239, 'Psalms 53:2', 'yousafzai2019', 'OT', 'Psalms', 53, 2),
+('spatial', 'پاس', 15803, 'Ezra 5:1', 'yousafzai2019', 'OT', 'Ezra', 5, 1),
+('spatial', 'شاته', 17305, 'Nehemiah 12:32', 'afghan2023', 'OT', 'Nehemiah', 12, 32),
+('spatial', 'شاته', 33507, 'Song of Songs 4:1', 'yousafzai2019', 'NT', 'Song of Songs', 4, 1),
+('spatial', 'پسه', 18454, 'Numbers 6:19', 'afghan2023', 'OT', 'Numbers', 6, 19),
+('spatial', 'پسه', 10811, 'Ezekiel 43:23', 'afghan2023', 'OT', 'Ezekiel', 43, 23),
+('spatial', 'مغرب', 23929, 'Ezekiel 41:12', 'yousafzai2019', 'OT', 'Ezekiel', 41, 12),
+('spatial', 'مغرب', 22168, 'Jeremiah 32:44', 'yousafzai2019', 'OT', 'Jeremiah', 32, 44),
+('spatial', 'ورې', 23635, '2 Thessalonians 3:11', 'afghan2023', 'NT', '2 Thessalonians', 3, 11),
+('spatial', 'ورې', 21315, 'Isaiah 65:25', 'yousafzai2019', 'OT', 'Isaiah', 65, 25);
 
--- spatial (17 entries from 9 unique words)
+-- time_concepts (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('spatial', 'هلته', 1368, 'Genesis 46:27', 'yousafzai2019', 'OT', 'Genesis', 46, 27),
-('spatial', 'هلته', 1464, 'Genesis 50:5', 'yousafzai2019', 'OT', 'Genesis', 50, 5),
-('spatial', 'دلته', 1599, 'Exodus 5:22', 'yousafzai2019', 'OT', 'Exodus', 5, 22),
-('spatial', 'دلته', 1139, 'Genesis 40:8', 'yousafzai2019', 'OT', 'Genesis', 40, 8),
-('spatial', 'لرې', 542, 'Genesis 22:4', 'yousafzai2019', 'OT', 'Genesis', 22, 4),
-('spatial', 'لرې', 2433, 'Exodus 34:11', 'yousafzai2019', 'OT', 'Exodus', 34, 11),
-('spatial', 'بهر', 2532, 'Exodus 37:2', 'yousafzai2019', 'OT', 'Exodus', 37, 2),
-('spatial', 'بهر', 1534, 'Exodus 3:8', 'yousafzai2019', 'OT', 'Exodus', 3, 8),
-('spatial', 'وروستو', 338, 'Genesis 14:5', 'yousafzai2019', 'OT', 'Genesis', 14, 5),
-('spatial', 'وروستو', 539, 'Genesis 22:1', 'yousafzai2019', 'OT', 'Genesis', 22, 1),
-('spatial', 'شا', 2187, 'Exodus 26:22', 'yousafzai2019', 'OT', 'Exodus', 26, 22),
-('spatial', 'شا', 478, 'Genesis 19:26', 'yousafzai2019', 'OT', 'Genesis', 19, 26),
-('spatial', 'جنوب', 2211, 'Exodus 27:9', 'yousafzai2019', 'OT', 'Exodus', 27, 9),
-('spatial', 'جنوب', 2568, 'Exodus 38:9', 'yousafzai2019', 'OT', 'Exodus', 38, 9),
-('spatial', 'پاس', 7, 'Genesis 1:7', 'yousafzai2019', 'OT', 'Genesis', 1, 7),
-('spatial', 'پاس', 2511, 'Exodus 36:19', 'yousafzai2019', 'OT', 'Exodus', 36, 19),
-('spatial', 'ورې', 1231, 'Genesis 42:22', 'yousafzai2019', 'OT', 'Genesis', 42, 22);
+('time_concepts', 'اوس', 13909, 'Jeremiah 50:3', 'afghan2023', 'OT', 'Jeremiah', 50, 3),
+('time_concepts', 'اوس', 17570, 'Numbers 10:36', 'afghan2023', 'OT', 'Numbers', 10, 36),
+('time_concepts', 'پسه', 33527, 'Leviticus 8:20', 'yousafzai2019', 'OT', 'Leviticus', 8, 20),
+('time_concepts', 'پسه', 18454, 'Numbers 6:19', 'afghan2023', 'OT', 'Numbers', 6, 19),
+('time_concepts', 'مستقبل', 17969, 'Numbers 23:21', 'afghan2023', 'OT', 'Numbers', 23, 21),
+('time_concepts', 'مستقبل', 15211, 'Job 8:7', 'afghan2023', 'OT', 'Job', 8, 7);
 
--- time_concepts (2 entries from 1 unique words)
+-- body_parts_torso (22 entries from 11 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('time_concepts', 'اوس', 1411, 'Genesis 48:5', 'yousafzai2019', 'OT', 'Genesis', 48, 5),
-('time_concepts', 'اوس', 1534, 'Exodus 3:8', 'yousafzai2019', 'OT', 'Exodus', 3, 8);
+('body_parts_torso', 'لاس', 18500, 'Numbers 9:6', 'afghan2023', 'OT', 'Numbers', 9, 6),
+('body_parts_torso', 'لاس', 4243, 'Mark 14:20', 'afghan2023', 'NT', 'Mark', 14, 20),
+('body_parts_torso', 'شا', 27742, 'Luke 9:62', 'yousafzai2019', 'NT', 'Luke', 9, 62),
+('body_parts_torso', 'شا', 21605, 'Psalms 82:7', 'afghan2023', 'OT', 'Psalms', 82, 7),
+('body_parts_torso', 'څنګ', 22999, 'Ezekiel 8:4', 'yousafzai2019', 'OT', 'Ezekiel', 8, 4),
+('body_parts_torso', 'څنګ', 18305, 'Psalms 58:8', 'yousafzai2019', 'OT', 'Psalms', 58, 8),
+('body_parts_torso', 'خېټه', 5944, 'Revelation 10:9', 'afghan2023', 'NT', 'Revelation', 10, 9),
+('body_parts_torso', 'خېټه', 10626, 'Judges 3:21', 'yousafzai2019', 'OT', 'Judges', 3, 21),
+('body_parts_torso', 'ګوته', 15938, 'Joshua 7:14', 'afghan2023', 'OT', 'Joshua', 7, 14),
+('body_parts_torso', 'ګوته', 7383, 'Leviticus 9:9', 'yousafzai2019', 'OT', 'Leviticus', 9, 9),
+('body_parts_torso', 'سینه', 17193, 'Micah 7:17', 'afghan2023', 'OT', 'Micah', 7, 17),
+('body_parts_torso', 'سینه', 7765, '2 Samuel 18:14', 'afghan2023', 'OT', '2 Samuel', 18, 14),
+('body_parts_torso', 'اړخ', 15452, 'Joshua 12:8', 'afghan2023', 'OT', 'Joshua', 12, 8),
+('body_parts_torso', 'اړخ', 22874, 'Ezekiel 1:17', 'yousafzai2019', 'OT', 'Ezekiel', 1, 17),
+('body_parts_torso', 'اوږه', 22086, 'Song of solomon 8:5', 'afghan2023', 'OT', 'Song of Solomon', 8, 5),
+('body_parts_torso', 'اوږه', 8688, 'Deuteronomy 18:3', 'afghan2023', 'OT', 'Deuteronomy', 18, 3),
+('body_parts_torso', 'پوښتۍ', 29238, 'John 19:34', 'yousafzai2019', 'NT', 'John', 19, 34),
+('body_parts_torso', 'پوښتۍ', 4559, 'Genesis 2:22', 'yousafzai2019', 'OT', 'Genesis', 2, 22),
+('body_parts_torso', 'پښتۍ', 29273, 'John 20:27', 'yousafzai2019', 'NT', 'John', 20, 27),
+('body_parts_torso', 'پښتۍ', 24329, 'Daniel 7:5', 'yousafzai2019', 'OT', 'Daniel', 7, 5),
+('body_parts_torso', 'ولی', 5791, 'Matthew 9:23', 'afghan2023', 'NT', 'Matthew', 9, 23),
+('body_parts_torso', 'ولی', 2886, 'Jude 1:3', 'afghan2023', 'NT', 'Jude', 1, 3);
 
--- body_parts_torso (12 entries from 7 unique words)
+-- body_parts (42 entries from 21 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('body_parts_torso', 'لاس', 2422, 'Exodus 33:23', 'yousafzai2019', 'OT', 'Exodus', 33, 23),
-('body_parts_torso', 'لاس', 1555, 'Exodus 4:7', 'yousafzai2019', 'OT', 'Exodus', 4, 7),
-('body_parts_torso', 'شا', 2198, 'Exodus 26:33', 'yousafzai2019', 'OT', 'Exodus', 26, 33),
-('body_parts_torso', 'شا', 429, 'Genesis 18:10', 'yousafzai2019', 'OT', 'Genesis', 18, 10),
-('body_parts_torso', 'څنګ', 2247, 'Exodus 28:26', 'yousafzai2019', 'OT', 'Exodus', 28, 26),
-('body_parts_torso', 'خېټه', 70, 'Genesis 3:14', 'yousafzai2019', 'OT', 'Genesis', 3, 14),
-('body_parts_torso', 'خېټه', 667, 'Genesis 25:22', 'yousafzai2019', 'OT', 'Genesis', 25, 22),
-('body_parts_torso', 'ګوته', 2733, 'Leviticus 4:17', 'yousafzai2019', 'OT', 'Leviticus', 4, 17),
-('body_parts_torso', 'ګوته', 2750, 'Leviticus 4:34', 'yousafzai2019', 'OT', 'Leviticus', 4, 34),
-('body_parts_torso', 'اوږه', 623, 'Genesis 24:45', 'yousafzai2019', 'OT', 'Genesis', 24, 45),
-('body_parts_torso', 'پوښتۍ', 2289, 'Exodus 29:27', 'yousafzai2019', 'OT', 'Exodus', 29, 27),
-('body_parts_torso', 'پوښتۍ', 2290, 'Exodus 29:28', 'yousafzai2019', 'OT', 'Exodus', 29, 28);
+('body_parts', 'لاس', 7165, 'Exodus 40:31', 'yousafzai2019', 'OT', 'Exodus', 40, 31),
+('body_parts', 'لاس', 3796, 'Luke 4:39', 'afghan2023', 'NT', 'Luke', 4, 39),
+('body_parts', 'غوږ', 11575, '1 Samuel 15:16', 'yousafzai2019', 'OT', '1 Samuel', 15, 16),
+('body_parts', 'غوږ', 6788, 'Exodus 29:20', 'yousafzai2019', 'OT', 'Exodus', 29, 20),
+('body_parts', 'زړه', 21349, 'Psalms 71:23', 'afghan2023', 'OT', 'Psalms', 71, 23),
+('body_parts', 'زړه', 9616, 'Ecclesiastes 9:7', 'afghan2023', 'OT', 'Ecclesiastes', 9, 7),
+('body_parts', 'شا', 6721, 'Romans 8:22', 'afghan2023', 'NT', 'Romans', 8, 22),
+('body_parts', 'شا', 27742, 'Luke 9:62', 'yousafzai2019', 'NT', 'Luke', 9, 62),
+('body_parts', 'ادوم', 20295, 'Isaiah 11:14', 'yousafzai2019', 'OT', 'Isaiah', 11, 14),
+('body_parts', 'ادوم', 15460, '2 Chronicles 25:11', 'yousafzai2019', 'OT', '2 Chronicles', 25, 11),
+('body_parts', 'څنګ', 24811, 'Amos 4:10', 'yousafzai2019', 'OT', 'Amos', 4, 10),
+('body_parts', 'څنګ', 22904, '2 Corinthians 6:14', 'afghan2023', 'NT', '2 Corinthians', 6, 14),
+('body_parts', 'سترګه', 22439, '1 Corinthians 4:10', 'afghan2023', 'NT', '1 Corinthians', 4, 10),
+('body_parts', 'سترګه', 27566, 'Luke 6:41', 'yousafzai2019', 'NT', 'Luke', 6, 41),
+('body_parts', 'هډوکی', 16547, 'Judges 9:2', 'afghan2023', 'OT', 'Judges', 9, 2),
+('body_parts', 'هډوکی', 19718, 'Psalms 109:24', 'afghan2023', 'OT', 'Psalms', 109, 24),
+('body_parts', 'خېټه', 22476, '1 Corinthians 6:13', 'afghan2023', 'NT', '1 Corinthians', 6, 13),
+('body_parts', 'خېټه', 5944, 'Revelation 10:9', 'afghan2023', 'NT', 'Revelation', 10, 9),
+('body_parts', 'ګوته', 7383, 'Leviticus 9:9', 'yousafzai2019', 'OT', 'Leviticus', 9, 9),
+('body_parts', 'ګوته', 15150, '2 Chronicles 10:10', 'yousafzai2019', 'OT', '2 Chronicles', 10, 10),
+('body_parts', 'سینه', 3246, 'Luke 18:13', 'afghan2023', 'NT', 'Luke', 18, 13),
+('body_parts', 'سینه', 11400, 'Hosea 13:8', 'afghan2023', 'OT', 'Hosea', 13, 8),
+('body_parts', 'پښه', 17932, 'Numbers 22:25', 'afghan2023', 'OT', 'Numbers', 22, 25),
+('body_parts', 'پښه', 5704, 'Genesis 41:44', 'yousafzai2019', 'OT', 'Genesis', 41, 44),
+('body_parts', 'اړخ', 10936, 'Ezekiel 4:8', 'afghan2023', 'OT', 'Ezekiel', 4, 8),
+('body_parts', 'اړخ', 15977, 'Joshua 8:33', 'afghan2023', 'OT', 'Joshua', 8, 33),
+('body_parts', 'مرۍ', 2565, 'John 4:7', 'afghan2023', 'NT', 'John', 4, 7),
+('body_parts', 'مرۍ', 20640, 'Isaiah 30:28', 'yousafzai2019', 'OT', 'Isaiah', 30, 28),
+('body_parts', 'پوزه', 14031, '2 Kings 19:28', 'yousafzai2019', 'OT', '2 Kings', 19, 28),
+('body_parts', 'پوزه', 5131, 'Genesis 24:47', 'yousafzai2019', 'OT', 'Genesis', 24, 47),
+('body_parts', 'اوږه', 22086, 'Song of solomon 8:5', 'afghan2023', 'OT', 'Song of Solomon', 8, 5),
+('body_parts', 'اوږه', 28340, 'Luke 23:26', 'yousafzai2019', 'NT', 'Luke', 23, 26),
+('body_parts', 'غاښ', 17980, 'Psalms 37:12', 'yousafzai2019', 'OT', 'Psalms', 37, 12),
+('body_parts', 'غاښ', 6080, 'Revelation 18:12', 'afghan2023', 'NT', 'Revelation', 18, 12),
+('body_parts', 'پوښتۍ', 6796, 'Exodus 29:28', 'yousafzai2019', 'OT', 'Exodus', 29, 28),
+('body_parts', 'پوښتۍ', 4559, 'Genesis 2:22', 'yousafzai2019', 'OT', 'Genesis', 2, 22),
+('body_parts', 'پښتۍ', 24329, 'Daniel 7:5', 'yousafzai2019', 'OT', 'Daniel', 7, 5),
+('body_parts', 'پښتۍ', 29266, 'John 20:20', 'yousafzai2019', 'NT', 'John', 20, 20),
+('body_parts', 'پونده', 16803, 'Job 18:9', 'yousafzai2019', 'OT', 'Job', 18, 9),
+('body_parts', 'پونده', 5951, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17),
+('body_parts', 'ولی', 33760, 'Genesis 21:9', 'yousafzai2019', 'OT', 'Genesis', 21, 9),
+('body_parts', 'ولی', 9750, 'Esther 8:9', 'afghan2023', 'OT', 'Esther', 8, 9);
 
--- body_parts (26 entries from 15 unique words)
+-- states_size (14 entries from 7 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('body_parts', 'لاس', 2422, 'Exodus 33:23', 'yousafzai2019', 'OT', 'Exodus', 33, 23),
-('body_parts', 'لاس', 59, 'Genesis 3:3', 'yousafzai2019', 'OT', 'Genesis', 3, 3),
-('body_parts', 'غوږ', 2097, 'Exodus 23:21', 'yousafzai2019', 'OT', 'Exodus', 23, 21),
-('body_parts', 'غوږ', 1706, 'Exodus 9:21', 'yousafzai2019', 'OT', 'Exodus', 9, 21),
-('body_parts', 'شا', 2524, 'Exodus 36:32', 'yousafzai2019', 'OT', 'Exodus', 36, 32),
-('body_parts', 'شا', 2187, 'Exodus 26:22', 'yousafzai2019', 'OT', 'Exodus', 26, 22),
-('body_parts', 'ادوم', 958, 'Genesis 33:16', 'yousafzai2019', 'OT', 'Genesis', 33, 16),
-('body_parts', 'ادوم', 339, 'Genesis 14:6', 'yousafzai2019', 'OT', 'Genesis', 14, 6),
-('body_parts', 'څنګ', 2247, 'Exodus 28:26', 'yousafzai2019', 'OT', 'Exodus', 28, 26),
-('body_parts', 'سترګه', 2038, 'Exodus 21:26', 'yousafzai2019', 'OT', 'Exodus', 21, 26),
-('body_parts', 'سترګه', 566, 'Genesis 23:6', 'yousafzai2019', 'OT', 'Genesis', 23, 6),
-('body_parts', 'خېټه', 668, 'Genesis 25:23', 'yousafzai2019', 'OT', 'Genesis', 25, 23),
-('body_parts', 'خېټه', 667, 'Genesis 25:22', 'yousafzai2019', 'OT', 'Genesis', 25, 22),
-('body_parts', 'ګوته', 2750, 'Leviticus 4:34', 'yousafzai2019', 'OT', 'Leviticus', 4, 34),
-('body_parts', 'ګوته', 1196, 'Genesis 41:42', 'yousafzai2019', 'OT', 'Genesis', 41, 42),
-('body_parts', 'پښه', 1198, 'Genesis 41:44', 'yousafzai2019', 'OT', 'Genesis', 41, 44),
-('body_parts', 'مرۍ', 1436, 'Genesis 49:8', 'yousafzai2019', 'OT', 'Genesis', 49, 8),
-('body_parts', 'پوزه', 625, 'Genesis 24:47', 'yousafzai2019', 'OT', 'Genesis', 24, 47),
-('body_parts', 'پوزه', 600, 'Genesis 24:22', 'yousafzai2019', 'OT', 'Genesis', 24, 22),
-('body_parts', 'اوږه', 623, 'Genesis 24:45', 'yousafzai2019', 'OT', 'Genesis', 24, 45),
-('body_parts', 'غاښ', 2036, 'Exodus 21:24', 'yousafzai2019', 'OT', 'Exodus', 21, 24),
-('body_parts', 'غاښ', 2039, 'Exodus 21:27', 'yousafzai2019', 'OT', 'Exodus', 21, 27),
-('body_parts', 'پوښتۍ', 2290, 'Exodus 29:28', 'yousafzai2019', 'OT', 'Exodus', 29, 28),
-('body_parts', 'پوښتۍ', 52, 'Genesis 2:21', 'yousafzai2019', 'OT', 'Genesis', 2, 21),
-('body_parts', 'پونده', 71, 'Genesis 3:15', 'yousafzai2019', 'OT', 'Genesis', 3, 15),
-('body_parts', 'پونده', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17);
+('states_size', 'لوی', 20496, 'Psalms 21:5', 'afghan2023', 'OT', 'Psalms', 21, 5),
+('states_size', 'لوی', 1011, 'Acts 5:17', 'afghan2023', 'NT', 'Acts', 5, 17),
+('states_size', 'لږ', 9030, 'Deuteronomy 2:9', 'yousafzai2019', 'OT', 'Deuteronomy', 2, 9),
+('states_size', 'لږ', 23533, '1 Thessalonians 2:17', 'afghan2023', 'NT', '1 Thessalonians', 2, 17),
+('states_size', 'لوړ', 12914, '1 Kings 7:16', 'yousafzai2019', 'OT', '1 Kings', 7, 16),
+('states_size', 'لوړ', 21686, 'Jeremiah 13:27', 'yousafzai2019', 'OT', 'Jeremiah', 13, 27),
+('states_size', 'اوږد', 10922, 'Ezekiel 48:15', 'afghan2023', 'OT', 'Ezekiel', 48, 15),
+('states_size', 'اوږد', 27094, 'Mark 12:40', 'yousafzai2019', 'NT', 'Mark', 12, 40),
+('states_size', 'وړوکی', 11584, 'Isaiah 11:6', 'afghan2023', 'OT', 'Isaiah', 11, 6),
+('states_size', 'وړوکی', 4501, 'Mark 4:31', 'afghan2023', 'NT', 'Mark', 4, 31),
+('states_size', 'دېو', 33812, 'Song of Songs 8:10', 'yousafzai2019', 'NT', 'Song of Songs', 8, 10),
+('states_size', 'دېو', 20293, 'Psalms 144:14', 'afghan2023', 'OT', 'Psalms', 144, 14),
+('states_size', 'جګ', 20965, 'Isaiah 45:9', 'yousafzai2019', 'OT', 'Isaiah', 45, 9),
+('states_size', 'جګ', 11260, 'Habakkuk 1:3', 'afghan2023', 'OT', 'Habakkuk', 1, 3);
 
--- states_size (10 entries from 5 unique words)
+-- relationships (10 entries from 5 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('states_size', 'لوی', 1344, 'Genesis 46:3', 'yousafzai2019', 'OT', 'Genesis', 46, 3),
-('states_size', 'لوی', 437, 'Genesis 18:18', 'yousafzai2019', 'OT', 'Genesis', 18, 18),
-('states_size', 'لږ', 2404, 'Exodus 33:5', 'yousafzai2019', 'OT', 'Exodus', 33, 5),
-('states_size', 'لږ', 1513, 'Exodus 2:10', 'yousafzai2019', 'OT', 'Exodus', 2, 10),
-('states_size', 'لوړ', 2540, 'Exodus 37:10', 'yousafzai2019', 'OT', 'Exodus', 37, 10),
-('states_size', 'لوړ', 2148, 'Exodus 25:23', 'yousafzai2019', 'OT', 'Exodus', 25, 23),
-('states_size', 'اوږد', 78, 'Genesis 3:22', 'yousafzai2019', 'OT', 'Genesis', 3, 22),
-('states_size', 'اوږد', 2181, 'Exodus 26:16', 'yousafzai2019', 'OT', 'Exodus', 26, 16),
-('states_size', 'وړوکی', 472, 'Genesis 19:20', 'yousafzai2019', 'OT', 'Genesis', 19, 20),
-('states_size', 'وړوکی', 1092, 'Genesis 38:14', 'yousafzai2019', 'OT', 'Genesis', 38, 14);
+('relationships', 'پاچا', 33728, '1 Chronicles 27:25', 'yousafzai2019', 'OT', '1 Chronicles', 27, 25),
+('relationships', 'پاچا', 7470, '2 Kings 25:8', 'afghan2023', 'OT', '2 Kings', 25, 8),
+('relationships', 'ملګری', 1201, 'Colossians 1:7', 'afghan2023', 'NT', 'Colossians', 1, 7),
+('relationships', 'ملګری', 2955, 'Luke 11:5', 'afghan2023', 'NT', 'Luke', 11, 5),
+('relationships', 'خدمتګار', 32215, '2 Timothy 2:15', 'yousafzai2019', 'NT', '2 Timothy', 2, 15),
+('relationships', 'خدمتګار', 6094, 'Revelation 19:2', 'afghan2023', 'NT', 'Revelation', 19, 2),
+('relationships', 'دوست', 5873, 'Philippians 2:12', 'afghan2023', 'NT', 'Philippians', 2, 12),
+('relationships', 'دوست', 183, '3 john 1:5', 'afghan2023', 'NT', '3 John', 1, 5),
+('relationships', 'خادم', 20157, 'Psalms 135:14', 'afghan2023', 'OT', 'Psalms', 135, 14),
+('relationships', 'خادم', 14091, '2 Kings 22:4', 'yousafzai2019', 'OT', '2 Kings', 22, 4);
 
--- states_life (9 entries from 5 unique words)
+-- leadership (14 entries from 7 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('states_life', 'ژوند', 78, 'Genesis 3:22', 'yousafzai2019', 'OT', 'Genesis', 3, 22),
-('states_life', 'ژوند', 2035, 'Exodus 21:23', 'yousafzai2019', 'OT', 'Exodus', 21, 23),
-('states_life', 'مړ', 2048, 'Exodus 21:36', 'yousafzai2019', 'OT', 'Exodus', 21, 36),
-('states_life', 'مړ', 1247, 'Genesis 42:38', 'yousafzai2019', 'OT', 'Genesis', 42, 38),
-('states_life', 'مرګ', 697, 'Genesis 26:18', 'yousafzai2019', 'OT', 'Genesis', 26, 18),
-('states_life', 'مرګ', 1475, 'Genesis 50:16', 'yousafzai2019', 'OT', 'Genesis', 50, 16),
-('states_life', 'نوی', 1493, 'Exodus 1:8', 'yousafzai2019', 'OT', 'Exodus', 1, 8),
-('states_life', 'زوړ', 513, 'Genesis 21:7', 'yousafzai2019', 'OT', 'Genesis', 21, 7),
-('states_life', 'زوړ', 409, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17);
+('leadership', 'پاچا', 33744, '1 Chronicles 3:2', 'yousafzai2019', 'OT', '1 Chronicles', 3, 2),
+('leadership', 'پاچا', 33610, '2 Chronicles 4:11', 'yousafzai2019', 'OT', '2 Chronicles', 4, 11),
+('leadership', 'خدمتګار', 674, 'Acts 22:14', 'afghan2023', 'NT', 'Acts', 22, 14),
+('leadership', 'خدمتګار', 6184, 'Revelation 22:9', 'afghan2023', 'NT', 'Revelation', 22, 9),
+('leadership', 'شهزاده', 21990, 'Song of solomon 1:12', 'afghan2023', 'OT', 'Song of Solomon', 1, 12),
+('leadership', 'شهزاده', 24419, 'Daniel 10:13', 'yousafzai2019', 'OT', 'Daniel', 10, 13),
+('leadership', 'خادم', 20157, 'Psalms 135:14', 'afghan2023', 'OT', 'Psalms', 135, 14),
+('leadership', 'خادم', 14091, '2 Kings 22:4', 'yousafzai2019', 'OT', '2 Kings', 22, 4),
+('leadership', 'شهزادګۍ', 20995, 'Isaiah 47:1', 'yousafzai2019', 'OT', 'Isaiah', 47, 1),
+('leadership', 'شهزادګۍ', 22069, 'Song of solomon 7:1', 'afghan2023', 'OT', 'Song of Solomon', 7, 1),
+('leadership', 'شاهزاده', 11807, 'Isaiah 23:8', 'afghan2023', 'OT', 'Isaiah', 23, 8),
+('leadership', 'شاهزاده', 16528, 'Judges 8:18', 'afghan2023', 'OT', 'Judges', 8, 18),
+('leadership', 'شاهزادګۍ', 20930, 'Psalms 45:13', 'afghan2023', 'OT', 'Psalms', 45, 13),
+('leadership', 'شاهزادګۍ', 20927, 'Psalms 45:10', 'afghan2023', 'OT', 'Psalms', 45, 10);
 
--- numbers_cardinal (21 entries from 11 unique words)
+-- states_life (18 entries from 9 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('numbers_cardinal', 'دوه', 2522, 'Exodus 36:30', 'yousafzai2019', 'OT', 'Exodus', 36, 30),
-('numbers_cardinal', 'دوه', 2198, 'Exodus 26:33', 'yousafzai2019', 'OT', 'Exodus', 26, 33),
-('numbers_cardinal', 'درې', 138, 'Genesis 5:32', 'yousafzai2019', 'OT', 'Genesis', 5, 32),
-('numbers_cardinal', 'درې', 1356, 'Genesis 46:15', 'yousafzai2019', 'OT', 'Genesis', 46, 15),
-('numbers_cardinal', 'څلور', 2550, 'Exodus 37:20', 'yousafzai2019', 'OT', 'Exodus', 37, 20),
-('numbers_cardinal', 'څلور', 2049, 'Exodus 22:1', 'yousafzai2019', 'OT', 'Exodus', 22, 1),
-('numbers_cardinal', 'لس', 115, 'Genesis 5:9', 'yousafzai2019', 'OT', 'Genesis', 5, 9),
-('numbers_cardinal', 'لس', 588, 'Genesis 24:10', 'yousafzai2019', 'OT', 'Genesis', 24, 10),
-('numbers_cardinal', 'شپږ', 2158, 'Exodus 25:33', 'yousafzai2019', 'OT', 'Exodus', 25, 33),
-('numbers_cardinal', 'شپږ', 2508, 'Exodus 36:16', 'yousafzai2019', 'OT', 'Exodus', 36, 16),
-('numbers_cardinal', 'څلوېښت', 2531, 'Exodus 37:1', 'yousafzai2019', 'OT', 'Exodus', 37, 1),
-('numbers_cardinal', 'څلوېښت', 2186, 'Exodus 26:21', 'yousafzai2019', 'OT', 'Exodus', 26, 21),
-('numbers_cardinal', 'دېرش', 280, 'Genesis 11:17', 'yousafzai2019', 'OT', 'Genesis', 11, 17),
-('numbers_cardinal', 'دېرش', 1796, 'Exodus 12:41', 'yousafzai2019', 'OT', 'Exodus', 12, 41),
-('numbers_cardinal', 'پنځوس', 2568, 'Exodus 38:9', 'yousafzai2019', 'OT', 'Exodus', 38, 9),
-('numbers_cardinal', 'پنځوس', 2504, 'Exodus 36:12', 'yousafzai2019', 'OT', 'Exodus', 36, 12),
-('numbers_cardinal', 'څوارلس', 1363, 'Genesis 46:22', 'yousafzai2019', 'OT', 'Genesis', 46, 22),
-('numbers_cardinal', 'څوارلس', 151, 'Genesis 6:15', 'yousafzai2019', 'OT', 'Genesis', 6, 15),
-('numbers_cardinal', 'شپاړس', 2522, 'Exodus 36:30', 'yousafzai2019', 'OT', 'Exodus', 36, 30),
-('numbers_cardinal', 'شپاړس', 1359, 'Genesis 46:18', 'yousafzai2019', 'OT', 'Genesis', 46, 18),
-('numbers_cardinal', 'نولس', 288, 'Genesis 11:25', 'yousafzai2019', 'OT', 'Genesis', 11, 25);
+('states_life', 'ژوند', 7900, 'Leviticus 26:3', 'yousafzai2019', 'OT', 'Leviticus', 26, 3),
+('states_life', 'ژوند', 31126, '1 Corinthians 15:35', 'yousafzai2019', 'NT', '1 Corinthians', 15, 35),
+('states_life', 'مړ', 3441, 'Luke 20:37', 'afghan2023', 'NT', 'Luke', 20, 37),
+('states_life', 'مړ', 1966, 'James 3:17', 'afghan2023', 'NT', 'James', 3, 17),
+('states_life', 'مرګ', 16791, 'Job 17:13', 'yousafzai2019', 'OT', 'Job', 17, 13),
+('states_life', 'مرګ', 27723, 'Luke 9:43', 'yousafzai2019', 'NT', 'Luke', 9, 43),
+('states_life', 'نوی', 8773, 'Deuteronomy 20:5', 'afghan2023', 'OT', 'Deuteronomy', 20, 5),
+('states_life', 'نوی', 11579, 'Isaiah 11:1', 'afghan2023', 'OT', 'Isaiah', 11, 1),
+('states_life', 'تازه', 10979, 'Judges 15:19', 'yousafzai2019', 'OT', 'Judges', 15, 19),
+('states_life', 'تازه', 22109, 'Jeremiah 31:25', 'yousafzai2019', 'OT', 'Jeremiah', 31, 25),
+('states_life', 'زوړ', 16229, 'Judges 19:22', 'afghan2023', 'OT', 'Judges', 19, 22),
+('states_life', 'زوړ', 4915, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17),
+('states_life', 'مړینه', 2375, 'John 19:27', 'afghan2023', 'NT', 'John', 19, 27),
+('states_life', 'مړینه', 4327, 'Mark 15:32', 'afghan2023', 'NT', 'Mark', 15, 32),
+('states_life', 'زېږېدنه', 3380, 'Luke 1:56', 'afghan2023', 'NT', 'Luke', 1, 56),
+('states_life', 'زېږېدنه', 5127, 'Matthew 1:17', 'afghan2023', 'NT', 'Matthew', 1, 17),
+('states_life', 'زېږون', 6805, 'Titus 3:5', 'afghan2023', 'NT', 'Titus', 3, 5),
+('states_life', 'زېږون', 20960, 'Psalms 48:6', 'afghan2023', 'OT', 'Psalms', 48, 6);
 
--- numbers (27 entries from 14 unique words)
+-- nature_land (12 entries from 6 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('numbers', 'دوه', 2522, 'Exodus 36:30', 'yousafzai2019', 'OT', 'Exodus', 36, 30),
-('numbers', 'دوه', 2507, 'Exodus 36:15', 'yousafzai2019', 'OT', 'Exodus', 36, 15),
-('numbers', 'درې', 1032, 'Genesis 36:14', 'yousafzai2019', 'OT', 'Genesis', 36, 14),
-('numbers', 'درې', 1335, 'Genesis 45:22', 'yousafzai2019', 'OT', 'Genesis', 45, 22),
-('numbers', 'څلور', 2543, 'Exodus 37:13', 'yousafzai2019', 'OT', 'Exodus', 37, 13),
-('numbers', 'څلور', 2528, 'Exodus 36:36', 'yousafzai2019', 'OT', 'Exodus', 36, 36),
-('numbers', 'کم', 1720, 'Exodus 10:2', 'yousafzai2019', 'OT', 'Exodus', 10, 2),
-('numbers', 'کم', 1761, 'Exodus 12:4', 'yousafzai2019', 'OT', 'Exodus', 12, 4),
-('numbers', 'لږ', 1317, 'Genesis 45:4', 'yousafzai2019', 'OT', 'Genesis', 45, 4),
-('numbers', 'لږ', 1384, 'Genesis 47:9', 'yousafzai2019', 'OT', 'Genesis', 47, 9),
-('numbers', 'لس', 115, 'Genesis 5:9', 'yousafzai2019', 'OT', 'Genesis', 5, 9),
-('numbers', 'لس', 2216, 'Exodus 27:16', 'yousafzai2019', 'OT', 'Exodus', 27, 16),
-('numbers', 'شپږ', 2443, 'Exodus 34:21', 'yousafzai2019', 'OT', 'Exodus', 34, 21),
-('numbers', 'شپږ', 2459, 'Exodus 35:2', 'yousafzai2019', 'OT', 'Exodus', 35, 2),
-('numbers', 'څلوېښت', 160, 'Genesis 7:4', 'yousafzai2019', 'OT', 'Genesis', 7, 4),
-('numbers', 'څلوېښت', 2186, 'Exodus 26:21', 'yousafzai2019', 'OT', 'Exodus', 26, 21),
-('numbers', 'دېرش', 1796, 'Exodus 12:41', 'yousafzai2019', 'OT', 'Exodus', 12, 41),
-('numbers', 'دېرش', 1384, 'Genesis 47:9', 'yousafzai2019', 'OT', 'Genesis', 47, 9),
-('numbers', 'پنځوس', 2211, 'Exodus 27:9', 'yousafzai2019', 'OT', 'Exodus', 27, 9),
-('numbers', 'پنځوس', 2568, 'Exodus 38:9', 'yousafzai2019', 'OT', 'Exodus', 38, 9),
-('numbers', 'څلورم', 2241, 'Exodus 28:20', 'yousafzai2019', 'OT', 'Exodus', 28, 20),
-('numbers', 'څلورم', 2429, 'Exodus 34:7', 'yousafzai2019', 'OT', 'Exodus', 34, 7),
-('numbers', 'څوارلس', 1363, 'Genesis 46:22', 'yousafzai2019', 'OT', 'Genesis', 46, 22),
-('numbers', 'څوارلس', 2501, 'Exodus 36:9', 'yousafzai2019', 'OT', 'Exodus', 36, 9),
-('numbers', 'شپاړس', 2522, 'Exodus 36:30', 'yousafzai2019', 'OT', 'Exodus', 36, 30),
-('numbers', 'شپاړس', 1359, 'Genesis 46:18', 'yousafzai2019', 'OT', 'Genesis', 46, 18),
-('numbers', 'نولس', 288, 'Genesis 11:25', 'yousafzai2019', 'OT', 'Genesis', 11, 25);
+('nature_land', 'زمکه', 13903, 'Jeremiah 4:28', 'afghan2023', 'OT', 'Jeremiah', 4, 28),
+('nature_land', 'زمکه', 23647, 'Ezekiel 32:8', 'yousafzai2019', 'OT', 'Ezekiel', 32, 8),
+('nature_land', 'ځمکه', 33505, 'Leviticus 11:29', 'yousafzai2019', 'OT', 'Leviticus', 11, 29),
+('nature_land', 'ځمکه', 5479, 'Matthew 27:7', 'afghan2023', 'NT', 'Matthew', 27, 7),
+('nature_land', 'غر', 15286, 'Joel 2:5', 'afghan2023', 'OT', 'Joel', 2, 5),
+('nature_land', 'غر', 10350, 'Joshua 18:13', 'yousafzai2019', 'OT', 'Joshua', 18, 13),
+('nature_land', 'صحرا', 14702, 'Job 30:3', 'afghan2023', 'OT', 'Job', 30, 3),
+('nature_land', 'صحرا', 4822, 'Genesis 13:1', 'yousafzai2019', 'OT', 'Genesis', 13, 1),
+('nature_land', 'مېوه', 8147, 'Amos 9:14', 'afghan2023', 'OT', 'Amos', 9, 14),
+('nature_land', 'مېوه', 17030, 'Leviticus 27:30', 'afghan2023', 'OT', 'Leviticus', 27, 30),
+('nature_land', 'بوټی', 17806, 'Numbers 19:6', 'afghan2023', 'OT', 'Numbers', 19, 6),
+('nature_land', 'بوټی', 15377, 'Jonah 4:6', 'afghan2023', 'OT', 'Jonah', 4, 6);
 
--- nature_land (10 entries from 5 unique words)
+-- nature (44 entries from 22 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('nature_land', 'زمکه', 409, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17),
-('nature_land', 'زمکه', 173, 'Genesis 7:17', 'yousafzai2019', 'OT', 'Genesis', 7, 17),
-('nature_land', 'غر', 1527, 'Exodus 3:1', 'yousafzai2019', 'OT', 'Exodus', 3, 1),
-('nature_land', 'غر', 2110, 'Exodus 24:1', 'yousafzai2019', 'OT', 'Exodus', 24, 1),
-('nature_land', 'صحرا', 1544, 'Exodus 3:18', 'yousafzai2019', 'OT', 'Exodus', 3, 18),
-('nature_land', 'صحرا', 640, 'Genesis 24:62', 'yousafzai2019', 'OT', 'Genesis', 24, 62),
-('nature_land', 'مېوه', 67, 'Genesis 3:11', 'yousafzai2019', 'OT', 'Genesis', 3, 11),
-('nature_land', 'مېوه', 68, 'Genesis 3:12', 'yousafzai2019', 'OT', 'Genesis', 3, 12),
-('nature_land', 'بوټی', 1140, 'Genesis 40:9', 'yousafzai2019', 'OT', 'Genesis', 40, 9),
-('nature_land', 'بوټی', 36, 'Genesis 2:5', 'yousafzai2019', 'OT', 'Genesis', 2, 5);
+('nature', 'زمکه', 13471, 'Jeremiah 33:12', 'afghan2023', 'OT', 'Jeremiah', 33, 12),
+('nature', 'زمکه', 27000, 'Mark 10:29', 'yousafzai2019', 'NT', 'Mark', 10, 29),
+('nature', 'ځمکه', 19270, 'Proverbs 3:20', 'afghan2023', 'OT', 'Proverbs', 3, 20),
+('nature', 'ځمکه', 12125, 'Isaiah 37:31', 'afghan2023', 'OT', 'Isaiah', 37, 31),
+('nature', 'سیند', 10374, 'Ezekiel 29:3', 'afghan2023', 'OT', 'Ezekiel', 29, 3),
+('nature', 'سیند', 11692, 'Isaiah 18:1', 'afghan2023', 'OT', 'Isaiah', 18, 1),
+('nature', 'سمندر', 22106, 'Zechariah 10:11', 'afghan2023', 'OT', 'Zechariah', 10, 11),
+('nature', 'سمندر', 10317, 'Joshua 16:8', 'yousafzai2019', 'OT', 'Joshua', 16, 8),
+('nature', 'غر', 33223, 'Revelation 9:9', 'yousafzai2019', 'NT', 'Revelation', 9, 9),
+('nature', 'غر', 33547, 'Song of Songs 1:7', 'yousafzai2019', 'NT', 'Song of Songs', 1, 7),
+('nature', 'صحرا', 14702, 'Job 30:3', 'afghan2023', 'OT', 'Job', 30, 3),
+('nature', 'صحرا', 11861, '1 Samuel 25:1', 'yousafzai2019', 'OT', '1 Samuel', 25, 1),
+('nature', 'اوبه', 33617, 'Exodus 2:16', 'yousafzai2019', 'OT', 'Exodus', 2, 16),
+('nature', 'اوبه', 4726, 'Mark 9:41', 'afghan2023', 'NT', 'Mark', 9, 41),
+('nature', 'مېوه', 31844, 'Colossians 1:6', 'yousafzai2019', 'NT', 'Colossians', 1, 6),
+('nature', 'مېوه', 22278, 'Zechariah 8:12', 'afghan2023', 'OT', 'Zechariah', 8, 12),
+('nature', 'دریاب', 20543, 'Psalms 24:2', 'afghan2023', 'OT', 'Psalms', 24, 2),
+('nature', 'دریاب', 19664, 'Psalms 107:26', 'afghan2023', 'OT', 'Psalms', 107, 26),
+('nature', 'بوټی', 11651, 'Isaiah 14:29', 'afghan2023', 'OT', 'Isaiah', 14, 29),
+('nature', 'بوټی', 15378, 'Jonah 4:7', 'afghan2023', 'OT', 'Jonah', 4, 7),
+('nature', 'اس', 14784, 'Job 32:14', 'afghan2023', 'OT', 'Job', 32, 14),
+('nature', 'اس', 4227, 'Mark 14:4', 'afghan2023', 'NT', 'Mark', 14, 4),
+('nature', 'زمری', 16106, 'Judges 14:6', 'afghan2023', 'OT', 'Judges', 14, 6),
+('nature', 'زمری', 6336, 'Revelation 9:17', 'afghan2023', 'NT', 'Revelation', 9, 17),
+('nature', 'مار', 25699, 'Matthew 6:26', 'yousafzai2019', 'NT', 'Matthew', 6, 26),
+('nature', 'مار', 19050, 'Proverbs 25:24', 'afghan2023', 'OT', 'Proverbs', 25, 24),
+('nature', 'واوره', 5228, 'Genesis 27:8', 'yousafzai2019', 'OT', 'Genesis', 27, 8),
+('nature', 'واوره', 6463, 'Exodus 18:19', 'yousafzai2019', 'OT', 'Exodus', 18, 19),
+('nature', 'آس', 14151, 'Jeremiah 8:6', 'afghan2023', 'OT', 'Jeremiah', 8, 6),
+('nature', 'آس', 13961, 'Jeremiah 51:9', 'afghan2023', 'OT', 'Jeremiah', 51, 9),
+('nature', 'غوا', 25313, 'Zechariah 3:10', 'yousafzai2019', 'OT', 'Zechariah', 3, 10),
+('nature', 'غوا', 5679, 'Genesis 41:19', 'yousafzai2019', 'OT', 'Genesis', 41, 19),
+('nature', 'ماهي', 12980, 'Jeremiah 16:16', 'afghan2023', 'OT', 'Jeremiah', 16, 16),
+('nature', 'ماهي', 24080, 'Ezekiel 47:10', 'yousafzai2019', 'OT', 'Ezekiel', 47, 10),
+('nature', 'اوښ', 10262, 'Ezekiel 24:16', 'afghan2023', 'OT', 'Ezekiel', 24, 16),
+('nature', 'اوښ', 13337, 'Jeremiah 2:23', 'afghan2023', 'OT', 'Jeremiah', 2, 23),
+('nature', 'مېلو', 19727, 'Proverbs 28:15', 'yousafzai2019', 'OT', 'Proverbs', 28, 15),
+('nature', 'مېلو', 24833, 'Amos 5:19', 'yousafzai2019', 'OT', 'Amos', 5, 19),
+('nature', 'کب', 11857, 'Isaiah 26:5', 'afghan2023', 'OT', 'Isaiah', 26, 5),
+('nature', 'کب', 20117, 'Psalms 131:1', 'afghan2023', 'OT', 'Psalms', 131, 1),
+('nature', 'سپی', 11669, 'Isaiah 16:6', 'afghan2023', 'OT', 'Isaiah', 16, 6),
+('nature', 'سپی', 33564, 'Numbers 3:49', 'yousafzai2019', 'OT', 'Numbers', 3, 49),
+('nature', 'چرګه', 26342, 'Matthew 23:37', 'yousafzai2019', 'NT', 'Matthew', 23, 37),
+('nature', 'چرګه', 5298, 'Matthew 23:37', 'afghan2023', 'NT', 'Matthew', 23, 37);
 
--- nature (20 entries from 12 unique words)
+-- emotions_positive (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('nature', 'زمکه', 178, 'Genesis 7:22', 'yousafzai2019', 'OT', 'Genesis', 7, 22),
-('nature', 'زمکه', 173, 'Genesis 7:17', 'yousafzai2019', 'OT', 'Genesis', 7, 17),
-('nature', 'سمندر', 1201, 'Genesis 41:49', 'yousafzai2019', 'OT', 'Genesis', 41, 49),
-('nature', 'سمندر', 925, 'Genesis 32:12', 'yousafzai2019', 'OT', 'Genesis', 32, 12),
-('nature', 'غر', 2110, 'Exodus 24:1', 'yousafzai2019', 'OT', 'Exodus', 24, 1),
-('nature', 'غر', 1527, 'Exodus 3:1', 'yousafzai2019', 'OT', 'Exodus', 3, 1),
-('nature', 'صحرا', 339, 'Genesis 14:6', 'yousafzai2019', 'OT', 'Genesis', 14, 6),
-('nature', 'صحرا', 518, 'Genesis 21:14', 'yousafzai2019', 'OT', 'Genesis', 21, 14),
-('nature', 'مېوه', 59, 'Genesis 3:3', 'yousafzai2019', 'OT', 'Genesis', 3, 3),
-('nature', 'مېوه', 68, 'Genesis 3:12', 'yousafzai2019', 'OT', 'Genesis', 3, 12),
-('nature', 'بوټی', 36, 'Genesis 2:5', 'yousafzai2019', 'OT', 'Genesis', 2, 5),
-('nature', 'بوټی', 1730, 'Exodus 10:12', 'yousafzai2019', 'OT', 'Exodus', 10, 12),
-('nature', 'مار', 70, 'Genesis 3:14', 'yousafzai2019', 'OT', 'Genesis', 3, 14),
-('nature', 'مار', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17),
-('nature', 'واوره', 1554, 'Exodus 4:6', 'yousafzai2019', 'OT', 'Exodus', 4, 6),
-('nature', 'آس', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17),
-('nature', 'غوا', 2080, 'Exodus 23:4', 'yousafzai2019', 'OT', 'Exodus', 23, 4),
-('nature', 'غوا', 2049, 'Exodus 22:1', 'yousafzai2019', 'OT', 'Exodus', 22, 1),
-('nature', 'اوښ', 642, 'Genesis 24:64', 'yousafzai2019', 'OT', 'Genesis', 24, 64),
-('nature', 'سپی', 1754, 'Exodus 11:7', 'yousafzai2019', 'OT', 'Exodus', 11, 7);
+('emotions_positive', 'مینه', 20336, 'Psalms 147:11', 'afghan2023', 'OT', 'Psalms', 147, 11),
+('emotions_positive', 'مینه', 1260, 'Colossians 3:14', 'afghan2023', 'NT', 'Colossians', 3, 14),
+('emotions_positive', 'رحم', 28080, 'Luke 18:13', 'yousafzai2019', 'NT', 'Luke', 18, 13),
+('emotions_positive', 'رحم', 20326, 'Isaiah 14:1', 'yousafzai2019', 'OT', 'Isaiah', 14, 1),
+('emotions_positive', 'خوښي', 20335, 'Psalms 147:10', 'afghan2023', 'OT', 'Psalms', 147, 10),
+('emotions_positive', 'خوښي', 21860, 'Psalms 97:8', 'afghan2023', 'OT', 'Psalms', 97, 8);
 
--- actions_fight (7 entries from 4 unique words)
+-- emotions (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('actions_fight', 'جنګ', 1580, 'Exodus 5:3', 'yousafzai2019', 'OT', 'Exodus', 5, 3),
-('actions_fight', 'جنګ', 335, 'Genesis 14:2', 'yousafzai2019', 'OT', 'Genesis', 14, 2),
-('actions_fight', 'ماته', 597, 'Genesis 24:19', 'yousafzai2019', 'OT', 'Genesis', 24, 19),
-('actions_fight', 'شکست', 555, 'Genesis 22:17', 'yousafzai2019', 'OT', 'Genesis', 22, 17),
-('actions_fight', 'شکست', 339, 'Genesis 14:6', 'yousafzai2019', 'OT', 'Genesis', 14, 6),
-('actions_fight', 'جګړه', 699, 'Genesis 26:20', 'yousafzai2019', 'OT', 'Genesis', 26, 20),
-('actions_fight', 'جګړه', 1516, 'Exodus 2:13', 'yousafzai2019', 'OT', 'Exodus', 2, 13);
+('emotions', 'مینه', 19331, 'Proverbs 5:19', 'afghan2023', 'OT', 'Proverbs', 5, 19),
+('emotions', 'مینه', 23251, '1 Peter 5:14', 'afghan2023', 'NT', '1 Peter', 5, 14),
+('emotions', 'رحم', 21984, 'Jeremiah 26:19', 'yousafzai2019', 'OT', 'Jeremiah', 26, 19),
+('emotions', 'رحم', 12507, 'Isaiah 54:10', 'afghan2023', 'OT', 'Isaiah', 54, 10),
+('emotions', 'خوښي', 21850, 'Psalms 96:11', 'afghan2023', 'OT', 'Psalms', 96, 11),
+('emotions', 'خوښي', 11828, 'Isaiah 24:11', 'afghan2023', 'OT', 'Isaiah', 24, 11);
 
--- age_stages (4 entries from 2 unique words)
+-- fruits_holy_spirit (2 entries from 1 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('age_stages', 'مشر', 1321, 'Genesis 45:8', 'yousafzai2019', 'OT', 'Genesis', 45, 8),
-('age_stages', 'مشر', 580, 'Genesis 24:2', 'yousafzai2019', 'OT', 'Genesis', 24, 2),
-('age_stages', 'زوړ', 513, 'Genesis 21:7', 'yousafzai2019', 'OT', 'Genesis', 21, 7),
-('age_stages', 'زوړ', 409, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17);
+('fruits_holy_spirit', 'مینه', 20666, 'Psalms 31:23', 'afghan2023', 'OT', 'Psalms', 31, 23),
+('fruits_holy_spirit', 'مینه', 2212, 'John 14:21', 'afghan2023', 'NT', 'John', 14, 21);
 
--- body_parts_head (9 entries from 5 unique words)
+-- abstract_good (12 entries from 6 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('body_parts_head', 'غوږ', 1299, 'Genesis 44:18', 'yousafzai2019', 'OT', 'Genesis', 44, 18),
-('body_parts_head', 'غوږ', 1706, 'Exodus 9:21', 'yousafzai2019', 'OT', 'Exodus', 9, 21),
-('body_parts_head', 'سترګه', 1115, 'Genesis 39:7', 'yousafzai2019', 'OT', 'Genesis', 39, 7),
-('body_parts_head', 'سترګه', 566, 'Genesis 23:6', 'yousafzai2019', 'OT', 'Genesis', 23, 6),
-('body_parts_head', 'مرۍ', 1436, 'Genesis 49:8', 'yousafzai2019', 'OT', 'Genesis', 49, 8),
-('body_parts_head', 'پوزه', 625, 'Genesis 24:47', 'yousafzai2019', 'OT', 'Genesis', 24, 47),
-('body_parts_head', 'پوزه', 600, 'Genesis 24:22', 'yousafzai2019', 'OT', 'Genesis', 24, 22),
-('body_parts_head', 'غاښ', 2036, 'Exodus 21:24', 'yousafzai2019', 'OT', 'Exodus', 21, 24),
-('body_parts_head', 'غاښ', 2039, 'Exodus 21:27', 'yousafzai2019', 'OT', 'Exodus', 21, 27);
+('abstract_good', 'مینه', 2212, 'John 14:21', 'afghan2023', 'NT', 'John', 14, 21),
+('abstract_good', 'مینه', 20336, 'Psalms 147:11', 'afghan2023', 'OT', 'Psalms', 147, 11),
+('abstract_good', 'ښه', 8451, 'Numbers 18:18', 'yousafzai2019', 'OT', 'Numbers', 18, 18),
+('abstract_good', 'ښه', 362, 'Acts 14:16', 'afghan2023', 'NT', 'Acts', 14, 16),
+('abstract_good', 'رحم', 12417, 'Isaiah 49:13', 'afghan2023', 'OT', 'Isaiah', 49, 13),
+('abstract_good', 'رحم', 19634, 'Psalms 106:44', 'afghan2023', 'OT', 'Psalms', 106, 44),
+('abstract_good', 'عدالت', 21866, 'Psalms 98:2', 'afghan2023', 'OT', 'Psalms', 98, 2),
+('abstract_good', 'عدالت', 30846, '1 Corinthians 6:6', 'yousafzai2019', 'NT', '1 Corinthians', 6, 6),
+('abstract_good', 'انصاف', 21563, 'Psalms 7:17', 'afghan2023', 'OT', 'Psalms', 7, 17),
+('abstract_good', 'انصاف', 18730, 'Proverbs 16:10', 'afghan2023', 'OT', 'Proverbs', 16, 10),
+('abstract_good', 'صدق', 13538, 'Jeremiah 36:12', 'afghan2023', 'OT', 'Jeremiah', 36, 12),
+('abstract_good', 'صدق', 21834, 'Jeremiah 21:1', 'yousafzai2019', 'OT', 'Jeremiah', 21, 1);
 
--- places (7 entries from 4 unique words)
+-- actions_fight (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('places', 'لاره', 1337, 'Genesis 45:24', 'yousafzai2019', 'OT', 'Genesis', 45, 24),
-('places', 'لاره', 663, 'Genesis 25:18', 'yousafzai2019', 'OT', 'Genesis', 25, 18),
-('places', 'لار', 2096, 'Exodus 23:20', 'yousafzai2019', 'OT', 'Exodus', 23, 20),
-('places', 'لار', 1107, 'Genesis 38:29', 'yousafzai2019', 'OT', 'Genesis', 38, 29),
-('places', 'جنوب', 2568, 'Exodus 38:9', 'yousafzai2019', 'OT', 'Exodus', 38, 9),
-('places', 'جنوب', 2183, 'Exodus 26:18', 'yousafzai2019', 'OT', 'Exodus', 26, 18),
-('places', 'سړک', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17);
+('actions_fight', 'جنګ', 21330, 'Isaiah 66:15', 'yousafzai2019', 'OT', 'Isaiah', 66, 15),
+('actions_fight', 'جنګ', 8830, 'Numbers 31:14', 'yousafzai2019', 'OT', 'Numbers', 31, 14),
+('actions_fight', 'ماته', 20400, 'Psalms 17:3', 'afghan2023', 'OT', 'Psalms', 17, 3),
+('actions_fight', 'ماته', 23016, '2 Corinthians 12:6', 'afghan2023', 'NT', '2 Corinthians', 12, 6),
+('actions_fight', 'شکست', 10910, 'Judges 12:4', 'yousafzai2019', 'OT', 'Judges', 12, 4),
+('actions_fight', 'شکست', 12963, 'Jeremiah 15:20', 'afghan2023', 'OT', 'Jeremiah', 15, 20),
+('actions_fight', 'جګړه', 24646, 'Hosea 12:3', 'yousafzai2019', 'OT', 'Hosea', 12, 3),
+('actions_fight', 'جګړه', 15354, '2 Chronicles 20:22', 'yousafzai2019', 'OT', '2 Chronicles', 20, 22);
 
--- food (6 entries from 3 unique words)
+-- age_stages (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('food', 'خوراک', 2437, 'Exodus 34:15', 'yousafzai2019', 'OT', 'Exodus', 34, 15),
-('food', 'خوراک', 1269, 'Genesis 43:22', 'yousafzai2019', 'OT', 'Genesis', 43, 22),
-('food', 'مېوه', 68, 'Genesis 3:12', 'yousafzai2019', 'OT', 'Genesis', 3, 12),
-('food', 'مېوه', 47, 'Genesis 2:16', 'yousafzai2019', 'OT', 'Genesis', 2, 16),
-('food', 'غوښه', 368, 'Genesis 15:11', 'yousafzai2019', 'OT', 'Genesis', 15, 11),
-('food', 'غوښه', 1150, 'Genesis 40:19', 'yousafzai2019', 'OT', 'Genesis', 40, 19);
+('age_stages', 'مشر', 20025, 'Ecclesiastes 10:16', 'yousafzai2019', 'OT', 'Ecclesiastes', 10, 16),
+('age_stages', 'مشر', 12166, 'Isaiah 3:4', 'afghan2023', 'OT', 'Isaiah', 3, 4),
+('age_stages', 'زوړ', 33415, 'Revelation 20:2', 'yousafzai2019', 'NT', 'Revelation', 20, 2),
+('age_stages', 'زوړ', 16229, 'Judges 19:22', 'afghan2023', 'OT', 'Judges', 19, 22),
+('age_stages', 'ځلمیتوب', 9434, 'Ecclesiastes 11:9', 'afghan2023', 'OT', 'Ecclesiastes', 11, 9),
+('age_stages', 'ځلمیتوب', 9435, 'Ecclesiastes 11:10', 'afghan2023', 'OT', 'Ecclesiastes', 11, 10);
 
--- weather (10 entries from 6 unique words)
+-- body_parts_head (10 entries from 5 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('weather', 'آسمان', 521, 'Genesis 21:17', 'yousafzai2019', 'OT', 'Genesis', 21, 17),
-('weather', 'آسمان', 182, 'Genesis 8:2', 'yousafzai2019', 'OT', 'Genesis', 8, 2),
-('weather', 'باران', 168, 'Genesis 7:12', 'yousafzai2019', 'OT', 'Genesis', 7, 12),
-('weather', 'باران', 1716, 'Exodus 9:33', 'yousafzai2019', 'OT', 'Exodus', 9, 33),
-('weather', 'نمر', 475, 'Genesis 19:23', 'yousafzai2019', 'OT', 'Genesis', 19, 23),
-('weather', 'نمر', 374, 'Genesis 15:17', 'yousafzai2019', 'OT', 'Genesis', 15, 17),
-('weather', 'طوفان', 1717, 'Exodus 9:34', 'yousafzai2019', 'OT', 'Exodus', 9, 34),
-('weather', 'سپوږمۍ', 16, 'Genesis 1:16', 'yousafzai2019', 'OT', 'Genesis', 1, 16),
-('weather', 'سپوږمۍ', 1051, 'Genesis 37:9', 'yousafzai2019', 'OT', 'Genesis', 37, 9),
-('weather', 'واوره', 1554, 'Exodus 4:6', 'yousafzai2019', 'OT', 'Exodus', 4, 6);
+('body_parts_head', 'غوږ', 9645, 'Esther 1:17', 'afghan2023', 'OT', 'Esther', 1, 17),
+('body_parts_head', 'غوږ', 6788, 'Exodus 29:20', 'yousafzai2019', 'OT', 'Exodus', 29, 20),
+('body_parts_head', 'سترګه', 10960, 'Ezekiel 5:15', 'afghan2023', 'OT', 'Ezekiel', 5, 15),
+('body_parts_head', 'سترګه', 27566, 'Luke 6:41', 'yousafzai2019', 'NT', 'Luke', 6, 41),
+('body_parts_head', 'مرۍ', 10047, 'Ezekiel 19:2', 'afghan2023', 'OT', 'Ezekiel', 19, 2),
+('body_parts_head', 'مرۍ', 25102, 'Nahum 2:12', 'yousafzai2019', 'OT', 'Nahum', 2, 12),
+('body_parts_head', 'پوزه', 14031, '2 Kings 19:28', 'yousafzai2019', 'OT', '2 Kings', 19, 28),
+('body_parts_head', 'پوزه', 5131, 'Genesis 24:47', 'yousafzai2019', 'OT', 'Genesis', 24, 47),
+('body_parts_head', 'غاښ', 18290, 'Psalms 57:4', 'yousafzai2019', 'OT', 'Psalms', 57, 4),
+('body_parts_head', 'غاښ', 20738, 'Psalms 35:16', 'afghan2023', 'OT', 'Psalms', 35, 16);
 
--- abstract_good (6 entries from 3 unique words)
+-- actions_communication (4 entries from 2 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('abstract_good', 'ښه', 913, 'Genesis 31:55', 'yousafzai2019', 'OT', 'Genesis', 31, 55),
-('abstract_good', 'ښه', 435, 'Genesis 18:16', 'yousafzai2019', 'OT', 'Genesis', 18, 16),
-('abstract_good', 'رحم', 2418, 'Exodus 33:19', 'yousafzai2019', 'OT', 'Exodus', 33, 19),
-('abstract_good', 'رحم', 2428, 'Exodus 34:6', 'yousafzai2019', 'OT', 'Exodus', 34, 6),
-('abstract_good', 'عدالت', 1598, 'Exodus 5:21', 'yousafzai2019', 'OT', 'Exodus', 5, 21),
-('abstract_good', 'عدالت', 2752, 'Leviticus 5:1', 'yousafzai2019', 'OT', 'Leviticus', 5, 1);
+('actions_communication', 'ځواب', 33629, 'Judges 14:13', 'yousafzai2019', 'OT', 'Judges', 14, 13),
+('actions_communication', 'ځواب', 33480, 'Acts 8:37', 'yousafzai2019', 'NT', 'Acts', 8, 37),
+('actions_communication', 'پوښتنه', 16410, 'Judges 4:20', 'afghan2023', 'OT', 'Judges', 4, 20),
+('actions_communication', 'پوښتنه', 6451, 'Exodus 18:7', 'yousafzai2019', 'OT', 'Exodus', 18, 7);
 
--- grammar_adjectives (11 entries from 6 unique words)
+-- places (18 entries from 9 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('grammar_adjectives', 'ښه', 913, 'Genesis 31:55', 'yousafzai2019', 'OT', 'Genesis', 31, 55),
-('grammar_adjectives', 'ښه', 435, 'Genesis 18:16', 'yousafzai2019', 'OT', 'Genesis', 18, 16),
-('grammar_adjectives', 'بد', 2755, 'Leviticus 5:4', 'yousafzai2019', 'OT', 'Leviticus', 5, 4),
-('grammar_adjectives', 'بد', 48, 'Genesis 2:17', 'yousafzai2019', 'OT', 'Genesis', 2, 17),
-('grammar_adjectives', 'نوی', 1493, 'Exodus 1:8', 'yousafzai2019', 'OT', 'Exodus', 1, 8),
-('grammar_adjectives', 'جنوب', 2183, 'Exodus 26:18', 'yousafzai2019', 'OT', 'Exodus', 26, 18),
-('grammar_adjectives', 'جنوب', 2211, 'Exodus 27:9', 'yousafzai2019', 'OT', 'Exodus', 27, 9),
-('grammar_adjectives', 'اوږد', 2148, 'Exodus 25:23', 'yousafzai2019', 'OT', 'Exodus', 25, 23),
-('grammar_adjectives', 'اوږد', 2572, 'Exodus 38:13', 'yousafzai2019', 'OT', 'Exodus', 38, 13),
-('grammar_adjectives', 'زوړ', 513, 'Genesis 21:7', 'yousafzai2019', 'OT', 'Genesis', 21, 7),
-('grammar_adjectives', 'زوړ', 409, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17);
+('places', 'لاره', 2130, 'John 12:27', 'afghan2023', 'NT', 'John', 12, 27),
+('places', 'لاره', 27234, 'Mark 15:29', 'yousafzai2019', 'NT', 'Mark', 15, 29),
+('places', 'لار', 12983, 'Jeremiah 16:19', 'afghan2023', 'OT', 'Jeremiah', 16, 19),
+('places', 'لار', 11707, '1 Samuel 19:2', 'yousafzai2019', 'OT', '1 Samuel', 19, 2),
+('places', 'جنوب', 23870, 'Ezekiel 40:2', 'yousafzai2019', 'OT', 'Ezekiel', 40, 2),
+('places', 'جنوب', 20032, 'Ecclesiastes 11:3', 'yousafzai2019', 'OT', 'Ecclesiastes', 11, 3),
+('places', 'ختیځ', 10732, 'Ezekiel 40:32', 'afghan2023', 'OT', 'Ezekiel', 40, 32),
+('places', 'ختیځ', 33775, 'Numbers 2:3', 'yousafzai2019', 'OT', 'Numbers', 2, 3),
+('places', 'مغرب', 8455, 'Daniel 8:4', 'afghan2023', 'OT', 'Daniel', 8, 4),
+('places', 'مغرب', 22168, 'Jeremiah 32:44', 'yousafzai2019', 'OT', 'Jeremiah', 32, 44),
+('places', 'صوبه', 13222, 'Jeremiah 26:3', 'afghan2023', 'OT', 'Jeremiah', 26, 3),
+('places', 'صوبه', 21788, 'Jeremiah 18:11', 'yousafzai2019', 'OT', 'Jeremiah', 18, 11),
+('places', 'سړک', 13154, '1 Kings 13:24', 'yousafzai2019', 'OT', '1 Kings', 13, 24),
+('places', 'سړک', 19344, 'Proverbs 15:19', 'yousafzai2019', 'OT', 'Proverbs', 15, 19),
+('places', 'کوڅه', 18322, 'Psalms 59:14', 'yousafzai2019', 'OT', 'Psalms', 59, 14),
+('places', 'کوڅه', 14762, 'Job 31:32', 'afghan2023', 'OT', 'Job', 31, 32),
+('places', 'سرک', 21773, 'Jeremiah 17:23', 'yousafzai2019', 'OT', 'Jeremiah', 17, 23),
+('places', 'سرک', 32384, 'Hebrews 3:16', 'yousafzai2019', 'NT', 'Hebrews', 3, 16);
 
--- religious_actions (4 entries from 2 unique words)
+-- food (24 entries from 12 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('religious_actions', 'برکت', 554, 'Genesis 22:16', 'yousafzai2019', 'OT', 'Genesis', 22, 16),
-('religious_actions', 'برکت', 579, 'Genesis 24:1', 'yousafzai2019', 'OT', 'Genesis', 24, 1),
-('religious_actions', 'قربان', 962, 'Genesis 33:20', 'yousafzai2019', 'OT', 'Genesis', 33, 20),
-('religious_actions', 'قربان', 2300, 'Exodus 29:38', 'yousafzai2019', 'OT', 'Exodus', 29, 38);
+('food', 'خوراک', 25492, 'Malachi 1:12', 'yousafzai2019', 'OT', 'Malachi', 1, 12),
+('food', 'خوراک', 14560, 'Job 23:12', 'afghan2023', 'OT', 'Job', 23, 12),
+('food', 'ډوډۍ', 3516, 'Luke 22:27', 'afghan2023', 'NT', 'Luke', 22, 27),
+('food', 'ډوډۍ', 33774, 'Exodus 12:20', 'yousafzai2019', 'OT', 'Exodus', 12, 20),
+('food', 'اوبه', 22591, 'Jeremiah 50:32', 'yousafzai2019', 'OT', 'Jeremiah', 50, 32),
+('food', 'اوبه', 7377, '2 Kings 18:31', 'afghan2023', 'OT', '2 Kings', 18, 31),
+('food', 'مېوه', 5188, 'Matthew 21:19', 'afghan2023', 'NT', 'Matthew', 21, 19),
+('food', 'مېوه', 31844, 'Colossians 1:6', 'yousafzai2019', 'NT', 'Colossians', 1, 6),
+('food', 'غوښه', 8226, 'Numbers 11:18', 'yousafzai2019', 'OT', 'Numbers', 11, 18),
+('food', 'غوښه', 30968, '1 Corinthians 10:28', 'yousafzai2019', 'NT', '1 Corinthians', 10, 28),
+('food', 'غنم', 20442, 'Isaiah 21:10', 'yousafzai2019', 'OT', 'Isaiah', 21, 10),
+('food', 'غنم', 6808, 'Exodus 29:40', 'yousafzai2019', 'OT', 'Exodus', 29, 40),
+('food', 'شات', 23875, 'Ezekiel 40:7', 'yousafzai2019', 'OT', 'Ezekiel', 40, 7),
+('food', 'شات', 12783, 'Isaiah 7:22', 'afghan2023', 'OT', 'Isaiah', 7, 22),
+('food', 'مالګه', 5636, 'Matthew 5:13', 'afghan2023', 'NT', 'Matthew', 5, 13),
+('food', 'مالګه', 13517, '2 Kings 2:20', 'yousafzai2019', 'OT', '2 Kings', 2, 20),
+('food', 'ماهي', 20409, 'Isaiah 19:8', 'yousafzai2019', 'OT', 'Isaiah', 19, 8),
+('food', 'ماهي', 25978, 'Matthew 13:48', 'yousafzai2019', 'NT', 'Matthew', 13, 48),
+('food', 'کب', 25136, 'Habakkuk 1:14', 'yousafzai2019', 'OT', 'Habakkuk', 1, 14),
+('food', 'کب', 11857, 'Isaiah 26:5', 'afghan2023', 'OT', 'Isaiah', 26, 5),
+('food', 'برنج', 10324, 'Ezekiel 27:13', 'afghan2023', 'OT', 'Ezekiel', 27, 13),
+('food', 'برنج', 9195, 'Deuteronomy 33:25', 'afghan2023', 'OT', 'Deuteronomy', 33, 25),
+('food', 'پنیر', 33818, '2 Samuel 17:29', 'yousafzai2019', 'OT', '2 Samuel', 17, 29),
+('food', 'پنیر', 7751, '2 Samuel 17:29', 'afghan2023', 'OT', '2 Samuel', 17, 29);
 
--- religious (10 entries from 5 unique words)
+-- nature_water (10 entries from 5 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('religious', 'برکت', 526, 'Genesis 21:22', 'yousafzai2019', 'OT', 'Genesis', 21, 22),
-('religious', 'برکت', 579, 'Genesis 24:1', 'yousafzai2019', 'OT', 'Genesis', 24, 1),
-('religious', 'مقدس', 2589, 'Exodus 39:1', 'yousafzai2019', 'OT', 'Exodus', 39, 1),
-('religious', 'مقدس', 2250, 'Exodus 28:29', 'yousafzai2019', 'OT', 'Exodus', 28, 29),
-('religious', 'فرښته', 2401, 'Exodus 33:2', 'yousafzai2019', 'OT', 'Exodus', 33, 2),
-('religious', 'فرښته', 1528, 'Exodus 3:2', 'yousafzai2019', 'OT', 'Exodus', 3, 2),
-('religious', 'مَلِک', 504, 'Genesis 20:14', 'yousafzai2019', 'OT', 'Genesis', 20, 14),
-('religious', 'مَلِک', 680, 'Genesis 26:1', 'yousafzai2019', 'OT', 'Genesis', 26, 1),
-('religious', 'قربان', 333, 'Genesis 13:18', 'yousafzai2019', 'OT', 'Genesis', 13, 18),
-('religious', 'قربان', 2742, 'Leviticus 4:26', 'yousafzai2019', 'OT', 'Leviticus', 4, 26);
+('nature_water', 'سیند', 9228, 'Deuteronomy 3:17', 'afghan2023', 'OT', 'Deuteronomy', 3, 17),
+('nature_water', 'سیند', 15750, 'Joshua 22:4', 'afghan2023', 'OT', 'Joshua', 22, 4),
+('nature_water', 'سمندر', 33148, 'Revelation 4:6', 'yousafzai2019', 'NT', 'Revelation', 4, 6),
+('nature_water', 'سمندر', 11334, 'Haggai 2:6', 'afghan2023', 'OT', 'Haggai', 2, 6),
+('nature_water', 'اوبه', 17813, 'Numbers 19:13', 'afghan2023', 'OT', 'Numbers', 19, 13),
+('nature_water', 'اوبه', 20219, 'Isaiah 8:15', 'yousafzai2019', 'OT', 'Isaiah', 8, 15),
+('nature_water', 'دریاب', 21804, 'Psalms 93:4', 'afghan2023', 'OT', 'Psalms', 93, 4),
+('nature_water', 'دریاب', 20352, 'Psalms 148:7', 'afghan2023', 'OT', 'Psalms', 148, 7),
+('nature_water', 'واوره', 20403, 'Psalms 17:6', 'afghan2023', 'OT', 'Psalms', 17, 6),
+('nature_water', 'واوره', 11187, 'Ruth 3:2', 'yousafzai2019', 'OT', 'Ruth', 3, 2);
 
--- direction (10 entries from 5 unique words)
+-- weather (22 entries from 11 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('direction', 'بهر', 1521, 'Exodus 2:20', 'yousafzai2019', 'OT', 'Exodus', 2, 20),
-('direction', 'بهر', 2200, 'Exodus 26:35', 'yousafzai2019', 'OT', 'Exodus', 26, 35),
-('direction', 'وروستو', 338, 'Genesis 14:5', 'yousafzai2019', 'OT', 'Genesis', 14, 5),
-('direction', 'وروستو', 944, 'Genesis 33:2', 'yousafzai2019', 'OT', 'Genesis', 33, 2),
-('direction', 'شا', 2192, 'Exodus 26:27', 'yousafzai2019', 'OT', 'Exodus', 26, 27),
-('direction', 'شا', 478, 'Genesis 19:26', 'yousafzai2019', 'OT', 'Genesis', 19, 26),
-('direction', 'جنوب', 2183, 'Exodus 26:18', 'yousafzai2019', 'OT', 'Exodus', 26, 18),
-('direction', 'جنوب', 2568, 'Exodus 38:9', 'yousafzai2019', 'OT', 'Exodus', 38, 9),
-('direction', 'پاس', 2179, 'Exodus 26:14', 'yousafzai2019', 'OT', 'Exodus', 26, 14),
-('direction', 'پاس', 2511, 'Exodus 36:19', 'yousafzai2019', 'OT', 'Exodus', 36, 19);
+('weather', 'آسمان', 21044, 'Isaiah 49:13', 'yousafzai2019', 'OT', 'Isaiah', 49, 13),
+('weather', 'آسمان', 8425, 'Daniel 7:2', 'afghan2023', 'OT', 'Daniel', 7, 2),
+('weather', 'باران', 11039, 'Ezra 10:9', 'afghan2023', 'OT', 'Ezra', 10, 9),
+('weather', 'باران', 33058, 'Jude 1:12', 'yousafzai2019', 'NT', 'Jude', 1, 12),
+('weather', 'نمر', 17020, 'Job 27:21', 'yousafzai2019', 'OT', 'Job', 27, 21),
+('weather', 'نمر', 15291, 'Joel 2:10', 'afghan2023', 'OT', 'Joel', 2, 10),
+('weather', 'لمر', 5020, 'Matthew 17:2', 'afghan2023', 'NT', 'Matthew', 17, 2),
+('weather', 'لمر', 33496, 'Deuteronomy 16:6', 'yousafzai2019', 'OT', 'Deuteronomy', 16, 6),
+('weather', 'طوفان', 25732, 'Matthew 7:25', 'yousafzai2019', 'NT', 'Matthew', 7, 25),
+('weather', 'طوفان', 15038, 'Job 40:6', 'afghan2023', 'OT', 'Job', 40, 6),
+('weather', 'سپوږمۍ', 5329, 'Matthew 24:29', 'afghan2023', 'NT', 'Matthew', 24, 29),
+('weather', 'سپوږمۍ', 25170, 'Habakkuk 3:11', 'yousafzai2019', 'OT', 'Habakkuk', 3, 11),
+('weather', 'واوره', 7213, '2 Chronicles 6:19', 'afghan2023', 'OT', '2 Chronicles', 6, 19),
+('weather', 'واوره', 16699, 'Lamentations 3:56', 'afghan2023', 'OT', 'Lamentations', 3, 56),
+('weather', 'توفان', 21068, 'Psalms 55:8', 'afghan2023', 'OT', 'Psalms', 55, 8),
+('weather', 'توفان', 11372, 'Hosea 11:6', 'afghan2023', 'OT', 'Hosea', 11, 6),
+('weather', 'ورېځ', 33604, 'Exodus 24:16', 'yousafzai2019', 'OT', 'Exodus', 24, 16),
+('weather', 'ورېځ', 4212, 'Mark 13:26', 'afghan2023', 'NT', 'Mark', 13, 26),
+('weather', 'تود', 15991, 'Joshua 9:12', 'afghan2023', 'OT', 'Joshua', 9, 12),
+('weather', 'تود', 4277, 'Mark 14:54', 'afghan2023', 'NT', 'Mark', 14, 54),
+('weather', 'یخ', 12015, 'Isaiah 32:14', 'afghan2023', 'OT', 'Isaiah', 32, 14),
+('weather', 'یخ', 472, 'Acts 17:19', 'afghan2023', 'NT', 'Acts', 17, 19);
 
--- religious_concepts (6 entries from 3 unique words)
+-- grammar_adjectives (18 entries from 9 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('religious_concepts', 'مقدس', 2295, 'Exodus 29:33', 'yousafzai2019', 'OT', 'Exodus', 29, 33),
-('religious_concepts', 'مقدس', 2198, 'Exodus 26:33', 'yousafzai2019', 'OT', 'Exodus', 26, 33),
-('religious_concepts', 'فرښته', 1778, 'Exodus 12:23', 'yousafzai2019', 'OT', 'Exodus', 12, 23),
-('religious_concepts', 'فرښته', 1422, 'Genesis 48:16', 'yousafzai2019', 'OT', 'Genesis', 48, 16),
-('religious_concepts', 'مَلِک', 531, 'Genesis 21:27', 'yousafzai2019', 'OT', 'Genesis', 21, 27),
-('religious_concepts', 'مَلِک', 690, 'Genesis 26:11', 'yousafzai2019', 'OT', 'Genesis', 26, 11);
+('grammar_adjectives', 'ښه', 14068, '2 Kings 21:7', 'yousafzai2019', 'OT', '2 Kings', 21, 7),
+('grammar_adjectives', 'ښه', 8451, 'Numbers 18:18', 'yousafzai2019', 'OT', 'Numbers', 18, 18),
+('grammar_adjectives', 'بد', 6399, 'Romans 12:2', 'afghan2023', 'NT', 'Romans', 12, 2),
+('grammar_adjectives', 'بد', 11183, 'Ezra 8:6', 'afghan2023', 'OT', 'Ezra', 8, 6),
+('grammar_adjectives', 'نوی', 8103, 'Amos 7:1', 'afghan2023', 'OT', 'Amos', 7, 1),
+('grammar_adjectives', 'نوی', 5784, 'Matthew 9:16', 'afghan2023', 'NT', 'Matthew', 9, 16),
+('grammar_adjectives', 'جنوب', 10267, 'Joshua 15:21', 'yousafzai2019', 'OT', 'Joshua', 15, 21),
+('grammar_adjectives', 'جنوب', 10557, 'Judges 1:9', 'yousafzai2019', 'OT', 'Judges', 1, 9),
+('grammar_adjectives', 'اوږد', 7037, 'Exodus 37:1', 'yousafzai2019', 'OT', 'Exodus', 37, 1),
+('grammar_adjectives', 'اوږد', 6641, 'Exodus 25:10', 'yousafzai2019', 'OT', 'Exodus', 25, 10),
+('grammar_adjectives', 'ختیځ', 11019, 'Ezekiel 8:16', 'afghan2023', 'OT', 'Ezekiel', 8, 16),
+('grammar_adjectives', 'ختیځ', 9200, 'Deuteronomy 34:1', 'afghan2023', 'OT', 'Deuteronomy', 34, 1),
+('grammar_adjectives', 'زوړ', 15777, 'Joshua 23:2', 'afghan2023', 'OT', 'Joshua', 23, 2),
+('grammar_adjectives', 'زوړ', 4915, 'Genesis 17:17', 'yousafzai2019', 'OT', 'Genesis', 17, 17),
+('grammar_adjectives', 'مغرب', 22259, 'Zechariah 7:7', 'afghan2023', 'OT', 'Zechariah', 7, 7),
+('grammar_adjectives', 'مغرب', 8455, 'Daniel 8:4', 'afghan2023', 'OT', 'Daniel', 8, 4),
+('grammar_adjectives', 'یخ', 7312, '2 Kings 13:19', 'afghan2023', 'OT', '2 Kings', 13, 19),
+('grammar_adjectives', 'یخ', 6317, 'Revelation 8:11', 'afghan2023', 'NT', 'Revelation', 8, 11);
 
--- time_months (4 entries from 3 unique words)
+-- religious_actions (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('time_months', 'کال', 338, 'Genesis 14:5', 'yousafzai2019', 'OT', 'Genesis', 14, 5),
-('time_months', 'کال', 2095, 'Exodus 23:19', 'yousafzai2019', 'OT', 'Exodus', 23, 19),
-('time_months', 'اوړی', 202, 'Genesis 8:22', 'yousafzai2019', 'OT', 'Genesis', 8, 22),
-('time_months', 'ژمی', 202, 'Genesis 8:22', 'yousafzai2019', 'OT', 'Genesis', 8, 22);
+('religious_actions', 'برکت', 5508, 'Genesis 35:9', 'yousafzai2019', 'OT', 'Genesis', 35, 9),
+('religious_actions', 'برکت', 18773, 'Proverbs 17:20', 'afghan2023', 'OT', 'Proverbs', 17, 20),
+('religious_actions', 'دعا', 31343, '2 Corinthians 9:14', 'yousafzai2019', 'NT', '2 Corinthians', 9, 14),
+('religious_actions', 'دعا', 33494, 'Matthew 17:21', 'yousafzai2019', 'NT', 'Matthew', 17, 21),
+('religious_actions', 'بپتسمه', 29873, 'Acts 16:15', 'yousafzai2019', 'NT', 'Acts', 16, 15),
+('religious_actions', 'بپتسمه', 29940, 'Acts 18:8', 'yousafzai2019', 'NT', 'Acts', 18, 8),
+('religious_actions', 'قربان', 1602, 'Hebrews 10:9', 'afghan2023', 'NT', 'Hebrews', 10, 9),
+('religious_actions', 'قربان', 14117, '2 Kings 23:12', 'yousafzai2019', 'OT', '2 Kings', 23, 12);
 
--- emotions_positive (2 entries from 1 unique words)
+-- direction (18 entries from 9 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('emotions_positive', 'رحم', 468, 'Genesis 19:16', 'yousafzai2019', 'OT', 'Genesis', 19, 16),
-('emotions_positive', 'رحم', 1129, 'Genesis 39:21', 'yousafzai2019', 'OT', 'Genesis', 39, 21);
+('direction', 'بهر', 12858, 'Jeremiah 11:4', 'afghan2023', 'OT', 'Jeremiah', 11, 4),
+('direction', 'بهر', 26689, 'Mark 3:14', 'yousafzai2019', 'NT', 'Mark', 3, 14),
+('direction', 'وروستو', 13670, 'Jeremiah 41:4', 'afghan2023', 'OT', 'Jeremiah', 41, 4),
+('direction', 'وروستو', 12900, 'Jeremiah 13:6', 'afghan2023', 'OT', 'Jeremiah', 13, 6),
+('direction', 'شا', 27742, 'Luke 9:62', 'yousafzai2019', 'NT', 'Luke', 9, 62),
+('direction', 'شا', 26082, 'Matthew 16:19', 'yousafzai2019', 'NT', 'Matthew', 16, 19),
+('direction', 'جنوب', 10557, 'Judges 1:9', 'yousafzai2019', 'OT', 'Judges', 1, 9),
+('direction', 'جنوب', 24055, 'Ezekiel 46:9', 'yousafzai2019', 'OT', 'Ezekiel', 46, 9),
+('direction', 'ختیځ', 10908, 'Ezekiel 47:17', 'afghan2023', 'OT', 'Ezekiel', 47, 17),
+('direction', 'ختیځ', 9200, 'Deuteronomy 34:1', 'afghan2023', 'OT', 'Deuteronomy', 34, 1),
+('direction', 'پاس', 15803, 'Ezra 5:1', 'yousafzai2019', 'OT', 'Ezra', 5, 1),
+('direction', 'پاس', 800, 'Acts 26:23', 'afghan2023', 'NT', 'Acts', 26, 23),
+('direction', 'شاته', 27742, 'Luke 9:62', 'yousafzai2019', 'NT', 'Luke', 9, 62),
+('direction', 'شاته', 14166, '2 Kings 25:4', 'yousafzai2019', 'OT', '2 Kings', 25, 4),
+('direction', 'پسه', 4818, 'Matthew 12:11', 'afghan2023', 'NT', 'Matthew', 12, 11),
+('direction', 'پسه', 17952, 'Numbers 23:4', 'afghan2023', 'OT', 'Numbers', 23, 4),
+('direction', 'مغرب', 13324, 'Jeremiah 2:10', 'afghan2023', 'OT', 'Jeremiah', 2, 10),
+('direction', 'مغرب', 22259, 'Zechariah 7:7', 'afghan2023', 'OT', 'Zechariah', 7, 7);
 
--- emotions (2 entries from 1 unique words)
+-- time_months (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('emotions', 'رحم', 2418, 'Exodus 33:19', 'yousafzai2019', 'OT', 'Exodus', 33, 19),
-('emotions', 'رحم', 2428, 'Exodus 34:6', 'yousafzai2019', 'OT', 'Exodus', 34, 6);
+('time_months', 'کال', 19514, 'Psalms 104:2', 'afghan2023', 'OT', 'Psalms', 104, 2),
+('time_months', 'کال', 16941, 'Leviticus 25:33', 'afghan2023', 'OT', 'Leviticus', 25, 33),
+('time_months', 'اوړی', 23565, '1 Thessalonians 4:16', 'afghan2023', 'NT', '1 Thessalonians', 4, 16),
+('time_months', 'اوړی', 33861, 'Numbers 14:36', 'yousafzai2019', 'OT', 'Numbers', 14, 36),
+('time_months', 'موسم', 363, 'Acts 14:17', 'afghan2023', 'NT', 'Acts', 14, 17),
+('time_months', 'موسم', 19476, 'Proverbs 20:4', 'yousafzai2019', 'OT', 'Proverbs', 20, 4),
+('time_months', 'ژمی', 22778, '1 Corinthians 16:6', 'afghan2023', 'NT', '1 Corinthians', 16, 6),
+('time_months', 'ژمی', 21415, 'Psalms 74:17', 'afghan2023', 'OT', 'Psalms', 74, 17);
 
--- abstract_concepts (5 entries from 3 unique words)
+-- abstract_concepts (12 entries from 6 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('abstract_concepts', 'رحم', 468, 'Genesis 19:16', 'yousafzai2019', 'OT', 'Genesis', 19, 16),
-('abstract_concepts', 'رحم', 1129, 'Genesis 39:21', 'yousafzai2019', 'OT', 'Genesis', 39, 21),
-('abstract_concepts', 'خلاصون', 1446, 'Genesis 49:18', 'yousafzai2019', 'OT', 'Genesis', 49, 18),
-('abstract_concepts', 'عدالت', 2752, 'Leviticus 5:1', 'yousafzai2019', 'OT', 'Leviticus', 5, 1),
-('abstract_concepts', 'عدالت', 2082, 'Exodus 23:6', 'yousafzai2019', 'OT', 'Exodus', 23, 6);
+('abstract_concepts', 'رحم', 21984, 'Jeremiah 26:19', 'yousafzai2019', 'OT', 'Jeremiah', 26, 19),
+('abstract_concepts', 'رحم', 12507, 'Isaiah 54:10', 'afghan2023', 'OT', 'Isaiah', 54, 10),
+('abstract_concepts', 'خلاصون', 14429, 'Job 19:25', 'afghan2023', 'OT', 'Job', 19, 25),
+('abstract_concepts', 'خلاصون', 2646, 'John 5:34', 'afghan2023', 'NT', 'John', 5, 34),
+('abstract_concepts', 'عدالت', 23084, '1 John 2:29', 'afghan2023', 'NT', '1 John', 2, 29),
+('abstract_concepts', 'عدالت', 24645, 'Hosea 12:2', 'yousafzai2019', 'OT', 'Hosea', 12, 2),
+('abstract_concepts', 'قضاوت', 11269, 'Habakkuk 1:12', 'afghan2023', 'OT', 'Habakkuk', 1, 12),
+('abstract_concepts', 'قضاوت', 6036, 'Revelation 16:7', 'afghan2023', 'NT', 'Revelation', 16, 7),
+('abstract_concepts', 'انصاف', 18730, 'Proverbs 16:10', 'afghan2023', 'OT', 'Proverbs', 16, 10),
+('abstract_concepts', 'انصاف', 8663, 'Deuteronomy 16:18', 'afghan2023', 'OT', 'Deuteronomy', 16, 18),
+('abstract_concepts', 'ازادي', 748, 'Acts 24:23', 'afghan2023', 'NT', 'Acts', 24, 23),
+('abstract_concepts', 'ازادي', 12648, 'Isaiah 61:1', 'afghan2023', 'OT', 'Isaiah', 61, 1);
 
--- measurement (5 entries from 3 unique words)
+-- measurement (18 entries from 9 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('measurement', 'ډک', 1178, 'Genesis 41:24', 'yousafzai2019', 'OT', 'Genesis', 41, 24),
-('measurement', 'ډک', 20, 'Genesis 1:20', 'yousafzai2019', 'OT', 'Genesis', 1, 20),
-('measurement', 'شمېر', 1588, 'Exodus 5:11', 'yousafzai2019', 'OT', 'Exodus', 5, 11),
-('measurement', 'شمېر', 1761, 'Exodus 12:4', 'yousafzai2019', 'OT', 'Exodus', 12, 4),
-('measurement', 'شمېره', 167, 'Genesis 7:11', 'yousafzai2019', 'OT', 'Genesis', 7, 11);
+('measurement', 'ډک', 17779, 'Psalms 25:10', 'yousafzai2019', 'OT', 'Psalms', 25, 10),
+('measurement', 'ډک', 1044, 'Acts 6:8', 'afghan2023', 'NT', 'Acts', 6, 8),
+('measurement', 'شمېر', 21028, 'Isaiah 48:19', 'yousafzai2019', 'OT', 'Isaiah', 48, 19),
+('measurement', 'شمېر', 9005, 'Deuteronomy 28:62', 'afghan2023', 'OT', 'Deuteronomy', 28, 62),
+('measurement', 'نیم', 17305, 'Nehemiah 12:32', 'afghan2023', 'OT', 'Nehemiah', 12, 32),
+('measurement', 'نیم', 15548, 'Joshua 15:34', 'afghan2023', 'OT', 'Joshua', 15, 34),
+('measurement', 'نمبر', 15407, '2 Chronicles 23:6', 'yousafzai2019', 'OT', '2 Chronicles', 23, 6),
+('measurement', 'نمبر', 31082, '1 Corinthians 14:31', 'yousafzai2019', 'NT', '1 Corinthians', 14, 31),
+('measurement', 'شمېره', 19579, 'Psalms 105:34', 'afghan2023', 'OT', 'Psalms', 105, 34),
+('measurement', 'شمېره', 3011, 'Luke 12:7', 'afghan2023', 'NT', 'Luke', 12, 7),
+('measurement', 'ژوروالی', 837, 'Acts 27:28', 'afghan2023', 'NT', 'Acts', 27, 28),
+('measurement', 'ژوروالی', 7163, '2 Chronicles 4:2', 'afghan2023', 'OT', '2 Chronicles', 4, 2),
+('measurement', 'نیمایي', 7754, '2 Samuel 18:3', 'afghan2023', 'OT', '2 Samuel', 18, 3),
+('measurement', 'نیمایي', 17308, 'Nehemiah 12:38', 'afghan2023', 'OT', 'Nehemiah', 12, 38),
+('measurement', 'تعداد', 12867, 'Jeremiah 11:13', 'afghan2023', 'OT', 'Jeremiah', 11, 13),
+('measurement', 'تعداد', 21632, 'Jeremiah 11:13', 'yousafzai2019', 'OT', 'Jeremiah', 11, 13),
+('measurement', 'شمار', 33247, 'Revelation 11:1', 'yousafzai2019', 'NT', 'Revelation', 11, 1),
+('measurement', 'شمار', 7896, '2 Samuel 24:4', 'afghan2023', 'OT', '2 Samuel', 24, 4);
 
--- actions_communication (2 entries from 1 unique words)
+-- body_parts_internal (4 entries from 2 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('actions_communication', 'پوښتنه', 1274, 'Genesis 43:27', 'yousafzai2019', 'OT', 'Genesis', 43, 27),
-('actions_communication', 'پوښتنه', 1237, 'Genesis 42:28', 'yousafzai2019', 'OT', 'Genesis', 42, 28);
+('body_parts_internal', 'زړه', 17359, 'Nehemiah 1:11', 'afghan2023', 'OT', 'Nehemiah', 1, 11),
+('body_parts_internal', 'زړه', 9616, 'Ecclesiastes 9:7', 'afghan2023', 'OT', 'Ecclesiastes', 9, 7),
+('body_parts_internal', 'هډوکی', 16137, 'Judges 15:17', 'afghan2023', 'OT', 'Judges', 15, 17),
+('body_parts_internal', 'هډوکی', 16547, 'Judges 9:2', 'afghan2023', 'OT', 'Judges', 9, 2);
 
--- family_female (4 entries from 2 unique words)
+-- family_female (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('family_female', 'لور', 486, 'Genesis 19:34', 'yousafzai2019', 'OT', 'Genesis', 19, 34),
-('family_female', 'لور', 1356, 'Genesis 46:15', 'yousafzai2019', 'OT', 'Genesis', 46, 15),
-('family_female', 'نمسۍ', 1032, 'Genesis 36:14', 'yousafzai2019', 'OT', 'Genesis', 36, 14),
-('family_female', 'نمسۍ', 1348, 'Genesis 46:7', 'yousafzai2019', 'OT', 'Genesis', 46, 7);
+('family_female', 'لور', 18286, 'Numbers 34:11', 'afghan2023', 'OT', 'Numbers', 34, 11),
+('family_female', 'لور', 25024, 'Micah 4:13', 'yousafzai2019', 'OT', 'Micah', 4, 13),
+('family_female', 'نیا', 20942, 'Psalms 46:8', 'afghan2023', 'OT', 'Psalms', 46, 8),
+('family_female', 'نیا', 33708, 'Numbers 1:11', 'yousafzai2019', 'OT', 'Numbers', 1, 11),
+('family_female', 'نمسۍ', 15391, '2 Chronicles 22:2', 'yousafzai2019', 'OT', '2 Chronicles', 22, 2),
+('family_female', 'نمسۍ', 5854, 'Genesis 46:7', 'yousafzai2019', 'OT', 'Genesis', 46, 7),
+('family_female', 'لمسۍ', 7594, '2 Kings 8:26', 'afghan2023', 'OT', '2 Kings', 8, 26),
+('family_female', 'لمسۍ', 6852, '2 Chronicles 11:18', 'afghan2023', 'OT', '2 Chronicles', 11, 18);
 
--- family_general (4 entries from 2 unique words)
+-- family_general (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('family_general', 'بچی', 1761, 'Exodus 12:4', 'yousafzai2019', 'OT', 'Exodus', 12, 4),
-('family_general', 'بچی', 1503, 'Exodus 1:22', 'yousafzai2019', 'OT', 'Exodus', 1, 22),
-('family_general', 'خپلوان', 296, 'Genesis 12:1', 'yousafzai2019', 'OT', 'Genesis', 12, 1),
-('family_general', 'خپلوان', 323, 'Genesis 13:8', 'yousafzai2019', 'OT', 'Genesis', 13, 8);
+('family_general', 'بچی', 23069, '1 John 2:14', 'afghan2023', 'NT', '1 John', 2, 14),
+('family_general', 'بچی', 2139, 'John 12:36', 'afghan2023', 'NT', 'John', 12, 36),
+('family_general', 'قبیله', 33800, 'Numbers 2:29', 'yousafzai2019', 'OT', 'Numbers', 2, 29),
+('family_general', 'قبیله', 12647, 'Isaiah 60:22', 'afghan2023', 'OT', 'Isaiah', 60, 22),
+('family_general', 'خپلوان', 17776, 'Numbers 18:6', 'afghan2023', 'OT', 'Numbers', 18, 6),
+('family_general', 'خپلوان', 18310, 'Numbers 35:19', 'afghan2023', 'OT', 'Numbers', 35, 19),
+('family_general', 'خېل', 16265, 'Esther 2:15', 'yousafzai2019', 'OT', 'Esther', 2, 15),
+('family_general', 'خېل', 16383, 'Esther 9:29', 'yousafzai2019', 'OT', 'Esther', 9, 29);
 
--- numbers_quantities (4 entries from 2 unique words)
+-- numbers_quantities (10 entries from 5 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('numbers_quantities', 'کم', 633, 'Genesis 24:55', 'yousafzai2019', 'OT', 'Genesis', 24, 55),
-('numbers_quantities', 'کم', 123, 'Genesis 5:17', 'yousafzai2019', 'OT', 'Genesis', 5, 17),
-('numbers_quantities', 'لږ', 592, 'Genesis 24:14', 'yousafzai2019', 'OT', 'Genesis', 24, 14),
-('numbers_quantities', 'لږ', 1258, 'Genesis 43:11', 'yousafzai2019', 'OT', 'Genesis', 43, 11);
+('numbers_quantities', 'کم', 17598, 'Numbers 11:30', 'afghan2023', 'OT', 'Numbers', 11, 30),
+('numbers_quantities', 'کم', 10235, 'Joshua 14:2', 'yousafzai2019', 'OT', 'Joshua', 14, 2),
+('numbers_quantities', 'ځینې', 10180, 'Ezekiel 22:12', 'afghan2023', 'OT', 'Ezekiel', 22, 12),
+('numbers_quantities', 'ځینې', 958, 'Acts 4:1', 'afghan2023', 'NT', 'Acts', 4, 1),
+('numbers_quantities', 'لږ', 9030, 'Deuteronomy 2:9', 'yousafzai2019', 'OT', 'Deuteronomy', 2, 9),
+('numbers_quantities', 'لږ', 23533, '1 Thessalonians 2:17', 'afghan2023', 'NT', '1 Thessalonians', 2, 17),
+('numbers_quantities', 'نیم', 589, 'Acts 20:7', 'afghan2023', 'NT', 'Acts', 20, 7),
+('numbers_quantities', 'نیم', 15548, 'Joshua 15:34', 'afghan2023', 'OT', 'Joshua', 15, 34),
+('numbers_quantities', 'نیمایي', 17415, 'Nehemiah 4:6', 'afghan2023', 'OT', 'Nehemiah', 4, 6),
+('numbers_quantities', 'نیمایي', 10851, 'Ezekiel 45:5', 'afghan2023', 'OT', 'Ezekiel', 45, 5);
 
--- nature_water (3 entries from 2 unique words)
+-- commerce (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('nature_water', 'سمندر', 1201, 'Genesis 41:49', 'yousafzai2019', 'OT', 'Genesis', 41, 49),
-('nature_water', 'سمندر', 10, 'Genesis 1:10', 'yousafzai2019', 'OT', 'Genesis', 1, 10),
-('nature_water', 'واوره', 1554, 'Exodus 4:6', 'yousafzai2019', 'OT', 'Exodus', 4, 6);
+('commerce', 'شته', 17769, 'Numbers 17:12', 'afghan2023', 'OT', 'Numbers', 17, 12),
+('commerce', 'شته', 8231, 'Numbers 11:23', 'yousafzai2019', 'OT', 'Numbers', 11, 23),
+('commerce', 'بیه', 17002, 'Leviticus 26:43', 'afghan2023', 'OT', 'Leviticus', 26, 43),
+('commerce', 'بیه', 17435, 'Nehemiah 5:3', 'afghan2023', 'OT', 'Nehemiah', 5, 3),
+('commerce', 'طلا', 7744, 'Leviticus 21:14', 'yousafzai2019', 'OT', 'Leviticus', 21, 14),
+('commerce', 'طلا', 3183, 'Luke 16:18', 'afghan2023', 'NT', 'Luke', 16, 18);
 
--- commerce (2 entries from 1 unique words)
+-- descriptions_appearance (4 entries from 2 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('commerce', 'شته', 609, 'Genesis 24:31', 'yousafzai2019', 'OT', 'Genesis', 24, 31),
-('commerce', 'شته', 1401, 'Genesis 47:26', 'yousafzai2019', 'OT', 'Genesis', 47, 26);
+('descriptions_appearance', 'ښایسته', 12650, 'Isaiah 61:3', 'afghan2023', 'OT', 'Isaiah', 61, 3),
+('descriptions_appearance', 'ښایسته', 6084, 'Revelation 18:16', 'afghan2023', 'NT', 'Revelation', 18, 16),
+('descriptions_appearance', 'ښکلی', 3031, 'Luke 12:27', 'afghan2023', 'NT', 'Luke', 12, 27),
+('descriptions_appearance', 'ښکلی', 1655, 'Hebrews 11:23', 'afghan2023', 'NT', 'Hebrews', 11, 23);
 
--- descriptions_appearance (3 entries from 2 unique words)
+-- descriptions_character (2 entries from 1 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('descriptions_appearance', 'ښایسته', 1196, 'Genesis 41:42', 'yousafzai2019', 'OT', 'Genesis', 41, 42),
-('descriptions_appearance', 'ښایسته', 1172, 'Genesis 41:18', 'yousafzai2019', 'OT', 'Genesis', 41, 18),
-('descriptions_appearance', 'ښکلی', 1505, 'Exodus 2:2', 'yousafzai2019', 'OT', 'Exodus', 2, 2);
+('descriptions_character', 'وفادار', 1764, 'Hebrews 3:6', 'afghan2023', 'NT', 'Hebrews', 3, 6),
+('descriptions_character', 'وفادار', 32367, 'Hebrews 2:17', 'yousafzai2019', 'NT', 'Hebrews', 2, 17);
 
--- descriptions_character (1 entries from 1 unique words)
+-- work (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('descriptions_character', 'وفادار', 527, 'Genesis 21:23', 'yousafzai2019', 'OT', 'Genesis', 21, 23);
+('work', 'نوکر', 3206, 'Luke 17:10', 'afghan2023', 'NT', 'Luke', 17, 10),
+('work', 'نوکر', 11404, '1 Samuel 9:14', 'yousafzai2019', 'OT', '1 Samuel', 9, 14),
+('work', 'خدمتګار', 32215, '2 Timothy 2:15', 'yousafzai2019', 'NT', '2 Timothy', 2, 15),
+('work', 'خدمتګار', 3393, 'Luke 1:69', 'afghan2023', 'NT', 'Luke', 1, 69),
+('work', 'خادم', 20141, 'Psalms 134:1', 'afghan2023', 'OT', 'Psalms', 134, 1),
+('work', 'خادم', 6489, 'Romans 16:1', 'afghan2023', 'NT', 'Romans', 16, 1);
 
--- relationships (1 entries from 1 unique words)
+-- body_parts_legs (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('relationships', 'ملګری', 1098, 'Genesis 38:20', 'yousafzai2019', 'OT', 'Genesis', 38, 20);
+('body_parts_legs', 'ادوم', 10287, 'Ezekiel 25:14', 'afghan2023', 'OT', 'Ezekiel', 25, 14),
+('body_parts_legs', 'ادوم', 17040, 'Malachi 1:4', 'afghan2023', 'OT', 'Malachi', 1, 4),
+('body_parts_legs', 'پښه', 7749, 'Leviticus 21:19', 'yousafzai2019', 'OT', 'Leviticus', 21, 19),
+('body_parts_legs', 'پښه', 5704, 'Genesis 41:44', 'yousafzai2019', 'OT', 'Genesis', 41, 44),
+('body_parts_legs', 'پونده', 14392, 'Job 18:9', 'afghan2023', 'OT', 'Job', 18, 9),
+('body_parts_legs', 'پونده', 5951, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17);
 
--- work (2 entries from 1 unique words)
+-- religious_places (10 entries from 5 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('work', 'نوکر', 588, 'Genesis 24:10', 'yousafzai2019', 'OT', 'Genesis', 24, 10),
-('work', 'نوکر', 637, 'Genesis 24:59', 'yousafzai2019', 'OT', 'Genesis', 24, 59);
-
--- body_parts_legs (5 entries from 3 unique words)
-INSERT INTO category_verse_mappings (
-  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
-) VALUES
-('body_parts_legs', 'ادوم', 958, 'Genesis 33:16', 'yousafzai2019', 'OT', 'Genesis', 33, 16),
-('body_parts_legs', 'ادوم', 675, 'Genesis 25:30', 'yousafzai2019', 'OT', 'Genesis', 25, 30),
-('body_parts_legs', 'پښه', 1198, 'Genesis 41:44', 'yousafzai2019', 'OT', 'Genesis', 41, 44),
-('body_parts_legs', 'پونده', 671, 'Genesis 25:26', 'yousafzai2019', 'OT', 'Genesis', 25, 26),
-('body_parts_legs', 'پونده', 71, 'Genesis 3:15', 'yousafzai2019', 'OT', 'Genesis', 3, 15);
+('religious_places', 'قضاوت', 12578, 'Isaiah 59:4', 'afghan2023', 'OT', 'Isaiah', 59, 4),
+('religious_places', 'قضاوت', 23236, 'Ezekiel 17:20', 'yousafzai2019', 'OT', 'Ezekiel', 17, 20),
+('religious_places', 'کلیسا', 23352, '1 Timothy 3:7', 'afghan2023', 'NT', '1 Timothy', 3, 7),
+('religious_places', 'کلیسا', 23375, '1 Timothy 4:14', 'afghan2023', 'NT', '1 Timothy', 4, 14),
+('religious_places', 'دوزخ', 26125, 'Matthew 18:9', 'yousafzai2019', 'NT', 'Matthew', 18, 9),
+('religious_places', 'دوزخ', 26320, 'Matthew 23:15', 'yousafzai2019', 'NT', 'Matthew', 23, 15),
+('religious_places', 'کنیسه', 3777, 'Luke 4:20', 'afghan2023', 'NT', 'Luke', 4, 20),
+('religious_places', 'کنیسه', 3894, 'Luke 7:5', 'afghan2023', 'NT', 'Luke', 7, 5),
+('religious_places', 'جنت', 2928, 'Luke 10:20', 'afghan2023', 'NT', 'Luke', 10, 20),
+('religious_places', 'جنت', 3603, 'Luke 23:43', 'afghan2023', 'NT', 'Luke', 23, 43);
 
 -- actions_see (2 entries from 1 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('actions_see', 'کولاو', 1268, 'Genesis 43:21', 'yousafzai2019', 'OT', 'Genesis', 43, 21),
-('actions_see', 'کولاو', 523, 'Genesis 21:19', 'yousafzai2019', 'OT', 'Genesis', 21, 19);
+('actions_see', 'کولاو', 6202, 'Revelation 2:6', 'afghan2023', 'NT', 'Revelation', 2, 6),
+('actions_see', 'کولاو', 5798, 'Genesis 44:11', 'yousafzai2019', 'OT', 'Genesis', 44, 11);
 
--- nature_animals (7 entries from 5 unique words)
+-- abstract_bad (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('nature_animals', 'مار', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17),
-('nature_animals', 'مار', 1551, 'Exodus 4:3', 'yousafzai2019', 'OT', 'Exodus', 4, 3),
-('nature_animals', 'آس', 1445, 'Genesis 49:17', 'yousafzai2019', 'OT', 'Genesis', 49, 17),
-('nature_animals', 'غوا', 2049, 'Exodus 22:1', 'yousafzai2019', 'OT', 'Exodus', 22, 1),
-('nature_animals', 'غوا', 2080, 'Exodus 23:4', 'yousafzai2019', 'OT', 'Exodus', 23, 4),
-('nature_animals', 'اوښ', 642, 'Genesis 24:64', 'yousafzai2019', 'OT', 'Genesis', 24, 64),
-('nature_animals', 'سپی', 1754, 'Exodus 11:7', 'yousafzai2019', 'OT', 'Exodus', 11, 7);
+('abstract_bad', 'دروغ', 20597, 'Psalms 27:12', 'afghan2023', 'OT', 'Psalms', 27, 12),
+('abstract_bad', 'دروغ', 21893, 'Jeremiah 23:16', 'yousafzai2019', 'OT', 'Jeremiah', 23, 16),
+('abstract_bad', 'جور', 23935, 'Ezekiel 41:18', 'yousafzai2019', 'OT', 'Ezekiel', 41, 18),
+('abstract_bad', 'جور', 8880, 'Deuteronomy 24:14', 'afghan2023', 'OT', 'Deuteronomy', 24, 14),
+('abstract_bad', 'شریر', 10998, 'Ezekiel 7:22', 'afghan2023', 'OT', 'Ezekiel', 7, 22),
+('abstract_bad', 'شریر', 21192, 'Psalms 64:2', 'afghan2023', 'OT', 'Psalms', 64, 2);
 
--- colors (1 entries from 1 unique words)
+-- nature_animals (22 entries from 11 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('colors', 'تور', 1733, 'Exodus 10:15', 'yousafzai2019', 'OT', 'Exodus', 10, 15);
+('nature_animals', 'اس', 12128, 'Isaiah 37:34', 'afghan2023', 'OT', 'Isaiah', 37, 34),
+('nature_animals', 'اس', 4227, 'Mark 14:4', 'afghan2023', 'NT', 'Mark', 14, 4),
+('nature_animals', 'زمری', 12145, 'Isaiah 38:13', 'afghan2023', 'OT', 'Isaiah', 38, 13),
+('nature_animals', 'زمری', 33886, '1 Kings 10:20', 'yousafzai2019', 'OT', '1 Kings', 10, 20),
+('nature_animals', 'مار', 12374, '2 Samuel 14:27', 'yousafzai2019', 'OT', '2 Samuel', 14, 27),
+('nature_animals', 'مار', 22572, '1 Corinthians 10:9', 'afghan2023', 'NT', '1 Corinthians', 10, 9),
+('nature_animals', 'آس', 21307, 'Isaiah 65:17', 'yousafzai2019', 'OT', 'Isaiah', 65, 17),
+('nature_animals', 'آس', 25954, 'Matthew 13:24', 'yousafzai2019', 'NT', 'Matthew', 13, 24),
+('nature_animals', 'غوا', 5679, 'Genesis 41:19', 'yousafzai2019', 'OT', 'Genesis', 41, 19),
+('nature_animals', 'غوا', 15759, 'Joshua 22:18', 'afghan2023', 'OT', 'Joshua', 22, 18),
+('nature_animals', 'ماهي', 20409, 'Isaiah 19:8', 'yousafzai2019', 'OT', 'Isaiah', 19, 8),
+('nature_animals', 'ماهي', 5045, 'Matthew 17:27', 'afghan2023', 'NT', 'Matthew', 17, 27),
+('nature_animals', 'اوښ', 14168, 'Jeremiah 9:1', 'afghan2023', 'OT', 'Jeremiah', 9, 1),
+('nature_animals', 'اوښ', 18721, 'Psalms 80:5', 'yousafzai2019', 'OT', 'Psalms', 80, 5),
+('nature_animals', 'مېلو', 3485, 'Luke 21:34', 'afghan2023', 'NT', 'Luke', 21, 34),
+('nature_animals', 'مېلو', 19727, 'Proverbs 28:15', 'yousafzai2019', 'OT', 'Proverbs', 28, 15),
+('nature_animals', 'کب', 21059, 'Isaiah 50:2', 'yousafzai2019', 'OT', 'Isaiah', 50, 2),
+('nature_animals', 'کب', 11857, 'Isaiah 26:5', 'afghan2023', 'OT', 'Isaiah', 26, 5),
+('nature_animals', 'سپی', 11166, 'Ezra 7:15', 'afghan2023', 'OT', 'Ezra', 7, 15),
+('nature_animals', 'سپی', 20524, 'Psalms 22:20', 'afghan2023', 'OT', 'Psalms', 22, 20),
+('nature_animals', 'چرګه', 3097, 'Luke 13:34', 'afghan2023', 'NT', 'Luke', 13, 34),
+('nature_animals', 'چرګه', 27931, 'Luke 13:34', 'yousafzai2019', 'NT', 'Luke', 13, 34);
 
--- numbers_ordinal (2 entries from 1 unique words)
+-- activities_social (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('numbers_ordinal', 'څلورم', 373, 'Genesis 15:16', 'yousafzai2019', 'OT', 'Genesis', 15, 16),
-('numbers_ordinal', 'څلورم', 45, 'Genesis 2:14', 'yousafzai2019', 'OT', 'Genesis', 2, 14);
+('activities_social', 'واده', 3835, 'Luke 5:34', 'afghan2023', 'NT', 'Luke', 5, 34),
+('activities_social', 'واده', 3183, 'Luke 16:18', 'afghan2023', 'NT', 'Luke', 16, 18),
+('activities_social', 'هرکلی', 5890, 'Philippians 2:29', 'afghan2023', 'NT', 'Philippians', 2, 29),
+('activities_social', 'هرکلی', 188, '3 john 1:10', 'afghan2023', 'NT', '3 John', 1, 10),
+('activities_social', 'جنازه', 16906, 'Job 21:33', 'yousafzai2019', 'OT', 'Job', 21, 33),
+('activities_social', 'جنازه', 7733, 'Leviticus 21:1', 'yousafzai2019', 'OT', 'Leviticus', 21, 1);
 
--- materials (2 entries from 1 unique words)
+-- activities (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('materials', 'زېړ', 2586, 'Exodus 38:29', 'yousafzai2019', 'OT', 'Exodus', 38, 29),
-('materials', 'زېړ', 2567, 'Exodus 38:8', 'yousafzai2019', 'OT', 'Exodus', 38, 8);
+('activities', 'واده', 16796, 'Leviticus 21:4', 'afghan2023', 'OT', 'Leviticus', 21, 4),
+('activities', 'واده', 5224, 'Matthew 22:9', 'afghan2023', 'NT', 'Matthew', 22, 9),
+('activities', 'هرکلی', 4000, 'Luke 9:5', 'afghan2023', 'NT', 'Luke', 9, 5),
+('activities', 'هرکلی', 763, 'Acts 25:13', 'afghan2023', 'NT', 'Acts', 25, 13),
+('activities', 'جنازه', 27586, 'Luke 7:12', 'yousafzai2019', 'NT', 'Luke', 7, 12),
+('activities', 'جنازه', 20345, 'Isaiah 14:20', 'yousafzai2019', 'OT', 'Isaiah', 14, 20);
 
--- clothing (1 entries from 1 unique words)
+-- tools (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('clothing', 'څپلۍ', 356, 'Genesis 14:23', 'yousafzai2019', 'OT', 'Genesis', 14, 23);
+('tools', 'غشی', 11780, 'Isaiah 22:3', 'afghan2023', 'OT', 'Isaiah', 22, 3),
+('tools', 'غشی', 7310, '2 Kings 13:17', 'afghan2023', 'OT', '2 Kings', 13, 17),
+('tools', 'څټک', 13160, 'Jeremiah 23:29', 'afghan2023', 'OT', 'Jeremiah', 23, 29),
+('tools', 'څټک', 16440, 'Judges 5:26', 'afghan2023', 'OT', 'Judges', 5, 26),
+('tools', 'چاقو', 13549, 'Jeremiah 36:23', 'afghan2023', 'OT', 'Jeremiah', 36, 23),
+('tools', 'چاقو', 11696, 'Isaiah 18:5', 'afghan2023', 'OT', 'Isaiah', 18, 5);
 
--- time_days (1 entries from 1 unique words)
+-- colors (4 entries from 2 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('time_days', 'هفته', 2088, 'Exodus 23:12', 'yousafzai2019', 'OT', 'Exodus', 23, 12);
+('colors', 'تور', 16433, 'Job 3:9', 'yousafzai2019', 'OT', 'Job', 3, 9),
+('colors', 'تور', 12041, '2 Samuel 1:22', 'yousafzai2019', 'OT', '2 Samuel', 1, 22),
+('colors', 'طلا', 26982, 'Mark 10:11', 'yousafzai2019', 'NT', 'Mark', 10, 11),
+('colors', 'طلا', 3183, 'Luke 16:18', 'afghan2023', 'NT', 'Luke', 16, 18);
 
--- actions_eat (1 entries from 1 unique words)
+-- numbers_ordinal (8 entries from 4 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('actions_eat', 'تنده', 597, 'Genesis 24:19', 'yousafzai2019', 'OT', 'Genesis', 24, 19);
+('numbers_ordinal', 'لومړی', 3221, 'Luke 17:25', 'afghan2023', 'NT', 'Luke', 17, 25),
+('numbers_ordinal', 'لومړی', 16024, 'Judges 10:18', 'afghan2023', 'OT', 'Judges', 10, 18),
+('numbers_ordinal', 'لومړنی', 17254, 'Nehemiah 10:37', 'afghan2023', 'OT', 'Nehemiah', 10, 37),
+('numbers_ordinal', 'لومړنی', 22761, '1 Corinthians 15:47', 'afghan2023', 'NT', '1 Corinthians', 15, 47),
+('numbers_ordinal', 'څلورم', 15106, 'Job 42:16', 'afghan2023', 'OT', 'Job', 42, 16),
+('numbers_ordinal', 'څلورم', 6167, 'Revelation 21:19', 'afghan2023', 'NT', 'Revelation', 21, 19),
+('numbers_ordinal', 'پنځم', 33720, '1 Chronicles 27:8', 'yousafzai2019', 'OT', '1 Chronicles', 27, 8),
+('numbers_ordinal', 'پنځم', 16217, 'Judges 19:8', 'afghan2023', 'OT', 'Judges', 19, 8);
 
--- leadership (1 entries from 1 unique words)
+-- religious_objects (6 entries from 3 unique words)
 INSERT INTO category_verse_mappings (
   category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
 ) VALUES
-('leadership', 'شهزادګۍ', 1512, 'Exodus 2:9', 'yousafzai2019', 'OT', 'Exodus', 2, 9);
+('religious_objects', 'کتاب', 24334, 'Daniel 7:10', 'yousafzai2019', 'OT', 'Daniel', 7, 10),
+('religious_objects', 'کتاب', 25642, 'Matthew 5:17', 'yousafzai2019', 'NT', 'Matthew', 5, 17),
+('religious_objects', 'بت', 28607, 'John 5:18', 'yousafzai2019', 'NT', 'John', 5, 18),
+('religious_objects', 'بت', 13572, '2 Kings 4:23', 'yousafzai2019', 'OT', '2 Kings', 4, 23),
+('religious_objects', 'مجسمه', 24184, 'Daniel 2:35', 'yousafzai2019', 'OT', 'Daniel', 2, 35),
+('religious_objects', 'مجسمه', 33885, '1 Kings 10:19', 'yousafzai2019', 'OT', '1 Kings', 10, 19);
+
+-- cooking (4 entries from 2 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('cooking', 'وږی', 5924, 'Philippians 4:12', 'afghan2023', 'NT', 'Philippians', 4, 12),
+('cooking', 'وږی', 16440, 'Judges 5:26', 'afghan2023', 'OT', 'Judges', 5, 26),
+('cooking', 'تږی', 5393, 'Matthew 25:42', 'afghan2023', 'NT', 'Matthew', 25, 42),
+('cooking', 'تږی', 19047, 'Proverbs 25:21', 'afghan2023', 'OT', 'Proverbs', 25, 21);
+
+-- materials (8 entries from 4 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('materials', 'تیږه', 5604, 'Matthew 4:6', 'afghan2023', 'NT', 'Matthew', 4, 6),
+('materials', 'تیږه', 4346, 'Mark 16:4', 'afghan2023', 'NT', 'Mark', 16, 4),
+('materials', 'زېړ', 16868, 'Job 20:24', 'yousafzai2019', 'OT', 'Job', 20, 24),
+('materials', 'زېړ', 13357, 'Jeremiah 30:6', 'afghan2023', 'OT', 'Jeremiah', 30, 6),
+('materials', 'کاغذ', 126, '2 john 1:12', 'afghan2023', 'NT', '2 John', 1, 12),
+('materials', 'کاغذ', 22140, 'Jeremiah 32:16', 'yousafzai2019', 'OT', 'Jeremiah', 32, 16),
+('materials', 'طلا', 22510, '1 Corinthians 7:27', 'afghan2023', 'NT', '1 Corinthians', 7, 27),
+('materials', 'طلا', 19980, 'Psalms 119:127', 'afghan2023', 'OT', 'Psalms', 119, 127);
+
+-- clothing (4 entries from 2 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('clothing', 'خت', 6859, 'Exodus 31:7', 'yousafzai2019', 'OT', 'Exodus', 31, 7),
+('clothing', 'خت', 3517, 'Luke 22:28', 'afghan2023', 'NT', 'Luke', 22, 28),
+('clothing', 'څپلۍ', 11756, 'Isaiah 20:2', 'afghan2023', 'OT', 'Isaiah', 20, 2),
+('clothing', 'څپلۍ', 21969, 'Ruth 4:8', 'afghan2023', 'OT', 'Ruth', 4, 8);
+
+-- mental_think (2 entries from 1 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('mental_think', 'پلان', 8042, 'Amos 3:7', 'afghan2023', 'OT', 'Amos', 3, 7),
+('mental_think', 'پلان', 16295, 'Judges 20:32', 'afghan2023', 'OT', 'Judges', 20, 32);
+
+-- time_days (4 entries from 2 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('time_days', 'نهه', 18288, 'Numbers 34:13', 'afghan2023', 'OT', 'Numbers', 34, 13),
+('time_days', 'نهه', 5138, 'Matthew 20:3', 'afghan2023', 'NT', 'Matthew', 20, 3),
+('time_days', 'هفته', 30043, 'Acts 21:4', 'yousafzai2019', 'NT', 'Acts', 21, 4),
+('time_days', 'هفته', 6594, 'Exodus 23:12', 'yousafzai2019', 'OT', 'Exodus', 23, 12);
+
+-- actions_eat (2 entries from 1 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('actions_eat', 'تنده', 19523, 'Psalms 104:11', 'afghan2023', 'OT', 'Psalms', 104, 11),
+('actions_eat', 'تنده', 24518, 'Hosea 2:22', 'yousafzai2019', 'OT', 'Hosea', 2, 22);
+
+-- actions_hand (2 entries from 1 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('actions_hand', 'مېلو', 8428, 'Daniel 7:5', 'afghan2023', 'OT', 'Daniel', 7, 5),
+('actions_hand', 'مېلو', 33285, 'Revelation 13:2', 'yousafzai2019', 'NT', 'Revelation', 13, 2);
+
+-- actions (2 entries from 1 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('actions', 'مېلو', 16653, 'Lamentations 3:10', 'afghan2023', 'OT', 'Lamentations', 3, 10),
+('actions', 'مېلو', 8428, 'Daniel 7:5', 'afghan2023', 'OT', 'Daniel', 7, 5);
+
+-- containers (2 entries from 1 unique words)
+INSERT INTO category_verse_mappings (
+  category_key, pashto_word, verse_id, verse_ref, translation_key, testament, book, chapter, verse
+) VALUES
+('containers', 'بوتل', 3231, 'Luke 17:35', 'afghan2023', 'NT', 'Luke', 17, 35),
+('containers', 'بوتل', 7146, '2 Chronicles 36:20', 'afghan2023', 'OT', '2 Chronicles', 36, 20);
 

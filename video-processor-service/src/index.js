@@ -71,7 +71,7 @@ async function getVideoDuration(audioFile) {
  * Transcribe audio with ElevenLabs
  */
 async function transcribeWithElevenLabs(audioFile, apiKey) {
-  const fileStats = await stat(audioFile);
+  let fileStats = await stat(audioFile);
   const maxSize = 25 * 1024 * 1024; // 25MB
   
   let finalAudioFile = audioFile;
@@ -81,10 +81,11 @@ async function transcribeWithElevenLabs(audioFile, apiKey) {
     const compressedPath = audioFile.replace('.mp3', '_compressed.mp3');
     await execAsync(`ffmpeg -i "${audioFile}" -b:a 64k -y "${compressedPath}"`, { timeout: 120000 });
     finalAudioFile = compressedPath;
+    // Re-stat the compressed file
+    fileStats = await stat(finalAudioFile);
   }
   
   // Create FormData using file stream (more reliable for ElevenLabs API)
-  const fileStats = await stat(finalAudioFile);
   const formData = new FormData();
   
   // Use createReadStream instead of reading entire file into buffer
