@@ -21,11 +21,10 @@ export async function GET(request: NextRequest) {
       console.warn('Cloudflare Worker not available, using fallback:', workerError);
     }
 
-    // Fallback: Return empty array for now (worker endpoints need to be added)
-    // TODO: Add topics endpoints to Cloudflare Worker
+    // Fallback: Return empty array if worker is unavailable
     return NextResponse.json({
       categories: [],
-      message: 'Topics endpoints need to be added to Cloudflare Worker',
+      message: 'Cloudflare Worker unavailable',
     });
   } catch (error: any) {
     console.error('Topics categories API error:', error);

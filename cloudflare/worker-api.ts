@@ -411,6 +411,155 @@ async function getNounData(env: Env, word: string): Promise<Response> {
 }
 
 /**
+ * Get form occurrences (verse references) for a word form
+ * GET /api/form-occurrences?form={form}&translation={translation}
+ */
+async function getFormOccurrences(
+  env: Env,
+  form: string,
+  translation: 'afghan2023' | 'yousafzai2019' | null
+): Promise<Response> {
+  try {
+    let query = env.DB.prepare(
+      `SELECT pashto_form, verse_refs, frequency FROM form_occurrences WHERE pashto_form = ?`
+    ).bind(form);
+
+    if (translation) {
+      query = env.DB.prepare(
+        `SELECT pashto_form, verse_refs, frequency FROM form_occurrences 
+         WHERE pashto_form = ? AND (translation_key = ? OR translation_key IS NULL)`
+      ).bind(form, translation);
+    }
+
+    const result = await query.first();
+
+    if (!result) {
+      return errorResponse('Form not found', 404);
+    }
+
+    const verseRefs = typeof result.verse_refs === 'string' 
+      ? JSON.parse(result.verse_refs) 
+      : result.verse_refs || [];
+
+    return jsonResponse({
+      form: result.pashto_form,
+      verse_refs: verseRefs,
+      frequency: result.frequency || 0,
+      translation: translation || null,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get form occurrences: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get inflection reasons for a form or base word
+ * GET /api/inflection-reasons?form={form}&base_word={base_word}&translation={translation}
+ */
+async function getInflectionReasons(
+  env: Env,
+  form: string | null,
+  baseWord: string | null,
+  translation: 'afghan2023' | 'yousafzai2019' | null
+): Promise<Response> {
+  try {
+    let query: any;
+    
+    if (form) {
+      query = env.DB.prepare(
+        `SELECT * FROM inflection_reasons WHERE pashto_form = ?`
+      ).bind(form);
+      
+      if (translation) {
+        query = env.DB.prepare(
+          `SELECT * FROM inflection_reasons 
+           WHERE pashto_form = ? AND (translation_key = ? OR translation_key IS NULL)
+           ORDER BY frequency DESC`
+        ).bind(form, translation);
+      }
+    } else if (baseWord) {
+      query = env.DB.prepare(
+        `SELECT * FROM inflection_reasons WHERE base_word = ?`
+      ).bind(baseWord);
+      
+      if (translation) {
+        query = env.DB.prepare(
+          `SELECT * FROM inflection_reasons 
+           WHERE base_word = ? AND (translation_key = ? OR translation_key IS NULL)
+           ORDER BY frequency DESC`
+        ).bind(baseWord, translation);
+      }
+    } else {
+      return errorResponse('Must provide form or base_word', 400);
+    }
+
+    const result = await query.all();
+    const reasons = result.results?.map((r: any) => ({
+      pashto_form: r.pashto_form,
+      base_word: r.base_word,
+      verse_ref: r.verse_ref,
+      inflection_type: r.inflection_type,
+      is_plural: r.is_plural === 1,
+      is_in_sandwich: r.is_in_sandwich === 1,
+      sandwich_type: r.sandwich_type,
+      is_subject_transitive_past: r.is_subject_transitive_past === 1,
+      context_sentence: r.context_sentence,
+      word_position: r.word_position,
+      translation_key: r.translation_key,
+    })) || [];
+
+    // Aggregate reasons by form
+    const aggregated: Record<string, {
+      form: string;
+      base_word: string;
+      reasons: {
+        plural: number;
+        sandwich: number;
+        transitive_past: number;
+        sandwich_types: string[];
+      };
+      total_occurrences: number;
+    }> = {};
+
+    for (const reason of reasons) {
+      if (!aggregated[reason.pashto_form]) {
+        aggregated[reason.pashto_form] = {
+          form: reason.pashto_form,
+          base_word: reason.base_word,
+          reasons: {
+            plural: 0,
+            sandwich: 0,
+            transitive_past: 0,
+            sandwich_types: [],
+          },
+          total_occurrences: 0,
+        };
+      }
+      
+      const agg = aggregated[reason.pashto_form];
+      agg.total_occurrences++;
+      if (reason.is_plural) agg.reasons.plural++;
+      if (reason.is_in_sandwich) {
+        agg.reasons.sandwich++;
+        if (reason.sandwich_type && !agg.reasons.sandwich_types.includes(reason.sandwich_type)) {
+          agg.reasons.sandwich_types.push(reason.sandwich_type);
+        }
+      }
+      if (reason.is_subject_transitive_past) agg.reasons.transitive_past++;
+    }
+
+    return jsonResponse({
+      form: form || null,
+      base_word: baseWord || null,
+      reasons: Object.values(aggregated),
+      total: reasons.length,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get inflection reasons: ${error.message}`, 500);
+  }
+}
+
+/**
  * Get related forms for a query
  * GET /api/related-forms?query={query}
  */
@@ -446,6 +595,117 @@ async function getRelatedForms(env: Env, query: string): Promise<Response> {
     });
   } catch (error: any) {
     return errorResponse(`Failed to get related forms: ${error.message}`, 500);
+  }
+}
+
+// ========================================
+// Topics API Routes
+// ========================================
+
+/**
+ * Get all word categories with verse counts
+ * GET /api/topics/categories
+ */
+async function getTopicsCategories(env: Env): Promise<Response> {
+  try {
+    // Get all categories with verse counts
+    const result = await env.DB.prepare(
+      `SELECT 
+        wc.category_key,
+        wc.category_name,
+        wc.description,
+        wc.parent_category,
+        COUNT(DISTINCT cvm.verse_ref) as verse_count,
+        COUNT(DISTINCT cvm.pashto_word) as word_count
+      FROM word_categories wc
+      LEFT JOIN category_verse_mappings cvm ON wc.category_key = cvm.category_key
+      GROUP BY wc.category_key, wc.category_name, wc.description, wc.parent_category
+      HAVING verse_count > 0
+      ORDER BY verse_count DESC, wc.category_name ASC`
+    ).all();
+
+    const categories = result.results?.map((cat: any) => ({
+      category_key: cat.category_key,
+      category_name: cat.category_name || cat.category_key.split('_').map((w: string) => 
+        w.charAt(0).toUpperCase() + w.slice(1)
+      ).join(' '),
+      description: cat.description,
+      parent_category: cat.parent_category,
+      verse_count: cat.verse_count || 0,
+      word_count: cat.word_count || 0,
+    })) || [];
+
+    return jsonResponse({ categories, count: categories.length });
+  } catch (error: any) {
+    return errorResponse(`Failed to get categories: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Get verses for a specific category
+ * GET /api/topics/verses?category={category_key}&limit={limit}
+ */
+async function getTopicsVerses(
+  env: Env,
+  categoryKey: string,
+  limit: number = 200
+): Promise<Response> {
+  try {
+    if (!categoryKey) {
+      return errorResponse('Missing category parameter', 400);
+    }
+
+    // Get verses for the category, joining with verse tables to get text
+    const result = await env.DB.prepare(
+      `SELECT DISTINCT
+        cvm.verse_ref,
+        cvm.book,
+        cvm.chapter,
+        cvm.verse,
+        cvm.pashto_word,
+        cvm.translation_key,
+        cvm.testament,
+        CASE 
+          WHEN cvm.translation_key = 'afghan2023' THEN v_afghan.text
+          WHEN cvm.translation_key = 'yousafzai2019' THEN v_yousafzai.text
+          ELSE NULL
+        END as text
+      FROM category_verse_mappings cvm
+      LEFT JOIN verses_afghan2023 v_afghan ON 
+        cvm.translation_key = 'afghan2023' AND 
+        cvm.book = v_afghan.book AND 
+        cvm.chapter = v_afghan.chapter AND 
+        cvm.verse = v_afghan.verse
+      LEFT JOIN verses_yousafzai v_yousafzai ON 
+        cvm.translation_key = 'yousafzai2019' AND 
+        cvm.book = v_yousafzai.book AND 
+        cvm.chapter = v_yousafzai.chapter AND 
+        cvm.verse = v_yousafzai.verse
+      WHERE cvm.category_key = ?
+      ORDER BY cvm.book, cvm.chapter, cvm.verse
+      LIMIT ?`
+    )
+      .bind(categoryKey, limit)
+      .all();
+
+    const verses = result.results?.map((verse: any) => ({
+      verse_ref: verse.verse_ref,
+      book: verse.book,
+      chapter: verse.chapter,
+      verse: verse.verse,
+      pashto_word: verse.pashto_word,
+      translation_key: verse.translation_key,
+      testament: verse.testament,
+      text: verse.text || null,
+    })) || [];
+
+    return jsonResponse({
+      category: categoryKey,
+      verses,
+      count: verses.length,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get verses: ${error.message}`, 500);
   }
 }
 
@@ -557,12 +817,48 @@ export default {
       return getNounData(env, decodeURIComponent(word));
     }
 
+    if (path === '/api/form-occurrences' && request.method === 'GET') {
+      const form = url.searchParams.get('form');
+      const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
+      
+      if (!form) {
+        return errorResponse('Missing form parameter', 400);
+      }
+      return getFormOccurrences(env, form, translation);
+    }
+
+    if (path === '/api/inflection-reasons' && request.method === 'GET') {
+      const form = url.searchParams.get('form');
+      const baseWord = url.searchParams.get('base_word');
+      const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
+      
+      if (!form && !baseWord) {
+        return errorResponse('Missing form or base_word parameter', 400);
+      }
+      return getInflectionReasons(env, form || null, baseWord || null, translation);
+    }
+
     if (path === '/api/related-forms' && request.method === 'GET') {
       const query = url.searchParams.get('query');
       if (!query) {
         return errorResponse('Missing query parameter', 400);
       }
       return getRelatedForms(env, query);
+    }
+
+    // Topics API routes
+    if (path === '/api/topics/categories' && request.method === 'GET') {
+      return getTopicsCategories(env);
+    }
+
+    if (path === '/api/topics/verses' && request.method === 'GET') {
+      const category = url.searchParams.get('category');
+      const limit = Math.min(200, Math.max(10, parseInt(url.searchParams.get('limit') || '200')));
+      
+      if (!category) {
+        return errorResponse('Missing category parameter', 400);
+      }
+      return getTopicsVerses(env, category, limit);
     }
 
     return errorResponse('Not found', 404);
