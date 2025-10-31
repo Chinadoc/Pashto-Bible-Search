@@ -10,6 +10,7 @@ import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import ChapterNavigator from "../components/ChapterNavigator";
 import ChapterView from "../components/ChapterView";
+import TopicsBrowser from "../components/TopicsBrowser";
 import type {
   Verse,
   Scope,
@@ -84,7 +85,7 @@ const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   gender: 'all',
 };
 
-const MAIN_TABS = ['search', 'chapters', 'lexicon', 'videos', 'poems'] as const;
+const MAIN_TABS = ['search', 'topics', 'chapters', 'lexicon', 'videos', 'poems'] as const;
 type MainTab = typeof MAIN_TABS[number];
 
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
@@ -1683,6 +1684,16 @@ export default function ClientHome() {
             🔍 Search
           </button>
           <button
+            onClick={() => setActiveMainTab('topics')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'topics'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📚 Topics
+          </button>
+          <button
             onClick={() => setActiveMainTab('chapters')}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
               activeMainTab === 'chapters'
@@ -2354,6 +2365,29 @@ export default function ClientHome() {
         </div>
       </div>
         </>
+      )}
+
+      {/* Topics Tab */}
+      {activeMainTab === 'topics' && (
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              📚 Browse by Topics
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Explore words and verses organized by semantic categories. Click on a category to see all words and Bible verses in that topic.
+            </p>
+            
+            <TopicsBrowser
+              onCategorySelect={(categoryKey) => {
+                // Switch to search tab and search for the category
+                setQuery(categoryKey);
+                setSearchLanguage('topics');
+                setActiveMainTab('search');
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Chapters Tab */}
