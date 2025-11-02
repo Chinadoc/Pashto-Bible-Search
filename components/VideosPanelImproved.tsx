@@ -536,6 +536,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
               <p className="text-gray-500 dark:text-gray-400">Select a video to view</p>
             </div>
           )}
+        </div>
         </>
       )}
     </div>
