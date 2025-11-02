@@ -379,7 +379,7 @@ async function uploadToR2(segmentFiles, videoId) {
 /**
  * Store metadata in Cloudflare D1 via Worker
  */
-async function storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, transcriptionService) {
+async function storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, transcriptionService, title) {
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/process`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -390,6 +390,7 @@ async function storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 
       segments,
       transcription_service: transcriptionService || 'elevenlabs',
       r2Keys: r2Keys.join(','),
+      title: title || null,
     }),
   });
   
@@ -669,7 +670,7 @@ app.post('/process-video', async (req, res) => {
     console.log(`\n💾 Step 6: Storing metadata in D1...`);
     const storeStartTime = Date.now();
     try {
-      await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 'elevenlabs');
+      await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 'elevenlabs', req.body.title || null);
       const storeDuration = ((Date.now() - storeStartTime) / 1000).toFixed(2);
       console.log(`✅ Metadata stored:`);
       console.log(`   Duration: ${storeDuration}s`);

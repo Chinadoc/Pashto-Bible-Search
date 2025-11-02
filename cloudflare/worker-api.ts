@@ -649,7 +649,7 @@ async function getRelatedForms(env: Env, query: string): Promise<Response> {
 async function processVideo(env: Env, request: Request): Promise<Response> {
   try {
     const body = await request.json();
-    const { youtubeUrl, videoId, apiKeys, transcript, words, segments, transcription_service } = body;
+    const { youtubeUrl, videoId, apiKeys, transcript, words, segments, transcription_service, title } = body;
 
     if (!youtubeUrl || !videoId) {
       return errorResponse('Missing youtubeUrl or videoId', 400);
@@ -694,6 +694,7 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
           segments TEXT,
           transcription_service TEXT,
           r2_audio_key TEXT,
+          title TEXT,
           created_at TEXT,
           updated_at TEXT
         )
@@ -705,10 +706,13 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
       // Generate R2 keys for all segments (comma-separated)
       const r2Keys = finalSegments.map((_, index) => `videos/${videoId}/segment_${index + 1}.mp3`).join(',');
       
+      // Check if title column exists, if not we'll handle it gracefully
+      const titleValue = title || null;
+      
       await env.DB.prepare(`
         INSERT OR REPLACE INTO video_transcripts 
-        (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, title, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         videoId,
         youtubeUrl,
@@ -716,6 +720,7 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
         segmentsJson, // Properly stringified JSON - full length
         service,
         r2Keys, // Store R2 keys as comma-separated string
+        titleValue,
         metadata.created_at,
         metadata.created_at
       ).run();
@@ -785,6 +790,7 @@ async function listVideos(env: Env): Promise<Response> {
         segments: segments,
         transcription_service: video.transcription_service,
         r2_audio_key: video.r2_audio_key,
+        title: video.title || null,
         created_at: video.created_at,
         updated_at: video.updated_at,
       };

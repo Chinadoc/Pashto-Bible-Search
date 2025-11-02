@@ -22,6 +22,7 @@ interface VideoProcessingRequest {
     huggingface?: string;
     deepseek?: string;
   };
+  title?: string;
 }
 
 /**
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body: VideoProcessingRequest = await request.json();
-    const { youtubeUrl, apiKeys } = body;
+    const { youtubeUrl, apiKeys, title } = body;
 
     console.log(`📥 Received request:`);
     console.log(`   YouTube URL: ${youtubeUrl}`);
@@ -305,7 +306,7 @@ export async function POST(request: NextRequest) {
       console.log(`   Service URL: ${processingServiceUrl}`);
       console.log(`   Endpoint: ${processingServiceUrl}/process-video`);
       
-      const requestBody = { youtubeUrl, apiKeys };
+      const requestBody = { youtubeUrl, apiKeys, title: body.title || null };
       console.log(`   Request body keys: ${Object.keys(requestBody).join(', ')}`);
       
       try {
