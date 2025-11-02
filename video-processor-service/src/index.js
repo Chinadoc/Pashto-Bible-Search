@@ -45,7 +45,7 @@ async function downloadVideoAudio(youtubeUrl, videoId) {
   try {
     await mkdir(tempDir, { recursive: true });
     
-    const cmd = `yt-dlp --extract-audio --audio-format mp3 --output "${outputPath}" "${youtubeUrl}"`;
+    const cmd = `yt-dlp --extract-audio --audio-format mp3 --output "${outputPath}" --no-warnings "${youtubeUrl}"`;
     await execAsync(cmd, { timeout: 300000 });
     
     return outputPath;
