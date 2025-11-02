@@ -461,6 +461,8 @@ function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elev
       endTime: Math.round(endTime * 10) / 10,
       confidence: avgConfidence,
     });
+    
+    deepgramIndex = endIndex + 1;
   }
   
   console.log(`✅ Aligned ${alignedSegments.length} segments`);
