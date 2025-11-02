@@ -136,6 +136,10 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioErrors, setAudioErrors] = useState<Record<string, string>>({});
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [elevenLabsLoading, setElevenLabsLoading] = useState(false);
+  const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const segmentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -536,7 +540,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
               <p className="text-gray-500 dark:text-gray-400">Select a video to view</p>
             </div>
           )}
-        </div>
+          </div>
         </>
       )}
     </div>
