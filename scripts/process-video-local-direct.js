@@ -36,7 +36,7 @@ try {
 }
 
 // Import timestamp alignment functions
-const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved, alignTranscriptionsWithConfidence } = require(path.join(servicePath, 'src/timestamp-alignment'));
+const { transcribeWithWhisper, transcribeWithDeepgram, alignTranscriptionsImproved, alignTranscriptionsWithConfidence } = require(path.join(servicePath, 'src/timestamp-alignment'));
 
 const execAsync = promisify(exec);
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
@@ -299,22 +299,22 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
     let segments = [];
     
     try {
-      // Pass 1: Choose timestamp provider (AssemblyAI > Deepgram > Whisper)
-      let timestampProvider = 'whisper';
-      if (process.env.ASSEMBLYAI_API_KEY) {
-        timestampProvider = 'assemblyai';
-      } else if (process.env.DEEPGRAM_API_KEY) {
+      // Pass 1: Choose timestamp provider (Deepgram Whisper > OpenAI Whisper API > Local Whisper)
+      let timestampProvider = 'whisper_local';
+      if (process.env.DEEPGRAM_API_KEY) {
         timestampProvider = 'deepgram';
+      } else if (process.env.OPENAI_API_KEY) {
+        timestampProvider = 'openai_whisper';
       }
       
       console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
       try {
-        if (timestampProvider === 'assemblyai') {
-          whisperData = await transcribeWithAssemblyAI(audioFile, process.env.ASSEMBLYAI_API_KEY);
-        } else if (timestampProvider === 'deepgram') {
+        if (timestampProvider === 'deepgram') {
           whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
+        } else if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
+          whisperData = await transcribeWithWhisper(audioFile, false); // false = use API
         } else {
-          const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
+          const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
           whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
         }
         

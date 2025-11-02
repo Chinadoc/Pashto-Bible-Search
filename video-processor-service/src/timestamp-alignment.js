@@ -15,108 +15,12 @@ const FormData = require('form-data');
 const execAsync = promisify(exec);
 
 /**
- * Transcribe with AssemblyAI for excellent word-level timestamps
- * AssemblyAI provides very accurate word-level timestamps
- */
-async function transcribeWithAssemblyAI(audioFile, apiKey) {
-  console.log(`🎤 Transcribing with AssemblyAI for word-level timestamps...`);
-  
-  const fileStats = await readFile(audioFile).then(buf => buf.length);
-  
-  // Step 1: Upload audio file
-  const uploadFormData = new FormData();
-  uploadFormData.append('file', createReadStream(audioFile));
-  
-  const uploadResponse = await axios.post('https://api.assemblyai.com/v2/upload', uploadFormData, {
-    headers: {
-      'authorization': apiKey,
-      ...uploadFormData.getHeaders(),
-    },
-    maxContentLength: Infinity,
-    maxBodyLength: Infinity,
-  });
-  
-  const uploadUrl = uploadResponse.data.upload_url;
-  console.log(`   ✅ Audio uploaded: ${(fileStats / 1024 / 1024).toFixed(2)} MB`);
-  
-  // Step 2: Start transcription
-  const transcriptResponse = await axios.post('https://api.assemblyai.com/v2/transcript', {
-    audio_url: uploadUrl,
-    language_code: 'auto', // Auto-detect (Pashto should be detected)
-    word_boost: ['ps'], // Boost Pashto words if needed
-    punctuate: true,
-    format_text: true,
-  }, {
-    headers: {
-      'authorization': apiKey,
-      'content-type': 'application/json',
-    },
-  });
-  
-  const transcriptId = transcriptResponse.data.id;
-  console.log(`   📡 Transcription started, ID: ${transcriptId}`);
-  
-  // Step 3: Poll for completion
-  let transcript = null;
-  let attempts = 0;
-  const maxAttempts = 60; // 5 minutes max
-  
-  while (!transcript && attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-    
-    const statusResponse = await axios.get(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-      headers: {
-        'authorization': apiKey,
-      },
-    });
-    
-    const status = statusResponse.data.status;
-    
-    if (status === 'completed') {
-      transcript = statusResponse.data;
-      break;
-    } else if (status === 'error') {
-      throw new Error(`AssemblyAI transcription failed: ${statusResponse.data.error}`);
-    }
-    
-    attempts++;
-    if (attempts % 6 === 0) {
-      console.log(`   ⏳ Still processing... (${attempts * 5}s)`);
-    }
-  }
-  
-  if (!transcript) {
-    throw new Error('AssemblyAI transcription timed out');
-  }
-  
-  // Extract word-level timestamps
-  const words = transcript.words || [];
-  
-  console.log(`✅ AssemblyAI transcription completed:`);
-  console.log(`   Text length: ${transcript.text.length} chars`);
-  console.log(`   Words with timestamps: ${words.length}`);
-  
-  return {
-    text: transcript.text || '',
-    words: words.map(w => ({
-      word: w.text.trim(),
-      start: w.start / 1000, // Convert ms to seconds
-      end: w.end / 1000,
-    })),
-    segments: transcript.sentences?.map(s => ({
-      text: s.text,
-      start: s.start / 1000,
-      end: s.end / 1000,
-    })) || [],
-  };
-}
-
-/**
- * Transcribe with Deepgram for excellent word-level timestamps
- * Deepgram is fast and cost-efficient
+ * Transcribe with Deepgram Whisper Cloud for excellent word-level timestamps
+ * Deepgram Whisper Cloud provides managed Whisper with word-level timestamps
+ * Reference: https://developers.deepgram.com/docs/models-languages-overview#deepgram-whisper-cloud
  */
 async function transcribeWithDeepgram(audioFile, apiKey) {
-  console.log(`🎤 Transcribing with Deepgram Whisper for word-level timestamps...`);
+  console.log(`🎤 Transcribing with Deepgram Whisper Cloud for word-level timestamps...`);
   
   const fileStream = createReadStream(audioFile);
   const fileStats = await readFile(audioFile).then(buf => buf.length);
@@ -124,40 +28,20 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
   console.log(`   Uploading ${(fileStats / 1024 / 1024).toFixed(2)} MB to Deepgram...`);
   
   try {
-    // Try Deepgram Whisper - if account doesn't have access, fall back to regular Deepgram models
-    // First try with Whisper tier
-    let response;
-    try {
-      response = await axios.post('https://api.deepgram.com/v1/listen?tier=whisper&model=whisper-large&punctuate=true&utterances=true&timestamps=true&confidence=true', fileStream, {
-        headers: {
-          'Authorization': `Token ${apiKey}`,
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': fileStats.toString(),
-        },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-        timeout: 120000,
-      });
-    } catch (whisperError) {
-      if (whisperError.response?.status === 403) {
-        console.log(`   ⚠️ Whisper tier not available, trying regular Deepgram models...`);
-        // Recreate stream for retry
-        const retryStream = createReadStream(audioFile);
-        // Try nova-2 or base model
-        response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&utterances=true&timestamps=true&confidence=true', retryStream, {
-          headers: {
-            'Authorization': `Token ${apiKey}`,
-            'Content-Type': 'audio/mpeg',
-            'Content-Length': fileStats.toString(),
-          },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-          timeout: 120000,
-        });
-      } else {
-        throw whisperError;
-      }
-    }
+    // Deepgram Whisper Cloud: Use model=whisper-large (not tier=whisper)
+    // Format: model=whisper-large (or whisper-medium, whisper-small, etc.)
+    // Whisper models support Pashto and provide word-level timestamps
+    console.log(`   Using Deepgram Whisper Cloud (whisper-large model)...`);
+    const response = await axios.post('https://api.deepgram.com/v1/listen?model=whisper-large&punctuate=true&utterances=true&timestamps=true&confidence=true', fileStream, {
+      headers: {
+        'Authorization': `Token ${apiKey}`,
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': fileStats.toString(),
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 120000,
+    });
     
     const results = response.data.results;
     if (!results || !results.channels || !results.channels[0]) {
@@ -576,10 +460,7 @@ function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elev
       startTime: Math.round(startTime * 10) / 10,
       endTime: Math.round(endTime * 10) / 10,
       confidence: avgConfidence,
-      deepgramWords: segmentWords.map(w => w.word).join(' '),
     });
-    
-    deepgramIndex = endIndex + 1;
   }
   
   console.log(`✅ Aligned ${alignedSegments.length} segments`);
@@ -595,7 +476,6 @@ function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elev
 
 module.exports = {
   transcribeWithWhisper,
-  transcribeWithAssemblyAI,
   transcribeWithDeepgram,
   alignTranscriptions,
   alignTranscriptionsImproved,
