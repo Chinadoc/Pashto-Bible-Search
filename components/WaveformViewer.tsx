@@ -42,6 +42,11 @@ export default function WaveformViewer({
     let audioContext: AudioContext;
     let analyser: AnalyserNode;
     let source: MediaElementAudioSourceNode;
+    
+    // Store event handlers so they can be removed in cleanup
+    let handleLoadedData: (() => void) | null = null;
+    let handleLoadedMetadata: (() => void) | null = null;
+    let handleCanPlay: (() => void) | null = null;
 
     const initAudio = async () => {
       try {
@@ -86,18 +91,35 @@ export default function WaveformViewer({
         };
 
         // Generate waveform when audio loads
-        audio.addEventListener('loadeddata', () => {
+        handleLoadedData = () => {
           setTimeout(() => {
             generateWaveform();
           }, 200);
-        });
+        };
+        audio.addEventListener('loadeddata', handleLoadedData);
 
         // Generate waveform when metadata loads
-        audio.addEventListener('loadedmetadata', () => {
+        handleLoadedMetadata = () => {
           setTimeout(() => {
             generateWaveform();
           }, 200);
-        });
+        };
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        
+        // Also try when canplay fires
+        handleCanPlay = () => {
+          setTimeout(() => {
+            generateWaveform();
+          }, 200);
+        };
+        audio.addEventListener('canplay', handleCanPlay);
+        
+        // Also try to load immediately if already ready
+        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          setTimeout(() => {
+            generateWaveform();
+          }, 200);
+        }
 
         // Animate waveform during playback
         const animate = () => {
