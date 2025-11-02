@@ -145,6 +145,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSegments, setEditedSegments] = useState<Array<{startTime: number; endTime: number}>>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isDetectingSilence, setIsDetectingSilence] = useState(false);
   const [silenceRegions, setSilenceRegions] = useState<Array<{start: number; end: number}>>([]);
   const [processingStatus, setProcessingStatus] = useState<{
     stage: string;
