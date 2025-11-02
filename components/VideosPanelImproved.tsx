@@ -511,6 +511,27 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                           }
                         }}
                         videoDuration={selectedVideo.total_duration || 0}
+                        onDetectSilence={async () => {
+                          if (!selectedVideo) return [];
+                          
+                          const response = await fetch('/api/detect-silence', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              videoId: selectedVideo.video_id,
+                              youtubeUrl: selectedVideo.youtube_url,
+                            }),
+                          });
+                          
+                          const result = await response.json();
+                          if (response.ok && result.success) {
+                            setIsEditMode(true);
+                            setEditedSegments(result.segments);
+                            return result.segments;
+                          } else {
+                            throw new Error(result.error || 'Failed to detect silence');
+                          }
+                        }}
                       />
                     );
                   })()}
