@@ -1,18 +1,21 @@
 /**
  * WhisperX Forced Alignment Wrapper
- * Uses WhisperX Python script for accurate word-level timestamps
+ * Uses WhisperX API service (cloud) or local Python script for accurate word-level timestamps
  * Takes existing transcription (from ElevenLabs) and audio, returns accurate timestamps
  */
 
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { existsSync } = require('fs');
+const { existsSync, createReadStream } = require('fs');
 const { join } = require('path');
+const FormData = require('form-data');
+const axios = require('axios');
 
 const execAsync = promisify(exec);
 
 /**
  * Use WhisperX forced alignment to get accurate timestamps from existing transcription
+ * Tries cloud API first, falls back to local Python script
  * 
  * @param {string} audioFile - Path to audio file
  * @param {string} transcriptionText - Existing transcription text (high quality from ElevenLabs)
@@ -24,10 +27,52 @@ async function alignWithWhisperX(audioFile, transcriptionText, language = 'ps') 
   console.log(`   Audio: ${audioFile}`);
   console.log(`   Text length: ${transcriptionText.length} chars`);
   
-  // Check if Python script exists
+  // Check if WhisperX API URL is configured (cloud service)
+  const whisperXApiUrl = process.env.WHISPERX_API_URL;
+  
+  if (whisperXApiUrl) {
+    // Use cloud WhisperX API service
+    try {
+      console.log(`   Using WhisperX API service: ${whisperXApiUrl}`);
+      
+      const formData = new FormData();
+      formData.append('audio', createReadStream(audioFile));
+      formData.append('transcription', transcriptionText);
+      formData.append('language', language);
+      
+      const response = await axios.post(`${whisperXApiUrl}/align`, formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 600000, // 10 minutes timeout
+      });
+      
+      const result = response.data;
+      
+      console.log(`✅ WhisperX API alignment completed:`);
+      console.log(`   Words with timestamps: ${result.words?.length || 0}`);
+      console.log(`   Segments: ${result.segments?.length || 0}`);
+      
+      if (result.segments && result.segments.length > 0) {
+        console.log(`   First segment: ${result.segments[0].start}s - ${result.segments[0].end}s`);
+        console.log(`   Last segment: ${result.segments[result.segments.length - 1].start}s - ${result.segments[result.segments.length - 1].end}s`);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.warn(`⚠️ WhisperX API failed: ${error.message}`);
+      console.log(`   Falling back to local WhisperX...`);
+      // Fall through to local method
+    }
+  }
+  
+  // Fallback: Use local Python script
   const scriptPath = join(__dirname, 'whisperx-alignment.py');
   if (!existsSync(scriptPath)) {
-    throw new Error(`WhisperX alignment script not found: ${scriptPath}`);
+    throw new Error(`WhisperX alignment script not found: ${scriptPath}. Set WHISPERX_API_URL for cloud service.`);
   }
   
   // Check if audio file exists
@@ -68,7 +113,7 @@ async function alignWithWhisperX(audioFile, transcriptionText, language = 'ps') 
     
   } catch (error) {
     if (error.message.includes('whisperx not installed')) {
-      throw new Error('WhisperX not installed. Install with: pip install whisperx');
+      throw new Error('WhisperX not installed. Install with: pip install whisperx OR set WHISPERX_API_URL for cloud service.');
     }
     
     if (error.message.includes('JSON')) {
