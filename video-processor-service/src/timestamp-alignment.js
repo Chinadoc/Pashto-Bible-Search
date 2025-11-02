@@ -1,6 +1,6 @@
 /**
  * Two-pass transcription with timestamp alignment
- * Pass 1: Whisper (local or API) for accurate timestamps
+ * Pass 1: AssemblyAI/Deepgram/Whisper for accurate timestamps
  * Pass 2: ElevenLabs for quality transcription
  * Then align the two using text matching
  */
@@ -9,8 +9,152 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const { createReadStream } = require('fs');
 const { readFile } = require('fs/promises');
+const axios = require('axios');
+const FormData = require('form-data');
 
 const execAsync = promisify(exec);
+
+/**
+ * Transcribe with AssemblyAI for excellent word-level timestamps
+ * AssemblyAI provides very accurate word-level timestamps
+ */
+async function transcribeWithAssemblyAI(audioFile, apiKey) {
+  console.log(`🎤 Transcribing with AssemblyAI for word-level timestamps...`);
+  
+  const fileStats = await readFile(audioFile).then(buf => buf.length);
+  
+  // Step 1: Upload audio file
+  const uploadFormData = new FormData();
+  uploadFormData.append('file', createReadStream(audioFile));
+  
+  const uploadResponse = await axios.post('https://api.assemblyai.com/v2/upload', uploadFormData, {
+    headers: {
+      'authorization': apiKey,
+      ...uploadFormData.getHeaders(),
+    },
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
+  
+  const uploadUrl = uploadResponse.data.upload_url;
+  console.log(`   ✅ Audio uploaded: ${(fileStats / 1024 / 1024).toFixed(2)} MB`);
+  
+  // Step 2: Start transcription
+  const transcriptResponse = await axios.post('https://api.assemblyai.com/v2/transcript', {
+    audio_url: uploadUrl,
+    language_code: 'auto', // Auto-detect (Pashto should be detected)
+    word_boost: ['ps'], // Boost Pashto words if needed
+    punctuate: true,
+    format_text: true,
+  }, {
+    headers: {
+      'authorization': apiKey,
+      'content-type': 'application/json',
+    },
+  });
+  
+  const transcriptId = transcriptResponse.data.id;
+  console.log(`   📡 Transcription started, ID: ${transcriptId}`);
+  
+  // Step 3: Poll for completion
+  let transcript = null;
+  let attempts = 0;
+  const maxAttempts = 60; // 5 minutes max
+  
+  while (!transcript && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    
+    const statusResponse = await axios.get(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+      headers: {
+        'authorization': apiKey,
+      },
+    });
+    
+    const status = statusResponse.data.status;
+    
+    if (status === 'completed') {
+      transcript = statusResponse.data;
+      break;
+    } else if (status === 'error') {
+      throw new Error(`AssemblyAI transcription failed: ${statusResponse.data.error}`);
+    }
+    
+    attempts++;
+    if (attempts % 6 === 0) {
+      console.log(`   ⏳ Still processing... (${attempts * 5}s)`);
+    }
+  }
+  
+  if (!transcript) {
+    throw new Error('AssemblyAI transcription timed out');
+  }
+  
+  // Extract word-level timestamps
+  const words = transcript.words || [];
+  
+  console.log(`✅ AssemblyAI transcription completed:`);
+  console.log(`   Text length: ${transcript.text.length} chars`);
+  console.log(`   Words with timestamps: ${words.length}`);
+  
+  return {
+    text: transcript.text || '',
+    words: words.map(w => ({
+      word: w.text.trim(),
+      start: w.start / 1000, // Convert ms to seconds
+      end: w.end / 1000,
+    })),
+    segments: transcript.sentences?.map(s => ({
+      text: s.text,
+      start: s.start / 1000,
+      end: s.end / 1000,
+    })) || [],
+  };
+}
+
+/**
+ * Transcribe with Deepgram for excellent word-level timestamps
+ * Deepgram is fast and cost-efficient
+ */
+async function transcribeWithDeepgram(audioFile, apiKey) {
+  console.log(`🎤 Transcribing with Deepgram for word-level timestamps...`);
+  
+  const fileStream = createReadStream(audioFile);
+  
+  const response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&language=auto&utterances=true&timestamps=true', fileStream, {
+    headers: {
+      'Authorization': `Token ${apiKey}`,
+      'Content-Type': 'audio/mpeg',
+    },
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
+  
+  const results = response.data.results;
+  if (!results || !results.channels || !results.channels[0]) {
+    throw new Error('Deepgram transcription failed: Invalid response');
+  }
+  
+  const channel = results.channels[0];
+  const words = channel.alternatives[0].words || [];
+  
+  console.log(`✅ Deepgram transcription completed:`);
+  console.log(`   Text length: ${channel.alternatives[0].transcript.length} chars`);
+  console.log(`   Words with timestamps: ${words.length}`);
+  
+  return {
+    text: channel.alternatives[0].transcript || '',
+    words: words.map(w => ({
+      word: w.word.trim(),
+      start: w.start,
+      end: w.end,
+    })),
+    segments: channel.alternatives[0].paragraphs?.paragraphs.map(p => ({
+      text: p.sentences.map(s => s.text).join(' '),
+      start: p.start,
+      end: p.end,
+    })) || [],
+  };
+}
 
 /**
  * Transcribe with Whisper (local via whisper.cpp or API) to get word-level timestamps
@@ -288,6 +432,8 @@ function alignTranscriptionsImproved(whisperWords, whisperSegments, elevenLabsTe
 
 module.exports = {
   transcribeWithWhisper,
+  transcribeWithAssemblyAI,
+  transcribeWithDeepgram,
   alignTranscriptions,
   alignTranscriptionsImproved,
 };

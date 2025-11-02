@@ -7,7 +7,7 @@ const { join } = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
 const cors = require('cors');
-const { transcribeWithWhisper, alignTranscriptionsImproved } = require('./timestamp-alignment');
+const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved } = require('./timestamp-alignment');
 
 const execAsync = promisify(exec);
 const app = express();
@@ -413,11 +413,24 @@ app.post('/process-video', async (req, res) => {
     let segments = [];
     
     try {
-      // Pass 1: Whisper for timestamps (try local first, fallback to API)
-      console.log(`\n   📍 Pass 1: Whisper transcription (for timestamps)...`);
+      // Pass 1: Choose timestamp provider (AssemblyAI > Deepgram > Whisper)
+      let timestampProvider = 'whisper';
+      if (process.env.ASSEMBLYAI_API_KEY) {
+        timestampProvider = 'assemblyai';
+      } else if (process.env.DEEPGRAM_API_KEY) {
+        timestampProvider = 'deepgram';
+      }
+      
+      console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
       try {
-        const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
-        whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
+        if (timestampProvider === 'assemblyai') {
+          whisperData = await transcribeWithAssemblyAI(audioFile, process.env.ASSEMBLYAI_API_KEY);
+        } else if (timestampProvider === 'deepgram') {
+          whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
+        } else {
+          const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
+          whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
+        }
         
         // Get video duration from Whisper segments
         const videoDuration = whisperData.segments.length > 0 
