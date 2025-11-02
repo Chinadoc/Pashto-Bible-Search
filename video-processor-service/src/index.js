@@ -236,11 +236,69 @@ async function segmentTranscriptBySentences(text, videoDuration) {
 }
 
 /**
+ * Refine segment timestamps using WhisperX alignment on each segment individually
+ * This gives much more accurate timestamps since we're aligning smaller chunks
+ */
+async function refineSegmentsWithWhisperX(segments, segmentFiles, originalAudioStartTimes) {
+  console.log(`\n   🔧 Refining timestamps with WhisperX per-segment alignment...`);
+  const refinedSegments = [];
+  let successCount = 0;
+  
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const segmentFile = segmentFiles[i];
+    const originalStartTime = originalAudioStartTimes[i];
+    
+    if (!segmentFile || !existsSync(segmentFile)) {
+      console.warn(`   ⚠️ Segment ${i + 1} file not found, using original timestamps`);
+      refinedSegments.push(segment);
+      continue;
+    }
+    
+    try {
+      // Align this segment's text with its audio file
+      const alignmentResult = await alignWithWhisperX(segmentFile, segment.text, 'ps');
+      
+      if (alignmentResult && alignmentResult.segments && alignmentResult.segments.length > 0) {
+        // WhisperX returns timestamps relative to the segment audio
+        // Convert to absolute timestamps by adding the original start time
+        const alignedSegment = alignmentResult.segments[0];
+        const relativeStart = alignedSegment.start || 0;
+        const relativeEnd = alignedSegment.end || alignedSegment.start || 0;
+        
+        refinedSegments.push({
+          text: segment.text,
+          startTime: Math.round((originalStartTime + relativeStart) * 10) / 10,
+          endTime: Math.round((originalStartTime + relativeEnd) * 10) / 10,
+        });
+        
+        successCount++;
+        
+        if ((i + 1) % 10 === 0) {
+          console.log(`   ✅ Refined ${i + 1}/${segments.length} segments...`);
+        }
+      } else {
+        console.warn(`   ⚠️ No alignment result for segment ${i + 1}, using original`);
+        refinedSegments.push(segment);
+      }
+    } catch (error) {
+      console.warn(`   ⚠️ WhisperX alignment failed for segment ${i + 1}: ${error.message}`);
+      refinedSegments.push(segment);
+    }
+  }
+  
+  console.log(`   ✅ Refined ${successCount}/${segments.length} segments with WhisperX`);
+  return refinedSegments;
+}
+
+/**
  * Extract audio segments using ffmpeg with precise timing and padding
+ * Returns both segment files and their original start times for later refinement
  */
 async function extractAudioSegments(audioFile, segments, videoId) {
   const tempDir = join('/tmp', 'video-processing');
   const segmentFiles = [];
+  const originalStartTimes = [];
   
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -256,6 +314,9 @@ async function extractAudioSegments(audioFile, segments, videoId) {
       const end = segment.endTime + paddingEnd;
       const duration = end - start;
       
+      // Store original start time (without padding) for later refinement
+      originalStartTimes.push(start);
+      
       // Use precise decimal format for ffmpeg
       // Re-encode instead of copy to get precise cuts (not just keyframe cuts)
       const ffmpegCmd = `ffmpeg -ss ${start.toFixed(3)} -i "${audioFile}" -t ${duration.toFixed(3)} -c:a libmp3lame -ar 44100 -ac 1 -q:a 4 -af aresample=async=1:first_pts=0 "${outputPath}" -y`;
@@ -267,10 +328,11 @@ async function extractAudioSegments(audioFile, segments, videoId) {
       segmentFiles.push(outputPath);
     } catch (error) {
       console.warn(`Failed to extract segment ${i + 1}:`, error.message);
+      originalStartTimes.push(segment.startTime); // Fallback to original
     }
   }
   
-  return segmentFiles;
+  return { segmentFiles, originalStartTimes };
 }
 
 /**
@@ -544,8 +606,11 @@ app.post('/process-video', async (req, res) => {
     // Step 4: Extract audio segments
     console.log(`\n🎵 Step 4: Extracting audio segments...`);
     const extractStartTime = Date.now();
+    let originalStartTimes = [];
     try {
-      segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
+      const extractionResult = await extractAudioSegments(audioFile, segments, videoId);
+      segmentFiles = extractionResult.segmentFiles;
+      originalStartTimes = extractionResult.originalStartTimes;
       const extractDuration = ((Date.now() - extractStartTime) / 1000).toFixed(2);
       console.log(`✅ Audio extraction completed:`);
       console.log(`   Duration: ${extractDuration}s`);
@@ -556,6 +621,27 @@ app.post('/process-video', async (req, res) => {
     } catch (error) {
       console.error(`❌ Audio extraction failed:`, error.message);
       throw error;
+    }
+    
+    // Step 4.5: Refine segment timestamps with WhisperX per-segment alignment (if available)
+    // This dramatically improves timestamp accuracy by aligning each segment individually
+    if (segmentFiles.length > 0 && !useDeepgramDirect && process.env.USE_WHISPERX_REFINEMENT !== 'false') {
+      try {
+        console.log(`\n🔧 Step 4.5: Refining timestamps with WhisperX per-segment alignment...`);
+        const refineStartTime = Date.now();
+        segments = await refineSegmentsWithWhisperX(segments, segmentFiles, originalStartTimes);
+        const refineDuration = ((Date.now() - refineStartTime) / 1000).toFixed(2);
+        console.log(`✅ Timestamp refinement completed:`);
+        console.log(`   Duration: ${refineDuration}s`);
+        console.log(`   Segments refined: ${segments.length}`);
+        if (segments.length > 0) {
+          console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+          console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Timestamp refinement failed (continuing with original timestamps):`, error.message);
+        // Continue with original segments if refinement fails
+      }
     }
     
     // Step 5: Upload to R2
