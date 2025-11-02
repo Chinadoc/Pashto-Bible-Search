@@ -2436,7 +2436,7 @@ export default function ClientHome() {
 
       {/* Videos Tab */}
       {activeMainTab === 'videos' && (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[95%] mx-auto">
           <VideosPanel
             onSelectClip={(clip) => {
               if (clip?.query) {

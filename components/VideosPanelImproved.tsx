@@ -212,7 +212,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-all duration-300 ${
-      isFullScreen ? 'fixed inset-0 z-50 rounded-none' : 'p-6'
+      isFullScreen ? 'fixed inset-0 z-50 rounded-none' : 'p-6 w-full'
     }`}>
       <div className={`flex items-center justify-between ${isFullScreen ? 'p-6 border-b border-gray-200 dark:border-gray-700' : 'mb-6'}`}>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">

@@ -532,43 +532,62 @@ app.post('/process-video', async (req, res) => {
         }
         
       } else {
-        // Preferred approach: ElevenLabs for quality + WhisperX for alignment
-        // This gives best transcription quality with accurate timestamps
-        console.log(`\n   📍 Pass 1: ElevenLabs transcription (for quality)...`);
-        elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-        console.log(`   ✅ ElevenLabs transcription completed:`);
-        console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
-        console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+        // NEW APPROACH: Whisper first for timestamps, then ElevenLabs for quality, then align
+        // This avoids cumulative errors from full-file WhisperX alignment
+        // Whisper provides accurate timestamps from the start
+        console.log(`\n   📍 Pass 1: Whisper transcription (for accurate timestamps)...`);
         
-        // Pass 2: WhisperX forced alignment (best accuracy for timestamps)
-        console.log(`\n   📍 Pass 2: WhisperX forced alignment (for accurate timestamps)...`);
         try {
-          const whisperXResult = await alignWithWhisperX(audioFile, elevenLabsTranscript, 'ps');
-          if (whisperXResult && whisperXResult.segments && whisperXResult.segments.length > 0) {
-            segments = whisperXResult.segments.map(s => ({
-              text: s.text,
-              startTime: Math.round((s.start || 0) * 10) / 10,
-              endTime: Math.round((s.end || s.start || 0) * 10) / 10,
-            }));
-            console.log(`   ✅ Using WhisperX forced alignment (most accurate)`);
+          if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
+            whisperData = await transcribeWithWhisper(audioFile, false);
           } else {
-            throw new Error('WhisperX returned empty result');
+            const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
+            whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
           }
-        } catch (whisperXError) {
-          console.warn(`   ⚠️ WhisperX alignment failed: ${whisperXError.message}`);
-          console.log(`   Falling back to two-pass approach (Whisper + alignment)...`);
           
-          // Fallback: Use Whisper for timestamps + text-based alignment
+          console.log(`   ✅ Whisper transcription completed:`);
+          console.log(`      Text length: ${whisperData.text.length} chars`);
+          console.log(`      Words with timestamps: ${whisperData.words.length}`);
+          console.log(`      Segments: ${whisperData.segments.length}`);
+          
+          // Pass 2: ElevenLabs for better Pashto transcription quality
+          console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
+          elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+          console.log(`   ✅ ElevenLabs transcription completed:`);
+          console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
+          console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+          
+          // Pass 3: Align ElevenLabs text to Whisper timestamps (text-based alignment)
+          // This gives us Whisper's accurate timestamps with ElevenLabs' better text quality
+          console.log(`\n   📍 Pass 3: Aligning ElevenLabs text to Whisper timestamps...`);
+          segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+          console.log(`   ✅ Text-based alignment completed:`);
+          console.log(`      Segments: ${segments.length}`);
+          if (segments.length > 0) {
+            console.log(`      First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+            console.log(`      Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+          }
+          
+        } catch (whisperError) {
+          console.warn(`   ⚠️ Whisper transcription failed: ${whisperError.message}`);
+          console.log(`   Falling back to ElevenLabs + WhisperX alignment...`);
+          
+          // Fallback: ElevenLabs first, then WhisperX alignment
           try {
-            if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
-              whisperData = await transcribeWithWhisper(audioFile, false);
-            } else {
-              const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
-              whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
-            }
+            elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+            console.log(`   ✅ ElevenLabs transcription completed`);
             
-            segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
-            console.log(`   ✅ Using text-based alignment (fallback)`);
+            const whisperXResult = await alignWithWhisperX(audioFile, elevenLabsTranscript, 'ps');
+            if (whisperXResult && whisperXResult.segments && whisperXResult.segments.length > 0) {
+              segments = whisperXResult.segments.map(s => ({
+                text: s.text,
+                startTime: Math.round((s.start || 0) * 10) / 10,
+                endTime: Math.round((s.end || s.start || 0) * 10) / 10,
+              }));
+              console.log(`   ✅ Using WhisperX forced alignment (fallback)`);
+            } else {
+              throw new Error('WhisperX returned empty result');
+            }
           } catch (alignmentError) {
             console.warn(`   ⚠️ Alignment failed: ${alignmentError.message}`);
             console.log(`   Using proportional timing (least accurate)...`);
