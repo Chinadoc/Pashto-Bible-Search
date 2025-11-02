@@ -92,33 +92,50 @@ export default function WaveformViewer({
 
         // Generate waveform when audio loads
         handleLoadedData = () => {
+          console.log('Audio loadeddata event fired');
           setTimeout(() => {
             generateWaveform();
-          }, 200);
+          }, 500); // Increased delay to ensure audio is fully loaded
         };
         audio.addEventListener('loadeddata', handleLoadedData);
 
         // Generate waveform when metadata loads
         handleLoadedMetadata = () => {
+          console.log('Audio loadedmetadata event fired');
           setTimeout(() => {
             generateWaveform();
-          }, 200);
+          }, 500);
         };
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
         
         // Also try when canplay fires
         handleCanPlay = () => {
+          console.log('Audio canplay event fired');
           setTimeout(() => {
             generateWaveform();
-          }, 200);
+          }, 500);
         };
         audio.addEventListener('canplay', handleCanPlay);
         
-        // Also try to load immediately if already ready
-        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+        // Also try when canplaythrough fires (audio fully buffered)
+        const handleCanPlayThrough = () => {
+          console.log('Audio canplaythrough event fired');
           setTimeout(() => {
             generateWaveform();
-          }, 200);
+          }, 500);
+        };
+        audio.addEventListener('canplaythrough', handleCanPlayThrough);
+        
+        // Also try to load immediately if already ready
+        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          console.log(`Audio already ready, state: ${audio.readyState}`);
+          setTimeout(() => {
+            generateWaveform();
+          }, 500);
+        } else {
+          // Force load if not already loading
+          console.log('Forcing audio load...');
+          audio.load();
         }
 
         // Animate waveform during playback
@@ -183,6 +200,8 @@ export default function WaveformViewer({
         if (handleCanPlay) {
           audio.removeEventListener('canplay', handleCanPlay);
         }
+        // Note: handleCanPlayThrough is defined inside initAudio, so we can't remove it here
+        // but that's okay since the component will unmount
       }
     };
   }, [audioUrl, isPlaying]);
@@ -511,7 +530,23 @@ export default function WaveformViewer({
           onMouseLeave={handleCanvasMouseUp}
           style={{ display: 'block', cursor: draggingHandle ? 'ew-resize' : 'pointer' }}
         />
-        <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" style={{ display: 'none' }} />
+        <audio 
+          ref={audioRef} 
+          src={audioUrl} 
+          preload="auto" 
+          crossOrigin="anonymous" 
+          style={{ display: 'none' }}
+          onError={(e) => {
+            console.error('Audio loading error:', e);
+            setIsLoadingWaveform(false);
+            const errorMsg = `Failed to load audio from ${audioUrl}. Please check if the full audio file exists in R2.`;
+            alert(errorMsg);
+          }}
+          onLoadedData={() => {
+            console.log('Audio loaded successfully');
+            setIsLoadingWaveform(false);
+          }}
+        />
         
         {isLoadingWaveform && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
