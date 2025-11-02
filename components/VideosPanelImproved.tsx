@@ -140,6 +140,12 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   const [videoTitle, setVideoTitle] = useState('');
   const [elevenLabsLoading, setElevenLabsLoading] = useState(false);
   const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<{
+    stage: string;
+    progress: number;
+    message: string;
+  } | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const segmentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -205,19 +211,34 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-all duration-300 ${
+      isFullScreen ? 'fixed inset-0 z-50 rounded-none' : 'p-6'
+    }`}>
+      <div className={`flex items-center justify-between ${isFullScreen ? 'p-6 border-b border-gray-200 dark:border-gray-700' : 'mb-6'}`}>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           🎬 Processed Videos
         </h2>
-        <button
-          onClick={loadVideos}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedVideo && (
+            <button
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+            >
+              {isFullScreen ? '⤓ Exit Full Screen' : '⤢ Full Screen'}
+            </button>
+          )}
+          <button
+            onClick={loadVideos}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
+
+      <div className={isFullScreen ? 'h-[calc(100vh-100px)] px-6 pb-6 overflow-hidden' : ''}>
 
       {loading ? (
         <div className="text-center py-8">
@@ -260,7 +281,28 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                   }
                   setElevenLabsLoading(true);
                   setElevenLabsError(null);
+                  setProcessingStatus({ stage: 'Starting', progress: 0, message: 'Initializing video processing...' });
+                  
                   try {
+                    // Simulate progress updates
+                    const progressInterval = setInterval(() => {
+                      setProcessingStatus(prev => {
+                        if (!prev) return null;
+                        const stages = [
+                          { stage: 'Downloading', progress: 20, message: 'Downloading audio from YouTube...' },
+                          { stage: 'Transcribing', progress: 40, message: 'Transcribing with ElevenLabs...' },
+                          { stage: 'Aligning', progress: 60, message: 'Aligning timestamps with WhisperX...' },
+                          { stage: 'Segmenting', progress: 80, message: 'Creating audio segments...' },
+                          { stage: 'Uploading', progress: 90, message: 'Uploading to Cloudflare R2...' },
+                        ];
+                        const currentStageIndex = Math.floor(prev.progress / 20);
+                        if (currentStageIndex < stages.length) {
+                          return stages[currentStageIndex];
+                        }
+                        return { ...prev, progress: Math.min(prev.progress + 2, 95) };
+                      });
+                    }, 2000);
+
                     const response = await fetch('/api/process-video-cloudflare', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -272,16 +314,24 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                         }
                       })
                     });
+                    
+                    clearInterval(progressInterval);
+                    setProcessingStatus({ stage: 'Completing', progress: 95, message: 'Finalizing...' });
+                    
                     const result = await response.json();
                     if (response.ok && result.success) {
+                      setProcessingStatus({ stage: 'Complete', progress: 100, message: 'Video processed successfully!' });
                       setYoutubeUrl('');
                       setVideoTitle('');
                       await new Promise(resolve => setTimeout(resolve, 2000));
                       await loadVideos();
+                      setProcessingStatus(null);
                     } else {
+                      setProcessingStatus(null);
                       setElevenLabsError(result.error || result.details || 'Video processing failed');
                     }
                   } catch (error) {
+                    setProcessingStatus(null);
                     setElevenLabsError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
                   } finally {
                     setElevenLabsLoading(false);
@@ -292,6 +342,24 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
               >
                 {elevenLabsLoading ? '⏳ Processing Video...' : '🚀 Process Video'}
               </button>
+              
+              {/* Processing Status */}
+              {processingStatus && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-blue-900 dark:text-blue-100">{processingStatus.stage}</span>
+                    <span className="text-sm text-blue-700 dark:text-blue-300">{processingStatus.progress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mb-2">
+                    <div 
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${processingStatus.progress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">{processingStatus.message}</p>
+                </div>
+              )}
+              
               {elevenLabsError && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
                   <p className="text-red-700 dark:text-red-300 text-sm">{elevenLabsError}</p>
@@ -300,7 +368,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-6 h-[calc(100vh-400px)]">
+          <div className={`grid grid-cols-12 gap-6 ${isFullScreen ? 'h-[calc(100vh-350px)]' : 'h-[calc(100vh-400px)]'}`}>
           {/* Left Sidebar - Video List */}
           <div className="col-span-3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -354,9 +422,9 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
               </div>
 
               {/* Two Column Layout: Video Left, Transcript Right */}
-              <div className="grid grid-cols-5 gap-4 flex-1 overflow-hidden">
+              <div className={`grid ${isFullScreen ? 'grid-cols-3' : 'grid-cols-5'} gap-6 flex-1 overflow-hidden`}>
                 {/* Left Column - Video Player */}
-                <div className="col-span-2 flex flex-col">
+                <div className={`${isFullScreen ? 'col-span-1' : 'col-span-2'} flex flex-col`}>
                   <div className="bg-white dark:bg-gray-800 rounded border p-2 flex-1 min-h-0">
                     <div className="aspect-video w-full h-full">
                       {selectedVideo.youtube_url && selectedVideo.video_id ? (
@@ -393,7 +461,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                 </div>
 
                 {/* Right Column - Transcript */}
-                <div className="col-span-3 flex flex-col overflow-hidden">
+                <div className={`${isFullScreen ? 'col-span-2' : 'col-span-3'} flex flex-col overflow-hidden`}>
                   <div className="bg-white dark:bg-gray-800 rounded border p-4 flex-1 overflow-y-auto">
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
                       Transcript ({selectedVideo.clips.length} segments)
