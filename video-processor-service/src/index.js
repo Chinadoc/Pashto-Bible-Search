@@ -774,6 +774,171 @@ app.post('/process-video', async (req, res) => {
 });
 
 /**
+ * Detect silence/pauses in audio to find natural sentence boundaries
+ * POST /detect-silence
+ */
+app.post('/detect-silence', async (req, res) => {
+  const startTime = Date.now();
+  let audioFile = null;
+
+  try {
+    const { videoId, youtubeUrl } = req.body;
+
+    if (!videoId || !youtubeUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: videoId, youtubeUrl',
+      });
+    }
+
+    console.log(`\n🔍 ========== DETECTING SILENCE ==========`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`========================================\n`);
+
+    // Step 1: Download video audio
+    console.log(`📥 Step 1: Downloading video audio...`);
+    const downloadStartTime = Date.now();
+    try {
+      audioFile = await downloadVideoAudio(youtubeUrl, videoId);
+      const downloadDuration = ((Date.now() - downloadStartTime) / 1000).toFixed(2);
+      console.log(`✅ Download completed:`);
+      console.log(`   Duration: ${downloadDuration}s`);
+      console.log(`   File: ${audioFile}`);
+    } catch (error) {
+      console.error(`❌ Download failed:`, error.message);
+      throw error;
+    }
+
+    // Step 2: Detect silence using ffmpeg silencedetect filter
+    console.log(`\n🔍 Step 2: Detecting silence/pauses...`);
+    const detectStartTime = Date.now();
+    try {
+      // Use ffmpeg's silencedetect filter to find silent periods
+      // noise=-30dB: silence threshold
+      // duration=0.5: minimum silence duration to detect (500ms)
+      const silenceCmd = `ffmpeg -i "${audioFile}" -af silencedetect=noise=-30dB:duration=0.5 -f null - 2>&1 | grep -E "silence_start|silence_end"`;
+      
+      const { stdout } = await execAsync(silenceCmd, { timeout: 120000 });
+      
+      console.log(`   Silence detection output (first 500 chars):`);
+      console.log(stdout.substring(0, 500));
+      
+      // Parse silence detection output
+      const silencePoints = [];
+      const lines = stdout.split('\n');
+      
+      for (const line of lines) {
+        // Match: silence_start: 5.123
+        const startMatch = line.match(/silence_start:\s*([\d.]+)/);
+        if (startMatch) {
+          silencePoints.push(parseFloat(startMatch[1]));
+        }
+        // Match: silence_end: 6.789 | silence_duration: 1.666
+        const endMatch = line.match(/silence_end:\s*([\d.]+)/);
+        if (endMatch) {
+          silencePoints.push(parseFloat(endMatch[1]));
+        }
+      }
+
+      // Sort silence points
+      silencePoints.sort((a, b) => a - b);
+      
+      // Get video duration
+      const videoDuration = await getVideoDuration(audioFile);
+      
+      // Create segments based on silence points
+      // Each segment starts after a silence ends and ends before the next silence starts
+      const segments = [];
+      let currentStart = 0;
+      
+      for (let i = 0; i < silencePoints.length; i += 2) {
+        const silenceStart = silencePoints[i];
+        const silenceEnd = silencePoints[i + 1] || videoDuration;
+        
+        // Segment ends at the start of silence (or start of next silence)
+        if (silenceStart > currentStart + 0.5) { // Minimum segment length 0.5s
+          segments.push({
+            startTime: Math.round(currentStart * 10) / 10,
+            endTime: Math.round(silenceStart * 10) / 10,
+          });
+        }
+        
+        // Next segment starts after silence ends
+        currentStart = silenceEnd;
+      }
+      
+      // Add final segment if there's remaining audio
+      if (currentStart < videoDuration - 0.5) {
+        segments.push({
+          startTime: Math.round(currentStart * 10) / 10,
+          endTime: Math.round(videoDuration * 10) / 10,
+        });
+      }
+      
+      // If no silence detected, create a single segment
+      if (segments.length === 0) {
+        segments.push({
+          startTime: 0,
+          endTime: Math.round(videoDuration * 10) / 10,
+        });
+      }
+
+      const detectDuration = ((Date.now() - detectStartTime) / 1000).toFixed(2);
+      console.log(`✅ Silence detection completed:`);
+      console.log(`   Duration: ${detectDuration}s`);
+      console.log(`   Silence points found: ${silencePoints.length}`);
+      console.log(`   Segments created: ${segments.length}`);
+      if (segments.length > 0) {
+        console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+        console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+      }
+
+      // Cleanup
+      if (audioFile) {
+        await unlink(audioFile).catch(() => {});
+      }
+
+      const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`\n✅ ========== SILENCE DETECTION SUCCESS ==========`);
+      console.log(`   Total duration: ${totalDuration}s`);
+      console.log(`   Segments: ${segments.length}`);
+      console.log(`========================================\n`);
+
+      res.json({
+        success: true,
+        segments,
+        silencePoints: silencePoints.length,
+        message: `✅ Detected ${segments.length} segments based on silence`,
+      });
+
+    } catch (error) {
+      console.error(`❌ Silence detection failed:`, error.message);
+      throw error;
+    }
+
+  } catch (error) {
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`\n❌ ========== SILENCE DETECTION ERROR ==========`);
+    console.error(`   Duration: ${totalDuration}s`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
+    console.error(`==========================================\n`);
+
+    // Cleanup on error
+    if (audioFile) {
+      await unlink(audioFile).catch(() => {});
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+});
+
+/**
  * Regenerate segments with new timestamps
  * POST /regenerate-segments
  */
