@@ -59,7 +59,8 @@ export default function WaveformViewer({
           
           const bufferLength = analyser.frequencyBinCount;
           const dataArray = new Uint8Array(bufferLength);
-          analyser.getByteFrequencyData(dataArray);
+          // Use time domain data for waveform (amplitude over time)
+          analyser.getByteTimeDomainData(dataArray);
           
           // Sample waveform data
           const samples = 400; // More samples for better visualization
@@ -67,11 +68,12 @@ export default function WaveformViewer({
           const waveform: number[] = [];
           
           for (let i = 0; i < samples; i++) {
-            let sum = 0;
+            let max = 0;
             for (let j = 0; j < sampleSize; j++) {
-              sum += dataArray[i * sampleSize + j];
+              const value = Math.abs(dataArray[i * sampleSize + j] - 128) / 128; // Normalize to 0-1
+              max = Math.max(max, value);
             }
-            waveform.push(sum / sampleSize / 255);
+            waveform.push(max);
           }
           
           setWaveformData(waveform);
@@ -324,18 +326,19 @@ export default function WaveformViewer({
           </button>
         )}
       </div>
-      <div className="relative">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={120}
-          className="w-full h-24 cursor-pointer border border-gray-700 rounded"
-          onClick={handleCanvasClick}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          onMouseLeave={handleCanvasMouseUp}
-        />
+      <div className="relative w-full">
+        <div className="w-full h-24 bg-gray-800 rounded border border-gray-700 overflow-hidden">
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full cursor-pointer"
+            onClick={handleCanvasClick}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseUp}
+            style={{ display: 'block' }}
+          />
+        </div>
         <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" style={{ display: 'none' }} />
       </div>
       <div className="mt-2 text-xs text-gray-500">
