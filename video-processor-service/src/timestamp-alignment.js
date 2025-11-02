@@ -66,6 +66,43 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
       console.log(`   Average confidence: ${(avgConfidence * 100).toFixed(1)}%`);
     }
     
+    // Deepgram returns paragraphs/utterances which are good for segmentation
+    // If paragraphs exist, use them; otherwise create segments from words
+    let segments = [];
+    if (alternatives.paragraphs?.paragraphs && alternatives.paragraphs.paragraphs.length > 0) {
+      segments = alternatives.paragraphs.paragraphs.map(p => ({
+        text: p.sentences?.map(s => s.text).join(' ') || p.text || '',
+        start: p.start,
+        end: p.end,
+      }));
+    } else {
+      // Fallback: group words into sentences based on punctuation
+      let currentSegment = { text: '', start: words[0]?.start || 0, end: 0, words: [] };
+      for (const word of words) {
+        currentSegment.words.push(word);
+        currentSegment.text += (currentSegment.text ? ' ' : '') + word.word.trim();
+        currentSegment.end = word.end;
+        
+        // Check if word ends with punctuation
+        if (/[.!?؟]$/.test(word.word)) {
+          segments.push({
+            text: currentSegment.text,
+            start: currentSegment.start,
+            end: currentSegment.end,
+          });
+          currentSegment = { text: '', start: word.end, end: word.end, words: [] };
+        }
+      }
+      // Add last segment if any
+      if (currentSegment.text) {
+        segments.push({
+          text: currentSegment.text,
+          start: currentSegment.start,
+          end: currentSegment.end,
+        });
+      }
+    }
+    
     return {
       text: transcript,
       words: words.map(w => ({
@@ -74,11 +111,7 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
         end: w.end,
         confidence: w.confidence || 0.5, // Default confidence if not provided
       })),
-      segments: alternatives.paragraphs?.paragraphs?.map(p => ({
-        text: p.sentences?.map(s => s.text).join(' ') || p.text || '',
-        start: p.start,
-        end: p.end,
-      })) || [],
+      segments: segments,
     };
   } catch (error) {
     if (error.response) {

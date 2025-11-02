@@ -414,70 +414,119 @@ app.post('/process-video', async (req, res) => {
     let segments = [];
     
     try {
-      // Pass 1: Choose timestamp provider (Deepgram Whisper > OpenAI Whisper API > Local Whisper)
-      // Deepgram Whisper Cloud provides managed Whisper with word-level timestamps
+      // Choose transcription provider
+      // Strategy: If Deepgram available, use it directly (no alignment needed - has accurate timestamps)
+      // Otherwise use two-pass: Whisper for timestamps + ElevenLabs for quality + alignment
       let timestampProvider = 'whisper_local';
+      let useDeepgramDirect = false;
+      
       if (process.env.DEEPGRAM_API_KEY) {
         timestampProvider = 'deepgram';
+        useDeepgramDirect = true; // Deepgram provides accurate timestamps, use directly
       } else if (process.env.OPENAI_API_KEY) {
         timestampProvider = 'openai_whisper';
       }
       
-      console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
-      try {
-        if (timestampProvider === 'deepgram') {
-          whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
-        } else if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
-          // Use OpenAI Whisper API directly - best Pashto support
-          whisperData = await transcribeWithWhisper(audioFile, false); // false = use API
-        } else {
-          const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
-          whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
-        }
+      console.log(`\n   📍 Transcription strategy: ${useDeepgramDirect ? 'Deepgram direct (no alignment needed)' : 'Two-pass (Whisper + ElevenLabs + alignment)'}`);
+      
+      if (useDeepgramDirect) {
+        // Use Deepgram Whisper directly - it has accurate word-level timestamps
+        // No need for alignment since Deepgram provides timestamps with transcription
+        console.log(`\n   📍 Using Deepgram Whisper Cloud (direct transcription with timestamps)...`);
+        whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
         
-        // Get video duration from Whisper segments
         const videoDuration = whisperData.segments.length > 0 
           ? Math.max(...whisperData.segments.map(s => s.end || 0))
           : await getVideoDuration(audioFile);
         
-        console.log(`   ✅ Whisper transcription completed:`);
+        console.log(`   ✅ Deepgram transcription completed:`);
         console.log(`      Text length: ${whisperData.text.length} chars`);
         console.log(`      Words with timestamps: ${whisperData.words.length}`);
         console.log(`      Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
         
-        // Pass 2: ElevenLabs for quality transcription
-        console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
-        elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-        console.log(`   ✅ ElevenLabs transcription completed:`);
-        console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
-        console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+        // Convert Deepgram segments to our format
+        // Deepgram segments already have accurate timestamps from Whisper model
+        // No alignment needed - Deepgram provides both transcription AND timestamps
+        segments = whisperData.segments
+          .filter(segment => segment.text && segment.text.trim()) // Filter empty segments
+          .map(segment => ({
+            text: segment.text.trim(),
+            startTime: Math.round((segment.start || 0) * 10) / 10, // Round to 0.1s precision
+            endTime: Math.round((segment.end || segment.start || 0) * 10) / 10,
+          }));
         
-        // Step 3: Try WhisperX forced alignment first (best accuracy)
-        // Falls back to text-based alignment if WhisperX unavailable
-        console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
+        // Use Deepgram transcription as final transcript
+        elevenLabsTranscript = whisperData.text;
+        
+        console.log(`   ✅ Using Deepgram segments directly (no alignment needed)`);
+        console.log(`      Segments: ${segments.length}`);
+        if (segments.length > 0) {
+          console.log(`      First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+          console.log(`      Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+        }
+        
+      } else {
+        // Two-pass approach: Whisper for timestamps + ElevenLabs for quality + alignment
+        console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
         try {
-          const whisperXResult = await alignWithWhisperX(audioFile, elevenLabsTranscript, 'ps');
-          if (whisperXResult && whisperXResult.segments && whisperXResult.segments.length > 0) {
-            segments = whisperXResult.segments.map(s => ({
-              text: s.text,
-              startTime: s.start,
-              endTime: s.end,
-            }));
-            console.log(`   ✅ Using WhisperX forced alignment (most accurate)`);
+          if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
+            whisperData = await transcribeWithWhisper(audioFile, false); // false = use API
           } else {
-            throw new Error('WhisperX returned empty result');
+            const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
+            whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
           }
-        } catch (whisperXError) {
-          console.warn(`   ⚠️ WhisperX alignment failed: ${whisperXError.message}`);
-          console.log(`   Falling back to text-based alignment...`);
           
-          // Fallback: Use confidence-based alignment if Deepgram was used
-          if (timestampProvider === 'deepgram' && whisperData.words[0]?.confidence !== undefined) {
-            segments = alignTranscriptionsWithConfidence(whisperData.words, whisperData.segments, elevenLabsTranscript);
-          } else {
+          const videoDuration = whisperData.segments.length > 0 
+            ? Math.max(...whisperData.segments.map(s => s.end || 0))
+            : await getVideoDuration(audioFile);
+          
+          console.log(`   ✅ ${timestampProvider} transcription completed:`);
+          console.log(`      Text length: ${whisperData.text.length} chars`);
+          console.log(`      Words with timestamps: ${whisperData.words.length}`);
+          console.log(`      Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
+          
+          // Pass 2: ElevenLabs for quality transcription
+          console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
+          elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+          console.log(`   ✅ ElevenLabs transcription completed:`);
+          console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
+          console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+          
+          // Step 3: Try WhisperX forced alignment first (best accuracy)
+          // Falls back to text-based alignment if WhisperX unavailable
+          console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
+          try {
+            const whisperXResult = await alignWithWhisperX(audioFile, elevenLabsTranscript, 'ps');
+            if (whisperXResult && whisperXResult.segments && whisperXResult.segments.length > 0) {
+              segments = whisperXResult.segments.map(s => ({
+                text: s.text,
+                startTime: s.start,
+                endTime: s.end,
+              }));
+              console.log(`   ✅ Using WhisperX forced alignment (most accurate)`);
+            } else {
+              throw new Error('WhisperX returned empty result');
+            }
+          } catch (whisperXError) {
+            console.warn(`   ⚠️ WhisperX alignment failed: ${whisperXError.message}`);
+            console.log(`   Falling back to text-based alignment...`);
+            
+            // Fallback: Use text-based alignment
             segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
           }
+        } catch (whisperError) {
+          console.warn(`⚠️ ${timestampProvider} transcription failed: ${whisperError.message}`);
+          console.log(`   Falling back to single-pass (ElevenLabs + proportional timing)...`);
+          
+          // Fallback: use ElevenLabs only with proportional timing
+          elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+          const videoDuration = await getVideoDuration(audioFile);
+          segments = await segmentTranscriptBySentences(elevenLabsTranscript, videoDuration);
+          
+          console.log(`✅ Fallback transcription completed:`);
+          console.log(`   Using proportional timing (less accurate)`);
         }
+      }
         
         const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
         console.log(`✅ Two-pass transcription completed:`);
