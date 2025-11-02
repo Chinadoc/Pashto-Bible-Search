@@ -1299,6 +1299,19 @@ export default {
       return listVideos(env);
     }
 
+    // Get full video audio endpoint
+    if (path.startsWith('/api/video/') && path.endsWith('/audio-full') && request.method === 'GET') {
+      // Path format: /api/video/{videoId}/audio-full
+      const pathParts = path.split('/');
+      const videoId = pathParts[pathParts.length - 2];
+      
+      if (!videoId) {
+        return errorResponse('Missing video ID', 400);
+      }
+      return getVideoAudioFull(env, videoId, request);
+    }
+
+    // Get video audio endpoint
     if (path.startsWith('/api/video/') && path.endsWith('/audio') && request.method === 'GET') {
       // Path format: /api/video/{videoId}/audio?segment={segmentNumber}
       const pathParts = path.split('/');
