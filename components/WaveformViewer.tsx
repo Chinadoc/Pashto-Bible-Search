@@ -151,10 +151,16 @@ export default function WaveformViewer({
         audioContext.close().catch(() => {});
       }
       // Remove event listeners
-      if (audio && handleLoadedData && handleLoadedMetadata && handleCanPlay) {
-        audio.removeEventListener('loadeddata', handleLoadedData);
-        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.removeEventListener('canplay', handleCanPlay);
+      if (audio) {
+        if (handleLoadedData) {
+          audio.removeEventListener('loadeddata', handleLoadedData);
+        }
+        if (handleLoadedMetadata) {
+          audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        }
+        if (handleCanPlay) {
+          audio.removeEventListener('canplay', handleCanPlay);
+        }
       }
     };
   }, [audioUrl, isPlaying]);
