@@ -388,44 +388,62 @@ function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elev
     const sentenceWords = sentence.trim().split(/\s+/).map(w => w.toLowerCase().replace(/[.,!?؟]/g, ''));
     
     // Find matching start using sliding window with confidence scoring
-    let bestStart = deepgramIndex;
+    let bestStart = null;
     let bestMatchScore = 0;
     let bestConfidenceSum = 0;
     
-    // Look ahead up to 30 words
-    for (let start = deepgramIndex; start < Math.min(deepgramWords.length, deepgramIndex + 30); start++) {
+    // Look ahead up to 50 words (increased from 30 for better coverage)
+    const maxLookAhead = Math.min(deepgramWords.length, deepgramIndex + 50);
+    
+    for (let start = deepgramIndex; start < maxLookAhead; start++) {
       let matchScore = 0;
       let confidenceSum = 0;
       let consecutiveMatches = 0;
+      let matchedWords = 0;
       
-      for (let i = 0; i < Math.min(sentenceWords.length, 10); i++) {
+      // Check up to sentence length + 2 words for flexibility
+      for (let i = 0; i < Math.min(sentenceWords.length + 2, maxLookAhead - start); i++) {
         if (start + i >= deepgramWords.length) break;
         
         const deepgramWord = deepgramWords[start + i].word.toLowerCase().replace(/[.,!?؟]/g, '');
-        const sentenceWord = sentenceWords[i];
+        const sentenceWord = i < sentenceWords.length ? sentenceWords[i] : '';
         const confidence = deepgramWords[start + i].confidence || 0.5;
         
-        if (deepgramWord === sentenceWord) {
-          matchScore += 2;
-          confidenceSum += confidence;
-          consecutiveMatches++;
-        } else if (deepgramWord.includes(sentenceWord) || sentenceWord.includes(deepgramWord)) {
-          matchScore += 1;
-          confidenceSum += confidence * 0.5; // Partial match gets half confidence
-          consecutiveMatches = 0;
-        } else {
-          consecutiveMatches = 0;
+        if (i < sentenceWords.length) {
+          if (deepgramWord === sentenceWord) {
+            matchScore += 2;
+            confidenceSum += confidence;
+            consecutiveMatches++;
+            matchedWords++;
+          } else if (deepgramWord.includes(sentenceWord) || sentenceWord.includes(deepgramWord)) {
+            matchScore += 1;
+            confidenceSum += confidence * 0.5;
+            consecutiveMatches = 0;
+            matchedWords++;
+          } else {
+            consecutiveMatches = 0;
+          }
         }
       }
       
-      const avgConfidence = confidenceSum / Math.min(sentenceWords.length, 10);
-      const combinedScore = matchScore * (1 + avgConfidence); // Boost score by confidence
-      
-      if (combinedScore > bestMatchScore && consecutiveMatches >= 2) {
-        bestMatchScore = combinedScore;
-        bestConfidenceSum = confidenceSum;
-        bestStart = start;
+      // Require at least 2 words to match, and good confidence
+      if (matchedWords >= 2 && matchScore > 0) {
+        const avgConfidence = matchedWords > 0 ? confidenceSum / matchedWords : 0;
+        const combinedScore = matchScore * (1 + avgConfidence * 0.5); // Boost by confidence
+        
+        if (combinedScore > bestMatchScore) {
+          bestMatchScore = combinedScore;
+          bestConfidenceSum = confidenceSum;
+          bestStart = start;
+        }
       }
+    }
+    
+    // If no good match found, advance index and skip this sentence
+    if (bestStart === null || bestStart === deepgramIndex) {
+      console.warn(`⚠️ No match found for sentence, skipping: "${sentence.substring(0, 50)}..."`);
+      deepgramIndex = Math.min(deepgramIndex + 5, deepgramWords.length - 1);
+      continue;
     }
     
     // Find end - look for sentence boundary or estimate length
@@ -446,8 +464,15 @@ function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elev
       endIndex = Math.min(bestStart + Math.max(targetWords - 2, 3), deepgramWords.length - 1);
     }
     
-    const startTime = deepgramWords[bestStart]?.start || 0;
-    const endTime = deepgramWords[endIndex]?.end || (deepgramWords[endIndex]?.start || startTime + 5);
+    // Get timestamps - ensure they're valid
+    const startTime = deepgramWords[bestStart]?.start;
+    const endTime = deepgramWords[endIndex]?.end || deepgramWords[endIndex]?.start;
+    
+    if (startTime === undefined || endTime === undefined || endTime <= startTime) {
+      console.warn(`⚠️ Invalid timestamps for sentence, skipping`);
+      deepgramIndex = endIndex + 1;
+      continue;
+    }
     
     // Calculate average confidence for this segment
     const segmentWords = deepgramWords.slice(bestStart, endIndex + 1);

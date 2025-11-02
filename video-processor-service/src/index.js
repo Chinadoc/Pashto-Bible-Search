@@ -8,6 +8,7 @@ const FormData = require('form-data');
 const axios = require('axios');
 const cors = require('cors');
 const { transcribeWithWhisper, transcribeWithDeepgram, alignTranscriptionsImproved, alignTranscriptionsWithConfidence } = require('./timestamp-alignment');
+const { alignWithWhisperX } = require('./whisperx-alignment');
 
 const execAsync = promisify(exec);
 const app = express();
@@ -451,13 +452,31 @@ app.post('/process-video', async (req, res) => {
         console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
         console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
         
-        // Step 3: Align ElevenLabs text with timestamp provider timestamps
-        // Use confidence-based alignment if Deepgram was used (has confidence scores)
+        // Step 3: Try WhisperX forced alignment first (best accuracy)
+        // Falls back to text-based alignment if WhisperX unavailable
         console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
-        if (timestampProvider === 'deepgram' && whisperData.words[0]?.confidence !== undefined) {
-          segments = alignTranscriptionsWithConfidence(whisperData.words, whisperData.segments, elevenLabsTranscript);
-        } else {
-          segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        try {
+          const whisperXResult = await alignWithWhisperX(audioFile, elevenLabsTranscript, 'ps');
+          if (whisperXResult && whisperXResult.segments && whisperXResult.segments.length > 0) {
+            segments = whisperXResult.segments.map(s => ({
+              text: s.text,
+              startTime: s.start,
+              endTime: s.end,
+            }));
+            console.log(`   ✅ Using WhisperX forced alignment (most accurate)`);
+          } else {
+            throw new Error('WhisperX returned empty result');
+          }
+        } catch (whisperXError) {
+          console.warn(`   ⚠️ WhisperX alignment failed: ${whisperXError.message}`);
+          console.log(`   Falling back to text-based alignment...`);
+          
+          // Fallback: Use confidence-based alignment if Deepgram was used
+          if (timestampProvider === 'deepgram' && whisperData.words[0]?.confidence !== undefined) {
+            segments = alignTranscriptionsWithConfidence(whisperData.words, whisperData.segments, elevenLabsTranscript);
+          } else {
+            segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+          }
         }
         
         const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
