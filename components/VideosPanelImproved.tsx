@@ -145,6 +145,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSegments, setEditedSegments] = useState<Array<{startTime: number; endTime: number}>>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [silenceRegions, setSilenceRegions] = useState<Array<{start: number; end: number}>>([]);
   const [processingStatus, setProcessingStatus] = useState<{
     stage: string;
     progress: number;
@@ -514,24 +515,36 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                         onDetectSilence={async () => {
                           if (!selectedVideo) return [];
                           
-                          const response = await fetch('/api/detect-silence', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              videoId: selectedVideo.video_id,
-                              youtubeUrl: selectedVideo.youtube_url,
-                            }),
-                          });
-                          
-                          const result = await response.json();
-                          if (response.ok && result.success) {
-                            setIsEditMode(true);
-                            setEditedSegments(result.segments);
-                            return result.segments;
-                          } else {
-                            throw new Error(result.error || 'Failed to detect silence');
+                          setIsDetectingSilence(true);
+                          try {
+                            const response = await fetch('/api/detect-silence', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                videoId: selectedVideo.video_id,
+                                youtubeUrl: selectedVideo.youtube_url,
+                              }),
+                            });
+                            
+                            const result = await response.json();
+                            if (response.ok && result.success) {
+                              setIsEditMode(true);
+                              setEditedSegments(result.segments);
+                              
+                              // Also store silence regions for visualization
+                              if (result.silenceRegions) {
+                                setSilenceRegions(result.silenceRegions);
+                              }
+                              
+                              return result.segments;
+                            } else {
+                              throw new Error(result.error || 'Failed to detect silence');
+                            }
+                          } finally {
+                            setIsDetectingSilence(false);
                           }
                         }}
+                        silenceRegions={silenceRegions}
                       />
                     );
                   })()}

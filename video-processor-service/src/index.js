@@ -825,18 +825,25 @@ app.post('/detect-silence', async (req, res) => {
       
       // Parse silence detection output
       const silencePoints = [];
+      const silenceRegions = [];
       const lines = stdout.split('\n');
+      
+      let currentSilenceStart = null;
       
       for (const line of lines) {
         // Match: silence_start: 5.123
         const startMatch = line.match(/silence_start:\s*([\d.]+)/);
         if (startMatch) {
-          silencePoints.push(parseFloat(startMatch[1]));
+          currentSilenceStart = parseFloat(startMatch[1]);
+          silencePoints.push(currentSilenceStart);
         }
         // Match: silence_end: 6.789 | silence_duration: 1.666
         const endMatch = line.match(/silence_end:\s*([\d.]+)/);
-        if (endMatch) {
-          silencePoints.push(parseFloat(endMatch[1]));
+        if (endMatch && currentSilenceStart !== null) {
+          const silenceEnd = parseFloat(endMatch[1]);
+          silencePoints.push(silenceEnd);
+          silenceRegions.push({ start: currentSilenceStart, end: silenceEnd });
+          currentSilenceStart = null;
         }
       }
 
@@ -908,6 +915,7 @@ app.post('/detect-silence', async (req, res) => {
         success: true,
         segments,
         silencePoints: silencePoints.length,
+        silenceRegions, // Include silence regions for visualization
         message: `✅ Detected ${segments.length} segments based on silence`,
       });
 
