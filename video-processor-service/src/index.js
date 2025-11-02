@@ -671,10 +671,20 @@ app.post('/process-video', async (req, res) => {
       r2Keys = await uploadToR2(segmentFiles, videoId);
       
       // Also upload full audio file for waveform visualization
+      // IMPORTANT: Upload full audio BEFORE deleting audioFile
       try {
         console.log(`\n   📤 Uploading full audio file for waveform...`);
         const fullAudioKey = `videos/${videoId}/full.mp3`;
+        
+        // Verify audio file exists
+        if (!audioFile) {
+          throw new Error('Audio file not found');
+        }
+        
         const fullAudioBuffer = await readFile(audioFile);
+        const fileSizeMB = (fullAudioBuffer.length / (1024 * 1024)).toFixed(2);
+        console.log(`   Full audio file size: ${fileSizeMB} MB`);
+        
         const fullAudioResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/r2/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -685,12 +695,18 @@ app.post('/process-video', async (req, res) => {
         });
         
         if (fullAudioResponse.ok) {
-          console.log(`   ✅ Full audio uploaded: ${fullAudioKey}`);
+          const result = await fullAudioResponse.json();
+          console.log(`   ✅ Full audio uploaded successfully: ${fullAudioKey}`);
+          console.log(`   Upload result: ${JSON.stringify(result)}`);
         } else {
-          console.warn(`   ⚠️ Failed to upload full audio (non-critical)`);
+          const errorText = await fullAudioResponse.text();
+          console.error(`   ❌ Failed to upload full audio: ${fullAudioResponse.status} ${errorText}`);
+          throw new Error(`Upload failed: ${fullAudioResponse.status} ${errorText}`);
         }
       } catch (fullAudioError) {
-        console.warn(`   ⚠️ Failed to upload full audio: ${fullAudioError.message} (non-critical)`);
+        console.error(`   ❌ Failed to upload full audio: ${fullAudioError.message}`);
+        // Don't throw - this is non-critical for basic functionality
+        // but log it so we can debug
       }
       
       const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
@@ -1029,10 +1045,20 @@ app.post('/regenerate-segments', async (req, res) => {
       r2Keys = await uploadToR2(segmentFiles, videoId);
       
       // Also upload full audio file for waveform visualization
+      // IMPORTANT: Upload full audio BEFORE deleting audioFile
       try {
         console.log(`\n   📤 Uploading full audio file for waveform...`);
         const fullAudioKey = `videos/${videoId}/full.mp3`;
+        
+        // Verify audio file exists
+        if (!audioFile) {
+          throw new Error('Audio file not found');
+        }
+        
         const fullAudioBuffer = await readFile(audioFile);
+        const fileSizeMB = (fullAudioBuffer.length / (1024 * 1024)).toFixed(2);
+        console.log(`   Full audio file size: ${fileSizeMB} MB`);
+        
         const fullAudioResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/r2/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1043,12 +1069,18 @@ app.post('/regenerate-segments', async (req, res) => {
         });
         
         if (fullAudioResponse.ok) {
-          console.log(`   ✅ Full audio uploaded: ${fullAudioKey}`);
+          const result = await fullAudioResponse.json();
+          console.log(`   ✅ Full audio uploaded successfully: ${fullAudioKey}`);
+          console.log(`   Upload result: ${JSON.stringify(result)}`);
         } else {
-          console.warn(`   ⚠️ Failed to upload full audio (non-critical)`);
+          const errorText = await fullAudioResponse.text();
+          console.error(`   ❌ Failed to upload full audio: ${fullAudioResponse.status} ${errorText}`);
+          throw new Error(`Upload failed: ${fullAudioResponse.status} ${errorText}`);
         }
       } catch (fullAudioError) {
-        console.warn(`   ⚠️ Failed to upload full audio: ${fullAudioError.message} (non-critical)`);
+        console.error(`   ❌ Failed to upload full audio: ${fullAudioError.message}`);
+        // Don't throw - this is non-critical for basic functionality
+        // but log it so we can debug
       }
       
       const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
