@@ -414,16 +414,14 @@ app.post('/process-video', async (req, res) => {
     
     try {
       // Pass 1: Choose timestamp provider (OpenAI Whisper > AssemblyAI > Deepgram)
-      // OpenAI Whisper API supports Pashto with word-level timestamps
-      let timestampProvider = 'openai_whisper';
+      // OpenAI Whisper API supports Pashto with word-level timestamps - BEST CHOICE
+      let timestampProvider = 'whisper_local';
       if (process.env.OPENAI_API_KEY) {
         timestampProvider = 'openai_whisper';
       } else if (process.env.ASSEMBLYAI_API_KEY) {
         timestampProvider = 'assemblyai';
       } else if (process.env.DEEPGRAM_API_KEY) {
         timestampProvider = 'deepgram';
-      } else {
-        timestampProvider = 'whisper_local';
       }
       
       console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);

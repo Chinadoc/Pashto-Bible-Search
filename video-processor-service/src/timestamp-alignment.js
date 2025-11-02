@@ -393,6 +393,94 @@ function alignTranscriptions(whisperWords, whisperSegments, elevenLabsText) {
 }
 
 /**
+ * Improved alignment using fuzzy matching and word boundaries
+ * (Fallback for providers without confidence scores)
+ */
+function alignTranscriptionsImproved(whisperWords, whisperSegments, elevenLabsText) {
+  console.log(`🔗 Aligning ElevenLabs transcription with timestamps (improved)...`);
+  
+  const elevenLabsSentences = elevenLabsText.split(/[.!?؟]+\s+/).filter(s => s.trim());
+  
+  const alignedSegments = [];
+  let whisperIndex = 0;
+  
+  for (const sentence of elevenLabsSentences) {
+    if (!sentence.trim()) continue;
+    
+    const sentenceWords = sentence.trim().split(/\s+/).map(w => w.toLowerCase().replace(/[.,!?؟]/g, ''));
+    
+    // Find matching start using sliding window
+    let bestStart = whisperIndex;
+    let bestMatchScore = 0;
+    
+    // Look ahead up to 30 words
+    for (let start = whisperIndex; start < Math.min(whisperWords.length, whisperIndex + 30); start++) {
+      let matchScore = 0;
+      let consecutiveMatches = 0;
+      
+      for (let i = 0; i < Math.min(sentenceWords.length, 10); i++) {
+        if (start + i >= whisperWords.length) break;
+        
+        const whisperWord = whisperWords[start + i].word.toLowerCase().replace(/[.,!?؟]/g, '');
+        const sentenceWord = sentenceWords[i];
+        
+        if (whisperWord === sentenceWord) {
+          matchScore += 2;
+          consecutiveMatches++;
+        } else if (whisperWord.includes(sentenceWord) || sentenceWord.includes(whisperWord)) {
+          matchScore += 1;
+          consecutiveMatches = 0;
+        } else {
+          consecutiveMatches = 0;
+        }
+      }
+      
+      if (matchScore > bestMatchScore && consecutiveMatches >= 2) {
+        bestMatchScore = matchScore;
+        bestStart = start;
+      }
+    }
+    
+    // Find end - look for sentence boundary or estimate length
+    let endIndex = bestStart;
+    const targetWords = sentenceWords.length;
+    
+    // Look for punctuation or end of sentence
+    for (let i = bestStart; i < Math.min(whisperWords.length, bestStart + targetWords * 2); i++) {
+      endIndex = i;
+      const word = whisperWords[i].word;
+      if (/[.!?؟]/.test(word)) {
+        break;
+      }
+    }
+    
+    // Ensure we have at least some words
+    if (endIndex <= bestStart) {
+      endIndex = Math.min(bestStart + Math.max(targetWords - 2, 3), whisperWords.length - 1);
+    }
+    
+    const startTime = whisperWords[bestStart]?.start || 0;
+    const endTime = whisperWords[endIndex]?.end || (whisperWords[endIndex]?.start || startTime + 5);
+    
+    alignedSegments.push({
+      text: sentence.trim(),
+      startTime: Math.round(startTime * 10) / 10,
+      endTime: Math.round(endTime * 10) / 10,
+    });
+    
+    whisperIndex = endIndex + 1;
+  }
+  
+  console.log(`✅ Aligned ${alignedSegments.length} segments`);
+  if (alignedSegments.length > 0) {
+    console.log(`   First: ${alignedSegments[0].startTime}s - ${alignedSegments[0].endTime}s`);
+    console.log(`   Last: ${alignedSegments[alignedSegments.length - 1].startTime}s - ${alignedSegments[alignedSegments.length - 1].endTime}s`);
+  }
+  
+  return alignedSegments;
+}
+
+/**
  * Intelligent alignment with confidence-based merging
  * Combines Deepgram timestamps with ElevenLabs quality, using higher confidence words
  */
