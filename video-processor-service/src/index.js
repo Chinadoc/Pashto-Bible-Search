@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const { createReadStream } = require('fs');
 const { writeFile, unlink, readFile, stat, mkdir } = require('fs/promises');
+const { existsSync } = require('fs');
 const { join } = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
