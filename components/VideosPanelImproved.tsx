@@ -141,6 +141,9 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   const [elevenLabsLoading, setElevenLabsLoading] = useState(false);
   const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedSegments, setEditedSegments] = useState<Array<{startTime: number; endTime: number}>>([]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<{
     stage: string;
     progress: number;
@@ -177,6 +180,17 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
   useEffect(() => {
     loadVideos();
   }, []);
+
+  // Initialize edited segments when entering edit mode or video changes
+  useEffect(() => {
+    if (selectedVideo && isEditMode) {
+      const initialSegments = selectedVideo.clips.map(clip => ({
+        startTime: clip.start_time_seconds || clip.start_time || 0,
+        endTime: clip.end_time_seconds || clip.end_time || 0,
+      }));
+      setEditedSegments(initialSegments);
+    }
+  }, [selectedVideo, isEditMode]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -220,13 +234,26 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
         </h2>
         <div className="flex items-center gap-2">
           {selectedVideo && (
-            <button
-              onClick={() => setIsFullScreen(!isFullScreen)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
-            >
-              {isFullScreen ? '⤓ Exit Full Screen' : '⤢ Full Screen'}
-            </button>
+            <>
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isEditMode
+                    ? 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
+                    : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500'
+                }`}
+                title={isEditMode ? 'Exit edit mode' : 'Edit segment timestamps'}
+              >
+                {isEditMode ? '✓ Done Editing' : '✏️ Edit Timestamps'}
+              </button>
+              <button
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+              >
+                {isFullScreen ? '⤓ Exit Full Screen' : '⤢ Full Screen'}
+              </button>
+            </>
           )}
           <button
             onClick={loadVideos}
@@ -467,16 +494,91 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                       Transcript ({selectedVideo.clips.length} segments)
                     </h4>
                     
+                    {isEditMode && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                            ✏️ Edit Mode: Adjust timestamps with sliders, then click "Confirm Changes" to regenerate clips
+                          </p>
+                          <button
+                            onClick={async () => {
+                              if (!selectedVideo) return;
+                              setIsRegenerating(true);
+                              setProcessingStatus({ stage: 'Preparing', progress: 0, message: 'Preparing to regenerate segments...' });
+                              
+                              try {
+                                const response = await fetch('/api/regenerate-segments', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    videoId: selectedVideo.video_id,
+                                    youtubeUrl: selectedVideo.youtube_url,
+                                    segments: editedSegments.map((seg, idx) => ({
+                                      segment_number: idx + 1,
+                                      text: selectedVideo.clips[idx]?.transcript_text || selectedVideo.clips[idx]?.sentence || '',
+                                      startTime: seg.startTime,
+                                      endTime: seg.endTime,
+                                    })),
+                                  }),
+                                });
+                                
+                                const result = await response.json();
+                                if (response.ok && result.success) {
+                                  setProcessingStatus({ stage: 'Complete', progress: 100, message: 'Segments regenerated successfully!' });
+                                  setIsEditMode(false);
+                                  await new Promise(resolve => setTimeout(resolve, 2000));
+                                  await loadVideos();
+                                  setProcessingStatus(null);
+                                } else {
+                                  setProcessingStatus(null);
+                                  alert(result.error || 'Failed to regenerate segments');
+                                }
+                              } catch (error) {
+                                setProcessingStatus(null);
+                                alert(`Failed to regenerate segments: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                              } finally {
+                                setIsRegenerating(false);
+                              }
+                            }}
+                            disabled={isRegenerating}
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 font-medium"
+                          >
+                            {isRegenerating ? '⏳ Regenerating...' : '✅ Confirm Changes'}
+                          </button>
+                        </div>
+                        {processingStatus && (
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-yellow-700 dark:text-yellow-300">{processingStatus.stage}</span>
+                              <span className="text-xs text-yellow-600 dark:text-yellow-400">{processingStatus.progress}%</span>
+                            </div>
+                            <div className="w-full bg-yellow-200 dark:bg-yellow-800 rounded-full h-1.5">
+                              <div 
+                                className="bg-yellow-600 dark:bg-yellow-400 h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${processingStatus.progress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">{processingStatus.message}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="space-y-3">
                       {selectedVideo.clips.map((clip, index) => {
                         const segmentNum = clip.segment_number || clip.sentence_number || (index + 1);
                         const text = clip.transcript_text || clip.sentence || '';
-                        const startTime = clip.start_time_seconds || clip.start_time || 0;
-                        const endTime = clip.end_time_seconds || clip.end_time || 0;
+                        const originalStartTime = clip.start_time_seconds || clip.start_time || 0;
+                        const originalEndTime = clip.end_time_seconds || clip.end_time || 0;
+                        const startTime = isEditMode && editedSegments[index] ? editedSegments[index].startTime : originalStartTime;
+                        const endTime = isEditMode && editedSegments[index] ? editedSegments[index].endTime : originalEndTime;
                         const duration = clip.duration || (endTime - startTime);
                         const audioKey = `${selectedVideo.video_id}-${segmentNum}`;
                         const isPlaying = playingAudio === audioKey;
                         const isActive = activeSegmentIndex === index;
+                        
+                        // Get video duration for slider max
+                        const videoDuration = selectedVideo.total_duration || 300; // Default to 5 minutes if unknown
                         
                         let audioUrl = clip.audio_url || clip.server_url;
                         if (!audioUrl && selectedVideo.video_id) {
@@ -562,8 +664,59 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                                     {formatDuration(startTime)} - {formatDuration(endTime)}
+                                    {isEditMode && (startTime !== originalStartTime || endTime !== originalEndTime) && (
+                                      <span className="ml-2 text-orange-600 dark:text-orange-400">(edited)</span>
+                                    )}
                                   </span>
                                 </div>
+                                
+                                {isEditMode ? (
+                                  <div className="space-y-3 mt-2">
+                                    <div>
+                                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                        Start: {formatDuration(startTime)}
+                                      </label>
+                                      <input
+                                        type="range"
+                                        min={index > 0 ? editedSegments[index - 1]?.endTime || 0 : 0}
+                                        max={editedSegments[index + 1]?.startTime || videoDuration}
+                                        step="0.1"
+                                        value={startTime}
+                                        onChange={(e) => {
+                                          const newStart = parseFloat(e.target.value);
+                                          if (newStart < endTime) {
+                                            const newSegments = [...editedSegments];
+                                            newSegments[index] = { ...newSegments[index], startTime: newStart };
+                                            setEditedSegments(newSegments);
+                                          }
+                                        }}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                        End: {formatDuration(endTime)}
+                                      </label>
+                                      <input
+                                        type="range"
+                                        min={startTime}
+                                        max={editedSegments[index + 1]?.startTime || videoDuration}
+                                        step="0.1"
+                                        value={endTime}
+                                        onChange={(e) => {
+                                          const newEnd = parseFloat(e.target.value);
+                                          if (newEnd > startTime) {
+                                            const newSegments = [...editedSegments];
+                                            newSegments[index] = { ...newSegments[index], endTime: newEnd };
+                                            setEditedSegments(newSegments);
+                                          }
+                                        }}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null}
+                                
                                 <p 
                                   className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed"
                                   dir="rtl"

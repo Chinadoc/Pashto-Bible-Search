@@ -749,6 +749,165 @@ app.post('/process-video', async (req, res) => {
   }
 });
 
+/**
+ * Regenerate segments with new timestamps
+ * POST /regenerate-segments
+ */
+app.post('/regenerate-segments', async (req, res) => {
+  const startTime = Date.now();
+  let audioFile = null;
+  let segmentFiles = [];
+
+  try {
+    const { videoId, youtubeUrl, segments } = req.body;
+
+    if (!videoId || !youtubeUrl || !segments || !Array.isArray(segments)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: videoId, youtubeUrl, segments',
+      });
+    }
+
+    console.log(`\n🔄 ========== REGENERATING SEGMENTS ==========`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   Segments: ${segments.length}`);
+    console.log(`========================================\n`);
+
+    // Step 1: Download video audio
+    console.log(`📥 Step 1: Downloading video audio...`);
+    const downloadStartTime = Date.now();
+    try {
+      audioFile = await downloadVideoAudio(youtubeUrl, videoId);
+      const downloadDuration = ((Date.now() - downloadStartTime) / 1000).toFixed(2);
+      console.log(`✅ Download completed:`);
+      console.log(`   Duration: ${downloadDuration}s`);
+      console.log(`   File: ${audioFile}`);
+    } catch (error) {
+      console.error(`❌ Download failed:`, error.message);
+      throw error;
+    }
+
+    // Step 2: Delete old R2 segments
+    console.log(`\n🗑️ Step 2: Deleting old R2 segments...`);
+    try {
+      const deleteResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/${videoId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!deleteResponse.ok) {
+        const deleteResult = await deleteResponse.json();
+        console.warn(`⚠️ Some segments may not have been deleted: ${deleteResult.error || 'Unknown error'}`);
+      } else {
+        console.log(`✅ Old segments deleted`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to delete old segments: ${error.message}`);
+      // Continue anyway - we'll overwrite them
+    }
+
+    // Step 3: Extract new audio segments
+    console.log(`\n🎵 Step 3: Extracting new audio segments...`);
+    const extractStartTime = Date.now();
+    try {
+      const extractionResult = await extractAudioSegments(audioFile, segments.map(s => ({
+        text: s.text || '',
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })), videoId);
+      segmentFiles = extractionResult.segmentFiles;
+      const extractDuration = ((Date.now() - extractStartTime) / 1000).toFixed(2);
+      console.log(`✅ Audio extraction completed:`);
+      console.log(`   Duration: ${extractDuration}s`);
+      console.log(`   Segments extracted: ${segmentFiles.length}/${segments.length}`);
+    } catch (error) {
+      console.error(`❌ Audio extraction failed:`, error.message);
+      throw error;
+    }
+
+    // Step 4: Upload to R2
+    console.log(`\n☁️ Step 4: Uploading to Cloudflare R2...`);
+    const uploadStartTime = Date.now();
+    let r2Keys;
+    try {
+      r2Keys = await uploadToR2(segmentFiles, videoId);
+      const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+      console.log(`✅ Upload completed:`);
+      console.log(`   Duration: ${uploadDuration}s`);
+      console.log(`   Segments uploaded: ${r2Keys.length}/${segmentFiles.length}`);
+    } catch (error) {
+      console.error(`❌ Upload failed:`, error.message);
+      throw error;
+    }
+
+    // Step 5: Update D1 database
+    console.log(`\n💾 Step 5: Updating D1 database...`);
+    const updateStartTime = Date.now();
+    try {
+      const transcript = segments.map(s => s.text || '').join(' ');
+      await storeMetadata(youtubeUrl, videoId, transcript, segments.map(s => ({
+        text: s.text || '',
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })), r2Keys, 'elevenlabs', null);
+      const updateDuration = ((Date.now() - updateStartTime) / 1000).toFixed(2);
+      console.log(`✅ Database updated:`);
+      console.log(`   Duration: ${updateDuration}s`);
+    } catch (error) {
+      console.error(`❌ Database update failed:`, error.message);
+      throw error;
+    }
+
+    // Cleanup
+    console.log(`\n🧹 Cleaning up temporary files...`);
+    if (audioFile) {
+      await unlink(audioFile).catch(() => {});
+    }
+    for (const file of segmentFiles) {
+      await unlink(file).catch(() => {});
+    }
+    console.log(`✅ Cleanup completed`);
+
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`\n✅ ========== REGENERATION SUCCESS ==========`);
+    console.log(`   Total duration: ${totalDuration}s`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   Segments: ${segments.length}`);
+    console.log(`   R2 keys: ${r2Keys.length}`);
+    console.log(`========================================\n`);
+
+    res.json({
+      success: true,
+      videoId,
+      segments: segments.length,
+      r2Keys: r2Keys.length,
+      message: `✅ Segments regenerated successfully! ${segments.length} segments created.`,
+    });
+
+  } catch (error) {
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`\n❌ ========== REGENERATION ERROR ==========`);
+    console.error(`   Duration: ${totalDuration}s`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
+    console.error(`==========================================\n`);
+
+    // Cleanup on error
+    if (audioFile) {
+      await unlink(audioFile).catch(() => {});
+    }
+    for (const file of segmentFiles) {
+      await unlink(file).catch(() => {});
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Video processor service running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
