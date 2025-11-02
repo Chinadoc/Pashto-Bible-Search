@@ -116,7 +116,7 @@ async function transcribeWithAssemblyAI(audioFile, apiKey) {
  * Deepgram is fast and cost-efficient
  */
 async function transcribeWithDeepgram(audioFile, apiKey) {
-  console.log(`🎤 Transcribing with Deepgram for word-level timestamps...`);
+  console.log(`🎤 Transcribing with Deepgram Whisper for word-level timestamps...`);
   
   const fileStream = createReadStream(audioFile);
   const fileStats = await readFile(audioFile).then(buf => buf.length);
@@ -124,18 +124,40 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
   console.log(`   Uploading ${(fileStats / 1024 / 1024).toFixed(2)} MB to Deepgram...`);
   
   try {
-    // Try Deepgram without specifying model - let it auto-detect
-    // Or try without language parameter to let it auto-detect
-    const response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&utterances=true&timestamps=true&diarize=false', fileStream, {
-      headers: {
-        'Authorization': `Token ${apiKey}`,
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': fileStats.toString(),
-      },
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-      timeout: 120000, // 2 minutes timeout
-    });
+    // Try Deepgram Whisper - if account doesn't have access, fall back to regular Deepgram models
+    // First try with Whisper tier
+    let response;
+    try {
+      response = await axios.post('https://api.deepgram.com/v1/listen?tier=whisper&model=whisper-large&punctuate=true&utterances=true&timestamps=true&confidence=true', fileStream, {
+        headers: {
+          'Authorization': `Token ${apiKey}`,
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': fileStats.toString(),
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 120000,
+      });
+    } catch (whisperError) {
+      if (whisperError.response?.status === 403) {
+        console.log(`   ⚠️ Whisper tier not available, trying regular Deepgram models...`);
+        // Recreate stream for retry
+        const retryStream = createReadStream(audioFile);
+        // Try nova-2 or base model
+        response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&utterances=true&timestamps=true&confidence=true', retryStream, {
+          headers: {
+            'Authorization': `Token ${apiKey}`,
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': fileStats.toString(),
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          timeout: 120000,
+        });
+      } else {
+        throw whisperError;
+      }
+    }
     
     const results = response.data.results;
     if (!results || !results.channels || !results.channels[0]) {
@@ -155,6 +177,10 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
     console.log(`✅ Deepgram transcription completed:`);
     console.log(`   Text length: ${transcript.length} chars`);
     console.log(`   Words with timestamps: ${words.length}`);
+    if (words.length > 0 && words[0].confidence !== undefined) {
+      const avgConfidence = words.reduce((sum, w) => sum + (w.confidence || 0), 0) / words.length;
+      console.log(`   Average confidence: ${(avgConfidence * 100).toFixed(1)}%`);
+    }
     
     return {
       text: transcript,
@@ -162,6 +188,7 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
         word: w.word.trim(),
         start: w.start,
         end: w.end,
+        confidence: w.confidence || 0.5, // Default confidence if not provided
       })),
       segments: alternatives.paragraphs?.paragraphs?.map(p => ({
         text: p.sentences?.map(s => s.text).join(' ') || p.text || '',
@@ -366,49 +393,65 @@ function alignTranscriptions(whisperWords, whisperSegments, elevenLabsText) {
 }
 
 /**
- * Improved alignment using fuzzy matching and word boundaries
+ * Intelligent alignment with confidence-based merging
+ * Combines Deepgram timestamps with ElevenLabs quality, using higher confidence words
  */
-function alignTranscriptionsImproved(whisperWords, whisperSegments, elevenLabsText) {
-  console.log(`🔗 Aligning ElevenLabs transcription with Whisper timestamps (improved)...`);
+function alignTranscriptionsWithConfidence(deepgramWords, deepgramSegments, elevenLabsText) {
+  console.log(`🔗 Aligning transcriptions with confidence-based merging...`);
   
   const elevenLabsSentences = elevenLabsText.split(/[.!?؟]+\s+/).filter(s => s.trim());
   
   const alignedSegments = [];
-  let whisperIndex = 0;
+  let deepgramIndex = 0;
+  
+  // Create a word map from Deepgram for easy lookup
+  const deepgramWordMap = new Map();
+  deepgramWords.forEach((w, i) => {
+    deepgramWordMap.set(i, w);
+  });
   
   for (const sentence of elevenLabsSentences) {
     if (!sentence.trim()) continue;
     
     const sentenceWords = sentence.trim().split(/\s+/).map(w => w.toLowerCase().replace(/[.,!?؟]/g, ''));
     
-    // Find matching start using sliding window
-    let bestStart = whisperIndex;
+    // Find matching start using sliding window with confidence scoring
+    let bestStart = deepgramIndex;
     let bestMatchScore = 0;
+    let bestConfidenceSum = 0;
     
     // Look ahead up to 30 words
-    for (let start = whisperIndex; start < Math.min(whisperWords.length, whisperIndex + 30); start++) {
+    for (let start = deepgramIndex; start < Math.min(deepgramWords.length, deepgramIndex + 30); start++) {
       let matchScore = 0;
+      let confidenceSum = 0;
       let consecutiveMatches = 0;
       
       for (let i = 0; i < Math.min(sentenceWords.length, 10); i++) {
-        if (start + i >= whisperWords.length) break;
+        if (start + i >= deepgramWords.length) break;
         
-        const whisperWord = whisperWords[start + i].word.toLowerCase().replace(/[.,!?؟]/g, '');
+        const deepgramWord = deepgramWords[start + i].word.toLowerCase().replace(/[.,!?؟]/g, '');
         const sentenceWord = sentenceWords[i];
+        const confidence = deepgramWords[start + i].confidence || 0.5;
         
-        if (whisperWord === sentenceWord) {
+        if (deepgramWord === sentenceWord) {
           matchScore += 2;
+          confidenceSum += confidence;
           consecutiveMatches++;
-        } else if (whisperWord.includes(sentenceWord) || sentenceWord.includes(whisperWord)) {
+        } else if (deepgramWord.includes(sentenceWord) || sentenceWord.includes(deepgramWord)) {
           matchScore += 1;
+          confidenceSum += confidence * 0.5; // Partial match gets half confidence
           consecutiveMatches = 0;
         } else {
           consecutiveMatches = 0;
         }
       }
       
-      if (matchScore > bestMatchScore && consecutiveMatches >= 2) {
-        bestMatchScore = matchScore;
+      const avgConfidence = confidenceSum / Math.min(sentenceWords.length, 10);
+      const combinedScore = matchScore * (1 + avgConfidence); // Boost score by confidence
+      
+      if (combinedScore > bestMatchScore && consecutiveMatches >= 2) {
+        bestMatchScore = combinedScore;
+        bestConfidenceSum = confidenceSum;
         bestStart = start;
       }
     }
@@ -418,9 +461,9 @@ function alignTranscriptionsImproved(whisperWords, whisperSegments, elevenLabsTe
     const targetWords = sentenceWords.length;
     
     // Look for punctuation or end of sentence
-    for (let i = bestStart; i < Math.min(whisperWords.length, bestStart + targetWords * 2); i++) {
+    for (let i = bestStart; i < Math.min(deepgramWords.length, bestStart + targetWords * 2); i++) {
       endIndex = i;
-      const word = whisperWords[i].word;
+      const word = deepgramWords[i].word;
       if (/[.!?؟]/.test(word)) {
         break;
       }
@@ -428,25 +471,35 @@ function alignTranscriptionsImproved(whisperWords, whisperSegments, elevenLabsTe
     
     // Ensure we have at least some words
     if (endIndex <= bestStart) {
-      endIndex = Math.min(bestStart + Math.max(targetWords - 2, 3), whisperWords.length - 1);
+      endIndex = Math.min(bestStart + Math.max(targetWords - 2, 3), deepgramWords.length - 1);
     }
     
-    const startTime = whisperWords[bestStart]?.start || 0;
-    const endTime = whisperWords[endIndex]?.end || (whisperWords[endIndex]?.start || startTime + 5);
+    const startTime = deepgramWords[bestStart]?.start || 0;
+    const endTime = deepgramWords[endIndex]?.end || (deepgramWords[endIndex]?.start || startTime + 5);
+    
+    // Calculate average confidence for this segment
+    const segmentWords = deepgramWords.slice(bestStart, endIndex + 1);
+    const avgConfidence = segmentWords.length > 0
+      ? segmentWords.reduce((sum, w) => sum + (w.confidence || 0.5), 0) / segmentWords.length
+      : 0.5;
     
     alignedSegments.push({
       text: sentence.trim(),
       startTime: Math.round(startTime * 10) / 10,
       endTime: Math.round(endTime * 10) / 10,
+      confidence: avgConfidence,
+      deepgramWords: segmentWords.map(w => w.word).join(' '),
     });
     
-    whisperIndex = endIndex + 1;
+    deepgramIndex = endIndex + 1;
   }
   
   console.log(`✅ Aligned ${alignedSegments.length} segments`);
   if (alignedSegments.length > 0) {
-    console.log(`   First: ${alignedSegments[0].startTime}s - ${alignedSegments[0].endTime}s`);
+    const avgConfidence = alignedSegments.reduce((sum, s) => sum + (s.confidence || 0.5), 0) / alignedSegments.length;
+    console.log(`   First: ${alignedSegments[0].startTime}s - ${alignedSegments[0].endTime}s (conf: ${(alignedSegments[0].confidence * 100).toFixed(1)}%)`);
     console.log(`   Last: ${alignedSegments[alignedSegments.length - 1].startTime}s - ${alignedSegments[alignedSegments.length - 1].endTime}s`);
+    console.log(`   Average confidence: ${(avgConfidence * 100).toFixed(1)}%`);
   }
   
   return alignedSegments;
@@ -458,5 +511,6 @@ module.exports = {
   transcribeWithDeepgram,
   alignTranscriptions,
   alignTranscriptionsImproved,
+  alignTranscriptionsWithConfidence,
 };
 

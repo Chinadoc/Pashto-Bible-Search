@@ -7,7 +7,7 @@ const { join } = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
 const cors = require('cors');
-const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved } = require('./timestamp-alignment');
+const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved, alignTranscriptionsWithConfidence } = require('./timestamp-alignment');
 
 const execAsync = promisify(exec);
 const app = express();
@@ -457,9 +457,14 @@ app.post('/process-video', async (req, res) => {
         console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
         console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
         
-        // Step 3: Align ElevenLabs text with Whisper timestamps
+        // Step 3: Align ElevenLabs text with timestamp provider timestamps
+        // Use confidence-based alignment if Deepgram was used (has confidence scores)
         console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
-        segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        if (timestampProvider === 'deepgram' && whisperData.words[0]?.confidence !== undefined) {
+          segments = alignTranscriptionsWithConfidence(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        } else {
+          segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        }
         
         const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
         console.log(`✅ Two-pass transcription completed:`);
