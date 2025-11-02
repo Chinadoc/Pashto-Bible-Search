@@ -539,8 +539,8 @@ export default function WaveformViewer({
           onError={(e) => {
             console.error('Audio loading error:', e);
             setIsLoadingWaveform(false);
-            const errorMsg = `Failed to load audio from ${audioUrl}. Please check if the full audio file exists in R2.`;
-            alert(errorMsg);
+            // Don't show alert - just log and show message in UI
+            console.warn(`Full audio not available. This video may have been processed before full audio upload was added. Please reprocess the video to generate the waveform.`);
           }}
           onLoadedData={() => {
             console.log('Audio loaded successfully');
@@ -550,7 +550,25 @@ export default function WaveformViewer({
         
         {isLoadingWaveform && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
-            <div className="text-gray-400 text-sm">Loading waveform...</div>
+            <div className="text-gray-400 text-sm">
+              Loading waveform... 
+              <br />
+              <span className="text-xs text-gray-500 mt-1 block">
+                {audioUrl ? `From: ${audioUrl.split('/').pop()}` : 'No audio URL'}
+              </span>
+            </div>
+          </div>
+        )}
+        {!isLoadingWaveform && waveformData.length === 0 && audioUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
+            <div className="text-gray-400 text-sm text-center px-4">
+              <div className="mb-2">⚠️ Full audio not available</div>
+              <div className="text-xs text-gray-500">
+                This video was processed before full audio upload was added.
+                <br />
+                Please reprocess the video to generate the waveform.
+              </div>
+            </div>
           </div>
         )}
       </div>
