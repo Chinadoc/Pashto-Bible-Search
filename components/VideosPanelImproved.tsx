@@ -550,8 +550,8 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     </div>
                   </div>
                   
-                  {/* Unified Waveform Viewer - Always visible, but more prominent in edit mode */}
-                  {selectedVideo.video_id && (() => {
+                  {/* Unified Waveform Viewer - Only show when NOT in edit mode (edit mode shows it at top) */}
+                  {!isEditMode && selectedVideo.video_id && (() => {
                     let correctVideoId = selectedVideo.video_id;
                     if (selectedVideo.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
                       const extracted = extractVideoId(selectedVideo.youtube_url);
