@@ -119,41 +119,63 @@ async function transcribeWithDeepgram(audioFile, apiKey) {
   console.log(`🎤 Transcribing with Deepgram for word-level timestamps...`);
   
   const fileStream = createReadStream(audioFile);
+  const fileStats = await readFile(audioFile).then(buf => buf.length);
   
-  const response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&language=auto&utterances=true&timestamps=true', fileStream, {
-    headers: {
-      'Authorization': `Token ${apiKey}`,
-      'Content-Type': 'audio/mpeg',
-    },
-    maxContentLength: Infinity,
-    maxBodyLength: Infinity,
-  });
+  console.log(`   Uploading ${(fileStats / 1024 / 1024).toFixed(2)} MB to Deepgram...`);
   
-  const results = response.data.results;
-  if (!results || !results.channels || !results.channels[0]) {
-    throw new Error('Deepgram transcription failed: Invalid response');
+  try {
+    // Try Deepgram without specifying model - let it auto-detect
+    // Or try without language parameter to let it auto-detect
+    const response = await axios.post('https://api.deepgram.com/v1/listen?punctuate=true&utterances=true&timestamps=true&diarize=false', fileStream, {
+      headers: {
+        'Authorization': `Token ${apiKey}`,
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': fileStats.toString(),
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 120000, // 2 minutes timeout
+    });
+    
+    const results = response.data.results;
+    if (!results || !results.channels || !results.channels[0]) {
+      throw new Error('Deepgram transcription failed: Invalid response structure');
+    }
+    
+    const channel = results.channels[0];
+    const alternatives = channel.alternatives?.[0];
+    
+    if (!alternatives) {
+      throw new Error('Deepgram transcription failed: No alternatives found');
+    }
+    
+    const words = alternatives.words || [];
+    const transcript = alternatives.transcript || '';
+    
+    console.log(`✅ Deepgram transcription completed:`);
+    console.log(`   Text length: ${transcript.length} chars`);
+    console.log(`   Words with timestamps: ${words.length}`);
+    
+    return {
+      text: transcript,
+      words: words.map(w => ({
+        word: w.word.trim(),
+        start: w.start,
+        end: w.end,
+      })),
+      segments: alternatives.paragraphs?.paragraphs?.map(p => ({
+        text: p.sentences?.map(s => s.text).join(' ') || p.text || '',
+        start: p.start,
+        end: p.end,
+      })) || [],
+    };
+  } catch (error) {
+    if (error.response) {
+      const errorMsg = error.response.data?.error || JSON.stringify(error.response.data);
+      throw new Error(`Deepgram API error: ${error.response.status} - ${errorMsg}`);
+    }
+    throw error;
   }
-  
-  const channel = results.channels[0];
-  const words = channel.alternatives[0].words || [];
-  
-  console.log(`✅ Deepgram transcription completed:`);
-  console.log(`   Text length: ${channel.alternatives[0].transcript.length} chars`);
-  console.log(`   Words with timestamps: ${words.length}`);
-  
-  return {
-    text: channel.alternatives[0].transcript || '',
-    words: words.map(w => ({
-      word: w.word.trim(),
-      start: w.start,
-      end: w.end,
-    })),
-    segments: channel.alternatives[0].paragraphs?.paragraphs.map(p => ({
-      text: p.sentences.map(s => s.text).join(' '),
-      start: p.start,
-      end: p.end,
-    })) || [],
-  };
 }
 
 /**

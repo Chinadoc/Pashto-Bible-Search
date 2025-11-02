@@ -413,22 +413,30 @@ app.post('/process-video', async (req, res) => {
     let segments = [];
     
     try {
-      // Pass 1: Choose timestamp provider (AssemblyAI > Deepgram > Whisper)
-      let timestampProvider = 'whisper';
-      if (process.env.ASSEMBLYAI_API_KEY) {
+      // Pass 1: Choose timestamp provider (OpenAI Whisper > AssemblyAI > Deepgram)
+      // OpenAI Whisper API supports Pashto with word-level timestamps
+      let timestampProvider = 'openai_whisper';
+      if (process.env.OPENAI_API_KEY) {
+        timestampProvider = 'openai_whisper';
+      } else if (process.env.ASSEMBLYAI_API_KEY) {
         timestampProvider = 'assemblyai';
       } else if (process.env.DEEPGRAM_API_KEY) {
         timestampProvider = 'deepgram';
+      } else {
+        timestampProvider = 'whisper_local';
       }
       
       console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
       try {
-        if (timestampProvider === 'assemblyai') {
+        if (timestampProvider === 'openai_whisper' && process.env.OPENAI_API_KEY) {
+          // Use OpenAI Whisper API directly - best Pashto support
+          whisperData = await transcribeWithWhisper(audioFile, false); // false = use API
+        } else if (timestampProvider === 'assemblyai') {
           whisperData = await transcribeWithAssemblyAI(audioFile, process.env.ASSEMBLYAI_API_KEY);
         } else if (timestampProvider === 'deepgram') {
           whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
         } else {
-          const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
+          const useLocalWhisper = process.env.USE_LOCAL_WHISPER === 'true';
           whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
         }
         

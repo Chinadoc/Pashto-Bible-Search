@@ -36,7 +36,7 @@ try {
 }
 
 // Import timestamp alignment functions
-const { transcribeWithWhisper, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
+const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
 
 const execAsync = promisify(exec);
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
@@ -299,17 +299,30 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
     let segments = [];
     
     try {
-      // Pass 1: Whisper for timestamps
-      console.log(`\n   📍 Pass 1: Whisper transcription (for timestamps)...`);
+      // Pass 1: Choose timestamp provider (AssemblyAI > Deepgram > Whisper)
+      let timestampProvider = 'whisper';
+      if (process.env.ASSEMBLYAI_API_KEY) {
+        timestampProvider = 'assemblyai';
+      } else if (process.env.DEEPGRAM_API_KEY) {
+        timestampProvider = 'deepgram';
+      }
+      
+      console.log(`\n   📍 Pass 1: Transcription for timestamps (using ${timestampProvider})...`);
       try {
-        const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
-        whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
+        if (timestampProvider === 'assemblyai') {
+          whisperData = await transcribeWithAssemblyAI(audioFile, process.env.ASSEMBLYAI_API_KEY);
+        } else if (timestampProvider === 'deepgram') {
+          whisperData = await transcribeWithDeepgram(audioFile, process.env.DEEPGRAM_API_KEY);
+        } else {
+          const useLocalWhisper = !process.env.OPENAI_API_KEY || process.env.USE_LOCAL_WHISPER === 'true';
+          whisperData = await transcribeWithWhisper(audioFile, useLocalWhisper);
+        }
         
         const videoDuration = whisperData.segments.length > 0 
           ? Math.max(...whisperData.segments.map(s => s.end || 0))
           : await getVideoDuration(audioFile);
         
-        console.log(`   ✅ Whisper transcription completed:`);
+        console.log(`   ✅ ${timestampProvider} transcription completed:`);
         console.log(`      Text length: ${whisperData.text.length} chars`);
         console.log(`      Words with timestamps: ${whisperData.words.length}`);
         console.log(`      Video duration: ${videoDuration}s (${formatDuration(videoDuration)})`);
@@ -332,8 +345,8 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
           console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
         }
         
-      } catch (whisperError) {
-        console.warn(`⚠️ Whisper transcription failed: ${whisperError.message}`);
+      } catch (timestampError) {
+        console.warn(`⚠️ ${timestampProvider} transcription failed: ${timestampError.message}`);
         console.log(`   Falling back to single-pass (ElevenLabs + proportional timing)...`);
         
         // Fallback: use ElevenLabs only with proportional timing
