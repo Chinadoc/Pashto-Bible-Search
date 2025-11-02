@@ -412,8 +412,30 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
     const transcript = elevenLabsTranscript || (whisperData ? whisperData.text : '');
     
     console.log(`\n🎵 Step 5: Extracting audio segments...`);
-    segmentFiles = await extractAudioSegments(audioFile, segments, videoId);
+    let originalStartTimes = [];
+    const extractionResult = await extractAudioSegments(audioFile, segments, videoId);
+    segmentFiles = extractionResult.segmentFiles;
+    originalStartTimes = extractionResult.originalStartTimes;
     console.log(`✅ Extracted ${segmentFiles.length} audio segments`);
+    
+    // Step 5.5: Refine segment timestamps with WhisperX per-segment alignment (if available)
+    if (segmentFiles.length > 0 && !useDeepgramDirect && process.env.USE_WHISPERX_REFINEMENT !== 'false') {
+      try {
+        console.log(`\n🔧 Step 5.5: Refining timestamps with WhisperX per-segment alignment...`);
+        const refineStartTime = Date.now();
+        segments = await refineSegmentsWithWhisperX(segments, segmentFiles, originalStartTimes);
+        const refineDuration = ((Date.now() - refineStartTime) / 1000).toFixed(2);
+        console.log(`✅ Timestamp refinement completed:`);
+        console.log(`   Duration: ${refineDuration}s`);
+        console.log(`   Segments refined: ${segments.length}`);
+        if (segments.length > 0) {
+          console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+          console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Timestamp refinement failed (continuing with original timestamps):`, error.message);
+      }
+    }
     
     console.log(`\n☁️ Step 6: Uploading to Cloudflare R2...`);
     const r2Keys = await uploadToR2(segmentFiles, videoId);
