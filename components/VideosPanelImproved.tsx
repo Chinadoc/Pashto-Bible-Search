@@ -611,6 +611,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
