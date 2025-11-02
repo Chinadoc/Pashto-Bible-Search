@@ -477,12 +477,13 @@ app.post('/process-video', async (req, res) => {
     let elevenLabsTranscript = null;
     let segments = [];
     
+    // Choose transcription provider
+    // Strategy: If Deepgram available, use it directly (no alignment needed - has accurate timestamps)
+    // Otherwise use two-pass: Whisper for timestamps + ElevenLabs for quality + alignment
+    let timestampProvider = 'whisper_local';
+    let useDeepgramDirect = false;
+    
     try {
-      // Choose transcription provider
-      // Strategy: If Deepgram available, use it directly (no alignment needed - has accurate timestamps)
-      // Otherwise use two-pass: Whisper for timestamps + ElevenLabs for quality + alignment
-      let timestampProvider = 'whisper_local';
-      let useDeepgramDirect = false;
       
       if (process.env.DEEPGRAM_API_KEY) {
         timestampProvider = 'deepgram';
@@ -577,32 +578,27 @@ app.post('/process-video', async (req, res) => {
           }
         }
       }
-        
-        const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
-        console.log(`✅ Two-pass transcription completed:`);
-        console.log(`   Total duration: ${transcribeDuration}s`);
-        console.log(`   Segments: ${segments.length}`);
-        if (segments.length > 0) {
-          console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
-          console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
-        }
-        
-      } catch (whisperError) {
-        console.warn(`⚠️ Whisper transcription failed: ${whisperError.message}`);
-        console.log(`   Falling back to single-pass (ElevenLabs + proportional timing)...`);
-        
-        // Fallback: use ElevenLabs only with proportional timing
-        elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-        const videoDuration = await getVideoDuration(audioFile);
-        segments = await segmentTranscriptBySentences(elevenLabsTranscript, videoDuration);
-        
-        console.log(`✅ Fallback transcription completed:`);
-        console.log(`   Using proportional timing (less accurate)`);
+      
+      const transcribeDuration = ((Date.now() - transcribeStartTime) / 1000).toFixed(2);
+      console.log(`✅ Two-pass transcription completed:`);
+      console.log(`   Total duration: ${transcribeDuration}s`);
+      console.log(`   Segments: ${segments.length}`);
+      if (segments.length > 0) {
+        console.log(`   First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+        console.log(`   Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
       }
       
-    } catch (error) {
-      console.error(`❌ Transcription failed:`, error.message);
-      throw error;
+    } catch (whisperError) {
+      console.warn(`⚠️ Whisper transcription failed: ${whisperError.message}`);
+      console.log(`   Falling back to single-pass (ElevenLabs + proportional timing)...`);
+      
+      // Fallback: use ElevenLabs only with proportional timing
+      elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+      const videoDuration = await getVideoDuration(audioFile);
+      segments = await segmentTranscriptBySentences(elevenLabsTranscript, videoDuration);
+      
+      console.log(`✅ Fallback transcription completed:`);
+      console.log(`   Using proportional timing (less accurate)`);
     }
     
     // Step 4: Extract audio segments
