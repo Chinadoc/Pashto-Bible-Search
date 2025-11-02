@@ -306,16 +306,17 @@ async function extractAudioSegments(audioFile, segments, videoId) {
     const outputPath = join(tempDir, `${videoId}_segment_${i + 1}.mp3`);
     
     try {
-      // Use precise decimal times (not Math.floor)
-      // Add small padding before start to avoid clipping words
-      const paddingStart = 0.15; // 150ms before
-      const paddingEnd = 0.25;   // 250ms after
+      // Use larger padding to ensure we capture full audio
+      // This is especially important when timestamps are rough estimates
+      const paddingStart = 0.5; // 500ms before (increased from 150ms)
+      const paddingEnd = 0.75;   // 750ms after (increased from 250ms)
       
       const start = Math.max(0, segment.startTime - paddingStart);
       const end = segment.endTime + paddingEnd;
       const duration = end - start;
       
-      // Store original start time (without padding) for later refinement
+      // Store original start time (with padding) for later refinement
+      // This is the absolute start time in the full video
       originalStartTimes.push(start);
       
       // Use precise decimal format for ffmpeg
