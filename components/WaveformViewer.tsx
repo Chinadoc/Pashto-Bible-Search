@@ -151,7 +151,7 @@ export default function WaveformViewer({
         audioContext.close().catch(() => {});
       }
       // Remove event listeners
-      if (audio) {
+      if (audio && handleLoadedData && handleLoadedMetadata && handleCanPlay) {
         audio.removeEventListener('loadeddata', handleLoadedData);
         audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audio.removeEventListener('canplay', handleCanPlay);
