@@ -36,7 +36,7 @@ try {
 }
 
 // Import timestamp alignment functions
-const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved } = require(path.join(servicePath, 'src/timestamp-alignment'));
+const { transcribeWithWhisper, transcribeWithAssemblyAI, transcribeWithDeepgram, alignTranscriptionsImproved, alignTranscriptionsWithConfidence } = require(path.join(servicePath, 'src/timestamp-alignment'));
 
 const execAsync = promisify(exec);
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
@@ -334,9 +334,13 @@ async function processVideo(youtubeUrl, elevenlabsApiKey) {
         console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
         console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
         
-        // Pass 3: Align
+        // Pass 3: Align with confidence-based merging if Deepgram was used
         console.log(`\n   📍 Pass 3: Aligning transcriptions...`);
-        segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        if (timestampProvider === 'deepgram' && whisperData.words[0]?.confidence !== undefined) {
+          segments = alignTranscriptionsWithConfidence(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        } else {
+          segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+        }
         
         console.log(`✅ Two-pass transcription completed:`);
         console.log(`   Segments: ${segments.length}`);
