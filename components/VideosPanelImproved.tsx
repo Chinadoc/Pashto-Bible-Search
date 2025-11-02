@@ -489,7 +489,7 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     </div>
                   </div>
                   
-                  {/* Unified Waveform Viewer */}
+                  {/* Unified Waveform Viewer - Always visible, but more prominent in edit mode */}
                   {selectedVideo.video_id && (() => {
                     let correctVideoId = selectedVideo.video_id;
                     if (selectedVideo.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
@@ -501,52 +501,54 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     const fullAudioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${correctVideoId}/audio-full`;
                     
                     return (
-                      <WaveformViewer
-                        audioUrl={fullAudioUrl}
-                        segments={isEditMode ? editedSegments : selectedVideo.clips.map(clip => ({
-                          startTime: clip.start_time_seconds || clip.start_time || 0,
-                          endTime: clip.end_time_seconds || clip.end_time || 0,
-                        }))}
-                        onSegmentUpdate={(newSegments) => {
-                          if (isEditMode) {
-                            setEditedSegments(newSegments);
-                          }
-                        }}
-                        videoDuration={selectedVideo.total_duration || 0}
-                        onDetectSilence={async () => {
-                          if (!selectedVideo) return [];
-                          
-                          setIsDetectingSilence(true);
-                          try {
-                            const response = await fetch('/api/detect-silence', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                videoId: selectedVideo.video_id,
-                                youtubeUrl: selectedVideo.youtube_url,
-                              }),
-                            });
-                            
-                            const result = await response.json();
-                            if (response.ok && result.success) {
-                              setIsEditMode(true);
-                              setEditedSegments(result.segments);
-                              
-                              // Also store silence regions for visualization
-                              if (result.silenceRegions) {
-                                setSilenceRegions(result.silenceRegions);
-                              }
-                              
-                              return result.segments;
-                            } else {
-                              throw new Error(result.error || 'Failed to detect silence');
+                      <div className={`${isEditMode ? 'border-2 border-yellow-500 rounded-lg p-2 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}`}>
+                        <WaveformViewer
+                          audioUrl={fullAudioUrl}
+                          segments={isEditMode ? editedSegments : selectedVideo.clips.map(clip => ({
+                            startTime: clip.start_time_seconds || clip.start_time || 0,
+                            endTime: clip.end_time_seconds || clip.end_time || 0,
+                          }))}
+                          onSegmentUpdate={(newSegments) => {
+                            if (isEditMode) {
+                              setEditedSegments(newSegments);
                             }
-                          } finally {
-                            setIsDetectingSilence(false);
-                          }
-                        }}
-                        silenceRegions={silenceRegions}
-                      />
+                          }}
+                          videoDuration={selectedVideo.total_duration || 0}
+                          onDetectSilence={async () => {
+                            if (!selectedVideo) return [];
+                            
+                            setIsDetectingSilence(true);
+                            try {
+                              const response = await fetch('/api/detect-silence', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  videoId: selectedVideo.video_id,
+                                  youtubeUrl: selectedVideo.youtube_url,
+                                }),
+                              });
+                              
+                              const result = await response.json();
+                              if (response.ok && result.success) {
+                                setIsEditMode(true);
+                                setEditedSegments(result.segments);
+                                
+                                // Also store silence regions for visualization
+                                if (result.silenceRegions) {
+                                  setSilenceRegions(result.silenceRegions);
+                                }
+                                
+                                return result.segments;
+                              } else {
+                                throw new Error(result.error || 'Failed to detect silence');
+                              }
+                            } finally {
+                              setIsDetectingSilence(false);
+                            }
+                          }}
+                          silenceRegions={silenceRegions}
+                        />
+                      </div>
                     );
                   })()}
                 </div>
@@ -560,9 +562,9 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     
                     {isEditMode && (
                       <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-4">
                           <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                            ✏️ Edit Mode: Adjust timestamps with sliders, then click "Confirm Changes" to regenerate clips
+                            ✏️ Edit Mode: Adjust segment boundaries on the waveform below, then click "Confirm Changes" to regenerate clips
                           </p>
                           <button
                             onClick={async () => {

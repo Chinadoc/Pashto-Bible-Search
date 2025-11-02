@@ -147,7 +147,15 @@ export default function WaveformViewer({
       }
       if (source) source.disconnect();
       if (analyser) analyser.disconnect();
-      if (audioContext) audioContext.close();
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close().catch(() => {});
+      }
+      // Remove event listeners
+      if (audio) {
+        audio.removeEventListener('loadeddata', handleLoadedData);
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('canplay', handleCanPlay);
+      }
     };
   }, [audioUrl, isPlaying]);
 
@@ -192,7 +200,7 @@ export default function WaveformViewer({
       });
     }
     
-    // Draw waveform bars if we have data
+    // Draw waveform bars if we have data - colorful gradient like the image
     if (waveformData.length > 0) {
       const barWidth = width / waveformData.length;
       
@@ -201,9 +209,13 @@ export default function WaveformViewer({
         const x = index * barWidth;
         const y = centerY - barHeight / 2;
         
-        // Color based on amplitude
-        const isLow = value < 0.1;
-        ctx.fillStyle = isLow ? '#374151' : '#6366f1'; // Darker for quiet, brighter blue for sound
+        // Create colorful gradient based on position (like the image)
+        const hue = (index / waveformData.length) * 360; // 0-360 degrees
+        const saturation = value > 0.1 ? 80 : 20; // More saturated for louder sounds
+        const lightness = value > 0.1 ? 60 : 40; // Brighter for louder sounds
+        
+        // Use HSL for vibrant colors
+        ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
         ctx.fillRect(x, y, Math.max(1, barWidth - 0.5), barHeight);
       });
     } else {
@@ -303,6 +315,9 @@ export default function WaveformViewer({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Don't seek if we're dragging a handle
+    if (draggingHandle !== null) return;
+    
     const canvas = canvasRef.current;
     if (!canvas || videoDuration === 0) return;
 
@@ -313,7 +328,9 @@ export default function WaveformViewer({
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       if (!isPlaying) {
-        audioRef.current.play();
+        audioRef.current.play().catch(err => {
+          console.error('Error playing audio:', err);
+        });
       }
     }
   };
@@ -413,12 +430,26 @@ export default function WaveformViewer({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
+            onClick={async () => {
               if (audioRef.current) {
-                if (isPlaying) {
-                  audioRef.current.pause();
-                } else {
-                  audioRef.current.play();
+                try {
+                  if (isPlaying) {
+                    audioRef.current.pause();
+                  } else {
+                    await audioRef.current.play();
+                    setIsPlaying(true);
+                  }
+                } catch (error) {
+                  console.error('Error playing audio:', error);
+                  // Try loading the audio first
+                  audioRef.current.load();
+                  try {
+                    await audioRef.current.play();
+                    setIsPlaying(true);
+                  } catch (retryError) {
+                    console.error('Retry failed:', retryError);
+                    alert('Failed to play audio. Please check if the audio file is accessible.');
+                  }
                 }
               }
             }}
