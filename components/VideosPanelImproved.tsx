@@ -563,9 +563,182 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     {isEditMode && (
                       <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                            ✏️ Edit Mode: Adjust segment boundaries on the waveform below, then click "Confirm Changes" to regenerate clips
-                          </p>
+        <>
+          {/* Video Processing Form - Only show when NOT in edit mode */}
+          {!isEditMode && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                🎤 Process New Video
+              </h3>
+              <div className="space-y-3">
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                  placeholder="Optional: Custom video title"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!youtubeUrl.trim()) {
+                      setElevenLabsError('Please enter a YouTube URL');
+                      return;
+                    }
+                    setElevenLabsLoading(true);
+                    setElevenLabsError(null);
+                    setProcessingStatus({ stage: 'Starting', progress: 0, message: 'Initializing video processing...' });
+                    
+                    try {
+                      // Simulate progress updates
+                      const progressInterval = setInterval(() => {
+                        setProcessingStatus(prev => {
+                          if (!prev) return null;
+                          const stages = [
+                            { stage: 'Downloading', progress: 20, message: 'Downloading audio from YouTube...' },
+                            { stage: 'Transcribing', progress: 40, message: 'Transcribing with ElevenLabs...' },
+                            { stage: 'Aligning', progress: 60, message: 'Aligning timestamps with WhisperX...' },
+                            { stage: 'Segmenting', progress: 80, message: 'Creating audio segments...' },
+                            { stage: 'Uploading', progress: 90, message: 'Uploading to Cloudflare R2...' },
+                          ];
+                          const currentStageIndex = Math.floor(prev.progress / 20);
+                          if (currentStageIndex < stages.length) {
+                            return stages[currentStageIndex];
+                          }
+                          return { ...prev, progress: Math.min(prev.progress + 2, 95) };
+                        });
+                      }, 2000);
+
+                      const response = await fetch('/api/process-video-cloudflare', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          youtubeUrl: youtubeUrl.trim(),
+                          title: videoTitle.trim() || null,
+                          apiKeys: {
+                            elevenlabs: process.env.ELEVENLABS_API_KEY || 'sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543'
+                          }
+                        })
+                      });
+                      
+                      clearInterval(progressInterval);
+                      setProcessingStatus({ stage: 'Completing', progress: 95, message: 'Finalizing...' });
+                      
+                      const result = await response.json();
+                      if (response.ok && result.success) {
+                        setProcessingStatus({ stage: 'Complete', progress: 100, message: 'Video processed successfully!' });
+                        setYoutubeUrl('');
+                        setVideoTitle('');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        await loadVideos();
+                        setProcessingStatus(null);
+                      } else {
+                        setProcessingStatus(null);
+                        setElevenLabsError(result.error || result.details || 'Video processing failed');
+                      }
+                    } catch (error) {
+                      setProcessingStatus(null);
+                      setElevenLabsError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    } finally {
+                      setElevenLabsLoading(false);
+                    }
+                  }}
+                  disabled={elevenLabsLoading || !youtubeUrl.trim()}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 font-medium"
+                >
+                  {elevenLabsLoading ? '⏳ Processing Video...' : '🚀 Process Video'}
+                </button>
+                
+                {/* Processing Status */}
+                {processingStatus && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-blue-900 dark:text-blue-100">{processingStatus.stage}</span>
+                      <span className="text-sm text-blue-700 dark:text-blue-300">{processingStatus.progress}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mb-2">
+                      <div 
+                        className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${processingStatus.progress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">{processingStatus.message}</p>
+                  </div>
+                )}
+                
+                {elevenLabsError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-red-700 dark:text-red-300 text-sm">{elevenLabsError}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Waveform Viewer - Replace Process New Video area when in edit mode */}
+          {isEditMode && selectedVideo && selectedVideo.video_id && (() => {
+            let correctVideoId = selectedVideo.video_id;
+            if (selectedVideo.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
+              const extracted = extractVideoId(selectedVideo.youtube_url);
+              if (extracted) correctVideoId = extracted;
+            }
+            const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+            const fullAudioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${correctVideoId}/audio-full`;
+            
+            return (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border-2 border-yellow-500 dark:border-yellow-600">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  🎵 Waveform Editor - Drag handles to adjust segment boundaries
+                </h3>
+                <WaveformViewer
+                  audioUrl={fullAudioUrl}
+                  segments={editedSegments}
+                  onSegmentUpdate={(newSegments) => {
+                    setEditedSegments(newSegments);
+                  }}
+                  videoDuration={selectedVideo.total_duration || 0}
+                  onDetectSilence={async () => {
+                    if (!selectedVideo) return [];
+                    
+                    setIsDetectingSilence(true);
+                    try {
+                      const response = await fetch('/api/detect-silence', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          videoId: selectedVideo.video_id,
+                          youtubeUrl: selectedVideo.youtube_url,
+                        }),
+                      });
+                      
+                      const result = await response.json();
+                      if (response.ok && result.success) {
+                        setEditedSegments(result.segments);
+                        
+                        // Also store silence regions for visualization
+                        if (result.silenceRegions) {
+                          setSilenceRegions(result.silenceRegions);
+                        }
+                        
+                        return result.segments;
+                      } else {
+                        throw new Error(result.error || 'Failed to detect silence');
+                      }
+                    } finally {
+                      setIsDetectingSilence(false);
+                    }
+                  }}
+                  silenceRegions={silenceRegions}
+                />
+              </div>
+            );
+          })()}
                           <button
                             onClick={async () => {
                               if (!selectedVideo) return;
