@@ -283,12 +283,13 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
         </div>
       ) : (
         <>
-          {/* Video Processing Form */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              🎤 Process New Video
-            </h3>
-            <div className="space-y-3">
+          {/* Video Processing Form - Only show when NOT in edit mode */}
+          {!isEditMode && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                🎤 Process New Video
+              </h3>
+              <div className="space-y-3">
               <input
                 type="url"
                 value={youtubeUrl}
@@ -397,6 +398,66 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
               )}
             </div>
           </div>
+          )}
+
+          {/* Waveform Viewer - Replace Process New Video area when in edit mode */}
+          {isEditMode && selectedVideo && selectedVideo.video_id && (() => {
+            let correctVideoId = selectedVideo.video_id;
+            if (selectedVideo.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
+              const extracted = extractVideoId(selectedVideo.youtube_url);
+              if (extracted) correctVideoId = extracted;
+            }
+            const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+            const fullAudioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${correctVideoId}/audio-full`;
+            
+            return (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border-2 border-yellow-500 dark:border-yellow-600">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  🎵 Waveform Editor - Drag handles to adjust segment boundaries
+                </h3>
+                <WaveformViewer
+                  audioUrl={fullAudioUrl}
+                  segments={editedSegments}
+                  onSegmentUpdate={(newSegments) => {
+                    setEditedSegments(newSegments);
+                  }}
+                  videoDuration={selectedVideo.total_duration || 0}
+                  onDetectSilence={async () => {
+                    if (!selectedVideo) return [];
+                    
+                    setIsDetectingSilence(true);
+                    try {
+                      const response = await fetch('/api/detect-silence', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          videoId: selectedVideo.video_id,
+                          youtubeUrl: selectedVideo.youtube_url,
+                        }),
+                      });
+                      
+                      const result = await response.json();
+                      if (response.ok && result.success) {
+                        setEditedSegments(result.segments);
+                        
+                        // Also store silence regions for visualization
+                        if (result.silenceRegions) {
+                          setSilenceRegions(result.silenceRegions);
+                        }
+                        
+                        return result.segments;
+                      } else {
+                        throw new Error(result.error || 'Failed to detect silence');
+                      }
+                    } finally {
+                      setIsDetectingSilence(false);
+                    }
+                  }}
+                  silenceRegions={silenceRegions}
+                />
+              </div>
+            );
+          })()}
 
           <div className={`grid grid-cols-12 gap-6 ${isFullScreen ? 'h-[calc(100vh-350px)]' : 'h-[calc(100vh-400px)]'}`}>
           {/* Left Sidebar - Video List */}
