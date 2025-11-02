@@ -71,7 +71,12 @@ async def align_transcription(
         
         # Load alignment model
         print(f"📚 Loading alignment model for {language}...")
-        model_a, metadata = whisperx.load_align_model(language_code=language, device=DEVICE)
+        try:
+            model_a, metadata = whisperx.load_align_model(language_code=language, device=DEVICE)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load alignment model for {language}: {e}")
+            print(f"   Trying with 'auto' language detection...")
+            model_a, metadata = whisperx.load_align_model(language_code='auto', device=DEVICE)
         
         # Split transcription into sentences
         sentences = [s.strip() for s in transcription.split('.') if s.strip()]
