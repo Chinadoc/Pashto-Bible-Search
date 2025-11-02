@@ -910,6 +910,47 @@ async function deleteR2Object(env: Env, request: Request): Promise<Response> {
 }
 
 /**
+ * Get full video audio stream from R2 (for waveform visualization)
+ * GET /api/video/:videoId/audio-full
+ */
+async function getVideoAudioFull(env: Env, videoId: string, request: Request): Promise<Response> {
+  try {
+    // Try multiple possible paths for full audio
+    const possiblePaths = [
+      `videos/${videoId}/full.mp3`,  // Standard path
+      `videos/${videoId}/audio.mp3`,
+      `pashto-bible-audio/videos/${videoId}/full.mp3`,
+      `pashto-bible-audio/videos/${videoId}/audio.mp3`,
+      `videos/${videoId.toLowerCase()}/full.mp3`,
+      `pashto-bible-audio/videos/${videoId.toLowerCase()}/full.mp3`,
+    ];
+    
+    console.log(`Requesting full audio for video ${videoId}`);
+    
+    for (const r2Key of possiblePaths) {
+      try {
+        console.log(`Trying R2 path: ${r2Key}`);
+        const object = await env.AUDIO_BUCKET.get(r2Key);
+        
+        if (object !== null) {
+          console.log(`✅ Found full audio at: ${r2Key}`);
+          return streamAudio(env, r2Key, request);
+        }
+      } catch (pathError) {
+        console.log(`Path ${r2Key} error: ${pathError.message}, trying next...`);
+      }
+    }
+    
+    // If full audio not found, try to concatenate segments or return error
+    console.warn(`⚠️ Full audio not found for video ${videoId}, segments may need to be concatenated`);
+    return errorResponse(`Full audio file not found for video ${videoId}`, 404);
+  } catch (error: any) {
+    console.error(`Error getting full video audio: ${error.message}`, error);
+    return errorResponse(`Failed to get full video audio: ${error.message}`, 500);
+  }
+}
+
+/**
  * Get video audio stream from R2
  */
 async function getVideoAudio(env: Env, videoId: string, segment: number, request: Request): Promise<Response> {

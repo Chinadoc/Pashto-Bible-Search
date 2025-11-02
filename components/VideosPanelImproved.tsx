@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import WaveformViewer from './WaveformViewer';
 
 // YouTube Player Component - Simplified direct embed approach
 function YouTubePlayer({ 
@@ -450,8 +451,8 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
 
               {/* Two Column Layout: Video Left, Transcript Right */}
               <div className={`grid ${isFullScreen ? 'grid-cols-3' : 'grid-cols-5'} gap-6 flex-1 overflow-hidden`}>
-                {/* Left Column - Video Player */}
-                <div className={`${isFullScreen ? 'col-span-1' : 'col-span-2'} flex flex-col`}>
+                {/* Left Column - Video Player + Waveform */}
+                <div className={`${isFullScreen ? 'col-span-1' : 'col-span-2'} flex flex-col gap-4`}>
                   <div className="bg-white dark:bg-gray-800 rounded border p-2 flex-1 min-h-0">
                     <div className="aspect-video w-full h-full">
                       {selectedVideo.youtube_url && selectedVideo.video_id ? (
@@ -485,6 +486,34 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                       )}
                     </div>
                   </div>
+                  
+                  {/* Unified Waveform Viewer */}
+                  {selectedVideo.video_id && (() => {
+                    let correctVideoId = selectedVideo.video_id;
+                    if (selectedVideo.youtube_url && (!correctVideoId || correctVideoId.length < 11)) {
+                      const extracted = extractVideoId(selectedVideo.youtube_url);
+                      if (extracted) correctVideoId = extracted;
+                    }
+                    const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+                    // Try to get full audio URL
+                    const fullAudioUrl = `${CLOUDFLARE_WORKER_URL}/api/video/${correctVideoId}/audio-full`;
+                    
+                    return (
+                      <WaveformViewer
+                        audioUrl={fullAudioUrl}
+                        segments={isEditMode ? editedSegments : selectedVideo.clips.map(clip => ({
+                          startTime: clip.start_time_seconds || clip.start_time || 0,
+                          endTime: clip.end_time_seconds || clip.end_time || 0,
+                        }))}
+                        onSegmentUpdate={(newSegments) => {
+                          if (isEditMode) {
+                            setEditedSegments(newSegments);
+                          }
+                        }}
+                        videoDuration={selectedVideo.total_duration || 0}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Right Column - Transcript */}
