@@ -669,6 +669,30 @@ app.post('/process-video', async (req, res) => {
     let r2Keys;
     try {
       r2Keys = await uploadToR2(segmentFiles, videoId);
+      
+      // Also upload full audio file for waveform visualization
+      try {
+        console.log(`\n   📤 Uploading full audio file for waveform...`);
+        const fullAudioKey = `videos/${videoId}/full.mp3`;
+        const fullAudioBuffer = await readFile(audioFile);
+        const fullAudioResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/r2/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: fullAudioKey,
+            data: fullAudioBuffer.toString('base64'),
+          }),
+        });
+        
+        if (fullAudioResponse.ok) {
+          console.log(`   ✅ Full audio uploaded: ${fullAudioKey}`);
+        } else {
+          console.warn(`   ⚠️ Failed to upload full audio (non-critical)`);
+        }
+      } catch (fullAudioError) {
+        console.warn(`   ⚠️ Failed to upload full audio: ${fullAudioError.message} (non-critical)`);
+      }
+      
       const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
       console.log(`✅ Upload completed:`);
       console.log(`   Duration: ${uploadDuration}s`);
@@ -830,6 +854,30 @@ app.post('/regenerate-segments', async (req, res) => {
     let r2Keys;
     try {
       r2Keys = await uploadToR2(segmentFiles, videoId);
+      
+      // Also upload full audio file for waveform visualization
+      try {
+        console.log(`\n   📤 Uploading full audio file for waveform...`);
+        const fullAudioKey = `videos/${videoId}/full.mp3`;
+        const fullAudioBuffer = await readFile(audioFile);
+        const fullAudioResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/r2/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: fullAudioKey,
+            data: fullAudioBuffer.toString('base64'),
+          }),
+        });
+        
+        if (fullAudioResponse.ok) {
+          console.log(`   ✅ Full audio uploaded: ${fullAudioKey}`);
+        } else {
+          console.warn(`   ⚠️ Failed to upload full audio (non-critical)`);
+        }
+      } catch (fullAudioError) {
+        console.warn(`   ⚠️ Failed to upload full audio: ${fullAudioError.message} (non-critical)`);
+      }
+      
       const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
       console.log(`✅ Upload completed:`);
       console.log(`   Duration: ${uploadDuration}s`);
