@@ -53,14 +53,7 @@ export default function WaveformViewer({
         analyserRef.current = analyser;
         sourceRef.current = source;
 
-        // Generate waveform data
-        audio.addEventListener('loadeddata', () => {
-          if (analyser) {
-            generateWaveform();
-          }
-        });
-
-        // Generate waveform periodically during playback
+        // Generate waveform data once audio is loaded
         const generateWaveform = () => {
           if (!analyser) return;
           
@@ -84,6 +77,15 @@ export default function WaveformViewer({
           setWaveformData(waveform);
         };
 
+        // Generate waveform when audio loads
+        audio.addEventListener('loadeddata', () => {
+          setTimeout(() => {
+            if (analyser) {
+              generateWaveform();
+            }
+          }, 100);
+        });
+
         // Animate waveform during playback
         const animate = () => {
           if (isPlaying && analyser) {
@@ -92,11 +94,15 @@ export default function WaveformViewer({
           }
         };
 
-        if (isPlaying) {
+        audio.addEventListener('play', () => {
           animate();
-        } else {
-          generateWaveform();
-        }
+        });
+
+        audio.addEventListener('pause', () => {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+          }
+        });
       } catch (error) {
         console.error('Error initializing audio:', error);
       }
