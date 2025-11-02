@@ -8,7 +8,7 @@
 
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { createReadStream } = require('fs');
+const { createReadStream, existsSync } = require('fs');
 const { writeFile, unlink, readFile, stat, mkdir } = require('fs/promises');
 const { join } = require('path');
 const path = require('path');
@@ -183,9 +183,68 @@ async function segmentTranscriptBySentences(text, videoDuration) {
   return segments;
 }
 
+/**
+ * Refine segment timestamps using WhisperX alignment on each segment individually
+ */
+async function refineSegmentsWithWhisperX(segments, segmentFiles, originalAudioStartTimes) {
+  console.log(`\n   🔧 Refining timestamps with WhisperX per-segment alignment...`);
+  const refinedSegments = [];
+  let successCount = 0;
+  
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const segmentFile = segmentFiles[i];
+    const originalStartTime = originalAudioStartTimes[i];
+    
+    if (!segmentFile || !existsSync(segmentFile)) {
+      console.warn(`   ⚠️ Segment ${i + 1} file not found, using original timestamps`);
+      refinedSegments.push(segment);
+      continue;
+    }
+    
+    try {
+      const alignmentResult = await alignWithWhisperX(segmentFile, segment.text, 'ps');
+      
+      if (alignmentResult && alignmentResult.segments && alignmentResult.segments.length > 0) {
+        const alignedSegment = alignmentResult.segments[0];
+        const relativeStart = alignedSegment.start || 0;
+        const relativeEnd = alignedSegment.end || alignedSegment.start || 0;
+        
+        const absoluteStart = originalStartTime + relativeStart;
+        const absoluteEnd = originalStartTime + relativeEnd;
+        
+        refinedSegments.push({
+          text: segment.text,
+          startTime: Math.round(absoluteStart * 10) / 10,
+          endTime: Math.round(absoluteEnd * 10) / 10,
+        });
+        
+        successCount++;
+        
+        if ((i + 1) % 10 === 0) {
+          console.log(`   ✅ Refined ${i + 1}/${segments.length} segments...`);
+        }
+      } else {
+        refinedSegments.push(segment);
+      }
+    } catch (error) {
+      console.warn(`   ⚠️ WhisperX alignment failed for segment ${i + 1}: ${error.message}`);
+      refinedSegments.push(segment);
+    }
+  }
+  
+  console.log(`   ✅ Refined ${successCount}/${segments.length} segments with WhisperX`);
+  return refinedSegments;
+}
+
+/**
+ * Extract audio segments - returns both files and start times for refinement
+ */
 async function extractAudioSegments(audioFile, segments, videoId) {
   const tempDir = join(process.cwd(), 'temp');
+  await mkdir(tempDir, { recursive: true });
   const segmentFiles = [];
+  const originalStartTimes = [];
   
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -199,6 +258,8 @@ async function extractAudioSegments(audioFile, segments, videoId) {
       const end = segment.endTime + paddingEnd;
       const duration = end - start;
       
+      originalStartTimes.push(start);
+      
       const ffmpegCmd = `ffmpeg -ss ${start.toFixed(3)} -i "${audioFile}" -t ${duration.toFixed(3)} -c:a libmp3lame -ar 44100 -ac 1 -q:a 4 -af aresample=async=1:first_pts=0 "${outputPath}" -y`;
       
       await execAsync(ffmpegCmd, { timeout: 60000 });
@@ -209,10 +270,11 @@ async function extractAudioSegments(audioFile, segments, videoId) {
       }
     } catch (error) {
       console.warn(`Failed to extract segment ${i + 1}:`, error.message);
+      originalStartTimes.push(segment.startTime);
     }
   }
   
-  return segmentFiles;
+  return { segmentFiles, originalStartTimes };
 }
 
 async function uploadToR2(segmentFiles, videoId) {
