@@ -916,13 +916,11 @@ async function deleteR2Object(env: Env, request: Request): Promise<Response> {
 async function getVideoAudioFull(env: Env, videoId: string, request: Request): Promise<Response> {
   try {
     // Try multiple possible paths for full audio
+    // Note: R2 bucket name is NOT part of the key path
     const possiblePaths = [
       `videos/${videoId}/full.mp3`,  // Standard path
       `videos/${videoId}/audio.mp3`,
-      `pashto-bible-audio/videos/${videoId}/full.mp3`,
-      `pashto-bible-audio/videos/${videoId}/audio.mp3`,
-      `videos/${videoId.toLowerCase()}/full.mp3`,
-      `pashto-bible-audio/videos/${videoId.toLowerCase()}/full.mp3`,
+      `videos/${videoId.toLowerCase()}/full.mp3`,  // Lowercase video ID
     ];
     
     console.log(`Requesting full audio for video ${videoId}`);
@@ -935,6 +933,8 @@ async function getVideoAudioFull(env: Env, videoId: string, request: Request): P
         if (object !== null) {
           console.log(`✅ Found full audio at: ${r2Key}`);
           return streamAudio(env, r2Key, request);
+        } else {
+          console.log(`Path ${r2Key} not found (null), trying next...`);
         }
       } catch (pathError) {
         console.log(`Path ${r2Key} error: ${pathError.message}, trying next...`);
@@ -942,8 +942,9 @@ async function getVideoAudioFull(env: Env, videoId: string, request: Request): P
     }
     
     // If full audio not found, try to concatenate segments or return error
-    console.warn(`⚠️ Full audio not found for video ${videoId}, segments may need to be concatenated`);
-    return errorResponse(`Full audio file not found for video ${videoId}`, 404);
+    console.warn(`⚠️ Full audio not found for video ${videoId}`);
+    console.warn(`Tried paths: ${possiblePaths.join(', ')}`);
+    return errorResponse(`Full audio file not found for video ${videoId}. Tried: ${possiblePaths.join(', ')}`, 404);
   } catch (error: any) {
     console.error(`Error getting full video audio: ${error.message}`, error);
     return errorResponse(`Failed to get full video audio: ${error.message}`, 500);

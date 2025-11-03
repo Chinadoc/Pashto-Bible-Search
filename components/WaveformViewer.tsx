@@ -33,6 +33,7 @@ export default function WaveformViewer({
   const [draggingHandle, setDraggingHandle] = useState<{segmentIndex: number; isStart: boolean} | null>(null);
   const [isDetectingSilence, setIsDetectingSilence] = useState(false);
   const [isLoadingWaveform, setIsLoadingWaveform] = useState(true);
+  const [audioUrlKey, setAudioUrlKey] = useState(0); // Force re-render when audio URL changes
 
   // Load audio and generate waveform
   useEffect(() => {
@@ -204,7 +205,7 @@ export default function WaveformViewer({
         // but that's okay since the component will unmount
       }
     };
-  }, [audioUrl, isPlaying]);
+  }, [audioUrl, isPlaying, audioUrlKey]); // Add audioUrlKey to dependencies
 
   // Draw waveform with silence regions and segments
   useEffect(() => {
@@ -536,6 +537,7 @@ export default function WaveformViewer({
           preload="auto" 
           crossOrigin="anonymous" 
           style={{ display: 'none' }}
+          key={audioUrlKey} // Force re-render when key changes
           onError={(e) => {
             console.error('Audio loading error:', e);
             console.error('Audio URL:', audioUrl);
@@ -583,13 +585,19 @@ export default function WaveformViewer({
               </div>
               <button
                 onClick={() => {
-                  if (audioRef.current) {
-                    audioRef.current.load();
-                    setIsLoadingWaveform(true);
-                    setTimeout(() => {
-                      setIsLoadingWaveform(false);
-                    }, 2000);
-                  }
+                  console.log('Retry loading audio:', audioUrl);
+                  // Force audio element to reload by changing key
+                  setAudioUrlKey(prev => prev + 1);
+                  setIsLoadingWaveform(true);
+                  // Reset waveform data to trigger re-initialization
+                  setWaveformData([]);
+                  
+                  // Also try to reload the audio element directly
+                  setTimeout(() => {
+                    if (audioRef.current) {
+                      audioRef.current.load();
+                    }
+                  }, 100);
                 }}
                 className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
               >
