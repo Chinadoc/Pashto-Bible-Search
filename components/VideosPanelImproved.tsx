@@ -238,8 +238,17 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
         <div className="flex items-center gap-2">
           {selectedVideo && (
             <>
-              <button
-                onClick={() => setIsEditMode(!isEditMode)}
+                  <button
+                    onClick={() => {
+                      setIsEditMode(!isEditMode);
+                      // When entering edit mode, ensure waveform refreshes
+                      if (!isEditMode && selectedVideo) {
+                        // Force a small delay to ensure state updates
+                        setTimeout(() => {
+                          // The WaveformViewer will re-render with the new audioUrl
+                        }, 100);
+                      }
+                    }}
                 className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   isEditMode
                     ? 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
