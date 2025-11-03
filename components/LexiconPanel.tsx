@@ -257,7 +257,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
             <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
                 <th
-                  className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  style={{ minWidth: '80px' }}
                   onClick={() => {
                     if (sortBy === 'rank') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -270,7 +271,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                   Rank {sortBy === 'rank' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
-                  className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  style={{ minWidth: '120px' }}
                   onClick={() => {
                     if (sortBy === 'word') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -282,12 +284,13 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                 >
                   Word {sortBy === 'word' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Romanization</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">POS</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Inflection</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Base Form</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '140px' }}>Romanization</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '100px' }}>POS</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '120px' }}>Inflection</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '120px' }}>Base Form</th>
                 <th
-                  className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  className="px-4 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                  style={{ minWidth: '120px' }}
                   onClick={() => {
                     if (sortBy === 'frequency') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -320,25 +323,25 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               ) : (
                 filteredData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {item.frequency_rank || '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
                       {item.pashto_word}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.romanization || '-'}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.pos || item.word_type || '-'}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.inflection_type || '-'}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.base_form || '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.frequency_total.toLocaleString()}
                     </td>
                     {onPickForm && (
