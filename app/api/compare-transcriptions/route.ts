@@ -118,20 +118,20 @@ export async function POST(request: NextRequest) {
       const googleText = results.transcriptions.googleFlash.transcript.toLowerCase().trim();
       const elevenText = results.transcriptions.elevenLabs.transcript.toLowerCase().trim();
       
-      // Calculate similarity (simple word overlap)
-      const googleWords = new Set(googleText.split(/\s+/));
-      const elevenWords = new Set(elevenText.split(/\s+/));
-      const intersection = new Set([...googleWords].filter((x: string) => elevenWords.has(x)));
-      const union = new Set([...googleWords, ...elevenWords]);
-      const similarity = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
+            // Calculate similarity (simple word overlap)
+            const googleWords = new Set<string>(googleText.split(/\s+/));
+            const elevenWords = new Set<string>(elevenText.split(/\s+/));
+            const intersection = new Set<string>(Array.from(googleWords).filter((x) => elevenWords.has(x)));
+            const union = new Set<string>([...Array.from(googleWords), ...Array.from(elevenWords)]);
+            const similarity = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
 
-      results.comparison = {
-        similarity: similarity.toFixed(2) + '%',
-        googleOnlyWords: googleText.split(/\s+/).filter((w: string) => !elevenWords.has(w)).length,
-        elevenOnlyWords: elevenText.split(/\s+/).filter((w: string) => !googleWords.has(w)).length,
-        commonWords: intersection.size,
-        totalUniqueWords: union.size,
-      };
+            results.comparison = {
+              similarity: similarity.toFixed(2) + '%',
+              googleOnlyWords: googleText.split(/\s+/).filter((w) => !elevenWords.has(w)).length,
+              elevenOnlyWords: elevenText.split(/\s+/).filter((w) => !googleWords.has(w)).length,
+              commonWords: intersection.size,
+              totalUniqueWords: union.size,
+            };
     }
 
     return NextResponse.json(results);
