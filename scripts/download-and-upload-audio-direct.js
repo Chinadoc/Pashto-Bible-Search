@@ -78,6 +78,18 @@ async function uploadToR2(audioFile, videoId) {
     console.log(`   ✅ Upload successful!`);
     console.log(`   R2 Key: videos/${videoId}/full.mp3`);
     console.log(`   File size: ${fileSizeMB} MB`);
+    console.log(`   Upload response: ${JSON.stringify(result)}`);
+    
+    // Verify the upload by trying to fetch it back
+    console.log(`   🔍 Verifying upload...`);
+    const verifyResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/${videoId}/audio-full`);
+    if (verifyResponse.ok) {
+      console.log(`   ✅ Verification successful! File is accessible.`);
+    } else {
+      const verifyError = await verifyResponse.text();
+      console.warn(`   ⚠️ Verification failed: ${verifyResponse.status} ${verifyError}`);
+      console.warn(`   Note: File may need a moment to propagate. Try again in a few seconds.`);
+    }
     
     return result;
   } catch (error) {
