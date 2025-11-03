@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
 
             results.comparison = {
               similarity: similarity.toFixed(2) + '%',
-              googleOnlyWords: googleText.split(/\s+/).filter((w) => !elevenWords.has(w)).length,
-              elevenOnlyWords: elevenText.split(/\s+/).filter((w) => !googleWords.has(w)).length,
+              googleOnlyWords: googleText.split(/\s+/).filter((w: string) => !elevenWords.has(w)).length,
+              elevenOnlyWords: elevenText.split(/\s+/).filter((w: string) => !googleWords.has(w)).length,
               commonWords: intersection.size,
               totalUniqueWords: union.size,
             };
