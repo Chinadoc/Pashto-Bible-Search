@@ -106,6 +106,26 @@ def classify_verb_from_word_frequencies(
     if not pashto_word:
         return {}
     
+    # CRITICAL: Skip words that are clearly NOT verbs based on their POS
+    pos = word_entry.get('pos', '').lower().strip()
+    if pos:
+        # Skip adverbs, nouns, adjectives, pronouns, prepositions, conjunctions, etc.
+        non_verb_pos_patterns = [
+            'adv.', 'adverb', 'adv',
+            'n.', 'noun', 'n ',
+            'adj.', 'adjective', 'adj ',
+            'pron.', 'pronoun', 'pron',
+            'prep.', 'preposition', 'prep',
+            'conj.', 'conjunction', 'conj',
+            'det.', 'determiner', 'det',
+            'num.', 'numeral', 'num',
+            'interj.', 'interjection', 'interj',
+            'prop.', 'proper',  # proper nouns
+        ]
+        for pattern in non_verb_pos_patterns:
+            if pattern in pos:
+                return {}  # Skip non-verbs
+    
     # Try to find in dictionary
     dict_entry = dictionary_lookup.get(pashto_word)
     
@@ -278,7 +298,13 @@ def main():
     sql = """
     SELECT DISTINCT pashto_word, romanization, pos, word_type, base_verb
     FROM word_frequencies
-    WHERE pashto_word LIKE '%ل' OR word_type = 'verb' OR pos LIKE '%verb%' OR pos LIKE '%v.%'
+    WHERE (
+        pashto_word LIKE '%ل' 
+        OR word_type = 'verb' 
+        OR pos LIKE '%verb%' 
+        OR pos LIKE '%v.%'
+    )
+    AND (pos IS NULL OR pos NOT LIKE '%adv.%' AND pos NOT LIKE '%adverb%' AND pos NOT LIKE '%n.%' AND pos NOT LIKE '%noun%' AND pos NOT LIKE '%adj.%' AND pos NOT LIKE '%adjective%')
     ORDER BY pashto_word
     """
     

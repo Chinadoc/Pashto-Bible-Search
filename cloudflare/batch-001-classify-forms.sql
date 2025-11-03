@@ -1,10 +1,13 @@
 -- Batch 1: Classify Verb Forms
--- Forms classified: 313
--- Perfect forms detected: 1854
+-- Forms classified: 308
+-- Perfect forms detected: 1860
 
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'لاړل')
 WHERE id = 12041;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'لاړل')
+WHERE id = 12070;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'لاړل')
 WHERE id = 12575;
@@ -30,8 +33,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'لاړل')
 WHERE id = 38315;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'لاړل')
-WHERE id = 12070;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'شمال')
+WHERE id = 12075;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'شمال')
 WHERE id = 24031;
@@ -39,8 +42,8 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'شمال')
 WHERE id = 40560;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'شمال')
-WHERE id = 12075;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'راغلل')
+WHERE id = 12080;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'راغلل')
 WHERE id = 12292;
@@ -54,8 +57,8 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'راغلل')
 WHERE id = 15457;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'راغلل')
-WHERE id = 12080;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'اول')
+WHERE id = 12102;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'اول')
 WHERE id = 12931;
@@ -69,8 +72,11 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'اول')
 WHERE id = 37602;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'اول')
-WHERE id = 12102;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'مال')
+WHERE id = 42328;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'مال')
+WHERE id = 12104;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'مال')
 WHERE id = 16616;
@@ -78,8 +84,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'مال')
 WHERE id = 36115;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'مال')
-WHERE id = 12104;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'حال')
+WHERE id = 12111;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'حال')
 WHERE id = 18070;
@@ -87,14 +93,14 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'حال')
 WHERE id = 36382;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'حال')
-WHERE id = 12111;
-UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورکړل')
 WHERE id = 11903;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'ورکړل')
 WHERE id = 12150;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکړل')
+WHERE id = 12156;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورکړل')
 WHERE id = 12179;
@@ -117,11 +123,11 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکړل')
 WHERE id = 38313;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکړل')
-WHERE id = 12156;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'فضل')
 WHERE id = 12178;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'عقل')
+WHERE id = 12196;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'عقل')
 WHERE id = 16687;
@@ -132,8 +138,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'عقل')
 WHERE id = 21982;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'عقل')
-WHERE id = 12196;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'غوښتل')
+WHERE id = 12197;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'غوښتل')
 WHERE id = 18308;
@@ -168,26 +174,23 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'غوښتل')
 WHERE id = 41456;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'غوښتل')
-WHERE id = 12197;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'پیل')
+WHERE id = 12236;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'پیل')
 WHERE id = 30973;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'پیل')
-WHERE id = 12236;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ووژل')
 WHERE id = 7504;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ووژل')
+WHERE id = 12259;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ووژل')
 WHERE id = 17340;
 UPDATE word_frequencies 
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'ووژل')
 WHERE id = 40969;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ووژل')
-WHERE id = 12259;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'قتل')
 WHERE id = 12265;
@@ -197,6 +200,9 @@ WHERE id = 11665;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'مل')
 WHERE id = 12151;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'مل')
+WHERE id = 12283;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'مل')
 WHERE id = 12357;
@@ -213,26 +219,26 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'مل')
 WHERE id = 25370;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'مل')
-WHERE id = 12283;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'حاصل')
+WHERE id = 12308;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'حاصل')
 WHERE id = 15703;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'حاصل')
-WHERE id = 12308;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'نسل')
+WHERE id = 12327;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'نسل')
 WHERE id = 19553;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'نسل')
-WHERE id = 12327;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'محل')
+WHERE id = 12336;
 UPDATE word_frequencies 
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'محل')
 WHERE id = 40742;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'محل')
-WHERE id = 12336;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ولیدل')
+WHERE id = 12358;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'ولیدل')
 WHERE id = 13513;
@@ -246,14 +252,14 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ولیدل')
 WHERE id = 38579;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ولیدل')
-WHERE id = 12358;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'تېل')
+WHERE id = 12369;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'تېل')
 WHERE id = 12903;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'تېل')
-WHERE id = 12369;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'شامل')
+WHERE id = 12372;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'شامل')
 WHERE id = 17489;
@@ -261,14 +267,14 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'شامل')
 WHERE id = 18939;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'شامل')
-WHERE id = 12372;
-UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ویل')
 WHERE id = 12215;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ویل')
 WHERE id = 12301;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ویل')
+WHERE id = 12373;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'ویل')
 WHERE id = 12644;
@@ -312,8 +318,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ویل')
 WHERE id = 33466;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ویل')
-WHERE id = 12373;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'واورېدل')
+WHERE id = 12380;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'واورېدل')
 WHERE id = 14918;
@@ -327,8 +333,8 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'واورېدل')
 WHERE id = 41060;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'واورېدل')
-WHERE id = 12380;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'وویل')
+WHERE id = 12396;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'وویل')
 WHERE id = 23723;
@@ -339,8 +345,8 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'وویل')
 WHERE id = 35606;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'وویل')
-WHERE id = 12396;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'وکتل')
+WHERE id = 12438;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'وکتل')
 WHERE id = 28750;
@@ -348,8 +354,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'وکتل')
 WHERE id = 31597;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'وکتل')
-WHERE id = 12438;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'قبول')
+WHERE id = 12439;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'قبول')
 WHERE id = 13169;
@@ -357,8 +363,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'قبول')
 WHERE id = 15443;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'قبول')
-WHERE id = 12439;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیکل')
+WHERE id = 12483;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'لیکل')
 WHERE id = 22389;
@@ -393,9 +399,6 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'لیکل')
 WHERE id = 35489;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیکل')
-WHERE id = 12483;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'مثال')
 WHERE id = 7536;
 UPDATE word_frequencies 
@@ -403,10 +406,10 @@ SET form_type = 'past', base_verb = COALESCE(base_verb, 'مثال')
 WHERE id = 12493;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'یوځل')
-WHERE id = 28439;
+WHERE id = 12504;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'یوځل')
-WHERE id = 12504;
+WHERE id = 28439;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'شل')
 WHERE id = 11517;
@@ -423,6 +426,9 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'شل')
 WHERE id = 12096;
 UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'شل')
+WHERE id = 12515;
+UPDATE word_frequencies 
 SET form_type = 'subjunctive', base_verb = COALESCE(base_verb, 'شل')
 WHERE id = 13815;
 UPDATE word_frequencies 
@@ -438,20 +444,20 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'شل')
 WHERE id = 22145;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'شل')
-WHERE id = 12515;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'بعل')
+WHERE id = 12521;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بعل')
 WHERE id = 21105;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'بعل')
-WHERE id = 12521;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'فصل')
 WHERE id = 12548;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'سل')
 WHERE id = 12288;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'سل')
+WHERE id = 12603;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'سل')
 WHERE id = 13683;
@@ -471,8 +477,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'سل')
 WHERE id = 34910;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'سل')
-WHERE id = 12603;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'حلال')
+WHERE id = 12626;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'حلال')
 WHERE id = 19490;
@@ -486,11 +492,11 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'حلال')
 WHERE id = 40009;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'حلال')
-WHERE id = 12626;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکول')
 WHERE id = 12103;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکول')
+WHERE id = 12713;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورکول')
 WHERE id = 13680;
@@ -516,11 +522,11 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورکول')
 WHERE id = 33686;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورکول')
-WHERE id = 12713;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'غسل')
 WHERE id = 12826;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'وژل')
+WHERE id = 12837;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'وژل')
 WHERE id = 13062;
@@ -534,8 +540,8 @@ UPDATE word_frequencies
 SET form_type = 'perfect', base_verb = COALESCE(base_verb, 'وژل')
 WHERE id = 33390;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'وژل')
-WHERE id = 12837;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ولېږل')
+WHERE id = 12846;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'ولېږل')
 WHERE id = 14562;
@@ -561,11 +567,11 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'ولېږل')
 WHERE id = 40935;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ولېږل')
-WHERE id = 12846;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'توکل')
 WHERE id = 12912;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'پرېښودل')
+WHERE id = 12913;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'پرېښودل')
 WHERE id = 14020;
@@ -594,14 +600,14 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'پرېښودل')
 WHERE id = 40934;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'پرېښودل')
-WHERE id = 12913;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'اصُول')
+WHERE id = 12916;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'اصُول')
 WHERE id = 14109;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'اصُول')
-WHERE id = 12916;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'شکل')
+WHERE id = 12933;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'شکل')
 WHERE id = 15907;
@@ -609,8 +615,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'شکل')
 WHERE id = 25630;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'شکل')
-WHERE id = 12933;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'راوغوښتل')
+WHERE id = 12987;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'راوغوښتل')
 WHERE id = 15417;
@@ -630,9 +636,6 @@ UPDATE word_frequencies
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'راوغوښتل')
 WHERE id = 40939;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'راوغوښتل')
-WHERE id = 12987;
-UPDATE word_frequencies 
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 11700;
 UPDATE word_frequencies 
@@ -640,16 +643,13 @@ SET form_type = 'past', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 13022;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'کېدل')
-WHERE id = 13815;
+WHERE id = 13033;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 14420;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 15137;
-UPDATE word_frequencies 
-SET form_type = 'subjunctive', base_verb = COALESCE(base_verb, 'کېدل')
-WHERE id = 15927;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 16594;
@@ -675,11 +675,11 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'کېدل')
 WHERE id = 32960;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'کېدل')
-WHERE id = 13033;
-UPDATE word_frequencies 
 SET form_type = 'subjunctive', base_verb = COALESCE(base_verb, 'اوسېدل')
 WHERE id = 9127;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'اوسېدل')
+WHERE id = 13051;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'اوسېدل')
 WHERE id = 14639;
@@ -708,9 +708,6 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'اوسېدل')
 WHERE id = 37159;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'اوسېدل')
-WHERE id = 13051;
-UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'بلکل')
 WHERE id = 11642;
 UPDATE word_frequencies 
@@ -721,13 +718,16 @@ SET form_type = 'past', base_verb = COALESCE(base_verb, 'استعمال')
 WHERE id = 13171;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'ځنګل')
+WHERE id = 13184;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ځنګل')
 WHERE id = 23298;
 UPDATE word_frequencies 
 SET form_type = 'past_participle', base_verb = COALESCE(base_verb, 'ځنګل')
 WHERE id = 40506;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ځنګل')
-WHERE id = 13184;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
+WHERE id = 13217;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
 WHERE id = 15878;
@@ -739,16 +739,10 @@ SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
 WHERE id = 16308;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
-WHERE id = 25194;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
 WHERE id = 27470;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
-WHERE id = 38315;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'تلل')
-WHERE id = 13217;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'بوتلل')
+WHERE id = 13266;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'بوتلل')
 WHERE id = 15815;
@@ -771,8 +765,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بوتلل')
 WHERE id = 38586;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'بوتلل')
-WHERE id = 13266;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'بيګل')
+WHERE id = 13306;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بيګل')
 WHERE id = 16561;
@@ -780,8 +774,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بيګل')
 WHERE id = 20628;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'بيګل')
-WHERE id = 13306;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'مکمل')
+WHERE id = 13349;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'مکمل')
 WHERE id = 26368;
@@ -789,11 +783,11 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'مکمل')
 WHERE id = 38516;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'مکمل')
-WHERE id = 13349;
-UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'راوستل')
 WHERE id = 12691;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'راوستل')
+WHERE id = 13413;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'راوستل')
 WHERE id = 15011;
@@ -819,8 +813,8 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'راوستل')
 WHERE id = 31574;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'راوستل')
-WHERE id = 13413;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'عادل')
+WHERE id = 13430;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'عادل')
 WHERE id = 14915;
@@ -831,8 +825,8 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'عادل')
 WHERE id = 36064;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'عادل')
-WHERE id = 13430;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
+WHERE id = 13434;
 UPDATE word_frequencies 
 SET form_type = 'imperative', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 13454;
@@ -850,9 +844,6 @@ SET form_type = 'present', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 14009;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
-WHERE id = 14759;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 16741;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'لیدل')
@@ -863,9 +854,6 @@ WHERE id = 18510;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 18556;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
-WHERE id = 18602;
 UPDATE word_frequencies 
 SET form_type = 'subjunctive', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 18900;
@@ -882,23 +870,23 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
 WHERE id = 33665;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'لیدل')
-WHERE id = 13434;
-UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'جلیل')
 WHERE id = 13435;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'قابل')
-WHERE id = 32817;
+WHERE id = 13447;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'قابل')
-WHERE id = 13447;
+WHERE id = 32817;
+UPDATE word_frequencies 
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ګليل')
+WHERE id = 13453;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ګليل')
 WHERE id = 33082;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ګليل')
-WHERE id = 13453;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورغلل')
+WHERE id = 13455;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورغلل')
 WHERE id = 15103;
@@ -912,8 +900,8 @@ UPDATE word_frequencies
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'ورغلل')
 WHERE id = 21569;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'ورغلل')
-WHERE id = 13455;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'جال')
+WHERE id = 13522;
 UPDATE word_frequencies 
 SET form_type = 'present', base_verb = COALESCE(base_verb, 'جال')
 WHERE id = 14093;
@@ -927,8 +915,8 @@ UPDATE word_frequencies
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'جال')
 WHERE id = 37303;
 UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'جال')
-WHERE id = 13522;
+SET form_type = 'past', base_verb = COALESCE(base_verb, 'بېل')
+WHERE id = 13601;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بېل')
 WHERE id = 19664;
@@ -938,6 +926,3 @@ WHERE id = 20515;
 UPDATE word_frequencies 
 SET form_type = 'past', base_verb = COALESCE(base_verb, 'بېل')
 WHERE id = 22887;
-UPDATE word_frequencies 
-SET form_type = 'past', base_verb = COALESCE(base_verb, 'بېل')
-WHERE id = 13601;
