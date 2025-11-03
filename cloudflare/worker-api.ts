@@ -56,6 +56,77 @@ function cleanWord(word: string): string {
 }
 
 /**
+ * Infer verb root from form (simplified version for Worker)
+ */
+function inferVerbRootFromForm(form: string): {
+  root: string | null;
+  isTransitive: boolean;
+  isPerfective: boolean;
+  confidence: 'high' | 'medium' | 'low';
+} {
+  let prefix: string | null = null;
+  let root = form;
+  
+  // Remove verb prefixes
+  if (form.startsWith('و')) {
+    prefix = 'و';
+    root = form.slice(1);
+  } else if (form.startsWith('به')) {
+    prefix = 'به';
+    root = form.slice(2);
+  } else if (form.startsWith('تر')) {
+    prefix = 'تر';
+    root = form.slice(2);
+  }
+  
+  const isPerfective = prefix === 'و';
+  let isTransitive = false;
+  let confidence: 'high' | 'medium' | 'low' = 'low';
+  
+  // Check for verb endings
+  const verbEndings = ['م', 'ې', 'ي', 'و', 'ئ', 'ه'];
+  for (const ending of verbEndings) {
+    if (root.endsWith(ending) && root.length > ending.length) {
+      root = root.slice(0, -ending.length);
+      confidence = prefix ? 'high' : 'medium';
+      break;
+    }
+  }
+  
+  // Check for verb markers
+  if (root.endsWith('ول')) {
+    isTransitive = true;
+    confidence = 'high';
+  } else if (root.endsWith('ېدل') || root.endsWith('یدل')) {
+    isTransitive = false;
+    confidence = 'high';
+  } else if (root.endsWith('کول')) {
+    isTransitive = true;
+    confidence = 'high';
+  } else if (root.endsWith('کېدل')) {
+    isTransitive = false;
+    confidence = 'high';
+  }
+  
+  // If we couldn't find a clear root, return null
+  if (root === form && !prefix) {
+    return {
+      root: null,
+      isTransitive: false,
+      isPerfective: false,
+      confidence: 'low',
+    };
+  }
+  
+  return {
+    root: root || form,
+    isTransitive,
+    isPerfective,
+    confidence,
+  };
+}
+
+/**
  * Extract words from video transcript and add to word_frequencies with categorization
  */
 async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
@@ -150,19 +221,47 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
             WHERE pashto_word = ?
           `).bind(count, word).run();
         } else {
-          // New word from video - insert without metadata (will be categorized later or inherit from dictionary lookup)
-          // Video words are marked by their presence in video_word_mappings table
+          // New word from video - try to infer verb metadata if it looks like a verb
+          let inferredPos: string | null = null;
+          let inferredWordType: string | null = null;
+          let inferredInflectionType: string | null = null;
+          let inferredBaseForm: string | null = null;
+          
+          // Simple verb detection: check for verb markers
+          if (word.match(/^(و|به|تر)/) || word.match(/(ول|ېدل|یدل|کول|کېدل)$/) || 
+              word.match(/(م|ې|ي|و|ئ)$/)) {
+            // Looks like a verb - try to infer root
+            const verbAnalysis = inferVerbRootFromForm(word);
+            if (verbAnalysis.root && verbAnalysis.confidence !== 'low') {
+              inferredPos = verbAnalysis.isTransitive ? 'v. trans.' : 'v. intrans.';
+              inferredWordType = 'verb';
+              inferredInflectionType = verbAnalysis.isPerfective ? 'perfective_past' : 
+                                     word.startsWith('به') ? 'future_subjunctive' : 'imperfective_present';
+              inferredBaseForm = verbAnalysis.root;
+            }
+          }
+          
+          // Insert with inferred metadata if available
           await env.DB.prepare(`
             INSERT INTO word_frequencies (
               pashto_word, frequency_total, frequency_afghan2023_ot, frequency_afghan2023_nt,
               frequency_yousafzai2019_ot, frequency_yousafzai2019_nt, frequency_rank,
+              pos, word_type, inflection_type, base_form,
               created_at, updated_at
             )
-            VALUES (?, ?, 0, 0, 0, 0, 0, strftime('%s', 'now'), strftime('%s', 'now'))
+            VALUES (?, ?, 0, 0, 0, 0, 0, ?, ?, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))
             ON CONFLICT(pashto_word) DO UPDATE SET
               frequency_total = frequency_total + ?,
+              pos = COALESCE(pos, ?),
+              word_type = COALESCE(word_type, ?),
+              inflection_type = COALESCE(inflection_type, ?),
+              base_form = COALESCE(base_form, ?),
               updated_at = strftime('%s', 'now')
-          `).bind(word, count, count).run();
+          `).bind(
+            word, count,
+            inferredPos, inferredWordType, inferredInflectionType, inferredBaseForm,
+            count, inferredPos, inferredWordType, inferredInflectionType, inferredBaseForm
+          ).run();
         }
 
         // Insert video_word_mappings with audio reference
