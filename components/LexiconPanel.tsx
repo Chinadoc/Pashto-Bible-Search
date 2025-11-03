@@ -706,6 +706,21 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
                       {item.form}
+                      {(item as any).inflectionPattern && (
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                          ({(item as any).inflectionPattern})
+                        </span>
+                      )}
+                      {(item as any).wordType === 'proper_noun' && (
+                        <span className="ml-2 text-xs text-purple-600 dark:text-purple-400 font-semibold">
+                          [Proper Noun]
+                        </span>
+                      )}
+                      {(item as any).wordType === 'compound' && (
+                        <span className="ml-2 text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                          [Compound]
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.root || '-'}

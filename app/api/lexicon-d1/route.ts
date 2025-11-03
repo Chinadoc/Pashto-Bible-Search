@@ -99,44 +99,36 @@ export async function GET(request: NextRequest) {
     sql += ` LIMIT ${limit}`;
     
     // Query D1 via Cloudflare Worker
-    // For now, we'll use a simple fetch approach
-    // In production, you'd want to add a D1 query endpoint to the worker
+    const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sql }),
+    });
     
-    // Fallback: Use existing lexicon_frequency endpoint for now
-    // We'll enhance this later
-    const fallbackUrl = `/api/lexicon_frequency?scope=${scope}&limit=${limit}&pos=${posFilter}`;
-    const fallbackResponse = await fetch(new URL(fallbackUrl, request.url));
-    
-    if (fallbackResponse.ok) {
-      const data = await fallbackResponse.json();
+    if (workerResponse.ok) {
+      const result = await workerResponse.json();
+      const rows = result.results || [];
       
-      // Apply additional filters client-side for now
-      let items = data.items || [];
-      
-      // Filter by inflection pattern
-      if (inflectionPattern) {
-        // This would need to come from the data
-        // For now, we'll filter what we can
-      }
-      
-      // Filter by inflection label
-      if (inflectionLabel) {
-        // This would need inflection_label in the data
-      }
-      
-      // Filter by word type
-      if (wordType) {
-        // This would need word_type in the data
-      }
-      
-      // Apply search query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        items = items.filter((item: any) => 
-          item.form.toLowerCase().includes(query) ||
-          (item.dictionary?.romanized || '').toLowerCase().includes(query)
-        );
-      }
+      // Transform rows to match expected format
+      const items = rows.map((row: any) => ({
+        form: row.pashto_word,
+        frequency: row.frequency_total || 0,
+        rank: row.frequency_rank || 0,
+        root: row.base_word || null,
+        pos: row.pos || null,
+        romanization: row.romanization || null,
+        wordType: row.word_type || null,
+        inflectionPattern: row.inflection_pattern || null,
+        inflectionLabel: row.inflection_label || null,
+        hasIssues: row.has_issues || 0,
+        issueFlags: row.issue_flags ? JSON.parse(row.issue_flags) : [],
+        dictionary: row.romanization ? {
+          romanized: row.romanization,
+          pos: row.pos,
+        } : undefined,
+      }));
       
       return NextResponse.json({
         items,
@@ -155,6 +147,8 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // If D1 query fails, return empty result
+    console.warn('D1 query failed, returning empty result');
     return NextResponse.json({ items: [], total: 0 });
     
   } catch (error: any) {
