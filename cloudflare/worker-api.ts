@@ -699,6 +699,16 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
           updated_at TEXT
         )
       `).run();
+      
+      // Try to add title column if it doesn't exist (SQLite doesn't support IF NOT EXISTS for ALTER TABLE)
+      try {
+        await env.DB.prepare(`ALTER TABLE video_transcripts ADD COLUMN title TEXT`).run();
+      } catch (alterError: any) {
+        // Column might already exist, that's okay - ignore duplicate column errors
+        if (!alterError.message?.includes('duplicate column') && !alterError.message?.includes('no such column')) {
+          console.warn('Warning: Could not add title column:', alterError.message);
+        }
+      }
 
       // Ensure segments JSON is properly stringified (don't truncate!)
       const segmentsJson = JSON.stringify(finalSegments);
