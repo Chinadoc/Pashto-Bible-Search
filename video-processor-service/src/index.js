@@ -72,6 +72,88 @@ async function getVideoDuration(audioFile) {
 }
 
 /**
+ * Transcribe audio with Google Gemini Flash API
+ */
+async function transcribeWithGoogleFlash(audioFile, apiKey) {
+  let fileStats = await stat(audioFile);
+  const maxSize = 20 * 1024 * 1024; // 20MB limit for Gemini
+  
+  let finalAudioFile = audioFile;
+  
+  // Compress if needed
+  if (fileStats.size > maxSize) {
+    const compressedPath = audioFile.replace('.mp3', '_compressed.mp3');
+    await execAsync(`ffmpeg -i "${audioFile}" -b:a 64k -y "${compressedPath}"`, { timeout: 120000 });
+    finalAudioFile = compressedPath;
+    fileStats = await stat(finalAudioFile);
+  }
+  
+  console.log(`📤 Sending to Google Gemini Flash: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`   Language: Pashto (ps)`);
+  
+  try {
+    // Read audio file as base64
+    const audioBuffer = await readFile(finalAudioFile);
+    const audioBase64 = audioBuffer.toString('base64');
+    
+    // Use Gemini 2.0 Flash Experimental for audio transcription
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      {
+        contents: [{
+          parts: [{
+            inline_data: {
+              mime_type: 'audio/mpeg',
+              data: audioBase64
+            }
+          }]
+        }],
+        generationConfig: {
+          response_mime_type: 'text/plain',
+          language: 'ps' // Pashto
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 300000, // 5 minute timeout
+      }
+    );
+    
+    if (finalAudioFile !== audioFile) {
+      await unlink(finalAudioFile).catch(() => {});
+    }
+    
+    // Extract text from response
+    const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!text) {
+      throw new Error('No transcription text returned from Gemini');
+    }
+    
+    return text;
+  } catch (error) {
+    if (finalAudioFile !== audioFile) {
+      await unlink(finalAudioFile).catch(() => {});
+    }
+    
+    if (error.response) {
+      const errorText = JSON.stringify(error.response.data);
+      console.error(`❌ Google Gemini API Error:`);
+      console.error(`   Status: ${error.response.status}`);
+      console.error(`   Response: ${errorText}`);
+      throw new Error(`Google Gemini error: ${error.response.status} - ${errorText}`);
+    } else {
+      console.error(`❌ Request failed:`, error.message);
+      throw error;
+    }
+  }
+}
+
+/**
  * Transcribe audio with ElevenLabs
  */
 async function transcribeWithElevenLabs(audioFile, apiKey) {
@@ -437,20 +519,28 @@ app.post('/process-video', async (req, res) => {
     const videoId = videoIdMatch[1];
     console.log(`🎯 Extracted video ID: ${videoId}`);
     
+    // Check for transcription API keys (prefer Google Flash, fallback to ElevenLabs)
+    const googleFlashKey = apiKeys?.googleFlash || process.env.GOOGLE_FLASH_API_KEY || 'AIzaSyAi7Ke7fg3mW7hGmq1_mLaN3d0wRuTxDt0';
     const elevenlabsKey = apiKeys?.elevenlabs || process.env.ELEVENLABS_API_KEY;
     
-    if (!elevenlabsKey) {
-      console.error(`❌ ElevenLabs API key not found`);
+    if (!googleFlashKey && !elevenlabsKey) {
+      console.error(`❌ No transcription API key found`);
+      console.error(`   Checked: apiKeys.googleFlash=${!!apiKeys?.googleFlash}, env.GOOGLE_FLASH_API_KEY=${!!process.env.GOOGLE_FLASH_API_KEY}`);
       console.error(`   Checked: apiKeys.elevenlabs=${!!apiKeys?.elevenlabs}, env.ELEVENLABS_API_KEY=${!!process.env.ELEVENLABS_API_KEY}`);
       return res.status(400).json({ 
-        error: 'ElevenLabs API key is required',
-        details: 'Please provide apiKeys.elevenlabs in request or set ELEVENLABS_API_KEY environment variable'
+        error: 'Transcription API key is required',
+        details: 'Please provide apiKeys.googleFlash or apiKeys.elevenlabs in request, or set GOOGLE_FLASH_API_KEY or ELEVENLABS_API_KEY environment variable'
       });
     }
     
     console.log(`\n✅ Configuration validated:`);
     console.log(`   Video ID: ${videoId}`);
-    console.log(`   ElevenLabs key: ${elevenlabsKey.substring(0, 10)}...${elevenlabsKey.substring(elevenlabsKey.length - 4)}`);
+    if (googleFlashKey) {
+      console.log(`   Google Flash key: ${googleFlashKey.substring(0, 10)}...${googleFlashKey.substring(googleFlashKey.length - 4)}`);
+    }
+    if (elevenlabsKey) {
+      console.log(`   ElevenLabs key: ${elevenlabsKey.substring(0, 10)}...${elevenlabsKey.substring(elevenlabsKey.length - 4)}`);
+    }
     console.log(`   Cloudflare Worker URL: ${CLOUDFLARE_WORKER_URL}`);
     
     // Step 1: Download video audio
@@ -493,9 +583,41 @@ app.post('/process-video', async (req, res) => {
         timestampProvider = 'openai_whisper';
       }
       
-      console.log(`\n   📍 Transcription strategy: ${useDeepgramDirect ? 'Deepgram direct (no alignment needed)' : 'Two-pass (Whisper + ElevenLabs + alignment)'}`);
+      // Check if Google Flash is available (preferred)
+      const useGoogleFlash = !!googleFlashKey;
       
-      if (useDeepgramDirect) {
+      console.log(`\n   📍 Transcription strategy: ${useGoogleFlash ? 'Google Flash (preferred)' : useDeepgramDirect ? 'Deepgram direct (no alignment needed)' : 'Two-pass (Whisper + ElevenLabs + alignment)'}`);
+      
+      if (useGoogleFlash) {
+        // Use Google Gemini Flash API for transcription
+        console.log(`\n   📍 Using Google Gemini Flash API for transcription...`);
+        try {
+          const googleTranscript = await transcribeWithGoogleFlash(audioFile, googleFlashKey);
+          console.log(`   ✅ Google Flash transcription completed:`);
+          console.log(`      Text length: ${googleTranscript.length} chars`);
+          console.log(`      First 200 chars: ${googleTranscript.substring(0, 200)}...`);
+          
+          // Use proportional timing for segments (Google Flash doesn't provide timestamps)
+          const videoDuration = await getVideoDuration(audioFile);
+          segments = await segmentTranscriptBySentences(googleTranscript, videoDuration);
+          elevenLabsTranscript = googleTranscript;
+          service = 'google_flash';
+          
+          console.log(`   ✅ Using proportional timing for segments`);
+          console.log(`      Segments: ${segments.length}`);
+          if (segments.length > 0) {
+            console.log(`      First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+            console.log(`      Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+          }
+        } catch (googleError) {
+          console.warn(`   ⚠️ Google Flash transcription failed: ${googleError.message}`);
+          console.log(`   Falling back to other transcription methods...`);
+          // Fall through to other methods
+        }
+      }
+      
+      if (!useGoogleFlash || !elevenLabsTranscript) {
+        if (useDeepgramDirect) {
         // Use Deepgram Whisper directly - it has accurate word-level timestamps
         // No need for alignment since Deepgram provides timestamps with transcription
         console.log(`\n   📍 Using Deepgram Whisper Cloud (direct transcription with timestamps)...`);
@@ -550,22 +672,34 @@ app.post('/process-video', async (req, res) => {
           console.log(`      Words with timestamps: ${whisperData.words.length}`);
           console.log(`      Segments: ${whisperData.segments.length}`);
           
-          // Pass 2: ElevenLabs for better Pashto transcription quality
-          console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
-          elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
-          console.log(`   ✅ ElevenLabs transcription completed:`);
-          console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
-          console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+          // Pass 2: ElevenLabs for better Pashto transcription quality (if Google Flash wasn't used)
+          if (!elevenLabsTranscript && elevenlabsKey) {
+            console.log(`\n   📍 Pass 2: ElevenLabs transcription (for quality)...`);
+            elevenLabsTranscript = await transcribeWithElevenLabs(audioFile, elevenlabsKey);
+            console.log(`   ✅ ElevenLabs transcription completed:`);
+            console.log(`      Text length: ${elevenLabsTranscript.length} chars`);
+            console.log(`      First 100 chars: ${elevenLabsTranscript.substring(0, 100)}...`);
+          }
           
-          // Pass 3: Align ElevenLabs text to Whisper timestamps (text-based alignment)
-          // This gives us Whisper's accurate timestamps with ElevenLabs' better text quality
-          console.log(`\n   📍 Pass 3: Aligning ElevenLabs text to Whisper timestamps...`);
-          segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
-          console.log(`   ✅ Text-based alignment completed:`);
-          console.log(`      Segments: ${segments.length}`);
-          if (segments.length > 0) {
-            console.log(`      First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
-            console.log(`      Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+          // Pass 3: Align transcript text to Whisper timestamps (text-based alignment)
+          // This gives us Whisper's accurate timestamps with better text quality
+          if (elevenLabsTranscript && whisperData) {
+            console.log(`\n   📍 Pass 3: Aligning transcript text to Whisper timestamps...`);
+            segments = alignTranscriptionsImproved(whisperData.words, whisperData.segments, elevenLabsTranscript);
+            console.log(`   ✅ Text-based alignment completed:`);
+            console.log(`      Segments: ${segments.length}`);
+            if (segments.length > 0) {
+              console.log(`      First segment: ${segments[0].startTime}s - ${segments[0].endTime}s`);
+              console.log(`      Last segment: ${segments[segments.length - 1].startTime}s - ${segments[segments.length - 1].endTime}s`);
+            }
+          } else if (whisperData) {
+            // Use Whisper transcript directly if no other transcript available
+            elevenLabsTranscript = whisperData.text;
+            segments = whisperData.segments.map(s => ({
+              text: s.text,
+              startTime: Math.round((s.start || 0) * 10) / 10,
+              endTime: Math.round((s.end || s.start || 0) * 10) / 10,
+            }));
           }
           
         } catch (whisperError) {
@@ -729,7 +863,7 @@ app.post('/process-video', async (req, res) => {
     console.log(`\n💾 Step 6: Storing metadata in D1...`);
     const storeStartTime = Date.now();
     try {
-      await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, 'elevenlabs', req.body.title || null);
+      await storeMetadata(youtubeUrl, videoId, transcript, segments, r2Keys, service || 'elevenlabs', req.body.title || null);
       const storeDuration = ((Date.now() - storeStartTime) / 1000).toFixed(2);
       console.log(`✅ Metadata stored:`);
       console.log(`   Duration: ${storeDuration}s`);

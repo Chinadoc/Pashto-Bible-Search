@@ -742,6 +742,16 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
       return errorResponse(`Database error: ${dbError.message}`, 500);
     }
 
+    // Extract words from transcript and add to word_frequencies
+    try {
+      console.log(`📝 Extracting words from transcript...`);
+      await extractWordsFromVideoTranscript(env, videoId, finalTranscript);
+      console.log(`✅ Words extracted and added to word_frequencies`);
+    } catch (wordError: any) {
+      console.warn(`⚠️ Word extraction failed (non-critical): ${wordError.message}`);
+      // Don't fail the whole request if word extraction fails
+    }
+
     // Generate audio clips metadata
     const audioClips = finalSegments.map((segment, index) => ({
       segment_number: index + 1,
