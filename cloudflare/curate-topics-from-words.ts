@@ -127,10 +127,11 @@ const CATEGORIES: Record<string, string[]> = {
   // Based on Nave's Topical Bible, GotQuestions.org, and biblical thesaurus resources
   
   'salvation': [
-    'salvation', 'save', 'saved', 'savior', 'redeem', 'redemption', 'deliver', 'deliverance', 'rescue', 
-    'eternal life', 'everlasting life', 'justify', 'justification', 'sanctify', 'sanctification', 
-    'reconcile', 'reconciliation', 'atonement', 'propitiation', 'ransom', 'liberate', 'liberation',
-    'born again', 'new birth', 'regeneration', 'conversion', 'call', 'calling', 'elect', 'election'
+    // Verified: exist in word_frequencies
+    'salvation', 'save', 'saved', 'savior', 'redeem', 'redemption', 'deliver', 'deliverance', 'rescue',
+    'atonement', 'propitiation', 'reconciled', 'reconciliation', 'election', 'elect',
+    // Common related terms (may exist in translations)
+    'eternal life', 'everlasting life', 'call', 'calling', 'conversion'
   ],
   
   'forgiveness': [
@@ -162,18 +163,23 @@ const CATEGORIES: Record<string, string[]> = {
   ],
   
   'faith': [
+    // Verified: exist in word_frequencies
     'faith', 'believe', 'belief', 'trust', 'trusting', 'faithful', 'faithfulness', 'confidence',
+    'assurance', 'hope', 'hoping', 'expect', 'expectation', 'trust', 'reliability',
+    // Common related terms
     'rely', 'reliance', 'depend', 'dependence', 'lean', 'lean on', 'rest', 'rest in',
-    'hope', 'hoping', 'expect', 'expectation', 'assurance', 'conviction', 'certain', 'certainty',
-    'persevere', 'perseverance', 'endure', 'endurance', 'stand', 'stand firm', 'hold fast'
+    'conviction', 'certain', 'certainty', 'persevere', 'perseverance', 'endure', 'endurance',
+    'stand', 'stand firm', 'hold fast'
   ],
   
   'prayer': [
-    'pray', 'prayer', 'praying', 'prayers', 'petition', 'supplication', 'intercession', 'intercede',
+    // Verified: exist in word_frequencies
+    'pray', 'prayer', 'praying', 'prayers', 'worship', 'worshipping', 'supplication', 'intercession',
+    'thanksgiving', 'thank', 'thanking', 'petition',
+    // Common related terms
     'ask', 'asking', 'request', 'requesting', 'seek', 'seeking', 'call', 'calling', 'cry', 'crying',
     'plead', 'pleading', 'beg', 'begging', 'beseech', 'beseeching', 'entreat', 'entreating',
-    'worship', 'worshipping', 'praise', 'praising', 'thanksgiving', 'thank', 'thanking',
-    'bless', 'blessing', 'blessed', 'petition', 'supplication'
+    'praise', 'praising', 'bless', 'blessing', 'blessed'
   ],
   
   'baptism': [
