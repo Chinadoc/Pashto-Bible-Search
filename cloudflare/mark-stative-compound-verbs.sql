@@ -20,7 +20,7 @@ UPDATE word_frequencies SET word_type = 'compound_stative', pos = 'v. stat. comp
 -- Mark as compound_stative
 UPDATE word_frequencies SET word_type = 'compound_stative', pos = 'v. stat. comp. trans.', has_issues = 0 WHERE pashto_word = 'استعمالول';
 
--- استعمالېدل = استعمال + کېدل (transitive stative compound (squished))
+-- استعمالېدل = استعمال + کېدل (intransitive stative compound (squished))
 -- Mark as compound_stative
 UPDATE word_frequencies SET word_type = 'compound_stative', pos = 'v. stat. comp. intrans.', has_issues = 0 WHERE pashto_word = 'استعمالېدل';
 
