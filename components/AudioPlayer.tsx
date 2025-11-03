@@ -5,11 +5,12 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 interface AudioPlayerProps {
   audioUrl: string | null | undefined;
   verseRef: string;
+  autoLoad?: boolean; // Auto-load and show player when audio URL is available
 }
 
-export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
-  const [showPlayer, setShowPlayer] = useState(false);
-  const [loading, setLoading] = useState(false);
+export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: AudioPlayerProps) {
+  const [showPlayer, setShowPlayer] = useState(autoLoad); // Auto-show if autoLoad is true
+  const [loading, setLoading] = useState(autoLoad); // Auto-start loading if autoLoad is true
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -59,6 +60,15 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     ? `https://drive.google.com/uc?export=download&id=${fileId}` // Google Drive download
     : audioUrl; // R2/Supabase URLs can be downloaded directly
 
+  // Auto-load audio when component mounts if autoLoad is true
+  useEffect(() => {
+    if (autoLoad && audioUrl && audioRef.current) {
+      audioRef.current.load();
+      setLoading(true);
+      setError(null);
+    }
+  }, [autoLoad, audioUrl]);
+
   const handlePlayClick = () => {
     setShowPlayer(true);
     setLoading(true);
@@ -97,9 +107,12 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     setError(`Audio could not be loaded (Error ${errorCode}). Try downloading instead.`);
   };
 
+  // If autoLoad is true, always show the player (no toggle button needed)
+  const shouldShowPlayer = autoLoad ? true : showPlayer;
+
   return (
     <div className="flex flex-col gap-2">
-      {showPlayer ? (
+      {shouldShowPlayer ? (
         <div className="bg-gray-100 dark:bg-gray-800 rounded p-3 border border-gray-300 dark:border-gray-600">
           {loading && (
             <div className="text-xs text-gray-500 mb-2">Loading audio...</div>
@@ -113,7 +126,7 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
               controls
               controlsList="nodownload"
               className="w-full h-10"
-              preload="none"
+              preload={autoLoad ? "auto" : "none"}
               crossOrigin="anonymous"
               onLoadedData={handleAudioLoaded}
               onError={handleAudioError}
@@ -125,13 +138,17 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
           )}
           
           <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={() => setShowPlayer(false)}
-              className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              Hide player
-            </button>
-            <span className="text-gray-400">|</span>
+            {!autoLoad && (
+              <>
+                <button
+                  onClick={() => setShowPlayer(false)}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  Hide player
+                </button>
+                <span className="text-gray-400">|</span>
+              </>
+            )}
             <a
               href={downloadUrl}
               download
@@ -162,46 +179,49 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePlayClick}
-            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            title="Play audio inline"
-          >
-            ▶ Play Audio
-          </button>
-          
-          <a
-            href={downloadUrl}
-            download
-            className="text-xs text-blue-300 hover:text-blue-200 underline"
-            title="Download audio"
-          >
-            Download
-          </a>
-          
-          {isGoogleDrive ? (
-            <a
-              href={audioUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-300 hover:text-blue-200 underline"
-              title="Open in Google Drive"
+        // Only show play button if not auto-loading
+        !autoLoad && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePlayClick}
+              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              title="Play audio inline"
             >
-              Open in Drive
-            </a>
-          ) : (
+              ▶ Play Audio
+            </button>
+            
             <a
-              href={audioUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={downloadUrl}
+              download
               className="text-xs text-blue-300 hover:text-blue-200 underline"
-              title="Open audio URL"
+              title="Download audio"
             >
-              Open
+              Download
             </a>
-          )}
-        </div>
+            
+            {isGoogleDrive ? (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+                title="Open in Google Drive"
+              >
+                Open in Drive
+              </a>
+            ) : (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+                title="Open audio URL"
+              >
+                Open
+              </a>
+            )}
+          </div>
+        )
       )}
     </div>
   );
