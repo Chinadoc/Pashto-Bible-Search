@@ -8,7 +8,11 @@ export const runtime = 'edge';
 
 /**
  * Lexicon API endpoint - queries word_frequencies table directly
- * Uses Cloudflare REST API to query D1 database
+ * Uses Cloudflare Worker endpoint (primary) or REST API (fallback) to query D1 database
+ * 
+ * Environment Variables:
+ * - NEXT_PUBLIC_CLOUDFLARE_WORKER_URL: Worker URL (default: https://pashtobiblesearch.jeremy-samuels17.workers.dev)
+ * - CLOUDFLARE_API_TOKEN: Optional fallback if Worker unavailable
  */
 export async function GET(request: NextRequest) {
   try {
@@ -113,40 +117,67 @@ export async function GET(request: NextRequest) {
     
     console.log('Querying D1:', sql.substring(0, 200) + '...');
     
-    // Query D1 via Cloudflare REST API
-    if (!CLOUDFLARE_API_TOKEN) {
-      return NextResponse.json(
-        { error: 'CLOUDFLARE_API_TOKEN not configured' },
-        { status: 500 }
-      );
-    }
-    
-    const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
-    
-    const apiResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sql }),
-    });
-    
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      console.error('Cloudflare API error:', apiResponse.status, errorText);
-      return NextResponse.json(
-        { error: 'Database query failed', details: errorText },
-        { status: apiResponse.status }
-      );
-    }
-    
-    const result = await apiResponse.json();
-    
-    // Parse Cloudflare API response format
+    // Try Worker endpoint first (already has D1 access configured)
+    const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
     let rows: any[] = [];
-    if (result.success && result.result && Array.isArray(result.result) && result.result.length > 0) {
-      rows = result.result[0].results || [];
+    
+    try {
+      // Try Worker endpoint first
+      const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sql }),
+      });
+      
+      if (workerResponse.ok) {
+        const result = await workerResponse.json();
+        rows = result.results || [];
+        console.log('Got', rows.length, 'rows from Worker endpoint');
+      } else {
+        console.warn('Worker endpoint failed:', workerResponse.status);
+        // Fallback to REST API if Worker fails
+        throw new Error('Worker endpoint failed');
+      }
+    } catch (workerError) {
+      // Fallback to Cloudflare REST API if Worker is unavailable
+      console.log('Falling back to Cloudflare REST API...');
+      
+      if (!CLOUDFLARE_API_TOKEN) {
+        return NextResponse.json(
+          { error: 'Neither Worker endpoint nor CLOUDFLARE_API_TOKEN available. Please configure NEXT_PUBLIC_CLOUDFLARE_WORKER_URL or CLOUDFLARE_API_TOKEN.' },
+          { status: 500 }
+        );
+      }
+      
+      const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
+      
+      const apiResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sql }),
+      });
+      
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        console.error('Cloudflare API error:', apiResponse.status, errorText);
+        return NextResponse.json(
+          { error: 'Database query failed', details: errorText },
+          { status: apiResponse.status }
+        );
+      }
+      
+      const result = await apiResponse.json();
+      
+      // Parse Cloudflare REST API response format
+      if (result.success && result.result && Array.isArray(result.result) && result.result.length > 0) {
+        rows = result.result[0].results || [];
+      }
+      console.log('Got', rows.length, 'rows from Cloudflare REST API');
     }
     
     if (rows.length === 0) {
