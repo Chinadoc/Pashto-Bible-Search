@@ -128,28 +128,42 @@ export async function GET(request: NextRequest) {
       const workerUrl = `${CLOUDFLARE_WORKER_URL}/api/d1/query`;
       console.log('Fetching from Worker:', workerUrl);
       
-      const workerResponse = await fetch(workerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sql }),
-      });
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      console.log('Worker response status:', workerResponse.status);
-      
-      if (workerResponse.ok) {
-        const result = await workerResponse.json();
-        rows = result.results || [];
-        console.log('Got', rows.length, 'rows from Worker endpoint');
-      } else {
-        const errorText = await workerResponse.text().catch(() => 'Unknown error');
-        console.warn('Worker endpoint failed:', workerResponse.status, errorText);
-        // Fallback to REST API if Worker fails
-        throw new Error(`Worker endpoint failed: ${workerResponse.status} - ${errorText}`);
+      try {
+        const workerResponse = await fetch(workerUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sql }),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('Worker response status:', workerResponse.status);
+        
+        if (workerResponse.ok) {
+          const result = await workerResponse.json();
+          rows = result.results || [];
+          console.log('Got', rows.length, 'rows from Worker endpoint');
+        } else {
+          const errorText = await workerResponse.text().catch(() => 'Unknown error');
+          console.warn('Worker endpoint failed:', workerResponse.status, errorText);
+          // Fallback to REST API if Worker fails
+          throw new Error(`Worker endpoint failed: ${workerResponse.status} - ${errorText}`);
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Worker endpoint timeout after 30 seconds');
+        }
+        throw fetchError;
       }
     } catch (workerError: any) {
-      console.error('Worker endpoint error:', workerError.message);
+      console.error('Worker endpoint error:', workerError.message || workerError);
       
       // Fallback to Cloudflare REST API if Worker is unavailable
       console.log('Falling back to Cloudflare REST API...');
