@@ -222,21 +222,56 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
       }
       
       // For words not found, try inferring base form and looking that up
-      // This handles cases like "وفرمایيل" → "فرمایل"
+      // This handles cases like "وفرمایيل" → "فرمایل" (LingDocs dictionary entry)
       const notFound = batch.filter(w => !wordMetadata.has(w));
       if (notFound.length > 0) {
-        const inferredRoots = new Map<string, string>(); // form -> inferred_root
+        const inferredRoots = new Map<string, string[]>(); // form -> [possible_roots]
         
         for (const form of notFound) {
           const analysis = inferVerbRootFromForm(form);
+          const possibleRoots: string[] = [];
+          
           if (analysis.root && analysis.confidence !== 'low' && analysis.root !== form) {
-            inferredRoots.set(form, analysis.root);
+            possibleRoots.push(analysis.root);
+            
+            // Also try removing "ول" suffix to get potential base form
+            // e.g., "فرمایيول" → "فرمایي" → try "فرمایل" (LingDocs form)
+            if (analysis.root.endsWith('ول') && analysis.root.length > 2) {
+              const withoutOl = analysis.root.slice(0, -2);
+              // Try adding "ل" to match LingDocs forms like "فرمایل"
+              if (withoutOl.length >= 3) {
+                possibleRoots.push(withoutOl + 'ل');
+              }
+            }
+            
+            // Try the stem directly (might match LingDocs imperfective root)
+            if (form.startsWith('و')) {
+              const stem = form.slice(1);
+              // Remove common endings to get closer to root
+              const cleanStem = stem.replace(/[مېيوئه]$/, '');
+              if (cleanStem.length >= 3 && cleanStem !== form) {
+                possibleRoots.push(cleanStem);
+                // Also try with 'ل' ending (common verb root ending)
+                if (!cleanStem.endsWith('ل')) {
+                  possibleRoots.push(cleanStem + 'ل');
+                }
+              }
+            }
+          }
+          
+          if (possibleRoots.length > 0) {
+            inferredRoots.set(form, [...new Set(possibleRoots)]); // Remove duplicates
           }
         }
         
-        // Look up inferred roots
+        // Look up all possible roots
         if (inferredRoots.size > 0) {
-          const rootsToLookup = Array.from(new Set(inferredRoots.values()));
+          const allRoots = new Set<string>();
+          for (const roots of inferredRoots.values()) {
+            roots.forEach(r => allRoots.add(r));
+          }
+          
+          const rootsToLookup = Array.from(allRoots);
           const rootPlaceholders = rootsToLookup.map(() => '?').join(',');
           
           const rootResults = await env.DB.prepare(`
@@ -246,21 +281,25 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
             WHERE pashto_word IN (${rootPlaceholders})
           `).bind(...rootsToLookup).all();
           
-          // Map roots back to forms
+          // Map roots back to forms (prefer exact matches, then try variations)
           const rootMap = new Map<string, any>();
           for (const row of rootResults.results || []) {
             rootMap.set(row.pashto_word as string, row);
           }
           
           // Associate root metadata with original forms
-          for (const [form, root] of inferredRoots.entries()) {
-            const rootData = rootMap.get(root);
-            if (rootData) {
-              // Use root's metadata but keep the form's base_form as the root
-              wordMetadata.set(form, {
-                ...rootData,
-                base_form: root, // The inferred root is the base form
-              });
+          for (const [form, roots] of inferredRoots.entries()) {
+            // Try roots in order (most specific first)
+            for (const root of roots) {
+              const rootData = rootMap.get(root);
+              if (rootData) {
+                // Use root's metadata but keep the form's base_form as the root
+                wordMetadata.set(form, {
+                  ...rootData,
+                  base_form: root, // The inferred root is the base form
+                });
+                break; // Use first match found
+              }
             }
           }
         }
