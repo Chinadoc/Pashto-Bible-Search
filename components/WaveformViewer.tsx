@@ -9,6 +9,9 @@ interface WaveformViewerProps {
   videoDuration?: number;
   onDetectSilence?: () => Promise<Array<{ startTime: number; endTime: number }>>;
   silenceRegions?: Array<{ start: number; end: number }>; // Detected silence regions
+  onTimeUpdate?: (currentTime: number) => void; // Callback for time updates
+  onPlay?: () => void; // Callback when audio starts playing
+  onPause?: () => void; // Callback when audio pauses
 }
 
 export default function WaveformViewer({ 
@@ -17,7 +20,10 @@ export default function WaveformViewer({
   onSegmentUpdate,
   videoDuration = 0,
   onDetectSilence,
-  silenceRegions = []
+  silenceRegions = [],
+  onTimeUpdate,
+  onPlay,
+  onPause
 }: WaveformViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -27,6 +33,7 @@ export default function WaveformViewer({
   const animationFrameRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [actualDuration, setActualDuration] = useState(0); // Actual audio duration
   const [waveformData, setWaveformData] = useState<number[]>([]);
   const [draggingSegment, setDraggingSegment] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -34,6 +41,8 @@ export default function WaveformViewer({
   const [isDetectingSilence, setIsDetectingSilence] = useState(false);
   const [isLoadingWaveform, setIsLoadingWaveform] = useState(true);
   const [audioUrlKey, setAudioUrlKey] = useState(0); // Force re-render when audio URL changes
+  const [zoomLevel, setZoomLevel] = useState(1); // Zoom level (1 = no zoom, 2 = 2x zoom, etc.)
+  const [zoomCenter, setZoomCenter] = useState(0.5); // Center of zoom (0-1, where 0.5 is center)
 
   // Load audio and generate waveform
   useEffect(() => {
@@ -75,12 +84,17 @@ export default function WaveformViewer({
               .then(response => response.arrayBuffer())
               .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer));
             
+            // Get the actual duration from the decoded audio
+            const duration = audioBuffer.duration;
+            setActualDuration(duration);
+            console.log(`Audio duration: ${duration}s`);
+            
             // Get the audio channel data (use first channel)
             const channelData = audioBuffer.getChannelData(0);
             const dataLength = channelData.length;
             
-            // Sample the waveform data
-            const samples = 800;
+            // Sample the waveform data - more samples for better visualization
+            const samples = Math.min(1600, Math.floor(duration * 100)); // ~100 samples per second, max 1600
             const sampleSize = Math.floor(dataLength / samples);
             const waveform: number[] = [];
             
@@ -97,7 +111,7 @@ export default function WaveformViewer({
               waveform.push(max);
             }
             
-            console.log(`Generated waveform from audio file: ${waveform.length} samples`);
+            console.log(`Generated waveform from audio file: ${waveform.length} samples, duration: ${duration}s`);
             setWaveformData(waveform);
             setIsLoadingWaveform(false);
           } catch (decodeError) {
@@ -242,7 +256,7 @@ export default function WaveformViewer({
     };
   }, [audioUrl, isPlaying, audioUrlKey]); // Add audioUrlKey to dependencies
 
-  // Draw waveform with silence regions and segments
+  // Draw waveform with silence regions and segments (with zoom support)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -262,46 +276,65 @@ export default function WaveformViewer({
     const height = canvas.height;
     const centerY = height / 2;
 
+    // Use actual duration if available, otherwise fall back to videoDuration prop
+    const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+
+    // Calculate zoom viewport
+    const viewportWidth = duration / zoomLevel;
+    const viewportStart = Math.max(0, Math.min(duration - viewportWidth, (duration - viewportWidth) * zoomCenter));
+    const viewportEnd = viewportStart + viewportWidth;
+
     ctx.clearRect(0, 0, width, height);
     
     // Draw background
     ctx.fillStyle = '#111827';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw silence regions first (background layer)
-    if (videoDuration > 0 && silenceRegions.length > 0) {
+    // Draw silence regions first (background layer) - only if duration is known
+    if (duration > 0 && silenceRegions.length > 0) {
       silenceRegions.forEach((silence) => {
-        const startX = (silence.start / videoDuration) * width;
-        const endX = (silence.end / videoDuration) * width;
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; // Red tint for silence
-        ctx.fillRect(startX, 0, endX - startX, height);
-        
-        // Draw silence label
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.5)';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('SILENCE', startX + 2, 12);
+        // Only draw if silence region is within viewport
+        if (silence.end >= viewportStart && silence.start <= viewportEnd) {
+          const startX = ((silence.start - viewportStart) / viewportWidth) * width;
+          const endX = ((silence.end - viewportStart) / viewportWidth) * width;
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.3)'; // Red tint for silence
+          ctx.fillRect(Math.max(0, startX), 0, Math.min(width, endX) - Math.max(0, startX), height);
+          
+          // Draw silence label if visible
+          if (startX >= 0 && startX < width) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('SILENCE', startX + 2, 12);
+          }
+        }
       });
     }
     
     // Draw waveform bars if we have data - colorful gradient like the image
-    if (waveformData.length > 0) {
-      const barWidth = width / waveformData.length;
+    if (waveformData.length > 0 && duration > 0) {
+      const samplesPerSecond = waveformData.length / duration;
+      const startSample = Math.floor(viewportStart * samplesPerSecond);
+      const endSample = Math.ceil(viewportEnd * samplesPerSecond);
+      const visibleSamples = Math.max(1, endSample - startSample);
+      const barWidth = width / visibleSamples;
       
-      waveformData.forEach((value, index) => {
+      for (let i = startSample; i < endSample && i < waveformData.length; i++) {
+        const value = waveformData[i];
         const barHeight = Math.max(2, value * height * 0.7);
-        const x = index * barWidth;
+        const x = ((i - startSample) / visibleSamples) * width;
         const y = centerY - barHeight / 2;
         
-        // Create colorful gradient based on position (like the image)
-        const hue = (index / waveformData.length) * 360; // 0-360 degrees
+        // Create colorful gradient based on position in full audio (not viewport)
+        const positionInFullAudio = i / waveformData.length;
+        const hue = positionInFullAudio * 360; // 0-360 degrees
         const saturation = value > 0.1 ? 80 : 20; // More saturated for louder sounds
         const lightness = value > 0.1 ? 60 : 40; // Brighter for louder sounds
         
         // Use HSL for vibrant colors
         ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
         ctx.fillRect(x, y, Math.max(1, barWidth - 0.5), barHeight);
-      });
-    } else {
+      }
+    } else if (waveformData.length === 0) {
       // Show placeholder if no waveform data
       ctx.fillStyle = '#374151';
       ctx.fillRect(0, centerY - 1, width, 2);
@@ -312,48 +345,63 @@ export default function WaveformViewer({
       ctx.textAlign = 'left';
     }
 
-    // Draw segment boundaries with draggable handles
-    if (videoDuration > 0) {
+    // Draw segment boundaries with draggable handles - only if duration is known
+    if (duration > 0) {
       segments.forEach((segment, index) => {
-        const startX = (segment.startTime / videoDuration) * width;
-        const endX = (segment.endTime / videoDuration) * width;
-        
-        // Highlight segment area
-        ctx.fillStyle = 'rgba(79, 70, 229, 0.2)';
-        ctx.fillRect(startX, 0, endX - startX, height);
-        
-        // Draw start boundary handle
-        ctx.fillStyle = '#6366f1';
-        ctx.fillRect(startX - 2, 0, 4, height);
-        // Draggable handle indicator
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(startX - 1, 0, 2, height);
-        
-        // Draw end boundary handle
-        ctx.fillStyle = '#6366f1';
-        ctx.fillRect(endX - 2, 0, 4, height);
-        // Draggable handle indicator
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(endX - 1, 0, 2, height);
-        
-        // Segment number label
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText(`${index + 1}`, startX + 5, 18);
-        
-        // Time labels
-        ctx.fillStyle = '#9ca3af';
-        ctx.font = '9px sans-serif';
-        const startTimeLabel = formatTime(segment.startTime);
-        const endTimeLabel = formatTime(segment.endTime);
-        ctx.fillText(startTimeLabel, startX + 5, height - 5);
-        ctx.fillText(endTimeLabel, endX - 30, height - 5);
+        // Only draw if segment is within viewport or overlaps
+        if (segment.endTime >= viewportStart && segment.startTime <= viewportEnd) {
+          const startX = ((segment.startTime - viewportStart) / viewportWidth) * width;
+          const endX = ((segment.endTime - viewportStart) / viewportWidth) * width;
+          
+          // Highlight segment area
+          ctx.fillStyle = 'rgba(79, 70, 229, 0.2)';
+          ctx.fillRect(Math.max(0, startX), 0, Math.min(width, endX) - Math.max(0, startX), height);
+          
+          // Draw start boundary handle (if visible)
+          if (startX >= -4 && startX <= width) {
+            ctx.fillStyle = '#6366f1';
+            ctx.fillRect(Math.max(0, startX - 2), 0, 4, height);
+            // Draggable handle indicator
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(Math.max(0, startX - 1), 0, 2, height);
+          }
+          
+          // Draw end boundary handle (if visible)
+          if (endX >= -4 && endX <= width) {
+            ctx.fillStyle = '#6366f1';
+            ctx.fillRect(Math.max(0, endX - 2), 0, 4, height);
+            // Draggable handle indicator
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(Math.max(0, endX - 1), 0, 2, height);
+          }
+          
+          // Segment number label (if visible)
+          if (startX >= 0 && startX < width) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(`${index + 1}`, startX + 5, 18);
+          }
+          
+          // Time labels (if visible)
+          if (startX >= 0 && startX < width) {
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '9px sans-serif';
+            const startTimeLabel = formatTime(segment.startTime);
+            ctx.fillText(startTimeLabel, startX + 5, height - 5);
+          }
+          if (endX >= 0 && endX < width) {
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '9px sans-serif';
+            const endTimeLabel = formatTime(segment.endTime);
+            ctx.fillText(endTimeLabel, endX - 30, height - 5);
+          }
+        }
       });
     }
 
-    // Draw progress indicator
-    if (videoDuration > 0) {
-      const progressX = (currentTime / videoDuration) * width;
+    // Draw progress indicator - only if duration is known
+    if (duration > 0 && currentTime >= viewportStart && currentTime <= viewportEnd) {
+      const progressX = ((currentTime - viewportStart) / viewportWidth) * width;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -367,29 +415,52 @@ export default function WaveformViewer({
       ctx.arc(progressX, centerY, 4, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [waveformData, currentTime, segments, videoDuration, silenceRegions]);
+  }, [waveformData, currentTime, segments, videoDuration, actualDuration, silenceRegions, zoomLevel, zoomCenter]);
 
-  // Update current time
+  // Update current time and notify parent
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const updateTime = () => {
-      setCurrentTime(audio.currentTime);
+      const time = audio.currentTime;
+      setCurrentTime(time);
+      if (onTimeUpdate) {
+        onTimeUpdate(time);
+      }
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if (onPlay) onPlay();
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      if (onPause) onPause();
+    };
+
+    const handleLoadedMetadata = () => {
+      if (audio.duration && audio.duration > 0) {
+        setActualDuration(audio.duration);
+        console.log(`Audio metadata loaded, duration: ${audio.duration}s`);
+      }
     };
 
     audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
-    audio.addEventListener('ended', () => setIsPlaying(false));
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handlePause);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('play', () => setIsPlaying(true));
-      audio.removeEventListener('pause', () => setIsPlaying(false));
-      audio.removeEventListener('ended', () => setIsPlaying(false));
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handlePause);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
-  }, [audioUrl]);
+  }, [audioUrl, onTimeUpdate, onPlay, onPause]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -402,14 +473,21 @@ export default function WaveformViewer({
     if (draggingHandle !== null) return;
     
     const canvas = canvasRef.current;
-    if (!canvas || videoDuration === 0) return;
+    if (!canvas) return;
+
+    const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+    if (duration === 0) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const time = (x / canvas.width) * videoDuration;
+    
+    // Calculate time based on zoom viewport
+    const viewportWidth = duration / zoomLevel;
+    const viewportStart = Math.max(0, Math.min(duration - viewportWidth, (duration - viewportWidth) * zoomCenter));
+    const time = viewportStart + (x / canvas.width) * viewportWidth;
 
     if (audioRef.current) {
-      audioRef.current.currentTime = time;
+      audioRef.current.currentTime = Math.max(0, Math.min(duration, time));
       if (!isPlaying) {
         audioRef.current.play().catch(err => {
           console.error('Error playing audio:', err);
@@ -420,16 +498,22 @@ export default function WaveformViewer({
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || videoDuration === 0) return;
+    if (!canvas) return;
+
+    const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+    if (duration === 0) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const time = (x / canvas.width) * videoDuration;
+    
+    // Calculate zoom viewport
+    const viewportWidth = duration / zoomLevel;
+    const viewportStart = Math.max(0, Math.min(duration - viewportWidth, (duration - viewportWidth) * zoomCenter));
 
     // Check if clicking on a segment boundary handle
     segments.forEach((segment, index) => {
-      const startX = (segment.startTime / videoDuration) * canvas.width;
-      const endX = (segment.endTime / videoDuration) * canvas.width;
+      const startX = ((segment.startTime - viewportStart) / viewportWidth) * canvas.width;
+      const endX = ((segment.endTime - viewportStart) / viewportWidth) * canvas.width;
       
       // Check start handle (wider click area)
       if (Math.abs(x - startX) < 8) {
@@ -457,11 +541,18 @@ export default function WaveformViewer({
     if (draggingSegment === null || draggingHandle === null) return;
 
     const canvas = canvasRef.current;
-    if (!canvas || videoDuration === 0) return;
+    if (!canvas) return;
+
+    const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+    if (duration === 0) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const time = Math.max(0, Math.min(videoDuration, (x / canvas.width) * videoDuration));
+    
+    // Calculate time based on zoom viewport
+    const viewportWidth = duration / zoomLevel;
+    const viewportStart = Math.max(0, Math.min(duration - viewportWidth, (duration - viewportWidth) * zoomCenter));
+    const time = Math.max(0, Math.min(duration, viewportStart + (x / canvas.width) * viewportWidth));
 
     const newSegments = [...segments];
     const segment = newSegments[draggingSegment];
@@ -474,7 +565,7 @@ export default function WaveformViewer({
     } else {
       // Dragging end handle
       const minTime = segment.startTime + 0.1;
-      const maxTime = draggingSegment < segments.length - 1 ? newSegments[draggingSegment + 1].startTime : videoDuration;
+      const maxTime = draggingSegment < segments.length - 1 ? newSegments[draggingSegment + 1].startTime : duration;
       segment.endTime = Math.max(minTime, Math.min(time, maxTime));
     }
 
@@ -541,18 +632,70 @@ export default function WaveformViewer({
             {isPlaying ? '⏸️ Pause' : '▶️ Play'}
           </button>
           <span className="text-sm text-gray-300 font-mono">
-            {formatTime(currentTime)} / {videoDuration > 0 ? formatTime(videoDuration) : '--:--'}
+            {formatTime(currentTime)} / {(actualDuration > 0 ? actualDuration : videoDuration) > 0 ? formatTime(actualDuration > 0 ? actualDuration : videoDuration) : '--:--'}
           </span>
         </div>
-        {onDetectSilence && (
-          <button
-            onClick={handleDetectSilence}
-            disabled={isDetectingSilence || isLoadingWaveform}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isDetectingSilence ? '⏳ Detecting...' : '🔍 Detect Silence'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2 px-2 py-1 bg-gray-800 rounded border border-gray-700">
+            <button
+              onClick={() => {
+                if (zoomLevel > 1) {
+                  setZoomLevel(prev => Math.max(1, prev / 2));
+                  // Keep zoom centered on current play position
+                  const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+                  if (duration > 0) {
+                    setZoomCenter(currentTime / duration);
+                  }
+                }
+              }}
+              disabled={zoomLevel <= 1}
+              className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Zoom Out"
+            >
+              ➖
+            </button>
+            <span className="text-xs text-gray-300 min-w-[40px] text-center">
+              {zoomLevel.toFixed(1)}x
+            </span>
+            <button
+              onClick={() => {
+                if (zoomLevel < 16) {
+                  setZoomLevel(prev => Math.min(16, prev * 2));
+                  // Keep zoom centered on current play position
+                  const duration = actualDuration > 0 ? actualDuration : (videoDuration > 0 ? videoDuration : 0);
+                  if (duration > 0) {
+                    setZoomCenter(currentTime / duration);
+                  }
+                }
+              }}
+              disabled={zoomLevel >= 16}
+              className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Zoom In"
+            >
+              ➕
+            </button>
+            <button
+              onClick={() => {
+                setZoomLevel(1);
+                setZoomCenter(0.5);
+              }}
+              className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs"
+              title="Reset Zoom"
+            >
+              ⟲
+            </button>
+          </div>
+          {onDetectSilence && (
+            <button
+              onClick={handleDetectSilence}
+              disabled={isDetectingSilence || isLoadingWaveform}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDetectingSilence ? '⏳ Detecting...' : '🔍 Detect Silence'}
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="relative w-full bg-gray-800 rounded border-2 border-gray-700 overflow-hidden" style={{ height: '150px' }}>

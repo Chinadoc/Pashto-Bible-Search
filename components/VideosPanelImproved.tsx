@@ -431,6 +431,68 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                     setEditedSegments(newSegments);
                   }}
                   videoDuration={selectedVideo.total_duration || 0}
+                  onTimeUpdate={(currentTime) => {
+                    // Sync YouTube video to current audio time
+                    const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                    if (iframe && iframe.contentWindow) {
+                      try {
+                        iframe.contentWindow.postMessage(JSON.stringify({
+                          event: 'command',
+                          func: 'seekTo',
+                          args: [Math.floor(currentTime), true]
+                        }), '*');
+                      } catch (e) {
+                        // Ignore sync errors
+                      }
+                    }
+                    
+                    // Find active segment based on waveform audio time
+                    const activeSegment = selectedVideo.clips.findIndex((clip) => {
+                      const startTime = clip.start_time_seconds || clip.start_time || 0;
+                      const endTime = clip.end_time_seconds || clip.end_time || 0;
+                      return currentTime >= startTime && currentTime < endTime;
+                    });
+                    if (activeSegment !== -1 && activeSegment !== activeSegmentIndex) {
+                      setActiveSegmentIndex(activeSegment);
+                      // Scroll transcript to active segment
+                      const segmentKey = `${selectedVideo.video_id}-${activeSegment + 1}`;
+                      const segmentElement = segmentRefs.current.get(segmentKey);
+                      if (segmentElement) {
+                        segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }
+                  }}
+                  onPlay={() => {
+                    // When waveform audio plays, sync YouTube video
+                    // The onTimeUpdate will handle seeking, so we just need to play
+                    const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                    if (iframe && iframe.contentWindow) {
+                      try {
+                        iframe.contentWindow.postMessage(JSON.stringify({
+                          event: 'command',
+                          func: 'playVideo',
+                          args: []
+                        }), '*');
+                      } catch (e) {
+                        console.warn('Failed to play YouTube video:', e);
+                      }
+                    }
+                  }}
+                  onPause={() => {
+                    // Pause YouTube video when waveform pauses
+                    const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                    if (iframe && iframe.contentWindow) {
+                      try {
+                        iframe.contentWindow.postMessage(JSON.stringify({
+                          event: 'command',
+                          func: 'pauseVideo',
+                          args: []
+                        }), '*');
+                      } catch (e) {
+                        console.warn('Failed to pause YouTube video:', e);
+                      }
+                    }
+                  }}
                   onDetectSilence={async () => {
                     if (!selectedVideo) return [];
                     
@@ -584,6 +646,68 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
                             }
                           }}
                           videoDuration={selectedVideo.total_duration || 0}
+                          onTimeUpdate={(currentTime) => {
+                            // Sync YouTube video to current audio time
+                            const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                            if (iframe && iframe.contentWindow) {
+                              try {
+                                iframe.contentWindow.postMessage(JSON.stringify({
+                                  event: 'command',
+                                  func: 'seekTo',
+                                  args: [Math.floor(currentTime), true]
+                                }), '*');
+                              } catch (e) {
+                                // Ignore sync errors
+                              }
+                            }
+                            
+                            // Find active segment based on waveform audio time
+                            const activeSegment = selectedVideo.clips.findIndex((clip) => {
+                              const startTime = clip.start_time_seconds || clip.start_time || 0;
+                              const endTime = clip.end_time_seconds || clip.end_time || 0;
+                              return currentTime >= startTime && currentTime < endTime;
+                            });
+                            if (activeSegment !== -1 && activeSegment !== activeSegmentIndex) {
+                              setActiveSegmentIndex(activeSegment);
+                              // Scroll transcript to active segment
+                              const segmentKey = `${selectedVideo.video_id}-${activeSegment + 1}`;
+                              const segmentElement = segmentRefs.current.get(segmentKey);
+                              if (segmentElement) {
+                                segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }
+                          }}
+                          onPlay={() => {
+                            // When waveform audio plays, sync YouTube video
+                            // The onTimeUpdate will handle seeking, so we just need to play
+                            const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                            if (iframe && iframe.contentWindow) {
+                              try {
+                                iframe.contentWindow.postMessage(JSON.stringify({
+                                  event: 'command',
+                                  func: 'playVideo',
+                                  args: []
+                                }), '*');
+                              } catch (e) {
+                                console.warn('Failed to play YouTube video:', e);
+                              }
+                            }
+                          }}
+                          onPause={() => {
+                            // Pause YouTube video when waveform pauses
+                            const iframe = document.querySelector(`iframe[id^="youtube-player-"]`) as HTMLIFrameElement;
+                            if (iframe && iframe.contentWindow) {
+                              try {
+                                iframe.contentWindow.postMessage(JSON.stringify({
+                                  event: 'command',
+                                  func: 'pauseVideo',
+                                  args: []
+                                }), '*');
+                              } catch (e) {
+                                console.warn('Failed to pause YouTube video:', e);
+                              }
+                            }
+                          }}
                           onDetectSilence={async () => {
                             if (!selectedVideo) return [];
                             
