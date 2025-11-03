@@ -2426,7 +2426,7 @@ export default function ClientHome() {
 
       {/* Lexicon Tab */}
       {activeMainTab === 'lexicon' && (
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full">
           <LexiconPanel onPickForm={(form) => {
             setQuery(form);
             router.push('/search');

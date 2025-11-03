@@ -139,7 +139,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   }
 
   return (
-    <div className="p-4 mx-auto" style={{ maxWidth: '95%' }} dir="rtl">
+    <div className="w-full" style={{ padding: '1rem 2rem', maxWidth: 'none' }} dir="rtl">
       <h2 className="text-xl font-bold mb-4">Lexicon - Word Frequency List</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Pashto Lexicon from Bible text ({data.length} words loaded)
@@ -253,7 +253,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       {/* Results Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: '100%' }}>
             <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
                 <th
@@ -282,10 +282,10 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                 >
                   Word {sortBy === 'word' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Romanization</th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">POS</th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Inflection</th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Base Form</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Romanization</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">POS</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Inflection</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Base Form</th>
                 <th
                   className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                   onClick={() => {
@@ -326,16 +326,16 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
                       {item.pashto_word}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.romanization || '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.pos || item.word_type || '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.inflection_type || '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {item.base_form || '-'}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
