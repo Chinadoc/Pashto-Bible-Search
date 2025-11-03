@@ -209,6 +209,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
     const placeholders = batch.map(() => '?').join(',');
     
     try {
+      // First, try direct lookup
       const dictResults = await env.DB.prepare(`
         SELECT pashto_word, pos, word_type, inflection_type, compound_type,
                base_form, romanization, english_translation
@@ -218,6 +219,51 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
       
       for (const row of dictResults.results || []) {
         wordMetadata.set(row.pashto_word as string, row);
+      }
+      
+      // For words not found, try inferring base form and looking that up
+      // This handles cases like "وفرمایيل" → "فرمایل"
+      const notFound = batch.filter(w => !wordMetadata.has(w));
+      if (notFound.length > 0) {
+        const inferredRoots = new Map<string, string>(); // form -> inferred_root
+        
+        for (const form of notFound) {
+          const analysis = inferVerbRootFromForm(form);
+          if (analysis.root && analysis.confidence !== 'low' && analysis.root !== form) {
+            inferredRoots.set(form, analysis.root);
+          }
+        }
+        
+        // Look up inferred roots
+        if (inferredRoots.size > 0) {
+          const rootsToLookup = Array.from(new Set(inferredRoots.values()));
+          const rootPlaceholders = rootsToLookup.map(() => '?').join(',');
+          
+          const rootResults = await env.DB.prepare(`
+            SELECT pashto_word, pos, word_type, inflection_type, compound_type,
+                   base_form, romanization, english_translation
+            FROM word_frequencies
+            WHERE pashto_word IN (${rootPlaceholders})
+          `).bind(...rootsToLookup).all();
+          
+          // Map roots back to forms
+          const rootMap = new Map<string, any>();
+          for (const row of rootResults.results || []) {
+            rootMap.set(row.pashto_word as string, row);
+          }
+          
+          // Associate root metadata with original forms
+          for (const [form, root] of inferredRoots.entries()) {
+            const rootData = rootMap.get(root);
+            if (rootData) {
+              // Use root's metadata but keep the form's base_form as the root
+              wordMetadata.set(form, {
+                ...rootData,
+                base_form: root, // The inferred root is the base form
+              });
+            }
+          }
+        }
       }
     } catch (error) {
       console.warn(`   Failed to fetch metadata for batch: ${error}`);
