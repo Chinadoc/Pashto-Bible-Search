@@ -151,10 +151,10 @@ async function cleanup() {
       // Build SQL for this batch
       const sqlStatements = [];
 
-      // Delete punctuation-only entries
+      // Delete punctuation-only entries (always first)
       if (punctuationOnly.length > 0) {
         const deleteIds = punctuationOnly.join(',');
-        sqlStatements.push(`DELETE FROM word_frequencies WHERE id IN (${deleteIds});`);
+        sqlStatements.unshift(`DELETE FROM word_frequencies WHERE id IN (${deleteIds});`);
       }
 
       // Process groups
@@ -211,7 +211,7 @@ async function cleanup() {
           `);
         }
 
-        // Delete punctuated versions
+        // Delete punctuated versions (always delete, even if we updated existing)
         if (group.ids.length > 0) {
           const deleteIds = group.ids.join(',');
           sqlStatements.push(`DELETE FROM word_frequencies WHERE id IN (${deleteIds});`);
