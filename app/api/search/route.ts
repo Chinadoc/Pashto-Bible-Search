@@ -1314,7 +1314,7 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         
         if (freqData && freqData.length > 0 && freqData[0].frequency_count) {
           totalEstimatedCount = freqData[0].frequency_count;
-          hasMoreResults = totalEstimatedCount > transformed.length;
+          hasMoreResults = (totalEstimatedCount ?? 0) > transformed.length;
         }
       } catch (freqError) {
         console.warn('Could not check word frequency for total count:', freqError);
