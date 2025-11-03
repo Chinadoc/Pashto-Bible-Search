@@ -472,14 +472,32 @@ async function getVersesByChapter(
       .bind(book, chapter)
       .all();
 
-    const verses = result.results?.map((verse: any) => ({
-      ...verse,
-      created_at: verse.created_at ? new Date(verse.created_at * 1000).toISOString() : null,
-      updated_at: verse.updated_at ? new Date(verse.updated_at * 1000).toISOString() : null,
-      tags: verse.tags ? parseJsonSafe(verse.tags, []) : [],
-    })) || [];
+    const verses = result.results?.map((verse: any) => {
+      let audioPublicUrl: string | null = null;
+      
+      // Build audio URL from R2 key - use full Worker URL
+      if (verse.audio_r2_key) {
+        const workerUrl = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+        audioPublicUrl = `${workerUrl}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}`;
+      }
+      
+      return {
+        ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+        book: verse.book,
+        chapter: verse.chapter,
+        verse: verse.verse,
+        text: verse.text,
+        testament: verse.testament,
+        dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
+        audio_public_url: audioPublicUrl,
+        audio_r2_key: verse.audio_r2_key || null,
+        created_at: verse.created_at ? new Date(verse.created_at * 1000).toISOString() : null,
+        updated_at: verse.updated_at ? new Date(verse.updated_at * 1000).toISOString() : null,
+        tags: verse.tags ? parseJsonSafe(verse.tags, []) : [],
+      };
+    }) || [];
 
-    return jsonResponse({ verses, count: verses.length });
+    return jsonResponse({ book, chapter, translation, verses, count: verses.length });
   } catch (error: any) {
     return errorResponse(`Failed to get verses: ${error.message}`, 500);
   }
