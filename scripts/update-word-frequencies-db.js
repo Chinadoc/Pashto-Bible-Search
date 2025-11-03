@@ -176,11 +176,31 @@ function generateUpdateSQL() {
     }
   }
 
-  console.log(`   Processed ${processedCount} entries with patterns`);
-  console.log(`   Generated ${updates.length} SQL update statements`);
-  console.log(`   - Punctuation removal: ${punctuationRemovedCount}`);
-  console.log(`   - Pattern labeling: ${patternLabeledCount}`);
-  console.log(`   - Romanization fixes: ${romanizationFixedCount}\n`);
+  // Third pass: fix romanization for words without patterns (after punctuation removal)
+  for (const entry of frequencyList) {
+    const pashtoWord = entry.pashto;
+    const cleanedWord = removePunctuation(pashtoWord);
+    const hasPunctuation = cleanedWord !== pashtoWord;
+    const wordToUpdate = hasPunctuation ? cleanedWord : pashtoWord;
+    
+    // Skip if already processed in pattern pass
+    if (entry.pattern) continue;
+    
+    // Only process if needs romanization
+    const needsRomanization = !entry.romanization || entry.romanization === '';
+    if (!needsRomanization) continue;
+    
+    // Try to get romanization from dictionary
+    let romanization = getRomanizationFromDict(pashtoWord);
+    if (!romanization && hasPunctuation) {
+      romanization = getRomanizationFromDict(cleanedWord);
+    }
+    
+    if (romanization) {
+      updates.push(`UPDATE word_frequencies SET romanization = '${romanization.replace(/'/g, "''")}' WHERE pashto_word = '${wordToUpdate.replace(/'/g, "''")}';`);
+      romanizationFixedCount++;
+    }
+  }
 
   return { updates, updatesWithPattern };
 }
