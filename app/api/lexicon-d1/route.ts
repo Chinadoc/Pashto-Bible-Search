@@ -7,12 +7,8 @@ const D1_DATABASE_ID = '54a972b6-897a-4ae0-ba19-ecf4a6edc3b0';
 export const runtime = 'edge';
 
 /**
- * Enhanced lexicon frequency API endpoint
- * Queries D1 word_frequencies table with advanced filtering
- * 
- * Environment Variables:
- * - CLOUDFLARE_API_TOKEN: Your existing Cloudflare API token (with all permissions)
- * - CLOUDFLARE_WORKER_URL: Optional fallback if token not set
+ * Lexicon API endpoint - queries word_frequencies table directly
+ * Uses Cloudflare REST API to query D1 database
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,32 +16,36 @@ export async function GET(request: NextRequest) {
     
     // Filter parameters
     const scope = params.get('scope') || 'all'; // 'all' | 'ot' | 'nt'
-    const limit = Math.min(1000, Math.max(50, Number(params.get('limit')) || 300));
-    const posFilter = params.get('pos') || 'any'; // 'any' | 'verb' | 'noun' | etc.
-    const inflectionPattern = params.get('inflection_pattern'); // 'pattern1', 'pattern2', etc.
-    const inflectionLabel = params.get('inflection_label'); // 'masc_1st', 'fem_2nd', etc.
-    const wordType = params.get('word_type'); // 'proper_noun', 'compound', etc.
-    const verbAspect = params.get('verb_aspect'); // 'imperfective' | 'perfective'
+    const limit = Math.min(10000, Math.max(50, Number(params.get('limit')) || 1000));
+    const posFilter = params.get('pos') || 'all'; // 'any' | 'verb' | 'noun' | etc.
+    const inflectionType = params.get('inflection_type'); // 'plain', '1st', '2nd', etc.
+    const wordType = params.get('word_type'); // 'noun', 'verb', 'compound', etc.
     const compoundType = params.get('compound_type'); // 'dynamic' | 'stative'
     const searchQuery = params.get('search') || '';
     const sortBy = params.get('sort_by') || 'frequency'; // 'frequency' | 'word' | 'rank'
     const sortOrder = params.get('sort_order') || 'desc'; // 'asc' | 'desc'
     
-    // Build SQL query
+    // Build SQL query with correct column names
     let sql = `SELECT 
+      id,
       pashto_word,
       frequency_total,
       frequency_rank,
+      frequency_afghan2023_ot,
+      frequency_afghan2023_nt,
+      frequency_yousafzai2019_ot,
+      frequency_yousafzai2019_nt,
       romanization,
       pos,
       word_type,
       inflection_type,
-      base_form,
       compound_type,
+      base_form,
+      english_translation,
       has_issues,
       issue_flags
     FROM word_frequencies
-    WHERE 1=1`;
+    WHERE frequency_total > 0`;
     
     const conditions: string[] = [];
     
@@ -57,43 +57,45 @@ export async function GET(request: NextRequest) {
     }
     
     // POS filter
-    if (posFilter && posFilter !== 'any' && posFilter !== 'all') {
+    if (posFilter && posFilter !== 'all' && posFilter !== 'any') {
       if (posFilter === 'verb') {
-        conditions.push(`(pos LIKE '%verb%' OR pos LIKE '%v.%')`);
+        conditions.push(`(pos LIKE '%verb%' OR pos LIKE '%v.%' OR word_type = 'verb')`);
       } else if (posFilter === 'noun') {
-        conditions.push(`(pos LIKE '%noun%' OR pos LIKE '%n.%')`);
+        conditions.push(`(pos LIKE '%noun%' OR pos LIKE '%n.%' OR word_type = 'noun')`);
+      } else if (posFilter === 'adj') {
+        conditions.push(`(pos LIKE '%adj%' OR pos LIKE '%adjective%' OR word_type = 'adjective')`);
+      } else if (posFilter === 'adv') {
+        conditions.push(`(pos LIKE '%adv%' OR pos LIKE '%adverb%')`);
       } else {
-        conditions.push(`pos LIKE '%${posFilter}%'`);
+        conditions.push(`(pos LIKE '%${posFilter.replace(/'/g, "''")}%' OR word_type = '${posFilter.replace(/'/g, "''")}')`);
       }
     }
     
-    // Inflection label filter - direct match with inflection_type
-    if (inflectionLabel && inflectionLabel !== 'any' && inflectionLabel !== 'all') {
-      conditions.push(`inflection_type = '${inflectionLabel.replace(/'/g, "''")}'`);
+    // Inflection type filter
+    if (inflectionType && inflectionType !== 'all' && inflectionType !== 'any') {
+      conditions.push(`inflection_type = '${inflectionType.replace(/'/g, "''")}'`);
     }
     
     // Word type filter
-    if (wordType && wordType !== 'any') {
+    if (wordType && wordType !== 'all' && wordType !== 'any') {
       conditions.push(`word_type = '${wordType.replace(/'/g, "''")}'`);
     }
     
     // Compound type filter
-    if (compoundType && compoundType !== 'any') {
+    if (compoundType && compoundType !== 'all' && compoundType !== 'any') {
       conditions.push(`compound_type = '${compoundType.replace(/'/g, "''")}'`);
     }
     
     // Search query
     if (searchQuery) {
-      conditions.push(`(pashto_word LIKE '%${searchQuery.replace(/'/g, "''")}%' OR romanization LIKE '%${searchQuery.replace(/'/g, "''")}%')`);
+      const escapedQuery = searchQuery.replace(/'/g, "''");
+      conditions.push(`(pashto_word LIKE '%${escapedQuery}%' OR romanization LIKE '%${escapedQuery}%' OR english_translation LIKE '%${escapedQuery}%')`);
     }
     
     // Add conditions to SQL
     if (conditions.length > 0) {
       sql += ' AND ' + conditions.join(' AND ');
     }
-    
-    console.log('Final SQL query:', sql);
-    console.log('Conditions:', conditions);
     
     // Sorting
     if (sortBy === 'frequency') {
@@ -102,110 +104,103 @@ export async function GET(request: NextRequest) {
       sql += ` ORDER BY pashto_word ${sortOrder.toUpperCase()}`;
     } else if (sortBy === 'rank') {
       sql += ` ORDER BY frequency_rank ${sortOrder.toUpperCase()}`;
+    } else {
+      sql += ` ORDER BY frequency_total DESC`;
     }
     
     // Limit
     sql += ` LIMIT ${limit}`;
     
-    // Query D1 directly via Cloudflare REST API
-    console.log('Executing SQL:', sql.substring(0, 200));
+    console.log('Querying D1:', sql.substring(0, 200) + '...');
     
-    let rows: any[] = [];
-    
-    if (CLOUDFLARE_API_TOKEN) {
-      // Use Cloudflare REST API to query D1 directly
-      const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
-      
-      const apiResponse = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sql }),
-      });
-      
-      if (apiResponse.ok) {
-        const result = await apiResponse.json();
-        // Cloudflare API returns: { success: true, result: [{ results: [...], meta: {...} }] }
-        if (result.success && result.result && Array.isArray(result.result) && result.result.length > 0) {
-          rows = result.result[0].results || [];
-          console.log('Got', rows.length, 'rows from D1 via REST API');
-        } else if (result.success && result.result && Array.isArray(result.result)) {
-          // Handle case where result might be directly an array
-          rows = result.result[0]?.results || result.result || [];
-          console.log('Got', rows.length, 'rows from D1 via REST API (alternative format)');
-        }
-      } else {
-        const errorText = await apiResponse.text();
-        console.error('Cloudflare API error:', apiResponse.status, errorText);
-      }
-    } else {
-      // Fallback: try Worker endpoint
-      const CLOUDFLARE_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-      const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sql }),
-      });
-      
-      if (workerResponse.ok) {
-        const result = await workerResponse.json();
-        rows = result.results || [];
-        console.log('Got', rows.length, 'rows from D1 via Worker');
-      } else {
-        console.error('Worker endpoint failed:', workerResponse.status);
-      }
+    // Query D1 via Cloudflare REST API
+    if (!CLOUDFLARE_API_TOKEN) {
+      return NextResponse.json(
+        { error: 'CLOUDFLARE_API_TOKEN not configured' },
+        { status: 500 }
+      );
     }
     
-    if (rows.length > 0) {
-      
-      // Transform rows to match expected format
-      const items = rows.map((row: any) => ({
-        pashto_word: row.pashto_word,
-        frequency_total: row.frequency_total || 0,
-        frequency_rank: row.frequency_rank || 0,
-        romanization: row.romanization || null,
-        pos: row.pos || null,
-        inflection_type: row.inflection_type || null,
-        base_form: row.base_form || null,
-        word_type: row.word_type || null,
-        compound_type: row.compound_type || null,
-        // Keep legacy fields for compatibility
-        form: row.pashto_word,
-        frequency: row.frequency_total || 0,
-        rank: row.frequency_rank || 0,
-        root: row.base_form || null,
-        inflectionLabel: row.inflection_type || null,
-        inflectionType: row.inflection_type || null,
-      }));
-      
+    const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
+    
+    const apiResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sql }),
+    });
+    
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      console.error('Cloudflare API error:', apiResponse.status, errorText);
+      return NextResponse.json(
+        { error: 'Database query failed', details: errorText },
+        { status: apiResponse.status }
+      );
+    }
+    
+    const result = await apiResponse.json();
+    
+    // Parse Cloudflare API response format
+    let rows: any[] = [];
+    if (result.success && result.result && Array.isArray(result.result) && result.result.length > 0) {
+      rows = result.result[0].results || [];
+    }
+    
+    if (rows.length === 0) {
+      console.warn('No rows returned from D1');
       return NextResponse.json({
-        items,
-        total: items.length,
+        items: [],
+        total: 0,
         filters: {
           scope,
           limit,
           posFilter,
-          inflectionPattern,
-          inflectionLabel,
+          inflectionType,
           wordType,
-          verbAspect,
           compoundType,
           searchQuery,
         },
       });
     }
     
-    // If no rows returned
-    console.warn('D1 query returned no rows');
-    return NextResponse.json({ 
-      items: [], 
-      total: 0, 
-      error: 'No data returned',
-      sql: sql.substring(0, 200) // Include SQL for debugging
+    // Transform rows to match frontend expectations
+    const items = rows.map((row: any) => ({
+      id: row.id,
+      pashto_word: row.pashto_word,
+      frequency_total: row.frequency_total || 0,
+      frequency_rank: row.frequency_rank || 0,
+      frequency_afghan2023_ot: row.frequency_afghan2023_ot || 0,
+      frequency_afghan2023_nt: row.frequency_afghan2023_nt || 0,
+      frequency_yousafzai2019_ot: row.frequency_yousafzai2019_ot || 0,
+      frequency_yousafzai2019_nt: row.frequency_yousafzai2019_nt || 0,
+      romanization: row.romanization || null,
+      pos: row.pos || null,
+      word_type: row.word_type || null,
+      inflection_type: row.inflection_type || null,
+      compound_type: row.compound_type || null,
+      base_form: row.base_form || null,
+      english_translation: row.english_translation || null,
+      has_issues: row.has_issues || 0,
+      issue_flags: row.issue_flags || null,
+    }));
+    
+    return NextResponse.json({
+      items,
+      total: items.length,
+      filters: {
+        scope,
+        limit,
+        posFilter,
+        inflectionType,
+        wordType,
+        compoundType,
+        searchQuery,
+        sortBy,
+        sortOrder,
+      },
     });
     
   } catch (error: any) {
