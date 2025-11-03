@@ -118,12 +118,17 @@ export async function GET(request: NextRequest) {
     console.log('Querying D1:', sql.substring(0, 200) + '...');
     
     // Try Worker endpoint first (already has D1 access configured)
+    // Use default Worker URL if env var not set
     const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+    console.log('Using Worker URL:', CLOUDFLARE_WORKER_URL);
     let rows: any[] = [];
     
     try {
       // Try Worker endpoint first
-      const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
+      const workerUrl = `${CLOUDFLARE_WORKER_URL}/api/d1/query`;
+      console.log('Fetching from Worker:', workerUrl);
+      
+      const workerResponse = await fetch(workerUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,22 +136,32 @@ export async function GET(request: NextRequest) {
         body: JSON.stringify({ sql }),
       });
       
+      console.log('Worker response status:', workerResponse.status);
+      
       if (workerResponse.ok) {
         const result = await workerResponse.json();
         rows = result.results || [];
         console.log('Got', rows.length, 'rows from Worker endpoint');
       } else {
-        console.warn('Worker endpoint failed:', workerResponse.status);
+        const errorText = await workerResponse.text().catch(() => 'Unknown error');
+        console.warn('Worker endpoint failed:', workerResponse.status, errorText);
         // Fallback to REST API if Worker fails
-        throw new Error('Worker endpoint failed');
+        throw new Error(`Worker endpoint failed: ${workerResponse.status} - ${errorText}`);
       }
-    } catch (workerError) {
+    } catch (workerError: any) {
+      console.error('Worker endpoint error:', workerError.message);
+      
       // Fallback to Cloudflare REST API if Worker is unavailable
       console.log('Falling back to Cloudflare REST API...');
       
       if (!CLOUDFLARE_API_TOKEN) {
+        console.error('No CLOUDFLARE_API_TOKEN available for fallback');
         return NextResponse.json(
-          { error: 'Neither Worker endpoint nor CLOUDFLARE_API_TOKEN available. Please configure NEXT_PUBLIC_CLOUDFLARE_WORKER_URL or CLOUDFLARE_API_TOKEN.' },
+          { 
+            error: 'Worker endpoint unavailable and no API token configured',
+            details: `Worker error: ${workerError.message}. Please ensure NEXT_PUBLIC_CLOUDFLARE_WORKER_URL is set in Vercel or configure CLOUDFLARE_API_TOKEN as fallback.`,
+            workerUrl: CLOUDFLARE_WORKER_URL
+          },
           { status: 500 }
         );
       }
