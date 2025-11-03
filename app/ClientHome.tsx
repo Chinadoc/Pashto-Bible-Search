@@ -724,6 +724,7 @@ export default function ClientHome() {
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
+  const [query, setQuery] = useState<string>('');
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
   const translationEffectGuard = useRef<boolean>(true);
