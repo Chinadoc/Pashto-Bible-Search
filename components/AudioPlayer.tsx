@@ -22,8 +22,15 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     );
   }
 
-  // Extract file ID from Google Drive URL (memoized to avoid recalculation)
+  // Determine if this is a Google Drive URL or R2/Supabase URL
+  const isGoogleDrive = useMemo(() => {
+    return audioUrl.includes('drive.google.com');
+  }, [audioUrl]);
+  
+  // Extract file ID from Google Drive URL (only if it's Google Drive)
   const fileId = useMemo(() => {
+    if (!isGoogleDrive) return null;
+    
     let id: string | null = null;
     
     // Extract file ID from various formats
@@ -39,13 +46,18 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
     }
     
     return id;
-  }, [audioUrl]);
+  }, [audioUrl, isGoogleDrive]);
   
-  // Use Cloudflare Worker as CORS proxy for Google Drive audio
-  // This provides better reliability and CORS handling
+  // Use appropriate URL based on source
+  // R2/Supabase URLs can be used directly, Google Drive needs proxy
   const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-  const streamingUrl = fileId ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` : audioUrl;
-  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : audioUrl;
+  const streamingUrl = isGoogleDrive && fileId 
+    ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` // Google Drive via proxy
+    : audioUrl; // R2/Supabase URLs work directly
+  
+  const downloadUrl = isGoogleDrive && fileId
+    ? `https://drive.google.com/uc?export=download&id=${fileId}` // Google Drive download
+    : audioUrl; // R2/Supabase URLs can be downloaded directly
 
   const handlePlayClick = () => {
     setShowPlayer(true);
@@ -128,14 +140,25 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
               Download
             </a>
             <span className="text-gray-400">|</span>
-            <a
-              href={audioUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-300 hover:text-blue-200 underline"
-            >
-              Open in Drive
-            </a>
+            {isGoogleDrive ? (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+              >
+                Open in Drive
+              </a>
+            ) : (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+              >
+                Open
+              </a>
+            )}
           </div>
         </div>
       ) : (
@@ -157,15 +180,27 @@ export default function AudioPlayer({ audioUrl, verseRef }: AudioPlayerProps) {
             Download
           </a>
           
-          <a
-            href={audioUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-300 hover:text-blue-200 underline"
-            title="Open in Google Drive"
-          >
-            Open
-          </a>
+          {isGoogleDrive ? (
+            <a
+              href={audioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-300 hover:text-blue-200 underline"
+              title="Open in Google Drive"
+            >
+              Open in Drive
+            </a>
+          ) : (
+            <a
+              href={audioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-300 hover:text-blue-200 underline"
+              title="Open audio URL"
+            >
+              Open
+            </a>
+          )}
         </div>
       )}
     </div>
