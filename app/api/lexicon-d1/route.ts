@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CLOUDFLARE_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || '3ac1a6fafce90adf6b1c8f1280dfc94d';
+const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+const D1_DATABASE_ID = '54a972b6-897a-4ae0-ba19-ecf4a6edc3b0';
 
 export const runtime = 'edge';
 
@@ -101,22 +103,55 @@ export async function GET(request: NextRequest) {
     // Limit
     sql += ` LIMIT ${limit}`;
     
-    // Query D1 via Cloudflare Worker
+    // Query D1 directly via Cloudflare REST API
     console.log('Executing SQL:', sql.substring(0, 200));
-    const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sql }),
-    });
     
-    console.log('Worker response status:', workerResponse.status);
+    let rows: any[] = [];
     
-    if (workerResponse.ok) {
-      const result = await workerResponse.json();
-      const rows = result.results || [];
-      console.log('Got', rows.length, 'rows from D1');
+    if (CLOUDFLARE_API_TOKEN) {
+      // Use Cloudflare REST API to query D1 directly
+      const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
+      
+      const apiResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sql }),
+      });
+      
+      if (apiResponse.ok) {
+        const result = await apiResponse.json();
+        if (result.success && result.result) {
+          rows = result.result[0]?.results || [];
+          console.log('Got', rows.length, 'rows from D1 via REST API');
+        }
+      } else {
+        const errorText = await apiResponse.text();
+        console.error('Cloudflare API error:', apiResponse.status, errorText);
+      }
+    } else {
+      // Fallback: try Worker endpoint
+      const CLOUDFLARE_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+      const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sql }),
+      });
+      
+      if (workerResponse.ok) {
+        const result = await workerResponse.json();
+        rows = result.results || [];
+        console.log('Got', rows.length, 'rows from D1 via Worker');
+      } else {
+        console.error('Worker endpoint failed:', workerResponse.status);
+      }
+    }
+    
+    if (rows.length > 0) {
       
       // Transform rows to match expected format
       const items = rows.map((row: any) => ({
@@ -155,11 +190,14 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // If D1 query fails, return empty result
-    console.warn('D1 query failed:', workerResponse.status, workerResponse.statusText);
-    const errorText = await workerResponse.text().catch(() => 'Unknown error');
-    console.warn('Error details:', errorText);
-    return NextResponse.json({ items: [], total: 0, error: 'D1 query failed', details: errorText });
+    // If no rows returned
+    console.warn('D1 query returned no rows');
+    return NextResponse.json({ 
+      items: [], 
+      total: 0, 
+      error: 'No data returned',
+      sql: sql.substring(0, 200) // Include SQL for debugging
+    });
     
   } catch (error: any) {
     console.error('Lexicon API error:', error);
