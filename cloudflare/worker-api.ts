@@ -1357,6 +1357,35 @@ export default {
       return deleteR2Object(env, request);
     }
 
+    // Generic D1 query endpoint for lexicon and other queries
+    if (path === '/api/d1/query' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { sql } = body;
+        
+        if (!sql || typeof sql !== 'string') {
+          return errorResponse('Missing or invalid SQL query', 400);
+        }
+        
+        // Security: Only allow SELECT queries
+        const sqlUpper = sql.trim().toUpperCase();
+        if (!sqlUpper.startsWith('SELECT')) {
+          return errorResponse('Only SELECT queries are allowed', 400);
+        }
+        
+        // Execute query
+        const result = await env.DB.prepare(sql).all();
+        
+        return jsonResponse({
+          success: true,
+          results: result.results || [],
+          meta: result.meta || {},
+        });
+      } catch (error: any) {
+        return errorResponse(`Query failed: ${error.message}`, 500);
+      }
+    }
+
     return errorResponse('Not found', 404);
   },
 };
