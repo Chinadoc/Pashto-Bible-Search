@@ -62,9 +62,39 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         scope,
         limit: limit.toString(),
         pos: posFilter,
+        search: searchQuery,
+        sort_by: sortBy,
+        sort_order: sortOrder,
       });
 
-      const response = await fetch(`/api/lexicon_frequency?${params}`);
+      // Add advanced filters if set
+      if (inflectionPatternFilter !== 'any') {
+        params.set('inflection_pattern', inflectionPatternFilter);
+      }
+      if (inflectionLabelFilter !== 'any') {
+        params.set('inflection_label', inflectionLabelFilter);
+      }
+      if (verbAspectFilter !== 'any') {
+        params.set('verb_aspect', verbAspectFilter);
+      }
+      if (compoundTypeFilter !== 'any') {
+        params.set('compound_type', compoundTypeFilter);
+      }
+      if (wordTypeFilter !== 'any') {
+        params.set('word_type', wordTypeFilter);
+      }
+
+      // Try new D1 endpoint first, fallback to lexicon_frequency
+      let response = await fetch(`/api/lexicon-d1?${params.toString()}`);
+      if (!response.ok) {
+        // Fallback to existing endpoint
+        const fallbackParams = new URLSearchParams({
+          scope,
+          limit: limit.toString(),
+          pos: posFilter,
+        });
+        response = await fetch(`/api/lexicon_frequency?${fallbackParams.toString()}`);
+      }
       const data = await response.json();
 
       console.log('API Response:', { ok: response.ok, status: response.status, itemsCount: data.items?.length });
@@ -142,7 +172,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   // Initial load and when filters change
   useEffect(() => {
     fetchFrequencyData();
-  }, [scope, limit, posFilter]);
+  }, [scope, limit, posFilter, inflectionPatternFilter, inflectionLabelFilter, verbAspectFilter, compoundTypeFilter, wordTypeFilter]);
 
   // Filter and search data
   useEffect(() => {
