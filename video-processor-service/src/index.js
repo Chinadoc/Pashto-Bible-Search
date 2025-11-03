@@ -1161,7 +1161,129 @@ app.post('/regenerate-segments', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+/**
+ * Upload full audio file for existing video
+ * POST /upload-full-audio
+ */
+app.post('/upload-full-audio', async (req, res) => {
+  const startTime = Date.now();
+  let audioFile = null;
+
+  try {
+    const { videoId, youtubeUrl } = req.body;
+
+    if (!videoId || !youtubeUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: videoId, youtubeUrl',
+      });
+    }
+
+    console.log(`\n📤 ========== UPLOADING FULL AUDIO ==========`);
+    console.log(`   Video ID: ${videoId}`);
+    console.log(`   YouTube URL: ${youtubeUrl}`);
+    console.log(`========================================\n`);
+
+    // Step 1: Download video audio
+    console.log(`📥 Step 1: Downloading video audio...`);
+    const downloadStartTime = Date.now();
+    try {
+      audioFile = await downloadVideoAudio(youtubeUrl, videoId);
+      const downloadDuration = ((Date.now() - downloadStartTime) / 1000).toFixed(2);
+      console.log(`✅ Download completed:`);
+      console.log(`   Duration: ${downloadDuration}s`);
+      console.log(`   File: ${audioFile}`);
+    } catch (error) {
+      console.error(`❌ Download failed:`, error.message);
+      throw error;
+    }
+
+    // Step 2: Upload full audio to R2
+    console.log(`\n📤 Step 2: Uploading full audio to R2...`);
+    const uploadStartTime = Date.now();
+    try {
+      const fullAudioKey = `videos/${videoId}/full.mp3`;
+      
+      // Verify audio file exists
+      if (!audioFile) {
+        throw new Error('Audio file not found');
+      }
+      
+      const fullAudioBuffer = await readFile(audioFile);
+      const fileSizeMB = (fullAudioBuffer.length / (1024 * 1024)).toFixed(2);
+      console.log(`   Full audio file size: ${fileSizeMB} MB`);
+      
+      const fullAudioResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/r2/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: fullAudioKey,
+          data: fullAudioBuffer.toString('base64'),
+        }),
+      });
+      
+      if (fullAudioResponse.ok) {
+        const result = await fullAudioResponse.json();
+        console.log(`   ✅ Full audio uploaded successfully: ${fullAudioKey}`);
+        console.log(`   Upload result: ${JSON.stringify(result)}`);
+        
+        const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+        console.log(`✅ Upload completed:`);
+        console.log(`   Duration: ${uploadDuration}s`);
+        console.log(`   File size: ${fileSizeMB} MB`);
+        
+        // Cleanup
+        if (audioFile) {
+          await unlink(audioFile).catch(() => {});
+        }
+        
+        const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`\n✅ ========== FULL AUDIO UPLOAD SUCCESS ==========`);
+        console.log(`   Total duration: ${totalDuration}s`);
+        console.log(`   Video ID: ${videoId}`);
+        console.log(`   R2 Key: ${fullAudioKey}`);
+        console.log(`========================================\n`);
+        
+        res.json({
+          success: true,
+          videoId,
+          r2Key: fullAudioKey,
+          fileSizeMB: parseFloat(fileSizeMB),
+          message: `✅ Full audio uploaded successfully!`,
+        });
+      } else {
+        const errorText = await fullAudioResponse.text();
+        console.error(`   ❌ Failed to upload full audio: ${fullAudioResponse.status} ${errorText}`);
+        throw new Error(`Upload failed: ${fullAudioResponse.status} ${errorText}`);
+      }
+    } catch (uploadError) {
+      console.error(`❌ Upload failed:`, uploadError.message);
+      throw uploadError;
+    }
+
+  } catch (error) {
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`\n❌ ========== FULL AUDIO UPLOAD ERROR ==========`);
+    console.error(`   Duration: ${totalDuration}s`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
+    console.error(`==========================================\n`);
+
+    // Cleanup on error
+    if (audioFile) {
+      await unlink(audioFile).catch(() => {});
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+});
+
+/**
   console.log(`🚀 Video processor service running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
 });
