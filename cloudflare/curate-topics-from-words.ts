@@ -109,6 +109,38 @@ const CATEGORIES: Record<string, string[]> = {
   // Fruits of the Holy Spirit (special category)
   'fruits_holy_spirit': ['love', 'joy', 'peace', 'patience', 'kindness', 'goodness', 'faithfulness', 'gentleness', 'self-control'],
   
+  // Biblical/Theological Topics (from GotQuestions.org Pashto)
+  'salvation': ['salvation', 'save', 'saved', 'savior', 'redeem', 'redemption', 'deliver', 'deliverance', 'rescue', 'eternal life', 'everlasting life'],
+  'forgiveness': ['forgive', 'forgiveness', 'pardon', 'pardon', 'mercy', 'clemency', 'absolve', 'absolution'],
+  'sin': ['sin', 'sins', 'sinful', 'sinner', 'wicked', 'wickedness', 'transgression', 'iniquity', 'evil', 'wrongdoing'],
+  'heaven': ['heaven', 'heavenly', 'paradise', 'eternal', 'eternity', 'immortal', 'glory', 'glorious'],
+  'death': ['death', 'die', 'dying', 'dead', 'grave', 'tomb', 'burial', 'buried', 'afterlife', 'life after death'],
+  'faith': ['faith', 'believe', 'belief', 'trust', 'trusting', 'faithful', 'faithfulness', 'confidence'],
+  'prayer': ['pray', 'prayer', 'praying', 'prayers', 'petition', 'supplication', 'intercession', 'intercede'],
+  'baptism': ['baptize', 'baptism', 'baptized', 'baptizing', 'immerse', 'immersion', 'wash', 'washing'],
+  'trinity': ['trinity', 'god', 'father', 'son', 'holy spirit', 'spirit', 'three', 'one', 'divine'],
+  'holy_spirit': ['holy spirit', 'spirit', 'ghost', 'comforter', 'helper', 'advocate', 'paraclete', 'tongues', 'speaking tongues'],
+  'repentance': ['repent', 'repentance', 'repenting', 'turn', 'return', 'turn away', 'change', 'conversion', 'convert'],
+  'gods_will': ['will', 'plan', 'purpose', 'desire', 'wish', 'intention', 'decree', 'command', 'ordain'],
+  'assurance': ['assurance', 'certain', 'certainty', 'sure', 'confidence', 'secure', 'security', 'guarantee'],
+  'eternal_security': ['eternal security', 'once saved', 'always saved', 'perseverance', 'persevere', 'endure', 'endurance'],
+  'repentance_salvation': ['repent', 'believe', 'faith', 'trust', 'accept', 'receive', 'follow', 'obey'],
+  'hell': ['hell', 'damnation', 'damned', 'eternal fire', 'lake of fire', 'judgment', 'judge', 'condemn', 'condemnation'],
+  'judgment': ['judge', 'judgment', 'judging', 'judge', 'trial', 'verdict', 'sentence', 'punish', 'punishment'],
+  'baptism_importance': ['baptize', 'baptism', 'command', 'obey', 'obedience', 'follow', 'example', 'initiation'],
+  'tithing': ['tithe', 'tithing', 'tenth', 'offer', 'offering', 'give', 'giving', 'contribute', 'contribution'],
+  'marriage': ['marriage', 'marry', 'married', 'wedding', 'wed', 'husband', 'wife', 'spouse', 'divorce', 'divorced'],
+  'divorce': ['divorce', 'divorced', 'separate', 'separation', 'marry', 'remarry', 'remarriage'],
+  'premarital_sex': ['sex', 'sexual', 'fornication', 'immorality', 'chastity', 'purity', 'virgin', 'virginity', 'before marriage'],
+  'women_ministry': ['woman', 'women', 'preach', 'pastor', 'minister', 'serve', 'service', 'minister', 'deacon'],
+  'tongues': ['tongues', 'speaking tongues', 'gift', 'gifts', 'spiritual gifts', 'prophesy', 'prophecy'],
+  'alcohol': ['wine', 'drink', 'drinking', 'alcohol', 'drunk', 'drunkenness', 'sober', 'abstain'],
+  'tattoos': ['tattoo', 'tattoos', 'mark', 'marks', 'body', 'pierce', 'piercing', 'marking'],
+  'pets_heaven': ['animal', 'animals', 'pet', 'pets', 'creature', 'creatures', 'heaven', 'eternal'],
+  'homosexuality': ['homosexual', 'homosexuality', 'same sex', 'gay', 'lesbian', 'sodomy', 'sodomite'],
+  'masturbation': ['masturbation', 'masturbate', 'self', 'lust', 'desire', 'sexual'],
+  'suicide': ['suicide', 'kill', 'killing', 'self', 'murder', 'despair', 'hope', 'hope'],
+  
   // Leadership
   'leadership': ['king', 'queen', 'ruler', 'prince', 'princess', 'leader', 'chief', 'ruler', 'governor', 'judge', 'prophet', 'priest', 'servant', 'slave'],
   

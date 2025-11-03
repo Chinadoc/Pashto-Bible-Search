@@ -40,6 +40,12 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [limit, setLimit] = useState(300);
   const [sortBy, setSortBy] = useState<'frequency' | 'form'>('frequency');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // New filters
+  const [inflectionPatternFilter, setInflectionPatternFilter] = useState<string>('any');
+  const [inflectionLabelFilter, setInflectionLabelFilter] = useState<string>('any');
+  const [verbAspectFilter, setVerbAspectFilter] = useState<string>('any');
+  const [compoundTypeFilter, setCompoundTypeFilter] = useState<string>('any');
+  const [wordTypeFilter, setWordTypeFilter] = useState<string>('any');
   const [audioMap, setAudioMap] = useState<Record<string, string>>({});
   const [searchMode, setSearchMode] = useState<'exact' | 'fuzzy' | 'regex' | 'root'>('exact');
   const [showStats, setShowStats] = useState(false);
@@ -149,25 +155,27 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       filtered = filtered.filter(item => {
         const form = item.form.toLowerCase();
         const root = (item.root || '').toLowerCase();
+        const romanization = (item.dictionary?.romanized || '').toLowerCase();
 
         switch (searchMode) {
           case 'exact':
-            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
+            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase()) || romanization.includes(query.toLowerCase());
 
           case 'fuzzy':
             // Simple fuzzy matching - check for similar characters
             return form.includes(query.toLowerCase()) ||
                    root.includes(query.toLowerCase()) ||
+                   romanization.includes(query.toLowerCase()) ||
                    levenshteinDistance(form, query.toLowerCase()) <= 2 ||
                    levenshteinDistance(root, query.toLowerCase()) <= 2;
 
           case 'regex':
             try {
               const regex = new RegExp(query, 'i');
-              return regex.test(item.form) || regex.test(item.root || '');
+              return regex.test(item.form) || regex.test(item.root || '') || regex.test(item.dictionary?.romanized || '');
             } catch {
               // Invalid regex, fall back to exact match
-              return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
+              return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase()) || romanization.includes(query.toLowerCase());
             }
 
           case 'root':
@@ -178,8 +186,63 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                    (query.length >= 2 && query.length <= 4 && /^[بپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+$/.test(query) && root.includes(query));
 
           default:
-            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
+            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase()) || romanization.includes(query.toLowerCase());
         }
+      });
+    }
+
+    // Apply additional filters from API response or client-side
+    // Note: These filters should ideally be applied server-side for better performance
+    // For now, we apply them client-side if the data includes these fields
+    
+    // Filter by inflection pattern (if available in data)
+    if (inflectionPatternFilter !== 'any') {
+      filtered = filtered.filter(item => {
+        // Check if item has inflection_pattern field
+        const itemPattern = (item as any).inflectionPattern;
+        return itemPattern === inflectionPatternFilter;
+      });
+    }
+
+    // Filter by inflection label (if available)
+    if (inflectionLabelFilter !== 'any') {
+      filtered = filtered.filter(item => {
+        const itemLabel = (item as any).inflectionLabel;
+        return itemLabel && itemLabel.includes(inflectionLabelFilter);
+      });
+    }
+
+    // Filter by verb aspect (if available)
+    if (verbAspectFilter !== 'any' && posFilter === 'verb') {
+      filtered = filtered.filter(item => {
+        // This would need aspect information in the data
+        // For now, we'll skip this filter until data includes aspect
+        return true;
+      });
+    }
+
+    // Filter by compound type (if available)
+    if (compoundTypeFilter !== 'any') {
+      filtered = filtered.filter(item => {
+        // Check if word contains zero-width non-joiner or space (compound indicator)
+        const isCompound = item.form.includes('\u200c') || item.form.includes('\u200d') || item.form.includes(' ');
+        if (compoundTypeFilter === 'dynamic') {
+          // Dynamic compounds typically have certain patterns
+          // This would need more sophisticated detection
+          return isCompound;
+        } else if (compoundTypeFilter === 'stative') {
+          // Stative compounds have different patterns
+          return isCompound;
+        }
+        return true;
+      });
+    }
+
+    // Filter by word type (if available)
+    if (wordTypeFilter !== 'any') {
+      filtered = filtered.filter(item => {
+        const itemWordType = (item as any).wordType;
+        return itemWordType === wordTypeFilter;
       });
     }
 
@@ -202,7 +265,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     });
 
     setFilteredData(filtered);
-  }, [frequencyData, searchQuery, sortBy, sortOrder, posFilter, searchMode]);
+  }, [frequencyData, searchQuery, sortBy, sortOrder, posFilter, searchMode, inflectionPatternFilter, inflectionLabelFilter, verbAspectFilter, compoundTypeFilter, wordTypeFilter]);
 
   // Simple Levenshtein distance for fuzzy matching
   function levenshteinDistance(a: string, b: string): number {
@@ -409,67 +472,146 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-medium mb-1">Scope</label>
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value="all">All Bible</option>
-              <option value="ot">Old Testament</option>
-              <option value="nt">New Testament</option>
-            </select>
-      </div>
-
-          <div>
-            <label className="block text-xs font-medium mb-1">Word Type</label>
-            <select
-              value={posFilter}
-              onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value="any">All</option>
-              <option value="verb">Verbs</option>
-              <option value="noun">Nouns</option>
-            </select>
+        <div className="space-y-4">
+          {/* First row: Basic filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Scope</label>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="all">All Bible</option>
+                <option value="ot">Old Testament</option>
+                <option value="nt">New Testament</option>
+              </select>
             </div>
 
-          <div>
-            <label className="block text-xs font-medium mb-1">Result Count</label>
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value={100}>100</option>
-              <option value={300}>300</option>
-              <option value={500}>500</option>
-              <option value={1000}>1000</option>
-            </select>
-              </div>
-
-          <div>
-            <label className="block text-xs font-medium mb-1">Sort By</label>
-            <div className="flex gap-1">
+            <div>
+              <label className="block text-xs font-medium mb-1">Word Type</label>
               <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
-                className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
+                value={posFilter}
+                onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
               >
-                <option value="frequency">Frequency</option>
-                <option value="form">Alphabetical</option>
+                <option value="any">All</option>
+                <option value="verb">Verbs</option>
+                <option value="noun">Nouns</option>
               </select>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Result Count</label>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
               >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
+                <option value={100}>100</option>
+                <option value={300}>300</option>
+                <option value={500}>500</option>
+                <option value={1000}>1000</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Sort By</label>
+              <div className="flex gap-1">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
+                  className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
+                >
+                  <option value="frequency">Frequency</option>
+                  <option value="form">Alphabetical</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
             </div>
           </div>
-                </div>
+
+          {/* Second row: Advanced filters */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Inflection Pattern</label>
+              <select
+                value={inflectionPatternFilter}
+                onChange={(e) => setInflectionPatternFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="any">All Patterns</option>
+                <option value="pattern1">Pattern 1</option>
+                <option value="pattern2">Pattern 2</option>
+                <option value="pattern3">Pattern 3</option>
+                <option value="pattern4">Pattern 4</option>
+                <option value="pattern5">Pattern 5</option>
+                <option value="pattern5.5">Pattern 5.5</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Inflection</label>
+              <select
+                value={inflectionLabelFilter}
+                onChange={(e) => setInflectionLabelFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="any">All</option>
+                <option value="masc_1st">Masculine 1st</option>
+                <option value="masc_2nd">Masculine 2nd</option>
+                <option value="fem_1st">Feminine 1st</option>
+                <option value="fem_2nd">Feminine 2nd</option>
+                <option value="plain">Plain</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Verb Aspect</label>
+              <select
+                value={verbAspectFilter}
+                onChange={(e) => setVerbAspectFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                disabled={posFilter !== 'verb'}
+              >
+                <option value="any">All</option>
+                <option value="imperfective">Imperfective</option>
+                <option value="perfective">Perfective</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Compound Type</label>
+              <select
+                value={compoundTypeFilter}
+                onChange={(e) => setCompoundTypeFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="any">All</option>
+                <option value="dynamic">Dynamic</option>
+                <option value="stative">Stative</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1">Word Category</label>
+              <select
+                value={wordTypeFilter}
+                onChange={(e) => setWordTypeFilter(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="any">All</option>
+                <option value="proper_noun">Proper Nouns</option>
+                <option value="compound">Compound Words</option>
+              </select>
+            </div>
+          </div>
+        </div>
             </div>
 
       {/* Results Table */}
