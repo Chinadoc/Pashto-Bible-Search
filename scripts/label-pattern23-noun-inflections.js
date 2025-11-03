@@ -201,11 +201,12 @@ async function labelPattern23Inflections() {
         
         if (freqEntry) {
           // Only label if not already labeled OR if pattern is different (update pattern)
+          const wasAlreadyLabeled = !!freqEntry.inflection_label;
           if (!freqEntry.inflection_label || freqEntry.pattern !== pattern) {
             freqEntry.inflection_label = label;
             freqEntry.base_word = base;
             freqEntry.pattern = pattern;
-            if (!freqEntry.inflection_label) {
+            if (!wasAlreadyLabeled) {
               labeledCount++;
             }
           }
@@ -237,11 +238,12 @@ async function labelPattern23Inflections() {
         
         if (freqEntry) {
           // Only label if not already labeled OR if pattern is different (update pattern)
+          const wasAlreadyLabeled = !!freqEntry.inflection_label;
           if (!freqEntry.inflection_label || freqEntry.pattern !== pattern) {
             freqEntry.inflection_label = label;
             freqEntry.base_word = base;
             freqEntry.pattern = pattern;
-            if (!freqEntry.inflection_label) {
+            if (!wasAlreadyLabeled) {
               labeledCount++;
             }
           }
