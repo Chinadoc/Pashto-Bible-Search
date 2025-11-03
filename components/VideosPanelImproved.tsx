@@ -295,9 +295,18 @@ export default function VideosPanelImproved({ onSelectClip }: VideosPanelImprove
           {/* Video Processing Form - Only show when NOT in edit mode */}
           {!isEditMode && (
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                🎤 Process New Video
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  🎤 Process New Video
+                </h3>
+                <a
+                  href="/compare-transcriptions"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  title="Compare Google Flash 2.5 vs ElevenLabs transcriptions"
+                >
+                  🔬 Compare Transcriptions
+                </a>
+              </div>
               <div className="space-y-3">
               <input
                 type="url"
