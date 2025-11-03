@@ -135,6 +135,8 @@ According to [LingDocs Imperative Verbs](https://grammar.lingdocs.com/verbs/impe
 - مه نومېږه (mú nooméGa) - Don't be called! (singular)
 - مه نومېږئ (mú nooméGey) - Don't be called! (plural)
 
+**Note**: Future and imperative forms were not found in the Bible text. The forms listed above are based on grammar rules and would be generated when needed. The forms "نوم به" found in the text are the noun "نوم" (name) combined with the future marker "به", not verb conjugations.
+
 ## Next Steps
 
 1. Mark base verb form with `word_type = 'verb'`
@@ -153,4 +155,6 @@ According to [LingDocs Imperative Verbs](https://grammar.lingdocs.com/verbs/impe
 - https://grammar.lingdocs.com/verbs/subjunctive-verbs/
 - https://grammar.lingdocs.com/verbs/master-chart/
 - https://grammar.lingdocs.com/verbs/past-verbs/
+- https://grammar.lingdocs.com/verbs/future-verbs/
+- https://grammar.lingdocs.com/verbs/imperative-verbs/
 
