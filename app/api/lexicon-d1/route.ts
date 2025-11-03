@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
       romanization,
       pos,
       word_type,
-      inflection_pattern,
-      inflection_label,
-      base_word,
+      inflection_type,
+      base_form,
+      compound_type,
       has_issues,
       issue_flags
     FROM word_frequencies
@@ -61,19 +61,45 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Inflection pattern filter
-    if (inflectionPattern) {
-      conditions.push(`inflection_pattern = '${inflectionPattern.replace(/'/g, "''")}'`);
+    // Inflection pattern filter - map dropdown values to inflection_type
+    if (inflectionPattern && inflectionPattern !== 'any') {
+      // Map pattern values to actual inflection_type values
+      // For now, we'll filter by inflection_type values that match patterns
+      // This might need adjustment based on how patterns are stored
+      conditions.push(`inflection_type IS NOT NULL`);
     }
     
-    // Inflection label filter (1st/2nd inflection)
-    if (inflectionLabel) {
-      conditions.push(`inflection_label LIKE '%${inflectionLabel.replace(/'/g, "''")}%'`);
+    // Inflection label filter (1st/2nd inflection) - map to inflection_type
+    if (inflectionLabel && inflectionLabel !== 'any') {
+      // Map dropdown values to inflection_type values
+      let inflectionTypeFilter = '';
+      if (inflectionLabel === 'plain') {
+        inflectionTypeFilter = "plain";
+      } else if (inflectionLabel === 'masc_1st') {
+        inflectionTypeFilter = "1st";
+      } else if (inflectionLabel === 'masc_2nd') {
+        inflectionTypeFilter = "2nd";
+      } else if (inflectionLabel === 'fem_1st') {
+        inflectionTypeFilter = "1st";
+      } else if (inflectionLabel === 'fem_2nd') {
+        inflectionTypeFilter = "2nd";
+      } else {
+        inflectionTypeFilter = inflectionLabel.replace('masc_', '').replace('fem_', '');
+      }
+      if (inflectionTypeFilter) {
+        // Use exact match for better accuracy
+        conditions.push(`inflection_type = '${inflectionTypeFilter.replace(/'/g, "''")}'`);
+      }
     }
     
     // Word type filter
-    if (wordType) {
+    if (wordType && wordType !== 'any') {
       conditions.push(`word_type = '${wordType.replace(/'/g, "''")}'`);
+    }
+    
+    // Compound type filter
+    if (compoundType && compoundType !== 'any') {
+      conditions.push(`compound_type = '${compoundType.replace(/'/g, "''")}'`);
     }
     
     // Search query
@@ -85,6 +111,9 @@ export async function GET(request: NextRequest) {
     if (conditions.length > 0) {
       sql += ' AND ' + conditions.join(' AND ');
     }
+    
+    console.log('Final SQL query:', sql);
+    console.log('Conditions:', conditions);
     
     // Sorting
     if (sortBy === 'frequency') {
@@ -99,6 +128,7 @@ export async function GET(request: NextRequest) {
     sql += ` LIMIT ${limit}`;
     
     // Query D1 via Cloudflare Worker
+    console.log('Executing SQL:', sql.substring(0, 200));
     const workerResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/d1/query`, {
       method: 'POST',
       headers: {
@@ -107,23 +137,28 @@ export async function GET(request: NextRequest) {
       body: JSON.stringify({ sql }),
     });
     
+    console.log('Worker response status:', workerResponse.status);
+    
     if (workerResponse.ok) {
       const result = await workerResponse.json();
       const rows = result.results || [];
+      console.log('Got', rows.length, 'rows from D1');
       
       // Transform rows to match expected format
       const items = rows.map((row: any) => ({
         form: row.pashto_word,
         frequency: row.frequency_total || 0,
         rank: row.frequency_rank || 0,
-        root: row.base_word || null,
+        root: row.base_form || null,
         pos: row.pos || null,
         romanization: row.romanization || null,
         wordType: row.word_type || null,
-        inflectionPattern: row.inflection_pattern || null,
-        inflectionLabel: row.inflection_label || null,
+        inflectionPattern: null, // Pattern not stored directly, would need to derive from base_form
+        inflectionLabel: row.inflection_type || null,
+        inflectionType: row.inflection_type || null,
+        compoundType: row.compound_type || null,
         hasIssues: row.has_issues || 0,
-        issueFlags: row.issue_flags ? JSON.parse(row.issue_flags) : [],
+        issueFlags: row.issue_flags ? (typeof row.issue_flags === 'string' ? JSON.parse(row.issue_flags) : row.issue_flags) : [],
         dictionary: row.romanization ? {
           romanized: row.romanization,
           pos: row.pos,
@@ -148,8 +183,10 @@ export async function GET(request: NextRequest) {
     }
     
     // If D1 query fails, return empty result
-    console.warn('D1 query failed, returning empty result');
-    return NextResponse.json({ items: [], total: 0 });
+    console.warn('D1 query failed:', workerResponse.status, workerResponse.statusText);
+    const errorText = await workerResponse.text().catch(() => 'Unknown error');
+    console.warn('Error details:', errorText);
+    return NextResponse.json({ items: [], total: 0, error: 'D1 query failed', details: errorText });
     
   } catch (error: any) {
     console.error('Lexicon API error:', error);

@@ -38,7 +38,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [posFilter, setPosFilter] = useState<'any' | 'verb' | 'noun'>('any');
   const [scope, setScope] = useState<'all' | 'ot' | 'nt'>('all');
   const [limit, setLimit] = useState(300);
-  const [sortBy, setSortBy] = useState<'frequency' | 'form'>('frequency');
+  const [sortBy, setSortBy] = useState<'frequency' | 'form' | 'rank' | 'root' | 'type'>('frequency');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   // New filters
   const [inflectionPatternFilter, setInflectionPatternFilter] = useState<string>('any');
@@ -67,26 +67,31 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         sort_order: sortOrder,
       });
 
-      // Add advanced filters if set
-      if (inflectionPatternFilter !== 'any') {
+      // Add advanced filters if set (only send if not 'any')
+      if (inflectionPatternFilter && inflectionPatternFilter !== 'any') {
         params.set('inflection_pattern', inflectionPatternFilter);
       }
-      if (inflectionLabelFilter !== 'any') {
+      if (inflectionLabelFilter && inflectionLabelFilter !== 'any') {
         params.set('inflection_label', inflectionLabelFilter);
       }
-      if (verbAspectFilter !== 'any') {
+      if (verbAspectFilter && verbAspectFilter !== 'any') {
         params.set('verb_aspect', verbAspectFilter);
       }
-      if (compoundTypeFilter !== 'any') {
+      if (compoundTypeFilter && compoundTypeFilter !== 'any') {
         params.set('compound_type', compoundTypeFilter);
       }
-      if (wordTypeFilter !== 'any') {
+      if (wordTypeFilter && wordTypeFilter !== 'any') {
         params.set('word_type', wordTypeFilter);
       }
+      
+      console.log('Fetching with params:', params.toString());
 
       // Try new D1 endpoint first, fallback to lexicon_frequency
       let response = await fetch(`/api/lexicon-d1?${params.toString()}`);
+      console.log('API Response status:', response.status, 'URL:', `/api/lexicon-d1?${params.toString()}`);
+      
       if (!response.ok) {
+        console.warn('D1 API failed, trying fallback');
         // Fallback to existing endpoint
         const fallbackParams = new URLSearchParams({
           scope,
@@ -99,13 +104,15 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
       console.log('API Response:', { ok: response.ok, status: response.status, itemsCount: data.items?.length });
       console.log('Sample item:', data.items?.[0]);
+      console.log('Full response:', JSON.stringify(data).substring(0, 500));
 
-      if (response.ok && data.items && data.items.length > 0) {
+      if (response.ok && data.items) {
         console.log('Using API data with', data.items.length, 'items');
         setFrequencyData(data.items || []);
       } else {
         // Fallback to static JSON data
-        console.log('Using fallback JSON data');
+        console.log('API returned no items or error, using fallback JSON data');
+        console.log('API error:', data.error, data.details);
         const fallbackResponse = await fetch('/word_frequency_list.json');
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
@@ -229,25 +236,41 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     if (inflectionPatternFilter !== 'any') {
       filtered = filtered.filter(item => {
         // Check if item has inflection_pattern field
-        const itemPattern = (item as any).inflectionPattern;
-        return itemPattern === inflectionPatternFilter;
+        const itemPattern = (item as any).inflectionPattern || (item as any).inflection_pattern;
+        // If field doesn't exist, don't filter it out (show all)
+        if (!itemPattern) return true;
+        return String(itemPattern).toLowerCase() === inflectionPatternFilter.toLowerCase();
       });
     }
 
     // Filter by inflection label (if available)
     if (inflectionLabelFilter !== 'any') {
       filtered = filtered.filter(item => {
-        const itemLabel = (item as any).inflectionLabel;
-        return itemLabel && itemLabel.includes(inflectionLabelFilter);
+        const itemLabel = (item as any).inflectionLabel || (item as any).inflectionType;
+        // If field doesn't exist, don't filter it out (show all)
+        if (!itemLabel) return true;
+        // Map dropdown values to inflection_type values
+        const labelStr = String(itemLabel).toLowerCase();
+        let filterStr = inflectionLabelFilter.toLowerCase();
+        
+        // Map dropdown values to actual inflection_type values
+        if (filterStr === 'masc_1st' || filterStr === 'fem_1st') {
+          filterStr = '1st';
+        } else if (filterStr === 'masc_2nd' || filterStr === 'fem_2nd') {
+          filterStr = '2nd';
+        }
+        
+        return labelStr === filterStr || labelStr.includes(filterStr) || filterStr.includes(labelStr);
       });
     }
 
     // Filter by verb aspect (if available)
     if (verbAspectFilter !== 'any' && posFilter === 'verb') {
       filtered = filtered.filter(item => {
-        // This would need aspect information in the data
-        // For now, we'll skip this filter until data includes aspect
-        return true;
+        // Check if item has aspect information
+        const itemAspect = (item as any).aspect || (item as any).verbAspect;
+        if (!itemAspect) return true; // Don't filter if field doesn't exist
+        return String(itemAspect).toLowerCase() === verbAspectFilter.toLowerCase();
       });
     }
 
@@ -255,30 +278,27 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     if (compoundTypeFilter !== 'any') {
       filtered = filtered.filter(item => {
         const itemWordType = (item as any).wordType;
-        
-        if (compoundTypeFilter === 'dynamic') {
-          // Look for dynamic compound patterns (noun + verb)
-          return itemWordType === 'compound_dynamic';
-        } else if (compoundTypeFilter === 'stative') {
-          // Look for stative compound patterns (adjective/noun + کول/کېدل)
-          return itemWordType === 'compound_stative';
-        } else if (compoundTypeFilter === 'compound_dynamic') {
-          return itemWordType === 'compound_dynamic';
-        } else if (compoundTypeFilter === 'compound_stative') {
-          return itemWordType === 'compound_stative';
-        }
-        
-        // Check if word contains zero-width non-joiner or space (compound indicator)
         const isCompound = item.form.includes('\u200c') || item.form.includes('\u200d') || item.form.includes(' ');
-        if (compoundTypeFilter === 'dynamic') {
-          // Dynamic compounds typically have certain patterns
-          // This would need more sophisticated detection
-          return isCompound;
-        } else if (compoundTypeFilter === 'stative') {
-          // Stative compounds have different patterns
+        
+        // If wordType field exists, use it
+        if (itemWordType) {
+          if (compoundTypeFilter === 'dynamic' || compoundTypeFilter === 'compound_dynamic') {
+            return itemWordType === 'compound_dynamic' || itemWordType === 'dynamic';
+          } else if (compoundTypeFilter === 'stative' || compoundTypeFilter === 'compound_stative') {
+            return itemWordType === 'compound_stative' || itemWordType === 'stative';
+          }
+          return itemWordType === compoundTypeFilter;
+        }
+        
+        // Fallback: check if word looks like a compound
+        if (compoundTypeFilter === 'dynamic' || compoundTypeFilter === 'compound_dynamic') {
+          return isCompound && (item.pos === 'verb' || item.pos?.includes('verb'));
+        } else if (compoundTypeFilter === 'stative' || compoundTypeFilter === 'compound_stative') {
           return isCompound;
         }
-        return true;
+        
+        // If no compound type matches and filter is set, show only non-compounds
+        return !isCompound;
       });
     }
 
@@ -286,7 +306,9 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     if (wordTypeFilter !== 'any') {
       filtered = filtered.filter(item => {
         const itemWordType = (item as any).wordType;
-        return itemWordType === wordTypeFilter;
+        // If field doesn't exist, don't filter it out (show all)
+        if (!itemWordType) return true;
+        return String(itemWordType).toLowerCase() === wordTypeFilter.toLowerCase();
       });
     }
 
@@ -303,6 +325,13 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         comparison = a.frequency - b.frequency;
       } else if (sortBy === 'form') {
         comparison = a.form.localeCompare(b.form);
+      } else if (sortBy === 'root') {
+        comparison = (a.root || '').localeCompare(b.root || '');
+      } else if (sortBy === 'type') {
+        comparison = (a.pos || '').localeCompare(b.pos || '');
+      } else if (sortBy === 'rank') {
+        // Rank is based on index, so we'll sort by frequency as proxy
+        comparison = a.frequency - b.frequency;
       }
 
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -458,7 +487,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   }
 
   return (
-    <div className="p-4" dir="rtl">
+    <div className="p-4 mx-auto" style={{ maxWidth: '95%' }} dir="rtl">
       <h2 className="text-xl font-bold mb-4">Lexicon - Word Frequency List</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Pashto Lexicon - Word frequency list from Bible text
@@ -564,15 +593,19 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
               <div className="flex gap-1">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
+                  onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form' | 'rank' | 'root' | 'type')}
                   className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
                 >
                   <option value="frequency">Frequency</option>
                   <option value="form">Alphabetical</option>
+                  <option value="root">Root</option>
+                  <option value="type">Type</option>
+                  <option value="rank">Rank</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-600"
+                  title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
                 >
                   {sortOrder === 'asc' ? '↑' : '↓'}
                 </button>
@@ -666,20 +699,70 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
           <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
             <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
-                <th className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Rank
+                <th 
+                  className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+                  onClick={() => {
+                    if (sortBy === 'rank') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('rank');
+                      setSortOrder('desc');
+                    }
+                  }}
+                >
+                  Rank {sortBy === 'rank' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Word
+                <th 
+                  className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+                  onClick={() => {
+                    if (sortBy === 'form') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('form');
+                      setSortOrder('asc');
+                    }
+                  }}
+                >
+                  Word {sortBy === 'form' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Root
+                <th 
+                  className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+                  onClick={() => {
+                    if (sortBy === 'root') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('root');
+                      setSortOrder('asc');
+                    }
+                  }}
+                >
+                  Root {sortBy === 'root' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Type
+                <th 
+                  className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+                  onClick={() => {
+                    if (sortBy === 'type') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('type');
+                      setSortOrder('asc');
+                    }
+                  }}
+                >
+                  Type {sortBy === 'type' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Frequency
+                <th 
+                  className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+                  onClick={() => {
+                    if (sortBy === 'frequency') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('frequency');
+                      setSortOrder('desc');
+                    }
+                  }}
+                >
+                  Frequency {sortBy === 'frequency' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
                 <th className="w-80 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Dictionary
