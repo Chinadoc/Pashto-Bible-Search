@@ -538,13 +538,25 @@ export default function WaveformViewer({
           style={{ display: 'none' }}
           onError={(e) => {
             console.error('Audio loading error:', e);
+            console.error('Audio URL:', audioUrl);
+            console.error('Audio element state:', audioRef.current?.readyState);
+            console.error('Audio element error:', audioRef.current?.error);
             setIsLoadingWaveform(false);
             // Don't show alert - just log and show message in UI
-            console.warn(`Full audio not available. This video may have been processed before full audio upload was added. Please reprocess the video to generate the waveform.`);
+            console.warn(`Audio failed to load. URL: ${audioUrl}`);
           }}
           onLoadedData={() => {
             console.log('Audio loaded successfully');
+            console.log('Audio duration:', audioRef.current?.duration);
             setIsLoadingWaveform(false);
+          }}
+          onCanPlay={() => {
+            console.log('Audio can play');
+            setIsLoadingWaveform(false);
+          }}
+          onLoadedMetadata={() => {
+            console.log('Audio metadata loaded');
+            console.log('Audio duration:', audioRef.current?.duration);
           }}
         />
         
@@ -562,12 +574,27 @@ export default function WaveformViewer({
         {!isLoadingWaveform && waveformData.length === 0 && audioUrl && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
             <div className="text-gray-400 text-sm text-center px-4">
-              <div className="mb-2">⚠️ Full audio not available</div>
-              <div className="text-xs text-gray-500">
-                This video was processed before full audio upload was added.
-                <br />
-                Please reprocess the video to generate the waveform.
+              <div className="mb-2">⚠️ Waveform not loading</div>
+              <div className="text-xs text-gray-500 mb-2">
+                Audio URL: {audioUrl.split('/').pop()}
               </div>
+              <div className="text-xs text-gray-500">
+                Check browser console for errors. The audio file may need to be reloaded.
+              </div>
+              <button
+                onClick={() => {
+                  if (audioRef.current) {
+                    audioRef.current.load();
+                    setIsLoadingWaveform(true);
+                    setTimeout(() => {
+                      setIsLoadingWaveform(false);
+                    }, 2000);
+                  }
+                }}
+                className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+              >
+                Retry Loading
+              </button>
             </div>
           </div>
         )}
