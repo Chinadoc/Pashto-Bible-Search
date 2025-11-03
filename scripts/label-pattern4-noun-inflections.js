@@ -77,7 +77,7 @@ function generatePattern4Inflections(baseWord) {
     const stem = baseWord.slice(0, -2) + 'ش'; // تروش → ترش
     return {
       plain_m: baseWord,
-      inflection_1_m: baseWord.slice(0, -2) + 'ا' + baseWord.slice(-2, -1) + 'ه', // تر + ا + ش + ه = تراشه
+      inflection_1_m: baseWord.slice(0, -2) + 'ا' + baseWord.slice(-1) + 'ه', // تر + ا + ش + ه = تراشه
       inflection_2_m: stem + 'و', // ترش + و = ترشو
       plain_f: stem + 'ه', // ترش + ه = ترشه
       inflection_1_f: stem + 'ي', // ترش + ي = ترشي
