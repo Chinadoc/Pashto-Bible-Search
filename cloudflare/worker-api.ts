@@ -65,51 +65,80 @@ function inferVerbRootFromForm(form: string): {
   confidence: 'high' | 'medium' | 'low';
 } {
   let prefix: string | null = null;
-  let root = form;
+  let stem = form;
   
-  // Remove verb prefixes
-  if (form.startsWith('و')) {
-    prefix = 'و';
-    root = form.slice(1);
-  } else if (form.startsWith('به')) {
+  // Remove verb prefixes (check longer prefixes first)
+  if (form.startsWith('به')) {
     prefix = 'به';
-    root = form.slice(2);
+    stem = form.slice(2);
   } else if (form.startsWith('تر')) {
     prefix = 'تر';
-    root = form.slice(2);
+    stem = form.slice(2);
+  } else if (form.startsWith('و')) {
+    prefix = 'و';
+    stem = form.slice(1);
   }
   
   const isPerfective = prefix === 'و';
   let isTransitive = false;
   let confidence: 'high' | 'medium' | 'low' = 'low';
+  let root: string | null = null;
   
-  // Check for verb endings
-  const verbEndings = ['م', 'ې', 'ي', 'و', 'ئ', 'ه'];
+  // Check for verb endings (person/mood markers)
+  const verbEndings = ['م', 'ې', 'ي', 'و', 'ئ', 'ه', 'ل'];
+  let foundEnding = false;
+  
   for (const ending of verbEndings) {
-    if (root.endsWith(ending) && root.length > ending.length) {
-      root = root.slice(0, -ending.length);
-      confidence = prefix ? 'high' : 'medium';
-      break;
+    if (stem.endsWith(ending) && stem.length > ending.length + 1) {
+      const potentialStem = stem.slice(0, -ending.length);
+      // Only remove ending if remaining part looks valid
+      if (potentialStem.length >= 2) {
+        stem = potentialStem;
+        foundEnding = true;
+        confidence = prefix ? 'high' : 'medium';
+        break;
+      }
     }
   }
   
-  // Check for verb markers
-  if (root.endsWith('ول')) {
+  // Check for verb root markers to infer the base root
+  if (stem.endsWith('ول')) {
+    // Transitive verb root: e.g., "فرمايول"
+    root = stem; // Keep the full root with "ول"
     isTransitive = true;
     confidence = 'high';
-  } else if (root.endsWith('ېدل') || root.endsWith('یدل')) {
+  } else if (stem.endsWith('ېدل') || stem.endsWith('یدل')) {
+    // Intransitive verb root: e.g., "نومېدل"
+    root = stem; // Keep the full root with "ېدل"
     isTransitive = false;
     confidence = 'high';
-  } else if (root.endsWith('کول')) {
+  } else if (stem.endsWith('کول')) {
+    // Causative transitive: e.g., "کول"
+    root = stem;
     isTransitive = true;
     confidence = 'high';
-  } else if (root.endsWith('کېدل')) {
+  } else if (stem.endsWith('کېدل')) {
+    // Causative intransitive: e.g., "کېدل"
+    root = stem;
     isTransitive = false;
     confidence = 'high';
+  } else if (foundEnding || prefix) {
+    // We found a prefix or ending, so it's likely a verb form
+    // Try to construct root by adding "ول" (common transitive marker)
+    // This handles cases like "وفرمایي" → "فرمايول"
+    if (stem.length >= 3) {
+      // Common pattern: stem + "ول" for transitive verbs
+      root = stem + 'ول';
+      isTransitive = true;
+      confidence = prefix ? 'high' : 'medium';
+    } else {
+      root = stem;
+      confidence = prefix ? 'medium' : 'low';
+    }
   }
   
-  // If we couldn't find a clear root, return null
-  if (root === form && !prefix) {
+  // If we couldn't find a clear root and no prefix, return null
+  if (!root && !prefix && !foundEnding) {
     return {
       root: null,
       isTransitive: false,
@@ -119,7 +148,7 @@ function inferVerbRootFromForm(form: string): {
   }
   
   return {
-    root: root || form,
+    root: root || stem || form,
     isTransitive,
     isPerfective,
     confidence,
