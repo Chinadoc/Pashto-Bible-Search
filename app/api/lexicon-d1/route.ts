@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
     
     // POS filter
-    if (posFilter !== 'any') {
+    if (posFilter && posFilter !== 'any' && posFilter !== 'all') {
       if (posFilter === 'verb') {
         conditions.push(`(pos LIKE '%verb%' OR pos LIKE '%v.%')`);
       } else if (posFilter === 'noun') {
@@ -61,35 +61,9 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Inflection pattern filter - map dropdown values to inflection_type
-    if (inflectionPattern && inflectionPattern !== 'any') {
-      // Map pattern values to actual inflection_type values
-      // For now, we'll filter by inflection_type values that match patterns
-      // This might need adjustment based on how patterns are stored
-      conditions.push(`inflection_type IS NOT NULL`);
-    }
-    
-    // Inflection label filter (1st/2nd inflection) - map to inflection_type
-    if (inflectionLabel && inflectionLabel !== 'any') {
-      // Map dropdown values to inflection_type values
-      let inflectionTypeFilter = '';
-      if (inflectionLabel === 'plain') {
-        inflectionTypeFilter = "plain";
-      } else if (inflectionLabel === 'masc_1st') {
-        inflectionTypeFilter = "1st";
-      } else if (inflectionLabel === 'masc_2nd') {
-        inflectionTypeFilter = "2nd";
-      } else if (inflectionLabel === 'fem_1st') {
-        inflectionTypeFilter = "1st";
-      } else if (inflectionLabel === 'fem_2nd') {
-        inflectionTypeFilter = "2nd";
-      } else {
-        inflectionTypeFilter = inflectionLabel.replace('masc_', '').replace('fem_', '');
-      }
-      if (inflectionTypeFilter) {
-        // Use exact match for better accuracy
-        conditions.push(`inflection_type = '${inflectionTypeFilter.replace(/'/g, "''")}'`);
-      }
+    // Inflection label filter - direct match with inflection_type
+    if (inflectionLabel && inflectionLabel !== 'any' && inflectionLabel !== 'all') {
+      conditions.push(`inflection_type = '${inflectionLabel.replace(/'/g, "''")}'`);
     }
     
     // Word type filter
@@ -146,23 +120,22 @@ export async function GET(request: NextRequest) {
       
       // Transform rows to match expected format
       const items = rows.map((row: any) => ({
+        pashto_word: row.pashto_word,
+        frequency_total: row.frequency_total || 0,
+        frequency_rank: row.frequency_rank || 0,
+        romanization: row.romanization || null,
+        pos: row.pos || null,
+        inflection_type: row.inflection_type || null,
+        base_form: row.base_form || null,
+        word_type: row.word_type || null,
+        compound_type: row.compound_type || null,
+        // Keep legacy fields for compatibility
         form: row.pashto_word,
         frequency: row.frequency_total || 0,
         rank: row.frequency_rank || 0,
         root: row.base_form || null,
-        pos: row.pos || null,
-        romanization: row.romanization || null,
-        wordType: row.word_type || null,
-        inflectionPattern: null, // Pattern not stored directly, would need to derive from base_form
         inflectionLabel: row.inflection_type || null,
         inflectionType: row.inflection_type || null,
-        compoundType: row.compound_type || null,
-        hasIssues: row.has_issues || 0,
-        issueFlags: row.issue_flags ? (typeof row.issue_flags === 'string' ? JSON.parse(row.issue_flags) : row.issue_flags) : [],
-        dictionary: row.romanization ? {
-          romanized: row.romanization,
-          pos: row.pos,
-        } : undefined,
       }));
       
       return NextResponse.json({
