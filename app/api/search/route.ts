@@ -470,29 +470,39 @@ export async function POST(request: NextRequest) {
     } = body;
     const scope = normaliseScope(body.scope);
 
+    // Validate query first
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return NextResponse.json({ error: 'Query is required' }, { status: 400 });
+    }
+
+    const originalQuery = query.trim();
+    
     // Initialize disambiguation variables at the top
     let disambiguationResult: any = null;
     let disambiguationAnalysis: DisambiguationResult | null = null;
 
-      // Search video transcripts from Cloudflare D1
+    // Unified search: Search video transcripts (across all translations)
     const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
     let videoTranscriptResults: any[] = [];
     
     try {
-      const videoResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/list`);
+      const videoResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/list`, {
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
       if (videoResponse.ok) {
         const videoData = await videoResponse.json();
         const videos = videoData.videos || [];
         
-        // Search in video transcripts
+        // Search in video transcripts (unified - searches all videos regardless of translation toggle)
         videos.forEach((video: any) => {
           const transcript = video.transcript || '';
           const segments = video.segments || [];
           
           // Check if query matches transcript or any segment
-          const transcriptMatch = transcript.toLowerCase().includes(query.toLowerCase());
+          const queryLower = originalQuery.toLowerCase();
+          const transcriptMatch = transcript.toLowerCase().includes(queryLower);
           const segmentMatches = segments.filter((seg: any) => 
-            seg.text?.toLowerCase().includes(query.toLowerCase())
+            seg.text?.toLowerCase().includes(queryLower)
           );
           
           if (transcriptMatch || segmentMatches.length > 0) {
@@ -503,7 +513,7 @@ export async function POST(request: NextRequest) {
               youtube_url: video.youtube_url,
               segments: segmentMatches.length > 0 ? segmentMatches : [],
               source: 'video_transcript',
-              translation: null,
+              translation: null, // Videos are unified - not tied to specific translation
               dialect: null,
               testament: undefined,
             });
@@ -511,14 +521,45 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (error) {
-      console.warn('Failed to search video transcripts:', error);
+      // Don't fail search if video search fails - just log and continue
+      console.warn('Failed to search video transcripts (non-fatal):', error);
     }
 
-    if (!query || typeof query !== 'string' || !query.trim()) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 });
+    // Dictionary lookup for disambiguation (parallel to other searches)
+    let dictionaryEntries: any[] = [];
+    try {
+      const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ));
+
+      const { data: dictData } = await supabase
+        .from('dictionary')
+        .select('pashto, romanized, pos, english')
+        .eq('pashto', originalQuery)
+        .limit(10);
+
+      if (dictData && dictData.length > 0) {
+        dictionaryEntries = dictData;
+      } else {
+        // Try normalized variant
+        const normalized = originalQuery.replace(/ي/g, 'ی').replace(/ى/g, 'ی');
+        if (normalized !== originalQuery) {
+          const { data: normData } = await supabase
+            .from('dictionary')
+            .select('pashto, romanized, pos, english')
+            .eq('pashto', normalized)
+            .limit(10);
+          
+          if (normData) {
+            dictionaryEntries = normData;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Dictionary lookup failed (non-fatal):', error);
     }
 
-    const originalQuery = query.trim();
     const searchLanguage: 'pashto' | 'english' | 'anki' = language === 'anki' ? 'anki' : language === 'english' ? 'english' : 'pashto';
 
     // Add transliteration support for common Pashto words
@@ -1390,6 +1431,16 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           console.log(`⚡ Stored in instant cache (${transformed.length} results)`);
         }
 
+        // Group dictionary entries by POS for disambiguation display
+        const dictionaryByPos: Record<string, any[]> = {};
+        dictionaryEntries.forEach((entry: any) => {
+          const pos = entry.pos || 'unknown';
+          if (!dictionaryByPos[pos]) {
+            dictionaryByPos[pos] = [];
+          }
+          dictionaryByPos[pos].push(entry);
+        });
+
         return NextResponse.json({
           results: normalizeVerses(transformed),
           relatedForms,
@@ -1406,6 +1457,11 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
             romanization: romanizedDictionaryMatch?.romanized,
             root: romanizedDictionaryMatch?.pashto,
           },
+          dictionary: dictionaryEntries.length > 0 ? {
+            entries: dictionaryEntries,
+            groupedByPos: dictionaryByPos,
+            needsDisambiguation: dictionaryEntries.length > 1, // Multiple meanings found
+          } : undefined,
           count: transformed.length,
           hasMore: hasMoreResults || transformed.length >= limit, // Indicate if there might be more results
           totalEstimatedCount: totalEstimatedCount, // Estimated total from word_frequencies
@@ -1437,6 +1493,16 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           source: 'video_transcript',
         }));
 
+        // Group dictionary entries by POS for disambiguation display
+        const dictionaryByPosForVideo: Record<string, any[]> = {};
+        dictionaryEntries.forEach((entry: any) => {
+          const pos = entry.pos || 'unknown';
+          if (!dictionaryByPosForVideo[pos]) {
+            dictionaryByPosForVideo[pos] = [];
+          }
+          dictionaryByPosForVideo[pos].push(entry);
+        });
+
         const processed: Processed = {
           original: originalQuery,
           normalized: convertedQuery,
@@ -1454,6 +1520,11 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           results: normalizeVerses(transformed),
           relatedForms,
           processed,
+          dictionary: dictionaryEntries.length > 0 ? {
+            entries: dictionaryEntries,
+            groupedByPos: dictionaryByPosForVideo,
+            needsDisambiguation: dictionaryEntries.length > 1,
+          } : undefined,
           count: transformed.length,
           ms: Date.now() - startedAt,
           cached: false,
@@ -1461,8 +1532,26 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
       }
     } catch (error) {
       console.error('Search API error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      // Log detailed error information for debugging
+      console.error('Search error details:', {
+        query: originalQuery,
+        error: errorMessage,
+        stack: errorStack,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Return more informative error response
       return NextResponse.json(
-        { error: 'Search failed', details: error instanceof Error ? error.message : 'Unknown error' },
+        { 
+          error: 'Search failed', 
+          details: errorMessage,
+          query: originalQuery,
+          // Don't expose stack trace in production
+          ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+        },
         { status: 500 },
       );
     }

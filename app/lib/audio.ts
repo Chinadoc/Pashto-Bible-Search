@@ -121,13 +121,14 @@ export function audioUrlFromRef(ref: string, audioMap?: AudioMap | null): string
   return null;
 }
 
-export async function resolveAudioUrl(ref: string, entry?: unknown): Promise<string | null> {
+export async function resolveAudioUrl(ref: string, entry?: unknown, translation?: 'afghan2023' | 'yousafzai2019'): Promise<string | null> {
   if (!ref) return null;
   if (typeof entry === 'string' && /^https?:\/\//i.test(entry)) {
     return entry;
   }
   try {
-    const response = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}`, {
+    const translationParam = translation ? `&translation=${translation}` : '';
+    const response = await fetch(`/api/audio_url?ref=${encodeURIComponent(ref)}${translationParam}`, {
       method: 'GET',
       cache: 'no-store',
     });

@@ -439,17 +439,22 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       const startIndex = (page - 1) * itemsPerPage;
       const endIndex = Math.min(startIndex + itemsPerPage, results.length);
 
-      // Collect verses that need audio URLs
-      const versesNeedingAudio = [];
+      // Collect verses that need audio URLs, grouped by translation
+      const versesByTranslation: { afghan2023: string[], yousafzai2019: string[] } = { afghan2023: [], yousafzai2019: [] };
       for (let i = startIndex; i < endIndex; i++) {
         const verse = results[i];
         if (verse && verse.ref && !verseAudioUrls[verse.ref]) {
-          versesNeedingAudio.push(verse.ref);
+          const translation = verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+          versesByTranslation[translation].push(verse.ref);
         }
       }
 
       // Batch load audio URLs for efficiency (limit concurrent requests)
-      if (versesNeedingAudio.length > 0) {
+      // Process each translation separately
+      for (const translation of ['afghan2023', 'yousafzai2019'] as const) {
+        const versesNeedingAudio = versesByTranslation[translation];
+        if (versesNeedingAudio.length === 0) continue;
+        
         // Process in batches of 5 to avoid overwhelming the server
         const batchSize = 5;
         for (let i = 0; i < versesNeedingAudio.length; i += batchSize) {
@@ -459,7 +464,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             const response = await fetch('/api/audio_url', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refs: batch })
+              body: JSON.stringify({ refs: batch, translation })
             });
 
             if (response.ok) {
@@ -478,7 +483,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               setLoadingAudio(prev => new Set(prev).add(verseRef));
               try {
                 const entry = audioMap[verseRef];
-                const url = await resolveAudioUrl(verseRef, entry);
+                // Determine translation from verse
+                const verse = results.find(v => v.ref === verseRef);
+                const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+                const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -512,7 +520,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     try {
       const entry = audioMap[verseRef];
-      const url = await resolveAudioUrl(verseRef, entry);
+      // Determine translation from verse
+      const verse = results.find(v => v.ref === verseRef);
+      const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+      const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
@@ -526,7 +537,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         return next;
       });
     }
-  }, [audioMap, setResolvedUrls, verseAudioUrls, loadingAudio]);
+  }, [audioMap, setResolvedUrls, verseAudioUrls, loadingAudio, results]);
 
   // Helper functions for verse-specific audio operations
   const handleVerseDownload = async (verse: Verse) => {

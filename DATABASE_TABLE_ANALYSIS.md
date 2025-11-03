@@ -1,122 +1,61 @@
 # Database Table Analysis & Integration Plan
 
-## Current State Analysis
+Updated after dictionary-driven rebuild and verb form precomputation.
 
-### 1. `verbs_lexicon` - EMPTY (0 rows) ❌
-**Purpose**: Fast verb lookup table (LingDocs-style)
-**Schema**: `pashto_word`, `imperfective_stem`, `perfective_stem`, `perfective_root`, `past_participle`, `pos`, `romanization`, `english`
-**Status**: Table exists but is empty
-**Intended Use**: Used by `cloudflare/worker-api.ts` and `app/api/word-analysis/route.ts` for verb lookups
-**Problem**: Code queries it but gets no results because it's empty
+## Current Table Status
 
-**Solution**: Populate from `word_frequencies` where `word_type = 'verb'` OR run `scripts/create-verbs-lexicon-table.py` which generates SQL but hasn't been executed
+### `word_frequencies`
+- ✅ Primary search index; contains one row per observed form
+- Enriched with noun + verb metadata:
+  - `gender`, `number`, `plural_forms`, `inflection_pattern`
+  - `base_verb`, `form_type`, `verb_type`, `transitivity`
+- Coverage snapshot (after latest update):
+  - `form_type` populated for **2,887** rows
+  - `base_verb` populated for **2,775** rows
+- Still the only table hit by UI search and verse lookups → stays lean & indexed
 
-### 2. `nouns_lexicon` - POPULATED (2,360 rows) ✅
-**Purpose**: Noun-specific inflection data
-**Schema**: `pashto_word`, `romanized`, `gender`, `number`, `plural_forms`, `inflection_pattern`, `inflection_type`
-**Status**: Has data, separate from `word_frequencies`
-**Current Use**: Used by `app/api/word-analysis/route.ts` for noun lookups
-**Integration**: Currently separate - nouns have specialized inflection data that `word_frequencies` doesn't capture
+### `verbs_lexicon`
+- ✅ Rebuilt directly from `full_dictionary_enriched.json`
+- Rows: **3,710**
+- Schema now matches API expectations (`verb_root`, stems, roots, past_participle, romanization, english)
+- Indexed on `verb_root`, `imperfective_stem`, `perfective_stem`
+- Canonical source for verb metadata; no longer dependent on Bible frequency data
 
-**Question**: Should noun inflection data be merged into `word_frequencies` or kept separate?
+### `verb_forms`
+- ✅ New table with **237,042** precomputed conjugations
+- Columns: `base_verb`, `form`, `form_type`, `tense`, `person`
+- Backfills `word_frequencies` instantly (no recomputation) and powers fast lookups of every verb variant
 
-### 3. `word_category_mappings` - POPULATED but with ERRORS ⚠️
-**Purpose**: Categorize words (age_stages, places, actions, etc.)
-**Schema**: `pashto_word`, `category_key`, `confidence`
-**Status**: Has data but user reports "many errors"
-**Current Use**: Queryable but may have incorrect mappings
-**Problem**: Data quality issues - needs cleanup
+### `nouns_lexicon`
+- ✅ Rebuilt from the dictionary
+- Rows: **11,138**
+- Stores `romanized`, `gender`, `number`, `plural_forms`, `inflection_type`
+- `word_frequencies` noun entries now inherit this metadata via integration script
 
-**Solution**: 
-- Review/cleanup script needed
-- Could be used for filtering in LexiconPanel but needs validation
+### `word_source_mapping`
+- ✅ Populated with **4,195** entries derived from `word_verse_mapping`
+- Tracks primary source (e.g., Bible verse) and frequency for each word
 
-### 4. `word_frequency_update_log` - EMPTY (1 row, no real data) ❌
-**Purpose**: Track when word frequencies are updated
-**Schema**: `updated_at`, `words_updated`
-**Status**: Exists but not being used
-**Problem**: No logging mechanism currently records updates
+### `word_category_mappings`
+- ⚠️ Contains category tags (age_stages, places, etc.) but needs QA/cleanup before exposing filters
 
-**Solution**: Either populate it OR remove if not needed
+### `word_frequency_update_log`
+- ⚪️ Still empty; keep as a placeholder for future recalc logging or remove later
 
-### 5. `word_source_mapping` - EMPTY ❌
-**Purpose**: Track word sources (bible, video, poem, etc.)
-**Schema**: `pashto_word`, `source_type`, `source_id`, `frequency`, `translation_key`
-**Status**: Empty - designed to track where words come from
-**Problem**: Not populated, so can't track sources
+### `word_verse_mapping`
+- ✅ ~45,500 rows mapping words to verses; remains the backbone for Scripture cross-references and source extraction
 
-**Solution**: Populate from existing data (verses, videos) OR remove if not needed
+## Recent Automation (this session)
+1. Rebuilt `verbs_lexicon` and `nouns_lexicon` from the enriched dictionary (no dependency on observed frequencies)
+2. Generated `verb_forms` table with 237k conjugations for “canonical” coverage
+3. Populated `word_source_mapping` using existing verse data
+4. Reintegrated noun metadata into `word_frequencies` using the new dictionary-driven lexicon
+5. Updated `word_frequencies` verb rows using `verb_forms` for base verb + form type classification
 
-### 6. `word_verse_mapping` - LARGE (45,500 rows) ✅
-**Purpose**: Map each word occurrence to specific Bible verses
-**Schema**: `pashto_word`, `verse_id`, `verse_ref`, `translation_key`, `testament`, `book`, `chapter`, `verse`, `word_position`
-**Status**: Has substantial data
-**Current Use**: Could be used for verse-level search but may not be efficiently queried
-**Question**: Is this actually being used effectively in search?
-
-## Integration Strategy
-
-### Option 1: Consolidate Everything into `word_frequencies` (Recommended)
-**Pros**:
-- Single source of truth
-- Fast filtering by any field
-- Matches your goal of "robust, categorized data for rapid searching"
-
-**Cons**:
-- Large table (already 27,872 rows)
-- May lose some specialized data structure
-
-### Option 2: Keep Separate but Link Properly
-**Pros**:
-- Maintains specialized structures
-- Can optimize each table separately
-
-**Cons**:
-- More complex queries
-- Duplication risk
-- Harder to maintain
-
-## Recommended Actions
-
-### Immediate (High Priority)
-
-1. **Populate `verbs_lexicon`** from `word_frequencies`:
-   ```sql
-   INSERT INTO verbs_lexicon (pashto_word, imperfective_stem, perfective_stem, perfective_root, past_participle, pos, romanization, english)
-   SELECT pashto_word, imperfective_stem, perfective_stem, perfective_root, past_participle, pos, romanization, NULL
-   FROM word_frequencies
-   WHERE word_type = 'verb' AND base_verb = pashto_word
-   ```
-
-2. **Integrate `nouns_lexicon` data into `word_frequencies`**:
-   - Add noun-specific columns: `gender`, `number`, `plural_forms`, `inflection_pattern`
-   - Update `word_frequencies` from `nouns_lexicon` where they match
-
-3. **Clean up `word_category_mappings`**:
-   - Create validation script
-   - Remove incorrect mappings
-   - Use for filtering in UI
-
-### Medium Priority
-
-4. **Populate `word_source_mapping`** from `word_verse_mapping`:
-   - Extract unique words and their sources
-   - Populate `word_source_mapping` table
-
-5. **Optimize `word_verse_mapping` queries**:
-   - Check if it's being used efficiently
-   - Add indexes if needed
-   - Consider materialized views for common queries
-
-### Low Priority
-
-6. **Decide on `word_frequency_update_log`**:
-   - Either implement logging OR remove table
-
-## Files to Create
-
-1. `scripts/populate-verbs-lexicon-from-word-frequencies.py` - Populate verbs_lexicon
-2. `scripts/integrate-nouns-lexicon.py` - Merge nouns_lexicon into word_frequencies
-3. `scripts/validate-word-categories.py` - Clean up word_category_mappings
-4. `scripts/populate-word-source-mapping.py` - Extract sources from word_verse_mapping
+## Next Suggested Steps
+1. **Cleanup `word_category_mappings`** – audit/remove incorrect mappings, then expose category filters in the UI
+2. **Decide on `word_frequency_update_log`** – wire into future update scripts or drop if unneeded
+3. **Leverage `verb_forms` in the API/UI** – e.g. Lexicon panel “show all forms” without recomputation
+4. **Streaming ingestion** – classify new word forms on insert using `verb_forms` + `verbs_lexicon`
+5. **Dictionary table (optional)** – store `full_dictionary_enriched` in D1 for enterprise queries while keeping searches on `word_frequencies`
 

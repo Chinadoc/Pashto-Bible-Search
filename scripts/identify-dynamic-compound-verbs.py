@@ -1,282 +1,382 @@
 #!/usr/bin/env python3
 """
-Identify dynamic compound verbs (v. dyn. comp. trans.)
+Identify and process all dynamic compound verbs and their variants
 
-Pattern: Noun (object complement) + Auxiliary Verb = Dynamic Compound Verb
-Example: قدم (qadám, step) + وهل (wahul, to hit/strike) = قدم وهل (to take a step/to walk)
+Dynamic compounds are identified by:
+- Having و - óo prefix on کول in perfective forms
+- Made up of: action noun + helper verb (usually کول - kawúl "to do")
+- Can use other helper verbs: وهل, خوړل, ساتل, etc.
 
-According to LingDocs grammar: https://grammar.lingdocs.com/compound-verbs/dynamic-compounds/
-- Dynamic compounds conjugate using the auxiliary verb pattern
-- The noun part (object complement) stays constant
-- The verb part conjugates normally
+Based on: https://grammar.lingdocs.com/compound-verbs/dynamic-compounds/
 
-Strategy:
-1. Check dictionary for entries marked as "v. dyn. comp. trans." or similar
-2. Identify compound patterns: Noun + Verb (with space or zero-width joiner)
-3. Mark compound forms as 'compound_dynamic' in word_frequencies
-4. Keep compound forms as separate entries (don't delete)
+This script:
+1. Finds all dynamic compound verbs in word_frequencies
+2. Identifies their base forms and helper verbs
+3. Generates all variants (present, past, perfective, etc.)
+4. Links them properly in the database
 """
 
 import json
 import subprocess
-import re
-import sys
 from pathlib import Path
+from typing import List, Dict, Tuple, Optional, Set
 
-# Common auxiliary verbs used in dynamic compounds
-AUXILIARY_VERBS = [
-    'وهل',  # to hit/strike (most common)
-    'کول',  # to do/make
-    'کړل',  # to do/make (past)
-    'ورکړل',  # to give
-    'اخیستل',  # to take
-    'کړ',  # did/made (short form)
-    'شو',  # became
-    'ول',  # did/made (past)
-]
+APP_ROOT = Path(__file__).resolve().parent.parent
+OUTPUT_SQL = APP_ROOT / 'cloudflare' / 'link-dynamic-compound-verbs.sql'
 
-def load_dictionary():
-    """Load dictionary JSON to check for compound verb entries"""
-    dict_path = Path('docs/lexicon/full_dictionary_enriched.json')
-    if not dict_path.exists():
-        print(f"⚠️  Dictionary not found at {dict_path}")
-        return []
+# Helper verbs used in dynamic compounds
+DYNAMIC_HELPER_VERBS = {
+    'کول': ('kawúl', 'to do'),
+    'کېدل': ('kedúl', 'to happen'),  # intransitive version
+    'وهل': ('wahúl', 'to hit'),
+    'خوړل': ('khoRúl', 'to eat'),
+    'ساتل': ('saatúl', 'to keep'),
+}
+
+# Perfective forms of helper verbs (with و prefix for dynamic)
+DYNAMIC_HELPER_PERFECTIVE = {
+    'وکړل': 'کول',  # perfective of کول (to do)
+    'وشول': 'کېدل',  # perfective of کېدل (to happen)
+    'ووهل': 'وهل',  # perfective of وهل (to hit)
+    'وخوړل': 'خوړل',  # perfective of خوړل (to eat)
+    'وساتل': 'ساتل',  # perfective of ساتل (to keep)
+}
+
+# Also check for variations
+DYNAMIC_HELPER_VARIANTS = {
+    'کړل': 'کول',  # past participle/conjugated
+    'کړ': 'کول',
+    'کړه': 'کول',
+    'کړو': 'کول',
+    'کړې': 'کول',
+    'کړي': 'کول',
+    'کړلو': 'کول',
+    'کړلې': 'کول',
+    'کړلي': 'کول',
+    'شول': 'کېدل',  # past of کېدل (to happen)
+    'شو': 'کېدل',
+    'شوه': 'کېدل',
+    'شول': 'کېدل',
+    'وهل': 'وهل',  # base form
+    'ووهل': 'وهل',  # perfective
+    'ووه': 'وهل',
+    'ووهه': 'وهل',
+    'ووهو': 'وهل',
+    'ووهې': 'وهل',
+    'ووهي': 'وهل',
+    'ووهلو': 'وهل',
+    'ووهلې': 'وهل',
+    'ووهلي': 'وهل',
+    'خوړل': 'خوړل',  # base form
+    'وخوړل': 'خوړل',  # perfective
+    'خوړ': 'خوړل',
+    'خوړه': 'خوړل',
+    'خوړو': 'خوړل',
+    'خوړې': 'خوړل',
+    'خوړي': 'خوړل',
+    'خوړلو': 'خوړل',
+    'خوړلې': 'خوړل',
+    'خوړلي': 'خوړل',
+    'ساتل': 'ساتل',  # base form
+    'وساتل': 'ساتل',  # perfective
+    'سات': 'ساتل',
+    'ساته': 'ساتل',
+    'ساتو': 'ساتل',
+    'ساتې': 'ساتل',
+    'ساتي': 'ساتل',
+    'ساتلو': 'ساتل',
+    'ساتلې': 'ساتل',
+    'ساتلي': 'ساتل',
+}
+
+
+def query_base_compound_verbs(limit: int = 1000, offset: int = 0) -> List[Dict]:
+    """Query base dynamic compound verbs (noun + helper verb)"""
+    query_sql = f"""
+    SELECT id, pashto_word, frequency_total, pos, base_verb, romanization
+    FROM word_frequencies
+    WHERE (
+        -- Base forms: noun + helper verb
+        pashto_word LIKE '% کول'
+        OR pashto_word LIKE '% کېدل'
+        OR pashto_word LIKE '% وهل'
+        OR pashto_word LIKE '% خوړل'
+        OR pashto_word LIKE '% ساتل'
+    )
+    AND (
+        pashto_word NOT LIKE '% [SPLIT]'
+    )
+    ORDER BY frequency_total DESC
+    LIMIT {limit} OFFSET {offset}
+    """
+    
+    cmd = ['wrangler', 'd1', 'execute', 'pashto-bible-db', '--remote', '--command', query_sql, '--json']
     
     try:
-        with open(dict_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            # Dictionary structure: {"info": {...}, "entries": [...]}
-            if isinstance(data, dict) and 'entries' in data:
-                return data['entries']
-            elif isinstance(data, list):
-                return data
-            return []
-    except Exception as e:
-        print(f"⚠️  Error loading dictionary: {e}")
-        return []
-
-def query_verses_for_word(word, limit=5):
-    """Query verses to see how a word appears in context"""
-    cmd = f"""wrangler d1 execute pashto-bible-db --remote --command="SELECT ref, text FROM verses_afghan2023 WHERE text LIKE '%{word}%' LIMIT {limit};" --json"""
-    
-    try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8')
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', timeout=60)
         if result.returncode == 0:
-            data = json.loads(result.stdout)
-            if isinstance(data, list) and len(data) > 0:
-                first_item = data[0]
-                if isinstance(first_item, dict) and 'results' in first_item:
-                    return first_item['results']
-            elif isinstance(data, dict):
-                return data.get('results', [])
-            return []
+            try:
+                data = json.loads(result.stdout)
+                if isinstance(data, list) and len(data) > 0:
+                    if 'results' in data[0]:
+                        return data[0]['results']
+                elif isinstance(data, dict) and 'results' in data:
+                    return data['results'] if isinstance(data['results'], list) else []
+            except json.JSONDecodeError as e:
+                print(f"   ⚠️  JSON parse error: {e}")
+        return []
     except Exception as e:
         print(f"   ⚠️  Error: {e}")
         return []
 
-def find_dynamic_compounds_in_dictionary(entries):
-    """Find entries in dictionary marked as dynamic compound verbs"""
-    compounds = []
-    
-    # Look for entries with "dyn. comp." or "dynamic compound" in POS or definition
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-            
-        pos = entry.get('pos', '') or entry.get('c', '') or ''
-        english = entry.get('english', '') or entry.get('e', '') or ''
-        pashto = entry.get('pashto', '') or entry.get('p', '') or ''
-        
-        # Check if marked as dynamic compound
-        is_dyn_comp = (
-            'dyn. comp.' in pos.lower() or
-            'dynamic compound' in pos.lower() or
-            'v. dyn. comp.' in pos.lower()
-        )
-        
-        if is_dyn_comp and pashto:
-            # Check if it contains space or zero-width joiner (compound indicator)
-            has_separator = ' ' in pashto or '\u200c' in pashto or '\u200d' in pashto
-            
-            if has_separator:
-                compounds.append({
-                    'pashto': pashto,
-                    'english': english,
-                    'pos': pos,
-                    'romanization': entry.get('romanization', '') or entry.get('f', ''),
-                })
-    
-    return compounds
 
-def find_matching_compounds_in_word_frequencies(dict_compounds):
-    """Find dictionary compounds that exist in word_frequencies"""
-    matching_compounds = []
+def query_compound_variants(base_compound: str, limit: int = 500) -> List[Dict]:
+    """Query variants of a base compound verb"""
+    # Extract noun part
+    noun = base_compound.split()[0] if ' ' in base_compound else base_compound
     
-    print(f'\n🔍 Matching dictionary compounds with word_frequencies...')
+    # Escape single quotes in noun for SQL
+    noun_escaped = noun.replace("'", "''")
     
-    for compound in dict_compounds[:100]:  # Process first 100 to avoid timeout
-        pashto = compound['pashto']
-        
-        # Try exact match first
-        # Also try without spaces (words might be stored without spaces)
-        pashto_no_space = pashto.replace(' ', '').replace('\u200c', '').replace('\u200d', '')
-        
-        cmd = f"""wrangler d1 execute pashto-bible-db --remote --command="SELECT pashto_word, frequency_total, pos FROM word_frequencies WHERE pashto_word = '{pashto.replace("'", "''")}' OR pashto_word = '{pashto_no_space.replace("'", "''")}' LIMIT 1;" --json"""
-        
-        try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8', timeout=5)
-            if result.returncode == 0:
+    # Look for variants: noun + conjugated helper verb forms
+    query_sql = f"""
+    SELECT id, pashto_word, frequency_total, pos, base_verb
+    FROM word_frequencies
+    WHERE (
+        -- Perfective forms with و prefix
+        pashto_word LIKE '{noun_escaped} وکړ%'
+        OR pashto_word LIKE '{noun_escaped} وشو%'
+        OR pashto_word LIKE '{noun_escaped} ووه%'
+        OR pashto_word LIKE '{noun_escaped} وخوړ%'
+        OR pashto_word LIKE '{noun_escaped} وسات%'
+        -- Present/imperfective forms
+        OR pashto_word LIKE '{noun_escaped} کو%'
+        OR pashto_word LIKE '{noun_escaped} کې%'
+        OR pashto_word LIKE '{noun_escaped} وه%'
+        OR pashto_word LIKE '{noun_escaped} خوړ%'
+        OR pashto_word LIKE '{noun_escaped} سات%'
+    )
+    AND (
+        base_verb IS NULL OR base_verb = ''
+    )
+    AND (
+        pashto_word NOT LIKE '% [SPLIT]'
+    )
+    ORDER BY frequency_total DESC
+    LIMIT {limit}
+    """
+    
+    cmd = ['wrangler', 'd1', 'execute', 'pashto-bible-db', '--remote', '--command', query_sql, '--json']
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        if result.returncode == 0:
+            try:
                 data = json.loads(result.stdout)
-                results = []
                 if isinstance(data, list) and len(data) > 0:
-                    first_item = data[0]
-                    if isinstance(first_item, dict) and 'results' in first_item:
-                        results = first_item['results']
-                elif isinstance(data, dict):
-                    results = data.get('results', [])
-                
-                if results:
-                    matching_compounds.append({
-                        'dictionary_entry': compound,
-                        'word_frequency_entry': results[0],
-                    })
-        except Exception as e:
-            # Skip on error/timeout
-            continue
-    
-    return matching_compounds
+                    if 'results' in data[0]:
+                        return data[0]['results']
+                elif isinstance(data, dict) and 'results' in data:
+                    return data['results'] if isinstance(data['results'], list) else []
+            except json.JSONDecodeError:
+                pass
+        return []
+    except Exception:
+        return []
 
-def parse_compound(compound_word):
-    """Parse a compound word into noun + verb parts"""
-    # Split by space, zero-width joiner, or zero-width non-joiner
-    parts = re.split(r'[\s\u200c\u200d]+', compound_word.strip())
+
+def extract_dynamic_compound_parts(word: str) -> Optional[Tuple[str, str, str]]:
+    """
+    Extract dynamic compound parts: (noun, helper_verb, compound_type)
     
-    if len(parts) >= 2:
-        # Assume first part is noun, rest is verb
-        noun_part = parts[0]
-        verb_part = ' '.join(parts[1:])
+    Examples:
+    - "کار وکړل" -> ("کار", "کول", "dynamic")
+    - "پوښتنه وکړه" -> ("پوښتنه", "کول", "dynamic")
+    - "منډې ووهل" -> ("منډې", "وهل", "dynamic")
+    """
+    words = word.split()
+    
+    # Check for spaced patterns: noun + helper verb
+    if len(words) >= 2:
+        # Last word should be helper verb or its perfective form
+        last_word = words[-1]
         
-        return {
-            'noun': noun_part,
-            'verb': verb_part,
-            'full': compound_word,
-        }
+        # Check if last word is a helper verb variant
+        if last_word in DYNAMIC_HELPER_VARIANTS:
+            helper_base = DYNAMIC_HELPER_VARIANTS[last_word]
+            noun = ' '.join(words[:-1])
+            return (noun, helper_base, 'dynamic')
+        
+        # Check if last word is perfective helper verb
+        if last_word in DYNAMIC_HELPER_PERFECTIVE:
+            helper_base = DYNAMIC_HELPER_PERFECTIVE[last_word]
+            noun = ' '.join(words[:-1])
+            return (noun, helper_base, 'dynamic')
+        
+        # Check if last word is base helper verb
+        if last_word in DYNAMIC_HELPER_VERBS:
+            noun = ' '.join(words[:-1])
+            return (noun, last_word, 'dynamic')
+    
+    # Check for concatenated forms (noun + و + helper verb)
+    # Pattern: noun + و + helper_verb_stem
+    for helper_base, (rom, desc) in DYNAMIC_HELPER_VERBS.items():
+        # Check for و + helper verb pattern
+        if word.endswith('و' + helper_base[:2]):  # Simplified check
+            # Try to extract noun part
+            remaining = word[:-len('و' + helper_base[:2])]
+            if remaining:
+                return (remaining, helper_base, 'dynamic')
     
     return None
 
-def check_if_auxiliary_verb(verb_part):
-    """Check if verb part is a known auxiliary verb"""
-    # Remove common verb endings to check root
-    verb_root = verb_part
-    for ending in ['ل', 'ول', 'ېدل', 'کول']:
-        if verb_part.endswith(ending):
-            verb_root = verb_part[:-len(ending)]
-            break
+
+def find_base_compound_verb(noun: str, helper_verb: str, verbs_lexicon: Dict[str, Dict]) -> Optional[str]:
+    """
+    Find base compound verb form in lexicon
     
-    # Check if it matches known auxiliary verbs
-    return verb_part in AUXILIARY_VERBS or verb_root in AUXILIARY_VERBS
+    Examples:
+    - ("کار", "کول") -> "کار کول"
+    - ("پوښتنه", "کول") -> "پوښتنه کول"
+    """
+    # Try exact match: noun + space + helper_verb
+    compound = f"{noun} {helper_verb}"
+    
+    # Check if it exists in verbs_lexicon
+    for verb_root, verb_data in verbs_lexicon.items():
+        if verb_root == compound or verb_root.startswith(compound):
+            return verb_root
+    
+    # Also check dictionary for compound verbs
+    # This would require dictionary lookup - for now return the compound form
+    return compound
+
+
+def query_verbs_lexicon() -> Dict[str, Dict]:
+    """Load verbs_lexicon to check for verb forms"""
+    query_sql = "SELECT verb_root, imperfective_stem, perfective_stem, perfective_root, past_participle, pos FROM verbs_lexicon"
+    cmd = ['wrangler', 'd1', 'execute', 'pashto-bible-db', '--remote', '--command', query_sql, '--json']
+    
+    verbs_dict = {}
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if isinstance(data, list) and len(data) > 0:
+                results = data[0].get('results', [])
+                for row in results:
+                    verb_root = row.get('verb_root', '')
+                    if verb_root:
+                        verbs_dict[verb_root] = row
+    except Exception as e:
+        print(f"   ⚠️  Error loading verbs lexicon: {e}")
+    return verbs_dict
+
 
 def main():
-    print('🔍 Identifying dynamic compound verbs (v. dyn. comp. trans.)...\n')
+    print("🔍 Identifying dynamic compound verbs and their variants...\n")
     
-    # Load dictionary
-    print('📚 Loading dictionary...')
-    dictionary = load_dictionary()
-    dict_compounds = find_dynamic_compounds_in_dictionary(dictionary)
+    # Load verbs lexicon
+    print("📚 Loading verbs lexicon...")
+    verbs_lexicon = query_verbs_lexicon()
+    print(f"   ✅ Loaded {len(verbs_lexicon)} verbs\n")
     
-    print(f'   Found {len(dict_compounds)} dynamic compounds in dictionary')
-    if dict_compounds:
-        print('   Examples:')
-        for comp in dict_compounds[:5]:
-            print(f'      - {comp["pashto"]}: {comp["english"]} ({comp["pos"]})')
+    # Query base compound verbs
+    print("   Querying base dynamic compound verbs...")
+    base_compounds = []
+    batch_size = 1000
+    offset = 0
     
-    # Find matching compounds in word_frequencies
-    print('\n🔍 Matching dictionary compounds with word_frequencies...')
-    matching = find_matching_compounds_in_word_frequencies(dict_compounds)
-    print(f'   Found {len(matching)} matching compounds in word_frequencies')
+    while True:
+        entries = query_base_compound_verbs(limit=batch_size, offset=offset)
+        if not entries:
+            break
+        base_compounds.extend(entries)
+        if len(entries) < batch_size:
+            break
+        offset += batch_size
     
-    # Analyze each potential compound
-    confirmed_compounds = []
+    print(f"   ✅ Found {len(base_compounds)} base compounds\n")
     
-    for match in matching:
-        compound = match['dictionary_entry']
-        word_data = match['word_frequency_entry']
+    if not base_compounds:
+        print("   No base compound verbs found")
+        return
+    
+    # For each base compound, find its variants
+    matched_compounds = []
+    all_variants = []
+    
+    print("   Finding variants for each base compound...")
+    for base_entry in base_compounds[:50]:  # Process first 50 to avoid timeout
+        base_word = base_entry['pashto_word']
+        variants = query_compound_variants(base_word)
         
-        word = word_data.get('pashto_word', '')
-        parsed = parse_compound(word)
+        # Add base compound itself
+        matched_compounds.append({
+            'id': base_entry['id'],
+            'word': base_word,
+            'base_compound': base_word,
+            'frequency': base_entry.get('frequency_total', 0),
+            'current_pos': base_entry.get('pos'),
+        })
         
-        if parsed:
-            confirmed_compounds.append({
-                'word': word,
-                'noun_part': parsed['noun'],
-                'verb_part': parsed['verb'],
-                'frequency': word_data.get('frequency_total', 0),
-                'pos': word_data.get('pos', ''),
-                'dictionary_pos': compound.get('pos', ''),
-                'english': compound.get('english', ''),
-                'in_dictionary': True,
+        # Add variants
+        for variant in variants:
+            matched_compounds.append({
+                'id': variant['id'],
+                'word': variant['pashto_word'],
+                'base_compound': base_word,
+                'frequency': variant.get('frequency_total', 0),
+                'current_pos': variant.get('pos'),
             })
+        
+        if variants:
+            all_variants.extend([v['pashto_word'] for v in variants])
     
-    print(f'\n   ✅ Confirmed {len(confirmed_compounds)} dynamic compound verbs')
+    print(f"   ✅ Found {len(all_variants)} variants\n")
+    
+    print(f"   📊 Analysis:")
+    print(f"      Total compounds and variants: {len(matched_compounds)}")
+    print(f"      Base compounds: {len(base_compounds)}")
+    print(f"      Variants found: {len(all_variants)}\n")
     
     # Generate SQL
-    sql_updates = []
+    sql_statements = []
+    sql_statements.append('-- Link dynamic compound verbs to their base forms')
+    sql_statements.append('-- Based on: https://grammar.lingdocs.com/compound-verbs/dynamic-compounds/')
+    sql_statements.append('-- Dynamic compounds have و - óo prefix on helper verbs in perfective forms')
+    sql_statements.append('')
     
-    for compound in confirmed_compounds:
-        word = compound['word']
-        noun = compound['noun_part']
-        verb = compound['verb_part']
-        
-        sql_updates.append(f"-- {word} = {noun} + {verb} (dynamic compound)")
-        sql_updates.append(f"-- Mark as compound_dynamic")
-        clean_word = word.replace("'", "''")
-        
-        # Update POS to include dynamic compound marker if not already present
-        pos_update = "pos = 'v. dyn. comp. trans.'" if not compound['in_dictionary'] else ""
-        
-        if pos_update:
-            sql_updates.append(f"UPDATE word_frequencies SET word_type = 'compound_dynamic', {pos_update}, has_issues = 0 WHERE pashto_word = '{clean_word}';")
-        else:
-            sql_updates.append(f"UPDATE word_frequencies SET word_type = 'compound_dynamic', has_issues = 0 WHERE pashto_word = '{clean_word}';")
-        sql_updates.append('')
+    if matched_compounds:
+        for compound in matched_compounds:
+            word_escaped = "'" + compound['word'].replace("'", "''") + "'"
+            base_compound_escaped = "'" + compound['base_compound'].replace("'", "''") + "'"
+            
+            sql_statements.append(f"-- {compound['word']} -> base: {compound['base_compound']}")
+            sql_statements.append(f"""
+UPDATE word_frequencies
+SET base_verb = {base_compound_escaped},
+    pos = COALESCE(NULLIF(pos, ''), 'verb_dynamic_compound')
+WHERE id = {compound['id']};
+""")
+            sql_statements.append('')
     
     # Write SQL file
-    sql_path = 'cloudflare/mark-dynamic-compound-verbs.sql'
-    sql_content = [
-        '-- Mark dynamic compound verbs (v. dyn. comp. trans.)',
-        '-- Pattern: Noun (object complement) + Auxiliary Verb = Dynamic Compound Verb',
-        '-- Example: قدم (step) + وهل (to hit/strike) = قدم وهل (to take a step/to walk)',
-        '-- Reference: https://grammar.lingdocs.com/compound-verbs/dynamic-compounds/',
-        '',
-        '-- Add word_type column if missing',
-        "ALTER TABLE word_frequencies ADD COLUMN word_type TEXT;",
-        '',
-    ] + sql_updates + [
-        '',
-        '-- Create index',
-        'CREATE INDEX IF NOT EXISTS idx_word_frequencies_word_type ON word_frequencies (word_type);',
-    ]
+    OUTPUT_SQL.write_text('\n'.join(sql_statements), encoding='utf-8')
     
-    with open(sql_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(sql_content))
+    print(f"   ✅ Generated {OUTPUT_SQL}")
+    print(f"   📊 Prepared {len(matched_compounds)} dynamic compounds to link")
     
-    # Write analysis results
-    json_path = 'cloudflare/dynamic-compound-verbs-analysis.json'
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            'dictionary_compounds': dict_compounds,
-            'confirmed_compounds': confirmed_compounds,
-        }, f, indent=2, ensure_ascii=False)
+    if matched_compounds:
+        print(f"\n📋 Sample matched compounds (first 20):")
+        for compound in matched_compounds[:20]:
+            is_base = compound['word'] == compound['base_compound']
+            marker = "[BASE]" if is_base else "[VARIANT]"
+            print(f"   {marker} '{compound['word']}' -> '{compound['base_compound']}'")
     
-    print(f'\n✅ Generated:')
-    print(f'   - {sql_path}')
-    print(f'   - {json_path}\n')
-    
-    print('📋 Next steps:')
-    print('   1. Review dynamic-compound-verbs-analysis.json')
-    print('   2. Review and run: wrangler d1 execute pashto-bible-db --remote --file cloudflare/mark-dynamic-compound-verbs.sql')
-    print('   3. This will mark dynamic compound verbs so they can be filtered/displayed correctly\n')
+    print(f"\n💡 Next step:")
+    print(f"   wrangler d1 execute pashto-bible-db --remote --file {OUTPUT_SQL.relative_to(APP_ROOT)}")
+
 
 if __name__ == '__main__':
     main()
-

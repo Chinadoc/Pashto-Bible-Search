@@ -13,6 +13,7 @@ import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import ChapterNavigator from "../components/ChapterNavigator";
 import ChapterView from "../components/ChapterView";
 import TopicsBrowser from "../components/TopicsBrowser";
+import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
 import type {
   Verse,
   Scope,
@@ -650,9 +651,14 @@ export default function ClientHome() {
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
   const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [dictionaryData, setDictionaryData] = useState<{
+    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null }>;
+    groupedByPos: Record<string, any[]>;
+    needsDisambiguation: boolean;
+  } | undefined>();
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
-  const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
+  const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019' | 'unified'>('afghan2023');
   const pathname = usePathname();
   const router = useRouter();
   
@@ -901,7 +907,9 @@ export default function ClientHome() {
   // Refresh audio maps when results change to ensure we have latest URLs
   useEffect(() => {
     // Only refresh if we have results but no audio map for the active translation
-    const currentAudioMap = activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap;
+    const currentAudioMap = activeTranslation === 'unified' 
+      ? { ...audioMap, ...yousafzaiAudioMap }
+      : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap);
     if (results.length > 0 && Object.keys(currentAudioMap).length === 0) {
       const refreshAudioMaps = async () => {
         try {
@@ -1105,7 +1113,7 @@ export default function ClientHome() {
       enableFuzzy,
       bookFilter,
       language: languageOverride ?? searchLanguage,
-      translation: activeTranslation,
+      translation: activeTranslation === 'unified' ? undefined : activeTranslation,
       limit: limit, // Pass limit to API
     };
 
@@ -1163,7 +1171,7 @@ export default function ClientHome() {
         enableFuzzy,
         bookFilter,
         language: languageOverride ?? searchLanguage,
-        translation: activeTranslation,
+        translation: activeTranslation === 'unified' ? undefined : activeTranslation,
       };
 
       if (variantsPayload) {
@@ -1194,6 +1202,7 @@ export default function ClientHome() {
       setResults(searchData.results || []);
       setTotalEstimatedCount(searchData.totalEstimatedCount);
       setHasMoreResults(searchData.hasMore || false);
+      setDictionaryData(searchData.dictionary);
       setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
@@ -1723,6 +1732,16 @@ export default function ClientHome() {
               >
                 🕌 Yousafzai 2019
               </button>
+              <button
+                onClick={() => setActiveTranslation('unified')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'unified'
+                    ? 'bg-purple-600 text-white shadow-lg transform scale-105 ring-2 ring-purple-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🔀 Unified Search
+              </button>
             </div>
           </div>
 
@@ -1731,11 +1750,13 @@ export default function ClientHome() {
         <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
           activeTranslation === 'afghan2023'
             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            : activeTranslation === 'yousafzai2019'
+            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
         }`}>
-          {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+          {activeTranslation === 'afghan2023' ? '🇦🇫' : activeTranslation === 'yousafzai2019' ? '🕌' : '🔀'}
           <span className="ml-2">
-            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
+            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : activeTranslation === 'yousafzai2019' ? 'Yousafzai 2019 Translation' : 'Unified Search (Both Translations)'}
           </span>
         </div>
       </div>
@@ -1857,6 +1878,14 @@ export default function ClientHome() {
               </span>
             </div>
           </div>
+
+          {/* Dictionary Disambiguation - Show before results */}
+          {dictionaryData && (
+            <DictionaryDisambiguation
+              dictionary={dictionaryData}
+              query={query}
+            />
+          )}
 
           {/* Results Header */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
@@ -2272,7 +2301,7 @@ export default function ClientHome() {
           {/* Results List */}
           <ResultsList
             results={filteredResults}
-            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+            audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
             loading={isLoading}
             processed={processed}
             verbFilters={verbFilters}
@@ -2306,7 +2335,7 @@ export default function ClientHome() {
             onClearFilters={() => setBookFilter([])}
             resultsCount={results.length}
             filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
-            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+            audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
           />
         </div>
       </div>

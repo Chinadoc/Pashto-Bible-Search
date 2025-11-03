@@ -36532,23 +36532,5 @@
     },
     "past_participle": "یېرېدلی",
     "romanization": {}
-  },
-  "واهل": {
-    "stems": {
-      "imperfective": "واه",
-      "perfective": "واه"
-    },
-    "roots": {
-      "imperfective": "واهل",
-      "perfective": "واهل"
-    },
-    "past_participle": "واهلی",
-    "romanization": {
-      "imperfective_stem": "waah",
-      "perfective_stem": "waah",
-      "imperfective_root": "waahul",
-      "perfective_root": "waahul",
-      "past_participle": "waahulay"
-    }
   }
 }

@@ -2,97 +2,32 @@
 
 ## Current Status
 
-✅ **Batch processing is running in the background**
+✅ Background batch job has been stopped (no more long-running processing).
+✅ `verb_forms` table now covers every dictionary verb (237,042 forms), so classification happens instantly via lookups.
 
-### Progress So Far:
-- **Batches Completed**: 11+ batches processed
-- **Forms Classified**: 2,499 forms total
-  - Past forms: 1,628
-  - Present forms: 434
-  - Past participles: 168
-  - Imperative forms: 163
-  - Subjunctive forms: 101
-  - Perfect forms: 5
+### Summary Metrics
+- `word_frequencies` entries with `form_type`: **2,887**
+- `word_frequencies` entries with `base_verb`: **2,775**
+- `verb_forms` rows: **237,042** (3,710 verbs × all conjugations)
 
-### What's Happening:
+### What changed this session
+1. Precomputed `verb_forms` from the full dictionary and loaded them into D1.
+2. Backfilled `word_frequencies` (`base_verb`, `form_type`, `word_type`) using `verb_forms` lookups.
+3. Killed the old batch script (`pkill -f batch-classify-verb-forms.py`) now that precomputation is in place.
 
-The script `scripts/batch-classify-verb-forms.py` is processing verbs in batches of 100, sequentially:
-
-1. **For each batch**:
-   - Queries 100 base verbs from `word_frequencies`
-   - Generates all conjugations for each verb
-   - Classifies each form found in the database (present, past, perfect, imperative, etc.)
-   - Detects perfect forms and equatives
-   - Generates SQL update file
-   - Executes SQL immediately
-
-2. **Form Types Being Classified**:
-   - `present` - Present tense forms
-   - `past` - Past tense forms (continuous and simple)
-   - `perfect` - Perfect forms (past participle + equative)
-   - `imperative` - Imperative forms
-   - `future` - Future forms
-   - `subjunctive` - Subjunctive forms
-   - `ability` - Ability forms
-   - `past_participle` - Past participle forms
-   - `root` - Verb root forms
-
-3. **Perfect Form Detection**:
-   - Identifies past participles
-   - Looks for equatives (یم, وم, وي, etc.) that might be separate entries
-   - Links equatives to their verbs when found
-
-## Monitoring Progress
-
-Check progress anytime with:
+### Monitoring / Spot Checks
 ```bash
-python3 scripts/check-batch-progress.py
+python3 scripts/check-batch-progress.py          # Current coverage snapshot
 ```
 
-Check batch files:
-```bash
-ls -lt cloudflare/batch-*.sql | head -10
+```sql
+SELECT * FROM word_frequencies 
+WHERE base_verb = 'کارول' AND form_type = 'present';
+
+SELECT * FROM verb_forms 
+WHERE base_verb = 'کارول' 
+ORDER BY form_type, person;
 ```
 
-Monitor the process:
-```bash
-tail -f /tmp/batch_processing.log
-```
-
-## Expected Completion
-
-- **Total Base Verbs**: ~1,080
-- **Estimated Batches**: ~11 batches
-- **Expected Forms**: Thousands of forms will be classified
-
-## After Completion
-
-Once all batches are processed, you can:
-
-1. **Query by form type**:
-   ```sql
-   SELECT * FROM word_frequencies 
-   WHERE base_verb = 'کارول' AND form_type = 'present';
-   ```
-
-2. **See all forms of a verb**:
-   ```sql
-   SELECT pashto_word, form_type, frequency_total 
-   FROM word_frequencies 
-   WHERE base_verb = 'کارول' 
-   ORDER BY form_type, frequency_total DESC;
-   ```
-
-3. **Filter by specific tenses**:
-   ```sql
-   SELECT * FROM word_frequencies 
-   WHERE form_type IN ('present', 'past', 'perfect');
-   ```
-
-## Files Generated
-
-- `cloudflare/batch-XXX-classify-forms.sql` - SQL files for each batch
-- Each file contains UPDATE statements to set `form_type` and link `base_verb`
-
-The process will continue automatically until all batches are processed!
+Future ingestion should classify new forms immediately by querying `verb_forms` + `verbs_lexicon` rather than running a slow batch processor.
 

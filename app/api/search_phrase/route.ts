@@ -1736,7 +1736,8 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { query, scope, extraVariants, includeRelated, bookFilter, translation = 'afghan2023' }: SearchRequest = await request.json()
+    const { query, scope, extraVariants, includeRelated, bookFilter, translation }: SearchRequest = await request.json()
+    const effectiveTranslation = translation || 'unified'; // Default to unified if not specified
 
     if (!query?.trim()) {
       return NextResponse.json({
@@ -1749,13 +1750,13 @@ export async function POST(request: NextRequest) {
     // Create cache key from search parameters
     const variantsKey = Array.isArray(extraVariants) ? extraVariants.sort().join('|') : ''
     const bookFilterKey = bookFilter === null ? 'null' : (bookFilter || 'all')
-    const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}`
+    const cacheKey = `${query.trim()}-${scope}-${bookFilterKey}-${includeRelated ? 'rel1' : 'rel0'}-${variantsKey}-${effectiveTranslation}`
 
     // Debug logging for book filtering and scope
     if (bookFilter) {
       console.log(`DEBUG: Book filter applied: ${bookFilter}`)
     }
-    console.log(`DEBUG: Scope: ${scope}, Book filter: ${bookFilter}`)
+    console.log(`DEBUG: Scope: ${scope}, Book filter: ${bookFilter}, Translation: ${effectiveTranslation}`)
 
     // Check cache first
     const cached = SEARCH_CACHE.get(cacheKey)
@@ -2071,12 +2072,18 @@ export async function POST(request: NextRequest) {
     let textSearchHit = false
     
     // Search based on translation
-    const tablesToSearch = translation === 'yousafzai2019'
+    const tablesToSearch = effectiveTranslation === 'yousafzai2019'
       ? [
           { name: 'verses_yousafzai', translation: 'Yousafzai 2019' },
           { name: 'verses', translation: 'Standard' }
         ]
+      : effectiveTranslation === 'afghan2023'
+      ? [
+          { name: 'verses', translation: 'Afghan 2023' },
+          { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
+        ]
       : [
+          // Unified search: search both translations equally
           { name: 'verses', translation: 'Afghan 2023' },
           { name: 'verses_yousafzai', translation: 'Yousafzai 2019' }
         ]
