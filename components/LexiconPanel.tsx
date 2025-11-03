@@ -61,7 +61,13 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       }
 
       const result = await response.json();
-      setData(result.items || []);
+      
+      if (result.error) {
+        console.error('API Error:', result.error, result.details);
+        setError(`API Error: ${result.error}. ${result.details || ''}`);
+      } else {
+        setData(result.items || []);
+      }
     } catch (err: any) {
       console.error('Error fetching lexicon data:', err);
       setError(err.message || 'Failed to fetch data');

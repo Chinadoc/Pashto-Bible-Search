@@ -123,9 +123,14 @@ export async function GET(request: NextRequest) {
       
       if (apiResponse.ok) {
         const result = await apiResponse.json();
-        if (result.success && result.result) {
-          rows = result.result[0]?.results || [];
+        // Cloudflare API returns: { success: true, result: [{ results: [...], meta: {...} }] }
+        if (result.success && result.result && Array.isArray(result.result) && result.result.length > 0) {
+          rows = result.result[0].results || [];
           console.log('Got', rows.length, 'rows from D1 via REST API');
+        } else if (result.success && result.result && Array.isArray(result.result)) {
+          // Handle case where result might be directly an array
+          rows = result.result[0]?.results || result.result || [];
+          console.log('Got', rows.length, 'rows from D1 via REST API (alternative format)');
         }
       } else {
         const errorText = await apiResponse.text();
