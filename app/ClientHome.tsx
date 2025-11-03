@@ -647,6 +647,7 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
 
 export default function ClientHome() {
   const [results, setResults] = useState<Verse[]>([]);
+  const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
   const [hasMoreResults, setHasMoreResults] = useState(false);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
