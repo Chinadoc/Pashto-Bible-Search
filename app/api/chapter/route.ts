@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
 import { getVersesByChapter } from '@/app/lib/cloudflare-d1';
-
-// Type definition for verse from Supabase
-interface VerseRow {
-  book: string;
-  chapter: number;
-  verse: number;
-  text: string;
-  testament?: string;
-  dialect?: string | null;
-  translation_key?: string | null;
-  audio_storage_path?: string | null;
-  audio_public_url?: string | null;
-}
 
 // Helper function to decode HTML entities
 function decodeHtmlEntities(text: string): string {
@@ -32,33 +18,6 @@ function decodeHtmlEntities(text: string): string {
     decoded = decoded.replace(new RegExp(entity, 'g'), char);
   }
   return decoded;
-}
-
-// Helper function to ensure URL is in Google Drive download format
-function normalizeGoogleDriveUrl(googleDriveUrl: string | null): string | null {
-  if (!googleDriveUrl) return null;
-  
-  // Extract file ID from various Google Drive URL formats
-  let fileId: string | null = null;
-  
-  // Format 1: https://drive.google.com/file/d/{ID}/preview or /view
-  let match = googleDriveUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
-  if (match) {
-    fileId = match[1];
-  }
-  
-  // Format 2: https://drive.google.com/uc?id={ID}&export=...
-  if (!fileId) {
-    match = googleDriveUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
-    if (match) {
-      fileId = match[1];
-    }
-  }
-  
-  if (!fileId) return googleDriveUrl; // Return original if we can't parse
-  
-  // Return Google Drive file URL in a format that can be used for downloads
-  return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
 // Define chapter counts for each book
@@ -106,152 +65,72 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid chapter number' }, { status: 400 });
     }
 
-    // Try D1 first (Cloudflare), fallback to Supabase if unavailable
-    let verses: any[] | null = null;
-    let useD1 = false;
-
-    // Check if Cloudflare Worker URL is configured
+    // Fetch verses from Cloudflare D1 ONLY
     const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
     
-    if (cloudflareWorkerUrl) {
-      try {
-        console.log(`📖 Fetching ${book} ${chapter} from D1 (translation: ${translation})`);
-        const d1Verses = await getVersesByChapter(book, chapter, translation as 'afghan2023' | 'yousafzai2019');
+    if (!cloudflareWorkerUrl) {
+      return NextResponse.json(
+        { error: 'Cloudflare Worker URL not configured' },
+        { status: 500 }
+      );
+    }
+
+    let verses: any[] = [];
+
+    try {
+      console.log(`📖 Fetching ${book} ${chapter} from Cloudflare D1 (translation: ${translation})`);
+      const d1Verses = await getVersesByChapter(book, chapter, translation as 'afghan2023' | 'yousafzai2019');
+      
+      if (d1Verses && d1Verses.length > 0) {
+        verses = d1Verses.map((v) => ({
+          book: v.book,
+          chapter: v.chapter,
+          verse: v.verse,
+          text: v.text,
+          testament: v.testament,
+          audio_r2_key: v.audio_r2_key,
+        }));
+        console.log(`✅ D1 query returned ${verses.length} verses`);
+      } else {
+        // Try alternative translation as fallback
+        const altTranslation = translation === 'afghan2023' ? 'yousafzai2019' : 'afghan2023';
+        console.log(`⚠️ No verses found for ${translation}, trying ${altTranslation}...`);
+        const altVerses = await getVersesByChapter(book, chapter, altTranslation);
         
-        if (d1Verses && d1Verses.length > 0) {
-          verses = d1Verses.map((v) => ({
+        if (altVerses && altVerses.length > 0) {
+          verses = altVerses.map((v) => ({
             book: v.book,
             chapter: v.chapter,
             verse: v.verse,
             text: v.text,
             testament: v.testament,
-            audio_storage_path: v.audio_r2_key,
-            audio_public_url: v.audio_public_url,
-            audio_url: v.audio_public_url, // For compatibility
             audio_r2_key: v.audio_r2_key,
           }));
-          useD1 = true;
-          console.log(`✅ D1 query returned ${verses.length} verses`);
-        }
-      } catch (d1Error) {
-        console.warn(`⚠️ D1 query failed, falling back to Supabase:`, d1Error);
-      }
-    }
-
-    // Fallback to Supabase if D1 didn't return results
-    if (!verses || verses.length === 0) {
-      const tableName = translation === 'yousafzai2019' ? 'Yousafzai Verses' : 'Afghan 2023 Verses';
-      console.log(`📖 Fetching ${book} ${chapter} from ${tableName} (translation: ${translation})`);
-
-      const { data: supabaseVerses, error } = await supabase
-        .from(tableName)
-        .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
-        .eq('book', book)
-        .eq('chapter', chapter)
-        .order('verse', { ascending: true });
-
-      if (error) {
-        console.error(`❌ Supabase query error for ${tableName}:`, error);
-        return NextResponse.json(
-          { error: 'Database query failed', details: error.message },
-          { status: 500 }
-        );
-      }
-
-      // Map Supabase verses to include audio_r2_key if available in audio_storage_path
-      verses = supabaseVerses?.map((v: any) => ({
-        ...v,
-        audio_r2_key: v.audio_storage_path && v.audio_storage_path.startsWith('audio/') 
-          ? v.audio_storage_path 
-          : null,
-      })) || [];
-      console.log(`✅ Supabase query returned ${verses?.length || 0} verses from ${tableName}`);
-    }
-
-    // DEBUG: Check audio data in multiple verses
-    if (verses && verses.length > 0) {
-      console.log(`📝 Sample verse audio data (first 5 verses):`);
-      verses.slice(0, 5).forEach((v: any, idx: number) => {
-        console.log(`  Verse ${idx + 1}: ${v.book} ${v.chapter}:${v.verse}`, {
-          audio_url: v.audio_url,
-          audio_public_url: v.audio_public_url,
-          audio_storage_path: v.audio_storage_path,
-          normalizedUrl: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url)
-        });
-      });
-    }
-
-    if (!verses || verses.length === 0) {
-      // If Afghan 2023 is empty, try Yousafzai as fallback
-      if (translation === 'afghan2023') {
-        console.log(`⚠️  No verses found in D1 for ${book} ${chapter}, trying Yousafzai Verses as fallback...`);
-        const { data: fallbackVerses, error: fallbackError } = await supabase
-          .from('Yousafzai Verses')
-          .select('book, chapter, verse, text, testament, audio_storage_path, audio_public_url, audio_url')
-          .eq('book', book)
-          .eq('chapter', chapter)
-          .order('verse', { ascending: true });
-
-        if (fallbackError) {
-          console.error('❌ Fallback query also failed:', fallbackError);
-          return NextResponse.json({ error: 'No verses found for this chapter in any translation' }, { status: 404 });
-        }
-
-        if (fallbackVerses && fallbackVerses.length > 0) {
-          console.log(`✅ Found ${fallbackVerses.length} verses in Yousafzai as fallback`);
-          const formattedVerses = fallbackVerses.map((v: any) => ({
-            ref: `${v.book} ${v.chapter}:${v.verse}`,
-            book: v.book,
-            chapter: v.chapter,
-            verse: v.verse,
-            text: decodeHtmlEntities(v.text),
-            testament: v.testament,
-            dialect: 'yousafzai',
-            audio_storage_path: v.audio_storage_path,
-            audio_public_url: normalizeGoogleDriveUrl(v.audio_url || v.audio_public_url), // Normalize Google Drive URL
-          }));
-
-          const response = NextResponse.json({
-            book,
-            chapter,
-            translation: 'yousafzai2019',
-            verses: formattedVerses,
-            totalVerses: formattedVerses.length,
-            note: 'Afghan 2023 not available, showing Yousafzai 2019 instead'
-          });
-          // Cache verse data for 24 hours + serve stale for 7 days
-          response.headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-          return response;
+          console.log(`✅ Found ${verses.length} verses in ${altTranslation}`);
         }
       }
-
-      return NextResponse.json({ error: 'No verses found for this chapter' }, { status: 404 });
+    } catch (d1Error) {
+      console.error(`❌ D1 query failed:`, d1Error);
+      return NextResponse.json(
+        { error: 'Failed to fetch verses from Cloudflare D1', details: d1Error instanceof Error ? d1Error.message : 'Unknown error' },
+        { status: 500 }
+      );
     }
 
-    // Format verses for response
+    if (verses.length === 0) {
+      return NextResponse.json(
+        { error: 'No verses found for this chapter in Cloudflare D1' },
+        { status: 404 }
+      );
+    }
+
+    // Format verses for response - all audio from Cloudflare R2
     const formattedVerses = verses.map((v: any) => {
       let finalAudioUrl: string | null = null;
-      const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
       
-      // Priority 1: Use R2 audio if audio_r2_key is available (from D1 or Supabase)
+      // Build R2 audio URL via Cloudflare Worker
       if (v.audio_r2_key) {
         finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
-      } 
-      // Priority 2: Check if audio_storage_path looks like an R2 path
-      else if (v.audio_storage_path && (v.audio_storage_path.startsWith('audio/') || v.audio_storage_path.startsWith('verses/'))) {
-        finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_storage_path)}`;
-      }
-      // Priority 3: Fallback to Supabase URL if available
-      else if (v.audio_public_url && v.audio_public_url.includes('supabase.co')) {
-        finalAudioUrl = v.audio_public_url;
-      }
-      // Priority 4: Last resort - Google Drive (should be deprecated)
-      else {
-        const rawAudioUrl = v.audio_url || v.audio_public_url;
-        if (rawAudioUrl && rawAudioUrl.includes('drive.google.com')) {
-          console.warn(`⚠️ Using Google Drive fallback for ${v.book} ${v.chapter}:${v.verse} - consider migrating to R2`);
-          finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
-        }
       }
       
       return {
@@ -262,9 +141,8 @@ export async function GET(request: NextRequest) {
         text: decodeHtmlEntities(v.text),
         testament: v.testament,
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-        audio_storage_path: v.audio_storage_path || v.audio_r2_key,
         audio_public_url: finalAudioUrl,
-        audio_r2_key: v.audio_r2_key || v.audio_storage_path || null,
+        audio_r2_key: v.audio_r2_key || null,
       };
     });
 
