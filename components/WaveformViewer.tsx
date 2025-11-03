@@ -264,11 +264,13 @@ export default function WaveformViewer({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size based on container
+    // Set canvas size based on container and zoom level
     const container = canvas.parentElement;
     if (container) {
       const rect = container.getBoundingClientRect();
-      canvas.width = rect.width || 800;
+      const baseWidth = rect.width || 800;
+      // Expand canvas width when zoomed in
+      canvas.width = Math.max(baseWidth, baseWidth * zoomLevel);
       canvas.height = 150; // Taller for better visibility
     }
 
@@ -698,16 +700,21 @@ export default function WaveformViewer({
         </div>
       </div>
       
-      <div className="relative w-full bg-gray-800 rounded border-2 border-gray-700 overflow-hidden" style={{ height: '150px' }}>
+      <div className="relative w-full bg-gray-800 rounded border-2 border-gray-700 overflow-x-auto overflow-y-hidden" style={{ height: '150px' }}>
         <canvas
           ref={canvasRef}
-          className="w-full h-full cursor-pointer"
+          className="h-full cursor-pointer"
           onClick={handleCanvasClick}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseUp}
-          style={{ display: 'block', cursor: draggingHandle ? 'ew-resize' : 'pointer' }}
+          style={{ 
+            display: 'block', 
+            cursor: draggingHandle ? 'ew-resize' : 'pointer',
+            minWidth: '100%',
+            width: zoomLevel > 1 ? `${zoomLevel * 100}%` : '100%'
+          }}
         />
         <audio 
           ref={audioRef} 
