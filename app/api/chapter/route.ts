@@ -124,25 +124,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Format verses for response - all audio from Cloudflare R2
+    // Format verses for response - all text from D1, all audio from R2 (via Worker)
+    // The Worker already generates audio_public_url correctly, so we use it directly
     const formattedVerses = verses.map((v: any) => {
-      let finalAudioUrl: string | null = null;
-      
-      // Build R2 audio URL via Cloudflare Worker
-      if (v.audio_r2_key) {
-        finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
-      }
-      
       return {
         ref: `${v.book} ${v.chapter}:${v.verse}`,
         book: v.book,
         chapter: v.chapter,
         verse: v.verse,
-        text: decodeHtmlEntities(v.text),
+        text: decodeHtmlEntities(v.text), // Text from D1
         testament: v.testament,
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-        audio_public_url: finalAudioUrl,
-        audio_r2_key: v.audio_r2_key || null,
+        audio_public_url: v.audio_public_url || null, // Audio URL from Worker (R2)
+        audio_r2_key: v.audio_r2_key || null, // R2 key for reference
       };
     });
 

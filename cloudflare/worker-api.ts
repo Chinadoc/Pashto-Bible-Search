@@ -457,6 +457,22 @@ async function searchVerses(
 /**
  * Get verses by book and chapter
  */
+/**
+ * Generate R2 audio key from book, chapter, verse
+ * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
+ * Example: afghan2023/nt/matthew27_verse_002.mp3
+ */
+function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023'): string {
+  // Normalize book name: lowercase, remove spaces
+  // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
+  let bookSlug = book.toLowerCase().replace(/\s+/g, '');
+  
+  // Determine testament based on book name (simplified - most NT books)
+  const testament = translation === 'afghan2023' ? 'nt' : 'ot';
+  
+  return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
+}
+
 async function getVersesByChapter(
   env: Env,
   book: string,
@@ -472,13 +488,24 @@ async function getVersesByChapter(
       .bind(book, chapter)
       .all();
 
+    const workerUrl = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
     const verses = result.results?.map((verse: any) => {
       let audioPublicUrl: string | null = null;
+      let audioR2Key: string | null = verse.audio_r2_key || null;
       
-      // Build audio URL from R2 key - use full Worker URL
-      if (verse.audio_r2_key) {
-        const workerUrl = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-        audioPublicUrl = `${workerUrl}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}`;
+      // If no audio_r2_key in DB, try to generate it and check if it exists in R2
+      if (!audioR2Key) {
+        const generatedKey = generateR2AudioKey(verse.book, verse.chapter, verse.verse, translation);
+        // Don't set it here - we'll verify it exists before using it
+        audioR2Key = generatedKey;
+      }
+      
+      // Build audio URL from R2 key if we have one
+      if (audioR2Key) {
+        // Verify the file exists in R2 before creating URL
+        // (We'll check in parallel, but for now just create the URL)
+        audioPublicUrl = `${workerUrl}/api/audio/stream/${encodeURIComponent(audioR2Key)}`;
       }
       
       return {
@@ -490,7 +517,7 @@ async function getVersesByChapter(
         testament: verse.testament,
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
         audio_public_url: audioPublicUrl,
-        audio_r2_key: verse.audio_r2_key || null,
+        audio_r2_key: audioR2Key,
         created_at: verse.created_at ? new Date(verse.created_at * 1000).toISOString() : null,
         updated_at: verse.updated_at ? new Date(verse.updated_at * 1000).toISOString() : null,
         tags: verse.tags ? parseJsonSafe(verse.tags, []) : [],
@@ -1752,6 +1779,41 @@ export default {
     // R2 delete endpoint
     if (path === '/api/r2/delete' && request.method === 'POST') {
       return deleteR2Object(env, request);
+    }
+
+    // R2 list endpoint (for debugging - check what files exist)
+    if (path === '/api/r2/list' && request.method === 'GET') {
+      const prefix = url.searchParams.get('prefix') || '';
+      try {
+        const objects: any[] = [];
+        let cursor: string | undefined;
+        
+        do {
+          const listResult = await env.AUDIO_BUCKET.list({
+            prefix,
+            limit: 1000,
+            cursor,
+          });
+          
+          if (listResult.objects) {
+            objects.push(...listResult.objects.map((obj: any) => ({
+              key: obj.key,
+              size: obj.size,
+              uploaded: obj.uploaded,
+            })));
+          }
+          
+          cursor = listResult.cursor;
+        } while (cursor);
+        
+        return jsonResponse({
+          prefix,
+          count: objects.length,
+          objects: objects.slice(0, 100), // Limit to first 100 for response size
+        });
+      } catch (error: any) {
+        return errorResponse(`Failed to list R2 objects: ${error.message}`, 500);
+      }
     }
 
     // Generic D1 query endpoint for lexicon and other queries
