@@ -64,31 +64,66 @@ export default function WaveformViewer({
         analyserRef.current = analyser;
         sourceRef.current = source;
 
-        // Generate initial waveform data
-        const generateWaveform = () => {
-          if (!analyser) return;
+        // Generate initial waveform data from audio file
+        const generateWaveform = async () => {
+          if (!analyser || !audio) return;
           
-          const bufferLength = analyser.frequencyBinCount;
-          const dataArray = new Uint8Array(bufferLength);
-          // Use time domain data for waveform (amplitude over time)
-          analyser.getByteTimeDomainData(dataArray);
-          
-          // Sample waveform data - more samples for better visualization
-          const samples = 800; // Higher resolution
-          const sampleSize = Math.floor(bufferLength / samples);
-          const waveform: number[] = [];
-          
-          for (let i = 0; i < samples; i++) {
-            let max = 0;
-            for (let j = 0; j < sampleSize; j++) {
-              const value = Math.abs(dataArray[i * sampleSize + j] - 128) / 128; // Normalize to 0-1
-              max = Math.max(max, value);
+          try {
+            // First, try to decode the audio file to generate waveform
+            // This works even when audio isn't playing
+            const audioBuffer = await fetch(audioUrl)
+              .then(response => response.arrayBuffer())
+              .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer));
+            
+            // Get the audio channel data (use first channel)
+            const channelData = audioBuffer.getChannelData(0);
+            const dataLength = channelData.length;
+            
+            // Sample the waveform data
+            const samples = 800;
+            const sampleSize = Math.floor(dataLength / samples);
+            const waveform: number[] = [];
+            
+            for (let i = 0; i < samples; i++) {
+              let max = 0;
+              const start = i * sampleSize;
+              const end = Math.min(start + sampleSize, dataLength);
+              
+              for (let j = start; j < end; j++) {
+                const value = Math.abs(channelData[j]);
+                max = Math.max(max, value);
+              }
+              
+              waveform.push(max);
             }
-            waveform.push(max);
+            
+            console.log(`Generated waveform from audio file: ${waveform.length} samples`);
+            setWaveformData(waveform);
+            setIsLoadingWaveform(false);
+          } catch (decodeError) {
+            console.warn('Failed to decode audio for waveform, trying analyser method:', decodeError);
+            
+            // Fallback: use analyser method (requires audio to be playing)
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+            
+            const samples = 800;
+            const sampleSize = Math.floor(bufferLength / samples);
+            const waveform: number[] = [];
+            
+            for (let i = 0; i < samples; i++) {
+              let max = 0;
+              for (let j = 0; j < sampleSize; j++) {
+                const value = Math.abs(dataArray[i * sampleSize + j] - 128) / 128;
+                max = Math.max(max, value);
+              }
+              waveform.push(max);
+            }
+            
+            setWaveformData(waveform);
+            setIsLoadingWaveform(false);
           }
-          
-          setWaveformData(waveform);
-          setIsLoadingWaveform(false);
         };
 
         // Generate waveform when audio loads
