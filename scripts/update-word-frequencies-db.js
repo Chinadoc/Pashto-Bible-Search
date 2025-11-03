@@ -202,6 +202,12 @@ function generateUpdateSQL() {
     }
   }
 
+  console.log(`   Processed ${processedCount} entries with patterns`);
+  console.log(`   Generated ${updates.length} SQL update statements`);
+  console.log(`   - Punctuation removal: ${punctuationRemovedCount}`);
+  console.log(`   - Pattern labeling: ${patternLabeledCount}`);
+  console.log(`   - Romanization fixes: ${romanizationFixedCount}\n`);
+
   return { updates, updatesWithPattern };
 }
 
