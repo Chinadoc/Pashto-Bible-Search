@@ -158,7 +158,13 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      verses = supabaseVerses;
+      // Map Supabase verses to include audio_r2_key if available in audio_storage_path
+      verses = supabaseVerses?.map((v: any) => ({
+        ...v,
+        audio_r2_key: v.audio_storage_path && v.audio_storage_path.startsWith('audio/') 
+          ? v.audio_storage_path 
+          : null,
+      })) || [];
       console.log(`✅ Supabase query returned ${verses?.length || 0} verses from ${tableName}`);
     }
 
@@ -225,23 +231,26 @@ export async function GET(request: NextRequest) {
     // Format verses for response
     const formattedVerses = verses.map((v: any) => {
       let finalAudioUrl: string | null = null;
+      const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
       
-      if (useD1 && v.audio_r2_key) {
-        // Use R2 audio URL via Cloudflare Worker
-        const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+      // Priority 1: Use R2 audio if audio_r2_key is available (from D1 or Supabase)
+      if (v.audio_r2_key) {
         finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_r2_key)}`;
-      } else {
-        // Fallback to existing audio URL handling (Supabase/Google Drive)
+      } 
+      // Priority 2: Check if audio_storage_path looks like an R2 path
+      else if (v.audio_storage_path && (v.audio_storage_path.startsWith('audio/') || v.audio_storage_path.startsWith('verses/'))) {
+        finalAudioUrl = `${cloudflareWorkerUrl}/api/audio/stream/${encodeURIComponent(v.audio_storage_path)}`;
+      }
+      // Priority 3: Fallback to Supabase URL if available
+      else if (v.audio_public_url && v.audio_public_url.includes('supabase.co')) {
+        finalAudioUrl = v.audio_public_url;
+      }
+      // Priority 4: Last resort - Google Drive (should be deprecated)
+      else {
         const rawAudioUrl = v.audio_url || v.audio_public_url;
-        
-        if (rawAudioUrl) {
-          // If it's a Supabase URL, use it directly without normalization
-          if (rawAudioUrl.includes('supabase.co')) {
-            finalAudioUrl = rawAudioUrl;
-          } else {
-            // For Google Drive URLs, normalize them
-            finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
-          }
+        if (rawAudioUrl && rawAudioUrl.includes('drive.google.com')) {
+          console.warn(`⚠️ Using Google Drive fallback for ${v.book} ${v.chapter}:${v.verse} - consider migrating to R2`);
+          finalAudioUrl = normalizeGoogleDriveUrl(rawAudioUrl);
         }
       }
       
@@ -255,7 +264,7 @@ export async function GET(request: NextRequest) {
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
         audio_storage_path: v.audio_storage_path || v.audio_r2_key,
         audio_public_url: finalAudioUrl,
-        audio_r2_key: v.audio_r2_key || null, // Include R2 key for D1 verses
+        audio_r2_key: v.audio_r2_key || v.audio_storage_path || null,
       };
     });
 
