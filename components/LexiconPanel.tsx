@@ -254,6 +254,20 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     // Filter by compound type (if available)
     if (compoundTypeFilter !== 'any') {
       filtered = filtered.filter(item => {
+        const itemWordType = (item as any).wordType;
+        
+        if (compoundTypeFilter === 'dynamic') {
+          // Look for dynamic compound patterns (noun + verb)
+          return itemWordType === 'compound_dynamic';
+        } else if (compoundTypeFilter === 'stative') {
+          // Look for stative compound patterns (adjective/noun + کول/کېدل)
+          return itemWordType === 'compound_stative';
+        } else if (compoundTypeFilter === 'compound_dynamic') {
+          return itemWordType === 'compound_dynamic';
+        } else if (compoundTypeFilter === 'compound_stative') {
+          return itemWordType === 'compound_stative';
+        }
+        
         // Check if word contains zero-width non-joiner or space (compound indicator)
         const isCompound = item.form.includes('\u200c') || item.form.includes('\u200d') || item.form.includes(' ');
         if (compoundTypeFilter === 'dynamic') {
@@ -625,6 +639,8 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                 <option value="any">All</option>
                 <option value="dynamic">Dynamic</option>
                 <option value="stative">Stative</option>
+                <option value="compound_dynamic">Dynamic Compounds</option>
+                <option value="compound_stative">Stative Compounds</option>
               </select>
             </div>
 
