@@ -35,8 +35,27 @@ According to LingDocs grammar (https://grammar.lingdocs.com/verbs/):
 - Endings: م (1sg), ې (2sg), ي (3sg), و (1pl), ئ (2pl), ي (3pl)
 
 #### 2. Perfect
-- Uses past participle + auxiliary verb (یم/یې/دی/ده/یو/یئ/دي)
-- Example: نومېدلی دی (he/it has been called)
+According to [LingDocs Perfect Verbs](https://grammar.lingdocs.com/verbs/perfect-verbs-intro/) and [All Perfect Forms](https://grammar.lingdocs.com/verbs/all-perfect-verbs/):
+
+**Formula**: Past Participle + Auxiliary Verb (equative endings)
+
+**Present Perfect Forms**:
+- زه نومېدلی یم (zu noomedúlay yum) - I have been called
+- ته نومېدلی یې (tu noomedúlay ye) - You have been called
+- هغه نومېدلی دی (haghá noomedúlay day) - He/it has been called
+- هغه نومېدلې ده (haghá noomedúle da) - She/it has been called
+- موږ نومېدلي یو (mooG noomedúlee yoo) - We have been called
+- تاسې نومېدلي یئ (táase noomedúlee yey) - You (pl.) have been called
+- هغوی نومېدلي دي (haghwée noomedúlee dee) - They have been called
+
+**Past Perfect Forms**:
+- زه نومېدلی وم (zu noomedúlay wum) - I had been called
+- ته نومېدلی وې (tu noomedúlay we) - You had been called
+- هغه نومېدلی و (haghá noomedúlay wo) - He/it had been called
+- هغه نومېدلې وه (haghá noomedúle wa) - She/it had been called
+- موږ نومېدلي وو (mooG noomedúlee woo) - We had been called
+- تاسې نومېدلي وئ (táase noomedúlee wey) - You (pl.) had been called
+- هغوی نومېدلي وو (haghwée noomedúlee woo) - They had been called
 
 #### 3. Past (Simple/Continuous)
 - Uses perfective root: ونومېدل (or نومېدل with split head)
@@ -51,8 +70,32 @@ According to LingDocs grammar (https://grammar.lingdocs.com/verbs/):
 - Example: نومېږه (be called!)
 
 #### 6. Negative
-- Uses نه before verb
-- Example: نه نومېږم (I am not called)
+According to [LingDocs Negatives](https://grammar.lingdocs.com/verbs/negatives/) and [VP Structure](https://grammar.lingdocs.com/phrase-structure/vp/):
+
+**For Intransitive Verbs** (like نومېدل):
+- **نه** goes **before** the verb block
+- The subject is the **king** (controls verb agreement)
+- Subject does NOT inflect
+
+**Present Negative Forms**:
+- زه نه نومېږم (zu nú nooméGum) - I am not called
+- ته نه نومېږې (tu nú nooméGe) - You are not called
+- هغه نه نومېږي (haghá nú nooméGee) - He/it is not called
+
+**Past Negative Forms**:
+- زه نه نومېدل (zu nú noomedúl) - I was not called
+- ته نه نومېدل (tu nú noomedúl) - You were not called
+- هغه نه نومېدل (haghá nú noomedúl) - He/it was not called
+
+**Perfect Negative Forms**:
+- زه نه نومېدلی یم (zu nú noomedúlay yum) - I have not been called
+- ته نه نومېدلی یې (tu nú noomedúlay ye) - You have not been called
+- هغه نه نومېدلی دی (haghá nú noomedúlay day) - He/it has not been called
+
+**Important Notes**:
+- For intransitive verbs, **نه** always goes before the verb block
+- The subject (king) never inflects in intransitive verbs
+- The verb endings agree with the subject (king)
 
 ## Forms Found in Bible Text
 
@@ -146,6 +189,33 @@ According to [LingDocs Imperative Verbs](https://grammar.lingdocs.com/verbs/impe
 5. Add verb stems/roots to verb lexicon tables
 6. Implement grammar-based verb form generation
 
+## VP Structure (Verb Phrase Structure)
+
+According to [LingDocs VP Structure](https://grammar.lingdocs.com/phrase-structure/vp/):
+
+**نومېدل is an intransitive verb**, so it follows Structure #1:
+
+### Structure: Intransitive Verbs 🛴
+
+**Subject (King)** → **Verb**
+
+- Subject is the **king** (controls verb agreement)
+- Subject does **NOT inflect**
+- Verb endings agree with the subject
+- No object (servant)
+
+**Examples**:
+- زه نومېږم (zu nooméGum) - I am called
+- زه نومېدل (zu noomedúl) - I was called
+- زه نومېدلی یم (zu noomedúlay yum) - I have been called
+
+**Key Points**:
+- Subject never inflects (even in past tense)
+- Verb always agrees with subject
+- Structure stays the same in all tenses (present, past, perfect)
+
+This is different from transitive verbs, which have different structures for non-past vs. past tense.
+
 ## References
 
 - https://grammar.lingdocs.com/verbs/verbs-intro/
@@ -157,4 +227,8 @@ According to [LingDocs Imperative Verbs](https://grammar.lingdocs.com/verbs/impe
 - https://grammar.lingdocs.com/verbs/past-verbs/
 - https://grammar.lingdocs.com/verbs/future-verbs/
 - https://grammar.lingdocs.com/verbs/imperative-verbs/
+- https://grammar.lingdocs.com/verbs/perfect-verbs-intro/
+- https://grammar.lingdocs.com/verbs/all-perfect-verbs/
+- https://grammar.lingdocs.com/verbs/negatives/
+- https://grammar.lingdocs.com/phrase-structure/vp/
 
