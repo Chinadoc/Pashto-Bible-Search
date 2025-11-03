@@ -1043,7 +1043,7 @@ export default function ClientHome() {
   // Update coverage state when coverageData changes
   useEffect(() => {
     setCoverage(coverageData);
-  }, [coverageData]);
+  }, [coverageData, setCoverage]);
 
   const executeSearch = useCallback(async (
     opts: {
