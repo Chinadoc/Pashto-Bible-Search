@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       // Calculate similarity (simple word overlap)
       const googleWords = new Set(googleText.split(/\s+/));
       const elevenWords = new Set(elevenText.split(/\s+/));
-      const intersection = new Set([...googleWords].filter(x => elevenWords.has(x)));
+      const intersection = new Set([...googleWords].filter((x: string) => elevenWords.has(x)));
       const union = new Set([...googleWords, ...elevenWords]);
       const similarity = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
 
