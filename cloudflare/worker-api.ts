@@ -38,6 +38,116 @@ function parseJsonSafe<T>(jsonString: string | null, defaultValue: T): T {
   }
 }
 
+/**
+ * Extract Pashto words from text
+ */
+function extractPashtoWords(text: string): string[] {
+  const words = text.match(/[\u0600-\u06FF]+/g) || [];
+  return words.map(w => w.trim()).filter(w => w.length > 0);
+}
+
+/**
+ * Clean word by removing punctuation
+ */
+function cleanWord(word: string): string {
+  return word
+    .replace(/[.,!?؟،[\](){}«»]/g, '')
+    .trim();
+}
+
+/**
+ * Extract words from video transcript and add to word_frequencies
+ */
+async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
+  // Extract words
+  const words = extractPashtoWords(transcript);
+  
+  // Count words
+  const wordCounts = new Map<string, number>();
+  for (const word of words) {
+    const cleaned = cleanWord(word);
+    if (cleaned && cleaned.length > 0) {
+      wordCounts.set(cleaned, (wordCounts.get(cleaned) || 0) + 1);
+    }
+  }
+
+  if (wordCounts.size === 0) {
+    console.log(`   No words extracted from transcript`);
+    return;
+  }
+
+  // Ensure video_word_mappings table exists
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS video_word_mappings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      video_id TEXT NOT NULL,
+      pashto_word TEXT NOT NULL,
+      frequency INTEGER DEFAULT 1,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+      UNIQUE(video_id, pashto_word)
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_video_word_video ON video_word_mappings(video_id)
+  `).run().catch(() => {}); // Ignore if index already exists
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_video_word_word ON video_word_mappings(pashto_word)
+  `).run().catch(() => {}); // Ignore if index already exists
+
+  // Process words in batches
+  const batchSize = 50;
+  const allWords = Array.from(wordCounts.entries());
+  let processed = 0;
+
+  for (let i = 0; i < allWords.length; i += batchSize) {
+    const batch = allWords.slice(i, i + batchSize);
+
+    for (const [word, count] of batch) {
+      try {
+        // Update or insert word_frequencies
+        await env.DB.prepare(`
+          INSERT INTO word_frequencies (
+            pashto_word, frequency_total, frequency_afghan2023_ot, frequency_afghan2023_nt,
+            frequency_yousafzai2019_ot, frequency_yousafzai2019_nt, frequency_rank,
+            created_at, updated_at
+          )
+          VALUES (?, ?, 0, 0, 0, 0, 0, strftime('%s', 'now'), strftime('%s', 'now'))
+          ON CONFLICT(pashto_word) DO UPDATE SET
+            frequency_total = frequency_total + ?,
+            updated_at = strftime('%s', 'now')
+        `).bind(word, count, count).run();
+
+        // Insert video_word_mappings
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO video_word_mappings (video_id, pashto_word, frequency, updated_at)
+          VALUES (?, ?, ?, strftime('%s', 'now'))
+        `).bind(videoId, word, count).run();
+
+        processed++;
+      } catch (error: any) {
+        console.warn(`   Failed to process word "${word}": ${error.message}`);
+      }
+    }
+  }
+
+  // Recalculate ranks (do this once at the end)
+  if (processed > 0) {
+    await env.DB.prepare(`
+      UPDATE word_frequencies
+      SET frequency_rank = (
+        SELECT COUNT(*) + 1
+        FROM word_frequencies wf2
+        WHERE wf2.frequency_total > word_frequencies.frequency_total
+      )
+    `).run().catch(() => {}); // Ignore errors in rank calculation
+  }
+
+  console.log(`   Processed ${processed} unique words from video ${videoId}`);
+}
+
 // ========================================
 // API Routes
 // ========================================
