@@ -1314,7 +1314,6 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         
         if (freqData && freqData.length > 0 && freqData[0].frequency_count) {
           totalEstimatedCount = freqData[0].frequency_count;
-          hasMoreResults = (totalEstimatedCount ?? 0) > transformed.length;
         }
       } catch (freqError) {
         console.warn('Could not check word frequency for total count:', freqError);
@@ -1353,6 +1352,13 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
             source: 'video_transcript',
           }));
           transformed.push(...videoTransformed);
+        }
+
+        // Update hasMoreResults now that transformed is available
+        if (totalEstimatedCount !== undefined) {
+          hasMoreResults = totalEstimatedCount > transformed.length;
+        } else {
+          hasMoreResults = transformed.length >= limit;
         }
 
         // Cache the results
