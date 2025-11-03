@@ -76,13 +76,73 @@ According to LingDocs grammar (https://grammar.lingdocs.com/verbs/):
 
 4. **Punctuation**: Some forms include punctuation (نومېده، نومېده.) which should be cleaned.
 
+## Future Forms
+
+According to [LingDocs Future Verbs](https://grammar.lingdocs.com/verbs/future-verbs/):
+
+### Imperfective Future
+**Formula**: به + Present (imperfective stem + endings)
+- Used for ongoing/recurring future events
+- Emphasizes certainty of event happening
+
+**Forms**:
+- زه به نومېږم (zu ba nooméGum) - I will be called
+- ته به نومېږې (tu ba nooméGe) - You will be called
+- هغه به نومېږي (haghá ba nooméGee) - He/it will be called
+- موږ به نومېږو (mooG ba nooméGoo) - We will be called
+- تاسې به نومېږئ (táase ba nooméGey) - You (pl.) will be called
+- هغوی به نومېږي (haghwée ba nooméGee) - They will be called
+
+### Perfective Future
+**Formula**: به + Subjunctive (perfective stem + endings)
+- Used for one-time future events
+- Less certainty than imperfective future
+
+**Forms**:
+- زه به ونومېږم (zu ba óonoomeGum) - I will be called
+- ته به ونومېږې (tu ba óonoomeGe) - You will be called
+- هغه به ونومېږي (haghá ba óonoomeGee) - He/it will be called
+- موږ به ونومېږو (mooG ba óonoomeGoo) - We will be called
+- تاسې به ونومېږئ (táase ba óonoomeGey) - You (pl.) will be called
+- هغوی به ونومېږي (haghwée ba óonoomeGee) - They will be called
+
+## Imperative Forms
+
+According to [LingDocs Imperative Verbs](https://grammar.lingdocs.com/verbs/imperative-verbs/):
+
+### Imperfective Imperative
+**Formula**: Imperfective Stem + Imperative Ending
+- Used for repeated/general commands
+- Emphasizes firmness/certainty
+
+**Forms**:
+- نومېږه (nooméGa) - Be called! (singular)
+- نومېږئ (nooméGey) - Be called! (plural)
+
+### Perfective Imperative
+**Formula**: Perfective Stem + Imperative Ending
+- Used for one-time complete actions
+
+**Forms**:
+- ونومېږه (óonoomeGa) - Be called! (singular)
+- ونومېږئ (óonoomeGey) - Be called! (plural)
+
+### Negative Imperative
+**Formula**: مه + Imperfective Imperative
+- Only one form (no aspect distinction)
+
+**Forms**:
+- مه نومېږه (mú nooméGa) - Don't be called! (singular)
+- مه نومېږئ (mú nooméGey) - Don't be called! (plural)
+
 ## Next Steps
 
 1. Mark base verb form with `word_type = 'verb'`
 2. Mark perfect forms as `word_type = 'verb_conjugation'`
-3. Link conjugations to base verb via a `base_verb` field
-4. Add verb stems/roots to verb lexicon tables
-5. Implement grammar-based verb form generation
+3. Mark future and imperative forms as `word_type = 'verb_conjugation'`
+4. Link conjugations to base verb via a `base_verb` field
+5. Add verb stems/roots to verb lexicon tables
+6. Implement grammar-based verb form generation
 
 ## References
 
