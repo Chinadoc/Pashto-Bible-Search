@@ -62,8 +62,26 @@ According to [LingDocs Perfect Verbs](https://grammar.lingdocs.com/verbs/perfect
 - Example: زه نومېدل (I was called)
 
 #### 4. Ability
-- Uses past participle + شو/شوې
-- Example: نومېدلی شم (I can be called)
+According to [LingDocs Ability](https://grammar.lingdocs.com/verbs/ability/):
+
+**Formula**: Past Participle + شو/شوې (ability auxiliary)
+
+**Present Ability Forms**:
+- زه نومېدلی شم (zu noomedúlay shum) - I can be called
+- موږ نومېدلي شو (mooG noomedúlee shoo) - We can be called
+- ته نومېدلی شې (tu noomedúlay she) - You can be called
+- تاسې نومېدلي شئ (táase noomedúlee shey) - You (pl.) can be called
+- هغه نومېدلی شي (haghá noomedúlay shee) - He/it can be called
+- هغه نومېدلې شي (haghá noomedúle shee) - She/it can be called
+
+**Past Ability Forms**:
+- زه نومېدلی شوم (zu noomedúlay shwum) - I could be called
+- موږ نومېدلي شوو (mooG noomedúlee shwoo) - We could be called
+- ته نومېدلی شوې (tu noomedúlay shwe) - You could be called
+- تاسې نومېدلي شوئ (táase noomedúlee shwey) - You (pl.) could be called
+- هغه نومېدلی شو (haghá noomedúlay sho) - He/it could be called
+- هغه نومېدلې شوه (haghá noomedúle shwa) - She/it could be called
+- هغوی نومېدلي شول (haghwée noomedúlee shwul) - They could be called
 
 #### 5. Imperative
 - Uses imperfective stem + imperative ending
@@ -216,6 +234,24 @@ According to [LingDocs VP Structure](https://grammar.lingdocs.com/phrase-structu
 
 This is different from transitive verbs, which have different structures for non-past vs. past tense.
 
+## Passive Voice
+
+According to [LingDocs Passive Voice](https://grammar.lingdocs.com/verbs/passive-voice/):
+
+**Formula**: Past Participle + کېدل (to become)
+
+**Present Passive Forms**:
+- نومېدلی کېږي (noomedúlay kéGee) - is called (m.)
+- نومېدلې کېږي (noomedúle kéGee) - is called (f.)
+- نومېدلي کېږي (noomedúlee kéGee) - are called
+
+**Past Passive Forms**:
+- نومېدلی کېدل (noomedúlay kedúl) - was called (m.)
+- نومېدلې کېدل (noomedúle kedúl) - was called (f.)
+- نومېدلي کېدل (noomedúlee kedúl) - were called
+
+**Note**: Passive voice uses the past participle + کېدل (to become), which is different from perfect forms that use past participle + equative auxiliary (یم/دی/ده).
+
 ## References
 
 - https://grammar.lingdocs.com/verbs/verbs-intro/
@@ -231,4 +267,6 @@ This is different from transitive verbs, which have different structures for non
 - https://grammar.lingdocs.com/verbs/all-perfect-verbs/
 - https://grammar.lingdocs.com/verbs/negatives/
 - https://grammar.lingdocs.com/phrase-structure/vp/
+- https://grammar.lingdocs.com/verbs/passive-voice/
+- https://grammar.lingdocs.com/verbs/ability/
 
