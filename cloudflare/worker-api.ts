@@ -56,7 +56,7 @@ function cleanWord(word: string): string {
 }
 
 /**
- * Extract words from video transcript and add to word_frequencies
+ * Extract words from video transcript and add to word_frequencies with categorization
  */
 async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
   // Extract words
@@ -83,6 +83,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
       video_id TEXT NOT NULL,
       pashto_word TEXT NOT NULL,
       frequency INTEGER DEFAULT 1,
+      audio_r2_key TEXT,
       created_at INTEGER DEFAULT (strftime('%s', 'now')),
       updated_at INTEGER DEFAULT (strftime('%s', 'now')),
       UNIQUE(video_id, pashto_word)
@@ -91,40 +92,85 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_video_word_video ON video_word_mappings(video_id)
-  `).run().catch(() => {}); // Ignore if index already exists
+  `).run().catch(() => {});
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_video_word_word ON video_word_mappings(pashto_word)
-  `).run().catch(() => {}); // Ignore if index already exists
+  `).run().catch(() => {});
+
+  // Get dictionary metadata for words (POS, inflections, etc.)
+  const allWords = Array.from(wordCounts.keys());
+  const wordMetadata = new Map<string, any>();
+  
+  // Query dictionary for metadata in batches
+  const batchSize = 100;
+  for (let i = 0; i < allWords.length; i += batchSize) {
+    const batch = allWords.slice(i, i + batchSize);
+    const placeholders = batch.map(() => '?').join(',');
+    
+    try {
+      const dictResults = await env.DB.prepare(`
+        SELECT pashto_word, pos, word_type, inflection_type, compound_type,
+               base_form, romanization, english_translation
+        FROM word_frequencies
+        WHERE pashto_word IN (${placeholders})
+      `).bind(...batch).all();
+      
+      for (const row of dictResults.results || []) {
+        wordMetadata.set(row.pashto_word as string, row);
+      }
+    } catch (error) {
+      console.warn(`   Failed to fetch metadata for batch: ${error}`);
+    }
+  }
 
   // Process words in batches
-  const batchSize = 50;
-  const allWords = Array.from(wordCounts.entries());
   let processed = 0;
 
   for (let i = 0; i < allWords.length; i += batchSize) {
     const batch = allWords.slice(i, i + batchSize);
 
-    for (const [word, count] of batch) {
+    for (const word of batch) {
+      const count = wordCounts.get(word) || 0;
+      const metadata = wordMetadata.get(word);
+      
       try {
-        // Update or insert word_frequencies
-        await env.DB.prepare(`
-          INSERT INTO word_frequencies (
-            pashto_word, frequency_total, frequency_afghan2023_ot, frequency_afghan2023_nt,
-            frequency_yousafzai2019_ot, frequency_yousafzai2019_nt, frequency_rank,
-            created_at, updated_at
-          )
-          VALUES (?, ?, 0, 0, 0, 0, 0, strftime('%s', 'now'), strftime('%s', 'now'))
-          ON CONFLICT(pashto_word) DO UPDATE SET
-            frequency_total = frequency_total + ?,
-            updated_at = strftime('%s', 'now')
-        `).bind(word, count, count).run();
+        // Get or create audio R2 key for this word in this video
+        // Use the segment where the word appears most frequently
+        const audioKey = `videos/${videoId}/full.mp3`; // Full video audio for now
+        
+        // Update or insert word_frequencies with metadata preservation
+        if (metadata) {
+          // Word exists in dictionary - update frequency, preserve all metadata (pos, inflection_type, etc.)
+          await env.DB.prepare(`
+            UPDATE word_frequencies
+            SET 
+              frequency_total = frequency_total + ?,
+              updated_at = strftime('%s', 'now')
+            WHERE pashto_word = ?
+          `).bind(count, word).run();
+        } else {
+          // New word from video - insert without metadata (will be categorized later or inherit from dictionary lookup)
+          // Video words are marked by their presence in video_word_mappings table
+          await env.DB.prepare(`
+            INSERT INTO word_frequencies (
+              pashto_word, frequency_total, frequency_afghan2023_ot, frequency_afghan2023_nt,
+              frequency_yousafzai2019_ot, frequency_yousafzai2019_nt, frequency_rank,
+              created_at, updated_at
+            )
+            VALUES (?, ?, 0, 0, 0, 0, 0, strftime('%s', 'now'), strftime('%s', 'now'))
+            ON CONFLICT(pashto_word) DO UPDATE SET
+              frequency_total = frequency_total + ?,
+              updated_at = strftime('%s', 'now')
+          `).bind(word, count, count).run();
+        }
 
-        // Insert video_word_mappings
+        // Insert video_word_mappings with audio reference
         await env.DB.prepare(`
-          INSERT OR REPLACE INTO video_word_mappings (video_id, pashto_word, frequency, updated_at)
-          VALUES (?, ?, ?, strftime('%s', 'now'))
-        `).bind(videoId, word, count).run();
+          INSERT OR REPLACE INTO video_word_mappings 
+          (video_id, pashto_word, frequency, audio_r2_key, updated_at)
+          VALUES (?, ?, ?, ?, strftime('%s', 'now'))
+        `).bind(videoId, word, count, audioKey).run();
 
         processed++;
       } catch (error: any) {
@@ -142,7 +188,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
         FROM word_frequencies wf2
         WHERE wf2.frequency_total > word_frequencies.frequency_total
       )
-    `).run().catch(() => {}); // Ignore errors in rank calculation
+    `).run().catch(() => {});
   }
 
   console.log(`   Processed ${processed} unique words from video ${videoId}`);

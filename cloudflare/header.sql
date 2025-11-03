@@ -1,0 +1,12 @@
+-- Import Verb Stems/Roots from Dictionary to Word Frequencies
+-- This adds base verb information (stems/roots) from dictionary to word_frequencies
+-- Reference: https://grammar.lingdocs.com/verbs/master-chart/
+
+-- Add columns if missing (SQLite doesn't support IF NOT EXISTS, so we'll handle errors)
+-- These may already exist, which is fine
+-- base_verb TEXT;
+-- word_type TEXT;
+-- imperfective_stem TEXT;
+-- perfective_stem TEXT;
+-- perfective_root TEXT;
+-- past_participle TEXT;

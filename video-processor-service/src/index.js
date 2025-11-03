@@ -96,9 +96,9 @@ async function transcribeWithGoogleFlash(audioFile, apiKey) {
     const audioBuffer = await readFile(finalAudioFile);
     const audioBase64 = audioBuffer.toString('base64');
     
-    // Use Gemini 2.0 Flash Experimental for audio transcription
+    // Use Gemini 2.5 Flash for audio transcription (better Pashto support)
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         contents: [{
           parts: [{
