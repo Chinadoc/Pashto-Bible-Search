@@ -465,7 +465,7 @@ export async function POST(request: NextRequest) {
       variants = [],
       enableFuzzy = false,
       language = 'pashto',
-      limit = 100,
+      limit = 2000,
       translation = 'afghan2023',
     } = body;
     const scope = normaliseScope(body.scope);
@@ -952,7 +952,40 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
       try {
           console.log('🔍 Generating related forms for expanded search:', convertedQuery);
 
-        // Try to determine if it's a verb or noun and generate appropriate forms
+        // Use word_frequencies table to get POS, romanization, and English translation
+        let posGuess = 'unknown';
+        let romanization: string | undefined;
+        let englishTranslation: string | undefined;
+        
+        try {
+          const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+          ));
+          
+          const { data: freqData } = await supabase
+            .from('word_frequencies')
+            .select('ation, pos, english_translation')
+            .eq('pashto_word', convertedQuery)
+            .limit(1);
+          
+          if (freqData && freqData.length > 0) {
+            const entry = freqData[0];
+            romanization = entry.ation || undefined;
+            posGuess = entry.pos?.toLowerCase() || 'unknown';
+            englishTranslation = entry.english_translation || undefined;
+            
+            console.log(`📊 Word frequency data for "${convertedQuery}":`, {
+              pos: entry.pos,
+              romanization: romanization,
+              english: englishTranslation
+            });
+          }
+        } catch (freqError) {
+          console.warn('Failed to fetch word frequency data:', freqError);
+        }
+
+        // Fallback to dictionary if word_frequencies didn't have data
         const { dictionary } = await getData();
         const dictEntry = dictionary.find((entry: any) => {
           // Check exact Pashto match
@@ -968,20 +1001,22 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           return false;
         });
 
-        // Detect part of speech from dictionary
-        const pos = dictEntry?.pos?.toLowerCase() || '';
+        // Use word_frequencies POS if available, otherwise fall back to dictionary
+        const pos = posGuess !== 'unknown' ? posGuess : (dictEntry?.pos?.toLowerCase() || '');
         const isNoun = pos.includes('noun') || pos.includes('n.');
         const isVerb = pos.includes('verb') || pos.includes('v.');
         const isAdjective = pos.includes('adj');
 
-          console.log(`📖 Dictionary entry for "${convertedQuery}":`, {
-          pos: dictEntry?.pos,
+          console.log(`📖 POS detection for "${convertedQuery}":`, {
+          pos: pos,
+          source: posGuess !== 'unknown' ? 'word_frequencies' : (dictEntry?.pos ? 'dictionary' : 'unknown'),
           detected: isNoun ? 'noun' : isVerb ? 'verb' : isAdjective ? 'adjective' : 'unknown',
-          entry: dictEntry
+          romanization: romanization || dictEntry?.romanized,
+          english: englishTranslation || dictEntry?.english
         });
 
         let allVariants: any[] = [];
-        let posGuess = 'unknown';
+        let finalPosGuess = posGuess !== 'unknown' ? posGuess : 'unknown';
 
         // Prioritize based on detected POS
         if (isNoun) {
@@ -989,13 +1024,13 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           console.log('✅ Detected as NOUN - generating inflections');
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 30 });
           allVariants.push(...nounVariants);
-          posGuess = 'noun';
+          finalPosGuess = 'noun';
         } else if (isVerb) {
           // It's a verb - only generate verb conjugations
           console.log('✅ Detected as VERB - generating conjugations');
             const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
           allVariants.push(...verbVariants);
-          posGuess = 'verb';
+          finalPosGuess = 'verb';
         } else if (isAdjective) {
           // It's an adjective - generate both inflections and possibly compound verbs
           console.log('✅ Detected as ADJECTIVE - generating inflections and compounds');
@@ -1004,7 +1039,7 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           // Also check for stative compounds (adj + کېدل/کول)
             const verbVariants = await generateVerbVariants(convertedQuery, { cap: 20, includeCompound: true });
           allVariants.push(...verbVariants);
-          posGuess = 'adjective';
+          finalPosGuess = 'adjective';
         } else {
           // Unknown - try both but prioritize by what generates more results
           console.log('⚠️ Unknown POS - trying both');
@@ -1014,11 +1049,11 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           if (verbVariants.length > nounVariants.length) {
             allVariants.push(...verbVariants);
             allVariants.push(...nounVariants);
-            posGuess = 'verb';
+            finalPosGuess = 'verb';
           } else {
             allVariants.push(...nounVariants);
             allVariants.push(...verbVariants);
-            posGuess = 'noun';
+            finalPosGuess = 'noun';
           }
         }
 
@@ -1085,7 +1120,9 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
             other: groupedForms.other,
             forms: groupedForms,
             variantDetails,
-            posGuess: posGuess || dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun')
+            posGuess: finalPosGuess || dictEntry?.pos || (verbs.length > nouns.length ? 'verb' : 'noun'),
+            romanization: romanization || dictEntry?.romanized,
+            english: englishTranslation || dictEntry?.english
           };
         }
       } catch (error) {
@@ -1258,6 +1295,31 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         searchType = 'hybrid';
       }
 
+      // Check if there are more results available using word_frequencies
+      let totalEstimatedCount: number | undefined;
+      let hasMoreResults = false;
+      
+      try {
+        const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        ));
+        
+        // Check frequency for the main query term
+        const { data: freqData } = await supabase
+          .from('word_frequencies')
+          .select('frequency_count')
+          .eq('pashto_word', convertedQuery)
+          .limit(1);
+        
+        if (freqData && freqData.length > 0 && freqData[0].frequency_count) {
+          totalEstimatedCount = freqData[0].frequency_count;
+          hasMoreResults = totalEstimatedCount > transformed.length;
+        }
+      } catch (freqError) {
+        console.warn('Could not check word frequency for total count:', freqError);
+      }
+
       if (searchResults && searchResults.length > 0) {
         console.log('✅ Search successful, found', searchResults.length, 'results');
 
@@ -1339,6 +1401,8 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
             root: romanizedDictionaryMatch?.pashto,
           },
           count: transformed.length,
+          hasMore: hasMoreResults || transformed.length >= limit, // Indicate if there might be more results
+          totalEstimatedCount: totalEstimatedCount, // Estimated total from word_frequencies
           ms: Date.now() - startedAt,
           cached: false,
         });
@@ -1465,7 +1529,7 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
 async function supabaseOptimizedSearch(
   query: string,
   scope: Scope,
-  limit: number = 100,
+  limit: number = 2000,
   translation: string = 'afghan2023'
 ): Promise<any[]> {
   const startTime = Date.now();

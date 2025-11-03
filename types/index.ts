@@ -1,6 +1,6 @@
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
-export type SearchLanguage = "pashto" | "english" | "topics";
+export type SearchLanguage = "pashto" | "english";
 
 export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
 export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';

@@ -551,17 +551,6 @@ function SearchControls({
           >
             🇬🇧 English
           </button>
-          <button
-            onClick={() => setSearchLanguage('topics')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'topics'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Topics - Browse words and verses by semantic categories"
-          >
-            📚 Topics
-          </button>
         </div>
 
         <button
@@ -657,9 +646,9 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
 }
 
 export default function ClientHome() {
-  const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
-  const [coverage, setCoverage] = useState<CoverageItem[]>([]);
+  const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
+  const [hasMoreResults, setHasMoreResults] = useState(false);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
@@ -799,7 +788,7 @@ export default function ClientHome() {
     setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
-    setSearchLanguage(savedLanguage === 'english' ? 'english' : savedLanguage === 'topics' ? 'topics' : 'pashto');
+    setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
     // Tab is now determined by URL, no need to restore from localStorage
   }, []);
 
@@ -1060,6 +1049,7 @@ export default function ClientHome() {
       languageOverride?: SearchLanguage;
       preserveResults?: boolean;
       reason?: string;
+      limit?: number; // Add limit parameter
     } = {}
   ) => {
     const normalizedQuery = query.trim();
@@ -1082,6 +1072,7 @@ export default function ClientHome() {
       languageOverride,
       preserveResults = false,
       reason = 'manual',
+      limit = 2000, // Default to 2000, but can be overridden (e.g., 10 for typing)
     } = opts;
 
     const effectiveVariants =
@@ -1113,6 +1104,7 @@ export default function ClientHome() {
       bookFilter,
       language: languageOverride ?? searchLanguage,
       translation: activeTranslation,
+      limit: limit, // Pass limit to API
     };
 
     if (variantsPayload) {
@@ -1198,6 +1190,8 @@ export default function ClientHome() {
       });
 
       setResults(searchData.results || []);
+      setTotalEstimatedCount(searchData.totalEstimatedCount);
+      setHasMoreResults(searchData.hasMore || false);
       setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
@@ -1300,7 +1294,7 @@ export default function ClientHome() {
   );
 
   const handleSearch = useCallback(
-    (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
+    (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual', limit: 2000 }), // Use limit 2000 on manual search
     [executeSearch]
   );
 
@@ -1568,7 +1562,7 @@ export default function ClientHome() {
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
       setActiveVariantForms([]);
-      executeSearch({ preserveResults: false, reason: 'query' });
+      executeSearch({ preserveResults: false, reason: 'query', limit: 10 }); // Use limit 10 during typing
       // Reset flag after a short delay to allow state updates to complete
       setTimeout(() => {
         isQueryChangingRef.current = false;
@@ -1604,12 +1598,11 @@ export default function ClientHome() {
   const resultsCount = results.length;
 
   const isEnglishMode = searchLanguage === 'english';
-  const isTopicsMode = searchLanguage === 'topics';
 
   // Topics mode - will be used for category browsing
 
   return (
-    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isTopicsMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
+    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1624,27 +1617,15 @@ export default function ClientHome() {
         </div>
       )}
 
-      {/* Topics Mode Banner */}
-      {isTopicsMode && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-2xl">📚</span>
-            <div className="text-center">
-              <p className="font-bold text-lg">Topics Mode Active</p>
-              <p className="text-sm opacity-90">Browse words and verses by semantic categories</p>
-            </div>
-            <span className="text-2xl">📚</span>
-          </div>
-        </div>
-      )}
+      {/* Topics mode - will be used for category browsing */}
 
       {/* Header */}
       <header className="text-center mb-6">
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isTopicsMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isTopicsMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isTopicsMode ? 'Topics - Browse words and verses by semantic categories' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -1766,34 +1747,32 @@ export default function ClientHome() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={
-            isTopicsMode
-              ? "Browse topics (e.g., 'body parts', 'colors', 'animals', 'family')..."
-              : isEnglishMode
+            placeholder={
+              isEnglishMode
                 ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
                 : "Enter Pashto text to search..."
-          }
+            }
           variant="outlined"
           fullWidth
           inputProps={{
-            dir: isEnglishMode || isTopicsMode ? 'ltr' : 'rtl',
-            style: { textAlign: isEnglishMode || isTopicsMode ? 'left' : 'right', padding: '12px 16px' }
+            dir: isEnglishMode ? 'ltr' : 'rtl',
+            style: { textAlign: isEnglishMode ? 'left' : 'right', padding: '12px 16px' }
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              backgroundColor: isEnglishMode ? '#FFF7ED' : isTopicsMode ? '#ECFDF5' : '#374151',
-              borderColor: isEnglishMode ? '#F97316' : isTopicsMode ? '#10B981' : '#4B5563',
+              backgroundColor: isEnglishMode ? '#FFF7ED' : '#374151',
+              borderColor: isEnglishMode ? '#F97316' : '#4B5563',
               color: isEnglishMode ? '#9A3412' : '#F9FAFB',
               '&:hover': {
-                borderColor: isEnglishMode ? '#EA580C' : isTopicsMode ? '#059669' : '#6B7280'
+                borderColor: isEnglishMode ? '#EA580C' : '#6B7280'
               },
               '&.Mui-focused': {
-                borderColor: isEnglishMode ? '#F97316' : isTopicsMode ? '#10B981' : '#3B82F6',
-                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isTopicsMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                borderColor: isEnglishMode ? '#F97316' : '#3B82F6',
+                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
               }
             },
             '& .MuiInputBase-input::placeholder': {
-              color: isEnglishMode ? '#C2410C' : isTopicsMode ? '#065F46' : '#9CA3AF'
+              color: isEnglishMode ? '#C2410C' : '#9CA3AF'
             }
           }}
           InputProps={{
@@ -1881,7 +1860,7 @@ export default function ClientHome() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
+                Results ({filteredResults.length}{totalEstimatedCount && totalEstimatedCount > results.length ? ` of ~${totalEstimatedCount}` : results.length !== filteredResults.length ? ` of ${results.length}` : ''}{hasMoreResults ? '+' : ''})
               </h2>
             </div>
 
@@ -2287,19 +2266,6 @@ export default function ClientHome() {
             )}
           </div>
 
-          {/* Topics Info */}
-          {isTopicsMode && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div>
-                <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
-                  📚 Browse by Topics
-                </h3>
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  Search for a topic to see words and verses in that category. Examples: body parts, family, colors, numbers, weather, animals, food, etc.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Results List */}
           <ResultsList
