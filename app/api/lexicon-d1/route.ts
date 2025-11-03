@@ -9,6 +9,11 @@ export const runtime = 'edge';
 /**
  * Enhanced lexicon frequency API endpoint
  * Queries D1 word_frequencies table with advanced filtering
+ * 
+ * Required Environment Variables:
+ * - CLOUDFLARE_API_TOKEN: Cloudflare API token with "D1:Read" permissions
+ *   OR
+ * - CLOUDFLARE_WORKER_URL: URL of deployed Cloudflare Worker (fallback)
  */
 export async function GET(request: NextRequest) {
   try {
