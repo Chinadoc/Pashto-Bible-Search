@@ -1283,7 +1283,7 @@ app.post('/upload-full-audio', async (req, res) => {
   }
 });
 
-/**
+app.listen(PORT, () => {
   console.log(`🚀 Video processor service running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
 });
