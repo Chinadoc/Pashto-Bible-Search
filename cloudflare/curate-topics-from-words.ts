@@ -28,7 +28,21 @@ const CATEGORIES: Record<string, string[]> = {
   'body_parts_torso': ['chest', 'breast', 'back', 'shoulder', 'arm', 'hand', 'finger', 'palm', 'wrist', 'elbow', 'stomach', 'belly', 'waist', 'side', 'rib'],
   'body_parts_legs': ['leg', 'foot', 'toe', 'knee', 'thigh', 'ankle', 'heel', 'shin'],
   'body_parts_internal': ['heart', 'blood', 'bone', 'flesh', 'skin', 'vein', 'liver', 'kidney', 'lung', 'brain', 'soul', 'spirit'],
-  'body_parts': ['head', 'hair', 'face', 'forehead', 'eye', 'ear', 'nose', 'mouth', 'lip', 'tooth', 'tongue', 'chin', 'cheek', 'neck', 'throat', 'chest', 'breast', 'back', 'shoulder', 'arm', 'hand', 'finger', 'palm', 'wrist', 'elbow', 'stomach', 'belly', 'waist', 'side', 'rib', 'leg', 'foot', 'toe', 'knee', 'thigh', 'ankle', 'heel', 'shin', 'heart', 'blood', 'bone', 'flesh', 'skin', 'vein', 'liver', 'kidney', 'lung', 'brain', 'soul', 'spirit'],
+  'body_parts': [
+    // From body_parts_head
+    'head', 'hair', 'face', 'forehead', 'eye', 'ear', 'nose', 'mouth', 'lip', 'tooth', 'tongue', 'chin', 'cheek', 'neck', 'throat',
+    // From body_parts_torso
+    'chest', 'breast', 'back', 'shoulder', 'arm', 'hand', 'finger', 'palm', 'wrist', 'elbow', 'stomach', 'belly', 'waist', 'side', 'rib',
+    // From body_parts_legs
+    'leg', 'foot', 'toe', 'knee', 'thigh', 'ankle', 'heel', 'shin',
+    // From body_parts_internal
+    'heart', 'blood', 'bone', 'flesh', 'skin', 'vein', 'liver', 'kidney', 'lung', 'brain', 'soul', 'spirit',
+    // Additional body parts for better coverage
+    'beard', 'mustache', 'eyebrow', 'eyelid', 'jaw', 'shoulder blade', 'collarbone', 'spine', 'backbone',
+    'knuckle', 'nail', 'thumb', 'pinky', 'index finger', 'middle finger', 'ring finger',
+    'hip', 'loin', 'groin', 'abdomen', 'navel', 'bellybutton', 'umbilical cord',
+    'calf', 'shinbone', 'instep', 'sole', 'arch', 'toenail', 'fingernail'
+  ],
   
   // Family & Relationships
   'family_male': ['father', 'son', 'brother', 'husband', 'uncle', 'nephew', 'grandfather', 'grandson', 'father-in-law', 'son-in-law', 'brother-in-law'],
@@ -109,37 +123,207 @@ const CATEGORIES: Record<string, string[]> = {
   // Fruits of the Holy Spirit (special category)
   'fruits_holy_spirit': ['love', 'joy', 'peace', 'patience', 'kindness', 'goodness', 'faithfulness', 'gentleness', 'self-control'],
   
-  // Biblical/Theological Topics (from GotQuestions.org Pashto)
-  'salvation': ['salvation', 'save', 'saved', 'savior', 'redeem', 'redemption', 'deliver', 'deliverance', 'rescue', 'eternal life', 'everlasting life'],
-  'forgiveness': ['forgive', 'forgiveness', 'pardon', 'pardon', 'mercy', 'clemency', 'absolve', 'absolution'],
-  'sin': ['sin', 'sins', 'sinful', 'sinner', 'wicked', 'wickedness', 'transgression', 'iniquity', 'evil', 'wrongdoing'],
-  'heaven': ['heaven', 'heavenly', 'paradise', 'eternal', 'eternity', 'immortal', 'glory', 'glorious'],
-  'death': ['death', 'die', 'dying', 'dead', 'grave', 'tomb', 'burial', 'buried', 'afterlife', 'life after death'],
-  'faith': ['faith', 'believe', 'belief', 'trust', 'trusting', 'faithful', 'faithfulness', 'confidence'],
-  'prayer': ['pray', 'prayer', 'praying', 'prayers', 'petition', 'supplication', 'intercession', 'intercede'],
-  'baptism': ['baptize', 'baptism', 'baptized', 'baptizing', 'immerse', 'immersion', 'wash', 'washing'],
-  'trinity': ['trinity', 'god', 'father', 'son', 'holy spirit', 'spirit', 'three', 'one', 'divine'],
-  'holy_spirit': ['holy spirit', 'spirit', 'ghost', 'comforter', 'helper', 'advocate', 'paraclete', 'tongues', 'speaking tongues'],
-  'repentance': ['repent', 'repentance', 'repenting', 'turn', 'return', 'turn away', 'change', 'conversion', 'convert'],
-  'gods_will': ['will', 'plan', 'purpose', 'desire', 'wish', 'intention', 'decree', 'command', 'ordain'],
-  'assurance': ['assurance', 'certain', 'certainty', 'sure', 'confidence', 'secure', 'security', 'guarantee'],
-  'eternal_security': ['eternal security', 'once saved', 'always saved', 'perseverance', 'persevere', 'endure', 'endurance'],
-  'repentance_salvation': ['repent', 'believe', 'faith', 'trust', 'accept', 'receive', 'follow', 'obey'],
-  'hell': ['hell', 'damnation', 'damned', 'eternal fire', 'lake of fire', 'judgment', 'judge', 'condemn', 'condemnation'],
-  'judgment': ['judge', 'judgment', 'judging', 'judge', 'trial', 'verdict', 'sentence', 'punish', 'punishment'],
-  'baptism_importance': ['baptize', 'baptism', 'command', 'obey', 'obedience', 'follow', 'example', 'initiation'],
-  'tithing': ['tithe', 'tithing', 'tenth', 'offer', 'offering', 'give', 'giving', 'contribute', 'contribution'],
-  'marriage': ['marriage', 'marry', 'married', 'wedding', 'wed', 'husband', 'wife', 'spouse', 'divorce', 'divorced'],
-  'divorce': ['divorce', 'divorced', 'separate', 'separation', 'marry', 'remarry', 'remarriage'],
-  'premarital_sex': ['sex', 'sexual', 'fornication', 'immorality', 'chastity', 'purity', 'virgin', 'virginity', 'before marriage'],
-  'women_ministry': ['woman', 'women', 'preach', 'pastor', 'minister', 'serve', 'service', 'minister', 'deacon'],
-  'tongues': ['tongues', 'speaking tongues', 'gift', 'gifts', 'spiritual gifts', 'prophesy', 'prophecy'],
-  'alcohol': ['wine', 'drink', 'drinking', 'alcohol', 'drunk', 'drunkenness', 'sober', 'abstain'],
-  'tattoos': ['tattoo', 'tattoos', 'mark', 'marks', 'body', 'pierce', 'piercing', 'marking'],
-  'pets_heaven': ['animal', 'animals', 'pet', 'pets', 'creature', 'creatures', 'heaven', 'eternal'],
-  'homosexuality': ['homosexual', 'homosexuality', 'same sex', 'gay', 'lesbian', 'sodomy', 'sodomite'],
-  'masturbation': ['masturbation', 'masturbate', 'self', 'lust', 'desire', 'sexual'],
-  'suicide': ['suicide', 'kill', 'killing', 'self', 'murder', 'despair', 'hope', 'hope'],
+  // Biblical/Theological Topics (Enhanced with Biblical Thesaurus concepts)
+  // Based on Nave's Topical Bible, GotQuestions.org, and biblical thesaurus resources
+  
+  'salvation': [
+    'salvation', 'save', 'saved', 'savior', 'redeem', 'redemption', 'deliver', 'deliverance', 'rescue', 
+    'eternal life', 'everlasting life', 'justify', 'justification', 'sanctify', 'sanctification', 
+    'reconcile', 'reconciliation', 'atonement', 'propitiation', 'ransom', 'liberate', 'liberation',
+    'born again', 'new birth', 'regeneration', 'conversion', 'call', 'calling', 'elect', 'election'
+  ],
+  
+  'forgiveness': [
+    'forgive', 'forgiveness', 'pardon', 'pardon', 'mercy', 'clemency', 'absolve', 'absolution',
+    'remit', 'remission', 'release', 'free', 'excuse', 'excuse', 'blot out', 'wipe away',
+    'clear', 'cleanse', 'purge', 'purify', 'wash', 'white', 'snow', 'cover', 'cover over'
+  ],
+  
+  'sin': [
+    'sin', 'sins', 'sinful', 'sinner', 'wicked', 'wickedness', 'transgression', 'iniquity', 'evil', 'wrongdoing',
+    'trespass', 'trespasses', 'guilt', 'guilty', 'guiltiness', 'offense', 'offend', 'rebellion', 'rebel',
+    'disobedience', 'disobey', 'unrighteous', 'unrighteousness', 'ungodly', 'ungodliness', 'unholy',
+    'lawless', 'lawlessness', 'corrupt', 'corruption', 'depraved', 'depravity', 'perverse', 'perversity',
+    'abomination', 'abominable', 'unclean', 'uncleanness', 'defile', 'defiled', 'pollute', 'polluted'
+  ],
+  
+  'heaven': [
+    'heaven', 'heavenly', 'paradise', 'eternal', 'eternity', 'immortal', 'glory', 'glorious',
+    'kingdom', 'kingdom of heaven', 'kingdom of god', 'new jerusalem', 'celestial', 'celestial',
+    'throne', 'throne room', 'abode', 'dwelling', 'mansion', 'treasure', 'inheritance',
+    'crown', 'reward', 'prize', 'rest', 'peace', 'joy', 'blessed', 'blessing'
+  ],
+  
+  'death': [
+    'death', 'die', 'dying', 'dead', 'grave', 'tomb', 'burial', 'buried', 'afterlife', 'life after death',
+    'depart', 'departed', 'perish', 'perished', 'destroy', 'destruction', 'mortal', 'mortality',
+    'corpse', 'body', 'bones', 'ashes', 'dust', 'sleep', 'slept', 'fallen', 'fallen asleep',
+    'resurrection', 'raise', 'raised', 'rise', 'risen', 'awake', 'awaken'
+  ],
+  
+  'faith': [
+    'faith', 'believe', 'belief', 'trust', 'trusting', 'faithful', 'faithfulness', 'confidence',
+    'rely', 'reliance', 'depend', 'dependence', 'lean', 'lean on', 'rest', 'rest in',
+    'hope', 'hoping', 'expect', 'expectation', 'assurance', 'conviction', 'certain', 'certainty',
+    'persevere', 'perseverance', 'endure', 'endurance', 'stand', 'stand firm', 'hold fast'
+  ],
+  
+  'prayer': [
+    'pray', 'prayer', 'praying', 'prayers', 'petition', 'supplication', 'intercession', 'intercede',
+    'ask', 'asking', 'request', 'requesting', 'seek', 'seeking', 'call', 'calling', 'cry', 'crying',
+    'plead', 'pleading', 'beg', 'begging', 'beseech', 'beseeching', 'entreat', 'entreating',
+    'worship', 'worshipping', 'praise', 'praising', 'thanksgiving', 'thank', 'thanking',
+    'bless', 'blessing', 'blessed', 'petition', 'supplication'
+  ],
+  
+  'baptism': [
+    'baptize', 'baptism', 'baptized', 'baptizing', 'immerse', 'immersion', 'wash', 'washing',
+    'dip', 'dipping', 'plunge', 'plunging', 'bury', 'burial', 'rise', 'risen', 'new life',
+    'cleansing', 'cleanse', 'purify', 'purification', 'initiation', 'initiate', 'rite', 'ritual'
+  ],
+  
+  'trinity': [
+    'trinity', 'god', 'father', 'son', 'holy spirit', 'spirit', 'three', 'one', 'divine',
+    'godhead', 'deity', 'divinity', 'eternal', 'almighty', 'omnipotent', 'omniscient', 'omnipresent',
+    'creator', 'lord', 'master', 'king', 'sovereign', 'ruler', 'savior', 'redeemer'
+  ],
+  
+  'holy_spirit': [
+    'holy spirit', 'spirit', 'ghost', 'comforter', 'helper', 'advocate', 'paraclete', 'tongues', 'speaking tongues',
+    'spirit of god', 'spirit of the lord', 'spirit of christ', 'power', 'powerful', 'anointing', 'anoint',
+    'fill', 'filled', 'full', 'fellowship', 'guide', 'guiding', 'lead', 'leading', 'teach', 'teaching',
+    'convict', 'convicting', 'conviction', 'gift', 'gifts', 'spiritual gifts', 'fruit', 'fruits'
+  ],
+  
+  'repentance': [
+    'repent', 'repentance', 'repenting', 'turn', 'return', 'turn away', 'change', 'conversion', 'convert',
+    'change mind', 'change heart', 'remorse', 'remorseful', 'regret', 'regretful', 'sorrow', 'sorrowful',
+    'humble', 'humility', 'humble self', 'acknowledge', 'acknowledgment', 'confess', 'confession',
+    'forsake', 'forsaking', 'abandon', 'abandoning', 'leave', 'leaving', 'renounce', 'renouncing'
+  ],
+  
+  'gods_will': [
+    'will', 'plan', 'purpose', 'desire', 'wish', 'intention', 'decree', 'command', 'ordain',
+    'determine', 'determination', 'destine', 'destination', 'destiny', 'fate', 'providence',
+    'sovereign', 'sovereignty', 'counsel', 'counseling', 'guidance', 'guide', 'direct', 'direction',
+    'choose', 'chosen', 'elect', 'election', 'predestine', 'predestination'
+  ],
+  
+  'assurance': [
+    'assurance', 'certain', 'certainty', 'sure', 'confidence', 'secure', 'security', 'guarantee',
+    'guaranteed', 'sealed', 'seal', 'promise', 'promised', 'pledge', 'pledged', 'covenant',
+    'know', 'knowledge', 'believe', 'belief', 'trust', 'trusting', 'hope', 'hoping', 'expect'
+  ],
+  
+  'eternal_security': [
+    'eternal security', 'once saved', 'always saved', 'perseverance', 'persevere', 'endure', 'endurance',
+    'persist', 'persistence', 'continue', 'continuing', 'abide', 'abiding', 'remain', 'remaining',
+    'hold fast', 'stand firm', 'overcome', 'overcoming', 'victory', 'victorious', 'conquer', 'conquering'
+  ],
+  
+  'repentance_salvation': [
+    'repent', 'believe', 'faith', 'trust', 'accept', 'receive', 'follow', 'obey',
+    'confess', 'confession', 'acknowledge', 'acknowledgment', 'call', 'calling', 'come', 'coming',
+    'surrender', 'surrendering', 'yield', 'yielding', 'submit', 'submission', 'deny self', 'self denial'
+  ],
+  
+  'hell': [
+    'hell', 'damnation', 'damned', 'eternal fire', 'lake of fire', 'judgment', 'judge', 'condemn', 'condemnation',
+    'gehenna', 'hades', 'sheol', 'abyss', 'pit', 'bottomless pit', 'outer darkness', 'weeping', 'gnashing',
+    'torment', 'tormented', 'torture', 'tortured', 'pain', 'suffering', 'punishment', 'punish', 'perish'
+  ],
+  
+  'judgment': [
+    'judge', 'judgment', 'judging', 'judge', 'trial', 'verdict', 'sentence', 'punish', 'punishment',
+    'condemn', 'condemnation', 'convict', 'conviction', 'accuse', 'accusation', 'charge', 'charges',
+    'test', 'tested', 'try', 'tried', 'examine', 'examination', 'weigh', 'weighed', 'measure', 'measured',
+    'day of judgment', 'last day', 'final judgment', 'great white throne'
+  ],
+  
+  'baptism_importance': [
+    'baptize', 'baptism', 'command', 'obey', 'obedience', 'follow', 'example', 'initiation',
+    'commission', 'mandate', 'instruction', 'teach', 'teaching', 'require', 'requirement',
+    'necessary', 'necessity', 'essential', 'important', 'significance', 'symbol', 'symbolic',
+    'profess', 'profession', 'declare', 'declaration', 'witness', 'testimony', 'testify'
+  ],
+  
+  'tithing': [
+    'tithe', 'tithing', 'tenth', 'offer', 'offering', 'give', 'giving', 'contribute', 'contribution',
+    'sacrifice', 'sacrificial', 'donate', 'donation', 'gift', 'gifts', 'present', 'presents',
+    'firstfruits', 'first fruits', 'harvest', 'produce', 'increase', 'income', 'wealth', 'possessions'
+  ],
+  
+  'marriage': [
+    'marriage', 'marry', 'married', 'wedding', 'wed', 'husband', 'wife', 'spouse', 'divorce', 'divorced',
+    'bride', 'bridegroom', 'groom', 'wedding feast', 'wedding banquet', 'betrothed', 'betrothal',
+    'covenant', 'covenant relationship', 'one flesh', 'unite', 'united', 'join', 'joined', 'bond', 'bonded',
+    'love', 'loving', 'cherish', 'cherishing', 'honor', 'honoring', 'respect', 'respecting'
+  ],
+  
+  'divorce': [
+    'divorce', 'divorced', 'separate', 'separation', 'marry', 'remarry', 'remarriage',
+    'put away', 'send away', 'leave', 'leaving', 'abandon', 'abandoning', 'forsake', 'forsaking',
+    'break', 'breaking', 'dissolve', 'dissolved', 'nullify', 'nullified', 'annul', 'annulled',
+    'unfaithful', 'unfaithfulness', 'adultery', 'adulterous', 'infidelity', 'infidel'
+  ],
+  
+  'premarital_sex': [
+    'sex', 'sexual', 'fornication', 'immorality', 'chastity', 'purity', 'virgin', 'virginity', 'before marriage',
+    'unchaste', 'unchastity', 'impure', 'impurity', 'defile', 'defiled', 'pollute', 'polluted',
+    'lust', 'lustful', 'desire', 'desiring', 'covet', 'coveting', 'tempt', 'temptation', 'tempted',
+    'adultery', 'adulterous', 'prostitute', 'prostitution', 'harlot', 'harlotry'
+  ],
+  
+  'women_ministry': [
+    'woman', 'women', 'preach', 'pastor', 'minister', 'serve', 'service', 'minister', 'deacon',
+    'lead', 'leader', 'leadership', 'teach', 'teacher', 'teaching', 'prophesy', 'prophecy', 'prophet',
+    'elder', 'elders', 'bishop', 'overseer', 'shepherd', 'pastoral', 'church', 'congregation',
+    'authority', 'authorities', 'head', 'headship', 'submit', 'submission', 'submissive'
+  ],
+  
+  'tongues': [
+    'tongues', 'speaking tongues', 'gift', 'gifts', 'spiritual gifts', 'prophesy', 'prophecy',
+    'unknown tongue', 'unknown language', 'languages', 'interpret', 'interpretation', 'interpreter',
+    'utter', 'uttering', 'utterance', 'speak', 'speaking', 'glossolalia', 'edify', 'edification',
+    'spirit', 'holy spirit', 'filled', 'fill', 'power', 'anoint', 'anointing'
+  ],
+  
+  'alcohol': [
+    'wine', 'drink', 'drinking', 'alcohol', 'drunk', 'drunkenness', 'sober', 'abstain',
+    'intoxicated', 'intoxication', 'inebriated', 'inebriation', 'beer', 'strong drink',
+    'moderation', 'moderate', 'temperate', 'temperance', 'avoid', 'avoiding', 'flee', 'fleeing',
+    'stumbling block', 'cause to stumble', 'weak', 'weakness', 'liberty', 'freedom'
+  ],
+  
+  'tattoos': [
+    'tattoo', 'tattoos', 'mark', 'marks', 'body', 'pierce', 'piercing', 'marking',
+    'cut', 'cutting', 'gash', 'gashing', 'incision', 'scar', 'scarring', 'brand', 'branding',
+    'inscribe', 'inscription', 'engrave', 'engraving', 'decorate', 'decoration', 'ornament', 'ornamental'
+  ],
+  
+  'pets_heaven': [
+    'animal', 'animals', 'pet', 'pets', 'creature', 'creatures', 'heaven', 'eternal',
+    'beast', 'beasts', 'livestock', 'cattle', 'sheep', 'goat', 'donkey', 'horse',
+    'new earth', 'restored', 'restoration', 'renew', 'renewal', 'paradise', 'garden'
+  ],
+  
+  'homosexuality': [
+    'homosexual', 'homosexuality', 'same sex', 'gay', 'lesbian', 'sodomy', 'sodomite',
+    'sodom', 'sodomites', 'abomination', 'abominable', 'unnatural', 'unnatural relations',
+    'shameful', 'shame', 'lust', 'lustful', 'perversion', 'perverse', 'depraved', 'depravity'
+  ],
+  
+  'masturbation': [
+    'masturbation', 'masturbate', 'self', 'lust', 'desire', 'sexual',
+    'unclean', 'uncleanness', 'impure', 'impurity', 'defile', 'defiled',
+    'tempt', 'temptation', 'tempted', 'sin', 'sinful', 'evil', 'wicked'
+  ],
+  
+  'suicide': [
+    'suicide', 'kill', 'killing', 'self', 'murder', 'despair', 'hope', 'hopeless',
+    'end life', 'take life', 'destroy self', 'self destruction', 'desperate', 'desperation',
+    'sorrow', 'sorrowful', 'grief', 'grieving', 'anguish', 'anguished', 'suffer', 'suffering'
+  ],
   
   // Leadership
   'leadership': ['king', 'queen', 'ruler', 'prince', 'princess', 'leader', 'chief', 'ruler', 'governor', 'judge', 'prophet', 'priest', 'servant', 'slave'],
@@ -249,10 +433,32 @@ function matchWordToCategories(
     let totalScore = 0;
     let exactMatches = 0;
     const matchedKeywords: string[] = [];
+    const translationLower = translation.toLowerCase();
 
-    // Check for exact matches (highest priority)
+    // First, check for multi-word phrases (e.g., "index finger", "ring finger", "holy spirit")
+    for (const keyword of keywords) {
+      if (keyword.includes(' ')) {
+        const keywordLower = keyword.toLowerCase();
+        // Check if the multi-word phrase appears in the translation
+        if (translationLower.includes(keywordLower)) {
+          // Count how many words in the phrase match
+          const phraseWords = keywordLower.split(/\s+/);
+          const matches = phraseWords.filter(pw => translationLower.includes(pw));
+          if (matches.length === phraseWords.length) {
+            totalScore += 1.0;
+            exactMatches++;
+            matchedKeywords.push(keyword);
+          }
+        }
+      }
+    }
+
+    // Check for exact single-word matches (highest priority)
     for (const word of words) {
       for (const keyword of keywords) {
+        // Skip multi-word keywords (already handled above)
+        if (keyword.includes(' ')) continue;
+        
         if (word === keyword.toLowerCase()) {
           totalScore += 1.0;
           exactMatches++;
@@ -266,6 +472,9 @@ function matchWordToCategories(
     // This handles cases like "hand, arm" where both words match
     for (const word of words) {
       for (const keyword of keywords) {
+        // Skip multi-word keywords (already handled above)
+        if (keyword.includes(' ')) continue;
+        
         const keywordLower = keyword.toLowerCase();
         const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
         if (regex.test(word) && !matchedKeywords.includes(keyword)) {
