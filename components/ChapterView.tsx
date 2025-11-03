@@ -122,8 +122,8 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
                     <AudioPlayer audioUrl={verse.audio_public_url} verseRef={verse.ref} autoLoad={true} />
                   </div>
                 ) : (
-                  <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-                    🔇 Audio not available
+                  <div className="mt-3 text-xs text-gray-400 dark:text-gray-500 italic">
+                    (no audio yet)
                   </div>
                 )}
               </div>
