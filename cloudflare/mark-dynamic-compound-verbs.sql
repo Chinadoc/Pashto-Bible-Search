@@ -6,6 +6,10 @@
 -- Add word_type column if missing
 ALTER TABLE word_frequencies ADD COLUMN word_type TEXT;
 
+-- بحث کول = بحث + کول (dynamic compound)
+-- Mark as compound_dynamic
+UPDATE word_frequencies SET word_type = 'compound_dynamic', has_issues = 0 WHERE pashto_word = 'بحث کول';
+
 
 -- Create index
 CREATE INDEX IF NOT EXISTS idx_word_frequencies_word_type ON word_frequencies (word_type);

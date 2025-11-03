@@ -108,24 +108,43 @@ def find_dynamic_compounds_in_dictionary(entries):
     
     return compounds
 
-def identify_compound_patterns_in_word_frequencies():
-    """Identify potential dynamic compounds in word_frequencies"""
-    cmd = """wrangler d1 execute pashto-bible-db --remote --command="SELECT pashto_word, frequency_total, pos FROM word_frequencies WHERE (pashto_word LIKE '% %' OR pashto_word LIKE '%\u200c%' OR pashto_word LIKE '%\u200d%') AND pos LIKE '%verb%' LIMIT 200;" --json"""
+def find_matching_compounds_in_word_frequencies(dict_compounds):
+    """Find dictionary compounds that exist in word_frequencies"""
+    matching_compounds = []
     
-    try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8')
-        if result.returncode == 0:
-            data = json.loads(result.stdout)
-            if isinstance(data, list) and len(data) > 0:
-                first_item = data[0]
-                if isinstance(first_item, dict) and 'results' in first_item:
-                    return first_item['results']
-            elif isinstance(data, dict):
-                return data.get('results', [])
-            return []
-    except Exception as e:
-        print(f"⚠️  Error: {e}")
-        return []
+    print(f'\n🔍 Matching dictionary compounds with word_frequencies...')
+    
+    for compound in dict_compounds[:100]:  # Process first 100 to avoid timeout
+        pashto = compound['pashto']
+        
+        # Try exact match first
+        # Also try without spaces (words might be stored without spaces)
+        pashto_no_space = pashto.replace(' ', '').replace('\u200c', '').replace('\u200d', '')
+        
+        cmd = f"""wrangler d1 execute pashto-bible-db --remote --command="SELECT pashto_word, frequency_total, pos FROM word_frequencies WHERE pashto_word = '{pashto.replace("'", "''")}' OR pashto_word = '{pashto_no_space.replace("'", "''")}' LIMIT 1;" --json"""
+        
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8', timeout=5)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                results = []
+                if isinstance(data, list) and len(data) > 0:
+                    first_item = data[0]
+                    if isinstance(first_item, dict) and 'results' in first_item:
+                        results = first_item['results']
+                elif isinstance(data, dict):
+                    results = data.get('results', [])
+                
+                if results:
+                    matching_compounds.append({
+                        'dictionary_entry': compound,
+                        'word_frequency_entry': results[0],
+                    })
+        except Exception as e:
+            # Skip on error/timeout
+            continue
+    
+    return matching_compounds
 
 def parse_compound(compound_word):
     """Parse a compound word into noun + verb parts"""
@@ -171,39 +190,31 @@ def main():
         for comp in dict_compounds[:5]:
             print(f'      - {comp["pashto"]}: {comp["english"]} ({comp["pos"]})')
     
-    # Find potential compounds in word_frequencies
-    print('\n📊 Analyzing word_frequencies for compound patterns...')
-    freq_compounds = identify_compound_patterns_in_word_frequencies()
-    
-    print(f'   Found {len(freq_compounds)} potential compound verbs')
+    # Find matching compounds in word_frequencies
+    print('\n🔍 Matching dictionary compounds with word_frequencies...')
+    matching = find_matching_compounds_in_word_frequencies(dict_compounds)
+    print(f'   Found {len(matching)} matching compounds in word_frequencies')
     
     # Analyze each potential compound
     confirmed_compounds = []
     
-    for word_data in freq_compounds:
+    for match in matching:
+        compound = match['dictionary_entry']
+        word_data = match['word_frequency_entry']
+        
         word = word_data.get('pashto_word', '')
-        if not word:
-            continue
-        
         parsed = parse_compound(word)
-        if not parsed:
-            continue
         
-        # Check if verb part is an auxiliary verb
-        is_auxiliary = check_if_auxiliary_verb(parsed['verb'])
-        
-        # Check if it's already in dictionary
-        in_dict = any(comp['pashto'] == word for comp in dict_compounds)
-        
-        if is_auxiliary or in_dict:
+        if parsed:
             confirmed_compounds.append({
                 'word': word,
                 'noun_part': parsed['noun'],
                 'verb_part': parsed['verb'],
                 'frequency': word_data.get('frequency_total', 0),
                 'pos': word_data.get('pos', ''),
-                'in_dictionary': in_dict,
-                'is_auxiliary': is_auxiliary,
+                'dictionary_pos': compound.get('pos', ''),
+                'english': compound.get('english', ''),
+                'in_dictionary': True,
             })
     
     print(f'\n   ✅ Confirmed {len(confirmed_compounds)} dynamic compound verbs')
