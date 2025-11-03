@@ -32,7 +32,7 @@ async function uploadFullAudioForVideo(videoId, youtubeUrl) {
     });
 
     const result = await response.json();
-
+    
     if (response.ok && result.success) {
       console.log(`\n✅ Full audio uploaded successfully!`);
       console.log(`   Video ID: ${result.videoId}`);
@@ -50,6 +50,16 @@ async function uploadFullAudioForVideo(videoId, youtubeUrl) {
     }
   } catch (error) {
     console.error(`\n❌ Request failed:`, error.message);
+    // Try to get response text for debugging
+    try {
+      const response = await fetch(`${API_URL}/api/upload-full-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId, youtubeUrl }),
+      });
+      const text = await response.text();
+      console.error(`   Response: ${text.substring(0, 200)}`);
+    } catch {}
     return false;
   }
 }
