@@ -462,6 +462,16 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
       }
       forms.push(main + ' شو') // Past (perfective)
       forms.push(main + ' شوه') // Past feminine
+      
+      // Perfective root forms
+      forms.push(main + ' شول') // Perfective root
+      forms.push(main + ' شوه') // Perfective feminine
+      
+      // Past participles
+      forms.push(main + ' شوی') // Past participle masc. sing.
+      forms.push(main + ' شوې') // Past participle fem. sing.
+      forms.push(main + ' شوي') // Past participle masc. plur.
+      forms.push(main + ' شوې') // Past participle fem. plur.
 
       // Squished forms (fused) - Critical for proper matching!
       for (let i = 0; i < presentEndings.length; i++) {
@@ -469,6 +479,24 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
         forms.push(main + ending.p) // Squished present
       }
       forms.push(main + 'ېدل') // Infinitive squished
+      
+      // Generate gender/number variants of the main part if it's an adjective
+      // ښکېل -> ښکېلې (fem. sing.), ښکېله (fem. sing. alternate), etc.
+      // This handles cases like "ښکېلې کېدل" and "ښکېله کېدل"
+      if (main.endsWith('ل')) {
+        // Masculine singular: ښکېل
+        // Feminine singular: ښکېلې or ښکېله
+        const mainStem = main.slice(0, -1) // Remove ل
+        forms.push(mainStem + 'لې کېدل') // Feminine singular variant
+        forms.push(mainStem + 'له کېدل') // Feminine singular alternate
+        forms.push(mainStem + 'لې کېږم') // Feminine present forms
+        forms.push(mainStem + 'لې شول') // Feminine perfective
+        forms.push(mainStem + 'لې شوې') // Feminine past participle
+        
+        // Plural forms
+        forms.push(mainStem + 'لې کېږي') // Plural present
+        forms.push(mainStem + 'لې شوي') // Plural past participle
+      }
 
     } else if (helper === 'کول') {
       // Present forms for کول compounds using LingDocs structure
@@ -1577,12 +1605,73 @@ async function enrichVariantsFromSupabase(
         }
       }
 
-      // Special handling for "لیدل" and "وینم"
-      if (term === 'لیدل' || term === 'لېدل') {
-        const relatedForms = ['وینم', 'ووینم', 'وینې', 'ووینې', 'ولیدم', 'ولیدې', 'لیدلی', 'لیدلې'];
-        for (const form of relatedForms) {
-          collector.add(form, { sources: ['verb-conjugation'], pos: 'Verb' });
-        }
+      // Query inflections for compound verbs - search both the full compound and the main part
+      if (term.includes(' ') && (term.includes('کېدل') || term.includes('کول') || term.includes('شول'))) {
+        const parts = term.split(' ')
+        const mainPart = parts[0]
+        
+        // Query inflections for the main part (e.g., ښکېل)
+        try {
+          const { data: mainInflections } = await client
+            .from('inflections')
+            .select('inflected_form, grammatical_info, frequency')
+            .eq('base_word', mainPart)
+            .order('frequency', { ascending: false })
+            .limit(50)
+          
+          if (Array.isArray(mainInflections)) {
+            for (const row of mainInflections) {
+              const inflectedForm = row?.inflected_form
+              if (typeof inflectedForm === 'string') {
+                try {
+                  const parsed = JSON.parse(inflectedForm)
+                  if (Array.isArray(parsed)) {
+                    for (const item of parsed) {
+                      if (item && typeof item === 'object' && item.form) {
+                        // Add compound forms with the inflected main part
+                        const compoundForm = item.form + ' ' + parts[1]
+                        collector.add(compoundForm, { sources: ['compound-inflection'], pos: 'verb' })
+                        // Also add squished form if applicable
+                        if (parts[1] === 'کېدل' && item.form.endsWith('ل')) {
+                          const squished = item.form.slice(0, -1) + 'ېدل'
+                          collector.add(squished, { sources: ['compound-inflection'], pos: 'verb' })
+                        }
+                      }
+                    }
+                  }
+                } catch {}
+              }
+            }
+          }
+        } catch {}
+        
+        // Also query inflections for the full compound verb
+        try {
+          const { data: compoundInflections } = await client
+            .from('inflections')
+            .select('inflected_form, grammatical_info, frequency')
+            .eq('base_word', term)
+            .order('frequency', { ascending: false })
+            .limit(50)
+          
+          if (Array.isArray(compoundInflections)) {
+            for (const row of compoundInflections) {
+              const inflectedForm = row?.inflected_form
+              if (typeof inflectedForm === 'string') {
+                try {
+                  const parsed = JSON.parse(inflectedForm)
+                  if (Array.isArray(parsed)) {
+                    for (const item of parsed) {
+                      if (item && typeof item === 'object' && item.form) {
+                        collector.add(item.form, { sources: ['compound-inflection'], pos: 'verb' })
+                      }
+                    }
+                  }
+                } catch {}
+              }
+            }
+          }
+        } catch {}
       }
 
       if (term === 'وینم' || term === 'ووینم') {
@@ -2468,22 +2557,22 @@ export async function POST(request: NextRequest) {
         try {
           const { data: wordFreqData } = await supabase
             .from('word_frequencies')
-            .select('word, frequency')
-            .in('word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-            .gte('frequency', 1)
-            .order('frequency', { ascending: false })
+            .select('pashto_word, frequency_total')
+            .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
+            .gte('frequency_total', 1)
+            .order('frequency_total', { ascending: false })
             .limit(20)
 
           if (Array.isArray(wordFreqData)) {
             const typedWordFreqRows = wordFreqData as Array<{
-              word?: string | null
-              frequency?: number | null
+              pashto_word?: string | null
+              frequency_total?: number | null
             }>
             for (const row of typedWordFreqRows) {
-              if (row?.word && row?.frequency && !existingForms.find(e => e.form === row.word)) {
+              if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
                 existingForms.push({
-                  form: row.word,
-                  count: Number(row.frequency) || 0
+                  form: row.pashto_word,
+                  count: Number(row.frequency_total) || 0
                 })
               }
             }
@@ -2493,22 +2582,22 @@ export async function POST(request: NextRequest) {
           try {
             const { data: wordFreqData2 } = await supabase
               .from('word_frequencies')
-              .select('pashto_word, frequency_count')
+              .select('pashto_word, frequency_total')
               .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-              .gte('frequency_count', 1)
-              .order('frequency_count', { ascending: false })
+              .gte('frequency_total', 1)
+              .order('frequency_total', { ascending: false })
               .limit(20)
 
             if (Array.isArray(wordFreqData2)) {
               const typedWordFreqRows2 = wordFreqData2 as Array<{
                 pashto_word?: string | null
-                frequency_count?: number | null
+                frequency_total?: number | null
               }>
               for (const row of typedWordFreqRows2) {
-                if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
+                if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
                   existingForms.push({
                     form: row.pashto_word,
-                    count: Number(row.frequency_count) || 0
+                    count: Number(row.frequency_total) || 0
                   })
                 }
               }
@@ -2624,9 +2713,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Search phrase error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Error details:', errorMessage, error)
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        error: 'Search failed',
+        errorDetails: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         results: [],
         coverage: [],
         ms: Date.now() - startTime
