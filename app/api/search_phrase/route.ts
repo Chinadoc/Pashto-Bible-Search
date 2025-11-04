@@ -1356,7 +1356,8 @@ async function analyzeInflectionReasons(
         // This catches forms like: ولیدلم, ولیدلو, ولیدلې (from و + لیدل + ending)
         // Key: Perfective past forms are و + imperfective_root + ending
         // Examples: ولیدلم (و + لیدل + م), ولیدلو (و + لیدل + و), ولیدلې (و + لیدل + ې)
-        if (transitivePastEndings.some(ending => trimmed.endsWith(ending))) {
+        const matchingEnding = transitivePastEndings.find(ending => trimmed.endsWith(ending))
+        if (matchingEnding) {
           // Must have more than just "و" + ending (need verb stem/root)
           // Pattern should be: و + (at least 2-3 chars) + ending
           if (trimmed.length > 4 && !trimmed.match(/^وو?$/)) {
@@ -1367,7 +1368,7 @@ async function analyzeInflectionReasons(
             // Check if it looks like: و + verb root + ending
             // This pattern matches: و + لیدل + م, و + کړ + ل, و + وین + م, etc.
             // The middle part should be a verb root (usually ends in ل or has specific patterns)
-            const middlePart = trimmed.slice(1, trimmed.length - ending.length)
+            const middlePart = trimmed.slice(1, trimmed.length - matchingEnding.length)
             if (middlePart.length >= 2) {
               // Verb roots often end in ل, or have specific patterns
               // Accept if it matches the pattern و + root + ending
