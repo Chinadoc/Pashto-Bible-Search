@@ -516,12 +516,19 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const loadVerseAudioUrl = useCallback(async (verseRef: string) => {
     if (verseAudioUrls[verseRef] || loadingAudio.has(verseRef)) return; // Already loaded or loading
 
+    // Check if verse already has audio_verse_url
+    const verse = results.find(v => v.ref === verseRef);
+    if (verse?.audio_verse_url) {
+      setVerseAudioUrls(prev => ({ ...prev, [verseRef]: verse.audio_verse_url }));
+      setResolvedUrls(prev => ({ ...prev, [verseRef]: verse.audio_verse_url }));
+      return;
+    }
+
     setLoadingAudio(prev => new Set(prev).add(verseRef));
 
     try {
       const entry = audioMap[verseRef];
       // Determine translation from verse
-      const verse = results.find(v => v.ref === verseRef);
       const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
       const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
       if (url) {
