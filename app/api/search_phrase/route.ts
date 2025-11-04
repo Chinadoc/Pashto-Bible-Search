@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getD1Database, queryD1, queryD1First, D1Client } from '../../../utils/d1'
+import { getD1Database, queryD1, queryD1First, D1Client } from '../../utils/d1'
 import type { Verse } from '../../../types'
 
 // Book name constants for testament determination
@@ -1682,16 +1682,34 @@ export async function POST(request: NextRequest) {
 
     if (!PASHTO_CHAR_RE.test(originalTerm) && originalTerm.length > 2) {
       try {
-        const dictData = await db.query<{ pashto: string; pos: string; romanized: string }>(
-          `SELECT pashto, pos, romanized FROM dictionary WHERE romanized LIKE ? OR romanized LIKE ? OR romanized LIKE ? LIMIT 3`,
+        // Try romanized lookup first
+        const dictData = await db.query<{ word: string; pos: string; romanization: string; definition: string }>(
+          `SELECT word, pos, romanization, definition FROM dictionary WHERE romanization LIKE ? OR romanization LIKE ? OR romanization LIKE ? LIMIT 5`,
           [`${originalTerm}%`, `%${originalTerm}%`, `%${originalTerm}`]
         );
         if (Array.isArray(dictData)) {
-          for (const row of dictData as Array<{ pashto: string; pos?: string; romanized?: string }>) {
-            if (row && row.pashto) {
+          for (const row of dictData as Array<{ word: string; pos?: string; romanization?: string; definition?: string }>) {
+            if (row && row.word) {
               const pos = typeof row.pos === 'string' ? row.pos : undefined
-              const romanized = typeof row.romanized === 'string' ? row.romanized : undefined
-              variantCollector.add(row.pashto, { sources: ['dictionary'], pos, romanization: romanized })
+              const romanized = typeof row.romanization === 'string' ? row.romanization : undefined
+              variantCollector.add(row.word, { sources: ['dictionary'], pos, romanization: romanized })
+            }
+          }
+        }
+        
+        // Also try English lookup (check definition field for English translations)
+        if (!variantCollector.list().some((form) => PASHTO_CHAR_RE.test(form))) {
+          const englishDictData = await db.query<{ word: string; pos: string; romanization: string; definition: string }>(
+            `SELECT word, pos, romanization, definition FROM dictionary WHERE definition LIKE ? OR definition LIKE ? LIMIT 5`,
+            [`%${originalTerm}%`, `%${originalTerm.toLowerCase()}%`]
+          );
+          if (Array.isArray(englishDictData)) {
+            for (const row of englishDictData as Array<{ word: string; pos?: string; romanization?: string; definition?: string }>) {
+              if (row && row.word && PASHTO_CHAR_RE.test(row.word)) {
+                const pos = typeof row.pos === 'string' ? row.pos : undefined
+                const romanized = typeof row.romanization === 'string' ? row.romanization : undefined
+                variantCollector.add(row.word, { sources: ['dictionary-english'], pos, romanization: romanized })
+              }
             }
           }
         }
@@ -1739,14 +1757,14 @@ export async function POST(request: NextRequest) {
       }
     } else {
       try {
-        const dictRows = await db.query<{ pashto: string; pos: string; romanized: string }>(
-          `SELECT pashto, pos, romanized FROM dictionary WHERE pashto = ? LIMIT 1`,
+        const dictRows = await db.query<{ word: string; pos: string; romanization: string }>(
+          `SELECT word, pos, romanization FROM dictionary WHERE word = ? LIMIT 1`,
           [originalTerm]
         );
         if (Array.isArray(dictRows) && dictRows.length > 0) {
-          const row = dictRows[0] as { pashto: string; pos?: string; romanized?: string }
+          const row = dictRows[0] as { word: string; pos?: string; romanization?: string }
           if (row?.pos) {
-            const romanized = typeof row?.romanized === 'string' ? row.romanized : undefined
+            const romanized = typeof row?.romanization === 'string' ? row.romanization : undefined
             variantCollector.add(originalTerm, { sources: ['dictionary'], pos: row.pos, romanization: romanized })
           }
         }
@@ -2311,9 +2329,22 @@ export async function POST(request: NextRequest) {
           }
         }
         
+        // CRITICAL: Also add ALL forms from variantDetails (which includes inflections from inflections table)
+        // This ensures we check ALL inflected forms against word_frequencies
+        const variantForms = variantDetails
+          .filter((meta) => PASHTO_CHAR_RE.test(meta.form))
+          .map((meta) => meta.form)
+        
+        // Add variant forms to allPossibleForms (deduplicate)
+        const formsSet = new Set(allPossibleForms)
+        for (const form of variantForms) {
+          formsSet.add(form)
+        }
+        const allPossibleFormsWithVariants = Array.from(formsSet)
+        
         // Debug logging for جوړول
         if (normalizedLookup.includes('جوړول')) {
-          console.log(`DEBUG: جوړول - Generated ${allPossibleForms.length} possible forms:`, allPossibleForms.slice(0, 20))
+          console.log(`DEBUG: جوړول - Generated ${allPossibleFormsWithVariants.length} possible forms:`, allPossibleFormsWithVariants.slice(0, 20))
         }
 
         // Check which forms actually exist in the Bible using form_occurrences
@@ -2321,9 +2352,9 @@ export async function POST(request: NextRequest) {
         
         // Query in batches to avoid URL length limits
         const batchSize = 15
-        const maxFormsToCheck = includeRelated ? 120 : 60 // Check more forms when includeRelated is true
-        for (let i = 0; i < Math.min(allPossibleForms.length, maxFormsToCheck); i += batchSize) {
-          const batch = allPossibleForms.slice(i, i + batchSize)
+        const maxFormsToCheck = includeRelated ? allPossibleFormsWithVariants.length : Math.min(60, allPossibleFormsWithVariants.length) // Check ALL forms when includeRelated is true
+        for (let i = 0; i < Math.min(allPossibleFormsWithVariants.length, maxFormsToCheck); i += batchSize) {
+          const batch = allPossibleFormsWithVariants.slice(i, i + batchSize)
           
           try {
             const placeholders = batch.map(() => '?').join(',')
@@ -2409,13 +2440,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Also check word_frequencies table for additional forms
+        // CRITICAL: Check ALL forms, not just a subset
         try {
-          const formsToCheck = allPossibleForms.slice(0, includeRelated ? 60 : 30)
-          const placeholders = formsToCheck.map(() => '?').join(',')
-          const wordFreqData = await db.query<{ pashto_word: string; frequency_total: number }>(
-            `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 20`,
-            formsToCheck
-          );
+          const formsToCheck = includeRelated ? allPossibleFormsWithVariants : allPossibleFormsWithVariants.slice(0, 30)
+          if (formsToCheck.length > 0) {
+            const placeholders = formsToCheck.map(() => '?').join(',')
+            const wordFreqData = await db.query<{ pashto_word: string; frequency_total: number }>(
+              `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 100`,
+              formsToCheck
+            );
 
           if (Array.isArray(wordFreqData)) {
             const typedWordFreqRows = wordFreqData as Array<{
@@ -2434,7 +2467,7 @@ export async function POST(request: NextRequest) {
         } catch {
           // Try different column names
           try {
-            const formsToCheck = allPossibleForms.slice(0, includeRelated ? 60 : 30)
+            const formsToCheck = includeRelated ? allPossibleFormsWithVariants : allPossibleFormsWithVariants.slice(0, 30)
             const placeholders = formsToCheck.map(() => '?').join(',')
             const wordFreqData2 = await db.query<{ pashto_word: string; frequency_total: number }>(
               `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 20`,
@@ -2514,9 +2547,9 @@ export async function POST(request: NextRequest) {
         }
         
         // Fallback: If no forms found, at least show the inflected variants
-        if (existingForms.length === 0 && allPossibleForms.length > 1) {
+        if (existingForms.length === 0 && allPossibleFormsWithVariants.length > 1) {
           console.log('DEBUG: No forms found in database, showing generated forms as fallback')
-          const fallbackForms = allPossibleForms.slice(1, 11).map(form => ({ form, count: 0 }))
+          const fallbackForms = allPossibleFormsWithVariants.slice(1, 11).map(form => ({ form, count: 0 }))
           relatedForms = {
             verbs: fallbackForms.filter(f => verbForms.includes(f.form) || f.form.includes('ول') || f.form.includes('کول') || f.form.includes('نم') || f.form.includes('م')),
             nouns: fallbackForms.filter(f => !verbForms.includes(f.form) && !f.form.includes('ول') && !f.form.includes('کول') && !f.form.includes('نم') && !f.form.includes('م') && !f.form.includes('ل')),
