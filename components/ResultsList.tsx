@@ -443,9 +443,17 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       const versesByTranslation: { afghan2023: string[], yousafzai2019: string[] } = { afghan2023: [], yousafzai2019: [] };
       for (let i = startIndex; i < endIndex; i++) {
         const verse = results[i];
-        if (verse && verse.ref && !verseAudioUrls[verse.ref]) {
-          const translation = verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-          versesByTranslation[translation].push(verse.ref);
+        if (verse && verse.ref) {
+          // Use audio_verse_url directly if available (from search results)
+          if (verse.audio_verse_url) {
+            setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: verse.audio_verse_url }));
+            continue;
+          }
+          // Otherwise, add to batch loading list
+          if (!verseAudioUrls[verse.ref]) {
+            const translation = verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+            versesByTranslation[translation].push(verse.ref);
+          }
         }
       }
 
