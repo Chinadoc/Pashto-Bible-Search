@@ -2450,17 +2450,18 @@ export async function POST(request: NextRequest) {
               formsToCheck
             );
 
-          if (Array.isArray(wordFreqData)) {
-            const typedWordFreqRows = wordFreqData as Array<{
-              pashto_word?: string | null
-              frequency_total?: number | null
-            }>
-            for (const row of typedWordFreqRows) {
-              if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
-                existingForms.push({
-                  form: row.pashto_word,
-                  count: Number(row.frequency_total) || 0
-                })
+            if (Array.isArray(wordFreqData)) {
+              const typedWordFreqRows = wordFreqData as Array<{
+                pashto_word?: string | null
+                frequency_total?: number | null
+              }>
+              for (const row of typedWordFreqRows) {
+                if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
+                  existingForms.push({
+                    form: row.pashto_word,
+                    count: Number(row.frequency_total) || 0
+                  })
+                }
               }
             }
           }
@@ -2499,33 +2500,136 @@ export async function POST(request: NextRequest) {
           console.log(`DEBUG: جوړول - Found ${existingForms.length} existing forms:`, existingForms.slice(0, 10))
         }
 
-        const verbs: Array<{form: string, count: number}> = []
-        const nouns: Array<{form: string, count: number}> = []
-        const other: Array<{form: string, count: number}> = []
+        const verbs: Array<{form: string, count: number, inflectionType?: string}> = []
+        const nouns: Array<{form: string, count: number, inflectionType?: string}> = []
+        const other: Array<{form: string, count: number, inflectionType?: string}> = []
+
+        // Helper function to determine inflection type from form characteristics
+        // Also checks grammatical_info if available
+        function determineInflectionType(form: string, baseWord: string, grammaticalInfo?: string): string {
+          // Try to parse grammatical_info first if available
+          if (grammaticalInfo) {
+            try {
+              const info = typeof grammaticalInfo === 'string' ? JSON.parse(grammaticalInfo) : grammaticalInfo
+              if (info && typeof info === 'object') {
+                const formType = info.form_type
+                if (formType && typeof formType === 'string') {
+                  // Map common form types
+                  if (formType === 'plain') return 'plain'
+                  if (formType === '1st') {
+                    // Check if masculine or feminine based on pattern
+                    if (form.endsWith('ې')) return '1st_f'
+                    return '1st_m'
+                  }
+                  if (formType === '2nd') return '2nd'
+                  if (formType === 'plural') {
+                    if (form.endsWith('انې')) return 'plural_f'
+                    if (form.endsWith('انو')) return 'plural_2nd_m'
+                    if (form.endsWith('یانو')) return 'plural_2nd'
+                    return 'plural_m'
+                  }
+                }
+              }
+            } catch {}
+          }
+          
+          // Fallback to pattern-based detection
+          // Pattern 1: Plain form (same as base)
+          if (form === baseWord) return 'plain'
+          
+          // Pattern 2: 1st inflection masculine (same as plain for masculine nouns)
+          if (form === baseWord && !form.endsWith('ه')) return '1st_m'
+          
+          // Pattern 3: 1st inflection feminine (ends with ې)
+          if (form.endsWith('ې') && !form.endsWith('انې')) return '1st_f'
+          
+          // Pattern 4: 2nd inflection (ends with و)
+          if (form.endsWith('و') && !form.endsWith('انو') && !form.endsWith('یانو')) return '2nd'
+          
+          // Pattern 5: Vocative (masculine: ends with ه, feminine: ends with ې)
+          if (form.endsWith('ه') && form !== baseWord + 'ه') return 'vocative_m'
+          if (form.endsWith('ې') && form.endsWith('انې')) return 'vocative_f'
+          
+          // Pattern 6: Plural forms
+          if (form.endsWith('ان')) return 'plural_m'
+          if (form.endsWith('انې')) return 'plural_f'
+          if (form.endsWith('انو')) return 'plural_2nd_m'
+          if (form.endsWith('یانو')) return 'plural_2nd'
+          if (form.endsWith('ونه')) return 'plural_inanimate'
+          if (form.endsWith('ونو')) return 'plural_inanimate_2nd'
+          
+          // Pattern 7: Feminine forms ending in ۍ
+          if (form.endsWith('ۍ')) return '1st_f_stressed'
+          
+          // Pattern 8: 2nd inflection ending in یو
+          if (form.endsWith('یو')) return '2nd'
+          
+          return 'other'
+        }
+
+        // Create a map of form -> grammatical_info for better inflection type detection
+        const formToGrammaticalInfo = new Map<string, string>()
+        if (includeRelated && !isVerb) {
+          try {
+            const inflData = await db.query<{ inflected_form: string; grammatical_info: string }>(
+              `SELECT inflected_form, grammatical_info FROM inflections WHERE base_word = ? LIMIT 300`,
+              [normalizedLookup]
+            );
+            if (Array.isArray(inflData)) {
+              for (const row of inflData) {
+                const raw = row?.inflected_form
+                if (!raw) continue
+                const forms: string[] = []
+                if (typeof raw === 'string') {
+                  try {
+                    const parsed = JSON.parse(raw)
+                    if (Array.isArray(parsed)) {
+                      for (const entry of parsed) {
+                        if (typeof entry === 'string') forms.push(entry)
+                        else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form)
+                      }
+                    } else {
+                      forms.push(raw)
+                    }
+                  } catch {
+                    forms.push(raw)
+                  }
+                }
+                for (const form of forms) {
+                  if (form && typeof form === 'string' && row?.grammatical_info) {
+                    formToGrammaticalInfo.set(form, row.grammatical_info)
+                  }
+                }
+              }
+            }
+          } catch {}
+        }
 
         for (const item of existingForms) {
           const form = item.form
+          const grammaticalInfo = formToGrammaticalInfo.get(form)
+          const inflectionType = determineInflectionType(form, normalizedLookup, grammaticalInfo)
 
           // Categorize based on form origin and characteristics
           if (verbForms.includes(form)) {
             // This form was generated from verb conjugation
-            verbs.push(item)
+            verbs.push({...item, inflectionType})
           } else if (form.includes(' ') && (form.includes('ول') || form.includes('ېدل') || form.includes('کړل') || form.includes('کول'))) {
             // Compound verbs (منډه وهل, etc.)
-            verbs.push(item)
+            verbs.push({...item, inflectionType})
           } else if (form.endsWith('ل') || form.endsWith('ېدل') || form.endsWith('وهل') || form.endsWith('کول') || form.endsWith('کړل')) {
             // Simple verbs (infinitives)
-            verbs.push(item)
+            verbs.push({...item, inflectionType})
           } else if ((form.endsWith('م') || form.endsWith('ې') || form.endsWith('ي') || form.endsWith('و') || form.endsWith('ئ'))) {
             // Verb conjugations - these are the actual verb person endings
             // Don't exclude 'ي' here as it's a valid verb ending (3rd person singular)
-            verbs.push(item)
+            verbs.push({...item, inflectionType})
           } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
             // Nouns and adjectives (all inflected forms)
-            nouns.push(item)
+            nouns.push({...item, inflectionType})
           } else {
-            other.push(item)
+            other.push({...item, inflectionType})
           }
         }
 
