@@ -532,31 +532,32 @@ export async function POST(request: NextRequest) {
     // Dictionary lookup for disambiguation (parallel to other searches)
     let dictionaryEntries: any[] = [];
     try {
-      const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ));
+      const { getD1Database, queryD1 } = await import('@/utils/d1');
+      const db = getD1Database();
+      
+      if (db) {
+        // Query D1 dictionary table
+        const dictData = await queryD1<{ word: string; romanization: string; pos: string; definition: string }>(
+          db,
+          `SELECT word as pashto, romanization as romanized, pos, definition as english FROM dictionary WHERE word = ? LIMIT 10`,
+          [originalQuery]
+        );
 
-      const { data: dictData } = await supabase
-        .from('dictionary')
-        .select('pashto, romanized, pos, english')
-        .eq('pashto', originalQuery)
-        .limit(10);
-
-      if (dictData && dictData.length > 0) {
-        dictionaryEntries = dictData;
-      } else {
-        // Try normalized variant
-        const normalized = originalQuery.replace(/ي/g, 'ی').replace(/ى/g, 'ی');
-        if (normalized !== originalQuery) {
-          const { data: normData } = await supabase
-            .from('dictionary')
-            .select('pashto, romanized, pos, english')
-            .eq('pashto', normalized)
-            .limit(10);
-          
-          if (normData) {
-            dictionaryEntries = normData;
+        if (dictData && dictData.length > 0) {
+          dictionaryEntries = dictData;
+        } else {
+          // Try normalized variant
+          const normalized = originalQuery.replace(/ي/g, 'ی').replace(/ى/g, 'ی');
+          if (normalized !== originalQuery) {
+            const normData = await queryD1<{ word: string; romanization: string; pos: string; definition: string }>(
+              db,
+              `SELECT word as pashto, romanization as romanized, pos, definition as english FROM dictionary WHERE word = ? LIMIT 10`,
+              [normalized]
+            );
+            
+            if (normData && normData.length > 0) {
+              dictionaryEntries = normData;
+            }
           }
         }
       }
