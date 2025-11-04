@@ -1364,6 +1364,11 @@ async function deleteVideo(env: Env, videoId: string): Promise<Response> {
     await env.DB.prepare(`DELETE FROM video_word_mappings WHERE video_id = ?`)
       .bind(videoId)
       .run();
+    
+    // Delete video_transcripts entry
+    await env.DB.prepare(`DELETE FROM video_transcripts WHERE video_id = ?`)
+      .bind(videoId)
+      .run();
 
     return jsonResponse({
       success: true,
