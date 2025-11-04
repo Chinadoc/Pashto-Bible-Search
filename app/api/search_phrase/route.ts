@@ -1576,6 +1576,7 @@ async function enrichVariantsFromD1(
     }
   } catch {}
 
+  try {
     await enrichIrregularVariants(db, collector)
     addDirectionalVariants(collector)
   } catch (error) {
@@ -2453,12 +2454,13 @@ export async function POST(request: NextRequest) {
           for (const formData of formsToCheck) {
             try {
               // Get count from D1 database
+              const bookPlaceholders = bookVariantsList.map(() => '?').join(',')
+              const escapedForm = formData.form.replace(/[%_]/g, '\\$&')
               const countResult = await db.queryFirst<{ count: number }>(
-                `SELECT COUNT(*) as count FROM verses WHERE book IN (${bookPlaceholders})`,
-                bookVariantsList
+                `SELECT COUNT(*) as count FROM verses WHERE book IN (${bookPlaceholders}) AND text LIKE ?`,
+                [...bookVariantsList, `%${escapedForm}%`]
               );
               const count = countResult?.count || 0
-                .ilike('text', `%${formData.form.replace(/[%_]/g, '\\$&')}%`) // Escape SQL wildcards
 
               if (count && count > 0) {
                 bookFilteredForms.push({
