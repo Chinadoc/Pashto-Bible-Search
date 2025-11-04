@@ -74,249 +74,20 @@ interface SearchRequest {
 }
 
 // Irregular verbs map based on the comprehensive table provided
-const IRREGULAR_VERBS: Record<string, {
-  meaning: string
-  imperfectiveStem: string
-  perfectiveStem: string
-  imperfectiveRoot: string
-  perfectiveRoot: string
-  pastParticiple: string
-  notes: string
-}> = {
-  'لیدل': {
-    meaning: 'to see',
-    imperfectiveStem: 'وینـ',
-    perfectiveStem: 'ووینـ',
-    imperfectiveRoot: 'لیدل',
-    perfectiveRoot: 'ولیدل',
-    pastParticiple: 'لیدلی',
-    notes: 'Irregular imperfective stem; transitive; dynamic compounds'
-  },
-  'خوړل': {
-    meaning: 'to eat',
-    imperfectiveStem: 'خورـ',
-    perfectiveStem: 'وخورـ',
-    imperfectiveRoot: 'خوړل',
-    perfectiveRoot: 'وخوړل',
-    pastParticiple: 'خوړلی',
-    notes: 'Irregular imperfective stem; transitive; dynamic compounds'
-  },
-  'بوتلل': {
-    meaning: 'to take/send (by leading)',
-    imperfectiveStem: 'بیایـ',
-    perfectiveStem: 'بوځـ',
-    imperfectiveRoot: 'بوتلل',
-    perfectiveRoot: 'بوتلل',
-    pastParticiple: 'بوتللی',
-    notes: 'Highly irregular stems/roots; transitive; dynamic compounds'
-  },
-  'وړل': {
-    meaning: 'to carry/take (physically)',
-    imperfectiveStem: 'وړـ',
-    perfectiveStem: 'یوسـ',
-    imperfectiveRoot: 'وړل',
-    perfectiveRoot: 'ووړل',
-    pastParticiple: 'وړلی',
-    notes: 'Suppletive perfective stem; transitive; dynamic compounds'
-  },
-  'تلل': {
-    meaning: 'to go',
-    imperfectiveStem: 'ځـ',
-    perfectiveStem: 'لاړ شـ',
-    imperfectiveRoot: 'تلل',
-    perfectiveRoot: 'تلو',
-    pastParticiple: 'تللی',
-    notes: 'Suppletive perfective form; intransitive; irregular imperfective stem'
-  },
-  'کول': {
-    meaning: 'to do/make',
-    imperfectiveStem: 'کوـ',
-    perfectiveStem: 'کړـ',
-    imperfectiveRoot: 'کول',
-    perfectiveRoot: 'کړل',
-    pastParticiple: 'کړی',
-    notes: 'Irregular perfective stem; transitive; key helper in compounds'
-  },
-  'کېدل': {
-    meaning: 'to become/happen',
-    imperfectiveStem: 'کېږـ',
-    perfectiveStem: 'شـ',
-    imperfectiveRoot: 'کېدل',
-    perfectiveRoot: 'کېدل',
-    pastParticiple: 'شوی',
-    notes: 'Suppletive perfective stem; intransitive; key helper in stative compounds'
-  },
-  'اخیستل': {
-    meaning: 'to buy/take',
-    imperfectiveStem: 'اخلـ',
-    perfectiveStem: 'اخیستـ',
-    imperfectiveRoot: 'اخیستل',
-    perfectiveRoot: 'واخیستل',
-    pastParticiple: 'اخیستلی',
-    notes: 'Different present/past stems; transitive; irregular imperfective stem'
-  },
-  'ایښودل': {
-    meaning: 'to put/place',
-    imperfectiveStem: 'ږدـ',
-    perfectiveStem: 'ایښودـ',
-    imperfectiveRoot: 'ایښودل',
-    perfectiveRoot: 'ویښودل',
-    pastParticiple: 'ایښودلی',
-    notes: 'Irregular stems; transitive; stative compounds'
-  },
-  'اغوستل': {
-    meaning: 'to wear',
-    imperfectiveStem: 'اغوندـ',
-    perfectiveStem: 'اغوستـ',
-    imperfectiveRoot: 'اغوستل',
-    perfectiveRoot: 'واغوستل',
-    pastParticiple: 'اغوستلی',
-    notes: 'Different present/past stems; transitive'
-  },
-  'الوتل': {
-    meaning: 'to fly',
-    imperfectiveStem: 'الوزـ',
-    perfectiveStem: 'الوتـ',
-    imperfectiveRoot: 'الوتل',
-    perfectiveRoot: 'والوتل',
-    pastParticiple: 'الوتلی',
-    notes: 'Irregular stems; intransitive'
-  },
-  'بکېدل': {
-    meaning: 'to be bent over, become hunchbacked',
-    imperfectiveStem: 'بکېږـ',
-    perfectiveStem: 'بکـ',
-    imperfectiveRoot: 'بکېدل',
-    perfectiveRoot: 'بکېدل',
-    pastParticiple: 'بکېدلی',
-    notes: 'Stative compound; intransitive; irregular stems'
-  },
-  'خوښول': {
-    meaning: 'to like, to choose, to select; to make happy',
-    imperfectiveStem: 'خوښوـ',
-    perfectiveStem: 'خوښکـ',
-    imperfectiveRoot: 'خوښول',
-    perfectiveRoot: 'وخوښول',
-    pastParticiple: 'خوښولی',
-    notes: 'Stative compound; transitive'
-  },
-  'بلېدل': {
-    meaning: 'to burn, catch fire',
-    imperfectiveStem: 'بلېږـ',
-    perfectiveStem: 'بلـ',
-    imperfectiveRoot: 'بلېدل',
-    perfectiveRoot: 'بلېدل',
-    pastParticiple: 'بلېدلی',
-    notes: 'Stative compound; intransitive'
-  },
-  'غوړول': {
-    meaning: 'to grease, oil, butter, lubricate, to make greasy or oily',
-    imperfectiveStem: 'غوړوـ',
-    perfectiveStem: 'غوړکـ',
-    imperfectiveRoot: 'غوړول',
-    perfectiveRoot: 'وغوړول',
-    pastParticiple: 'غوړولی',
-    notes: 'Stative compound; transitive'
-  },
-  'خوب شول': {
-    meaning: 'to fall asleep',
-    imperfectiveStem: 'خوب شوـ',
-    perfectiveStem: 'خوب شوـ',
-    imperfectiveRoot: 'خوب شول',
-    perfectiveRoot: 'خوب شول',
-    pastParticiple: 'خوب شوی',
-    notes: 'Stative compound with شول; intransitive'
-  },
-  'تازه کېدل': {
-    meaning: 'to become fresh, renewed',
-    imperfectiveStem: 'تازه کېږـ',
-    perfectiveStem: 'تازه کـ',
-    imperfectiveRoot: 'تازه کېدل',
-    perfectiveRoot: 'تازه کېدل',
-    pastParticiple: 'تازه کېدلی',
-    notes: 'Stative compound with کېدل; intransitive'
-  },
-  'غوره کېدل': {
-    meaning: 'to be chosen, selected',
-    imperfectiveStem: 'غوره کېږـ',
-    perfectiveStem: 'غوره کـ',
-    imperfectiveRoot: 'غوره کېدل',
-    perfectiveRoot: 'غوره کېدل',
-    pastParticiple: 'غوره کېدلی',
-    notes: 'Stative compound with کېدل; intransitive'
-  },
-  'ایستل': {
-    meaning: 'to take out',
-    imperfectiveStem: 'باسـ',
-    perfectiveStem: 'ایستـ',
-    imperfectiveRoot: 'ایستل',
-    perfectiveRoot: 'ویستل',
-    pastParticiple: 'ایستلی',
-    notes: 'Suppletive imperfective stem; transitive'
-  },
-  'اوبدل': {
-    meaning: 'to weave',
-    imperfectiveStem: 'اوبـ',
-    perfectiveStem: 'اوبدـ',
-    imperfectiveRoot: 'اوبدل',
-    perfectiveRoot: 'واوبدل',
-    pastParticiple: 'اوبدلی',
-    notes: 'Irregular stems; transitive'
-  },
-  'پرېښودل': {
-    meaning: 'to leave/let go',
-    imperfectiveStem: 'پرېږدـ',
-    perfectiveStem: 'پرېښودـ',
-    imperfectiveRoot: 'پرېښودل',
-    perfectiveRoot: 'وپرېښودل',
-    pastParticiple: 'پرېښودلی',
-    notes: 'Irregular stems; transitive; stative compounds'
-  },
-  'پېژندل': {
-    meaning: 'to recognize/know',
-    imperfectiveStem: 'پېژنـ',
-    perfectiveStem: 'پېژندـ',
-    imperfectiveRoot: 'پېژندل',
-    perfectiveRoot: 'وپېژندل',
-    pastParticiple: 'پېژندلی',
-    notes: 'Different present/past stems; transitive'
-  },
-  'ختل': {
-    meaning: 'to climb/ascend',
-    imperfectiveStem: 'خېژـ',
-    perfectiveStem: 'ختـ',
-    imperfectiveRoot: 'ختل',
-    perfectiveRoot: 'وختل',
-    pastParticiple: 'ختلی',
-    notes: 'Irregular stems; intransitive'
-  },
-  'وهل': {
-    meaning: 'to hit/strike',
-    imperfectiveStem: 'وهـ',
-    perfectiveStem: 'ووهـ',
-    imperfectiveRoot: 'وهل',
-    perfectiveRoot: 'ووهل',
-    pastParticiple: 'وهلی',
-    notes: 'Irregular stems; transitive'
-  },
-  'غوښتل': {
-    meaning: 'to want',
-    imperfectiveStem: 'غواړـ',
-    perfectiveStem: 'غوښتـ',
-    imperfectiveRoot: 'غوښتل',
-    perfectiveRoot: 'وغوښتل',
-    pastParticiple: 'غوښتلی',
-    notes: 'Irregular stems; transitive'
-  },
-  'کتل': {
-    meaning: 'to look at',
-    imperfectiveStem: 'ګورـ',
-    perfectiveStem: 'کتـ',
-    imperfectiveRoot: 'کتل',
-    perfectiveRoot: 'وکتل',
-    pastParticiple: 'کتلی',
-    notes: 'Suppletive imperfective stem; transitive'
-  }
+function generateIrregularVerbForms(infinitive: string): string[] {
+  // This function now relies on database queries instead of hardcoded IRREGULAR_VERBS
+  // For immediate fallback, we'll generate basic forms
+  // The comprehensive forms come from verb_forms table query in the main search flow
+  const forms: string[] = [infinitive]
+  
+  // Basic pattern-based generation as fallback
+  // Real irregular verb data comes from database queries
+  return forms
+}
+function generateIrregularVerbForms(infinitive: string): string[] {
+  // This function is deprecated - use generateIrregularVerbFormsFromDB instead
+  // Kept for backward compatibility but returns minimal forms
+  return [infinitive];
 }
 
 // Generate forms for regular verbs following standard Pashto conjugation rules
@@ -582,16 +353,54 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
   return forms.filter(Boolean)
 }
 
-// Generate forms for irregular verbs using the predefined map
+// Helper function to generate irregular verb forms from database
+async function generateIrregularVerbFormsFromDB(client: any, infinitive: string): Promise<string[]> {
+  const forms: string[] = [infinitive];
+  
+  try {
+    // Query irregular_verbs table for stem/root data
+    const verbData = await getIrregularVerbData(client, infinitive);
+    if (!verbData) {
+      return forms; // Return just the infinitive if not found
+    }
+    
+    const impStem = verbData.imperfectiveStem?.replace(/ـ$/, '') || '';
+    const perfStem = verbData.perfectiveStem?.replace(/ـ$/, '') || '';
+    
+    if (!impStem && !perfStem) {
+      return forms; // No stems available
+    }
+    
+    // Generate basic present/subjunctive forms using stems
+    const presentEndings = ['م', 'و', 'ې', 'ې', 'ي', 'ي'];
+    for (const ending of presentEndings) {
+      if (impStem) forms.push(impStem + ending);
+      if (perfStem && perfStem !== impStem) forms.push(perfStem + ending);
+    }
+    
+    // Add past participle
+    if (verbData.pastParticiple) {
+      forms.push(verbData.pastParticiple);
+    }
+    
+    // Add roots
+    if (verbData.imperfectiveRoot) forms.push(verbData.imperfectiveRoot);
+    if (verbData.perfectiveRoot && verbData.perfectiveRoot !== verbData.imperfectiveRoot) {
+      forms.push(verbData.perfectiveRoot);
+    }
+  } catch (error) {
+    console.warn(`Error generating irregular verb forms for ${infinitive}:`, error);
+  }
+  
+  return forms.filter(Boolean);
+}
+
+// Generate forms for irregular verbs - now uses database
 function generateIrregularVerbForms(infinitive: string): string[] {
-  const verb = IRREGULAR_VERBS[infinitive]
-  if (!verb) return [infinitive]
-
-  const forms: string[] = [infinitive]
-
-  // Use the irregular stems
-  const impStem = verb.imperfectiveStem.replace(/ـ$/, '') // Remove stem marker
-  const perfStem = verb.perfectiveStem.replace(/ـ$/, '')
+  // This function is deprecated - use generateIrregularVerbFormsFromDB instead
+  // Kept for backward compatibility but returns minimal forms
+  return [infinitive];
+}
 
   // Present & Subjunctive Forms using LingDocs VerbBlock structure
   const presentEndings = [
@@ -665,145 +474,9 @@ function generateIrregularVerbForms(infinitive: string): string[] {
 
   for (let i = 0; i < pastEndings.length; i++) {
     const ending = pastEndings[i][0][0]
-    pastForms.push(verb.imperfectiveRoot.replace(/ل$/, '') + ending.p)
-    pastForms.push(verb.perfectiveRoot.replace(/ل$/, '') + ending.p)
+    const root = infinitive.replace(/ل$/, '')
+    pastForms.push(root + ending.p) // Past
   }
-
-  // Habitual past forms
-  for (const form of pastForms) {
-    habitualPastForms.push(`${baParticle} ${form}`)
-  }
-
-  // Hypothetical past forms (using 'aay' endings as seen in LingDocs)
-  const aayTail = ['ای', 'ی']
-  for (const tail of aayTail) {
-    hypotheticalPastForms.push(verb.imperfectiveRoot.replace(/ل$/, '') + tail)
-    hypotheticalPastForms.push(verb.perfectiveRoot.replace(/ل$/, '') + tail)
-  }
-
-  // Add all modal forms to main forms array
-  forms.push(...presentForms)
-  forms.push(...subjunctiveForms)
-  forms.push(...futureForms)
-  forms.push(...pastForms)
-  forms.push(...habitualPastForms)
-  forms.push(...hypotheticalPastForms)
-
-  // Past forms are now handled in the comprehensive modal structure above
-
-  // Perfect Tenses using LingDocs equative endings structure
-  const equativeEndings: Record<string, any> = {
-    past: {
-      short: [
-        [[{ p: 'وم', f: 'wum' }]],
-        [[{ p: 'وو', f: 'woo' }]],
-        [[{ p: 'وې', f: 'we' }]],
-        [[{ p: 'وې', f: 'we' }]],
-        [[{ p: 'و', f: 'wo' }]],
-        [[{ p: 'وه', f: 'wa' }]]
-      ],
-      long: [
-        [[{ p: 'ول', f: 'wul' }]],
-        [[{ p: 'ول', f: 'wul' }]],
-        [[{ p: 'وې', f: 'we' }]],
-        [[{ p: 'وې', f: 'we' }]],
-        [[{ p: 'ول', f: 'wul' }]],
-        [[{ p: 'وې', f: 'we' }]]
-      ]
-    },
-    present: [
-      [[{ p: 'یم', f: 'yum' }]],
-      [[{ p: 'یو', f: 'yoo' }]],
-      [[{ p: 'یې', f: 'ye' }]],
-      [[{ p: 'یې', f: 'ye' }]],
-      [[{ p: 'دی', f: 'day' }]],
-      [[{ p: 'ده', f: 'da' }]]
-    ],
-    habitual: [
-      [[{ p: 'یم', f: 'yum' }]],
-      [[{ p: 'یو', f: 'yoo' }]],
-      [[{ p: 'یې', f: 'ye' }]],
-      [[{ p: 'یې', f: 'ye' }]],
-      [[{ p: 'وي', f: 'wee' }]],
-      [[{ p: 'وي', f: 'wee' }]]
-    ],
-    subjunctive: [
-      [[{ p: 'وم', f: 'wum' }]],
-      [[{ p: 'وو', f: 'woo' }]],
-      [[{ p: 'وې', f: 'we' }]],
-      [[{ p: 'وې', f: 'we' }]],
-      [[{ p: 'وي', f: 'wee' }]],
-      [[{ p: 'وي', f: 'wee' }]]
-    ],
-    pastSubjunctive: [
-      [[{ p: 'وای', f: 'waay' }]],
-      [[{ p: 'وای', f: 'waay' }]],
-      [[{ p: 'وای', f: 'waay' }]],
-      [[{ p: 'وای', f: 'waay' }]],
-      [[{ p: 'وای', f: 'waay' }]],
-      [[{ p: 'وای', f: 'waay' }]]
-    ]
-  }
-
-  const participleBase = verb.pastParticiple.replace(/ی$/, '') // Remove ی to get base
-
-  // Generate perfect forms for all equative types
-  for (const [type, endings] of Object.entries(equativeEndings)) {
-    for (let i = 0; i < endings.length; i++) {
-      const ending = endings[i][0][0]
-      // Masculine singular
-      forms.push(`${verb.pastParticiple} ${ending.p}`)
-      // Feminine singular (add ې)
-      forms.push(`${participleBase}ې ${ending.p}`)
-      // Plural (add ی)
-      forms.push(`${participleBase}ي ${ending.p}`)
-    }
-  }
-
-  // Ability Moods - Comprehensive
-  forms.push(`${verb.pastParticiple} شم`) // Present Ability M.S.
-  forms.push(`و${verb.pastParticiple} شم`) // Subjunctive Ability M.S.
-  forms.push(`${verb.pastParticiple} شول`) // Past Ability
-
-  // Imperative Forms
-  forms.push(impStem + 'ه') // Imperfective Imperative
-  forms.push(perfStem + 'ه') // Perfective Imperative
-  forms.push(`مه ${impStem}ه`) // Negative Imperfective Imperative
-  forms.push(`مه ${perfStem}ه`) // Negative Perfective Imperative
-
-  // Comprehensive Negative Forms
-  forms.push(`نه ${impStem}م`)     // Negative Present
-  forms.push(`ونه ${perfStem}م`)   // Negative Subjunctive
-  forms.push(`نه ${verb.imperfectiveRoot}`) // Negative Continuous Past
-  forms.push(`ونه ${verb.perfectiveRoot}`)   // Negative Simple Past
-
-  // Negative forms for all persons
-  for (let i = 0; i < presentEndings.length; i++) {
-    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
-    forms.push(`نه ${impStem}${ending.p}`) // Negative Present
-    forms.push(`ونه ${impStem}${ending.p}`) // Negative Present Subjunctive (some verbs use this)
-    if (perfStem !== impStem) {
-      forms.push(`ونه ${perfStem}${ending.p}`) // Negative Subjunctive
-    }
-  }
-
-  // Negative Perfect Forms
-  forms.push(`نه یم ${verb.pastParticiple}`)
-  forms.push(`ونه یم ${verb.pastParticiple}`)
-  forms.push(`نه ول ${verb.pastParticiple}`)
-  forms.push(`ونه ول ${verb.pastParticiple}`)
-
-  // Negative Ability Forms
-  forms.push(`نه شم ${verb.pastParticiple}`)
-  forms.push(`ونه شم ${verb.pastParticiple}`)
-
-  // Add roots and participle
-  forms.push(verb.imperfectiveRoot)
-  forms.push(verb.perfectiveRoot)
-  forms.push(verb.pastParticiple)
-
-  return forms.filter(Boolean)
-}
 
 // Organize forms into LingDocs aspect-based structure
 function organizeFormsByAspect(forms: string[]): {
@@ -1538,30 +1211,110 @@ async function enrichIrregularVariants(
   } catch {}
 }
 
-// Load JSON data for form mappings
-const FORM_TO_ROOT_MAP = (() => {
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(process.cwd(), 'form_to_root_map.json');
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (error) {
-    console.error('Error loading form_to_root_map.json:', error);
-    return {};
-  }
-})();
+// Load JSON data for form mappings - REPLACED WITH DATABASE QUERIES
+// These are now loaded dynamically from Supabase instead of local JSON files
+const FORM_TO_ROOT_MAP: Record<string, string[]> = {}; // Deprecated - use form_roots table
+const GRAMMATICAL_INDEX: Record<string, any> = {}; // Deprecated - use form_lemmas and inflections tables
 
-const GRAMMATICAL_INDEX = (() => {
+// Helper function to get form-to-root mapping from database
+async function getFormToRootMap(client: any, term: string): Promise<string[]> {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(process.cwd(), 'grammatical_index_v15.json');
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const { data } = await client
+      .from('form_roots')
+      .select('root_word')
+      .eq('word_form', term)
+      .order('frequency', { ascending: false })
+      .limit(10);
+    
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(row => row.root_word).filter(Boolean);
+    }
   } catch (error) {
-    console.error('Error loading grammatical_index_v15.json:', error);
-    return {};
+    console.warn(`Error querying form_roots for ${term}:`, error);
   }
-})();
+  return [];
+}
+
+// Helper function to get all forms for a root from database
+async function getFormsForRoot(client: any, root: string): Promise<string[]> {
+  try {
+    const { data } = await client
+      .from('form_roots')
+      .select('word_form')
+      .eq('root_word', root)
+      .order('frequency', { ascending: false })
+      .limit(200);
+    
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(row => row.word_form).filter(Boolean);
+    }
+  } catch (error) {
+    console.warn(`Error querying form_roots for root ${root}:`, error);
+  }
+  return [];
+}
+
+// Helper function to get grammatical index data from database
+async function getGrammaticalIndexData(client: any, term: string): Promise<any> {
+  try {
+    // Query form_lemmas for base word info
+    const { data: lemmaData } = await client
+      .from('form_lemmas')
+      .select('lemma_form, base_word, part_of_speech, frequency')
+      .or(`base_word.eq.${term},lemma_form.eq.${term}`)
+      .order('frequency', { ascending: false })
+      .limit(10);
+    
+    // Query inflections for all forms
+    const { data: inflData } = await client
+      .from('inflections')
+      .select('inflected_form, grammatical_info, frequency')
+      .eq('base_word', term)
+      .order('frequency', { ascending: false })
+      .limit(100);
+    
+    if ((Array.isArray(lemmaData) && lemmaData.length > 0) || 
+        (Array.isArray(inflData) && inflData.length > 0)) {
+      return {
+        identities: [{
+          type: lemmaData?.[0]?.part_of_speech || 'unknown',
+          forms: inflData || []
+        }]
+      };
+    }
+  } catch (error) {
+    console.warn(`Error querying grammatical index for ${term}:`, error);
+  }
+  return null;
+}
+
+// Helper function to get irregular verb data from database
+async function getIrregularVerbData(client: any, verbRoot: string): Promise<any> {
+  try {
+    const { data } = await client
+      .from('irregular_verbs')
+      .select('verb_root, stems, roots, past_participle, romanization')
+      .eq('verb_root', verbRoot)
+      .limit(1);
+    
+    if (Array.isArray(data) && data.length > 0) {
+      const verb = data[0];
+      const stems = verb.stems as Record<string, any>;
+      const roots = verb.roots as Record<string, any>;
+      
+      return {
+        imperfectiveStem: stems?.imperfective || '',
+        perfectiveStem: stems?.perfective || '',
+        imperfectiveRoot: roots?.imperfective || verbRoot,
+        perfectiveRoot: roots?.perfective || verbRoot,
+        pastParticiple: verb.past_participle || '',
+      };
+    }
+  } catch (error) {
+    console.warn(`Error querying irregular_verbs for ${verbRoot}:`, error);
+  }
+  return null;
+}
 
 async function enrichVariantsFromSupabase(
   client: any,
@@ -1572,34 +1325,32 @@ async function enrichVariantsFromSupabase(
   const term = lookupTerm.trim()
   if (!term) return
 
-  // First, try to find related forms using the JSON data I created
+  // First, try to find related forms using database queries instead of JSON files
   if (includeRelated) {
     try {
-      // Check if this term has related forms in the form_to_root_map
-      if (FORM_TO_ROOT_MAP[term]) {
-        const root = FORM_TO_ROOT_MAP[term][0];
+      // Query form_roots table for root mapping (replaces FORM_TO_ROOT_MAP JSON)
+      const roots = await getFormToRootMap(client, term);
+      if (roots.length > 0) {
+        const root = roots[0];
         console.log(`Found root for ${term}: ${root}`);
-
+        
         // Add the root to variants
         collector.add(root, { sources: ['root-map'] });
-
-        // Find all forms that map to this root
-        for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (Array.isArray(roots) && roots.includes(root)) {
-            collector.add(form, { sources: ['root-map'] });
-          }
+        
+        // Get all forms for this root from database
+        const formsForRoot = await getFormsForRoot(client, root);
+        for (const form of formsForRoot) {
+          collector.add(form, { sources: ['root-map'] });
         }
       }
-
-      // Also check the grammatical index for related forms
-      if (GRAMMATICAL_INDEX[term]) {
-        const entry = GRAMMATICAL_INDEX[term];
-        for (const identity of entry.identities || []) {
-          for (const [formType, forms] of Object.entries(identity.forms || {})) {
-            if (Array.isArray(forms)) {
-              for (const form of forms) {
-                collector.add(form.form, { sources: ['grammar-index'], pos: identity.type });
-              }
+      
+      // Query grammatical index data from database (replaces GRAMMATICAL_INDEX JSON)
+      const grammarData = await getGrammaticalIndexData(client, term);
+      if (grammarData?.identities) {
+        for (const identity of grammarData.identities) {
+          for (const formEntry of identity.forms || []) {
+            if (typeof formEntry === 'object' && formEntry.form) {
+              collector.add(formEntry.form, { sources: ['grammar-index'], pos: identity.type });
             }
           }
         }
@@ -1683,16 +1434,16 @@ async function enrichVariantsFromSupabase(
         }
       }
 
-      // Also check for other verb roots and their conjugations
-      if (FORM_TO_ROOT_MAP[term]) {
-        const root = FORM_TO_ROOT_MAP[term][0];
+      // Also check for other verb roots and their conjugations - use database
+      const roots = await getFormToRootMap(client, term);
+      if (roots.length > 0) {
+        const root = roots[0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
-        for (const [form, roots] of Object.entries(FORM_TO_ROOT_MAP)) {
-          if (Array.isArray(roots) && roots.includes(root)) {
-            // Determine if this is a verb conjugation based on the form
-            const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
-            collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
-          }
+        const formsForRoot = await getFormsForRoot(client, root);
+        for (const form of formsForRoot) {
+          // Determine if this is a verb conjugation based on the form
+          const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
+          collector.add(form, { sources: ['root-map'], pos: isVerbForm ? 'Verb' : 'Noun' });
         }
       }
     } catch (error) {
@@ -1702,9 +1453,8 @@ async function enrichVariantsFromSupabase(
 
   const baseLimit = includeRelated ? 80 : 35
 
-  // Only do database queries if we don't have JSON data
-  if (!FORM_TO_ROOT_MAP[term] && !GRAMMATICAL_INDEX[term]) {
-    try {
+  // Always do database queries - no longer checking JSON files first
+  try {
       const { data } = await client
         .from('form_lemmas')
         .select('lemma_form,base_word,part_of_speech,frequency')
@@ -1820,6 +1570,8 @@ async function enrichVariantsFromSupabase(
 
     await enrichIrregularVariants(client, collector)
     addDirectionalVariants(collector)
+  } catch (error) {
+    console.error('Error in database queries:', error);
   }
 }
 
@@ -2544,18 +2296,24 @@ export async function POST(request: NextRequest) {
             }
           }
           
-          // Priority 1: Check if it's an irregular verb - use pattern-based generation as fallback
-          if (normalizedLookup in IRREGULAR_VERBS) {
-            verbForms.push(...generateIrregularVerbForms(normalizedLookup))
-            console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
+          // Priority 1: Check if it's an irregular verb - query database
+          try {
+            const irregularForms = await generateIrregularVerbFormsFromDB(supabase, normalizedLookup);
+            if (irregularForms.length > 1) {
+              verbForms.push(...irregularForms);
+              console.log(`DEBUG: ${normalizedLookup} - Found irregular verb in database, generated ${irregularForms.length} forms`);
+            }
+          } catch (error) {
+            console.warn('Error checking irregular verb:', error);
           }
           // Priority 2: Check if it's a compound verb with irregular auxiliary
           else if (normalizedLookup.includes(' ')) {
             const parts = normalizedLookup.split(' ');
             if (parts.length === 2) {
               const [main, aux] = parts;
-              // Check if auxiliary is irregular
-              if (aux in IRREGULAR_VERBS || aux === 'کېدل' || aux === 'کول') {
+              // Check if auxiliary is irregular - query database instead of hardcoded map
+              const auxVerbData = await getIrregularVerbData(supabase, aux);
+              if (auxVerbData || aux === 'کېدل' || aux === 'کول') {
                 try {
                   const { getCompoundVerbFormsWithIrregularAux } = await import('../utils/lingdocs-irregular-conjugations');
                   const compoundForms = await getCompoundVerbFormsWithIrregularAux(normalizedLookup);
