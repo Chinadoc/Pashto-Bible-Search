@@ -6,6 +6,7 @@ import type { Verse, AudioMap } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '../app/lib/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
 import HighlightText from './HighlightText';
+import EnhancedHighlightText from './EnhancedHighlightText';
 import VirtualizedResults from './VirtualizedResults';
 
 const OT_BOOKS = new Set([
@@ -76,6 +77,77 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     console.warn('Highlight regex error:', error);
     return <span>{text}</span>;
   }
+}
+
+// Enhanced highlighting function that shows inflection reasons
+function highlightWithInflectionReasons(
+  text: string, 
+  terms: string[], 
+  processed?: any
+): ReactNode {
+  if (!processed || !processed.variantDetails) {
+    return highlight(text, terms, processed);
+  }
+
+  // Build a map of form -> inflection reasons
+  const formToReasons = new Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>();
+  const formToInflectionType = new Map<string, string>();
+  
+  // Extract inflection data from variantDetails
+  if (processed.variantDetails) {
+    for (const detail of processed.variantDetails) {
+      if (detail.form && detail.inflectionReasons) {
+        formToReasons.set(detail.form, detail.inflectionReasons);
+      }
+      if (detail.form && detail.inflectionType) {
+        formToInflectionType.set(detail.form, detail.inflectionType);
+      }
+    }
+  }
+  
+  // Also check relatedForms for inflection data
+  if (processed.relatedForms) {
+    const allForms = [
+      ...(processed.relatedForms.nouns || []),
+      ...(processed.relatedForms.verbs || []),
+      ...(processed.relatedForms.other || [])
+    ];
+    
+    for (const form of allForms) {
+      if (form.form && form.inflectionReasons) {
+        formToReasons.set(form.form, form.inflectionReasons);
+      }
+      if (form.form && form.inflectionType) {
+        formToInflectionType.set(form.form, form.inflectionType);
+      }
+    }
+  }
+
+  // Get all tokens to highlight
+  const tokens = [
+    processed.normalized,
+    ...(processed.variants ?? []),
+    ...(processed.variantGroups?.nouns ?? []).map((v: any) => v.form),
+    ...(processed.variantGroups?.verbs ?? []).map((v: any) => v.form),
+  ].filter(Boolean) as string[];
+
+  // Use HighlightText for basic highlighting
+  const basicHighlighted = <HighlightText text={text} tokens={tokens} />;
+  
+  // If no inflection reasons, return basic highlighting
+  if (formToReasons.size === 0) {
+    return basicHighlighted;
+  }
+
+  // Enhanced highlighting with inflection reason tags
+  return (
+    <EnhancedHighlightText 
+      text={text} 
+      tokens={tokens}
+      formToReasons={formToReasons}
+      formToInflectionType={formToInflectionType}
+    />
+  );
 }
 
 function getTranslationBadge(translation?: string | null, dialect?: string | null): ReactNode {
@@ -216,7 +288,7 @@ function VerseItem({
 
       {/* Verse text with absolute-positioned verse number chip */}
       <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-        {verse.text ? highlight(cleanVerseText(verse.text), termsProp || [], processed) : <span className="text-gray-500 italic">No text available</span>}
+        {verse.text ? highlightWithInflectionReasons(cleanVerseText(verse.text), termsProp || [], processed) : <span className="text-gray-500 italic">No text available</span>}
       </p>
 
       {/* Verse number chip removed as requested */}
