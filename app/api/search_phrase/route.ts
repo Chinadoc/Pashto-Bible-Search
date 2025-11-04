@@ -1309,25 +1309,23 @@ async function analyzeInflectionReasons(
     const numeralWords = ['څو', 'یو', 'دوه', 'درې', 'څلور', 'پنځه', 'شپږ', 'اووه', 'اته', 'نهه', 'لس']
 
     // Comprehensive transitive past tense verb detection
-    // Transitive markers that indicate transitive verbs
+    // Focus on detecting actual perfective past tense verb forms, not just roots
+    // Transitive markers are specific verb stems that indicate transitive action
     const transitiveMarkers = [
+      // Compound verb auxiliaries (کړ, ول, etc.)
       'کړ', 'کړل', 'کړه', 'کړې', 'کړو', 'کړم', 'کړئ', 'کړی',
       'ول', 'وله', 'ولې', 'ولو', 'ولم', 'ولئ', 'ولی',
       'وخ', 'وخه', 'وخې', 'وخو', 'وخم', 'وخئ',
-      'ور', 'وره', 'ورې', 'ورو', 'ورم', 'ورئ',
-      'ک', 'که', 'کې', 'کو', 'کم', 'کئ',
-      'ایست', 'ایستل', 'ایسته', 'ایستې', 'ایستو',
-      'پاک', 'پاکه', 'پاکې', 'پاکو',
-      'کښ', 'کښه', 'کښې', 'کښو',
-      'ګر', 'ګره', 'ګرې', 'ګرو',
-      'در', 'دره', 'درې', 'درو'
+      // Specific transitive verb stems (not roots)
+      'وکړ', 'ورکړ', 'ووین', 'ووی', 'وکت', 'واخ', 'ووړ', 'وخو', 'وخړ', 'وژ', 'ولیک', 'وښ',
+      'ایست', 'ایستل', 'ایسته', 'ایستې', 'ایستو', 'پاک', 'پاکه', 'پاکې', 'پاکو'
     ]
     
-    // Past tense endings that indicate past tense
-    const pastEndings = ['م', 'ې', 'ئ', 'ي', 'و', 'ه', 'ول', 'ولي', 'وو']
+    // Past tense endings that agree with object (transitive past characteristic)
+    const transitivePastEndings = ['م', 'ې', 'ئ', 'و', 'ه', 'ول', 'ولي']
     
     // Perfective prefixes (most common in Pashto)
-    const perfectivePrefixes = ['و', 'وو', 'ور', 'وبر', 'وب', 'ود', 'وړ', 'وګ', 'وک', 'وپ', 'وت', 'وچ', 'وخ', 'وج', 'وز', 'وش', 'وغ', 'وف', 'وق', 'ول', 'وم', 'ون', 'وه', 'وی', 'ویا', 'ویب', 'وید', 'ویړ', 'ویک', 'ویل', 'ویم', 'وین', 'ویه', 'ویو']
+    const perfectivePrefixes = ['و', 'وو', 'ور', 'وبر', 'وب', 'ود', 'وړ', 'وګ', 'وک', 'وپ', 'وت', 'وچ', 'وخ', 'وج', 'وز', 'وش', 'وغ', 'وف', 'وق', 'ول', 'وم', 'ون', 'وه', 'وی']
     
     // Tokenize Pashto text (simple word boundary detection)
     function tokenize(text: string): string[] {
@@ -1341,40 +1339,57 @@ async function analyzeInflectionReasons(
       
       const trimmed = token.trim()
       
-      // 1. Check for perfective prefix (و, وو) with transitive markers
-      if (trimmed.startsWith('و') || trimmed.startsWith('وو')) {
-        // Check if it contains transitive markers
+      // 1. Check for perfective prefix (و) + transitive markers
+      // This catches forms like: وکړ, ورکړ, ووین, ووی, etc.
+      if (trimmed.startsWith('و')) {
+        // Check if it contains known transitive markers
         if (transitiveMarkers.some(marker => trimmed.includes(marker))) {
-          return true
-        }
-        // Check for past endings (indicates perfective past)
-        if (pastEndings.some(ending => trimmed.endsWith(ending))) {
-          // Exclude intransitive "شو" unless it has transitive markers
-          if (trimmed.includes('شو') && !transitiveMarkers.some(m => trimmed.includes(m))) {
+          // Exclude intransitive forms like "شو" unless it has transitive markers
+          if (trimmed === 'شو' || trimmed.startsWith('شو') && !transitiveMarkers.some(m => trimmed.includes(m))) {
             return false
           }
           return true
         }
+        
+        // Check for perfective prefix + past ending pattern
+        // Pattern: و + verb stem + transitive past ending
+        // This catches forms like: ولیدلم, ولیدلو, ولیدلې (from و + لیدل + ending)
+        // Key: Perfective past forms are و + imperfective_root + ending
+        // Examples: ولیدلم (و + لیدل + م), ولیدلو (و + لیدل + و), ولیدلې (و + لیدل + ې)
+        if (transitivePastEndings.some(ending => trimmed.endsWith(ending))) {
+          // Must have more than just "و" + ending (need verb stem/root)
+          // Pattern should be: و + (at least 2-3 chars) + ending
+          if (trimmed.length > 4 && !trimmed.match(/^وو?$/)) {
+            // Exclude equative forms (و, وو, وم, وې, وئ, etc.)
+            if (trimmed.match(/^و[ومېئ]$/)) {
+              return false
+            }
+            // Check if it looks like: و + verb root + ending
+            // This pattern matches: و + لیدل + م, و + کړ + ل, و + وین + م, etc.
+            // The middle part should be a verb root (usually ends in ل or has specific patterns)
+            const middlePart = trimmed.slice(1, trimmed.length - ending.length)
+            if (middlePart.length >= 2) {
+              // Verb roots often end in ل, or have specific patterns
+              // Accept if it matches the pattern و + root + ending
+              return true
+            }
+          }
+        }
       }
       
       // 2. Check for transitive markers with past endings (even without perfective prefix)
+      // This catches forms that might not have the prefix
       if (transitiveMarkers.some(marker => trimmed.includes(marker))) {
-        if (pastEndings.some(ending => trimmed.endsWith(ending))) {
+        if (transitivePastEndings.some(ending => trimmed.endsWith(ending))) {
           return true
         }
       }
       
-      // 3. Check for specific perfective patterns: و + stem + past ending
-      // Pattern: و + (consonant/vowel) + past ending
-      if (trimmed.match(/^و[^و]*[مېئيوه]$/)) {
-        // Make sure it's not just "و" or "وو" (equative forms)
-        if (trimmed.length > 2 && !trimmed.match(/^وو?$/)) {
-          return true
-        }
-      }
-      
-      // 4. Check for compound verbs with transitive auxiliaries
-      if (trimmed.includes(' ') && trimmed.split(' ').some(part => transitiveMarkers.some(m => part.includes(m)))) {
+      // 3. Check for compound verbs with transitive auxiliaries
+      if (trimmed.includes(' ') && trimmed.split(' ').some(part => 
+        transitiveMarkers.some(m => part.includes(m)) && 
+        transitivePastEndings.some(e => part.endsWith(e))
+      )) {
         return true
       }
       
@@ -2894,9 +2909,9 @@ export async function POST(request: NextRequest) {
           console.log(`DEBUG: جوړول - Found ${existingForms.length} existing forms:`, existingForms.slice(0, 10))
         }
 
-        const verbs: Array<{form: string, count: number, inflectionType?: string}> = []
-        const nouns: Array<{form: string, count: number, inflectionType?: string}> = []
-        const other: Array<{form: string, count: number, inflectionType?: string}> = []
+        const verbs: Array<{form: string, count: number, inflectionType?: string, inflectionReasons?: any}> = []
+        const nouns: Array<{form: string, count: number, inflectionType?: string, inflectionReasons?: any}> = []
+        const other: Array<{form: string, count: number, inflectionType?: string, inflectionReasons?: any}> = []
 
         // Helper function to determine inflection type from form characteristics
         // Also checks grammatical_info if available
