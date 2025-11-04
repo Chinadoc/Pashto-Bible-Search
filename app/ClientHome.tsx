@@ -1237,11 +1237,26 @@ export default function ClientHome() {
       }
 
       console.error('Search error:', err);
-      setError(err instanceof Error ? err.message : 'Search failed');
+      
+      // Check if error is a 500 or network error vs actual no results
+      const isServerError = err instanceof Error && (
+        err.message.includes('500') || 
+        err.message.includes('Search failed') ||
+        err.message.includes('fetch')
+      );
+      
+      if (isServerError) {
+        // Show user-friendly message instead of technical error
+        setError('No results found. Try a different search term or check your connection.');
+      } else {
+        setError(err instanceof Error ? err.message : 'No results found');
+      }
+      
       if (!preserveResults) {
       setResults([]);
       setCoverage([]);
       setRelatedForms(null);
+      setDictionaryData(undefined);
       }
       setProcessed(null);
     } finally {
@@ -1640,69 +1655,71 @@ export default function ClientHome() {
         </p>
       </header>
 
-      {/* Main Tabs */}
+      {/* Main Tabs - Mobile responsive with horizontal scroll */}
       <div className="flex justify-center mb-6">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
-          <Link
-            href="/search"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'search'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            🔍 Search
-          </Link>
-          <Link
-            href="/topics"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'topics'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📚 Topics
-          </Link>
-          <Link
-            href="/chapters"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'chapters'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📖 Chapters
-          </Link>
-          <Link
-            href="/lexicon"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'lexicon'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📚 Lexicon
-          </Link>
-          <Link
-            href="/videos"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'videos'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            🎬 Videos
-          </Link>
-          <Link
-            href="/poems"
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'poems'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📝 Poems
-          </Link>
+        <div className="w-full max-w-4xl">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1 overflow-x-auto scrollbar-hide">
+            <Link
+              href="/search"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'search'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              🔍 Search
+            </Link>
+            <Link
+              href="/topics"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'topics'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              📚 Topics
+            </Link>
+            <Link
+              href="/chapters"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'chapters'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              📖 Chapters
+            </Link>
+            <Link
+              href="/lexicon"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'lexicon'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              📚 Lexicon
+            </Link>
+            <Link
+              href="/videos"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'videos'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              🎬 Videos
+            </Link>
+            <Link
+              href="/poems"
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeMainTab === 'poems'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              📝 Poems
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -2412,7 +2429,7 @@ export default function ClientHome() {
                 <ChapterView
                   book={selectedBook}
                   chapter={selectedChapter}
-                  translation={activeTranslation}
+                  translation={activeTranslation === 'unified' ? undefined : activeTranslation}
                 />
               </div>
             )}
