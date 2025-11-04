@@ -2489,7 +2489,7 @@ export async function POST(request: NextRequest) {
           // FIRST: Always query verb_forms table for comprehensive conjugations (when includeRelated is true)
           if (includeRelated) {
             try {
-              const { getIrregularVerbForms } = await import('../../utils/lingdocs-irregular-conjugations');
+              const { getIrregularVerbForms } = await import('@/app/utils/lingdocs-irregular-conjugations');
               const comprehensiveForms = await getIrregularVerbForms(normalizedLookup);
               if (comprehensiveForms.length > 0) {
                 verbForms.push(...comprehensiveForms);
@@ -2571,7 +2571,7 @@ export async function POST(request: NextRequest) {
               const auxVerbData = await getIrregularVerbData(db, aux);
               if (auxVerbData || aux === 'کېدل' || aux === 'کول') {
                 try {
-                  const { getCompoundVerbFormsWithIrregularAux } = await import('../../utils/lingdocs-irregular-conjugations');
+                  const { getCompoundVerbFormsWithIrregularAux } = await import('@/app/utils/lingdocs-irregular-conjugations');
                   const compoundForms = await getCompoundVerbFormsWithIrregularAux(normalizedLookup);
                   if (compoundForms.length > 0) {
                     verbForms.push(...compoundForms);
