@@ -100,6 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_form_occurrences_translation ON form_occurrences 
 -- INFLECTION REASONS ANALYSIS
 -- ========================================
 
+-- Original occurrence-level table (for detailed examples, optional)
 CREATE TABLE IF NOT EXISTS inflection_reasons (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   pashto_form TEXT NOT NULL,
@@ -121,6 +122,26 @@ CREATE INDEX IF NOT EXISTS idx_inflection_reasons_form ON inflection_reasons (pa
 CREATE INDEX IF NOT EXISTS idx_inflection_reasons_base ON inflection_reasons (base_word);
 CREATE INDEX IF NOT EXISTS idx_inflection_reasons_verse ON inflection_reasons (verse_ref);
 CREATE INDEX IF NOT EXISTS idx_inflection_reasons_translation ON inflection_reasons (translation_key);
+
+-- Aggregated table for fast lookups (PRIMARY SOURCE)
+CREATE TABLE IF NOT EXISTS inflection_reasons_aggregated (
+  pashto_form TEXT PRIMARY KEY,
+  base_word TEXT,
+  plural_count INTEGER DEFAULT 0,
+  sandwich_count INTEGER DEFAULT 0,
+  transitive_past_count INTEGER DEFAULT 0,
+  sandwich_types TEXT, -- JSON array: ["په...کې", "د"]
+  example_verse_refs TEXT, -- JSON array: ["John 3:16", "Matthew 5:1"]
+  inflection_type TEXT, -- "plain", "1st_m", "1st_f", "2nd", "plural_m", etc.
+  total_analyzed INTEGER DEFAULT 0, -- Number of verses analyzed
+  last_updated INTEGER DEFAULT (strftime('%s', 'now')),
+  created_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_agg_base ON inflection_reasons_aggregated (base_word);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_agg_plural ON inflection_reasons_aggregated (plural_count DESC);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_agg_sandwich ON inflection_reasons_aggregated (sandwich_count DESC);
+CREATE INDEX IF NOT EXISTS idx_inflection_reasons_agg_transitive ON inflection_reasons_aggregated (transitive_past_count DESC);
 
 -- ========================================
 -- 5. FORM TO ROOT MAPPING

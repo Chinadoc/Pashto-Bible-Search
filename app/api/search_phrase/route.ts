@@ -3015,7 +3015,7 @@ export async function POST(request: NextRequest) {
           } catch {}
         }
 
-        // Analyze inflection reasons for each form (only for nouns/adjectives to avoid performance issues)
+        // Get inflection reasons from pre-computed aggregated table (FAST!)
         // Process in batches to avoid too many queries
         const formsToAnalyze = existingForms.filter(item => {
           const form = item.form
@@ -3025,7 +3025,7 @@ export async function POST(request: NextRequest) {
                  !form.endsWith('ل') &&
                  (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                   form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه'))
-        }).slice(0, includeRelated ? 20 : 10) // Limit analysis to top forms
+        })
 
         // Create a map of form -> inflection reasons
         const formToReasons = new Map<string, { 
@@ -3042,13 +3042,108 @@ export async function POST(request: NextRequest) {
           }>;
         }>()
         
-        // Analyze inflection reasons for each form (parallel processing)
-        const analysisPromises = formsToAnalyze.map(async (item) => {
-          const reasons = await analyzeInflectionReasons(db, item.form, normalizedLookup, 5)
-          formToReasons.set(item.form, reasons)
-        })
-        
-        await Promise.all(analysisPromises)
+        // Batch lookup from pre-computed aggregated table
+        const formsToLookup = formsToAnalyze.map(item => item.form)
+        if (formsToLookup.length > 0) {
+          try {
+            // Query in batches to avoid SQL parameter limits
+            const lookupBatchSize = 50
+            for (let i = 0; i < formsToLookup.length; i += lookupBatchSize) {
+              const batch = formsToLookup.slice(i, i + lookupBatchSize)
+              const placeholders = batch.map(() => '?').join(',')
+              
+              const aggregatedData = await db.query<{
+                pashto_form: string;
+                base_word: string | null;
+                plural_count: number;
+                sandwich_count: number;
+                transitive_past_count: number;
+                sandwich_types: string | null;
+                example_verse_refs: string | null;
+                inflection_type: string | null;
+              }>(
+                `SELECT pashto_form, base_word, plural_count, sandwich_count, 
+                        transitive_past_count, sandwich_types, example_verse_refs, inflection_type
+                 FROM inflection_reasons_aggregated 
+                 WHERE pashto_form IN (${placeholders})`,
+                batch
+              )
+              
+              if (Array.isArray(aggregatedData)) {
+                for (const row of aggregatedData) {
+                  if (row?.pashto_form) {
+                    let sandwichTypes: string[] = []
+                    let exampleRefs: string[] = []
+                    
+                    try {
+                      if (row.sandwich_types) {
+                        sandwichTypes = JSON.parse(row.sandwich_types) || []
+                      }
+                      if (row.example_verse_refs) {
+                        exampleRefs = JSON.parse(row.example_verse_refs) || []
+                      }
+                    } catch {}
+                    
+                    // Convert to expected format with examples
+                    const reasons: {
+                      plural: number;
+                      sandwich: number;
+                      transitive_past: number;
+                      sandwich_types: string[];
+                      examples: Array<{
+                        verse_ref: string;
+                        text: string;
+                        reason: 'plural' | 'sandwich' | 'transitive_past';
+                      }>;
+                    } = {
+                      plural: row.plural_count || 0,
+                      sandwich: row.sandwich_count || 0,
+                      transitive_past: row.transitive_past_count || 0,
+                      sandwich_types: sandwichTypes,
+                      examples: exampleRefs.slice(0, 2).map(ref => ({
+                        verse_ref: ref,
+                        text: '', // Will be populated if needed
+                        reason: (row.plural_count > 0 ? 'plural' : 
+                                row.sandwich_count > 0 ? 'sandwich' : 
+                                'transitive_past') as 'plural' | 'sandwich' | 'transitive_past'
+                      }))
+                    }
+                    
+                    formToReasons.set(row.pashto_form, reasons)
+                  }
+                }
+              }
+            }
+            
+            // Fallback: For forms not in aggregated table, use on-the-fly analysis (rare case)
+            const missingForms = formsToLookup.filter(form => !formToReasons.has(form))
+            if (missingForms.length > 0 && includeRelated) {
+              console.log(`⚠️  ${missingForms.length} forms not in aggregated table, analyzing on-the-fly...`)
+              const fallbackPromises = missingForms.slice(0, 5).map(async (form) => {
+                try {
+                  const reasons = await analyzeInflectionReasons(db, form, normalizedLookup, 5)
+                  formToReasons.set(form, reasons)
+                } catch (error) {
+                  console.warn(`Error analyzing ${form}:`, error)
+                }
+              })
+              await Promise.all(fallbackPromises)
+            }
+          } catch (error) {
+            console.warn('Error querying inflection_reasons_aggregated, falling back to on-the-fly analysis:', error)
+            // Fallback to on-the-fly analysis for limited forms
+            const fallbackForms = formsToAnalyze.slice(0, 5)
+            const fallbackPromises = fallbackForms.map(async (item) => {
+              try {
+                const reasons = await analyzeInflectionReasons(db, item.form, normalizedLookup, 5)
+                formToReasons.set(item.form, reasons)
+              } catch (error) {
+                console.warn(`Error analyzing ${item.form}:`, error)
+              }
+            })
+            await Promise.all(fallbackPromises)
+          }
+        }
 
         for (const item of existingForms) {
           const form = item.form
@@ -3128,15 +3223,37 @@ export async function POST(request: NextRequest) {
         primaryVariant: primaryTerm,
         variants: searchVariants,
         variantsSearched: variantsToSearch,
-        variantDetails: variantDetails.map(({ form, sources, pos, frequency, note, romanization, pattern }) => ({
-          form,
-          sources,
-          pos,
-          frequency,
-          note,
-          romanization,
-          pattern,
-        })),
+        variantDetails: variantDetails.map(({ form, sources, pos, frequency, note, romanization, pattern }) => {
+          // Look up inflection data from relatedForms
+          let inflectionType: string | undefined
+          let inflectionReasons: any | undefined
+          
+          if (relatedForms) {
+            const allForms = [
+              ...(relatedForms.nouns || []),
+              ...(relatedForms.verbs || []),
+              ...(relatedForms.other || [])
+            ]
+            
+            const matchedForm = allForms.find(f => f.form === form)
+            if (matchedForm) {
+              inflectionType = matchedForm.inflectionType
+              inflectionReasons = matchedForm.inflectionReasons
+            }
+          }
+          
+          return {
+            form,
+            sources,
+            pos,
+            frequency,
+            note,
+            romanization,
+            pattern,
+            inflectionType,
+            inflectionReasons,
+          }
+        }),
         variantGroups,
         romanization: ""
       },

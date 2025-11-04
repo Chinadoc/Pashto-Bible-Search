@@ -920,7 +920,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
       <div className="mb-4 flex flex-col gap-2">
         {/* Search term and dictionary info */}
-        {(dictionaryData?.entries?.length > 0 || processed?.normalized || processed?.romanization) && (
+        {((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
           <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
             <span className="font-medium">Showing results for </span>
             {dictionaryData?.entries?.[0] ? (
