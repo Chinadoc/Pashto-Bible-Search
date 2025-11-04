@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       if (v.audio_r2_key) {
         // Use existing R2 key to generate stream URL
         r2Key = v.audio_r2_key;
-        audioUrl = getAudioStreamUrl(r2Key);
+        audioUrl = getAudioStreamUrl(v.audio_r2_key);
       } else if (v.audio_public_url) {
         // Use existing public URL if available
         audioUrl = v.audio_public_url;
