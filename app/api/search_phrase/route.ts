@@ -1437,7 +1437,7 @@ async function analyzeInflectionReasons(
         } else if (pattern.type === 'circ') {
           // Circumposition surrounding the word
           const hasLeft = leftSet.has(pattern.left) || leftTokens.slice(-2).some(t => t === pattern.left)
-          const hasRight = rightSet.has(pattern.right) || rightTokens.slice(0, 3).some(t => t.includes(pattern.right))
+          const hasRight = pattern.right ? (rightSet.has(pattern.right) || rightTokens.slice(0, 3).some(t => t.includes(pattern.right))) : false
           
           if (hasLeft && hasRight) {
             reasons.sandwich++
@@ -1500,28 +1500,6 @@ async function enrichVariantsFromD1(
 ) {
   const term = lookupTerm.trim()
   if (!term) return
-
-  let supabaseClient: any = null
-  const getSupabaseClient = async () => {
-    if (supabaseClient) return supabaseClient
-
-    try {
-      const { createClient } = await import('@supabase/supabase-js')
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      if (!url || !key) {
-        console.warn('Supabase credentials missing for enrichVariantsFromD1')
-        return null
-      }
-
-      supabaseClient = createClient(url, key)
-      return supabaseClient
-    } catch (error) {
-      console.warn('Failed to initialize Supabase client for enrichVariantsFromD1:', error)
-      return null
-    }
-  }
 
   // First, try to find related forms using database queries instead of JSON files
   if (includeRelated) {
@@ -1647,66 +1625,59 @@ async function enrichVariantsFromD1(
 
   const baseLimit = includeRelated ? 80 : 35
 
-  const supabase = await getSupabaseClient()
+  // Query form_lemmas using D1
+  try {
+    const lemmaData = await db.query<{ lemma_form: string; base_word: string; part_of_speech: string; frequency: number }>(
+      `SELECT lemma_form, base_word, part_of_speech, frequency FROM form_lemmas WHERE base_word = ? OR lemma_form = ? ORDER BY frequency DESC LIMIT ?`,
+      [term, term, baseLimit]
+    )
 
-  if (supabase) {
-    try {
-      const { data } = await supabase
-        .from('form_lemmas')
-        .select('lemma_form,base_word,part_of_speech,frequency')
-        .or(`base_word.eq.${term},lemma_form.eq.${term}`)
-        .order('frequency', { ascending: false })
-        .limit(baseLimit)
+    if (Array.isArray(lemmaData)) {
+      for (const row of lemmaData) {
+        const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
+        const freq = Number(row?.frequency)
+        const frequency = Number.isFinite(freq) ? freq : undefined
+        if (row?.lemma_form) collector.add(row.lemma_form, { sources: ['lemma'], pos, frequency })
+        if (row?.base_word) collector.add(row.base_word, { sources: ['lemma-base'], pos, frequency })
+      }
+    }
+  } catch (error) {
+    console.warn('D1 form_lemmas query failed:', error)
+  }
 
-      if (Array.isArray(data)) {
-        for (const row of data) {
-          const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
-          const freq = Number(row?.frequency)
-          const frequency = Number.isFinite(freq) ? freq : undefined
-          if (row?.lemma_form) collector.add(row.lemma_form, { sources: ['lemma'], pos, frequency })
-          if (row?.base_word) collector.add(row.base_word, { sources: ['lemma-base'], pos, frequency })
+  // Query form_roots using D1
+  try {
+    // Query form_roots for word_form matches
+    const wordFormData = await db.query<{ word_form: string; root_form: string }>(
+      `SELECT word_form, root_form FROM form_roots WHERE word_form = ? ORDER BY frequency DESC LIMIT ?`,
+      [term, baseLimit]
+    )
+
+    if (Array.isArray(wordFormData)) {
+      for (const row of wordFormData) {
+        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+          collector.add(row.root_form, { sources: ['root'] })
         }
       }
-    } catch (error) {
-      console.warn('Supabase form_lemmas query failed:', error)
     }
 
-    try {
-      // Query form_roots for word_form matches
-      const { data: wordFormData } = await supabase
-        .from('form_roots')
-        .select('word_form,root_form')
-        .eq('word_form', term)
-        .order('frequency', { ascending: false })
-        .limit(baseLimit)
+    // Query form_roots for root_form matches
+    const rootFormData = await db.query<{ word_form: string; root_form: string }>(
+      `SELECT word_form, root_form FROM form_roots WHERE root_form = ? ORDER BY frequency DESC LIMIT ?`,
+      [term, baseLimit]
+    )
 
-      if (Array.isArray(wordFormData)) {
-        for (const row of wordFormData) {
-          if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
-          if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
-            collector.add(row.root_form, { sources: ['root'] })
-          }
+    if (Array.isArray(rootFormData)) {
+      for (const row of rootFormData) {
+        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+          collector.add(row.root_form, { sources: ['root'] })
         }
       }
-
-      const { data: rootFormData } = await supabase
-        .from('form_roots')
-        .select('word_form,root_form')
-        .eq('root_form', term)
-        .order('frequency', { ascending: false })
-        .limit(baseLimit)
-
-      if (Array.isArray(rootFormData)) {
-        for (const row of rootFormData) {
-          if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
-          if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
-            collector.add(row.root_form, { sources: ['root'] })
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Supabase form_roots query failed:', error)
     }
+  } catch (error) {
+    console.warn('D1 form_roots query failed:', error)
   }
 
   try {
