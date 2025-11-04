@@ -1237,6 +1237,261 @@ async function getIrregularVerbData(db: D1Client, verbRoot: string): Promise<any
   return null;
 }
 
+/**
+ * Analyze inflection reasons by examining verse contexts
+ * Detects: plural, sandwich (adpositional phrase), transitive past tense subject
+ * Returns detailed analysis with example verses
+ */
+async function analyzeInflectionReasons(
+  db: D1Client,
+  form: string,
+  baseWord: string,
+  sampleSize: number = 10
+): Promise<{ 
+  plural: number; 
+  sandwich: number; 
+  transitive_past: number; 
+  sandwich_types: string[];
+  examples: Array<{
+    verse_ref: string;
+    text: string;
+    reason: 'plural' | 'sandwich' | 'transitive_past';
+    highlighted_context?: string;
+    pattern?: string;
+  }>;
+}> {
+  const reasons = {
+    plural: 0,
+    sandwich: 0,
+    transitive_past: 0,
+    sandwich_types: [] as string[],
+    examples: [] as Array<{
+      verse_ref: string;
+      text: string;
+      reason: 'plural' | 'sandwich' | 'transitive_past';
+      highlighted_context?: string;
+      pattern?: string;
+    }>
+  }
+
+  try {
+    // Get sample verses containing this form
+    const verses = await db.query<{ text: string; book: string; chapter: number; verse: number }>(
+      `SELECT text, book, chapter, verse FROM verses WHERE text LIKE ? LIMIT ?`,
+      [`%${form.replace(/[%_]/g, '\\$&')}%`, sampleSize]
+    )
+
+    if (!Array.isArray(verses) || verses.length === 0) {
+      return reasons
+    }
+
+    // Common sandwich patterns (adpositional phrases)
+    const sandwichPatterns = [
+      // Preposition patterns (before the word)
+      { type: 'pre', left: 'د', right: null, name: 'د' },
+      { type: 'pre', left: 'تر', right: null, name: 'تر' },
+      { type: 'pre', left: 'پر', right: null, name: 'پر' },
+      { type: 'pre', left: 'په', right: null, name: 'په' },
+      { type: 'pre', left: 'له', right: null, name: 'له' },
+      // Circumposition patterns (surrounding the word)
+      { type: 'circ', left: 'په', right: 'کې', name: 'په...کې' },
+      { type: 'circ', left: 'په', right: 'باندې', name: 'په...باندې' },
+      { type: 'circ', left: 'له', right: 'سره', name: 'له...سره' },
+      { type: 'circ', left: 'له', right: 'څخه', name: 'له...څخه' },
+      { type: 'circ', left: 'پر', right: 'باندې', name: 'پر...باندې' },
+      { type: 'circ', left: 'د', right: 'په اړه', name: 'د...په اړه' },
+      { type: 'circ', left: 'د', right: 'لپاره', name: 'د...لپاره' },
+      { type: 'circ', left: 'د', right: 'دپاره', name: 'د...دپاره' },
+    ]
+
+    // Plural indicators
+    const pluralSuffixes = ['ان', 'انو', 'ونه', 'ونو', 'انې', 'یان', 'یانو']
+    const numeralWords = ['څو', 'یو', 'دوه', 'درې', 'څلور', 'پنځه', 'شپږ', 'اووه', 'اته', 'نهه', 'لس']
+
+    // Transitive past tense verb indicators
+    const pastTransitiveHints = ['و', 'شو', 'کړ', 'وخ', 'ول', 'کړل', 'کړه', 'کړې', 'کړو']
+
+    // Tokenize Pashto text (simple word boundary detection)
+    function tokenize(text: string): string[] {
+      // Split on spaces and common punctuation
+      return text.split(/[\s\u200C\u200D\u200E\u200F\uFEFF]+/).filter(t => t.length > 0)
+    }
+
+    // Check if token is likely a perfective past tense verb
+    function isLikelyPastTransitive(token: string): boolean {
+      // Check for perfective prefixes or past tense markers
+      if (pastTransitiveHints.some(hint => token.includes(hint))) return true
+      // Check for verb endings that suggest past tense
+      if (token.match(/^(و|ول|کړ)[\u0600-\u06FF]+$/)) return true
+      return false
+    }
+
+    // Function to highlight context around form
+    function highlightContext(verseText: string, formIndex: number, formLength: number, pattern?: string): string {
+      const contextWindow = 30
+      const start = Math.max(0, formIndex - contextWindow)
+      const end = Math.min(verseText.length, formIndex + formLength + contextWindow)
+      let context = verseText.slice(start, end)
+      
+      // Highlight the form itself
+      const relativeFormIndex = formIndex - start
+      const beforeForm = context.slice(0, relativeFormIndex)
+      const formText = context.slice(relativeFormIndex, relativeFormIndex + formLength)
+      const afterForm = context.slice(relativeFormIndex + formLength)
+      
+      // Highlight sandwich pattern if provided
+      if (pattern) {
+        const patternParts = pattern.split('...')
+        if (patternParts.length === 2) {
+          const [leftPart, rightPart] = patternParts
+          // Find and highlight the pattern parts
+          const leftIndex = beforeForm.lastIndexOf(leftPart)
+          const rightIndex = afterForm.indexOf(rightPart)
+          
+          if (leftIndex !== -1 && rightIndex !== -1) {
+            const beforePattern = beforeForm.slice(0, leftIndex)
+            const leftPattern = beforeForm.slice(leftIndex)
+            const middlePattern = formText
+            const rightPattern = afterForm.slice(0, rightIndex + rightPart.length)
+            const afterPattern = afterForm.slice(rightIndex + rightPart.length)
+            
+            return `${beforePattern}[${leftPattern}][${middlePattern}][${rightPattern}]${afterPattern}`
+          }
+        } else if (patternParts.length === 1) {
+          // Preposition pattern
+          const leftIndex = beforeForm.lastIndexOf(patternParts[0])
+          if (leftIndex !== -1) {
+            const beforePattern = beforeForm.slice(0, leftIndex)
+            const patternText = beforeForm.slice(leftIndex)
+            return `${beforePattern}[${patternText}][${formText}]${afterForm}`
+          }
+        }
+      }
+      
+      return `${beforeForm}[${formText}]${afterForm}`
+    }
+
+    for (const verse of verses) {
+      const verseText = verse.text || ''
+      const formIndex = verseText.indexOf(form)
+      
+      if (formIndex === -1) continue
+
+      const verseRef = `${verse.book} ${verse.chapter}:${verse.verse}`
+
+      // Get context window around the form (20 characters before/after)
+      const contextWindow = 20
+      const contextStart = Math.max(0, formIndex - contextWindow)
+      const contextEnd = Math.min(verseText.length, formIndex + form.length + contextWindow)
+      const context = verseText.slice(contextStart, contextEnd)
+
+      // Tokenize context for better analysis
+      const tokens = tokenize(context)
+      const formTokenIndex = tokens.findIndex(t => t.includes(form))
+      
+      if (formTokenIndex === -1) continue
+
+      const leftTokens = tokens.slice(Math.max(0, formTokenIndex - 4), formTokenIndex)
+      const rightTokens = tokens.slice(formTokenIndex + 1, formTokenIndex + 5)
+      const leftSet = new Set(leftTokens)
+      const rightSet = new Set(rightTokens)
+
+      // Check for plural indicators
+      const isPlural = pluralSuffixes.some(suffix => form.endsWith(suffix)) ||
+                      numeralWords.some(num => leftSet.has(num) || rightSet.has(num)) ||
+                      tokens.some(t => /^\d+$/.test(t)) // Numeric digits
+
+      if (isPlural) {
+        reasons.plural++
+        reasons.examples.push({
+          verse_ref: verseRef,
+          text: verseText,
+          reason: 'plural',
+          highlighted_context: highlightContext(verseText, formIndex, form.length)
+        })
+      }
+
+      // Check for sandwich patterns (adpositional phrases)
+      let sandwichFound = false
+      let sandwichPattern: string | undefined
+      
+      for (const pattern of sandwichPatterns) {
+        if (pattern.type === 'pre') {
+          // Preposition before the word
+          if (leftSet.has(pattern.left) || leftTokens.slice(-2).some(t => t === pattern.left)) {
+            reasons.sandwich++
+            sandwichFound = true
+            sandwichPattern = pattern.name
+            if (!reasons.sandwich_types.includes(pattern.name)) {
+              reasons.sandwich_types.push(pattern.name)
+            }
+            reasons.examples.push({
+              verse_ref: verseRef,
+              text: verseText,
+              reason: 'sandwich',
+              highlighted_context: highlightContext(verseText, formIndex, form.length, pattern.name),
+              pattern: pattern.name
+            })
+            break // Count each verse only once for sandwich
+          }
+        } else if (pattern.type === 'circ') {
+          // Circumposition surrounding the word
+          const hasLeft = leftSet.has(pattern.left) || leftTokens.slice(-2).some(t => t === pattern.left)
+          const hasRight = rightSet.has(pattern.right) || rightTokens.slice(0, 3).some(t => t.includes(pattern.right))
+          
+          if (hasLeft && hasRight) {
+            reasons.sandwich++
+            sandwichFound = true
+            sandwichPattern = pattern.name
+            if (!reasons.sandwich_types.includes(pattern.name)) {
+              reasons.sandwich_types.push(pattern.name)
+            }
+            reasons.examples.push({
+              verse_ref: verseRef,
+              text: verseText,
+              reason: 'sandwich',
+              highlighted_context: highlightContext(verseText, formIndex, form.length, pattern.name),
+              pattern: pattern.name
+            })
+            break // Count each verse only once for sandwich
+          }
+        }
+      }
+
+      // Check for transitive past tense subject
+      // Look for past tense verbs in the context
+      // The word should appear BEFORE the verb (as subject in Pashto word order)
+      const hasPastTransitive = leftTokens.slice(-3).some(isLikelyPastTransitive) ||
+                                (rightTokens.slice(0, 3).some(isLikelyPastTransitive) && 
+                                 // Check if there's a transitive verb marker nearby
+                                 (context.includes('و') && (context.includes('کړ') || context.includes('ول'))))
+
+      if (hasPastTransitive && !sandwichFound) {
+        // Only count as transitive past if not already counted as sandwich
+        reasons.transitive_past++
+        reasons.examples.push({
+          verse_ref: verseRef,
+          text: verseText,
+          reason: 'transitive_past',
+          highlighted_context: highlightContext(verseText, formIndex, form.length)
+        })
+      }
+    }
+
+    // Limit examples to top 3 per reason type
+    const pluralExamples = reasons.examples.filter(e => e.reason === 'plural').slice(0, 2)
+    const sandwichExamples = reasons.examples.filter(e => e.reason === 'sandwich').slice(0, 2)
+    const transitiveExamples = reasons.examples.filter(e => e.reason === 'transitive_past').slice(0, 2)
+    
+    reasons.examples = [...pluralExamples, ...sandwichExamples, ...transitiveExamples]
+
+    return reasons
+  } catch (error) {
+    console.warn(`Error analyzing inflection reasons for ${form}:`, error)
+    return reasons
+  }
+}
+
 async function enrichVariantsFromD1(
   db: D1Client,
   lookupTerm: string,
@@ -1245,6 +1500,28 @@ async function enrichVariantsFromD1(
 ) {
   const term = lookupTerm.trim()
   if (!term) return
+
+  let supabaseClient: any = null
+  const getSupabaseClient = async () => {
+    if (supabaseClient) return supabaseClient
+
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      if (!url || !key) {
+        console.warn('Supabase credentials missing for enrichVariantsFromD1')
+        return null
+      }
+
+      supabaseClient = createClient(url, key)
+      return supabaseClient
+    } catch (error) {
+      console.warn('Failed to initialize Supabase client for enrichVariantsFromD1:', error)
+      return null
+    }
+  }
 
   // First, try to find related forms using database queries instead of JSON files
   if (includeRelated) {
@@ -1370,58 +1647,67 @@ async function enrichVariantsFromD1(
 
   const baseLimit = includeRelated ? 80 : 35
 
-  // Always do database queries - no longer checking JSON files first
-  try {
-      const { data } = await client
+  const supabase = await getSupabaseClient()
+
+  if (supabase) {
+    try {
+      const { data } = await supabase
         .from('form_lemmas')
         .select('lemma_form,base_word,part_of_speech,frequency')
         .or(`base_word.eq.${term},lemma_form.eq.${term}`)
         .order('frequency', { ascending: false })
         .limit(baseLimit)
+
       if (Array.isArray(data)) {
         for (const row of data) {
-        const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
-        const freq = Number(row?.frequency)
-        const frequency = Number.isFinite(freq) ? freq : undefined
-        if (row?.lemma_form) collector.add(row.lemma_form, { sources: ['lemma'], pos, frequency })
-        if (row?.base_word) collector.add(row.base_word, { sources: ['lemma-base'], pos, frequency })
+          const pos = typeof row?.part_of_speech === 'string' ? row.part_of_speech : undefined
+          const freq = Number(row?.frequency)
+          const frequency = Number.isFinite(freq) ? freq : undefined
+          if (row?.lemma_form) collector.add(row.lemma_form, { sources: ['lemma'], pos, frequency })
+          if (row?.base_word) collector.add(row.base_word, { sources: ['lemma-base'], pos, frequency })
+        }
       }
+    } catch (error) {
+      console.warn('Supabase form_lemmas query failed:', error)
     }
-  } catch {}
 
     try {
       // Query form_roots for word_form matches
-    const { data: wordFormData } = await client
-      .from('form_roots')
-      .select('word_form,root_form')
-      .eq('word_form', term)
-      .order('frequency', { ascending: false })
-      .limit(baseLimit)
-    if (Array.isArray(wordFormData)) {
-      for (const row of wordFormData) {
-        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
-        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
-          collector.add(row.root_form, { sources: ['root'] })
-        }
-      }
-    }
+      const { data: wordFormData } = await supabase
+        .from('form_roots')
+        .select('word_form,root_form')
+        .eq('word_form', term)
+        .order('frequency', { ascending: false })
+        .limit(baseLimit)
 
-    // Query form_roots for root_form matches
-    const { data: rootFormData } = await client
-      .from('form_roots')
-      .select('word_form,root_form')
-      .eq('root_form', term)
-      .order('frequency', { ascending: false })
-      .limit(baseLimit)
-    if (Array.isArray(rootFormData)) {
-      for (const row of rootFormData) {
-        if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
-        if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
-          collector.add(row.root_form, { sources: ['root'] })
+      if (Array.isArray(wordFormData)) {
+        for (const row of wordFormData) {
+          if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+          if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+            collector.add(row.root_form, { sources: ['root'] })
+          }
         }
       }
+
+      const { data: rootFormData } = await supabase
+        .from('form_roots')
+        .select('word_form,root_form')
+        .eq('root_form', term)
+        .order('frequency', { ascending: false })
+        .limit(baseLimit)
+
+      if (Array.isArray(rootFormData)) {
+        for (const row of rootFormData) {
+          if (row?.word_form) collector.add(row.word_form, { sources: ['root-map'] })
+          if (includeRelated && row?.root_form && row.root_form !== row.word_form) {
+            collector.add(row.root_form, { sources: ['root'] })
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Supabase form_roots query failed:', error)
     }
-  } catch {}
+  }
 
   try {
     // When includeRelated is true, get more inflections (up to 500 for comprehensive coverage)
@@ -2203,7 +2489,7 @@ export async function POST(request: NextRequest) {
           // FIRST: Always query verb_forms table for comprehensive conjugations (when includeRelated is true)
           if (includeRelated) {
             try {
-              const { getIrregularVerbForms } = await import('../utils/lingdocs-irregular-conjugations');
+              const { getIrregularVerbForms } = await import('../../utils/lingdocs-irregular-conjugations');
               const comprehensiveForms = await getIrregularVerbForms(normalizedLookup);
               if (comprehensiveForms.length > 0) {
                 verbForms.push(...comprehensiveForms);
@@ -2285,7 +2571,7 @@ export async function POST(request: NextRequest) {
               const auxVerbData = await getIrregularVerbData(db, aux);
               if (auxVerbData || aux === 'کېدل' || aux === 'کول') {
                 try {
-                  const { getCompoundVerbFormsWithIrregularAux } = await import('../utils/lingdocs-irregular-conjugations');
+                  const { getCompoundVerbFormsWithIrregularAux } = await import('../../utils/lingdocs-irregular-conjugations');
                   const compoundForms = await getCompoundVerbFormsWithIrregularAux(normalizedLookup);
                   if (compoundForms.length > 0) {
                     verbForms.push(...compoundForms);
@@ -2605,10 +2891,52 @@ export async function POST(request: NextRequest) {
           } catch {}
         }
 
+        // Analyze inflection reasons for each form (only for nouns/adjectives to avoid performance issues)
+        // Process in batches to avoid too many queries
+        const formsToAnalyze = existingForms.filter(item => {
+          const form = item.form
+          // Only analyze nouns/adjectives (not verbs)
+          return !verbForms.includes(form) && 
+                 !form.includes(' ') && 
+                 !form.endsWith('ل') &&
+                 (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
+                  form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه'))
+        }).slice(0, includeRelated ? 20 : 10) // Limit analysis to top forms
+
+        // Create a map of form -> inflection reasons
+        const formToReasons = new Map<string, { 
+          plural: number; 
+          sandwich: number; 
+          transitive_past: number; 
+          sandwich_types: string[];
+          examples: Array<{
+            verse_ref: string;
+            text: string;
+            reason: 'plural' | 'sandwich' | 'transitive_past';
+            highlighted_context?: string;
+            pattern?: string;
+          }>;
+        }>()
+        
+        // Analyze inflection reasons for each form (parallel processing)
+        const analysisPromises = formsToAnalyze.map(async (item) => {
+          const reasons = await analyzeInflectionReasons(db, item.form, normalizedLookup, 5)
+          formToReasons.set(item.form, reasons)
+        })
+        
+        await Promise.all(analysisPromises)
+
         for (const item of existingForms) {
           const form = item.form
           const grammaticalInfo = formToGrammaticalInfo.get(form)
           const inflectionType = determineInflectionType(form, normalizedLookup, grammaticalInfo)
+          const inflectionReasons = formToReasons.get(form) || { 
+            plural: 0, 
+            sandwich: 0, 
+            transitive_past: 0, 
+            sandwich_types: [],
+            examples: []
+          }
 
           // Categorize based on form origin and characteristics
           if (verbForms.includes(form)) {
@@ -2627,7 +2955,7 @@ export async function POST(request: NextRequest) {
           } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
             // Nouns and adjectives (all inflected forms)
-            nouns.push({...item, inflectionType})
+            nouns.push({...item, inflectionType, inflectionReasons})
           } else {
             other.push({...item, inflectionType})
           }
