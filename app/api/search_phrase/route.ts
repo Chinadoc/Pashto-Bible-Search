@@ -385,13 +385,6 @@ async function generateIrregularVerbFormsFromDB(db: D1Client, infinitive: string
   return forms.filter(Boolean);
 }
 
-// Generate forms for irregular verbs - now uses database
-// This function is deprecated - use generateIrregularVerbFormsFromDB instead
-// Kept for backward compatibility but returns minimal forms
-function generateIrregularVerbForms(infinitive: string): string[] {
-  return [infinitive];
-}
-
 // Organize forms into LingDocs aspect-based structure
 function organizeFormsByAspect(forms: string[]): {
   imperfective: string[]
