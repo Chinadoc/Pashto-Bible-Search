@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getD1Database, queryD1, queryD1First, D1Client } from '../../utils/d1'
+import { getD1Database, queryD1, queryD1First, D1Client } from '@/utils/d1'
 import type { Verse } from '../../../types'
 
 // Book name constants for testament determination
