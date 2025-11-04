@@ -147,7 +147,8 @@ export async function GET(request: NextRequest) {
       } else {
         // Generate R2 key and URL based on book/chapter/verse pattern
         r2Key = generateR2AudioKey(v.book, v.chapter, v.verse, translation as 'afghan2023' | 'yousafzai2019');
-        audioUrl = getAudioStreamUrl(r2Key);
+        // generateR2AudioKey always returns a string, so r2Key is guaranteed to be non-null here
+        audioUrl = getAudioStreamUrl(r2Key!);
       }
       
       return {
