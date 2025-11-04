@@ -123,8 +123,8 @@ function VerseItem({
   page: number;
   itemsPerPage: number;
   audioMap: AudioMap;
-  resolvedUrls: Record<string, string>;
-  setResolvedUrls: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  resolvedUrls: Record<string, string | null>;
+  setResolvedUrls: React.Dispatch<React.SetStateAction<Record<string, string | null>>>;
   downloadingMap: Record<string, boolean>;
   setDownloadingMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   playingKey: string | null;
@@ -394,7 +394,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string | null>>({});
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
   
