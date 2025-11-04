@@ -1308,22 +1308,100 @@ async function analyzeInflectionReasons(
     const pluralSuffixes = ['ان', 'انو', 'ونه', 'ونو', 'انې', 'یان', 'یانو']
     const numeralWords = ['څو', 'یو', 'دوه', 'درې', 'څلور', 'پنځه', 'شپږ', 'اووه', 'اته', 'نهه', 'لس']
 
-    // Transitive past tense verb indicators
-    const pastTransitiveHints = ['و', 'شو', 'کړ', 'وخ', 'ول', 'کړل', 'کړه', 'کړې', 'کړو']
-
+    // Comprehensive transitive past tense verb detection
+    // Transitive markers that indicate transitive verbs
+    const transitiveMarkers = [
+      'کړ', 'کړل', 'کړه', 'کړې', 'کړو', 'کړم', 'کړئ', 'کړی',
+      'ول', 'وله', 'ولې', 'ولو', 'ولم', 'ولئ', 'ولی',
+      'وخ', 'وخه', 'وخې', 'وخو', 'وخم', 'وخئ',
+      'ور', 'وره', 'ورې', 'ورو', 'ورم', 'ورئ',
+      'ک', 'که', 'کې', 'کو', 'کم', 'کئ',
+      'ایست', 'ایستل', 'ایسته', 'ایستې', 'ایستو',
+      'پاک', 'پاکه', 'پاکې', 'پاکو',
+      'کښ', 'کښه', 'کښې', 'کښو',
+      'ګر', 'ګره', 'ګرې', 'ګرو',
+      'در', 'دره', 'درې', 'درو'
+    ]
+    
+    // Past tense endings that indicate past tense
+    const pastEndings = ['م', 'ې', 'ئ', 'ي', 'و', 'ه', 'ول', 'ولي', 'وو']
+    
+    // Perfective prefixes (most common in Pashto)
+    const perfectivePrefixes = ['و', 'وو', 'ور', 'وبر', 'وب', 'ود', 'وړ', 'وګ', 'وک', 'وپ', 'وت', 'وچ', 'وخ', 'وج', 'وز', 'وش', 'وغ', 'وف', 'وق', 'ول', 'وم', 'ون', 'وه', 'وی', 'ویا', 'ویب', 'وید', 'ویړ', 'ویک', 'ویل', 'ویم', 'وین', 'ویه', 'ویو']
+    
     // Tokenize Pashto text (simple word boundary detection)
     function tokenize(text: string): string[] {
       // Split on spaces and common punctuation
       return text.split(/[\s\u200C\u200D\u200E\u200F\uFEFF]+/).filter(t => t.length > 0)
     }
 
-    // Check if token is likely a perfective past tense verb
+    // Comprehensive check if token is likely a transitive past tense verb
     function isLikelyPastTransitive(token: string): boolean {
-      // Check for perfective prefixes or past tense markers
-      if (pastTransitiveHints.some(hint => token.includes(hint))) return true
-      // Check for verb endings that suggest past tense
-      if (token.match(/^(و|ول|کړ)[\u0600-\u06FF]+$/)) return true
+      if (!token || token.length < 2) return false
+      
+      const trimmed = token.trim()
+      
+      // 1. Check for perfective prefix (و, وو) with transitive markers
+      if (trimmed.startsWith('و') || trimmed.startsWith('وو')) {
+        // Check if it contains transitive markers
+        if (transitiveMarkers.some(marker => trimmed.includes(marker))) {
+          return true
+        }
+        // Check for past endings (indicates perfective past)
+        if (pastEndings.some(ending => trimmed.endsWith(ending))) {
+          // Exclude intransitive "شو" unless it has transitive markers
+          if (trimmed.includes('شو') && !transitiveMarkers.some(m => trimmed.includes(m))) {
+            return false
+          }
+          return true
+        }
+      }
+      
+      // 2. Check for transitive markers with past endings (even without perfective prefix)
+      if (transitiveMarkers.some(marker => trimmed.includes(marker))) {
+        if (pastEndings.some(ending => trimmed.endsWith(ending))) {
+          return true
+        }
+      }
+      
+      // 3. Check for specific perfective patterns: و + stem + past ending
+      // Pattern: و + (consonant/vowel) + past ending
+      if (trimmed.match(/^و[^و]*[مېئيوه]$/)) {
+        // Make sure it's not just "و" or "وو" (equative forms)
+        if (trimmed.length > 2 && !trimmed.match(/^وو?$/)) {
+          return true
+        }
+      }
+      
+      // 4. Check for compound verbs with transitive auxiliaries
+      if (trimmed.includes(' ') && trimmed.split(' ').some(part => transitiveMarkers.some(m => part.includes(m)))) {
+        return true
+      }
+      
       return false
+    }
+    
+    // Helper to find transitive verb in context and verify subject-object relationship
+    function findTransitiveVerbInContext(tokens: string[], formIndex: number): { found: boolean; verbIndex?: number; verb?: string } {
+      // Look for transitive verbs in a window around the form
+      const searchWindow = 5
+      const start = Math.max(0, formIndex - searchWindow)
+      const end = Math.min(tokens.length, formIndex + searchWindow + 1)
+      
+      for (let i = start; i < end; i++) {
+        if (i === formIndex) continue // Skip the form itself
+        
+        const token = tokens[i]
+        if (isLikelyPastTransitive(token)) {
+          // In Pashto, subject typically comes before the verb
+          // If form is before verb, it could be the subject
+          if (i > formIndex) {
+            return { found: true, verbIndex: i, verb: token }
+          }
+        }
+      }
+      
+      return { found: false }
     }
 
     // Function to highlight context around form
@@ -1488,21 +1566,37 @@ async function analyzeInflectionReasons(
       }
 
       // Check for transitive past tense subject
-      // Look for past tense verbs in the context
+      // Look for transitive past tense verbs in the context
       // The word should appear BEFORE the verb (as subject in Pashto word order)
-      const hasPastTransitive = leftTokens.slice(-3).some(isLikelyPastTransitive) ||
-                                (rightTokens.slice(0, 3).some(isLikelyPastTransitive) && 
-                                 // Check if there's a transitive verb marker nearby
-                                 (context.includes('و') && (context.includes('کړ') || context.includes('ول'))))
+      const verbSearch = findTransitiveVerbInContext(tokens, formTokenIndex)
+      
+      let hasPastTransitive = false
+      let transitiveVerb: string | undefined
+      
+      if (verbSearch.found && verbSearch.verb) {
+        // Found a transitive verb - verify the form is likely the subject
+        // In Pashto, subjects of transitive past verbs are inflected (2nd inflection)
+        hasPastTransitive = true
+        transitiveVerb = verbSearch.verb
+      } else {
+        // Fallback: check for transitive markers in context
+        hasPastTransitive = leftTokens.slice(-3).some(isLikelyPastTransitive) ||
+                            (rightTokens.slice(0, 3).some(isLikelyPastTransitive) && 
+                             transitiveMarkers.some(m => context.includes(m)))
+      }
 
       if (hasPastTransitive && !sandwichFound) {
         // Only count as transitive past if not already counted as sandwich
         reasons.transitive_past++
+        
+        // Enhanced highlighting: include the transitive verb in context if found
+        const highlightedContext = highlightContext(verseText, formIndex, form.length)
+        
         reasons.examples.push({
           verse_ref: verseRef,
           text: verseText,
           reason: 'transitive_past',
-          highlighted_context: highlightContext(verseText, formIndex, form.length)
+          highlighted_context: highlightedContext
         })
       }
     }
@@ -2336,7 +2430,7 @@ export async function POST(request: NextRequest) {
                 sql += ` LIMIT 1`
                 
                 const verseData = await db.query<any>(sql, verseParams)
-                const verseRows = Array.isArray(verseData)
+                const verseRows = Array.isArray(verseData) ? verseData : []
 
                 if (verseRows.length > 0) {
                   const row = verseRows[0]
