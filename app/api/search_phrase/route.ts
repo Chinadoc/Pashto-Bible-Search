@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../utils/supabase'
+import { getD1Database, queryD1, queryD1First, D1Client } from '../../../utils/d1'
 import type { Verse } from '../../../types'
 
 // Book name constants for testament determination
@@ -354,12 +354,12 @@ function generateCompoundVerbForms(infinitive: string, isStative: boolean): stri
 }
 
 // Helper function to generate irregular verb forms from database
-async function generateIrregularVerbFormsFromDB(client: any, infinitive: string): Promise<string[]> {
+async function generateIrregularVerbFormsFromDB(db: D1Client, infinitive: string): Promise<string[]> {
   const forms: string[] = [infinitive];
   
   try {
     // Query irregular_verbs table for stem/root data
-    const verbData = await getIrregularVerbData(client, infinitive);
+    const verbData = await getIrregularVerbData(db, infinitive);
     if (!verbData) {
       return forms; // Return just the infinitive if not found
     }
@@ -1031,7 +1031,7 @@ function formatPosLabel(pos: string): string {
 }
 
 async function backfillRomanizations(
-  client: any,
+  db: D1Client,
   details: VariantMeta[],
   limit: number
 ) {
@@ -1044,10 +1044,11 @@ async function backfillRomanizations(
   if (missing.length === 0) return
 
   try {
-    const { data } = await client
-      .from('dictionary')
-      .select('pashto,romanized')
-      .in('pashto', missing)
+    const placeholders = missing.map(() => '?').join(',')
+    const data = await db.query<{ pashto: string; romanized: string }>(
+      `SELECT pashto, romanized FROM dictionary WHERE pashto IN (${placeholders})`,
+      missing
+    );
     if (Array.isArray(data)) {
       const map = new Map<string, string>()
       for (const row of data) {
@@ -1072,10 +1073,11 @@ async function backfillRomanizations(
   if (remaining.length === 0) return
 
   try {
-    const { data } = await client
-      .from('romanized_dictionary')
-      .select('pashto_word,romanization')
-      .in('pashto_word', remaining)
+    const placeholders = remaining.map(() => '?').join(',')
+    const data = await db.query<{ pashto_word: string; romanization: string }>(
+      `SELECT pashto_word, romanization FROM romanized_dictionary WHERE pashto_word IN (${placeholders})`,
+      remaining
+    );
     if (Array.isArray(data)) {
       const map = new Map<string, string>()
       for (const row of data) {
@@ -1143,7 +1145,7 @@ async function addDirectionalVariants(collector: VariantCollector) {
 }
 
 async function enrichIrregularVariants(
-  client: any,
+  db: D1Client,
   collector: VariantCollector
 ) {
   const pashtoForms = dedupePreserveOrder(
@@ -1155,20 +1157,32 @@ async function enrichIrregularVariants(
   if (pashtoForms.length === 0) return
 
   try {
-    const { data } = await client
-      .from('irregular_verbs')
-      .select('verb_root,roots,stems,past_participle,romanization')
-      .in('verb_root', pashtoForms)
+    const placeholders = pashtoForms.map(() => '?').join(',')
+    const data = await db.query<{ verb_root: string; roots: string; stems: string; past_participle: string; romanization: string }>(
+      `SELECT verb_root, roots, stems, past_participle, romanization FROM irregular_verbs WHERE verb_root IN (${placeholders})`,
+      pashtoForms
+    );
 
     if (Array.isArray(data)) {
       for (const row of data) {
         if (!row?.verb_root) continue
         const root = String(row.verb_root)
-        const romanization = extractRomanizationText(row?.romanization)
-        const romanizationRecord = (row?.romanization && typeof row?.romanization === 'object') ? (row.romanization as Record<string, any>) : undefined
+        let romanization: string | undefined
+        let romanizationRecord: Record<string, any> | undefined
+        
+        try {
+          romanization = typeof row.romanization === 'string' ? row.romanization : undefined
+          romanizationRecord = (row?.romanization && typeof row?.romanization === 'string') 
+            ? JSON.parse(row.romanization) 
+            : (row?.romanization && typeof row?.romanization === 'object') 
+              ? row.romanization as Record<string, any>
+              : undefined
+        } catch {}
+        
+        const romanizationExtracted = extractRomanizationText(row?.romanization)
         const patternLabel = 'Irregular verb'
         const noteLabel = 'Irregular verb'
-        const baseRoman = typeof romanizationRecord?.imperfective_root === 'string' ? romanizationRecord.imperfective_root : (romanization || undefined)
+        const baseRoman = typeof romanizationRecord?.imperfective_root === 'string' ? romanizationRecord.imperfective_root : (romanizationExtracted || undefined)
 
         const baseMeta: Partial<VariantMeta> = {
           sources: ['irregular-verb'],
@@ -1195,12 +1209,16 @@ async function enrichIrregularVariants(
           if (typeof formValue !== 'string' || !formValue.trim()) return
           const rom = romanKey && romanizationRecord && typeof romanizationRecord[romanKey] === 'string'
             ? romanizationRecord[romanKey] as string
-            : baseRoman || romanization || undefined
+            : baseRoman || romanizationExtracted || undefined
           collector.add(formValue.trim(), { sources: ['irregular-verb'], romanization: rom, pattern: patternLabel, note: noteLabel, pos: 'verb' })
         }
 
-        if (row?.roots && typeof row.roots === 'object') {
-          const rootsRecord = row.roots as Record<string, any>
+        let rootsRecord: Record<string, any> | undefined
+        try {
+          rootsRecord = typeof row.roots === 'string' ? JSON.parse(row.roots) : (row.roots && typeof row.roots === 'object') ? row.roots as Record<string, any> : undefined
+        } catch {}
+        
+        if (rootsRecord) {
           addIrregularForm(rootsRecord.perfective, 'perfective_root')
           addIrregularForm(rootsRecord.imperfective, 'imperfective_root')
         }
@@ -1212,19 +1230,17 @@ async function enrichIrregularVariants(
 }
 
 // Load JSON data for form mappings - REPLACED WITH DATABASE QUERIES
-// These are now loaded dynamically from Supabase instead of local JSON files
+// These are now loaded dynamically from D1 database instead of local JSON files
 const FORM_TO_ROOT_MAP: Record<string, string[]> = {}; // Deprecated - use form_roots table
 const GRAMMATICAL_INDEX: Record<string, any> = {}; // Deprecated - use form_lemmas and inflections tables
 
 // Helper function to get form-to-root mapping from database
-async function getFormToRootMap(client: any, term: string): Promise<string[]> {
+async function getFormToRootMap(db: D1Client, term: string): Promise<string[]> {
   try {
-    const { data } = await client
-      .from('form_roots')
-      .select('root_word')
-      .eq('word_form', term)
-      .order('frequency', { ascending: false })
-      .limit(10);
+    const data = await db.query<{ root_word: string }>(
+      `SELECT root_word FROM form_roots WHERE word_form = ? ORDER BY frequency DESC LIMIT 10`,
+      [term]
+    );
     
     if (Array.isArray(data) && data.length > 0) {
       return data.map(row => row.root_word).filter(Boolean);
@@ -1236,14 +1252,12 @@ async function getFormToRootMap(client: any, term: string): Promise<string[]> {
 }
 
 // Helper function to get all forms for a root from database
-async function getFormsForRoot(client: any, root: string): Promise<string[]> {
+async function getFormsForRoot(db: D1Client, root: string): Promise<string[]> {
   try {
-    const { data } = await client
-      .from('form_roots')
-      .select('word_form')
-      .eq('root_word', root)
-      .order('frequency', { ascending: false })
-      .limit(200);
+    const data = await db.query<{ word_form: string }>(
+      `SELECT word_form FROM form_roots WHERE root_word = ? ORDER BY frequency DESC LIMIT 200`,
+      [root]
+    );
     
     if (Array.isArray(data) && data.length > 0) {
       return data.map(row => row.word_form).filter(Boolean);
@@ -1255,23 +1269,19 @@ async function getFormsForRoot(client: any, root: string): Promise<string[]> {
 }
 
 // Helper function to get grammatical index data from database
-async function getGrammaticalIndexData(client: any, term: string): Promise<any> {
+async function getGrammaticalIndexData(db: D1Client, term: string): Promise<any> {
   try {
     // Query form_lemmas for base word info
-    const { data: lemmaData } = await client
-      .from('form_lemmas')
-      .select('lemma_form, base_word, part_of_speech, frequency')
-      .or(`base_word.eq.${term},lemma_form.eq.${term}`)
-      .order('frequency', { ascending: false })
-      .limit(10);
+    const lemmaData = await db.query<{ lemma_form: string; base_word: string; part_of_speech: string; frequency: number }>(
+      `SELECT lemma_form, base_word, part_of_speech, frequency FROM form_lemmas WHERE base_word = ? OR lemma_form = ? ORDER BY frequency DESC LIMIT 10`,
+      [term, term]
+    );
     
     // Query inflections for all forms
-    const { data: inflData } = await client
-      .from('inflections')
-      .select('inflected_form, grammatical_info, frequency')
-      .eq('base_word', term)
-      .order('frequency', { ascending: false })
-      .limit(100);
+    const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+      `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 100`,
+      [term]
+    );
     
     if ((Array.isArray(lemmaData) && lemmaData.length > 0) || 
         (Array.isArray(inflData) && inflData.length > 0)) {
@@ -1289,18 +1299,22 @@ async function getGrammaticalIndexData(client: any, term: string): Promise<any> 
 }
 
 // Helper function to get irregular verb data from database
-async function getIrregularVerbData(client: any, verbRoot: string): Promise<any> {
+async function getIrregularVerbData(db: D1Client, verbRoot: string): Promise<any> {
   try {
-    const { data } = await client
-      .from('irregular_verbs')
-      .select('verb_root, stems, roots, past_participle, romanization')
-      .eq('verb_root', verbRoot)
-      .limit(1);
+    const data = await db.query<{ verb_root: string; stems: string; roots: string; past_participle: string; romanization: string }>(
+      `SELECT verb_root, stems, roots, past_participle, romanization FROM irregular_verbs WHERE verb_root = ? LIMIT 1`,
+      [verbRoot]
+    );
     
     if (Array.isArray(data) && data.length > 0) {
       const verb = data[0];
-      const stems = verb.stems as Record<string, any>;
-      const roots = verb.roots as Record<string, any>;
+      let stems: Record<string, any> = {};
+      let roots: Record<string, any> = {};
+      
+      try {
+        stems = typeof verb.stems === 'string' ? JSON.parse(verb.stems) : verb.stems || {};
+        roots = typeof verb.roots === 'string' ? JSON.parse(verb.roots) : verb.roots || {};
+      } catch {}
       
       return {
         imperfectiveStem: stems?.imperfective || '',
@@ -1316,8 +1330,8 @@ async function getIrregularVerbData(client: any, verbRoot: string): Promise<any>
   return null;
 }
 
-async function enrichVariantsFromSupabase(
-  client: any,
+async function enrichVariantsFromD1(
+  db: D1Client,
   lookupTerm: string,
   collector: VariantCollector,
   includeRelated: boolean
@@ -1329,7 +1343,7 @@ async function enrichVariantsFromSupabase(
   if (includeRelated) {
     try {
       // Query form_roots table for root mapping (replaces FORM_TO_ROOT_MAP JSON)
-      const roots = await getFormToRootMap(client, term);
+      const roots = await getFormToRootMap(db, term);
       if (roots.length > 0) {
         const root = roots[0];
         console.log(`Found root for ${term}: ${root}`);
@@ -1338,14 +1352,14 @@ async function enrichVariantsFromSupabase(
         collector.add(root, { sources: ['root-map'] });
         
         // Get all forms for this root from database
-        const formsForRoot = await getFormsForRoot(client, root);
+        const formsForRoot = await getFormsForRoot(db, root);
         for (const form of formsForRoot) {
           collector.add(form, { sources: ['root-map'] });
         }
       }
       
       // Query grammatical index data from database (replaces GRAMMATICAL_INDEX JSON)
-      const grammarData = await getGrammaticalIndexData(client, term);
+      const grammarData = await getGrammaticalIndexData(db, term);
       if (grammarData?.identities) {
         for (const identity of grammarData.identities) {
           for (const formEntry of identity.forms || []) {
@@ -1363,12 +1377,10 @@ async function enrichVariantsFromSupabase(
         
         // Query inflections for the main part (e.g., ښکېل)
         try {
-          const { data: mainInflections } = await client
-            .from('inflections')
-            .select('inflected_form, grammatical_info, frequency')
-            .eq('base_word', mainPart)
-            .order('frequency', { ascending: false })
-            .limit(50)
+          const mainInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+            `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 50`,
+            [mainPart]
+          );
           
           if (Array.isArray(mainInflections)) {
             for (const row of mainInflections) {
@@ -1398,12 +1410,10 @@ async function enrichVariantsFromSupabase(
         
         // Also query inflections for the full compound verb
         try {
-          const { data: compoundInflections } = await client
-            .from('inflections')
-            .select('inflected_form, grammatical_info, frequency')
-            .eq('base_word', term)
-            .order('frequency', { ascending: false })
-            .limit(50)
+          const compoundInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+            `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 50`,
+            [term]
+          );
           
           if (Array.isArray(compoundInflections)) {
             for (const row of compoundInflections) {
@@ -1435,11 +1445,11 @@ async function enrichVariantsFromSupabase(
       }
 
       // Also check for other verb roots and their conjugations - use database
-      const roots = await getFormToRootMap(client, term);
+      const roots = await getFormToRootMap(db, term);
       if (roots.length > 0) {
         const root = roots[0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
-        const formsForRoot = await getFormsForRoot(client, root);
+        const formsForRoot = await getFormsForRoot(db, root);
         for (const form of formsForRoot) {
           // Determine if this is a verb conjugation based on the form
           const isVerbForm = form.includes('نم') || form.includes('و') || form.includes('ل') || form.endsWith('م') || form.endsWith('ې');
@@ -1506,15 +1516,13 @@ async function enrichVariantsFromSupabase(
     }
   } catch {}
 
-    try {
-      // When includeRelated is true, get more inflections (up to 500 for comprehensive coverage)
-      const inflectionLimit = includeRelated ? 500 : baseLimit
-      const { data } = await client
-        .from('inflections')
-        .select('inflected_form,grammatical_info,frequency')
-        .eq('base_word', term)
-        .order('frequency', { ascending: false })
-        .limit(inflectionLimit)
+  try {
+    // When includeRelated is true, get more inflections (up to 500 for comprehensive coverage)
+    const inflectionLimit = includeRelated ? 500 : baseLimit
+    const data = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+        `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT ?`,
+        [term, inflectionLimit]
+      );
       if (Array.isArray(data)) {
         for (const row of data) {
           const info = row?.grammatical_info as Record<string, any> | null | undefined
@@ -1568,7 +1576,7 @@ async function enrichVariantsFromSupabase(
     }
   } catch {}
 
-    await enrichIrregularVariants(client, collector)
+    await enrichIrregularVariants(db, collector)
     addDirectionalVariants(collector)
   } catch (error) {
     console.error('Error in database queries:', error);
@@ -1611,12 +1619,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Check if we have valid Supabase credentials
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+    // Initialize D1 database client
+    const d1Db = getD1Database();
+    if (!d1Db) {
       return NextResponse.json({
         results: [],
         coverage: [],
@@ -1624,6 +1629,7 @@ export async function POST(request: NextRequest) {
         ms: Date.now() - startTime
       })
     }
+    const db = new D1Client(d1Db);
 
     const originalTerm = query.trim()
 
@@ -1634,12 +1640,10 @@ export async function POST(request: NextRequest) {
       let forms: string[] = []
       try {
         // Prefer DB inflections for the auxiliary
-        const { data } = await supabase
-          .from('inflections')
-          .select('inflected_form')
-          .eq('base_word', aux)
-          .order('frequency', { ascending: false })
-          .limit(40)
+        const data = await db.query<{ inflected_form: string }>(
+          `SELECT inflected_form FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 40`,
+          [aux]
+        );
         if (Array.isArray(data) && data.length > 0) {
           for (const row of data) {
             try {
@@ -1679,16 +1683,30 @@ export async function POST(request: NextRequest) {
 
       for (const p of phrases) {
         try {
-          let q = supabase.from('verses').select(selectCols).ilike('text', `%${p.replace(/%/g,'')}%`)
-          if (scope === 'ot') q = q.eq('testament', 'OT')
-          if (scope === 'nt') q = q.eq('testament', 'NT')
+          // Query verses from D1 database
+          let sql = `SELECT ${selectCols} FROM verses WHERE text LIKE ?`
+          const params: any[] = [`%${p.replace(/%/g,'')}%`]
+          
+          if (scope === 'ot') {
+            sql += ` AND testament = 'OT'`
+          } else if (scope === 'nt') {
+            sql += ` AND testament = 'NT'`
+          }
+          
           // Apply book filter if provided
           if (bookFilter) {
             const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-            q = q.in('book', bookVariantsList)
+            if (bookVariantsList.length > 0) {
+              const bookPlaceholders = bookVariantsList.map(() => '?').join(',')
+              sql += ` AND book IN (${bookPlaceholders})`
+              params.push(...bookVariantsList)
+            }
           }
-          const { data, error } = await q.limit(60)
-          if (!error && Array.isArray(data) && data.length > 0) {
+          
+          sql += ` LIMIT 60`
+          
+          const data = await db.query<any>(sql, params)
+          if (Array.isArray(data) && data.length > 0) {
             for (const row of data as any[]) {
               const text = row.text || ''
               const ref = `${row.book} ${row.chapter}:${row.verse}`
@@ -1756,11 +1774,10 @@ export async function POST(request: NextRequest) {
 
     if (!PASHTO_CHAR_RE.test(originalTerm) && originalTerm.length > 2) {
       try {
-        const { data: dictData } = await supabase
-          .from('dictionary')
-          .select('pashto,pos,romanized')
-          .or(`romanized.ilike.${originalTerm},romanized.ilike.${originalTerm}*,romanized.ilike.*${originalTerm}`)
-          .limit(3)
+        const dictData = await db.query<{ pashto: string; pos: string; romanized: string }>(
+          `SELECT pashto, pos, romanized FROM dictionary WHERE romanized LIKE ? OR romanized LIKE ? OR romanized LIKE ? LIMIT 3`,
+          [`${originalTerm}%`, `%${originalTerm}%`, `%${originalTerm}`]
+        );
         if (Array.isArray(dictData)) {
           for (const row of dictData as Array<{ pashto: string; pos?: string; romanized?: string }>) {
             if (row && row.pashto) {
@@ -1774,11 +1791,10 @@ export async function POST(request: NextRequest) {
 
       if (!variantCollector.list().some((form) => PASHTO_CHAR_RE.test(form))) {
         try {
-          const { data } = await supabase
-            .from('romanized_dictionary')
-            .select('pashto_word,pos,romanization')
-            .ilike('romanization', `%${originalTerm}%`)
-            .limit(3)
+          const data = await db.query<{ pashto_word: string; pos: string; romanization: string }>(
+            `SELECT pashto_word, pos, romanization FROM romanized_dictionary WHERE romanization LIKE ? LIMIT 3`,
+            [`%${originalTerm}%`]
+          );
           if (Array.isArray(data)) {
             for (const row of data as Array<{ pashto_word: string; pos?: string; romanization?: string }>) {
               if (row && row.pashto_word) {
@@ -1815,11 +1831,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       try {
-        const { data: dictRows } = await supabase
-          .from('dictionary')
-          .select('pashto,pos,romanized')
-          .eq('pashto', originalTerm)
-          .limit(1)
+        const dictRows = await db.query<{ pashto: string; pos: string; romanized: string }>(
+          `SELECT pashto, pos, romanized FROM dictionary WHERE pashto = ? LIMIT 1`,
+          [originalTerm]
+        );
         if (Array.isArray(dictRows) && dictRows.length > 0) {
           const row = dictRows[0] as { pashto: string; pos?: string; romanized?: string }
           if (row?.pos) {
@@ -1832,7 +1847,7 @@ export async function POST(request: NextRequest) {
 
     let lookupTerm = variantCollector.list().find((form) => PASHTO_CHAR_RE.test(form)) || originalTerm
 
-    await enrichVariantsFromSupabase(supabase, lookupTerm, variantCollector, !!includeRelated)
+    await enrichVariantsFromD1(db, lookupTerm, variantCollector, !!includeRelated)
 
     variantCollector.ensureFeminine()
 
@@ -1858,10 +1873,10 @@ export async function POST(request: NextRequest) {
 
     if (pashtoFormsForFrequency.length > 0) {
       try {
-        const { data } = await supabase
-          .from('word_frequencies')
-          .select('pashto_word,frequency_count')
-          .in('pashto_word', pashtoFormsForFrequency)
+        const data = await db.query<{ pashto_word: string; frequency_count: number }>(
+          `SELECT pashto_word, frequency_count FROM word_frequencies WHERE pashto_word IN (${pashtoFormsForFrequency.map(() => '?').join(',')})`,
+          pashtoFormsForFrequency
+        );
         if (Array.isArray(data)) {
           type WordFrequencyRow = {
             pashto_word: string | null
@@ -1888,7 +1903,7 @@ export async function POST(request: NextRequest) {
 
     variantDetails = prioritizeVariants(variantDetails, originalTerm)
 
-    await backfillRomanizations(supabase, variantDetails, includeRelated ? 80 : 40)
+    await backfillRomanizations(db, variantDetails, includeRelated ? 80 : 40)
 
     const searchVariants = variantDetails.map((meta) => meta.form)
     const primaryTerm = searchVariants.find((form) => PASHTO_CHAR_RE.test(form)) || searchVariants[0]
@@ -1937,16 +1952,30 @@ export async function POST(request: NextRequest) {
         if (!variantTerm) continue
 
         try {
-          let q = supabase.from(table.name).select(selectCols).ilike('text', `%${variantTerm.replace(/%/g,'')}%`)
-          if (scope === 'ot') q = q.eq('testament', 'OT')
-          if (scope === 'nt') q = q.eq('testament', 'NT')
+          // Query verses from D1 database
+          let sql = `SELECT ${selectCols} FROM ${table.name} WHERE text LIKE ?`
+          const params: any[] = [`%${variantTerm.replace(/%/g,'')}%`]
+          
+          if (scope === 'ot') {
+            sql += ` AND testament = 'OT'`
+          } else if (scope === 'nt') {
+            sql += ` AND testament = 'NT'`
+          }
+          
           // Apply book filter if provided
           if (bookFilter) {
             const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-            q = q.in('book', bookVariantsList)
+            if (bookVariantsList.length > 0) {
+              const bookPlaceholders = bookVariantsList.map(() => '?').join(',')
+              sql += ` AND book IN (${bookPlaceholders})`
+              params.push(...bookVariantsList)
+            }
           }
-          const { data, error } = await q.limit(50) // Lower limit per table to avoid timeout
-          if (!error && Array.isArray(data) && data.length > 0) {
+          
+          sql += ` LIMIT 50`
+          
+          const data = await db.query<any>(sql, params).catch(() => [])
+          if (Array.isArray(data) && data.length > 0) {
             textSearchHit = true
             for (const row of data as any[]) {
               const rawText = (row as any).text || ''
@@ -1992,7 +2021,10 @@ export async function POST(request: NextRequest) {
                       const chapterPadded = String((row as any).chapter).padStart(3, '0')
                       const versePadded = String((row as any).verse).padStart(3, '0')
                       const filename = `yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`
-                      audioVerseUrl = `https://nkombdutnjvaasxrbmdn.supabase.co/storage/v1/object/public/audio/yousafzai/${filename}`
+                      // Use Cloudflare R2 or remove Supabase domain reference
+                      // Audio files should be served from Cloudflare R2 instead
+                      const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev'
+                      audioVerseUrl = `${workerUrl}/audio/yousafzai/${filename}`
                     }
                   }
                 }
@@ -2041,14 +2073,14 @@ export async function POST(request: NextRequest) {
     if (allResults.length === 0 && primaryTerm) {
       // Simple form_occurrences check only
       try {
-        const { data } = await supabase
-          .from('form_occurrences')
-          .select('verses')
-          .eq('pashto_form', primaryTerm)
-            .limit(1)
+        // Query form_occurrences from D1
+        const occurrenceData = await db.query<{ verses: string }>(
+          `SELECT verses FROM form_occurrences WHERE pashto_form = ? LIMIT 1`,
+          [primaryTerm]
+        )
         
-        const formOccurrenceRows = Array.isArray(data)
-          ? (data as Array<{ verses?: unknown }>)
+        const formOccurrenceRows = Array.isArray(occurrenceData)
+          ? (occurrenceData as Array<{ verses?: unknown }>)
           : []
 
         if (
@@ -2062,29 +2094,23 @@ export async function POST(request: NextRequest) {
               const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/)
               if (match) {
                 const [, book, chapter, verse] = match
-                let verseQuery = supabase
-                  .from('verses')
-                  .select(selectCols)
-                  .eq('book', book)
-                  .eq('chapter', parseInt(chapter))
-                  .eq('verse', parseInt(verse))
-
-                // Apply book filter if provided - this ensures verse lookups respect book filtering
+                let sql = `SELECT ${selectCols} FROM verses WHERE book = ? AND chapter = ? AND verse = ?`
+                const verseParams: any[] = [book, parseInt(chapter), parseInt(verse)]
+                
+                // Apply book filter if provided
                 if (bookFilter) {
                   const bookVariantsList = bookVariants(bookFilter).slice(0, 5)
-                  verseQuery = verseQuery.in('book', bookVariantsList)
+                  if (bookVariantsList.length > 0) {
+                    const bookPlaceholders = bookVariantsList.map(() => '?').join(',')
+                    sql += ` AND book IN (${bookPlaceholders})`
+                    verseParams.push(...bookVariantsList)
+                  }
                 }
-
-                const { data: verseData } = await verseQuery.limit(1)
+                
+                sql += ` LIMIT 1`
+                
+                const verseData = await db.query<any>(sql, verseParams)
                 const verseRows = Array.isArray(verseData)
-                  ? (verseData as Array<{
-                      book?: string | null
-                      chapter?: number | null
-                      verse?: number | null
-                      text?: string | null
-                      testament?: 'OT' | 'NT' | null
-                    }>)
-                  : []
 
                 if (verseRows.length > 0) {
                   const row = verseRows[0]
@@ -2174,12 +2200,10 @@ export async function POST(request: NextRequest) {
         // For nouns/adjectives: Always query inflections table comprehensively when includeRelated is true
         if (includeRelated && !isVerb) {
           try {
-            const { data: inflData } = await supabase
-              .from('inflections')
-              .select('inflected_form, grammatical_info, frequency')
-              .eq('base_word', normalizedLookup)
-              .order('frequency', { ascending: false })
-              .limit(300); // Get more forms for nouns
+            const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+              `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 300`,
+              [normalizedLookup]
+            );
             
             if (Array.isArray(inflData)) {
               const inflectionForms: string[] = [];
@@ -2246,12 +2270,10 @@ export async function POST(request: NextRequest) {
             
             // Also query inflections table for verb forms
             try {
-              const { data: inflData } = await supabase
-                .from('inflections')
-                .select('inflected_form, grammatical_info, frequency')
-                .eq('base_word', normalizedLookup)
-                .order('frequency', { ascending: false })
-                .limit(200);
+              const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
+                `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 200`,
+                [normalizedLookup]
+              );
               
               if (Array.isArray(inflData)) {
                 for (const row of inflData) {
@@ -2298,7 +2320,7 @@ export async function POST(request: NextRequest) {
           
           // Priority 1: Check if it's an irregular verb - query database
           try {
-            const irregularForms = await generateIrregularVerbFormsFromDB(supabase, normalizedLookup);
+            const irregularForms = await generateIrregularVerbFormsFromDB(db, normalizedLookup);
             if (irregularForms.length > 1) {
               verbForms.push(...irregularForms);
               console.log(`DEBUG: ${normalizedLookup} - Found irregular verb in database, generated ${irregularForms.length} forms`);
@@ -2312,7 +2334,7 @@ export async function POST(request: NextRequest) {
             if (parts.length === 2) {
               const [main, aux] = parts;
               // Check if auxiliary is irregular - query database instead of hardcoded map
-              const auxVerbData = await getIrregularVerbData(supabase, aux);
+              const auxVerbData = await getIrregularVerbData(db, aux);
               if (auxVerbData || aux === 'کېدل' || aux === 'کول') {
                 try {
                   const { getCompoundVerbFormsWithIrregularAux } = await import('../utils/lingdocs-irregular-conjugations');
@@ -2372,13 +2394,11 @@ export async function POST(request: NextRequest) {
           const batch = allPossibleForms.slice(i, i + batchSize)
           
           try {
-            const { data: occurrenceData } = await supabase
-              .from('form_occurrences')
-              .select('pashto_form, frequency')
-              .in('pashto_form', batch)
-              .gte('frequency', 1)
-              .order('frequency', { ascending: false })
-              .limit(30)
+            const placeholders = batch.map(() => '?').join(',')
+            const occurrenceData = await db.query<{ pashto_form: string; frequency: number }>(
+              `SELECT pashto_form, frequency FROM form_occurrences WHERE pashto_form IN (${placeholders}) AND frequency >= 1 ORDER BY frequency DESC LIMIT 30`,
+              batch
+            );
 
             if (Array.isArray(occurrenceData)) {
               const typedRows = occurrenceData as Array<{
@@ -2397,13 +2417,11 @@ export async function POST(request: NextRequest) {
           } catch (error: any) {
             // Try different column names if the first attempt fails
             try {
-              const { data: occurrenceData2 } = await supabase
-                .from('form_occurrences')
-                .select('pashto_form, frequency')
-                .in('pashto_form', batch)
-                .gte('frequency', 1)
-                .order('frequency', { ascending: false })
-                .limit(30)
+              const placeholders = batch.map(() => '?').join(',')
+              const occurrenceData2 = await db.query<{ pashto_form: string; frequency: number }>(
+                `SELECT pashto_form, frequency FROM form_occurrences WHERE pashto_form IN (${placeholders}) AND frequency >= 1 ORDER BY frequency DESC LIMIT 30`,
+                batch
+              );
 
               if (Array.isArray(occurrenceData2)) {
                 const typedRows2 = occurrenceData2 as Array<{
@@ -2434,10 +2452,12 @@ export async function POST(request: NextRequest) {
           const formsToCheck = includeRelated ? existingForms.slice(0, 20) : existingForms.slice(0, 12)
           for (const formData of formsToCheck) {
             try {
-              const { count } = await supabase
-                .from('verses')
-                .select('*', { count: 'exact', head: true })
-                .in('book', bookVariantsList)
+              // Get count from D1 database
+              const countResult = await db.queryFirst<{ count: number }>(
+                `SELECT COUNT(*) as count FROM verses WHERE book IN (${bookPlaceholders})`,
+                bookVariantsList
+              );
+              const count = countResult?.count || 0
                 .ilike('text', `%${formData.form.replace(/[%_]/g, '\\$&')}%`) // Escape SQL wildcards
 
               if (count && count > 0) {
@@ -2457,13 +2477,12 @@ export async function POST(request: NextRequest) {
 
         // Also check word_frequencies table for additional forms
         try {
-          const { data: wordFreqData } = await supabase
-            .from('word_frequencies')
-            .select('pashto_word, frequency_total')
-            .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-            .gte('frequency_total', 1)
-            .order('frequency_total', { ascending: false })
-            .limit(20)
+          const formsToCheck = allPossibleForms.slice(0, includeRelated ? 60 : 30)
+          const placeholders = formsToCheck.map(() => '?').join(',')
+          const wordFreqData = await db.query<{ pashto_word: string; frequency_total: number }>(
+            `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 20`,
+            formsToCheck
+          );
 
           if (Array.isArray(wordFreqData)) {
             const typedWordFreqRows = wordFreqData as Array<{
@@ -2482,13 +2501,12 @@ export async function POST(request: NextRequest) {
         } catch {
           // Try different column names
           try {
-            const { data: wordFreqData2 } = await supabase
-              .from('word_frequencies')
-              .select('pashto_word, frequency_total')
-              .in('pashto_word', allPossibleForms.slice(0, includeRelated ? 60 : 30))
-              .gte('frequency_total', 1)
-              .order('frequency_total', { ascending: false })
-              .limit(20)
+            const formsToCheck = allPossibleForms.slice(0, includeRelated ? 60 : 30)
+            const placeholders = formsToCheck.map(() => '?').join(',')
+            const wordFreqData2 = await db.query<{ pashto_word: string; frequency_total: number }>(
+              `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 20`,
+              formsToCheck
+            );
 
             if (Array.isArray(wordFreqData2)) {
               const typedWordFreqRows2 = wordFreqData2 as Array<{
