@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getVerseByRef, resolveAudioUrlFromVerse } from '@/app/lib/cloudflare-d1';
 
 export const runtime = 'nodejs';
 
@@ -15,53 +16,46 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get audio URL from D1/R2 via Cloudflare Worker
-    const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
-    
-    if (!cloudflareWorkerUrl) {
-      return NextResponse.json(
-        {
-          error: 'Cloudflare Worker not configured',
-          ref,
-        },
-        { status: 503 },
-      );
-    }
+    console.log(`🔊 Resolving audio URL for ${ref} from D1/R2`);
 
-    try {
-      const d1Response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio?ref=${encodeURIComponent(ref)}&translation=${translation}`);
-      
-      if (d1Response.ok) {
-        const d1Data = await d1Response.json();
-        if (d1Data.url) {
-          console.log(`✅ Audio URL resolved from D1/R2 for ${ref}`);
+    // Fetch verse from D1 to get audio_r2_key
+    const verse = await getVerseByRef(ref, translation);
+
+    if (!verse) {
+      // Try fallback translation
+      if (translation === 'afghan2023') {
+        const fallbackVerse = await getVerseByRef(ref, 'yousafzai2019');
+        if (fallbackVerse) {
+          const audioUrl = await resolveAudioUrlFromVerse(fallbackVerse);
           return NextResponse.json({
             ref,
-            url: d1Data.url,
+            url: audioUrl,
+            translation: 'yousafzai2019',
             source: 'd1-r2',
-            r2_key: d1Data.r2_key || null,
+            r2_key: fallbackVerse.audio_r2_key || null,
           });
         }
       }
-      
-      // If D1 doesn't have the verse or audio, return not found
+      return NextResponse.json({ error: 'Verse not found' }, { status: 404 });
+    }
+
+    // Resolve audio URL from verse (uses R2 via Cloudflare Worker)
+    const audioUrl = await resolveAudioUrlFromVerse(verse);
+
+    if (!audioUrl) {
       return NextResponse.json(
-        {
-          error: 'Audio not found',
-          ref,
-        },
-        { status: 404 },
-      );
-    } catch (d1Error) {
-      console.error(`❌ D1 audio resolution failed for ${ref}:`, d1Error);
-      return NextResponse.json(
-        {
-          error: 'Failed to resolve audio URL',
-          details: d1Error instanceof Error ? d1Error.message : String(d1Error),
-        },
-        { status: 500 },
+        { error: 'Audio not available for this verse', ref },
+        { status: 404 }
       );
     }
+
+    console.log(`✅ Audio URL resolved from D1/R2 for ${ref}`);
+    return NextResponse.json({
+      ref,
+      url: audioUrl,
+      source: 'd1-r2',
+      r2_key: verse.audio_r2_key || null,
+    });
   } catch (error) {
     console.error('Failed to resolve audio URL:', error);
     return NextResponse.json(
@@ -93,32 +87,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Refs array contained no usable values' }, { status: 400 });
     }
 
-    // Use batch endpoint from d1-audio API
-    const cloudflareWorkerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
-    if (!cloudflareWorkerUrl) {
-      return NextResponse.json({ error: 'Cloudflare Worker not configured' }, { status: 503 });
-    }
+    console.log(`🔊 Batch resolving ${stringRefs.length} audio URLs from D1/R2`);
 
-    try {
-      const batchResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/d1-audio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refs: stringRefs, translation }),
-      });
-
-      if (batchResponse.ok) {
-        const batchData = await batchResponse.json();
-        return NextResponse.json({ urls: batchData.urls || {} });
-      }
-    } catch (error) {
-      console.error('Batch audio resolution failed:', error);
-    }
-
-    // Fallback: return null for all if batch fails
     const urls: Record<string, string | null> = {};
-    for (const ref of stringRefs) {
-      urls[ref] = null;
+
+    // Process in parallel (limit concurrent requests)
+    const batchSize = 10;
+    for (let i = 0; i < stringRefs.length; i += batchSize) {
+      const batch = stringRefs.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (ref: string) => {
+          try {
+            const verse = await getVerseByRef(ref, translation);
+            if (verse) {
+              const audioUrl = await resolveAudioUrlFromVerse(verse);
+              urls[ref] = audioUrl;
+            } else {
+              urls[ref] = null;
+            }
+          } catch (error) {
+            console.warn(`Failed to resolve audio for ${ref}:`, error);
+            urls[ref] = null;
+          }
+        })
+      );
     }
+
     return NextResponse.json({ urls });
   } catch (error) {
     console.error('Failed to batch resolve audio URLs:', error);
