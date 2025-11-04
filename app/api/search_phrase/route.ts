@@ -74,19 +74,9 @@ interface SearchRequest {
 }
 
 // Irregular verbs map based on the comprehensive table provided
+// This function is deprecated - use generateIrregularVerbFormsFromDB instead
+// Kept for backward compatibility but returns minimal forms
 function generateIrregularVerbForms(infinitive: string): string[] {
-  // This function now relies on database queries instead of hardcoded IRREGULAR_VERBS
-  // For immediate fallback, we'll generate basic forms
-  // The comprehensive forms come from verb_forms table query in the main search flow
-  const forms: string[] = [infinitive]
-  
-  // Basic pattern-based generation as fallback
-  // Real irregular verb data comes from database queries
-  return forms
-}
-function generateIrregularVerbForms(infinitive: string): string[] {
-  // This function is deprecated - use generateIrregularVerbFormsFromDB instead
-  // Kept for backward compatibility but returns minimal forms
   return [infinitive];
 }
 
@@ -396,87 +386,11 @@ async function generateIrregularVerbFormsFromDB(db: D1Client, infinitive: string
 }
 
 // Generate forms for irregular verbs - now uses database
+// This function is deprecated - use generateIrregularVerbFormsFromDB instead
+// Kept for backward compatibility but returns minimal forms
 function generateIrregularVerbForms(infinitive: string): string[] {
-  // This function is deprecated - use generateIrregularVerbFormsFromDB instead
-  // Kept for backward compatibility but returns minimal forms
   return [infinitive];
 }
-
-  // Present & Subjunctive Forms using LingDocs VerbBlock structure
-  const presentEndings = [
-    // 1st person singular
-    [[{ p: 'م', f: 'um' }]],
-    // 1st person plural
-    [[{ p: 'و', f: 'oo' }]],
-    // 2nd person singular masculine
-    [[{ p: 'ې', f: 'e' }]],
-    // 2nd person singular feminine
-    [[{ p: 'ې', f: 'e' }]],
-    // 3rd person singular
-    [[{ p: 'ي', f: 'ee' }]],
-    // 3rd person plural
-    [[{ p: 'ي', f: 'ee' }]]
-  ]
-
-  // Generate present forms
-  for (let i = 0; i < presentEndings.length; i++) {
-    const ending = presentEndings[i][0][0] // Get the first (and usually only) ending
-    forms.push(impStem + ending.p) // Present
-    if (perfStem !== impStem) {
-      forms.push(perfStem + ending.p) // Subjunctive
-    }
-  }
-
-  // Comprehensive Modal Content Structure (matching LingDocs)
-  const baParticle = 'به'
-
-  // Generate all person forms for present
-  const presentForms: string[] = []
-  const subjunctiveForms: string[] = []
-  const futureForms: string[] = []
-  const pastForms: string[] = []
-  const habitualPastForms: string[] = []
-  const hypotheticalPastForms: string[] = []
-
-  for (let i = 0; i < presentEndings.length; i++) {
-    const ending = presentEndings[i][0][0]
-    presentForms.push(impStem + ending.p)
-    if (perfStem !== impStem) {
-      subjunctiveForms.push(perfStem + ending.p)
-    }
-  }
-
-  // Future forms
-  for (const form of presentForms) {
-    futureForms.push(`${baParticle} ${form}`)
-  }
-  if (perfStem !== impStem) {
-    for (const form of subjunctiveForms) {
-      futureForms.push(`${baParticle} ${form}`)
-    }
-  }
-
-  // Past forms using LingDocs structure
-  const pastEndings = [
-    // 1st person singular
-    [[{ p: 'لم', f: 'lum' }]],
-    // 1st person plural
-    [[{ p: 'لو', f: 'loo' }]],
-    // 2nd person singular masculine
-    [[{ p: 'لې', f: 'le' }]],
-    // 2nd person singular feminine
-    [[{ p: 'لې', f: 'le' }]],
-    // 3rd person singular masculine
-    [[{ p: 'ل', f: 'ul' }]],
-    // 3rd person singular feminine
-    [[{ p: 'له', f: 'la' }]]
-  ]
-
-  for (let i = 0; i < pastEndings.length; i++) {
-    const ending = pastEndings[i][0][0]
-    const root = infinitive.replace(/ل$/, '')
-    pastForms.push(root + ending.p) // Past
-  }
 
 // Organize forms into LingDocs aspect-based structure
 function organizeFormsByAspect(forms: string[]): {
