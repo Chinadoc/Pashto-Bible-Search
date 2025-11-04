@@ -392,6 +392,38 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
     }
   }
 
+  // Update frequency_video for all words affected by this video
+  if (processed > 0) {
+    const affectedWords = Array.from(wordCounts.keys());
+    const placeholders = affectedWords.map(() => '?').join(',');
+    
+    // Update frequency_video from video_word_mappings
+    await env.DB.prepare(`
+      UPDATE word_frequencies
+      SET frequency_video = (
+        SELECT COALESCE(SUM(frequency), 0)
+        FROM video_word_mappings
+        WHERE video_word_mappings.pashto_word = word_frequencies.pashto_word
+      )
+      WHERE pashto_word IN (${placeholders})
+    `).bind(...affectedWords).run().catch((err) => {
+      console.warn(`   Failed to update frequency_video: ${err.message}`);
+    });
+
+    // Recalculate frequency_total (Bible + video)
+    await env.DB.prepare(`
+      UPDATE word_frequencies
+      SET frequency_total = COALESCE(frequency_afghan2023_ot, 0) + 
+                            COALESCE(frequency_afghan2023_nt, 0) + 
+                            COALESCE(frequency_yousafzai2019_ot, 0) + 
+                            COALESCE(frequency_yousafzai2019_nt, 0) + 
+                            COALESCE(frequency_video, 0)
+      WHERE pashto_word IN (${placeholders})
+    `).bind(...affectedWords).run().catch((err) => {
+      console.warn(`   Failed to update frequency_total: ${err.message}`);
+    });
+  }
+
   // Recalculate ranks (do this once at the end)
   if (processed > 0) {
     await env.DB.prepare(`
@@ -1289,8 +1321,47 @@ async function deleteVideo(env: Env, videoId: string): Promise<Response> {
       }
     }
 
-    // Delete from D1
-    await env.DB.prepare(`DELETE FROM video_transcripts WHERE video_id = ?`)
+    // Delete video_word_mappings and update frequency_video
+    // First, get all words affected by this video
+    const videoWordsResult = await env.DB.prepare(
+      `SELECT pashto_word, frequency FROM video_word_mappings WHERE video_id = ?`
+    ).bind(videoId).all();
+    
+    const affectedWords: string[] = [];
+    if (videoWordsResult.results && videoWordsResult.results.length > 0) {
+      // Decrement frequency_video for each word
+      for (const mapping of videoWordsResult.results as any[]) {
+        affectedWords.push(mapping.pashto_word);
+        
+        await env.DB.prepare(`
+          UPDATE word_frequencies 
+          SET frequency_video = MAX(0, COALESCE(frequency_video, 0) - ?),
+              frequency_total = MAX(0, COALESCE(frequency_total, 0) - ?)
+          WHERE pashto_word = ?
+        `).bind(mapping.frequency, mapping.frequency, mapping.pashto_word).run().catch((err) => {
+          console.warn(`Failed to update frequency_video for ${mapping.pashto_word}: ${err.message}`);
+        });
+      }
+      
+      // Recalculate frequency_total for affected words (safety check)
+      if (affectedWords.length > 0) {
+        const placeholders = affectedWords.map(() => '?').join(',');
+        await env.DB.prepare(`
+          UPDATE word_frequencies
+          SET frequency_total = COALESCE(frequency_afghan2023_ot, 0) + 
+                                COALESCE(frequency_afghan2023_nt, 0) + 
+                                COALESCE(frequency_yousafzai2019_ot, 0) + 
+                                COALESCE(frequency_yousafzai2019_nt, 0) + 
+                                COALESCE(frequency_video, 0)
+          WHERE pashto_word IN (${placeholders})
+        `).bind(...affectedWords).run().catch((err) => {
+          console.warn(`Failed to recalculate frequency_total: ${err.message}`);
+        });
+      }
+    }
+    
+    // Delete video_word_mappings entries
+    await env.DB.prepare(`DELETE FROM video_word_mappings WHERE video_id = ?`)
       .bind(videoId)
       .run();
 

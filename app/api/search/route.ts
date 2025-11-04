@@ -1475,6 +1475,16 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
       // If no results found, check video transcripts and return them
       console.log(`🔄 No Bible results found for query: "${convertedQuery}"`);
       
+      // Group dictionary entries by POS for disambiguation display
+      const dictionaryByPosForVideo: Record<string, any[]> = {};
+      dictionaryEntries.forEach((entry: any) => {
+        const pos = entry.pos || 'unknown';
+        if (!dictionaryByPosForVideo[pos]) {
+          dictionaryByPosForVideo[pos] = [];
+        }
+        dictionaryByPosForVideo[pos].push(entry);
+      });
+      
       // Return video transcript results if available
       if (videoTranscriptResults.length > 0) {
         console.log(`📹 Found ${videoTranscriptResults.length} video transcript matches`);
@@ -1530,6 +1540,38 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
           cached: false,
         });
       }
+      
+      // No results found (neither Bible nor video) - return empty results with dictionary if available
+      const dictionaryByPosFinal: Record<string, any[]> = {};
+      dictionaryEntries.forEach((entry: any) => {
+        const pos = entry.pos || 'unknown';
+        if (!dictionaryByPosFinal[pos]) {
+          dictionaryByPosFinal[pos] = [];
+        }
+        dictionaryByPosFinal[pos].push(entry);
+      });
+      
+      return NextResponse.json({
+        results: [],
+        relatedForms: null,
+        processed: {
+          original: originalQuery,
+          normalized: convertedQuery,
+          variants: searchTerms,
+          searchType: 'no_results',
+          language: searchLanguage,
+          romanization: romanizedDictionaryMatch?.romanized,
+          root: romanizedDictionaryMatch?.pashto,
+        },
+        dictionary: dictionaryEntries.length > 0 ? {
+          entries: dictionaryEntries,
+          groupedByPos: dictionaryByPosFinal,
+          needsDisambiguation: dictionaryEntries.length > 1,
+        } : undefined,
+        count: 0,
+        ms: Date.now() - startedAt,
+        cached: false,
+      });
     } catch (error) {
       console.error('Search API error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

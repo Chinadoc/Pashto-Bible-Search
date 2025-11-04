@@ -21,6 +21,17 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Set
 from collections import defaultdict
 
+# Add functions directory to path to import verb_inflector
+sys.path.insert(0, str(Path(__file__).parent.parent / 'functions'))
+
+try:
+    from verb_inflector import conjugate_verb, _build_tables_from_spec, _infer_regular_spec
+except ImportError:
+    print("⚠️  Warning: Could not import verb_inflector, using fallback generation")
+    conjugate_verb = None
+    _build_tables_from_spec = None
+    _infer_regular_spec = None
+
 APP_ROOT = Path(__file__).parent.parent
 OUTPUT_SQL = APP_ROOT / 'cloudflare' / 'populate-compound-verb-conjugations.sql'
 
@@ -138,11 +149,89 @@ def generate_compound_verb_forms(compound_info: Dict) -> List[Tuple[str, str, st
     helper = compound_info['helper']
     is_stative = compound_info['is_stative']
     is_transitive = compound_info['is_transitive']
+    base_verb = compound_info['pashto']
     
     forms = []
     
     # Base form
-    forms.append((compound_info['pashto'], 'infinitive', 'Base compound verb'))
+    forms.append((base_verb, 'infinitive', 'Base compound verb'))
+    
+    # Try to use verb_inflector for comprehensive generation
+    if _infer_regular_spec:
+        try:
+            spec = _infer_regular_spec(base_verb)
+            
+            # Override for stative compounds to remove و prefix from perfective
+            if spec and is_stative and helper == 'کول':
+                # Stative transitive: perfective should be complement + کړ (NO و prefix!)
+                spec['stems']['perfective'] = complement + ' کړ'
+                spec['roots']['perfective'] = complement + ' کړل'
+            
+            if spec and _build_tables_from_spec:
+                tables = _build_tables_from_spec(base_verb, spec)
+                
+                # Extract all forms from tables
+                form_mappings = {
+                    'present': 'present',
+                    'subjunctive': 'subjunctive',
+                    'imperfective_future': 'future_imperfective',
+                    'perfective_future': 'future_perfective',
+                    'imperfective_imperative': 'imperative_imperfective',
+                    'perfective_imperative': 'imperative_perfective',
+                    'continuous_past': 'past_continuous',
+                    'simple_past': 'past_perfective',
+                    'habitual_continuous_past': 'past_habitual_continuous',
+                    'habitual_simple_past': 'past_habitual_perfective',
+                    'ability_present': 'ability_present',
+                    'ability_subjunctive': 'ability_subjunctive',
+                    'ability_continuous_past': 'ability_past_continuous',
+                    'ability_simple_past': 'ability_past_perfective',
+                    'ability_imperfective_future': 'ability_future_imperfective',
+                    'ability_perfective_future': 'ability_future_perfective',
+                    'perfect_present': 'perfect_present',
+                    'perfect_past': 'perfect_past',
+                    'perfect_subjunctive': 'perfect_subjunctive',
+                    'perfect_future': 'perfect_future',
+                    'perfect_habitual': 'perfect_habitual',
+                }
+                
+                for table_name, form_type_prefix in form_mappings.items():
+                    if table_name in tables:
+                        table = tables[table_name]
+                        for person, (ps_form, rom_form) in table.items():
+                            # Clean up placeholder forms (with "... به ...")
+                            if '...' in ps_form:
+                                continue
+                            
+                            # Fix stative compound perfective forms (remove و prefix)
+                            if is_stative and helper == 'کول':
+                                # Remove و from perfective forms
+                                if 'perfective' in form_type_prefix or 'past_perfective' in form_type_prefix:
+                                    ps_form = ps_form.replace(f'{complement} وکړ', f'{complement} کړ')
+                                    ps_form = ps_form.replace(f'{complement} وکړل', f'{complement} کړل')
+                            
+                            forms.append((ps_form, f'{form_type_prefix}_{person}', f'{form_type_prefix.replace("_", " ").title()} {person}'))
+                
+                # Add roots and stems
+                meta = tables.get('meta', {})
+                if 'imperfective_root' in meta:
+                    forms.append((meta['imperfective_root'], 'imperfective_root', 'Imperfective root'))
+                if 'perfective_root' in meta:
+                    perfective_root = meta['perfective_root']
+                    # Fix stative compound perfective root
+                    if is_stative and helper == 'کول':
+                        perfective_root = perfective_root.replace(f'{complement} وکړل', f'{complement} کړل')
+                    forms.append((perfective_root, 'perfective_root', 'Perfective root'))
+                if 'past_participle' in meta:
+                    forms.append((meta['past_participle'], 'past_participle', 'Past participle'))
+                
+                # Return early if we got comprehensive forms
+                if len(forms) > 10:
+                    return forms
+        except Exception as e:
+            print(f"   ⚠️  Error using verb_inflector for {base_verb}: {e}")
+    
+    # Fallback to manual generation if verb_inflector failed
     
     if is_stative:
         # STATIVE COMPOUNDS
