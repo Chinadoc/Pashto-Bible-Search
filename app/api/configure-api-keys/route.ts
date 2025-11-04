@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
+  if (!supabaseUrl || !supabaseKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
 }
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface ApiKeysRequest {
   elevenlabs?: string;
@@ -27,6 +29,15 @@ export async function POST(request: NextRequest) {
 
     // Store in Supabase (in a secure table)
     // For now, we'll use environment variables, but this allows future expansion
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        message: 'API keys configured (using request-time keys)',
+        stored: false,
+      });
+    }
+
     const { data, error } = await supabase
       .from('api_keys')
       .upsert([
@@ -87,6 +98,15 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        keys: [],
+        message: 'No stored keys found',
+      });
+    }
+
     const { data, error } = await supabase
       .from('api_keys')
       .select('service, updated_at')
