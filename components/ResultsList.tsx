@@ -21,6 +21,11 @@ interface Props {
   terms?: string[]; // preferred: multiple variants to highlight
   highlightBook?: string | null; // book to visually highlight
   processed?: any; // processed data from search for highlighting
+  dictionaryData?: {
+    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null }>;
+    groupedByPos: Record<string, any[]>;
+    needsDisambiguation: boolean;
+  };
   verbFilters?: {
     person: 'all' | '1st' | '2nd' | '3rd';
     tense: 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
@@ -361,7 +366,7 @@ function VerseItem({
   );
 }
 
-export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed, verbFilters, multiVerbFilters, activeVariantForms, onResetFilters }: Props) {
+export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed, dictionaryData, verbFilters, multiVerbFilters, activeVariantForms, onResetFilters }: Props) {
   // Early returns BEFORE any hooks to avoid React hooks violations
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   
@@ -913,21 +918,120 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         </div>
       )}
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
-        <span>
-          Showing {shouldUseVirtualization ? results.length : paginatedResults.length} of {results.length} results
-          {!shouldUseVirtualization && results.length > itemsPerPage && (
-            <span className="ml-2 text-xs">
-              (Page {page} of {Math.ceil(results.length / itemsPerPage)})
-            </span>
-          )}
-          {shouldUseVirtualization && (
-            <span className="ml-2 text-xs text-blue-600">
-              (Virtualized for performance)
-            </span>
-          )}
-        </span>
-        {!shouldUseVirtualization && showPagination && paginationControl('top')}
+      <div className="mb-4 flex flex-col gap-2">
+        {/* Search term and dictionary info */}
+        {(dictionaryData?.entries?.length > 0 || processed?.normalized || processed?.romanization) && (
+          <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+            <span className="font-medium">Showing results for </span>
+            {dictionaryData?.entries?.[0] ? (
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {dictionaryData.entries[0].pashto}
+                {dictionaryData.entries[0].romanized && (
+                  <> - {dictionaryData.entries[0].romanized}</>
+                )}
+                {dictionaryData.entries[0].pos && (
+                  <span className="text-gray-600 dark:text-gray-400 ml-1">
+                    {dictionaryData.entries[0].pos}
+                  </span>
+                )}
+                {dictionaryData.entries[0].english && (
+                  <span className="text-gray-600 dark:text-gray-400 ml-1">
+                    {dictionaryData.entries[0].english}
+                  </span>
+                )}
+              </span>
+            ) : processed?.normalized ? (
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {processed.normalized}
+                {processed.romanization && (
+                  <> - {processed.romanization}</>
+                )}
+                {processed.pos && processed.pos !== 'unknown' && (
+                  <span className="text-gray-600 dark:text-gray-400 ml-1">
+                    {processed.pos}
+                  </span>
+                )}
+              </span>
+            ) : null}
+          </div>
+        )}
+        
+        {/* Active filters */}
+        {hasActiveFilters && (
+          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+            <span className="font-medium">Active filters: </span>
+            {multiVerbFilters ? (
+              <>
+                {multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? (
+                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-700 dark:text-blue-300">
+                    {multiVerbFilters.person.filter(p => p !== 'all').map(p => {
+                      if (p === '1st') return '1st person';
+                      if (p === '2nd') return '2nd person';
+                      if (p === '3rd') return '3rd person';
+                      return p;
+                    }).join(', ')}
+                  </span>
+                ) : null}
+                {multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? (
+                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-700 dark:text-purple-300">
+                    {multiVerbFilters.tense.filter(t => t !== 'all').join(', ')}
+                  </span>
+                ) : null}
+                {multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? (
+                  <span className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">
+                    {multiVerbFilters.aspect.filter(a => a !== 'all').join(', ')}
+                  </span>
+                ) : null}
+                {multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? (
+                  <span className="ml-1 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 rounded text-orange-700 dark:text-orange-300">
+                    {multiVerbFilters.mood.filter(m => m !== 'all').join(', ')}
+                  </span>
+                ) : null}
+              </>
+            ) : verbFilters ? (
+              <>
+                {verbFilters.person !== 'all' && (
+                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-700 dark:text-blue-300">
+                    {verbFilters.person === '1st' ? '1st person' : verbFilters.person === '2nd' ? '2nd person' : '3rd person'}
+                  </span>
+                )}
+                {verbFilters.tense !== 'all' && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-700 dark:text-purple-300">
+                    {verbFilters.tense}
+                  </span>
+                )}
+                {verbFilters.aspect !== 'all' && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">
+                    {verbFilters.aspect}
+                  </span>
+                )}
+                {verbFilters.mood !== 'all' && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 rounded text-orange-700 dark:text-orange-300">
+                    {verbFilters.mood}
+                  </span>
+                )}
+              </>
+            ) : null}
+          </div>
+        )}
+        
+        {/* Results count */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
+          <span>
+            Showing {shouldUseVirtualization ? results.length : paginatedResults.length} of {results.length} results
+            {!shouldUseVirtualization && results.length > itemsPerPage && (
+              <span className="ml-2 text-xs">
+                (Page {page} of {Math.ceil(results.length / itemsPerPage)})
+              </span>
+            )}
+            {shouldUseVirtualization && (
+              <span className="ml-2 text-xs text-blue-600">
+                (Virtualized for performance)
+              </span>
+            )}
+          </span>
+          {!shouldUseVirtualization && showPagination && paginationControl('top')}
+        </div>
       </div>
 
       {shouldUseVirtualization ? (

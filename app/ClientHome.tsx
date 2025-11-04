@@ -417,7 +417,11 @@ function SearchControls({
   setBookFilter,
   resultsCount,
   refreshAudioMap,
-  isLoading
+  isLoading,
+  verbFilters,
+  setVerbFilters,
+  nounFilters,
+  setNounFilters
 }: {
   scope: Scope;
   setScope: (scope: Scope) => void;
@@ -432,6 +436,10 @@ function SearchControls({
   resultsCount: number;
   refreshAudioMap: () => Promise<void>;
   isLoading: boolean;
+  verbFilters?: VerbFilterState;
+  setVerbFilters?: (filters: VerbFilterState) => void;
+  nounFilters?: NounFilterState;
+  setNounFilters?: (filters: NounFilterState) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -562,6 +570,89 @@ function SearchControls({
         >
           🔄 Audio
         </button>
+
+        {/* Conjugation Filters (for verbs) */}
+        {includeRelated && verbFilters && setVerbFilters && (
+          <div className="flex flex-wrap items-center gap-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+            <span className="text-xs font-semibold text-blue-800 dark:text-blue-200">Verb Filters:</span>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-300">Tense:</label>
+              <select
+                value={verbFilters.tense}
+                onChange={(e) => setVerbFilters({ ...verbFilters, tense: e.target.value as VerbFilterTense })}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="present">Present</option>
+                <option value="past">Past</option>
+                <option value="subjunctive">Subjunctive</option>
+                <option value="perfect">Perfect</option>
+                <option value="future">Future</option>
+                <option value="imperative">Imperative</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-300">Aspect:</label>
+              <select
+                value={verbFilters.aspect}
+                onChange={(e) => setVerbFilters({ ...verbFilters, aspect: e.target.value as VerbFilterAspect })}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="imperfective">Imperfective</option>
+                <option value="perfective">Perfective</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-300">Mood:</label>
+              <select
+                value={verbFilters.mood}
+                onChange={(e) => setVerbFilters({ ...verbFilters, mood: e.target.value as VerbFilterMood })}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="indicative">Indicative</option>
+                <option value="subjunctive">Subjunctive</option>
+                <option value="imperative">Imperative</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Inflection Filters (for nouns/adjectives) */}
+        {includeRelated && nounFilters && setNounFilters && (
+          <div className="flex flex-wrap items-center gap-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800">
+            <span className="text-xs font-semibold text-purple-800 dark:text-purple-200">Inflection Filters:</span>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-300">Type:</label>
+              <select
+                value={nounFilters.inflectionType}
+                onChange={(e) => setNounFilters({ ...nounFilters, inflectionType: e.target.value as NounInflectionType })}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="plain">Plain/Base</option>
+                <option value="1st">1st Inflection</option>
+                <option value="2nd">2nd Inflection</option>
+                <option value="plural">Plural</option>
+                <option value="vocative">Vocative</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-300">Reason:</label>
+              <select
+                value={nounFilters.inflectionReason || 'all'}
+                onChange={(e) => setNounFilters({ ...nounFilters, inflectionReason: e.target.value as InflectionReasonFilter })}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="plural">Plural</option>
+                <option value="sandwich">Sandwich</option>
+                <option value="transitive_past">Transitive Past</option>
+              </select>
+            </div>
+          </div>
+        )}
 
         <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
           {resultsCount} results
@@ -1869,6 +1960,10 @@ export default function ClientHome() {
         resultsCount={resultsCount}
         refreshAudioMap={refreshAudioMap}
         isLoading={isLoading}
+        verbFilters={verbFilters}
+        setVerbFilters={setVerbFilters}
+        nounFilters={nounFilters}
+        setNounFilters={setNounFilters}
       />
 
       {/* Error Message */}
@@ -2321,6 +2416,7 @@ export default function ClientHome() {
             audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
             loading={isLoading}
             processed={processed}
+            dictionaryData={dictionaryData}
             verbFilters={verbFilters}
             multiVerbFilters={multiVerbFilters}
             activeVariantForms={activeVariantForms}
