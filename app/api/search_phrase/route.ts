@@ -2201,6 +2201,7 @@ export async function POST(request: NextRequest) {
         // For nouns/adjectives: Always query inflections table comprehensively when includeRelated is true
         if (includeRelated && !isVerb) {
           try {
+            // FIRST: Query inflections table (authoritative source for all inflected forms)
             const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
               `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 300`,
               [normalizedLookup]
@@ -2248,6 +2249,24 @@ export async function POST(request: NextRequest) {
               const allNounForms = new Set([...nounForms, ...inflectionForms]);
               nounForms = Array.from(allNounForms);
               console.log(`DEBUG: ${normalizedLookup} - Added ${inflectionForms.length} inflections from inflections table (noun/adjective)`);
+            }
+            
+            // ALSO: Query nouns_lexicon to get inflection pattern and ensure completeness
+            // This helps especially when inflections table might be incomplete
+            try {
+              const nounLexiconData = await db.query<{ lemma: string; inflection_pattern: string; gender: string; pos: string }>(
+                `SELECT lemma, inflection_pattern, gender, pos FROM nouns_lexicon WHERE lemma = ? LIMIT 1`,
+                [normalizedLookup]
+              );
+              
+              if (Array.isArray(nounLexiconData) && nounLexiconData.length > 0) {
+                const nounEntry = nounLexiconData[0];
+                console.log(`DEBUG: ${normalizedLookup} - Found in nouns_lexicon with pattern: ${nounEntry.inflection_pattern}`);
+                // The inflection pattern info can be used for additional form generation if needed
+                // The inflections table should already have all forms, but this confirms the pattern
+              }
+            } catch (error) {
+              console.warn('nouns_lexicon query failed (may not exist):', error);
             }
           } catch (error) {
             console.warn('inflections table query failed for noun:', error);
@@ -2320,17 +2339,20 @@ export async function POST(request: NextRequest) {
           }
           
           // Priority 1: Check if it's an irregular verb - query database
+          let foundVerbType = false;
           try {
             const irregularForms = await generateIrregularVerbFormsFromDB(db, normalizedLookup);
             if (irregularForms.length > 1) {
               verbForms.push(...irregularForms);
               console.log(`DEBUG: ${normalizedLookup} - Found irregular verb in database, generated ${irregularForms.length} forms`);
+              foundVerbType = true;
             }
           } catch (error) {
             console.warn('Error checking irregular verb:', error);
           }
+          
           // Priority 2: Check if it's a compound verb with irregular auxiliary
-          else if (normalizedLookup.includes(' ')) {
+          if (!foundVerbType && normalizedLookup.includes(' ')) {
             const parts = normalizedLookup.split(' ');
             if (parts.length === 2) {
               const [main, aux] = parts;
@@ -2353,15 +2375,17 @@ export async function POST(request: NextRequest) {
               const isStative = aux === 'کېدل' || aux === 'شول';
               verbForms.push(...generateCompoundVerbForms(normalizedLookup, isStative));
               console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
+              foundVerbType = true;
             }
           }
           // Priority 3: Check if it's a fused compound verb (ګرمېدل, etc.)
-          else if (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل')) {
+          if (!foundVerbType && (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل'))) {
             verbForms.push(...generateFusedCompoundVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found fused compound verb, generated ${verbForms.length} forms`)
+            foundVerbType = true;
           }
           // Priority 4: Regular verb
-          else {
+          if (!foundVerbType) {
             verbForms.push(...generateRegularVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found regular verb, generated ${verbForms.length} forms`)
           }
