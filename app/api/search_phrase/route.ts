@@ -1352,9 +1352,9 @@ async function enrichVariantsFromD1(
       }
 
       // Also check for other verb roots and their conjugations - use database
-      const roots = await getFormToRootMap(db, term);
-      if (roots.length > 0) {
-        const root = roots[0];
+      const additionalRoots = await getFormToRootMap(db, term);
+      if (additionalRoots.length > 0) {
+        const root = additionalRoots[0];
         console.log(`Adding forms for root ${root} when searching for ${term}`);
         const formsForRoot = await getFormsForRoot(db, root);
         for (const form of formsForRoot) {
