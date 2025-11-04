@@ -1405,6 +1405,7 @@ export async function POST(request: NextRequest) {
             dialect: null,
             tags: [['video_transcript']] as any[][],
             audio_verse_url: null,
+            audio_r2_key: null,
             id: transformed.length + index + 1,
             video_id: video.video_id,
             youtube_url: video.youtube_url,
