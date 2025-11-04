@@ -1434,7 +1434,7 @@ async function analyzeInflectionReasons(
             })
             break // Count each verse only once for sandwich
           }
-        } else if (pattern.type === 'circ') {
+        } else if (pattern.type === 'circ' && pattern.right) {
           // Circumposition surrounding the word
           const hasLeft = leftSet.has(pattern.left) || leftTokens.slice(-2).some(t => t === pattern.left)
           const hasRight = rightSet.has(pattern.right) || rightTokens.slice(0, 3).some(t => t.includes(pattern.right))
@@ -1718,7 +1718,9 @@ async function enrichVariantsFromD1(
       );
       if (Array.isArray(data)) {
         for (const row of data) {
-          const info = row?.grammatical_info as Record<string, any> | null | undefined
+          const info = (typeof row?.grammatical_info === 'string'
+            ? (JSON.parse(row.grammatical_info) as Record<string, any>)
+            : row?.grammatical_info) as Record<string, any> | null | undefined
           const raw = row?.inflected_form
           const freq = Number(row?.frequency)
           const frequency = Number.isFinite(freq) ? freq : undefined
@@ -2320,9 +2322,9 @@ export async function POST(request: NextRequest) {
                 }
                 
                 sql += ` LIMIT 1`
-                
+
                 const verseData = await db.query<any>(sql, verseParams)
-                const verseRows = Array.isArray(verseData)
+                const verseRows = Array.isArray(verseData) ? verseData : []
 
                 if (verseRows.length > 0) {
                   const row = verseRows[0]
@@ -2489,7 +2491,7 @@ export async function POST(request: NextRequest) {
           // FIRST: Always query verb_forms table for comprehensive conjugations (when includeRelated is true)
           if (includeRelated) {
             try {
-              const { getIrregularVerbForms } = await import('../../utils/lingdocs-irregular-conjugations');
+              const { getIrregularVerbForms } = await import('@/app/utils/lingdocs-irregular-conjugations');
               const comprehensiveForms = await getIrregularVerbForms(normalizedLookup);
               if (comprehensiveForms.length > 0) {
                 verbForms.push(...comprehensiveForms);
@@ -2571,7 +2573,7 @@ export async function POST(request: NextRequest) {
               const auxVerbData = await getIrregularVerbData(db, aux);
               if (auxVerbData || aux === 'کېدل' || aux === 'کول') {
                 try {
-                  const { getCompoundVerbFormsWithIrregularAux } = await import('../../utils/lingdocs-irregular-conjugations');
+                  const { getCompoundVerbFormsWithIrregularAux } = await import('@/app/utils/lingdocs-irregular-conjugations');
                   const compoundForms = await getCompoundVerbFormsWithIrregularAux(normalizedLookup);
                   if (compoundForms.length > 0) {
                     verbForms.push(...compoundForms);
@@ -2955,7 +2957,7 @@ export async function POST(request: NextRequest) {
           } else if (form.endsWith('ه') || form.endsWith('ې') || form.endsWith('و') || form.endsWith('ۍ') ||
                      form.endsWith('ی') || form.endsWith('ي') || form.endsWith('یو') || form.endsWith('ان') || form.endsWith('ونه')) {
             // Nouns and adjectives (all inflected forms)
-            nouns.push({...item, inflectionType, inflectionReasons})
+            nouns.push({...item, inflectionType, inflectionReasons} as any)
           } else {
             other.push({...item, inflectionType})
           }
