@@ -121,7 +121,7 @@ type Processed = {
   original: string;
   normalized: string;
   variants: string[];
-    searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results' | 'video_transcript';
+    searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'd1' | 'no_results' | 'video_transcript';
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   variantGroups?: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   variantDetails?: any;
@@ -1003,28 +1003,27 @@ export async function POST(request: NextRequest) {
         let englishTranslation: string | undefined;
         
         try {
-          const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-          ));
+          const { getD1Database, queryD1First } = await import('@/utils/d1');
+          const db = getD1Database();
           
-          const { data: freqData } = await supabase
-            .from('word_frequencies')
-            .select('ation, pos, english_translation')
-            .eq('pashto_word', convertedQuery)
-            .limit(1);
-          
-          if (freqData && freqData.length > 0) {
-            const entry = freqData[0];
-            romanization = entry.ation || undefined;
-            posGuess = entry.pos?.toLowerCase() || 'unknown';
-            englishTranslation = entry.english_translation || undefined;
+          if (db) {
+            const freqRow = await queryD1First<{ romanization: string; pos: string; english_translation: string }>(
+              db,
+              `SELECT romanization, pos, english_translation FROM word_frequencies WHERE pashto_word = ? LIMIT 1`,
+              [convertedQuery]
+            );
             
-            console.log(`📊 Word frequency data for "${convertedQuery}":`, {
-              pos: entry.pos,
-              romanization: romanization,
-              english: englishTranslation
-            });
+            if (freqRow) {
+              romanization = freqRow.romanization || undefined;
+              posGuess = freqRow.pos?.toLowerCase() || 'unknown';
+              englishTranslation = freqRow.english_translation || undefined;
+              
+              console.log(`📊 Word frequency data for "${convertedQuery}":`, {
+                pos: freqRow.pos,
+                romanization: romanization,
+                english: englishTranslation
+              });
+            }
           }
         } catch (freqError) {
           console.warn('Failed to fetch word frequency data:', freqError);
@@ -1223,22 +1222,36 @@ export async function POST(request: NextRequest) {
       console.log('🔍 Executing optimized search for:', convertedQuery, 'with', searchTerms.length, 'terms');
 
       let searchResults: any[] = [];
-      let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'supabase' | 'no_results' | 'video_transcript' = 'fast';
+      let searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'd1' | 'no_results' | 'video_transcript' = 'fast';
 
-    // ULTRA-FAST STANDARD SEARCH: Use Supabase word_index for instant results
+    // ULTRA-FAST STANDARD SEARCH: Use D1 for instant results
     if (searchTerms.length === 1 && !includeRelated && searchLanguage === 'pashto') {
-      console.log('🚀 Using ultra-fast Supabase word_index lookup for standard search');
+      console.log('🌩️  Using D1 search for single-term query');
       try {
-          // First try the ultra-fast Supabase optimized search
-          const supabaseResults = await supabaseOptimizedSearch(convertedQuery, scope, limit, translation);
+        // Use D1 searchVersesD1 for fast results
+        const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
+        const d1Results = await searchVersesD1(convertedQuery, {
+          translation: translation as 'afghan2023' | 'yousafzai2019',
+          testament: testamentFilter,
+          limit: limit,
+        });
 
-        if (supabaseResults && supabaseResults.length > 0) {
-          searchResults = supabaseResults;
-          searchType = 'supabase';
-          console.log(`🚀 Ultra-fast Supabase search: found ${searchResults.length} results in record time`);
-      } else {
-          // Fallback to occurrence map if Supabase search fails
-          console.log('🚀 Supabase search returned no results, trying occurrence map');
+        if (d1Results && d1Results.length > 0) {
+          searchResults = d1Results.map((verse: any) => ({
+            ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+            text: verse.text,
+            testament: verse.testament,
+            book: verse.book,
+            chapter: verse.chapter,
+            verse: verse.verse,
+            audio_verse_url: verse.audio_r2_key ? getAudioStreamUrl(verse.audio_r2_key) : null,
+            audio_r2_key: verse.audio_r2_key || null,
+          }));
+          searchType = 'd1';
+          console.log(`✅ D1 search: found ${searchResults.length} results`);
+        } else {
+          // Fallback to occurrence map if D1 search fails
+          console.log('⚡ D1 search returned no results, trying occurrence map');
           const { occurrenceMap } = await getLightweightData();
           const verseRefs = occurrenceMap.get(convertedQuery);
 
@@ -1264,7 +1277,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.warn('Ultra-fast Supabase search failed, falling back to enhanced search:', error);
+        console.warn('D1 search failed, falling back to enhanced search:', error);
         searchResults = await hybridSearch(convertedQuery, { scope, limit });
         searchType = 'enhanced';
       }
@@ -1314,6 +1327,8 @@ export async function POST(request: NextRequest) {
               book: verse.book,
               chapter: verse.chapter,
               verse: verse.verse,
+              audio_verse_url: verse.audio_r2_key ? getAudioStreamUrl(verse.audio_r2_key) : null,
+              audio_r2_key: verse.audio_r2_key || null,
             }));
             searchType = 'enhanced';
             console.log(`✅ D1 form_occurrences search: found ${searchResults.length} results`);
@@ -1340,25 +1355,24 @@ export async function POST(request: NextRequest) {
         searchType = 'hybrid';
       }
 
-      // Check if there are more results available using word_frequencies
+      // Check if there are more results available using D1 word_frequencies
       let totalEstimatedCount: number | undefined;
       let hasMoreResults = false;
       
       try {
-        const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        ));
+        const { getD1Database, queryD1First } = await import('@/utils/d1');
+        const db = getD1Database();
         
-        // Check frequency for the main query term
-        const { data: freqData } = await supabase
-          .from('word_frequencies')
-          .select('frequency_count')
-          .eq('pashto_word', convertedQuery)
-          .limit(1);
-        
-        if (freqData && freqData.length > 0 && freqData[0].frequency_count) {
-          totalEstimatedCount = freqData[0].frequency_count;
+        if (db) {
+          const freqRow = await queryD1First<{ frequency_count: number }>(
+            db,
+            `SELECT frequency_count FROM word_frequencies WHERE pashto_word = ? LIMIT 1`,
+            [convertedQuery]
+          );
+          
+          if (freqRow && freqRow.frequency_count) {
+            totalEstimatedCount = freqRow.frequency_count;
+          }
         }
       } catch (freqError) {
         console.warn('Could not check word frequency for total count:', freqError);
@@ -1375,7 +1389,8 @@ export async function POST(request: NextRequest) {
           translation: null,
           dialect: null,
           tags: [] as any[][],
-          audio_verse_url: null, // Audio handled via D1/R2
+          audio_verse_url: result.audio_verse_url || result.audio_r2_key ? getAudioStreamUrl(result.audio_r2_key) : null,
+          audio_r2_key: result.audio_r2_key || null,
           id: index + 1,
         }));
 
@@ -1669,107 +1684,6 @@ export async function POST(request: NextRequest) {
       },
     });
   }
-
-// Ultra-fast search using pre-computed word occurrence index
-async function supabaseOptimizedSearch(
-  query: string,
-  scope: Scope,
-  limit: number = 2000,
-  translation: string = 'afghan2023'
-): Promise<any[]> {
-  const startTime = Date.now();
-  try {
-    console.log('🚀 Starting ultra-fast word occurrence search', { query, scope, limit, translation });
-
-    const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ));
-
-    // Use word_occurrence_index for ultra-fast lookups
-    const { data: occurrenceData, error: occurrenceError } = await supabase
-      .from('word_occurrence_index')
-      .select('verse_refs, tf_idf_scores, frequency')
-      .eq('word', query)
-      .eq('translation_key', translation)
-      .single();
-
-    if (occurrenceData && !occurrenceError && occurrenceData.verse_refs && occurrenceData.verse_refs.length > 0) {
-      console.log(`⚡ Word occurrence index hit`, {
-        results: occurrenceData.verse_refs.length,
-        frequency: occurrenceData.frequency
-      });
-
-      // Get verse details using the fast function (with audio URLs)
-      const { data: verses, error: versesError } = await supabase
-        .rpc('search_verses_by_word_fast', {
-          search_word: query,
-          search_translation: translation,
-          max_results: limit
-        });
-
-      if (verses && !versesError) {
-        console.log(`⚡ Ultra-fast Word Occurrence Search`, {
-          results: verses.length,
-          method: 'word_occurrence_index',
-          translation
-        });
-        return verses;
-      } else if (!versesError) {
-        // Fallback: manually fetch verses by refs (with audio URLs)
-        const { data: fallbackVerses } = await supabase
-          .from(translation === 'afghan2023' ? 'verses' : 'verses_yousafzai')
-          .select('id, ref, text, testament, book, chapter, verse, audio_url, audio_public_url, audio_verse_url')
-          .in('ref', occurrenceData.verse_refs.slice(0, limit));
-
-        if (fallbackVerses) {
-          // Sort by TF-IDF scores if available
-          let sortedVerses = fallbackVerses;
-          if (occurrenceData.tf_idf_scores && Array.isArray(occurrenceData.tf_idf_scores)) {
-            sortedVerses = fallbackVerses
-              .map((verse, index) => ({
-                ...verse,
-                score: occurrenceData.tf_idf_scores[index] || 0
-              }))
-              .sort((a, b) => (b.score || 0) - (a.score || 0));
-          }
-
-          console.log(`⚡ Ultra-fast Word Occurrence Search (Fallback)`, {
-            results: sortedVerses.length,
-            method: 'manual_fetch',
-            translation
-          });
-          return sortedVerses;
-        }
-      }
-    }
-
-    // Fallback to cross-translation search if no specific match
-    if (scope === 'all') {
-      console.log('🔄 Falling back to cross-translation search');
-      const { data: crossResults } = await supabase
-        .rpc('search_verses_cross_translation', {
-          search_word: query,
-          max_results: limit
-        });
-
-      if (crossResults) {
-        console.log(`⚡ Cross-translation Search`, {
-          results: crossResults.length,
-          method: 'cross_translation'
-        });
-        return crossResults;
-      }
-    }
-
-    console.log(`⚡ Word Occurrence Search (No Results)`, { translation });
-    return [];
-  } catch (error) {
-    console.log(`⚠️ Ultra-fast word occurrence search failed`, { error: error instanceof Error ? error.message : error });
-    console.log(`⚡ Word Occurrence Search (Error)`, { error: true, translation });
-    return [];
-  }
-}
 
 // Helper function to check scope
 function matchesScope(verse: any, scope: Scope): boolean {
