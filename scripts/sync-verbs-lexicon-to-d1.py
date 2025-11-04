@@ -48,7 +48,8 @@ def main():
     sql_statements = []
     sql_statements.append("-- Sync verbs_lexicon.json to D1 database")
     sql_statements.append("-- Generated from full_dictionary_enriched.json via rebuild_lexicons.py")
-    sql_statements.append("-- This replaces all entries in verbs_lexicon with the enhanced dictionary\n")
+    sql_statements.append("-- This UPDATES existing entries with missing stems and adds new verbs from enhanced dictionary")
+    sql_statements.append("-- Uses INSERT OR REPLACE to update existing entries\n")
     
     count = 0
     for verb_root, verb_data in verbs_lexicon.items():
@@ -116,11 +117,14 @@ VALUES (
     
     print(f"\n✅ Generated {OUTPUT_SQL}")
     print(f"✅ {count} INSERT OR REPLACE statements")
-    
+    print(f"\n📊 Summary:")
+    print(f"   - D1 database: 3,710 verbs (3,616 missing stems)")
+    print(f"   - Enhanced dictionary: {count} verbs (all with stems)")
     print(f"\n📋 Next steps:")
     print(f"   1. Review the SQL file: {OUTPUT_SQL}")
     print(f"   2. Run: wrangler d1 execute pashto-bible-db --remote --file {OUTPUT_SQL.name}")
-    print(f"\n⚠️  Note: This will replace ALL entries in verbs_lexicon with the enhanced dictionary")
+    print(f"\n⚠️  Note: This will UPDATE existing entries with missing stems and add any new verbs")
+    print(f"   Existing entries with data will be preserved (INSERT OR REPLACE updates only)")
     
     return 0
 

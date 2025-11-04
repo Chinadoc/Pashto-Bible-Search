@@ -2417,23 +2417,53 @@ export async function POST(request: NextRequest) {
         // NEW: Detect if this is a verb and generate appropriate conjugations
         const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
         if (isVerb) {
-          // Priority 1: Check if it's an irregular verb
+          // Priority 1: Check if it's an irregular verb - use LingDocs comprehensive forms
           if (normalizedLookup in IRREGULAR_VERBS) {
             verbForms.push(...generateIrregularVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
+            
+            // Also try to get comprehensive forms from verb_forms table (LingDocs data)
+            try {
+              const { getIrregularVerbForms } = await import('../utils/lingdocs-irregular-conjugations');
+              const comprehensiveForms = await getIrregularVerbForms(normalizedLookup);
+              if (comprehensiveForms.length > 0) {
+                verbForms.push(...comprehensiveForms);
+                console.log(`DEBUG: ${normalizedLookup} - Added ${comprehensiveForms.length} LingDocs forms`);
+              }
+            } catch (error) {
+              // Fallback if module not available
+              console.warn('LingDocs irregular conjugations not available:', error);
+            }
           }
-          // Priority 2: Check if it's a fused compound verb (ګرمېدل, etc.)
+          // Priority 2: Check if it's a compound verb with irregular auxiliary
+          else if (normalizedLookup.includes(' ')) {
+            const parts = normalizedLookup.split(' ');
+            if (parts.length === 2) {
+              const [main, aux] = parts;
+              // Check if auxiliary is irregular
+              if (aux in IRREGULAR_VERBS || aux === 'کېدل' || aux === 'کول') {
+                try {
+                  const { getCompoundVerbFormsWithIrregularAux } = await import('../utils/lingdocs-irregular-conjugations');
+                  const compoundForms = await getCompoundVerbFormsWithIrregularAux(normalizedLookup);
+                  if (compoundForms.length > 0) {
+                    verbForms.push(...compoundForms);
+                    console.log(`DEBUG: ${normalizedLookup} - Added ${compoundForms.length} compound forms with irregular aux`);
+                  }
+                } catch (error) {
+                  console.warn('LingDocs compound forms not available:', error);
+                }
+              }
+              
+              // Also generate standard compound forms
+              const isStative = aux === 'کېدل' || aux === 'شول';
+              verbForms.push(...generateCompoundVerbForms(normalizedLookup, isStative));
+              console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
+            }
+          }
+          // Priority 3: Check if it's a fused compound verb (ګرمېدل, etc.)
           else if (normalizedLookup.endsWith('ېدل') || normalizedLookup.endsWith('کېدل')) {
             verbForms.push(...generateFusedCompoundVerbForms(normalizedLookup))
             console.log(`DEBUG: ${normalizedLookup} - Found fused compound verb, generated ${verbForms.length} forms`)
-          }
-          // Priority 3: Check if it's a spaced compound verb
-          else if (normalizedLookup.includes(' ')) {
-            // Detect stative vs dynamic compound
-            const isStative = normalizedLookup.endsWith('کېدل') || normalizedLookup.endsWith('شول') ||
-                             normalizedLookup.includes('کېدل') || normalizedLookup.includes('شول')
-            verbForms.push(...generateCompoundVerbForms(normalizedLookup, isStative))
-            console.log(`DEBUG: ${normalizedLookup} - Found ${isStative ? 'stative' : 'dynamic'} compound, generated ${verbForms.length} forms`)
           }
           // Priority 4: Regular verb
           else {
