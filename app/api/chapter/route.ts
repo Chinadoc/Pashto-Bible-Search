@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVersesByChapter } from '@/app/lib/cloudflare-d1';
+import { generateR2AudioUrl, generateR2AudioKey } from '@/app/lib/chapter-audio';
 
 // Helper function to decode HTML entities
 function decodeHtmlEntities(text: string): string {
@@ -124,9 +125,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Format verses for response - all text from D1, all audio from R2 (via Worker)
-    // The Worker already generates audio_public_url correctly, so we use it directly
+    // Import getAudioStreamUrl once
+    const { getAudioStreamUrl } = await import('@/app/lib/cloudflare-d1');
+    
+    // Format verses for response - generate audio URLs efficiently for entire chapter
     const formattedVerses = verses.map((v: any) => {
+      // Generate R2 audio URL if we have the verse data
+      // Prefer audio_r2_key from D1, but generate if missing
+      let audioUrl: string | null = null;
+      let r2Key: string | null = null;
+      
+      if (v.audio_r2_key) {
+        // Use existing R2 key to generate stream URL
+        r2Key = v.audio_r2_key;
+        audioUrl = getAudioStreamUrl(r2Key);
+      } else if (v.audio_public_url) {
+        // Use existing public URL if available
+        audioUrl = v.audio_public_url;
+        // Try to extract R2 key from URL or generate it
+        r2Key = generateR2AudioKey(v.book, v.chapter, v.verse, translation as 'afghan2023' | 'yousafzai2019');
+      } else {
+        // Generate R2 key and URL based on book/chapter/verse pattern
+        r2Key = generateR2AudioKey(v.book, v.chapter, v.verse, translation as 'afghan2023' | 'yousafzai2019');
+        audioUrl = getAudioStreamUrl(r2Key);
+      }
+      
       return {
         ref: `${v.book} ${v.chapter}:${v.verse}`,
         book: v.book,
@@ -135,8 +158,8 @@ export async function GET(request: NextRequest) {
         text: decodeHtmlEntities(v.text), // Text from D1
         testament: v.testament,
         dialect: translation === 'yousafzai2019' ? 'yousafzai' : 'afghan',
-        audio_public_url: v.audio_public_url || null, // Audio URL from Worker (R2)
-        audio_r2_key: v.audio_r2_key || null, // R2 key for reference
+        audio_public_url: audioUrl, // Generated or existing audio URL
+        audio_r2_key: r2Key, // R2 key for reference
       };
     });
 

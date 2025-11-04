@@ -455,6 +455,9 @@ function transformResults(results: Array<{ ref: string; text: string; testament?
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  // Store query at function scope for error handling - initialize with default
+  // This variable MUST be accessible in the catch block
+  let originalQuery: string = 'unknown';
 
   try {
     console.log(`🔍 Search request started at ${new Date().toISOString()}`);
@@ -475,7 +478,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const originalQuery = query.trim();
+    // Assign the query after validation
+    originalQuery = query.trim();
     
     // Initialize disambiguation variables at the top
     let disambiguationResult: any = null;
@@ -695,10 +699,10 @@ export async function POST(request: NextRequest) {
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
-// ============================================================================
-// TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
-// ============================================================================
-if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+    // ============================================================================
+    // TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
+    // ============================================================================
+    if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
   console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
   try {
     // Map scope to testament filter
@@ -749,12 +753,12 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
     } else {
       console.log(`⚠️ D1 search returned ${d1Verses?.length || 0} results`);
     }
-  } catch (d1Error) {
-    console.warn(`⚠️ D1 search failed:`, d1Error);
-  }
-}
+      } catch (d1Error) {
+        console.warn(`⚠️ D1 search failed:`, d1Error);
+      }
+    }
 
-// English search mode: find ALL Pashto words with this English term
+    // English search mode: find ALL Pashto words with this English term
     if (searchLanguage === 'english') {
       console.log('🇬🇧 English search mode enabled for query:', originalQuery);
       
@@ -1573,13 +1577,17 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         cached: false,
       });
     } catch (error) {
+      // Error handler - originalQuery is accessible from function scope
       console.error('Search API error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
       
+      // originalQuery is declared at function scope (line 460) and is always accessible here
+      const errorQuery: string = originalQuery;
+      
       // Log detailed error information for debugging
       console.error('Search error details:', {
-        query: originalQuery,
+        query: errorQuery,
         error: errorMessage,
         stack: errorStack,
         timestamp: new Date().toISOString(),
@@ -1590,7 +1598,7 @@ if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto'
         { 
           error: 'Search failed', 
           details: errorMessage,
-          query: originalQuery,
+          query: errorQuery,
           // Don't expose stack trace in production
           ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
         },
