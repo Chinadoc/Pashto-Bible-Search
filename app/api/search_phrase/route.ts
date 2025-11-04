@@ -1328,7 +1328,7 @@ async function analyzeInflectionReasons(
 
     // Function to highlight context around form
     function highlightContext(verseText: string, formIndex: number, formLength: number, pattern?: string): string {
-      const contextWindow = 30
+      const contextWindow = 40
       const start = Math.max(0, formIndex - contextWindow)
       const end = Math.min(verseText.length, formIndex + formLength + contextWindow)
       let context = verseText.slice(start, end)
@@ -1343,31 +1343,60 @@ async function analyzeInflectionReasons(
       if (pattern) {
         const patternParts = pattern.split('...')
         if (patternParts.length === 2) {
+          // Circumposition pattern (e.g., "په...کې")
           const [leftPart, rightPart] = patternParts
-          // Find and highlight the pattern parts
-          const leftIndex = beforeForm.lastIndexOf(leftPart)
-          const rightIndex = afterForm.indexOf(rightPart)
+          
+          // Find the left part (preposition) - search backwards from form
+          let leftIndex = -1
+          for (let i = beforeForm.length - 1; i >= Math.max(0, beforeForm.length - 10); i--) {
+            if (beforeForm.slice(i).startsWith(leftPart)) {
+              leftIndex = i
+              break
+            }
+          }
+          
+          // Find the right part (postposition) - search forwards from form
+          let rightIndex = -1
+          for (let i = 0; i < Math.min(afterForm.length, 15); i++) {
+            if (afterForm.slice(i).startsWith(rightPart)) {
+              rightIndex = i
+              break
+            }
+          }
           
           if (leftIndex !== -1 && rightIndex !== -1) {
             const beforePattern = beforeForm.slice(0, leftIndex)
-            const leftPattern = beforeForm.slice(leftIndex)
+            const leftPattern = beforeForm.slice(leftIndex, leftIndex + leftPart.length)
+            const betweenPattern = beforeForm.slice(leftIndex + leftPart.length)
             const middlePattern = formText
-            const rightPattern = afterForm.slice(0, rightIndex + rightPart.length)
+            const rightPattern = afterForm.slice(rightIndex, rightIndex + rightPart.length)
             const afterPattern = afterForm.slice(rightIndex + rightPart.length)
             
-            return `${beforePattern}[${leftPattern}][${middlePattern}][${rightPattern}]${afterPattern}`
+            return `${beforePattern}[${leftPattern}]${betweenPattern}[${middlePattern}][${rightPattern}]${afterPattern}`
           }
         } else if (patternParts.length === 1) {
-          // Preposition pattern
-          const leftIndex = beforeForm.lastIndexOf(patternParts[0])
+          // Preposition pattern (e.g., "د")
+          const leftPart = patternParts[0]
+          let leftIndex = -1
+          
+          // Search backwards from form position
+          for (let i = beforeForm.length - 1; i >= Math.max(0, beforeForm.length - 10); i--) {
+            if (beforeForm.slice(i).startsWith(leftPart)) {
+              leftIndex = i
+              break
+            }
+          }
+          
           if (leftIndex !== -1) {
             const beforePattern = beforeForm.slice(0, leftIndex)
-            const patternText = beforeForm.slice(leftIndex)
-            return `${beforePattern}[${patternText}][${formText}]${afterForm}`
+            const patternText = beforeForm.slice(leftIndex, leftIndex + leftPart.length)
+            const betweenPattern = beforeForm.slice(leftIndex + leftPart.length)
+            return `${beforePattern}[${patternText}]${betweenPattern}[${formText}]${afterForm}`
           }
         }
       }
       
+      // Default: just highlight the form
       return `${beforeForm}[${formText}]${afterForm}`
     }
 
@@ -1689,7 +1718,21 @@ async function enrichVariantsFromD1(
       );
       if (Array.isArray(data)) {
         for (const row of data) {
-          const info = row?.grammatical_info as Record<string, any> | null | undefined
+          let info: Record<string, any> | null | undefined = null
+          
+          // Parse grammatical_info if it's a string (JSON stored as string)
+          if (row?.grammatical_info) {
+            if (typeof row.grammatical_info === 'string') {
+              try {
+                info = JSON.parse(row.grammatical_info) as Record<string, any>
+              } catch {
+                info = null
+              }
+            } else if (typeof row.grammatical_info === 'object') {
+              info = row.grammatical_info as Record<string, any>
+            }
+          }
+          
           const raw = row?.inflected_form
           const freq = Number(row?.frequency)
           const frequency = Number.isFinite(freq) ? freq : undefined
