@@ -446,7 +446,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         if (verse && verse.ref) {
           // Use audio_verse_url directly if available (from search results)
           if (verse.audio_verse_url) {
-            setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: verse.audio_verse_url }));
+            setVerseAudioUrls(prev => ({ ...prev, [verse.ref]: verse.audio_verse_url || null }));
             continue;
           }
           // Otherwise, add to batch loading list
@@ -527,8 +527,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     // Check if verse already has audio_verse_url
     const verse = results.find(v => v.ref === verseRef);
     if (verse?.audio_verse_url) {
-      setVerseAudioUrls(prev => ({ ...prev, [verseRef]: verse.audio_verse_url }));
-      setResolvedUrls(prev => ({ ...prev, [verseRef]: verse.audio_verse_url }));
+      const audioUrl = verse.audio_verse_url || null;
+      setVerseAudioUrls(prev => ({ ...prev, [verseRef]: audioUrl }));
+      setResolvedUrls(prev => ({ ...prev, [verseRef]: audioUrl }));
       return;
     }
 
