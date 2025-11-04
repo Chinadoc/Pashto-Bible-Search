@@ -32,6 +32,11 @@ interface VerbForm {
  * Get all conjugated forms for an irregular verb from verb_forms table
  * This uses the comprehensive LingDocs conjugation data
  */
+/**
+ * Get all conjugated forms for ANY verb from verb_forms table
+ * This uses the comprehensive LingDocs conjugation data
+ * Works for both irregular and regular verbs if they're in the table
+ */
 export async function getIrregularVerbForms(verbRoot: string): Promise<string[]> {
   if (!supabaseUrl || !supabaseKey) {
     return [];
@@ -40,24 +45,33 @@ export async function getIrregularVerbForms(verbRoot: string): Promise<string[]>
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Query verb_forms table for all forms of this verb
+    // Increased limit to get all forms (up to 1000 for comprehensive coverage)
     const { data, error } = await supabase
       .from('verb_forms')
       .select('form')
       .eq('verb_root', verbRoot)
-      .limit(500);
+      .limit(1000);
     
     if (error) {
-      console.warn(`Error fetching irregular verb forms for ${verbRoot}:`, error);
+      // If table doesn't exist yet, that's okay - return empty array
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.log(`verb_forms table not yet created - run the integration SQL`);
+        return [];
+      }
+      console.warn(`Error fetching verb forms for ${verbRoot}:`, error);
       return [];
     }
     
     if (Array.isArray(data)) {
-      return data.map(row => row.form).filter(Boolean);
+      const forms = data.map(row => row.form).filter(Boolean);
+      return forms;
     }
     
     return [];
   } catch (error) {
-    console.warn(`Error in getIrregularVerbForms:`, error);
+    // If table doesn't exist, that's okay - fallback to pattern generation
+    console.warn(`Error in getIrregularVerbForms (may be normal if table doesn't exist yet):`, error);
     return [];
   }
 }

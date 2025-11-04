@@ -119,3 +119,4 @@ The script `scripts/fix-verbs-lexicon-stems.py` generated:
 - [LingDocs Pashto Inflector](https://github.com/lingdocs/pashto-inflector)
 - [IRREGULAR_VERBS.md](IRREGULAR_VERBS.md)
 
+

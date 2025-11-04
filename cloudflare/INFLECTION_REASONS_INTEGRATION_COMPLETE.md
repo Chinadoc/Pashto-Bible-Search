@@ -117,3 +117,4 @@ To populate the `inflection_reasons` table:
 
 The integration is **complete and ready to use** once the `inflection_reasons` table is populated with analysis data.
 
+

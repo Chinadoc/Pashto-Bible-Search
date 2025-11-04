@@ -91,3 +91,4 @@ FROM word_frequencies
 WHERE pashto_word IN ('خانه', 'رسم', 'خانې', 'رسمو')
 ORDER BY pashto_word;
 
+

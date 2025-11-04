@@ -156,7 +156,7 @@
     },
     "roots": {
       "imperfective": "راکول",
-      "perfective": "وراکول"
+      "perfective": "راکړل"
     },
     "past_participle": "راکړی"
   },
@@ -170,5 +170,16 @@
       "perfective": "ورکړل"
     },
     "past_participle": "ورکړی"
+  },
+  "درکول": {
+    "stems": {
+      "imperfective": "درکو",
+      "perfective": "درکړ"
+    },
+    "roots": {
+      "imperfective": "درکول",
+      "perfective": "درکړل"
+    },
+    "past_participle": "درکړی"
   }
 }

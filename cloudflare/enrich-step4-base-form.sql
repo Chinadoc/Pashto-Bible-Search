@@ -12,3 +12,4 @@ AND EXISTS (
   WHERE inflection_reasons.pashto_form = word_frequencies.pashto_word
 );
 
+

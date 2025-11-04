@@ -165,3 +165,4 @@ After migration, the present tense generation script (`generate-present-tense-ve
 - The `conjugation_pattern` field indicates the type of conjugation (regular, stem_variation, root_variation, etc.)
 - The `irregularity_type` field for irregular verbs indicates the type of irregularity
 
+

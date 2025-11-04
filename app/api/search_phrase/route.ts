@@ -1757,12 +1757,14 @@ async function enrichVariantsFromSupabase(
   } catch {}
 
     try {
+      // When includeRelated is true, get more inflections (up to 500 for comprehensive coverage)
+      const inflectionLimit = includeRelated ? 500 : baseLimit
       const { data } = await client
         .from('inflections')
         .select('inflected_form,grammatical_info,frequency')
         .eq('base_word', term)
         .order('frequency', { ascending: false })
-        .limit(baseLimit)
+        .limit(inflectionLimit)
       if (Array.isArray(data)) {
         for (const row of data) {
           const info = row?.grammatical_info as Record<string, any> | null | undefined
@@ -2410,30 +2412,142 @@ export async function POST(request: NextRequest) {
 
         const normalizedLookup = relatedLookupTerm.trim() || originalTerm
 
+        // Detect if this is a verb BEFORE generating forms
+        const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
+
         // Generate all inflected forms using our comprehensive pattern system
-        const nounForms = expandInflectionVariants(normalizedLookup)
+        let nounForms = expandInflectionVariants(normalizedLookup)
         const verbForms: string[] = []
+        
+        // For nouns/adjectives: Always query inflections table comprehensively when includeRelated is true
+        if (includeRelated && !isVerb) {
+          try {
+            const { data: inflData } = await supabase
+              .from('inflections')
+              .select('inflected_form, grammatical_info, frequency')
+              .eq('base_word', normalizedLookup)
+              .order('frequency', { ascending: false })
+              .limit(300); // Get more forms for nouns
+            
+            if (Array.isArray(inflData)) {
+              const inflectionForms: string[] = [];
+              for (const row of inflData) {
+                const raw = row?.inflected_form;
+                if (!raw) continue;
+                
+                // Parse inflected_form (can be string, array, or JSON string)
+                const forms: string[] = [];
+                if (Array.isArray(raw)) {
+                  for (const entry of raw) {
+                    if (typeof entry === 'string') forms.push(entry);
+                    else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form);
+                  }
+                } else if (typeof raw === 'string') {
+                  try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                      for (const entry of parsed) {
+                        if (typeof entry === 'string') forms.push(entry);
+                        else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form);
+                      }
+                    } else if (parsed && typeof parsed === 'object' && typeof parsed.form === 'string') {
+                      forms.push(parsed.form);
+                    } else {
+                      forms.push(raw);
+                    }
+                  } catch {
+                    forms.push(raw);
+                  }
+                }
+                
+                for (const form of forms) {
+                  if (form && typeof form === 'string') {
+                    inflectionForms.push(form);
+                  }
+                }
+              }
+              
+              // Merge with pattern-based forms (deduplicate)
+              const allNounForms = new Set([...nounForms, ...inflectionForms]);
+              nounForms = Array.from(allNounForms);
+              console.log(`DEBUG: ${normalizedLookup} - Added ${inflectionForms.length} inflections from inflections table (noun/adjective)`);
+            }
+          } catch (error) {
+            console.warn('inflections table query failed for noun:', error);
+          }
+        }
 
         // NEW: Detect if this is a verb and generate appropriate conjugations
-        const isVerb = normalizedLookup.endsWith('ل') || normalizedLookup.endsWith('دل')
         if (isVerb) {
-          // Priority 1: Check if it's an irregular verb - use LingDocs comprehensive forms
-          if (normalizedLookup in IRREGULAR_VERBS) {
-            verbForms.push(...generateIrregularVerbForms(normalizedLookup))
-            console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
-            
-            // Also try to get comprehensive forms from verb_forms table (LingDocs data)
+          // FIRST: Always query verb_forms table for comprehensive conjugations (when includeRelated is true)
+          if (includeRelated) {
             try {
               const { getIrregularVerbForms } = await import('../utils/lingdocs-irregular-conjugations');
               const comprehensiveForms = await getIrregularVerbForms(normalizedLookup);
               if (comprehensiveForms.length > 0) {
                 verbForms.push(...comprehensiveForms);
-                console.log(`DEBUG: ${normalizedLookup} - Added ${comprehensiveForms.length} LingDocs forms`);
+                console.log(`DEBUG: ${normalizedLookup} - Added ${comprehensiveForms.length} forms from verb_forms table`);
               }
             } catch (error) {
-              // Fallback if module not available
-              console.warn('LingDocs irregular conjugations not available:', error);
+              console.warn('verb_forms table query failed:', error);
             }
+            
+            // Also query inflections table for verb forms
+            try {
+              const { data: inflData } = await supabase
+                .from('inflections')
+                .select('inflected_form, grammatical_info, frequency')
+                .eq('base_word', normalizedLookup)
+                .order('frequency', { ascending: false })
+                .limit(200);
+              
+              if (Array.isArray(inflData)) {
+                for (const row of inflData) {
+                  const raw = row?.inflected_form;
+                  if (!raw) continue;
+                  
+                  // Parse inflected_form (can be string, array, or JSON string)
+                  const forms: string[] = [];
+                  if (Array.isArray(raw)) {
+                    for (const entry of raw) {
+                      if (typeof entry === 'string') forms.push(entry);
+                      else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form);
+                    }
+                  } else if (typeof raw === 'string') {
+                    try {
+                      const parsed = JSON.parse(raw);
+                      if (Array.isArray(parsed)) {
+                        for (const entry of parsed) {
+                          if (typeof entry === 'string') forms.push(entry);
+                          else if (entry && typeof entry === 'object' && typeof entry.form === 'string') forms.push(entry.form);
+                        }
+                      } else if (parsed && typeof parsed === 'object' && typeof parsed.form === 'string') {
+                        forms.push(parsed.form);
+                      } else {
+                        forms.push(raw);
+                      }
+                    } catch {
+                      forms.push(raw);
+                    }
+                  }
+                  
+                  for (const form of forms) {
+                    if (form && typeof form === 'string') {
+                      verbForms.push(form);
+                    }
+                  }
+                }
+                console.log(`DEBUG: ${normalizedLookup} - Added ${inflData.length} inflections from inflections table`);
+              }
+            } catch (error) {
+              console.warn('inflections table query failed for verb:', error);
+            }
+          }
+          
+          // Priority 1: Check if it's an irregular verb - use pattern-based generation as fallback
+          if (normalizedLookup in IRREGULAR_VERBS) {
+            verbForms.push(...generateIrregularVerbForms(normalizedLookup))
+            console.log(`DEBUG: ${normalizedLookup} - Found irregular verb, generated ${verbForms.length} forms`)
           }
           // Priority 2: Check if it's a compound verb with irregular auxiliary
           else if (normalizedLookup.includes(' ')) {

@@ -48,3 +48,4 @@ WHERE (word_type IN ('noun', 'adjective')
 GROUP BY inflection_type
 ORDER BY count DESC;
 
+

@@ -150,3 +150,4 @@ WHERE (word_type IN ('noun', 'adjective', 'simple', 'inflected')
 GROUP BY inflection_type
 ORDER BY count DESC;
 
+

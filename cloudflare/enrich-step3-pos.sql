@@ -13,3 +13,4 @@ AND EXISTS (
   WHERE nouns_lexicon.pashto_word = word_frequencies.pashto_word
 );
 
+

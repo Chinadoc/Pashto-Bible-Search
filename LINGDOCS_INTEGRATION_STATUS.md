@@ -1,199 +1,109 @@
-# LingDocs Integration: Implementation Summary
+# LingDocs Integration Status & Impact Analysis
 
-## ✅ Completed Tasks
+## Current Status
 
-### 1. **Implementation Plan Created**
-   - Created comprehensive `LINGDOCS_INTEGRATION_PLAN.md` with:
-     - 7 phases of implementation
-     - Detailed checklist for each phase
-     - Recommended implementation order
-     - Success criteria
+### ✅ What Was Created
 
-### 2. **Database Schema Enhancement**
-   - Created `cloudflare/enhance-verb-schema.sql`
-   - Adds columns for comprehensive verb classification:
-     - `verb_type` - Classification (simple, stative_compound, dynamic_compound, etc.)
-     - `transitivity` - Transitive, intransitive, or grammatically transitive
-     - `yul_ending` - Flag for verbs ending with ی
-     - `idiosyncratic_3sg_masc` - Special 3rd person masculine singular forms
-     - `complement_text` - Complement part for compound verbs
-     - `aux_verb` - Auxiliary verb (کول, کېدل, etc.)
+1. **Extraction Script**: `scripts/extract-lingdocs-irregular-conjugations.py`
+   - Extracted **1,536 forms** from LingDocs irregular-conjugations.ts
+   - 6 irregular verbs: کېدل (142 forms), کول (204 forms), تلل (224 forms), ورکول (322 forms), درکول (322 forms), راکول (322 forms)
 
-### 3. **Enhanced Verb Classifier**
-   - Created `functions/verb_classifier.py` - Python port of LingDocs' `getVerbInfo()`
-   - Features implemented:
-     - ✅ Irregular verb detection (checks `irregular_verbs.json` first)
-     - ✅ Verb type classification (simple, stative compound, dynamic compound)
-     - ✅ Transitivity detection from POS tags
-     - ✅ Stem/root extraction from dictionary entries
-     - ✅ Complement and auxiliary extraction for compounds
-     - ✅ Yul ending detection
-     - ✅ Idiosyncratic form extraction
+2. **Integration SQL**: `cloudflare/integrate-lingdocs-irregular-conjugations.sql`
+   - Updates `verbs_lexicon` with correct stems for 6 irregular verbs
+   - Creates new `verb_forms` table with all 1,536 conjugation forms
+   - **STATUS: Generated but NOT yet executed**
 
-## 📋 Next Steps (In Order)
+3. **Search Integration**: `app/utils/lingdocs-irregular-conjugations.ts`
+   - TypeScript module ready to query `verb_forms` table
+   - Updated search route to use LingDocs forms
 
-### Immediate (Week 1)
-1. **Run Database Schema Update**
-   ```bash
-   wrangler d1 execute pashto-bible-db --remote --file cloudflare/enhance-verb-schema.sql
-   ```
+## ❌ Conflicts
 
-2. **Expand Irregular Verb Database**
-   - Review `pashto-inflector/src/lib/src/irregular-conjugations.ts`
-   - Port comprehensive irregular verb tables to `irregular_verbs.json`
-   - Include full conjugation blocks for high-frequency irregulars
+**No conflicts detected** - The integration uses:
+- `INSERT OR REPLACE` for `verbs_lexicon` (safe - updates existing rows)
+- `CREATE TABLE IF NOT EXISTS` for `verb_forms` (safe - doesn't overwrite)
+- `INSERT OR IGNORE` for forms (safe - skips duplicates)
 
-3. **Enhance Dictionary Extraction Script**
-   - Update `scripts/import-verb-stems-from-dictionary.py` to use `verb_classifier.py`
-   - Extract all verb metadata: `psp`, `ssp`, `prp`, `pp`, `tppp`, `tppf`
-   - Handle compound verb detection and complement extraction
+## Impact on Database Tables
 
-### Short-term (Week 2-3)
-4. **Implement Stem/Root Extraction Logic**
-   - Port `getVerbRoots()` and `getVerbStems()` functions
-   - Add intelligent fallbacks for missing data
-   - Handle split heads and perfective prefixes
+### verbs_lexicon Table
 
-5. **Add Comprehensive Form Generation**
-   - Passive voice forms (for transitive verbs)
-   - Ability forms (root + ی + شـ auxiliary)
-   - Hypothetical forms (root + ای/ی tail)
-   - All 8 perfect forms
+**Current State** (from your screenshot):
+- Many rows have empty `imperfective_stem` and `perfective_stem` columns
+- Only 6 irregular verbs would be updated by this integration
 
-6. **Implement Compound Verb Handling**
-   - Port `getDynamicCompoundInfo()` and `getGenerativeStativeCompoundVerbInfo()`
-   - Handle welding and squishing for stative compounds
-   - Handle split heads in perfective aspect
+**After Running SQL**:
+- ✅ **6 verbs get filled in**: کېدل, کول, تلل, ورکول, درکول, راکول
+  - کېدل: `imperfective_stem='کېږ'`, `perfective_stem='وش'`
+  - کول: `imperfective_stem='کو'`, `perfective_stem='وکړ'`
+  - تلل: `imperfective_stem='ځ'`, `perfective_stem='لاړ ش'`
+  - ورکول: `imperfective_stem='ورکو'`, `perfective_stem='ورکړ'`
+  - درکول: `imperfective_stem='درکو'`, `perfective_stem='درکړ'`
+  - راکول: `imperfective_stem='راکو'`, `perfective_stem='راکړ'`
 
-### Medium-term (Week 4-5)
-7. **Database Population**
-   - Create script to generate all verb forms using enhanced classifier
-   - Update `word_frequencies` with verb classification metadata
-   - Link all verb forms to base verbs via `base_verb` column
+**Impact**: 
+- ✅ **Improves** 6 rows (fills in missing stems)
+- ⚠️ **Limited scope** - only affects irregular verbs, not regular verbs
+- Regular verbs still need separate population script
 
-8. **Testing & Validation**
-   - Test verb classification on sample verbs
-   - Compare generated forms with LingDocs output
-   - Verify database integrity
+### word_frequencies Table
 
-## 🎯 Key Design Decisions
+**Current State** (from your screenshot):
+- Has data with some NULL values in `romanization` and `pos` columns
 
-1. **Incremental Migration**: Implement in phases, test each phase before moving to next
-2. **Irregular Priority**: Always check irregulars first, then dictionary, then inference
-3. **Compound Handling**: Extract complement and auxiliary separately, combine during conjugation
-4. **Database Strategy**: Store base verb info, generate forms on-demand but also pre-populate common forms
+**After Running SQL**:
+- ❌ **NO IMPACT** - This integration does NOT touch `word_frequencies`
+- The LingDocs integration is focused on verb conjugations, not word frequencies
+- Word frequencies come from verse analysis, not from LingDocs
 
-## 📊 Current Status
+### verb_forms Table (NEW)
 
-- ✅ **Phase 1.1**: Verb classifier created
-- ✅ **Phase 1.3**: Database schema ready
-- ⏳ **Phase 1.2**: Dictionary extraction (needs enhancement)
-- ⏳ **Phase 2**: Irregular verb expansion (needs work)
-- ⏳ **Phase 3**: Stem/root extraction (needs implementation)
-- ⏳ **Phase 4**: Form generation (needs implementation)
-- ⏳ **Phase 5**: Compound handling (needs implementation)
-- ⏳ **Phase 6**: Database population (pending phases 1-5)
-- ⏳ **Phase 7**: Testing (pending all phases)
+**After Running SQL**:
+- ✅ **Creates new table** with 1,536 rows
+- ✅ **Comprehensive coverage** - all morphological variants for irregular verbs
+- ✅ **Fast lookup** - indexed by `verb_root` and `form`
+- ✅ **Enables search** - search can now find any conjugated form
 
-## 🔗 Files Created/Modified
+## Recommendation
 
-### New Files
-- `LINGDOCS_INTEGRATION_PLAN.md` - Comprehensive implementation plan
-- `functions/verb_classifier.py` - Enhanced verb classification logic
-- `cloudflare/enhance-verb-schema.sql` - Database schema updates
-
-### Files to Modify Next
-- `irregular_verbs.json` - Expand with comprehensive irregulars
-- `scripts/import-verb-stems-from-dictionary.py` - Enhance extraction
-- `functions/verb_inflector.py` - Add LingDocs logic
-
-## 💡 Usage Example
-
-```python
-from functions.verb_classifier import get_verb_info
-
-# Test entry
-entry = {
-    'pashto': 'نومېدل',
-    'pos': 'v. intrans.',
-    'psp': 'نومېږ',
-    'ssp': 'ونوم',
-    'prp': 'ونومېدل',
-    'pp': 'نومېدلی',
-    'f': 'noomedul',
-    'e': 'to be called (a name)',
-}
-
-info = get_verb_info(entry)
-# Returns: {
-#   'pashto': 'نومېدل',
-#   'type': 'simple',
-#   'transitivity': 'intransitive',
-#   'yul_ending': False,
-#   'imperfective_stem': 'نومېږ',
-#   'perfective_stem': 'ونوم',
-#   ...
-# }
-```
-
-## 🚀 Ready to Populate Database
-
-The foundation is in place! **Database population scripts are ready:**
-
-### Quick Start: Populate Database
-
-Run the master script to populate all data:
+### To Apply the Integration:
 
 ```bash
-python3 scripts/populate-database.py
+# 1. Run the SQL to populate verb_forms and update verbs_lexicon
+wrangler d1 execute pashto-bible-db --remote --file cloudflare/integrate-lingdocs-irregular-conjugations.sql
+
+# 2. Verify verbs_lexicon was updated
+wrangler d1 execute pashto-bible-db --remote --command="SELECT verb_root, imperfective_stem, perfective_stem FROM verbs_lexicon WHERE verb_root IN ('کېدل', 'کول', 'تلل', 'ورکول', 'درکول', 'راکول')"
+
+# 3. Verify verb_forms was created
+wrangler d1 execute pashto-bible-db --remote --command="SELECT COUNT(*) as count FROM verb_forms"
 ```
 
-Or run individual scripts:
+### Expected Results:
 
-```bash
-# 1. Fill missing romanization and POS (quick win)
-python3 scripts/fill-missing-data.py
+**verbs_lexicon**: 
+- 6 rows updated with correct stems
+- Still many empty rows for regular verbs (expected - needs separate script)
 
-# 2. Classify all verbs with comprehensive data
-python3 scripts/populate-verb-classifications.py
-```
+**verb_forms**:
+- New table created with 1,536 rows
+- Ready for search integration
 
-Then execute the generated SQL files:
+**word_frequencies**:
+- No changes (not affected by this integration)
 
-```bash
-# First, ensure schema is updated
-wrangler d1 execute pashto-bible-db --remote --file cloudflare/enhance-verb-schema.sql
+**Search Functionality**:
+- ✅ Can now find conjugated forms like "کېږم", "شول", "شوی" when searching for "کېدل"
+- ✅ Compound verbs like "ښکېل کېدل" will generate all variants
 
-# Then populate data
-wrangler d1 execute pashto-bible-db --remote --file cloudflare/fill-missing-data.sql
-wrangler d1 execute pashto-bible-db --remote --file cloudflare/populate-verb-classifications.sql
-```
+## Summary
 
-### What Gets Populated
+| Aspect | Status | Impact |
+|--------|--------|--------|
+| **Conflicts** | ✅ None | Safe to run |
+| **verbs_lexicon** | ⚠️ Partial | 6 verbs improved, many still empty |
+| **word_frequencies** | ❌ None | Not affected by this integration |
+| **verb_forms** | ✅ New | 1,536 forms ready for search |
+| **Search accuracy** | ✅ Improved | Can find conjugated forms |
 
-1. **Missing Data Script** (`fill-missing-data.py`):
-   - Fills NULL `romanization` from dictionary
-   - Fills NULL `pos` (part of speech) from dictionary
-   - Quick win for immediate searchability
-
-2. **Verb Classification Script** (`populate-verb-classifications.py`):
-   - Classifies all verbs with `verb_type` (simple, compound, etc.)
-   - Sets `transitivity` (transitive, intransitive, etc.)
-   - Extracts and stores `imperfective_stem`, `perfective_stem`, `perfective_root`, `past_participle`
-   - Identifies `complement_text` and `aux_verb` for compounds
-   - Sets `yul_ending` flag
-   - Links all forms to `base_verb`
-
-### Result: Rapid Searchability
-
-After running these scripts, you can:
-- ✅ Filter by `verb_type` (simple, stative_compound, dynamic_compound)
-- ✅ Filter by `transitivity` (transitive, intransitive)
-- ✅ Search by `complement_text` (find all verbs with same complement)
-- ✅ Filter by `aux_verb` (find all verbs using کول, کېدل, etc.)
-- ✅ Find all forms of a verb via `base_verb` lookup
-- ✅ Filter by `yul_ending` flag
-- ✅ Search by romanization (now filled in)
-
-The verb classifier is ready to use and tested. **The database population scripts are ready to run!**
-
+**Bottom Line**: The integration is safe and ready to run, but it only improves the 6 irregular verbs. Regular verbs still need a separate population script. The `word_frequencies` table is not affected by this integration.

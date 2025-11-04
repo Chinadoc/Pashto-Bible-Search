@@ -96,3 +96,4 @@ If Vercel still shows fallback to Supabase:
 4. Check browser console for fetch errors
 
 
+

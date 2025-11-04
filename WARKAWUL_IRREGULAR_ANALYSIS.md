@@ -66,3 +66,4 @@ To confirm how LingDocs actually handles this, we should check:
 - [LingDocs Pashto Grammar - Directional Pronouns](https://grammar.lingdocs.com/pronouns/pronouns-directional/)
 - [LingDocs Pashto Dictionary - ورکول](https://dictionary.lingdocs.com/)
 
+
