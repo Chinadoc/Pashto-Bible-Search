@@ -189,14 +189,23 @@ async function buildInlineRelatedForms(
     return null;
   }
 
+  console.log(`🔍 [BUILD_INLINE] Starting for "${normalized}" (translation: ${translation})`);
+
   try {
     const [verbVariants, nounVariants] = await Promise.all([
       generateVerbVariants(normalized, { cap: 60, includeCompound: true }),
       generateNounVariants(normalized, { cap: 40 }),
     ]);
 
+    console.log(`🔍 [BUILD_INLINE] Generated variants:`, {
+      verbCount: verbVariants.length,
+      nounCount: nounVariants.length,
+      verbSample: verbVariants.slice(0, 3).map(v => ({ form: v.form, label: v.label })),
+    });
+
     const combined = [...verbVariants, ...nounVariants];
     if (!combined.length) {
+      console.warn(`⚠️ [BUILD_INLINE] No variants generated for "${normalized}"`);
       return null;
     }
 
@@ -210,17 +219,23 @@ async function buildInlineRelatedForms(
     }
 
     let consolidated = Array.from(uniqueVariants.values());
+    console.log(`🔍 [BUILD_INLINE] After deduplication: ${consolidated.length} unique variants`);
 
     if (posFilters?.include?.length) {
       const includeSet = new Set(posFilters.include);
+      const before = consolidated.length;
       consolidated = consolidated.filter((variant) => includeSet.has((variant.pos || 'other') as PartOfSpeech));
+      console.log(`🔍 [BUILD_INLINE] POS include filter: ${before} → ${consolidated.length} variants`);
     }
     if (posFilters?.exclude?.length) {
       const excludeSet = new Set(posFilters.exclude);
+      const before = consolidated.length;
       consolidated = consolidated.filter((variant) => !excludeSet.has((variant.pos || 'other') as PartOfSpeech));
+      console.log(`🔍 [BUILD_INLINE] POS exclude filter: ${before} → ${consolidated.length} variants`);
     }
 
     if (!consolidated.length) {
+      console.warn(`⚠️ [BUILD_INLINE] No variants after POS filtering`);
       return null;
     }
 
@@ -240,6 +255,14 @@ async function buildInlineRelatedForms(
     const other = consolidated
       .filter((variant) => !['verb', 'noun', 'adjective'].includes(variant.pos as string))
       .map(toSimple);
+
+    console.log(`🔍 [BUILD_INLINE] Categorized:`, {
+      verbs: verbs.length,
+      nouns: nouns.length,
+      adjectives: adjectives.length,
+      other: other.length,
+      verbLabels: verbs.slice(0, 5).map(v => v.label),
+    });
 
     const variantsWithPos: VariantWithPOS[] = consolidated.map((variant) => ({
       form: variant.form,
@@ -262,6 +285,8 @@ async function buildInlineRelatedForms(
           : adjectives.length > 0
             ? 'adjective'
             : 'other';
+
+    console.log(`✅ [BUILD_INLINE] POS guess: ${posGuess} (verbs: ${verbs.length}, nouns: ${nouns.length})`);
 
     const relatedForms = {
       root: normalized,
@@ -291,9 +316,11 @@ async function buildInlineRelatedForms(
       new Set([normalized, ...consolidated.map((variant) => variant.form).filter(Boolean)])
     );
 
+    console.log(`✅ [BUILD_INLINE] Complete: ${searchTerms.length} search terms generated`);
+
     return { relatedForms, searchTerms };
   } catch (error) {
-    console.warn(`⚠️ Failed to build inline related forms for "${word}":`, error);
+    console.error(`❌ [BUILD_INLINE] Failed for "${word}":`, error);
     return null;
   }
 }

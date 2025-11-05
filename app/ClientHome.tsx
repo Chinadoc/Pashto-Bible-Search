@@ -240,7 +240,15 @@ function filterVerbVariantsMulti(
   verbs: RelatedFormVariant[] | undefined,
   multiFilters: MultiVerbFilterState
 ): RelatedFormVariant[] {
-  if (!verbs?.length) return [];
+  if (!verbs?.length) {
+    console.warn(`⚠️ [FILTER] No verbs provided to filterVerbVariantsMulti`);
+    return [];
+  }
+  
+  console.log(`🔍 [FILTER] Starting filterVerbVariantsMulti with ${verbs.length} verbs`, {
+    filters: multiFilters,
+    sampleVerbs: verbs.slice(0, 5).map(v => ({ form: v.form, label: v.label })),
+  });
   
   // Ensure all filter arrays exist and are arrays
   const person = Array.isArray(multiFilters.person) ? multiFilters.person : ['all'];
@@ -248,26 +256,33 @@ function filterVerbVariantsMulti(
   const aspect = Array.isArray(multiFilters.aspect) ? multiFilters.aspect : ['all'];
   const mood = Array.isArray(multiFilters.mood) ? multiFilters.mood : ['all'];
   
+  const personValues = person.filter(p => p !== 'all');
+  const tenseValues = tense.filter(t => t !== 'all');
+  const aspectValues = aspect.filter(a => a !== 'all');
+  const moodValues = mood.filter(m => m !== 'all');
+  
+  console.log(`🔍 [FILTER] Filter values:`, {
+    personValues,
+    tenseValues,
+    aspectValues,
+    moodValues,
+  });
+  
   const labelFilter = (variant: RelatedFormVariant) => {
     const label = normalizeLabel(variant.label);
     
     // Check person filter (multi-select)
-    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const personValues = person.filter(p => p !== 'all');
     const personMatch = personValues.length === 0 || matchesPersonMulti(label, person);
     
     // Check tense filter (multi-select)
-    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const tenseValues = tense.filter(t => t !== 'all');
     const tenseMatch = tenseValues.length === 0 ||
       tenseValues.some(t => {
         const matcher = TENSE_MATCHERS[t as VerbFilterTense];
-        return matcher ? matcher(label) : false;
+        const match = matcher ? matcher(label) : false;
+        return match;
       });
     
     // Check aspect filter (multi-select)
-    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const aspectValues = aspect.filter(a => a !== 'all');
     const aspectMatch = aspectValues.length === 0 ||
       aspectValues.some(a => {
         const matcher = ASPECT_MATCHERS[a as VerbFilterAspect];
@@ -275,25 +290,33 @@ function filterVerbVariantsMulti(
       });
     
     // Check mood filter (multi-select)
-    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const moodValues = mood.filter(m => m !== 'all');
     const moodMatch = moodValues.length === 0 ||
       moodValues.some(m => {
         const matcher = MOOD_MATCHERS[m as VerbFilterMood];
         return matcher ? matcher(label) : false;
       });
 
-    console.log(`Filtering variant: "${variant.form}" label: "${variant.label}" (${label})`);
-    console.log(`  Person match (${person.join(',')}): ${personMatch}`);
-    console.log(`  Tense match (${tense.join(',')}): ${tenseMatch}`);
-    console.log(`  Mood match (${mood.join(',')}): ${moodMatch}`);
-    console.log(`  Aspect match (${aspect.join(',')}): ${aspectMatch}`);
+    const matches = personMatch && tenseMatch && moodMatch && aspectMatch;
+    
+    // Only log first few to avoid spam
+    if (verbs.indexOf(variant) < 5) {
+      console.log(`🔍 [FILTER] Variant "${variant.form}" (label: "${variant.label}" → "${label}")`, {
+        personMatch,
+        tenseMatch,
+        moodMatch,
+        aspectMatch,
+        matches,
+      });
+    }
 
-    return personMatch && tenseMatch && moodMatch && aspectMatch;
+    return matches;
   };
 
   const filtered = verbs.filter(labelFilter);
-  console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for multi-filters:`, multiFilters);
+  console.log(`✅ [FILTER] Filtered ${verbs.length} verb variants down to ${filtered.length}`, {
+    filters: multiFilters,
+    filteredForms: filtered.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
+  });
   return filtered;
 }
 
@@ -1452,6 +1475,19 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
       } : null);
+      
+      // Log related forms structure for debugging
+      if (searchData.relatedForms) {
+        console.log(`✅ [CLIENT] Received relatedForms:`, {
+          total: searchData.relatedForms.total,
+          posGuess: searchData.relatedForms.posGuess,
+          verbsCount: searchData.relatedForms.forms?.verbs?.length || 0,
+          nounsCount: searchData.relatedForms.forms?.nouns?.length || 0,
+          verbLabels: searchData.relatedForms.forms?.verbs?.slice(0, 5).map((v: any) => ({ form: v.form, label: v.label })),
+        });
+      } else {
+        console.warn(`⚠️ [CLIENT] No relatedForms in API response`);
+      }
       setProcessed(searchData.processed ? {
         ...searchData.processed,
         searchedForm: searchData.searchedForm,
