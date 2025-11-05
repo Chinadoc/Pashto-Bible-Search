@@ -1613,7 +1613,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     if (previousLanguage.current !== searchLanguage && query.trim()) {
       console.log('DEBUG: Search language changed to', searchLanguage, '- refreshing results');
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
       setActiveVariantForms([]);
