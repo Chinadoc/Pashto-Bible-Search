@@ -114,60 +114,65 @@ export default function SearchHeader({
         </div>
       </div>
 
-      {/* Translation Tabs */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
-          <button
-            onClick={() => setActiveTranslation('afghan2023')}
-            className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+      {/* Translation Tabs - Only show when on search tab */}
+      {activeMainTab === 'search' && (
+        <>
+          <div className="flex justify-center mb-6">
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+              <button
+                onClick={() => setActiveTranslation('afghan2023')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'afghan2023'
+                    ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🇦🇫 Afghan 2023
+              </button>
+              <button
+                onClick={() => setActiveTranslation('yousafzai2019')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'yousafzai2019'
+                    ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🕌 Yousafzai 2019
+              </button>
+              <button
+                onClick={() => setActiveTranslation('unified')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                  activeTranslation === 'unified'
+                    ? 'bg-purple-600 text-white shadow-lg transform scale-105 ring-2 ring-purple-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                🔀 Unified Search
+              </button>
+            </div>
+          </div>
+
+          {/* Translation Indicator */}
+          <div className="mb-4 text-center">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
               activeTranslation === 'afghan2023'
-                ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            🇦🇫 Afghan 2023
-          </button>
-          <button
-            onClick={() => setActiveTranslation('yousafzai2019')}
-            className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
-              activeTranslation === 'yousafzai2019'
-                ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            🕌 Yousafzai 2019
-          </button>
-          <button
-            onClick={() => setActiveTranslation('unified')}
-            className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
-              activeTranslation === 'unified'
-                ? 'bg-purple-600 text-white shadow-lg transform scale-105 ring-2 ring-purple-300'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            🔀 Unified Search
-          </button>
-        </div>
-      </div>
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : activeTranslation === 'yousafzai2019'
+                ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+            }`}>
+              {activeTranslation === 'afghan2023' ? '🇦🇫' : activeTranslation === 'yousafzai2019' ? '🕌' : '🔀'}
+              <span className="ml-2">
+                {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : activeTranslation === 'yousafzai2019' ? 'Yousafzai 2019 Translation' : 'Unified Search (Both Translations)'}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
 
-      {/* Translation Indicator */}
-      <div className="mb-4 text-center">
-        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-          activeTranslation === 'afghan2023'
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : activeTranslation === 'yousafzai2019'
-            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-            : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-        }`}>
-          {activeTranslation === 'afghan2023' ? '🇦🇫' : activeTranslation === 'yousafzai2019' ? '🕌' : '🔀'}
-          <span className="ml-2">
-            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : activeTranslation === 'yousafzai2019' ? 'Yousafzai 2019 Translation' : 'Unified Search (Both Translations)'}
-          </span>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative z-10 mb-6">
+      {/* Search Bar - Only show when on search tab */}
+      {activeMainTab === 'search' && (
+        <div className="relative z-10 mb-6">
         <div className={`absolute inset-0 rounded-lg opacity-10 ${
           activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
         }`} style={{ zIndex: -1 }}></div>
@@ -240,7 +245,8 @@ export default function SearchHeader({
             )
           }}
         />
-      </div>
+        </div>
+      )}
     </>
   );
 }
