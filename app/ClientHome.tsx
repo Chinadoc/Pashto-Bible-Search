@@ -916,22 +916,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   }, []);
 
   // Trigger initial search when an initialQuery is provided (e.g., navigating from Results → Lexicon)
-  useEffect(() => {
-    const trimmedInitial = (initialQuery || '').trim();
-    if (!trimmedInitial) return;
-
-    if (trimmedInitial !== query.trim()) {
-      // Update query state to match the incoming initial query; regular query effect will handle searching.
-      initialQueryHandledRef.current = false;
-      setQuery(trimmedInitial);
-      return;
-    }
-
-    if (!initialQueryHandledRef.current) {
-      initialQueryHandledRef.current = true;
-      executeSearch({ preserveResults: false, reason: 'initial-query' });
-    }
-  }, [initialQuery, query, executeSearch]);
+  // Note: executeSearch is defined later, so we'll handle this in a separate effect after executeSearch is defined
 
   // Persist preferences when they change
   useEffect(() => {
@@ -1467,6 +1452,24 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
     executeSearch({ preserveResults: false, reason: 'translation-switch' });
   }, [activeTranslation, executeSearch, query]);
+
+  // Handle initial query when navigating from Results → Lexicon
+  useEffect(() => {
+    const trimmedInitial = (initialQuery || '').trim();
+    if (!trimmedInitial) return;
+
+    if (trimmedInitial !== query.trim()) {
+      // Update query state to match the incoming initial query; regular query effect will handle searching.
+      initialQueryHandledRef.current = false;
+      setQuery(trimmedInitial);
+      return;
+    }
+
+    if (!initialQueryHandledRef.current) {
+      initialQueryHandledRef.current = true;
+      executeSearch({ preserveResults: false, reason: 'initial-query' });
+    }
+  }, [initialQuery, query, executeSearch]);
 
   const debouncedVerbFilterSearch = useMemo(
     () => debounce((nextFilters: VerbFilterState) => {
