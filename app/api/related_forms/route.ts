@@ -203,6 +203,7 @@ async function getInflectionsFromD1(
         form: inf.inflected_form,
         label,
         pos,
+        sources: ['d1'], // D1 source
         count: inf.frequency || 0,
         score: inf.frequency || 0,
         flags: ['d1'],
@@ -479,6 +480,7 @@ export async function POST(req: NextRequest) {
             form: v.form,
             label: v.label || 'Verb Form',
             pos: 'verb',
+            sources: ['lingdocs'], // LingDocs source
             count: v.count || 0,
             score: v.score || 0,
             romanized: v.romanized,
@@ -493,8 +495,12 @@ export async function POST(req: NextRequest) {
             existing.count = Math.max(existing.count || 0, v.count || 0);
             existing.score = existing.count;
             existing.flags = [...(existing.flags || []), 'd1'];
+            // Merge sources
+            if (!existing.sources.includes('d1')) {
+              existing.sources.push('d1');
+            }
           } else {
-            allVerbForms.set(v.form, { ...v, flags: ['d1'] });
+            allVerbForms.set(v.form, { ...v, flags: ['d1'], sources: v.sources || ['d1'] });
           }
         });
 
@@ -519,6 +525,7 @@ export async function POST(req: NextRequest) {
             form: v.form,
             label: v.label || 'Noun Form',
             pos: 'noun',
+            sources: ['lingdocs'], // LingDocs source
             count: v.count || 0,
             score: v.score || 0,
             romanized: v.romanized,
@@ -532,8 +539,12 @@ export async function POST(req: NextRequest) {
             existing.count = Math.max(existing.count || 0, v.count || 0);
             existing.score = existing.count;
             existing.flags = [...(existing.flags || []), 'd1'];
+            // Merge sources
+            if (!existing.sources.includes('d1')) {
+              existing.sources.push('d1');
+            }
           } else {
-            allNounForms.set(v.form, { ...v, flags: ['d1'] });
+            allNounForms.set(v.form, { ...v, flags: ['d1'], sources: v.sources || ['d1'] });
           }
         });
 
@@ -562,8 +573,12 @@ export async function POST(req: NextRequest) {
             existing.count = Math.max(existing.count || 0, v.count || 0);
             existing.score = existing.count;
             existing.flags = [...(existing.flags || []), 'd1'];
+            // Merge sources
+            if (!existing.sources.includes('d1')) {
+              existing.sources.push('d1');
+            }
           } else {
-            allAdjForms.set(v.form, { ...v, flags: ['d1'] });
+            allAdjForms.set(v.form, { ...v, flags: ['d1'], sources: v.sources || ['d1'] });
           }
         });
 
