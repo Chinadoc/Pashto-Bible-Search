@@ -355,6 +355,7 @@ async function generateAdjectiveInflections(baseWord: string): Promise<Variant[]
     form: baseWord,
     label: 'Base',
     pos: 'adjective',
+    sources: [], // Will be enriched later
     count: 0,
     score: 0,
   });
@@ -363,9 +364,9 @@ async function generateAdjectiveInflections(baseWord: string): Promise<Variant[]
   // Example: مفرد → مفرده (feminine), مفردې (oblique), مفردو (plural)
   if (!baseWord.endsWith('ه') && !baseWord.endsWith('ی') && !baseWord.endsWith('ې')) {
     forms.push(
-      { form: baseWord + 'ه', label: 'Feminine', pos: 'adjective', count: 0, score: 0 },
-      { form: baseWord + 'ې', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
-      { form: baseWord + 'و', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+      { form: baseWord + 'ه', label: 'Feminine', pos: 'adjective', sources: [], count: 0, score: 0 },
+      { form: baseWord + 'ې', label: 'Oblique', pos: 'adjective', sources: [], count: 0, score: 0 },
+      { form: baseWord + 'و', label: 'Plural', pos: 'adjective', sources: [], count: 0, score: 0 }
     );
   }
 
@@ -374,8 +375,8 @@ async function generateAdjectiveInflections(baseWord: string): Promise<Variant[]
   if (baseWord.endsWith('ه')) {
     const stem = baseWord.slice(0, -1);
     forms.push(
-      { form: stem + 'ې', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
-      { form: stem + 'و', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+      { form: stem + 'ې', label: 'Oblique', pos: 'adjective', sources: [], count: 0, score: 0 },
+      { form: stem + 'و', label: 'Plural', pos: 'adjective', sources: [], count: 0, score: 0 }
     );
   }
 
@@ -384,8 +385,8 @@ async function generateAdjectiveInflections(baseWord: string): Promise<Variant[]
   if (baseWord.endsWith('ی')) {
     const stem = baseWord.slice(0, -1);
     forms.push(
-      { form: stem + 'ي', label: 'Oblique', pos: 'adjective', count: 0, score: 0 },
-      { form: stem + 'یو', label: 'Plural', pos: 'adjective', count: 0, score: 0 }
+      { form: stem + 'ي', label: 'Oblique', pos: 'adjective', sources: [], count: 0, score: 0 },
+      { form: stem + 'یو', label: 'Plural', pos: 'adjective', sources: [], count: 0, score: 0 }
     );
   }
 
