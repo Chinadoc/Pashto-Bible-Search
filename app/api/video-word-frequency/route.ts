@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/app/utils/supabase';
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
 // Helper function to analyze Pashto text and count words
 function analyzePashtoText(text: string): { wordCount: number, uniqueWords: string[], wordFreq: Record<string, number> } {
-  // Remove punctuation and normalize text
   const cleanText = text
-    .replace(/[^\u0600-\u06FF\s]/g, ' ') // Keep only Pashto characters and spaces
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/[^\u0600-\u06FF\s]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
   const words = cleanText.split(' ').filter(word => word.length > 0);
@@ -23,7 +22,6 @@ function analyzePashtoText(text: string): { wordCount: number, uniqueWords: stri
   };
 }
 
-// Function to categorize transcript quality
 function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | 'non-pashto' | 'music' | 'empty' {
   if (!transcript || transcript.trim().length === 0) {
     return 'empty';
@@ -59,20 +57,18 @@ export async function GET(request: NextRequest) {
     const includeCategorization = url.searchParams.get('categorize') === 'true';
     const limit = parseInt(url.searchParams.get('limit') || '100');
 
-    // Get all video transcripts from Supabase
-    const { data, error } = await supabase
-      .from('audio_mappings')
-      .select('*')
-      .like('verse_reference', 'video_%')
-      .order('verse_reference');
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 
-    // Aggregate all transcripts for word frequency analysis
-    const allTranscripts = data?.map(item => item.audio_path).join(' ') || '';
+    const rows = await db.query<{ video_id: string; transcript: string }>(
+      `SELECT video_id, transcript FROM video_transcripts`
+    );
+
+    const allTranscripts = (rows || []).map((item) => item.transcript || '').join(' ');
 
     if (!allTranscripts.trim()) {
       return NextResponse.json({
@@ -80,71 +76,38 @@ export async function GET(request: NextRequest) {
         wordFrequency: {
           totalWords: 0,
           uniqueWords: 0,
-          wordFrequency: []
+          wordFrequency: [],
         },
-        categorization: includeCategorization ? {
-          pashto: [],
-          mixed: [],
-          nonPashto: [],
-          music: [],
-          empty: []
-        } : null
+        categorization: includeCategorization
+          ? { pashto: [], mixed: [], nonPashto: [], music: [], empty: [] }
+          : null,
       });
     }
 
     const analysis = analyzePashtoText(allTranscripts);
 
-    // Convert word frequency to sorted array
     const wordFrequencyArray = Object.entries(analysis.wordFreq)
       .map(([word, frequency]) => ({ word, frequency }))
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, limit);
 
-    type CategorizationType = {
-      pashto: Array<{verseReference: string, transcript: string, category: string}>;
-      mixed: Array<{verseReference: string, transcript: string, category: string}>;
-      nonPashto: Array<{verseReference: string, transcript: string, category: string}>;
-      music: Array<{verseReference: string, transcript: string, category: string}>;
-      empty: Array<{verseReference: string, transcript: string, category: string}>;
-    } | null;
+    let categorization: {
+      pashto: any[];
+      mixed: any[];
+      nonPashto: any[];
+      music: any[];
+      empty: any[];
+    } | null = null;
 
-    let categorization: CategorizationType = null;
-    if (includeCategorization) {
-      categorization = {
-        pashto: [],
-        mixed: [],
-        nonPashto: [],
-        music: [],
-        empty: []
-      };
-
-      data?.forEach((item) => {
-        const category = categorizeTranscriptQuality(item.audio_path);
-        const transcriptData = {
-          verseReference: item.verse_reference,
-          transcript: item.audio_path,
-          category: category
-        };
-
-        if (categorization) {
-          switch (category) {
-            case 'pashto':
-              categorization.pashto.push(transcriptData);
-              break;
-            case 'mixed':
-              categorization.mixed.push(transcriptData);
-              break;
-            case 'non-pashto':
-              categorization.nonPashto.push(transcriptData);
-              break;
-            case 'music':
-              categorization.music.push(transcriptData);
-              break;
-            case 'empty':
-              categorization.empty.push(transcriptData);
-              break;
-          }
-        }
+    if (includeCategorization && rows) {
+      categorization = { pashto: [], mixed: [], nonPashto: [], music: [], empty: [] };
+      rows.forEach((item) => {
+        const category = categorizeTranscriptQuality(item.transcript || '');
+        categorization?.[category]?.push({
+          verseReference: `video_${item.video_id}`,
+          transcript: item.transcript,
+          category,
+        });
       });
     }
 
@@ -153,11 +116,10 @@ export async function GET(request: NextRequest) {
       wordFrequency: {
         totalWords: analysis.wordCount,
         uniqueWords: analysis.uniqueWords.length,
-        wordFrequency: wordFrequencyArray
+        wordFrequency: wordFrequencyArray,
       },
-      categorization: categorization as CategorizationType
+      categorization,
     });
-
   } catch (error) {
     console.error('Error analyzing video word frequency:', error);
     return NextResponse.json(

@@ -1,53 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '../../../utils/supabase';
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if we have valid Supabase credentials
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey ||
-        supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
       return NextResponse.json({
         status: 'ERROR',
-        error: 'Supabase credentials missing or invalid',
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
       }, { status: 500 });
     }
 
-    // Check for Yousafzai verses in Supabase
-    const { data: verses, error } = await supabase
-      .from('verses')
-      .select('*')
-      .eq('translation', 'Yousafzai 2019')
-      .limit(10);
-
-    if (error) {
-      return NextResponse.json({
-        status: 'ERROR',
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }, { status: 500 });
-    }
+    // Check for Yousafzai verses in D1
+    const verses = await db.query<any>(
+      `SELECT * FROM verses_yousafzai LIMIT 10`
+    );
 
     // Also check total count
-    const { count, error: countError } = await supabase
-      .from('verses')
-      .select('*', { count: 'exact', head: true })
-      .eq('translation', 'Yousafzai 2019');
-
-    if (countError) {
-      return NextResponse.json({
-        status: 'ERROR',
-        error: countError.message,
-        timestamp: new Date().toISOString()
-      }, { status: 500 });
-    }
+    const countData = await db.query<{ count: number }>(
+      `SELECT COUNT(*) as count FROM verses_yousafzai`
+    );
+    const count = countData && countData.length > 0 ? countData[0].count : 0;
 
     return NextResponse.json({
       status: 'OK',
-      yousafzaiVersesCount: count || 0,
+      yousafzaiVersesCount: count,
       sampleVerses: verses || [],
       timestamp: new Date().toISOString()
     });
@@ -60,4 +40,3 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
-

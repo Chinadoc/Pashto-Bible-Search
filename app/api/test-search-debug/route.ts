@@ -1,97 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
+import {
+  getD1ClientOrThrow,
+  getFormOccurrencesFromD1,
+  getWordVerseRefs,
+} from '@/utils/d1-helpers';
 
-type WordOccurrence = {
-  word: string;
-  frequency: number | null;
-  translation_key: string;
-  verse_refs: string[] | null;
-};
+type TranslationKey = 'afghan2023' | 'yousafzai2019';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { word = 'وهل', translations = ['afghan2023', 'yousafzai2019'] } = body;
+    const { word = 'وهل', translations = ['afghan2023', 'yousafzai2019'] }: {
+      word?: string;
+      translations?: TranslationKey[];
+    } = body;
 
     console.log(`🔍 Testing search for word: "${word}"`);
     console.log(`🔍 Testing translations: ${translations.join(', ')}`);
 
-    // First, check dictionary
-    console.log('\n📖 CHECKING DICTIONARY:');
-    const { data: dictData, error: dictError } = await supabase
-      .from('dictionary')
-      .select('pashto, romanized, pos, english')
-      .ilike('romanized', word)
-      .limit(5);
+    const db = getD1ClientOrThrow();
 
-    console.log(`Dictionary results for romanization "${word}":`, dictData?.length || 0);
-    if (dictData && dictData.length > 0) {
-      console.log('Sample:', dictData[0]);
+    // Check form_occurrences diagnostics
+    console.log('\n📖 CHECKING FORM_OCCURRENCES:');
+    const formData = await getFormOccurrencesFromD1(db, word);
+    if (formData) {
+      console.log(`✅ Found ${formData.verseRefs.length} refs in form_occurrences (frequency=${formData.frequency})`);
+      console.log('   Sample refs:', formData.verseRefs.slice(0, 5));
+    } else {
+      console.log('❌ No entries in form_occurrences');
     }
 
-    // For each translation, check word_occurrence_index
+    // Inspect per translation
     for (const translation of translations) {
-      console.log(`\n🔎 CHECKING word_occurrence_index FOR: ${translation}`);
-
-      // First, try the word as-is
-      const { data: direct, error: directError } = await supabase
-        .from('word_occurrence_index')
-        .select('word, frequency, translation_key, verse_refs')
-        .eq('word', word)
-        .eq('translation_key', translation)
-        .single<WordOccurrence>();
-
-      if (direct) {
-        console.log(`✅ Direct match found:`, {
-          word: direct.word,
-          frequency: direct.frequency,
-          translation_key: direct.translation_key,
-          verse_refs_count: direct.verse_refs?.length || 0
-        });
-      } else if (directError?.code !== 'PGRST116') {
-        console.log(`❌ Error:`, directError);
+      console.log(`\n🔎 Checking word_verse_mapping for ${translation}`);
+      const verseRefs = await getWordVerseRefs(db, word, translation);
+      if (verseRefs.length > 0) {
+        console.log(`✅ Mapping table returned ${verseRefs.length} refs`);
+        console.log('   Sample refs:', verseRefs.slice(0, 5));
       } else {
-        console.log(`❌ No direct match`);
+        console.log('❌ No refs in word_verse_mapping');
       }
 
-      // Check what keys exist for this translation
-      console.log(`\n📊 Checking sample entries for translation: ${translation}`);
-      const { data: sample, error: sampleError } = await supabase
-        .from('word_occurrence_index')
-        .select('word, translation_key')
-        .eq('translation_key', translation)
-        .limit(5);
-
-      const sampleEntries = (sample ?? []) as Array<Pick<WordOccurrence, 'word' | 'translation_key'>>;
-
-      if (sampleEntries.length > 0) {
-        console.log(`Found ${sampleEntries.length} entries. Sample words:`, sampleEntries.map(s => s.word));
-      } else {
-        console.log(`No entries found for translation: ${translation}`);
-        if (sampleError) {
-          console.log('Error:', sampleError);
-        }
-      }
-
-      // Get count of entries per translation
-      const { count, error: countError } = await supabase
-        .from('word_occurrence_index')
-        .select('*', { count: 'exact', head: true })
-        .eq('translation_key', translation);
-
-      if (!countError) {
-        console.log(`Total entries for ${translation}: ${count}`);
-      }
+      // Count entries per translation
+      const countRow = await db.queryFirst<{ count: number }>(
+        `SELECT COUNT(*) as count FROM word_verse_mapping WHERE translation_key = ?`,
+        [translation]
+      );
+      console.log(`📊 Total mapping rows for ${translation}: ${countRow?.count ?? 0}`);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Debug info logged to console',
-      timestamp: new Date().toISOString()
+      message: 'Diagnostics logged to console',
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Test error:', error);
     return NextResponse.json(

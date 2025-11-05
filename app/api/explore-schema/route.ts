@@ -1,99 +1,158 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
+import { getD1Database, D1Client } from '@/utils/d1';
 
 export async function GET(request: NextRequest) {
   try {
     const results: any = {};
 
-    // Check verses table
-    const { data: verses } = await supabase
-      .from('verses')
-      .select('*')
-      .limit(1);
+    const d1Db = getD1Database();
+    if (!d1Db) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+    const db = new D1Client(d1Db);
 
-    if (verses && verses[0]) {
-      results.verses = {
-        columns: Object.keys(verses[0]),
-        sample: verses[0]
-      };
+    // Check verses_afghan2023 table
+    try {
+      const verses = await db.query<any>(
+        `SELECT * FROM verses_afghan2023 LIMIT 1`
+      );
+
+      if (verses && verses.length > 0) {
+        results.verses_afghan2023 = {
+          columns: Object.keys(verses[0]),
+          sample: verses[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query verses_afghan2023:', error);
     }
 
-    // Check audio_files table
-    const { data: audio } = await supabase
-      .from('audio_files')
-      .select('*')
-      .limit(1);
+    // Check verses_yousafzai table
+    try {
+      const verses = await db.query<any>(
+        `SELECT * FROM verses_yousafzai LIMIT 1`
+      );
 
-    if (audio && audio[0]) {
-      results.audio_files = {
-        columns: Object.keys(audio[0]),
-        sample: audio[0]
-      };
-    }
-
-    // Check audio_mappings table
-    const { data: mappings } = await supabase
-      .from('audio_mappings')
-      .select('*')
-      .limit(1);
-
-    if (mappings && mappings[0]) {
-      results.audio_mappings = {
-        columns: Object.keys(mappings[0]),
-        sample: mappings[0]
-      };
+      if (verses && verses.length > 0) {
+        results.verses_yousafzai = {
+          columns: Object.keys(verses[0]),
+          sample: verses[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query verses_yousafzai:', error);
     }
 
     // Check word_frequencies table
-    const { data: freq } = await supabase
-      .from('word_frequencies')
-      .select('*')
-      .limit(1);
+    try {
+      const freq = await db.query<any>(
+        `SELECT * FROM word_frequencies LIMIT 1`
+      );
 
-    if (freq && freq[0]) {
-      results.word_frequencies = {
-        columns: Object.keys(freq[0]),
-        sample: freq[0]
-      };
+      if (freq && freq.length > 0) {
+        results.word_frequencies = {
+          columns: Object.keys(freq[0]),
+          sample: freq[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query word_frequencies:', error);
     }
 
     // Check form_occurrences table
-    const { data: formOcc } = await supabase
-      .from('form_occurrences')
-      .select('*')
-      .limit(1);
+    try {
+      const formOcc = await db.query<any>(
+        `SELECT * FROM form_occurrences LIMIT 1`
+      );
 
-    if (formOcc && formOcc[0]) {
-      results.form_occurrences = {
-        columns: Object.keys(formOcc[0]),
-        sample: formOcc[0]
-      };
+      if (formOcc && formOcc.length > 0) {
+        results.form_occurrences = {
+          columns: Object.keys(formOcc[0]),
+          sample: formOcc[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query form_occurrences:', error);
     }
 
-    // Check form_roots table
-    const { data: formRoots } = await supabase
-      .from('form_roots')
-      .select('*')
-      .limit(1);
+    // Check form_to_root table
+    try {
+      const formRoots = await db.query<any>(
+        `SELECT * FROM form_to_root LIMIT 1`
+      );
 
-    if (formRoots && formRoots[0]) {
-      results.form_roots = {
-        columns: Object.keys(formRoots[0]),
-        sample: formRoots[0]
-      };
+      if (formRoots && formRoots.length > 0) {
+        results.form_to_root = {
+          columns: Object.keys(formRoots[0]),
+          sample: formRoots[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query form_to_root:', error);
     }
 
-    // Check word_forms_master table
-    const { data: master } = await supabase
-      .from('word_forms_master')
-      .select('*')
-      .limit(1);
+    // Check inflections table
+    try {
+      const inflections = await db.query<any>(
+        `SELECT * FROM inflections LIMIT 1`
+      );
 
-    if (master && master[0]) {
-      results.word_forms_master = {
-        columns: Object.keys(master[0]),
-        sample: master[0]
-      };
+      if (inflections && inflections.length > 0) {
+        results.inflections = {
+          columns: Object.keys(inflections[0]),
+          sample: inflections[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query inflections:', error);
+    }
+
+    // Check nouns_lexicon table
+    try {
+      const nouns = await db.query<any>(
+        `SELECT * FROM nouns_lexicon LIMIT 1`
+      );
+
+      if (nouns && nouns.length > 0) {
+        results.nouns_lexicon = {
+          columns: Object.keys(nouns[0]),
+          sample: nouns[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query nouns_lexicon:', error);
+    }
+
+    // Check verbs_lexicon table
+    try {
+      const verbs = await db.query<any>(
+        `SELECT * FROM verbs_lexicon LIMIT 1`
+      );
+
+      if (verbs && verbs.length > 0) {
+        results.verbs_lexicon = {
+          columns: Object.keys(verbs[0]),
+          sample: verbs[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query verbs_lexicon:', error);
+    }
+
+    // Check word_verse_mapping table
+    try {
+      const mapping = await db.query<any>(
+        `SELECT * FROM word_verse_mapping LIMIT 1`
+      );
+
+      if (mapping && mapping.length > 0) {
+        results.word_verse_mapping = {
+          columns: Object.keys(mapping[0]),
+          sample: mapping[0]
+        };
+      }
+    } catch (error) {
+      console.warn('Could not query word_verse_mapping:', error);
     }
 
     return NextResponse.json({ success: true, schema: results });

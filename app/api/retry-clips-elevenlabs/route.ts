@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_b3f632622b08afb9a26b2fb912be9d1baa2548414f430543";
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Transcribe audio clip with ElevenLabs
 async function transcribeWithElevenLabs(audioUrl: string): Promise<string | null> {
@@ -56,21 +48,47 @@ export async function POST(request: NextRequest) {
 
     console.log(`\n🔄 Retrying clips for video: ${videoId}\n`);
 
-    // Fetch the video transcript with clips
-    const { data: videoData, error: fetchError } = await supabase
-      .from('video_transcripts')
-      .select('*')
-      .eq('video_id', videoId)
-      .single();
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    }
 
-    if (fetchError || !videoData) {
+    // Fetch the video transcript with clips
+    let videoData: any = null;
+    try {
+      const data = await db.queryFirst<{
+        video_id: string;
+        segments: string;
+        [key: string]: any;
+      }>(
+        `SELECT * FROM video_transcripts WHERE video_id = ? LIMIT 1`,
+        [videoId]
+      );
+      
+      if (data) {
+        videoData = {
+          ...data,
+          segments: typeof data.segments === 'string' ? JSON.parse(data.segments) : data.segments
+        };
+      }
+    } catch (error) {
+      console.warn('Could not fetch video from D1:', error);
       return NextResponse.json(
         { error: 'Video not found' },
         { status: 404 }
       );
     }
 
-    const clips = videoData.segments || [];
+    if (!videoData) {
+      return NextResponse.json(
+        { error: 'Video not found' },
+        { status: 404 }
+      );
+    }
+
+    const clips = Array.isArray(videoData.segments) ? videoData.segments : [];
     const clipsToRetry = clipIds ? clips.filter((c: any) => clipIds.includes(c.segment_number)) : clips.filter((c: any) => c.needs_retry);
 
     if (clipsToRetry.length === 0) {
@@ -113,14 +131,15 @@ export async function POST(request: NextRequest) {
         successCount++;
         console.log(`✅ Updated clip ${clip.segment_number}`);
 
-        // Save updated clips back to Supabase
-        await supabase
-          .from('video_transcripts')
-          .update({ 
-            segments: updatedClips,
-            updated_at: new Date().toISOString()
-          })
-          .eq('video_id', videoId);
+        // Save updated clips back to D1
+        try {
+          await db.query(
+            `UPDATE video_transcripts SET segments = ?, updated_at = ? WHERE video_id = ?`,
+            [JSON.stringify(updatedClips), new Date().toISOString(), videoId]
+          );
+        } catch (error) {
+          console.warn('Could not update video in D1:', error);
+        }
 
       } catch (error) {
         console.error(`Error retrying clip ${clip.segment_number}:`, error);
@@ -144,4 +163,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

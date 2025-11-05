@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
 interface VideoTranscriptRequest {
   videoId: string;
@@ -25,14 +16,13 @@ interface VideoTranscriptRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: VideoTranscriptRequest = await request.json();
-    
+
     const {
       videoId,
       videoUrl,
       transcript,
       segments = [],
-      audioSegments = [],
-      metadata = {}
+      metadata = {},
     } = body;
 
     if (!videoId || !videoUrl || !transcript) {
@@ -42,60 +32,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract video title from URL if possible
-    const videoTitle = new URL(videoUrl).searchParams.get('v') || videoId;
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    }
 
-    // Calculate validation score
-    const validation = metadata.validation || { confidence: 0.5, isValid: true };
-    const validationScore = Math.round(validation.confidence * 100);
+    const transcriptionService = metadata.source || 'elevenlabs';
+    const segmentsJson = segments.length > 0 ? JSON.stringify(segments) : null;
 
-    // Determine if retry is needed (low confidence)
-    const needsRetry = validationScore < 70;
+    try {
+      await db.query(
+        `INSERT OR REPLACE INTO video_transcripts (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, title, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          videoId,
+          videoUrl,
+          transcript,
+          segmentsJson,
+          transcriptionService,
+          null,
+          `Video ${videoId}`,
+          new Date().toISOString(),
+          new Date().toISOString(),
+        ]
+      );
 
-    // Store in Supabase
-    const { data, error } = await supabase
-      .from('video_transcripts')
-      .insert([
-        {
-          video_id: videoId,
-          video_title: videoTitle,
-          video_url: videoUrl,
-          transcript_text: transcript,
-          segments: segments.length > 0 ? segments : null,
-          validation_score: validationScore,
-          needs_retry: needsRetry,
-          retry_reason: needsRetry ? 'Low confidence transcription' : null,
-          retry_count: 0,
-          transcription_service: metadata.source || 'elevenlabs',
-          google_drive_url: null, // Will be set after upload
-          google_drive_file_id: null, // Will be set after upload
-          audio_file_path: null, // Will be set after upload
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase error:', error);
+      return NextResponse.json({
+        success: true,
+        transcriptId: videoId,
+        videoId,
+        message: 'Transcript stored successfully',
+      });
+    } catch (error) {
+      console.error('D1 error:', error);
       return NextResponse.json(
-        { error: 'Failed to store transcript: ' + error.message },
+        { error: 'Failed to store transcript: ' + (error instanceof Error ? error.message : String(error)) },
         { status: 500 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      transcriptId: data?.id,
-      videoId: data?.video_id,
-      validationScore: validationScore,
-      needsRetry: needsRetry,
-      message: needsRetry
-        ? 'Transcript stored but flagged for review (low confidence)'
-        : 'Transcript stored successfully'
-    });
-
   } catch (error) {
     console.error('Store transcript API error:', error);
     return NextResponse.json(

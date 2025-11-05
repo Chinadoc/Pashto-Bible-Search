@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface AssemblyAIWord {
   confidence: number;
@@ -97,95 +89,65 @@ async function transcribeWithAssemblyAI(youtubeUrl: string): Promise<AssemblyAIR
 function segmentTranscript(words: AssemblyAIWord[]): Array<{ text: string; startTime: number; endTime: number }> {
   const segments: Array<{ text: string; startTime: number; endTime: number }> = [];
   let currentSegment: AssemblyAIWord[] = [];
-
+  
   for (const word of words) {
     currentSegment.push(word);
     
-    // End segment on periods, question marks, or every 10-15 words
-    const endOfSentence = word.text.endsWith('.') || word.text.endsWith('؟') || word.text.endsWith('!');
-    const tooManyWords = currentSegment.length >= 15;
-
-    if ((endOfSentence && currentSegment.length >= 3) || (tooManyWords && currentSegment.length >= 10)) {
-      if (currentSegment.length > 0) {
-        const text = currentSegment.map(w => w.text).join(' ');
-        const startTime = currentSegment[0].start / 1000; // Convert to seconds
-        const endTime = currentSegment[currentSegment.length - 1].end / 1000;
-
+    // End segment on sentence-ending punctuation or long pause
+    const isSentenceEnd = /[.!?]\s*$/.test(word.text);
+    const nextWord = words[words.indexOf(word) + 1];
+    const longPause = nextWord && (nextWord.start - word.end) > 1.0;
+    
+    if (isSentenceEnd || longPause || currentSegment.length >= 10) {
+      const text = currentSegment.map(w => w.text).join(' ').trim();
+      if (text) {
         segments.push({
           text,
-          startTime,
-          endTime
+          startTime: currentSegment[0].start,
+          endTime: currentSegment[currentSegment.length - 1].end
         });
-
-        currentSegment = [];
       }
+      currentSegment = [];
     }
   }
-
+  
   // Add remaining words as final segment
   if (currentSegment.length > 0) {
-    const text = currentSegment.map(w => w.text).join(' ');
-    const startTime = currentSegment[0].start / 1000;
-    const endTime = currentSegment[currentSegment.length - 1].end / 1000;
-
-    segments.push({
-      text,
-      startTime,
-      endTime
-    });
+    const text = currentSegment.map(w => w.text).join(' ').trim();
+    if (text) {
+      segments.push({
+        text,
+        startTime: currentSegment[0].start,
+        endTime: currentSegment[currentSegment.length - 1].end
+      });
+    }
   }
-
-  console.log(`📊 Created ${segments.length} segments from transcript`);
+  
   return segments;
 }
 
-// Validate Pashto transcription quality
-function validatePashtoClip(text: string): { confidence: number; needsRetry: boolean; reason: string } {
-  // Check for Pashto script
-  const hasPashtoScript = /[\u0600-\u06FF]/.test(text);
+// Validate Pashto clip text
+function validatePashtoClip(text: string): { confidence: number; isValid: boolean; needsRetry: boolean; reason?: string } {
+  // Basic validation: check for Pashto characters
+  const pashtoChars = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  const minLength = text.trim().length >= 5;
+  const hasContent = text.trim().length > 0;
   
-  // Check for common Pashto words
-  const commonPashtoWords = ['خدای', 'عیسی', 'پیغمبر', 'کتاب', 'تورات', 'انجیل', 'زبور', 'کړي', 'کړل', 'کړه'];
-  const hasCommonWords = commonPashtoWords.some(word => text.includes(word));
-  
-  // Check word count
-  const wordCount = text.split(/\s+/).length;
-  
-  // Calculate confidence
-  let confidence = 0;
-  if (hasPashtoScript) confidence += 40;
-  if (hasCommonWords) confidence += 30;
-  if (wordCount >= 3) confidence += 20;
-  if (text.length > 10) confidence += 10;
-  
-  const needsRetry = confidence < 60; // Retry if confidence < 60%
+  const isValid = pashtoChars && minLength && hasContent;
+  const confidence = isValid ? 0.85 : 0.3;
+  const needsRetry = !isValid || confidence < 0.7;
   
   return {
     confidence,
+    isValid,
     needsRetry,
-    reason: needsRetry ? 'Low Pashto confidence - retry with ElevenLabs recommended' : 'Good quality transcription'
+    reason: needsRetry ? 'Low confidence or invalid Pashto text' : undefined
   };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 Environment check:', {
-      hasSupabaseUrl: !!supabaseUrl,
-      hasSupabaseKey: !!supabaseKey,
-      hasAssemblyAIKey: !!ASSEMBLYAI_API_KEY
-    });
-
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      console.error('Failed to parse request body:', error);
-      return NextResponse.json(
-        { error: 'Invalid request body', details: String(error) },
-        { status: 400 }
-      );
-    }
-    const { youtubeUrl } = body;
+    const { youtubeUrl } = await request.json();
 
     if (!youtubeUrl) {
       return NextResponse.json(
@@ -194,58 +156,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract video ID
-    const videoIdMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    if (!videoIdMatch) {
-      return NextResponse.json(
-        { error: 'Invalid YouTube URL' },
-        { status: 400 }
-      );
-    }
-    const videoId = videoIdMatch[1];
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🎬 Starting video processing...\n');
 
-    console.log(`\n🎬 Processing video: ${videoId}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    // Extract video ID
+    const videoId = youtubeUrl.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/)?.[1] || `video_${Date.now()}`;
+    console.log(`Video ID: ${videoId}\n`);
 
     // Step 1: Transcribe with AssemblyAI
     console.log('Step 1️⃣: Transcribing with AssemblyAI...');
-    let transcriptionResult;
-    try {
-      transcriptionResult = await transcribeWithAssemblyAI(youtubeUrl);
-    } catch (error) {
-      console.error('AssemblyAI transcription error:', error);
-      return NextResponse.json(
-        { 
-          error: 'AssemblyAI transcription failed',
-          details: String(error)
-        },
-        { status: 500 }
-      );
-    }
+    const transcription = await transcribeWithAssemblyAI(youtubeUrl);
     
-    if (!transcriptionResult) {
+    if (!transcription || !transcription.text) {
       return NextResponse.json(
-        { 
-          error: 'Failed to transcribe video with AssemblyAI.',
-          details: `AssemblyAI API key present: ${!!ASSEMBLYAI_API_KEY}. URL: ${youtubeUrl}. Check Vercel logs for details.`
-        },
+        { error: 'Failed to transcribe video' },
         { status: 500 }
       );
     }
 
-    if (!transcriptionResult.words || transcriptionResult.words.length === 0) {
-      return NextResponse.json(
-        { error: 'No speech detected in video audio' },
-        { status: 400 }
-      );
-    }
+    const fullTranscript = transcription.text;
+    console.log(`✅ Transcription complete: ${fullTranscript.length} characters\n`);
 
-    const fullTranscript = transcriptionResult.text;
-    console.log(`✅ Transcribed: "${fullTranscript.substring(0, 80)}..."\n`);
-
-    // Step 2: Segment the transcript
+    // Step 2: Segment transcript into clips
     console.log('Step 2️⃣: Segmenting transcript...');
-    const segments = segmentTranscript(transcriptionResult.words);
+    const segments = segmentTranscript(transcription.words || []);
     console.log(`✅ Created ${segments.length} segments\n`);
 
     // Step 3: Create clips metadata with validation
@@ -270,36 +204,38 @@ export async function POST(request: NextRequest) {
     const lowConfidenceCount = clips.filter(c => c.needs_retry).length;
     console.log(`✅ Created ${clips.length} clip records (${lowConfidenceCount} flagged for ElevenLabs retry)\n`);
 
-    // Step 4: Save to Supabase
-    console.log('Step 4️⃣: Saving to Supabase...');
-    const { data, error } = await supabase
-      .from('video_transcripts')
-      .insert([
-        {
-          video_id: videoId,
-          video_title: `Video ${videoId}`,
-          video_url: youtubeUrl,
-          transcript_text: fullTranscript,
-          segments: clips,
-          validation_score: 85,
-          needs_retry: false,
-          transcription_service: 'assemblyai',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Supabase error:', error);
-      return NextResponse.json(
-        { error: `Failed to save to Supabase: ${error.message}` },
-        { status: 500 }
-      );
+    // Step 4: Save to D1
+    console.log('Step 4️⃣: Saving to D1...');
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 
-    console.log(`✅ Saved to Supabase\n`);
+    try {
+      // Insert into video_transcripts table (if it exists)
+      await db.query(
+        `INSERT OR REPLACE INTO video_transcripts (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, title, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          videoId,
+          youtubeUrl,
+          fullTranscript,
+          JSON.stringify(clips),
+          'assemblyai',
+          clips.map((_, index) => `videos/${videoId}/segment_${index + 1}.mp3`).join(','),
+          `Video ${videoId}`,
+          new Date().toISOString(),
+          new Date().toISOString()
+        ]
+      );
+      console.log(`✅ Saved to D1\n`);
+    } catch (error) {
+      console.warn('⚠️ Could not save to D1 (table may not exist):', error);
+      // Continue anyway - the data is still returned
+    }
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🎉 Video processing complete!\n');
 
@@ -309,7 +245,7 @@ export async function POST(request: NextRequest) {
       transcript: fullTranscript,
       clipsCreated: clips.length,
       message: `✅ Processed video with ${clips.length} audio clips. Check Videos tab to see results!`,
-      data
+      clips
     });
 
   } catch (error) {

@@ -1,58 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
+import {
+  getD1ClientOrThrow,
+  getFormOccurrencesFromD1,
+  getWordVerseRefs,
+  fetchVerseByRef,
+  getWordFrequency,
+} from '@/utils/d1-helpers';
 
 export const runtime = 'nodejs';
 
 type Scope = 'all' | 'ot' | 'nt';
 
-interface WordFrequency {
-  word: string;
-  frequency: number;
-  translation_key?: string;
-  verse_refs?: string[];
-}
+type TranslationKey = 'afghan2023' | 'yousafzai2019';
 
-interface FormOccurrence {
-  form: string;
-  verse_refs: string[];
-  occurrence_count: number;
-}
-
-interface FormRoot {
-  root: string;
-  related_forms: string[];
-}
-
-interface VerseRow {
-  book: string;
-  chapter: number;
-  verse: number;
-  text: string;
-  testament?: string;
-  dialect?: string | null;
-  translation_key?: string | null;
-  audio_storage_path?: string | null;
-  audio_public_url?: string | null;
-}
-
-/**
- * Ultra-fast indexed search using pre-computed Supabase tables
- * This endpoint uses:
- * 1. word_occurrence_index - to check if word exists and get frequency + verse references
- * 2. dictionary - to get romanization matches (PRIMARY PRIORITY)
- * 3. variant_index - to get related forms/inflections (SECONDARY)
- * 4. verses/verses_yousafzai - to fetch the actual verse text
- * 5. Built-in audio URLs from verse tables
- *
- * Search Priority:
- * 1. EXACT ROMANIZATION MATCH (highest priority)
- * 2. EXACT PASHTO MATCH 
- * 3. FUZZY/PARTIAL MATCHES (only if enabled)
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, scope = 'all', translation = 'afghan2023', includeRelated = true, fuzzySearch = false } = body;
+    const {
+      query,
+      scope = 'all',
+      translation = 'afghan2023',
+      includeRelated = true,
+      fuzzySearch = false,
+    }: {
+      query: string;
+      scope?: Scope;
+      translation?: TranslationKey;
+      includeRelated?: boolean;
+      fuzzySearch?: boolean;
+    } = body;
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -63,175 +39,131 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Indexed search for: "${searchTerm}" (${translation}, ${scope}, fuzzy=${fuzzySearch})`);
 
-    // ============================================================================
-    // STEP 1: CHECK DICTIONARY FOR ROMANIZATION MATCHES (HIGHEST PRIORITY)
-    // ============================================================================
-    
-    let dictionaryMatches: any[] = [];
-    let pashtoWordsToLookup: string[] = [];
-    
-    // Try exact romanization match first
-    const { data: exactRomanMatch, error: romanError } = await supabase
-      .from('dictionary')
-      .select('pashto, romanized, pos, english')
-      .ilike('romanized', searchTerm)
-      .limit(20);
-      
-    if (exactRomanMatch && exactRomanMatch.length > 0) {
-      dictionaryMatches = exactRomanMatch;
-      pashtoWordsToLookup = exactRomanMatch.map((m: any) => m.pashto).filter(Boolean);
-      console.log(`✅ Found ${exactRomanMatch.length} romanization matches in dictionary`);
-      console.log(`📝 Pashto words to lookup: ${pashtoWordsToLookup.join(', ')}`);
-    } else {
-      // Try exact Pashto match
-      const { data: pashtoMatch, error: pashtoError } = await supabase
-        .from('dictionary')
-        .select('pashto, romanized, pos, english')
-        .eq('pashto', searchTerm)
-        .limit(20);
-        
-      if (pashtoMatch && pashtoMatch.length > 0) {
-        dictionaryMatches = pashtoMatch;
-        pashtoWordsToLookup = pashtoMatch.map((m: any) => m.pashto).filter(Boolean);
-        console.log(`✅ Found ${pashtoMatch.length} exact Pashto matches in dictionary`);
-      } else {
-        // Fallback: treat search term as-is (might be Pashto already)
-        pashtoWordsToLookup = [searchTerm];
-        console.log(`ℹ️  No dictionary matches, searching word_occurrence_index directly for: "${searchTerm}"`);
-      }
+    let db;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : String(error) },
+        { status: 500 }
+      );
     }
 
-    // ============================================================================
-    // STEP 2: GET VERSE REFERENCES FROM WORD_OCCURRENCE_INDEX
-    // ============================================================================
-    
-    let verseRefs: string[] = [];
-    let frequencyData: WordFrequency | null = null;
-    
-    // Try each potential Pashto word variant
-    for (const pashtoWord of pashtoWordsToLookup) {
-      const {
-        data: rawFrequencyData,
-        error: freqError
-      } = await supabase
-        .from('word_occurrence_index')
-        .select('word, frequency, translation_key, verse_refs')
-        .eq('word', pashtoWord)
-        .eq('translation_key', translation)
-        .single();
+    // --------------------------------------------------------------------------
+    // STEP 1: Dictionary lookup (best-effort) to normalise romanisation → Pashto
+    // --------------------------------------------------------------------------
+    let dictionaryMatches: Array<{ pashto: string; romanized?: string; pos?: string; english?: string }> = [];
+    let lookupWords: string[] = [];
 
-      const currentFrequencyData = (rawFrequencyData as WordFrequency | null);
+    try {
+      const dictRows = await db.query<{
+        word: string;
+        romanization?: string;
+        pos?: string;
+        definition?: string;
+      }>(
+        `SELECT word, romanization, pos, definition FROM dictionary WHERE word = ? OR romanization LIKE ? LIMIT 20`,
+        [searchTerm, `%${searchTerm}%`]
+      );
 
-      if (freqError && freqError.code !== 'PGRST116') {
-        console.error(`Frequency lookup error for "${pashtoWord}" (translation: ${translation}):`, freqError);
+      if (dictRows && dictRows.length > 0) {
+        dictionaryMatches = dictRows.map((row) => ({
+          pashto: row.word,
+          romanized: row.romanization,
+          pos: row.pos,
+          english: row.definition,
+        }));
+        lookupWords = dictRows.map((row) => row.word).filter(Boolean);
       }
-
-      if (currentFrequencyData) {
-        // Keep the first match for metadata
-        if (!frequencyData) {
-          frequencyData = currentFrequencyData;
-        }
-        console.log(`✅ Found in word_occurrence_index for "${pashtoWord}" (${translation}): ${currentFrequencyData.frequency} occurrences`);
-        if (currentFrequencyData.verse_refs) {
-          verseRefs.push(...currentFrequencyData.verse_refs);
-          console.log(`📍 Added ${currentFrequencyData.verse_refs.length} verse refs, total now: ${verseRefs.length}`);
-        }
-      } else {
-        console.log(`❌ No match in word_occurrence_index for "${pashtoWord}" with translation "${translation}"`);
-      }
+    } catch (error) {
+      console.warn('Dictionary lookup failed (continuing without dictionary):', error);
     }
-    
-    console.log(`📊 Total unique verse refs found: ${verseRefs.length}`);
 
-    // ============================================================================
-    // STEP 3: GET RELATED FORMS/INFLECTIONS (SECONDARY)
-    // ============================================================================
-    
-    let relatedForms: string[] = [];
+    if (lookupWords.length === 0) {
+      lookupWords = [searchTerm];
+    }
+
+    // --------------------------------------------------------------------------
+    // STEP 2: Gather verse references from form_occurrences and word_verse_mapping
+    // --------------------------------------------------------------------------
+    const verseSet = new Set<string>();
+    let primaryFrequency: number | null = null;
+
+    for (const word of lookupWords) {
+      const occurrences = await getFormOccurrencesFromD1(db, word, translation);
+      if (occurrences) {
+        occurrences.verseRefs.forEach((ref) => verseSet.add(ref));
+        if (primaryFrequency == null) {
+          primaryFrequency = occurrences.frequency;
+        }
+      }
+
+      const mappingRefs = await getWordVerseRefs(db, word, translation);
+      mappingRefs.forEach((ref) => verseSet.add(ref));
+    }
+
+    console.log(`📊 Total unique verse refs found: ${verseSet.size}`);
+
+    // --------------------------------------------------------------------------
+    // STEP 3: Expand with related forms (inflections)
+    // --------------------------------------------------------------------------
+    const relatedForms: string[] = [];
     if (includeRelated && fuzzySearch) {
-      const { data: rawVariantData } = await supabase
-        .from('variant_index')
-        .select('base_word, variants')
-        .eq('base_word', searchTerm)
-        .eq('translation_key', translation)
-        .single();
-
-      const variantData = (rawVariantData as any);
-
-      if (variantData && variantData.variants) {
-        const variants = variantData.variants as any[];
-        if (Array.isArray(variants)) {
-          relatedForms = variants.map(v => v.form || v).filter(Boolean);
-          console.log(`✅ Found ${relatedForms.length} related forms in variant_index`);
-
-          // Get occurrences for related forms too
-          for (const relatedForm of relatedForms.slice(0, 10)) {
-            const { data: rawRelatedOcc } = await supabase
-              .from('word_occurrence_index')
-              .select('verse_refs')
-              .eq('word', relatedForm)
-              .eq('translation_key', translation)
-              .single();
-
-            const relatedOccData = (rawRelatedOcc as any);
-
-            if (relatedOccData && relatedOccData.verse_refs) {
-              verseRefs.push(...relatedOccData.verse_refs);
+      try {
+        const inflectionRows = await db.query<{ inflected_form: string }>(
+          `SELECT inflected_form FROM inflections WHERE base_word = ? LIMIT 200`,
+          [searchTerm]
+        );
+        if (inflectionRows) {
+          inflectionRows.forEach((row) => {
+            try {
+              const forms = JSON.parse(row.inflected_form);
+              if (Array.isArray(forms)) {
+                forms.forEach((item) => {
+                  if (item && typeof item.form === 'string') {
+                    relatedForms.push(item.form);
+                  }
+                });
+              }
+            } catch (error) {
+              console.warn('Failed to parse inflected_form JSON:', error);
             }
-          }
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to fetch inflection data:', error);
+      }
+
+      const uniqueRelated = Array.from(new Set(relatedForms)).slice(0, 20);
+      for (const form of uniqueRelated) {
+        const occurrences = await getFormOccurrencesFromD1(db, form, translation);
+        if (occurrences) {
+          occurrences.verseRefs.forEach((ref) => verseSet.add(ref));
         }
       }
     }
 
-    // Remove duplicates
-    verseRefs = Array.from(new Set(verseRefs));
+    const verseRefs = Array.from(verseSet);
 
-    // ============================================================================
-    // STEP 4: FETCH ACTUAL VERSES FROM THE VERSES TABLE
-    // ============================================================================
-    
-    const versesTable = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses';
-
-    // Parse verse references and fetch verses
-    // Format: "Genesis 1:1", "Mark 10:45", etc.
+    // --------------------------------------------------------------------------
+    // STEP 4: Retrieve verse data
+    // --------------------------------------------------------------------------
     const verses = [];
-
     for (const ref of verseRefs.slice(0, 500)) {
-      // Parse ref like "Genesis 1:1"
-      const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
-      if (!match) continue;
+      const verseData = await fetchVerseByRef(db, ref, translation);
+      if (!verseData) continue;
 
-      const [, book, chapterStr, verseStr] = match;
-      const chapter = parseInt(chapterStr, 10);
-      const verse = parseInt(verseStr, 10);
-
-      const { data: rawVerseData } = await supabase
-        .from(versesTable)
-        .select('book, chapter, verse, text, testament, dialect, translation_key, audio_storage_path, audio_public_url')
-        .eq('book', book)
-        .eq('chapter', chapter)
-        .eq('verse', verse)
-        .single();
-
-      const verseData = rawVerseData as VerseRow | null;
-
-      if (verseData) {
-        // Apply scope filter
-        if (scope !== 'all') {
-          const testament = verseData.testament?.toLowerCase();
-          if (scope === 'ot' && testament !== 'ot') continue;
-          if (scope === 'nt' && testament !== 'nt') continue;
-        }
-
-        verses.push({
-          ref,
-          ...verseData
-        });
+      if (scope !== 'all') {
+        const testament = verseData.testament?.toLowerCase();
+        if (scope === 'ot' && testament !== 'ot') continue;
+        if (scope === 'nt' && testament !== 'nt') continue;
       }
+
+      verses.push({ ref, ...verseData });
     }
 
     const queryTime = Date.now() - startTime;
-    console.log(`⚡ Indexed search completed in ${queryTime}ms`);
+    const frequencyInfo = primaryFrequency ?? (await getWordFrequency(db, searchTerm))?.frequency ?? 0;
 
     return NextResponse.json({
       success: true,
@@ -241,17 +173,16 @@ export async function POST(request: NextRequest) {
         query: searchTerm,
         scope,
         translation,
-        frequency: frequencyData?.frequency ?? 0,
+        frequency: frequencyInfo,
         totalMatches: verseRefs.length,
         returnedResults: verses.length,
         dictionaryMatches: dictionaryMatches.length,
         relatedFormsCount: relatedForms.length,
         queryTimeMs: queryTime,
-        source: 'supabase-indexed',
-        searchPriority: dictionaryMatches.length > 0 ? 'dictionary-romanization' : 'word-occurrence'
-      }
+        source: 'd1-indexed',
+        searchPriority: verseRefs.length > 0 ? 'word-occurrence' : 'no-results',
+      },
     });
-
   } catch (error) {
     console.error('Indexed search error:', error);
     return NextResponse.json(

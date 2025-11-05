@@ -1,66 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getD1ClientOrThrow } from '@/utils/d1-helpers';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
     const { query } = await request.json();
-    
+
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
     const searchTerm = query.trim();
-    
-    // Query Supabase dictionary for all entries matching this word
-    const supabase = await import('@supabase/supabase-js').then(m => m.createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ));
+    const db = getD1ClientOrThrow();
 
-    // Try exact match first
-    const { data: exactMatches, error: exactError } = await supabase
-      .from('dictionary')
-      .select('pashto, romanized, pos, english')
-      .eq('pashto', searchTerm)
-      .limit(20);
+    const exactMatches = await db.query<{
+      word: string;
+      romanization?: string;
+      pos?: string;
+      definition?: string;
+    }>(
+      `SELECT word, romanization, pos, definition FROM dictionary WHERE word = ? LIMIT 20`,
+      [searchTerm]
+    );
 
-    if (exactError) {
-      console.warn('Dictionary lookup error:', exactError);
-    }
-
-    // Also try normalized variants
     const normalized = searchTerm.replace(/ي/g, 'ی').replace(/ى/g, 'ی');
-    let normalizedMatches: any[] = [];
-    
+    let normalizedMatches: typeof exactMatches = [];
+
     if (normalized !== searchTerm) {
-      const { data: normData } = await supabase
-        .from('dictionary')
-        .select('pashto, romanized, pos, english')
-        .eq('pashto', normalized)
-        .limit(20);
-      
-      if (normData) {
-        normalizedMatches = normData;
-      }
+      normalizedMatches = await db.query<{
+        word: string;
+        romanization?: string;
+        pos?: string;
+        definition?: string;
+      }>(
+        `SELECT word, romanization, pos, definition FROM dictionary WHERE word = ? LIMIT 20`,
+        [normalized]
+      );
     }
 
-    // Combine and deduplicate results
     const allMatches = new Map<string, any>();
-    
-    (exactMatches || []).forEach((entry: any) => {
-      const key = `${entry.pashto}|${entry.pos || ''}`;
-      if (!allMatches.has(key)) {
-        allMatches.set(key, entry);
-      }
-    });
-    
-    normalizedMatches.forEach((entry: any) => {
-      const key = `${entry.pashto}|${entry.pos || ''}`;
-      if (!allMatches.has(key)) {
-        allMatches.set(key, entry);
-      }
-    });
+
+    const addEntries = (rows?: typeof exactMatches) => {
+      rows?.forEach((entry) => {
+        const key = `${entry.word}|${entry.pos || ''}`;
+        if (!allMatches.has(key)) {
+          allMatches.set(key, {
+            pashto: entry.word,
+            romanized: entry.romanization,
+            pos: entry.pos,
+            english: entry.definition,
+          });
+        }
+      });
+    };
+
+    addEntries(exactMatches);
+    addEntries(normalizedMatches);
 
     const results = Array.from(allMatches.values());
 
@@ -88,7 +84,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
-
-
