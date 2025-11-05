@@ -884,6 +884,80 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
   }, [relatedForms?.posGuess, selectedPartOfSpeech]);
 
+  // Unified filter application function - handles all parts of speech
+  // NOTE: Must be defined before useEffects that use it
+  const applyFiltersAndSearch = useCallback((
+    pos: 'verb' | 'noun' | 'adjective',
+    filters: MultiVerbFilterState | NounFilterState | AdjectiveFilterState
+  ) => {
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    let filteredVariants: RelatedFormVariant[] = [];
+    let forms: string[] = [];
+
+    if (pos === 'verb') {
+      const verbFilters = filters as MultiVerbFilterState;
+      setMultiVerbFilters(verbFilters);
+      
+      if (!relatedForms?.verbs?.length) {
+        console.log('Verb filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, verbFilters);
+      forms = formsFromVariants(filteredVariants);
+
+      if (isDefaultMultiVerbFilter(verbFilters)) {
+        // Reset to all forms
+        setVariantsOverride(null);
+        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+        executeSearch({ preserveResults: false, reason: 'filter-reset' });
+        return;
+      }
+    } else if (pos === 'noun') {
+      const nounFilters = filters as NounFilterState;
+      setNounFilters(nounFilters);
+      
+      if (!relatedForms?.nouns?.length) {
+        console.log('Noun filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterNounVariants(relatedForms.nouns, nounFilters);
+      forms = formsFromVariants(filteredVariants);
+    } else if (pos === 'adjective') {
+      const adjectiveFilters = filters as AdjectiveFilterState;
+      setAdjectiveFilters(adjectiveFilters);
+      
+      if (!relatedForms?.other?.length) {
+        console.log('Adjective filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterAdjectiveVariants(relatedForms.other, adjectiveFilters);
+      forms = formsFromVariants(filteredVariants);
+    }
+
+    // If no forms match the filters, show no results
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
+      return;
+    }
+
+    // Always trigger new search with filtered forms
+    console.log(`🔄 ${pos} filter applied, searching for ${forms.length} filtered forms:`, forms.slice(0, 5));
+    variantKeyRef.current = forms.join('|');
+    setVariantsOverride(forms);
+    setActiveVariantForms(forms);
+    executeSearch({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
+  }, [includeRelated, relatedForms, executeSearch]);
+
   // Trigger search when multiVerbFilters change
   const previousMultiVerbFilters = useRef<MultiVerbFilterState>(multiVerbFilters);
   useEffect(() => {
