@@ -506,8 +506,8 @@ function SearchControls({
   resultsCount,
   refreshAudioMap,
   isLoading,
-  verbFilters,
-  setVerbFilters,
+  multiVerbFilters,
+  setMultiVerbFilters,
   nounFilters,
   setNounFilters
 }: {
@@ -524,8 +524,8 @@ function SearchControls({
   resultsCount: number;
   refreshAudioMap: () => Promise<void>;
   isLoading: boolean;
-  verbFilters?: VerbFilterState;
-  setVerbFilters?: (filters: VerbFilterState) => void;
+  multiVerbFilters?: MultiVerbFilterState;
+  setMultiVerbFilters?: (filters: MultiVerbFilterState) => void;
   nounFilters?: NounFilterState;
   setNounFilters?: (filters: NounFilterState) => void;
 }) {
@@ -854,8 +854,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   } | null>(null);
 
-  // Verb understanding state
-  const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER });
+  // Remove verbFilters - use only multiVerbFilters
+  // const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER }); // REMOVED
   const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
@@ -884,27 +884,17 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
   }, [relatedForms?.posGuess, selectedPartOfSpeech]);
 
-  // Trigger search when verb filters change (real-time filtering)
-  const previousVerbState = useRef<VerbFilterState>(verbFilters);
-
-  // useEffect to trigger search when verb filters change
+  // Trigger search when multiVerbFilters change
+  const previousMultiVerbFilters = useRef<MultiVerbFilterState>(multiVerbFilters);
   useEffect(() => {
-    // Only trigger if verb state actually changed and we have related forms
     if (includeRelated && relatedForms && query.trim()) {
-      const stateChanged =
-        previousVerbState.current.person !== verbFilters.person ||
-        previousVerbState.current.tense !== verbFilters.tense ||
-        previousVerbState.current.aspect !== verbFilters.aspect ||
-        previousVerbState.current.mood !== verbFilters.mood;
-
-      if (stateChanged) {
-        console.log('🔄 Verb filter changed, applying filter without re-searching');
-        applyVerbFiltersAndSearch(verbFilters);
+      const filtersChanged = JSON.stringify(previousMultiVerbFilters.current) !== JSON.stringify(multiVerbFilters);
+      if (filtersChanged) {
+        applyFiltersAndSearch('verb', multiVerbFilters);
       }
     }
-    previousVerbState.current = verbFilters;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verbFilters.person, verbFilters.tense, verbFilters.aspect, verbFilters.mood]);
+    previousMultiVerbFilters.current = multiVerbFilters;
+  }, [multiVerbFilters.person, multiVerbFilters.tense, multiVerbFilters.aspect, multiVerbFilters.mood, includeRelated, relatedForms, query, applyFiltersAndSearch]);
 
   // useEffect to trigger search when noun filters change
   useEffect(() => {
@@ -938,18 +928,89 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   useEffect(() => {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
-    const savedFilters = sanitizeVerbFilter(loadPersisted('verbFilters', DEFAULT_VERB_FILTER));
-    console.log('Loading verb filters from localStorage:', savedFilters);
-    setVerbFilters(savedFilters);
+    // Load multiVerbFilters instead of verbFilters
+    const savedMultiFilters = loadPersisted<MultiVerbFilterState>('multiVerbFilters', DEFAULT_MULTI_VERB_FILTER);
+    setMultiVerbFilters(savedMultiFilters);
     setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
-    // Tab is now determined by URL, no need to restore from localStorage
   }, []);
 
+  // Unified filter application function - handles all parts of speech
+  const applyFiltersAndSearch = useCallback((
+    pos: 'verb' | 'noun' | 'adjective',
+    filters: MultiVerbFilterState | NounFilterState | AdjectiveFilterState
+  ) => {
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    let filteredVariants: RelatedFormVariant[] = [];
+    let forms: string[] = [];
+
+    if (pos === 'verb') {
+      const verbFilters = filters as MultiVerbFilterState;
+      setMultiVerbFilters(verbFilters);
+      
+      if (!relatedForms?.verbs?.length) {
+        console.log('Verb filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, verbFilters);
+      forms = formsFromVariants(filteredVariants);
+
+      if (isDefaultMultiVerbFilter(verbFilters)) {
+        // Reset to all forms
+        setVariantsOverride(null);
+        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+        executeSearch({ preserveResults: false, reason: 'filter-reset' });
+        return;
+      }
+    } else if (pos === 'noun') {
+      const nounFilters = filters as NounFilterState;
+      setNounFilters(nounFilters);
+      
+      if (!relatedForms?.nouns?.length) {
+        console.log('Noun filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterNounVariants(relatedForms.nouns, nounFilters);
+      forms = formsFromVariants(filteredVariants);
+    } else if (pos === 'adjective') {
+      const adjectiveFilters = filters as AdjectiveFilterState;
+      setAdjectiveFilters(adjectiveFilters);
+      
+      if (!relatedForms?.other?.length) {
+        console.log('Adjective filters updated, awaiting related forms to refetch results');
+        return;
+      }
+
+      filteredVariants = filterAdjectiveVariants(relatedForms.other, adjectiveFilters);
+      forms = formsFromVariants(filteredVariants);
+    }
+
+    // If no forms match the filters, show no results
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
+      return;
+    }
+
+    // Always trigger new search with filtered forms
+    console.log(`🔄 ${pos} filter applied, searching for ${forms.length} filtered forms:`, forms.slice(0, 5));
+    variantKeyRef.current = forms.join('|');
+    setVariantsOverride(forms);
+    setActiveVariantForms(forms);
+    executeSearch({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
+  }, [includeRelated, relatedForms, executeSearch]);
+
   // Trigger initial search when an initialQuery is provided (e.g., navigating from Results → Lexicon)
-  // Note: executeSearch is defined later, so we'll handle this in a separate effect after executeSearch is defined
 
   // Persist preferences when they change
   useEffect(() => {
@@ -961,13 +1022,11 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     
     savePersisted('scope', scope);
     savePersisted('includeRelated', includeRelated);
-    console.log('Persisting verb filters:', verbFilters);
-    savePersisted('verbFilters', verbFilters);
+    savePersisted('multiVerbFilters', multiVerbFilters);
     savePersisted('nounFilters', nounFilters);
     savePersisted('adjectiveFilters', adjectiveFilters);
     savePersisted('searchLanguage', searchLanguage);
-    // Tab state is now in URL, no need to persist
-  }, [scope, includeRelated, verbFilters, nounFilters, adjectiveFilters, searchLanguage]);
+  }, [scope, includeRelated, multiVerbFilters, nounFilters, adjectiveFilters, searchLanguage]);
 
 
   // Clear any problematic initial values on mount
@@ -1504,215 +1563,18 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
   }, [initialQuery, query, executeSearch]);
 
-  const debouncedVerbFilterSearch = useMemo(
-    () => debounce((nextFilters: VerbFilterState) => {
-      const sanitized = sanitizeVerbFilter(nextFilters);
-      console.log('Applying verb filters:', { nextFilters, sanitized });
-      setVerbFilters(sanitized);
-
-      // Guard clauses moved to beginning to avoid early returns after hooks
-      if (!includeRelated) {
-        console.log('Related forms mode not active, filters ignored');
-        return;
-      }
-
-      if (!relatedForms?.verbs?.length) {
-        console.log('Verb filters updated, awaiting related forms to refetch results');
-        return;
-      }
-
-      const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
-      const forms = formsFromVariants(filteredVariants);
-
-      // If no forms match the filters, show no results
-      if (forms.length === 0) {
-        setResults([]);
-        setCoverage([]);
-        setVariantsOverride([]);
-        setActiveVariantForms([]);
-        return;
-      }
-
-      // Always trigger a new search with filtered forms (not just client-side filtering)
-      // This ensures we search for the actual filtered forms like "وهم" when Present tense is selected
-      console.log('🔄 Verb filter applied, searching for', forms.length, 'filtered forms:', forms.slice(0, 5));
-      
-      if (isDefaultVerbFilter(sanitized)) {
-        // Filters reset to "All" - restore original search
-        console.log('🔄 Filters reset to "All", restoring original search');
-        setVariantsOverride(null);
-        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-        executeSearch({ preserveResults: false, reason: 'filter-reset' });
-      } else {
-        // Specific filters applied - search with filtered forms
-        variantKeyRef.current = forms.join('|');
-        setVariantsOverride(forms);
-        setActiveVariantForms(forms);
-        executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
-      }
-    }, 200), // 200ms debounce for filter changes
-    [includeRelated, relatedForms, query, isDefaultVerbFilter, executeSearch, setVariantsOverride, setActiveVariantForms]
-  );
-
-  const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
-    debouncedVerbFilterSearch(nextFilters);
-  }, [debouncedVerbFilterSearch]);
-
   const applyMultiVerbFiltersAndSearch = useCallback((nextFilters: MultiVerbFilterState) => {
-    console.log('Applying multi verb filters:', nextFilters);
-    setMultiVerbFilters(nextFilters);
-
-    // Guard clauses moved to beginning to avoid early returns after hooks
-    if (!includeRelated) {
-      console.log('Related forms mode not active, filters ignored');
-      return;
-    }
-
-    if (!relatedForms?.verbs?.length) {
-      console.log('Verb filters updated, awaiting related forms to refetch results');
-      return;
-    }
-
-    // Use multi-filter function directly
-    const filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, nextFilters);
-    const forms = formsFromVariants(filteredVariants);
-
-    // If no forms match the filters, show no results
-    if (forms.length === 0) {
-      setResults([]);
-      setCoverage([]);
-      setVariantsOverride([]);
-      setActiveVariantForms([]);
-      return;
-    }
-
-    // Always trigger a new search with filtered forms (not just client-side filtering)
-    console.log('🔄 Multi verb filter applied, searching for', forms.length, 'filtered forms:', forms.slice(0, 5));
-    
-    if (isDefaultMultiVerbFilter(nextFilters)) {
-      // Filters reset to "All" - restore original search
-      console.log('🔄 Filters reset to "All", restoring original search');
-      setVariantsOverride(null);
-      setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-      executeSearch({ preserveResults: false, reason: 'filter-reset' });
-    } else {
-      // Specific filters applied - search with filtered forms
-      variantKeyRef.current = forms.join('|');
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
-    }
-  }, [includeRelated, relatedForms, query, isDefaultMultiVerbFilter, executeSearch, setVariantsOverride, setActiveVariantForms]);
+    applyFiltersAndSearch('verb', nextFilters);
+  }, [applyFiltersAndSearch]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
-    setNounFilters(nextFilters);
-
-    // Guard clauses moved to beginning to avoid early returns after hooks
-    if (!includeRelated) {
-      console.log('Related forms mode not active, filters ignored');
-      return;
-    }
-
-    if (!relatedForms?.nouns?.length) {
-      console.log('Noun filters updated, awaiting related forms to refetch results');
-      return;
-    }
-
-    const filteredVariants = filterNounVariants(relatedForms.nouns, nextFilters);
-    const forms = formsFromVariants(filteredVariants);
-
-    // If no forms match the filters, show no results
-    if (forms.length === 0) {
-      setResults([]);
-      setCoverage([]);
-      setVariantsOverride([]);
-      setActiveVariantForms([]);
-      return;
-    }
-
-    // Client-side filtering
-    if (results && results.length > 0) {
-      console.log('🔍 Client-side filtering existing results by', forms.length, 'noun forms');
-
-      const filtered = results.filter((verse) => {
-        const text = verse.text ?? '';
-        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
-
-        return forms.some(form => {
-          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
-          return collapsedText.includes(collapsedForm);
-        });
-      });
-
-      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
-      setResults(filtered);
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-
-      const newCoverage = calculateCoverageFromResults(filtered);
-      setCoverage(newCoverage);
-    } else {
-      console.log('🔄 No existing results, triggering search for filtered forms');
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'noun-filter' });
-    }
-  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
+    applyFiltersAndSearch('noun', nextFilters);
+  }, [applyFiltersAndSearch]);
 
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
-    setAdjectiveFilters(nextFilters);
-
-    // Guard clauses moved to beginning to avoid early returns after hooks
-    if (!includeRelated) {
-      console.log('Related forms mode not active, filters ignored');
-      return;
-    }
-
-    if (!relatedForms?.other?.length) {
-      console.log('Adjective filters updated, awaiting related forms to refetch results');
-      return;
-    }
-
-    const filteredVariants = filterAdjectiveVariants(relatedForms.other, nextFilters);
-    const forms = formsFromVariants(filteredVariants);
-
-    // If no forms match the filters, show no results
-    if (forms.length === 0) {
-      setResults([]);
-      setCoverage([]);
-      setVariantsOverride([]);
-      setActiveVariantForms([]);
-      return;
-    }
-
-    // Client-side filtering
-    if (results && results.length > 0) {
-      console.log('🔍 Client-side filtering existing results by', forms.length, 'adjective forms');
-
-      const filtered = results.filter((verse) => {
-        const text = verse.text ?? '';
-        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
-
-        return forms.some(form => {
-          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
-          return collapsedText.includes(collapsedForm);
-        });
-      });
-
-      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
-      setResults(filtered);
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-
-      const newCoverage = calculateCoverageFromResults(filtered);
-      setCoverage(newCoverage);
-    } else {
-      console.log('🔄 No existing results, triggering search for filtered forms');
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'adjective-filter' });
-    }
-  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
+    // Always trigger new search - don't do client-side filtering
+    applyFiltersAndSearch('adjective', nextFilters);
+  }, [applyFiltersAndSearch]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
@@ -1724,7 +1586,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       setVariantsOverride(null);
       setActiveVariantForms([]);
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
       // Trigger search with updated includeRelated setting
@@ -1774,7 +1635,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       // Reset filters and variant forms when query changes to ensure fresh analysis
       console.log('Clearing variant forms for new query:', trimmedQuery);
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
       // Reset part of speech selector to 'auto' so auto-detection can work
@@ -2063,8 +1923,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         resultsCount={resultsCount}
         refreshAudioMap={refreshAudioMap}
         isLoading={isLoading}
-        verbFilters={verbFilters}
-        setVerbFilters={setVerbFilters}
+        multiVerbFilters={multiVerbFilters}
+        setMultiVerbFilters={setMultiVerbFilters}
         nounFilters={nounFilters}
         setNounFilters={setNounFilters}
       />
@@ -2183,12 +2043,12 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
+                        Filter by verb form {!isDefaultMultiVerbFilter(multiVerbFilters) && '(Active)'}:
                       </span>
                       <button
                         onClick={() => {
                           setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-                          applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER });
+                          applyMultiVerbFiltersAndSearch({ ...DEFAULT_MULTI_VERB_FILTER });
                         }}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
@@ -2562,12 +2422,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             loading={isLoading}
             processed={processed}
             dictionaryData={dictionaryData}
-            verbFilters={verbFilters}
             multiVerbFilters={multiVerbFilters}
             activeVariantForms={activeVariantForms}
             onResetFilters={() => {
               setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-              setVerbFilters({ ...DEFAULT_VERB_FILTER });
               setNounFilters({ ...DEFAULT_NOUN_FILTER });
               setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
             }}
