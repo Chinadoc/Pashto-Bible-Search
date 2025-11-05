@@ -1369,7 +1369,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
         setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-        setVerbFilters({ ...DEFAULT_VERB_FILTER });
         setNounFilters({ ...DEFAULT_NOUN_FILTER });
         setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
         // Clear variant override to ensure fresh analysis
@@ -1484,6 +1483,11 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       setIsLoading(false);
     }
   }, [activeTranslation, bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
+
+  // Update executeSearchRef after executeSearch is defined
+  useEffect(() => {
+    executeSearchRef.current = executeSearch;
+  }, [executeSearch]);
 
   // Helper to calculate coverage from filtered results
   const calculateCoverageFromResults = useCallback((verses: Verse[]) => {
