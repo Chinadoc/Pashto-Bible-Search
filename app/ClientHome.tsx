@@ -981,11 +981,17 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
 
     // Always trigger new search with filtered forms
-    console.log(`🔄 ${pos} filter applied, searching for ${forms.length} filtered forms:`, forms.slice(0, 5));
+    console.log(`🔄 [CLIENT] ${pos} filter applied, searching for ${forms.length} filtered forms:`, forms.slice(0, 10));
+    console.log(`🔄 [CLIENT] Filtered variants:`, {
+      before: pos === 'verb' ? relatedForms?.verbs?.length : pos === 'noun' ? relatedForms?.nouns?.length : relatedForms?.other?.length,
+      after: filteredVariants.length,
+      filterApplied: filters,
+    });
     variantKeyRef.current = forms.join('|');
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
     if (executeSearchRef.current) {
+      console.log(`🔄 [CLIENT] Calling executeSearch with overrideVariants:`, forms.slice(0, 10));
       executeSearchRef.current({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
     }
   }, [includeRelated, relatedForms]);
@@ -1433,6 +1439,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         variantsSearched: searchData.processed?.variantsSearched || [],
         searchType: searchData.processed?.searchType || 'unknown',
         hasRelatedForms: !!searchData.relatedForms,
+        posGuess: searchData.relatedForms?.posGuess,
+        verbFormsCount: searchData.relatedForms?.forms?.verbs?.length || 0,
+        nounFormsCount: searchData.relatedForms?.forms?.nouns?.length || 0,
       });
 
       setResults(searchData.results || []);
