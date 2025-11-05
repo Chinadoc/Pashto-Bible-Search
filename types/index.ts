@@ -2,6 +2,9 @@ export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
 export type SearchLanguage = "pashto" | "english";
 
+export * from './search';
+export * from './database';
+
 export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
 export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
 export type VerbFilterAspect = 'all' | 'imperfective' | 'perfective';
