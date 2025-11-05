@@ -1,4 +1,147 @@
 import { getD1Database, D1Client } from '@/utils/d1';
+import type { POSMetadata, PartOfSpeech } from '@/types/search';
+
+export function getD1ClientOrThrow(): D1Client {
+  const d1Db = getD1Database();
+  if (!d1Db) {
+    throw new Error('Database not configured');
+  }
+  return new D1Client(d1Db);
+}
+
+/**
+ * Get POS metadata for a lemma from D1 database
+ * Checks verbs_lexicon, nouns_lexicon, and inflections tables
+ */
+export async function getPOSMetadata(
+  db: D1Client,
+  lemma: string
+): Promise<POSMetadata | null> {
+  if (!lemma || !lemma.trim()) {
+    return null;
+  }
+
+  const normalizedLemma = lemma.trim();
+
+  try {
+    // 1. Check verbs_lexicon
+    const verbRow = await db.queryFirst<{
+      infinitive: string;
+      transitivity?: string | null;
+      verb_type?: string | null;
+    }>(
+      `SELECT infinitive, transitivity, verb_type FROM verbs_lexicon WHERE infinitive = ? LIMIT 1`,
+      [normalizedLemma]
+    );
+
+    if (verbRow) {
+      const metadata: POSMetadata = {
+        pos: 'verb',
+        source: 'd1',
+        d1Lemma: normalizedLemma,
+      };
+
+      if (verbRow.transitivity) {
+        const trans = verbRow.transitivity.toLowerCase();
+        if (trans.includes('trans')) {
+          metadata.transitivity = 'transitive';
+        } else if (trans.includes('intrans')) {
+          metadata.transitivity = 'intransitive';
+        }
+      }
+
+      if (verbRow.verb_type) {
+        const vtype = verbRow.verb_type.toLowerCase();
+        if (vtype.includes('stat')) {
+          metadata.verbType = 'stative';
+        } else if (vtype.includes('dyn')) {
+          metadata.verbType = 'dynamic';
+        } else if (vtype.includes('comp')) {
+          metadata.verbType = 'compound';
+        }
+      }
+
+      return metadata;
+    }
+
+    // 2. Check nouns_lexicon
+    const nounRow = await db.queryFirst<{
+      lemma: string;
+      gender?: string | null;
+      inflection_type?: string | null;
+    }>(
+      `SELECT lemma, gender, inflection_type FROM nouns_lexicon WHERE lemma = ? LIMIT 1`,
+      [normalizedLemma]
+    );
+
+    if (nounRow) {
+      const metadata: POSMetadata = {
+        pos: 'noun',
+        source: 'd1',
+        d1Lemma: normalizedLemma,
+      };
+
+      if (nounRow.gender) {
+        const gen = nounRow.gender.toLowerCase();
+        if (gen.includes('m') && gen.includes('f')) {
+          metadata.gender = 'both';
+        } else if (gen.includes('m')) {
+          metadata.gender = 'masculine';
+        } else if (gen.includes('f')) {
+          metadata.gender = 'feminine';
+        }
+      }
+
+      if (nounRow.inflection_type) {
+        const inflType = nounRow.inflection_type.toLowerCase();
+        if (inflType.includes('irreg')) {
+          metadata.nounInflectionType = 'irregular';
+        } else if (inflType.includes('sandwich')) {
+          metadata.nounInflectionType = 'sandwich';
+        } else {
+          metadata.nounInflectionType = 'regular';
+        }
+      }
+
+      return metadata;
+    }
+
+    // 3. Check inflections table for POS hint
+    const inflectionRow = await db.queryFirst<{
+      base_word: string;
+      pos?: string | null;
+      grammatical_info?: string | null;
+    }>(
+      `SELECT base_word, pos, grammatical_info FROM inflections WHERE base_word = ? AND pos IS NOT NULL LIMIT 1`,
+      [normalizedLemma]
+    );
+
+    if (inflectionRow && inflectionRow.pos) {
+      const pos = inflectionRow.pos.toLowerCase();
+      let detectedPos: PartOfSpeech = 'other';
+
+      if (pos.startsWith('v') || pos === 'verb') {
+        detectedPos = 'verb';
+      } else if (pos.startsWith('n') || pos === 'noun') {
+        detectedPos = 'noun';
+      } else if (pos.startsWith('adj') || pos === 'adjective') {
+        detectedPos = 'adjective';
+      }
+
+      return {
+        pos: detectedPos,
+        source: 'd1',
+        d1Lemma: normalizedLemma,
+      };
+    }
+
+    // 4. No match found
+    return null;
+  } catch (error) {
+    console.warn(`Failed to query POS metadata for "${normalizedLemma}":`, error);
+    return null;
+  }
+}
 
 export function getD1ClientOrThrow(): D1Client {
   const d1Db = getD1Database();

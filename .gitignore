@@ -168,6 +168,8 @@ inflections_cache.json
 public/full_dictionary_enriched.json
 ot_form_occurrence_index.json
 dictionary_fast_index.json
+# Allow POS map (small, needed for runtime)
+!app/data/lingdocs_pos_map.json
 videos/*.mp4
 videos/
 *.mp4
