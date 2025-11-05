@@ -705,15 +705,28 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
   console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
+  console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
   try {
     // Map scope to testament filter
     const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
     
-    const d1Verses = await searchVersesD1(searchQuery, {
-      translation: translation as 'afghan2023' | 'yousafzai2019',
-      testament: testamentFilter,
-      limit: limit,
-    });
+    // Use searchVersesByForms if variants are provided, otherwise use regular search
+    let d1Verses: any[] = [];
+    if (variants && variants.length > 0) {
+      console.log(`🔍 Using searchVersesByForms with ${variants.length} variants`);
+      d1Verses = await searchVersesByForms(variants, {
+        translation: translation as 'afghan2023' | 'yousafzai2019',
+        testament: testamentFilter,
+        limit: limit,
+      });
+    } else {
+      console.log(`🔍 Using searchVersesD1 with query: "${searchQuery}"`);
+      d1Verses = await searchVersesD1(searchQuery, {
+        translation: translation as 'afghan2023' | 'yousafzai2019',
+        testament: testamentFilter,
+        limit: limit,
+      });
+    }
     
     if (d1Verses && d1Verses.length > 0) {
       const queryTimeMs = Date.now() - startedAt;
@@ -744,7 +757,8 @@ export async function POST(request: NextRequest) {
         processed: {
           original: originalQuery,
           normalized: searchQuery,
-          variants: [],
+          variants: variants || [],
+          variantsSearched: variants || [],
           searchType: 'd1',
           frequency: d1Verses.length,
         },
