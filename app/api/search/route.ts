@@ -8,6 +8,7 @@ import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
+import type { POSFilters, PartOfSpeech, POSSummary } from '@/types/search';
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
@@ -100,6 +101,7 @@ type SearchRequest = {
   scope?: Scope;
   includeRelated?: boolean;
   variants?: string[];
+  posFilters?: POSFilters;  // NEW: POS filtering support
   enableFuzzy?: boolean;
   language?: 'pashto' | 'english' | 'anki';
   bookFilter?: string[];
@@ -122,7 +124,7 @@ type Processed = {
   normalized: string;
   variants: string[];
     searchType: 'fast' | 'fuzzy' | 'enhanced' | 'hybrid' | 'occurrence' | 'd1' | 'no_results' | 'video_transcript';
-  pos?: 'noun' | 'verb' | 'adjective' | 'other';
+  pos?: PartOfSpeech;
   variantGroups?: { nouns?: Variant[]; verbs?: Variant[]; other?: Variant[] };
   variantDetails?: any;
   frequency?: number;
@@ -132,6 +134,7 @@ type Processed = {
   language?: 'pashto' | 'english' | 'anki';
   englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   variantsSearched?: string[];
+  posSummary?: POSSummary;  // NEW: POS summary from related forms
   disambiguation?: any;
 };
 
@@ -466,6 +469,7 @@ export async function POST(request: NextRequest) {
       query,
       includeRelated = false,
       variants = [],
+      posFilters,
       enableFuzzy = false,
       language = 'pashto',
       limit = 2000,
@@ -893,7 +897,70 @@ export async function POST(request: NextRequest) {
 
               if (relatedResponse.ok) {
                 const relatedFormsText = await relatedResponse.text();
-                return JSON.parse(relatedFormsText);
+                const relatedFormsData = JSON.parse(relatedFormsText);
+                
+                // Apply POS filters if provided
+                if (posFilters && (posFilters.include || posFilters.exclude)) {
+                  const allVariants: Array<{ form: string; pos: PartOfSpeech }> = [];
+                  
+                  // Collect all variants with their POS
+                  if (relatedFormsData.forms?.verbs) {
+                    relatedFormsData.forms.verbs.forEach((v: any) => {
+                      allVariants.push({ form: v.form, pos: v.pos || 'verb' });
+                    });
+                  }
+                  if (relatedFormsData.forms?.nouns) {
+                    relatedFormsData.forms.nouns.forEach((v: any) => {
+                      allVariants.push({ form: v.form, pos: v.pos || 'noun' });
+                    });
+                  }
+                  if (relatedFormsData.forms?.adjectives) {
+                    relatedFormsData.forms.adjectives.forEach((v: any) => {
+                      allVariants.push({ form: v.form, pos: v.pos || 'adjective' });
+                    });
+                  }
+                  if (relatedFormsData.forms?.other) {
+                    relatedFormsData.forms.other.forEach((v: any) => {
+                      allVariants.push({ form: v.form, pos: v.pos || 'other' });
+                    });
+                  }
+                  
+                  // Filter variants by POS
+                  const filteredVariants = allVariants.filter(v => {
+                    if (posFilters.include && posFilters.include.length > 0) {
+                      return posFilters.include.includes(v.pos);
+                    }
+                    if (posFilters.exclude && posFilters.exclude.length > 0) {
+                      return !posFilters.exclude.includes(v.pos);
+                    }
+                    return true;
+                  });
+                  
+                  // Update relatedFormsData with filtered variants
+                  const filteredForms: any = {};
+                  const posSet = new Set(filteredVariants.map(v => v.pos));
+                  const formSet = new Set(filteredVariants.map(v => v.form));
+                  
+                  if (posSet.has('verb')) {
+                    filteredForms.verbs = relatedFormsData.forms?.verbs?.filter((v: any) => formSet.has(v.form)) || [];
+                  }
+                  if (posSet.has('noun')) {
+                    filteredForms.nouns = relatedFormsData.forms?.nouns?.filter((v: any) => formSet.has(v.form)) || [];
+                  }
+                  if (posSet.has('adjective')) {
+                    filteredForms.adjectives = relatedFormsData.forms?.adjectives?.filter((v: any) => formSet.has(v.form)) || [];
+                  }
+                  if (posSet.has('other')) {
+                    filteredForms.other = relatedFormsData.forms?.other?.filter((v: any) => formSet.has(v.form)) || [];
+                  }
+                  
+                  relatedFormsData.forms = filteredForms;
+                  relatedFormsData.total = filteredVariants.length;
+                  
+                  console.log(`✅ Filtered variants by POS: ${allVariants.length} → ${filteredVariants.length}`);
+                }
+                
+                return relatedFormsData;
               }
               return null;
             } catch (error) {
