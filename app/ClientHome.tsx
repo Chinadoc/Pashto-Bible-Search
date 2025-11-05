@@ -193,6 +193,18 @@ function matchesAspect(label: string, aspect: VerbFilterAspect): boolean {
   return matcher ? matcher(label) : true;
 }
 
+function matchesPersonMulti(label: string, persons: string[]): boolean {
+  if (persons.includes('all') || persons.length === 0) return true;
+  
+  // Check if label matches any of the selected persons
+  return persons.some(person => {
+    if (person === 'all') return true;
+    const patterns = PERSON_PATTERNS[person as VerbFilterPerson];
+    if (!patterns?.length) return true;
+    return patterns.some((pattern) => label.toLowerCase().includes(pattern.toLowerCase()));
+  });
+}
+
 function filterVerbVariants(
   verbs: RelatedFormVariant[] | undefined,
   filters: VerbFilterState
@@ -216,6 +228,56 @@ function filterVerbVariants(
 
   const filtered = verbs.filter(labelFilter);
   console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for filters:`, filters);
+  return filtered;
+}
+
+function filterVerbVariantsMulti(
+  verbs: RelatedFormVariant[] | undefined,
+  multiFilters: MultiVerbFilterState
+): RelatedFormVariant[] {
+  if (!verbs?.length) return [];
+  
+  const labelFilter = (variant: RelatedFormVariant) => {
+    const label = normalizeLabel(variant.label);
+    
+    // Check person filter (multi-select)
+    const personMatch = matchesPersonMulti(label, multiFilters.person);
+    
+    // Check tense filter (multi-select)
+    const tenseMatch = multiFilters.tense.includes('all') || multiFilters.tense.length === 0 ||
+      multiFilters.tense.some(t => {
+        if (t === 'all') return true;
+        const matcher = TENSE_MATCHERS[t as VerbFilterTense];
+        return matcher ? matcher(label) : false;
+      });
+    
+    // Check aspect filter (multi-select)
+    const aspectMatch = multiFilters.aspect.includes('all') || multiFilters.aspect.length === 0 ||
+      multiFilters.aspect.some(a => {
+        if (a === 'all') return true;
+        const matcher = ASPECT_MATCHERS[a as VerbFilterAspect];
+        return matcher ? matcher(label) : false;
+      });
+    
+    // Check mood filter (multi-select)
+    const moodMatch = multiFilters.mood.includes('all') || multiFilters.mood.length === 0 ||
+      multiFilters.mood.some(m => {
+        if (m === 'all') return true;
+        const matcher = MOOD_MATCHERS[m as VerbFilterMood];
+        return matcher ? matcher(label) : false;
+      });
+
+    console.log(`Filtering variant: "${variant.form}" label: "${variant.label}" (${label})`);
+    console.log(`  Person match (${multiFilters.person.join(',')}): ${personMatch}`);
+    console.log(`  Tense match (${multiFilters.tense.join(',')}): ${tenseMatch}`);
+    console.log(`  Mood match (${multiFilters.mood.join(',')}): ${moodMatch}`);
+    console.log(`  Aspect match (${multiFilters.aspect.join(',')}): ${aspectMatch}`);
+
+    return personMatch && tenseMatch && moodMatch && aspectMatch;
+  };
+
+  const filtered = verbs.filter(labelFilter);
+  console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for multi-filters:`, multiFilters);
   return filtered;
 }
 
@@ -309,11 +371,19 @@ function toggleMultiFilter<T extends string>(
 }
 
 function multiFilterToSingleFilter(multiFilters: MultiVerbFilterState): VerbFilterState {
+  // If 'all' is included or array is empty, return 'all'
+  // Otherwise, if multiple values are selected, we need to filter for any of them
+  // For now, we'll use the first non-'all' value, but the actual filtering should handle multiple values
+  const personValues = multiFilters.person.filter(p => p !== 'all');
+  const tenseValues = multiFilters.tense.filter(t => t !== 'all');
+  const aspectValues = multiFilters.aspect.filter(a => a !== 'all');
+  const moodValues = multiFilters.mood.filter(m => m !== 'all');
+  
   return {
-    person: multiFilters.person.includes('all') || multiFilters.person.length === 0 ? 'all' : multiFilters.person[0],
-    tense: multiFilters.tense.includes('all') || multiFilters.tense.length === 0 ? 'all' : multiFilters.tense[0],
-    aspect: multiFilters.aspect.includes('all') || multiFilters.aspect.length === 0 ? 'all' : multiFilters.aspect[0],
-    mood: multiFilters.mood.includes('all') || multiFilters.mood.length === 0 ? 'all' : multiFilters.mood[0],
+    person: multiFilters.person.includes('all') || personValues.length === 0 ? 'all' : personValues[0] as VerbFilterPerson,
+    tense: multiFilters.tense.includes('all') || tenseValues.length === 0 ? 'all' : tenseValues[0] as VerbFilterTense,
+    aspect: multiFilters.aspect.includes('all') || aspectValues.length === 0 ? 'all' : aspectValues[0] as VerbFilterAspect,
+    mood: multiFilters.mood.includes('all') || moodValues.length === 0 ? 'all' : moodValues[0] as VerbFilterMood,
   };
 }
 
@@ -771,6 +841,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
+  const [selectedPartOfSpeech, setSelectedPartOfSpeech] = useState<'auto' | 'verb' | 'noun' | 'adjective'>('auto');
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
@@ -778,6 +849,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
   const translationEffectGuard = useRef<boolean>(true);
+  const initialQueryHandledRef = useRef<boolean>(false);
 
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
@@ -842,6 +914,24 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
     // Tab is now determined by URL, no need to restore from localStorage
   }, []);
+
+  // Trigger initial search when an initialQuery is provided (e.g., navigating from Results → Lexicon)
+  useEffect(() => {
+    const trimmedInitial = (initialQuery || '').trim();
+    if (!trimmedInitial) return;
+
+    if (trimmedInitial !== query.trim()) {
+      // Update query state to match the incoming initial query; regular query effect will handle searching.
+      initialQueryHandledRef.current = false;
+      setQuery(trimmedInitial);
+      return;
+    }
+
+    if (!initialQueryHandledRef.current) {
+      initialQueryHandledRef.current = true;
+      executeSearch({ preserveResults: false, reason: 'initial-query' });
+    }
+  }, [initialQuery, query, executeSearch]);
 
   // Persist preferences when they change
   useEffect(() => {
@@ -1436,10 +1526,47 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     console.log('Applying multi verb filters:', nextFilters);
     setMultiVerbFilters(nextFilters);
 
-    // Convert multi-select to single-select for backward compatibility
-    const singleFilter = multiFilterToSingleFilter(nextFilters);
-    applyVerbFiltersAndSearch(singleFilter);
-  }, [applyVerbFiltersAndSearch]);
+    // Guard clauses moved to beginning to avoid early returns after hooks
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    if (!relatedForms?.verbs?.length) {
+      console.log('Verb filters updated, awaiting related forms to refetch results');
+      return;
+    }
+
+    // Use multi-filter function directly
+    const filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, nextFilters);
+    const forms = formsFromVariants(filteredVariants);
+
+    // If no forms match the filters, show no results
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
+      return;
+    }
+
+    // Always trigger a new search with filtered forms (not just client-side filtering)
+    console.log('🔄 Multi verb filter applied, searching for', forms.length, 'filtered forms:', forms.slice(0, 5));
+    
+    if (isDefaultMultiVerbFilter(nextFilters)) {
+      // Filters reset to "All" - restore original search
+      console.log('🔄 Filters reset to "All", restoring original search');
+      setVariantsOverride(null);
+      setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+      executeSearch({ preserveResults: false, reason: 'filter-reset' });
+    } else {
+      // Specific filters applied - search with filtered forms
+      variantKeyRef.current = forms.join('|');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+    }
+  }, [includeRelated, relatedForms, query, isDefaultMultiVerbFilter, executeSearch, setVariantsOverride, setActiveVariantForms]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
     setNounFilters(nextFilters);
@@ -1968,13 +2095,40 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
-            {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
-            {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+            {/* Parts of Speech Selector - Always show when Related Forms Mode is active */}
+            {includeRelated && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Filter by Part of Speech:
+                  </span>
+                  <select
+                    value={selectedPartOfSpeech}
+                    onChange={(e) => {
+                      const newPos = e.target.value as 'auto' | 'verb' | 'noun' | 'adjective';
+                      setSelectedPartOfSpeech(newPos);
+                    }}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="auto">Auto (detect from word)</option>
+                    <option value="verb">Verb</option>
+                    <option value="noun">Noun</option>
+                    <option value="adjective">Adjective</option>
+                  </select>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {selectedPartOfSpeech === 'auto' && relatedForms?.posGuess && `(Detected: ${relatedForms.posGuess})`}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on selectedPartOfSpeech or posGuess */}
+            {(includeRelated || !isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
               <>
                 {/* VERB FILTERS */}
-                {(relatedForms?.posGuess === 'verb' ||
-                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
-                  (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
+                {((selectedPartOfSpeech === 'verb' || (selectedPartOfSpeech === 'auto' && (relatedForms?.posGuess === 'verb' ||
+                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0)))) ||
+                  (!relatedForms && (!isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters)))) && (
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2159,8 +2313,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* NOUN FILTERS */}
-            {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
-             (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
+            {((selectedPartOfSpeech === 'noun' || (selectedPartOfSpeech === 'auto' && (relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0))) ||
+             (!relatedForms && !isDefaultNounFilter(nounFilters))) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2267,8 +2421,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* ADJECTIVE FILTERS */}
-            {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
-             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+            {((selectedPartOfSpeech === 'adjective' || (selectedPartOfSpeech === 'auto' && ((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0))) ||
+             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters))) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
