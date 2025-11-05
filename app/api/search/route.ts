@@ -1505,15 +1505,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Cache the results
-        const processedData = {
+        const processedData: Processed = {
           original: originalQuery,
           normalized: convertedQuery,
           variants: searchTerms,
           searchType,
-          pos: 'unknown',
+          pos: relatedForms?.posGuess || 'unknown',
           language: searchLanguage,
           englishMatches: englishMatches.length ? englishMatches : undefined,
           variantsSearched: searchTerms,
+          posSummary: relatedForms?.posSummary,  // Include POS summary from related forms
           romanization: romanizedDictionaryMatch?.romanized,
           root: romanizedDictionaryMatch?.pashto,
         };
