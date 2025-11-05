@@ -6,6 +6,7 @@
  * - Nouns (using nouns_lexicon + LingDocs patterns)
  * - Adjectives (using LingDocs inflection patterns)
  * - Translation demarcation (Afghan 2023 vs Yousafzai)
+ * - POS tagging from LingDocs and D1
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,17 +14,30 @@ import { getLightweightData } from '@/app/lib/data/load';
 import { generateNounVariantsLingDocs, generateVerbVariantsLingDocs } from '@/app/utils/lingdocs_integration';
 import { generateNounVariants } from '@/app/utils/noun_variants';
 import { generateVerbVariants } from '@/app/utils/verb_variants';
+import { getD1ClientOrThrow, getPOSMetadata } from '@/utils/d1-helpers';
+import type { VariantWithPOS, POSSummary, PartOfSpeech, POSMetadata } from '@/types/search';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
-type Variant = {
-  form: string;
-  label: string;
-  pos: 'noun' | 'verb' | 'adjective' | 'other';
-  score?: number;
-  count?: number;
-  romanized?: string;
-  flags?: string[];
+// Load LingDocs POS map
+let lingdocsPosMap: Record<string, any> | null = null;
+function getLingDocsPosMap(): Record<string, any> {
+  if (lingdocsPosMap) return lingdocsPosMap;
+  
+  try {
+    const mapPath = join(process.cwd(), 'app', 'data', 'lingdocs_pos_map.json');
+    const mapData = readFileSync(mapPath, 'utf-8');
+    lingdocsPosMap = JSON.parse(mapData);
+    return lingdocsPosMap || {};
+  } catch (error) {
+    console.warn('⚠️ Failed to load LingDocs POS map:', error);
+    return {};
+  }
+}
+
+type Variant = VariantWithPOS & {
   inflectionReasons?: {
     plural: number;
     sandwich: number;
@@ -39,8 +53,9 @@ type RelatedFormsResponse = {
   total: number;
   variantDetails?: any;
   ms: number;
-  posGuess?: string;
+  posGuess?: PartOfSpeech;
   translation?: 'afghan2023' | 'yousafzai2019';
+  posSummary?: POSSummary;
   metadata?: {
     hasMultiplePos: boolean;
     primaryPos: string;
@@ -57,8 +72,98 @@ type RelatedFormsResponse = {
 };
 
 /**
- * Query D1 for inflections via Cloudflare Worker API
+ * Enrich variant with POS metadata from LingDocs and D1
  */
+async function enrichVariantWithPOS(
+  variant: Variant,
+  db: any
+): Promise<Variant> {
+  const lingdocsMap = getLingDocsPosMap();
+  const lingdocsEntry = lingdocsMap[variant.form];
+  
+  // Get D1 POS metadata
+  let d1Metadata: POSMetadata | null = null;
+  try {
+    if (db) {
+      d1Metadata = await getPOSMetadata(db, variant.form);
+    }
+  } catch (error) {
+    console.warn(`Failed to get D1 POS for "${variant.form}":`, error);
+  }
+  
+  // Determine POS from multiple sources
+  let detectedPos: PartOfSpeech = variant.pos as PartOfSpeech;
+  const sources: string[] = [];
+  
+  // Priority: D1 > LingDocs > existing variant.pos
+  if (d1Metadata) {
+    detectedPos = Array.isArray(d1Metadata.pos) ? d1Metadata.pos[0] : d1Metadata.pos;
+    sources.push('d1');
+  } else if (lingdocsEntry) {
+    const lingdocsPos = Array.isArray(lingdocsEntry.pos) ? lingdocsEntry.pos[0] : lingdocsEntry.pos;
+    if (lingdocsPos) {
+      detectedPos = lingdocsPos as PartOfSpeech;
+    }
+    sources.push('lingdocs');
+  } else if (variant.pos) {
+    detectedPos = variant.pos as PartOfSpeech;
+    sources.push('variant');
+  }
+  
+  // Build merged POS metadata
+  const posMetadata: POSMetadata = {
+    pos: detectedPos,
+    source: sources.length > 1 ? 'merged' : (sources[0] === 'd1' ? 'd1' : 'lingdocs'),
+  };
+  
+  if (lingdocsEntry) {
+    posMetadata.lingdocsId = lingdocsEntry.lingdocsId;
+    if (lingdocsEntry.transitivity) posMetadata.transitivity = lingdocsEntry.transitivity;
+    if (lingdocsEntry.verbType) posMetadata.verbType = lingdocsEntry.verbType;
+    if (lingdocsEntry.gender) posMetadata.gender = lingdocsEntry.gender;
+  }
+  
+  if (d1Metadata) {
+    posMetadata.d1Lemma = d1Metadata.d1Lemma;
+    if (d1Metadata.transitivity) posMetadata.transitivity = d1Metadata.transitivity;
+    if (d1Metadata.verbType) posMetadata.verbType = d1Metadata.verbType;
+    if (d1Metadata.gender) posMetadata.gender = d1Metadata.gender;
+    if (d1Metadata.nounInflectionType) posMetadata.nounInflectionType = d1Metadata.nounInflectionType;
+  }
+  
+  return {
+    ...variant,
+    pos: detectedPos,
+    posMetadata,
+    sources: sources.length > 0 ? sources : ['unknown'],
+  };
+}
+
+/**
+ * Calculate POS summary from variants
+ */
+function calculatePOSSummary(variants: Variant[]): POSSummary {
+  const summary: POSSummary = {};
+  
+  for (const variant of variants) {
+    const pos = variant.pos;
+    if (!summary[pos]) {
+      summary[pos] = {
+        count: 0,
+        sources: { lingdocs: 0, d1: 0 },
+      };
+    }
+    
+    summary[pos].count++;
+    
+    if (variant.sources) {
+      if (variant.sources.includes('lingdocs')) summary[pos].sources.lingdocs++;
+      if (variant.sources.includes('d1')) summary[pos].sources.d1++;
+    }
+  }
+  
+  return summary;
+}
 async function getInflectionsFromD1(
   baseWord: string,
   translation?: 'afghan2023' | 'yousafzai2019'
@@ -477,8 +582,38 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Enrich with frequency counts and inflection reasons
+    // Get D1 client for POS enrichment
+    let db: any = null;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      console.warn('⚠️ D1 client not available, skipping POS enrichment:', error);
+    }
+
+    // Enrich with POS metadata, frequency counts, and inflection reasons
     for (const form of allForms) {
+      // Enrich with POS metadata
+      if (db) {
+        const enriched = await enrichVariantWithPOS(form, db);
+        Object.assign(form, enriched);
+      } else {
+        // Fallback: use LingDocs map only
+        const lingdocsMap = getLingDocsPosMap();
+        const lingdocsEntry = lingdocsMap[form.form];
+        if (lingdocsEntry) {
+          const pos = Array.isArray(lingdocsEntry.pos) ? lingdocsEntry.pos[0] : lingdocsEntry.pos;
+          if (pos) {
+            form.pos = pos as PartOfSpeech;
+            form.sources = ['lingdocs'];
+            form.posMetadata = {
+              pos,
+              source: 'lingdocs',
+              lingdocsId: lingdocsEntry.lingdocsId,
+            };
+          }
+        }
+      }
+      
       const freq = frequencyMap.get(form.form) || 0;
       if (freq > 0) {
         form.count = freq;
@@ -494,6 +629,9 @@ export async function POST(req: NextRequest) {
 
     // Sort by frequency
     allForms.sort((a, b) => (b.count || 0) - (a.count || 0));
+    
+    // Calculate POS summary
+    const posSummary = calculatePOSSummary(allForms);
 
     // Update groups with enriched data
     const enrichedGroups: typeof groups = {};
@@ -510,8 +648,9 @@ export async function POST(req: NextRequest) {
       forms: enrichedGroups,
       total,
       ms: Date.now() - startedAt,
-      posGuess,
+      posGuess: posGuess as PartOfSpeech,
       translation,
+      posSummary,
       metadata: {
         hasMultiplePos: Object.keys(enrichedGroups).length > 1,
         primaryPos: posGuess,
