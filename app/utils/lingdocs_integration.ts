@@ -219,6 +219,7 @@ const IMPERATIVE_LABELS = ['2sg', '2pl'] as const;
 
 function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
   const variantMap = new Map<string, Variant>();
+  console.log(`🔍 [LINGDOCS] Flattening verb forms for "${lemma}"`);
 
   const addVariant = (ps: { p?: string; f?: string }, label: string) => {
     const form = typeof ps?.p === 'string' ? ps.p.trim() : '';
@@ -346,7 +347,13 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
     collectFromNode(conjugation.participle.present, 'Present Participle');
   }
 
-  return Array.from(variantMap.values());
+  const result = Array.from(variantMap.values());
+  const firstPersonCount = result.filter(v => v.label?.includes('1sg') || v.label?.includes('1pl')).length;
+  console.log(`✅ [LINGDOCS] Flattened ${result.length} verb forms for "${lemma}"`, {
+    firstPersonForms: firstPersonCount,
+    sampleLabels: result.slice(0, 10).map(v => v.label),
+  });
+  return result;
 }
 
 // ---------------------------------------------------------------------------

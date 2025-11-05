@@ -8,7 +8,7 @@ import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
-import type { POSFilters, PartOfSpeech, POSSummary } from '@/types/search';
+import type { POSFilters, PartOfSpeech, POSSummary, VariantWithPOS } from '@/types/search';
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
@@ -153,6 +153,150 @@ const YOUSAFZAI_BOOKS = new Set(['Psalms', 'Proverbs', 'Song of Solomon']);
 
 const COMPOUND_HELPERS = new Set(['وهل', 'کول', 'کېدل', 'کړل', 'اخیستل', 'ساتل']);
 const helperVariantCache = new Map<string, string[]>();
+
+function buildPosSummary(variants: VariantWithPOS[]): POSSummary {
+  const summary: POSSummary = {};
+
+  for (const variant of variants) {
+    const posKey = variant.pos;
+    if (!summary[posKey]) {
+      summary[posKey] = {
+        count: 0,
+        sources: { lingdocs: 0, d1: 0 },
+      };
+    }
+
+    summary[posKey].count += 1;
+
+    if (variant.sources?.includes('lingdocs')) {
+      summary[posKey].sources.lingdocs += 1;
+    }
+    if (variant.sources?.includes('d1')) {
+      summary[posKey].sources.d1 += 1;
+    }
+  }
+
+  return summary;
+}
+
+async function buildInlineRelatedForms(
+  word: string,
+  translation: 'afghan2023' | 'yousafzai2019',
+  posFilters?: POSFilters
+): Promise<{ relatedForms: any; searchTerms: string[] } | null> {
+  const normalized = word?.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const [verbVariants, nounVariants] = await Promise.all([
+      generateVerbVariants(normalized, { cap: 60, includeCompound: true }),
+      generateNounVariants(normalized, { cap: 40 }),
+    ]);
+
+    const combined = [...verbVariants, ...nounVariants];
+    if (!combined.length) {
+      return null;
+    }
+
+    const uniqueVariants = new Map<string, typeof combined[number]>();
+    for (const variant of combined) {
+      if (!variant?.form) continue;
+      const existing = uniqueVariants.get(variant.form);
+      if (!existing || (variant.count ?? 0) > (existing.count ?? 0)) {
+        uniqueVariants.set(variant.form, variant);
+      }
+    }
+
+    let consolidated = Array.from(uniqueVariants.values());
+
+    if (posFilters?.include?.length) {
+      const includeSet = new Set(posFilters.include);
+      consolidated = consolidated.filter((variant) => includeSet.has((variant.pos || 'other') as PartOfSpeech));
+    }
+    if (posFilters?.exclude?.length) {
+      const excludeSet = new Set(posFilters.exclude);
+      consolidated = consolidated.filter((variant) => !excludeSet.has((variant.pos || 'other') as PartOfSpeech));
+    }
+
+    if (!consolidated.length) {
+      return null;
+    }
+
+    const toSimple = (variant: typeof consolidated[number]) => ({
+      form: variant.form,
+      label: variant.label,
+      pos: variant.pos,
+      count: variant.count ?? 0,
+      score: variant.score ?? 0,
+      romanized: variant.romanized,
+      flags: variant.flags,
+    });
+
+    const verbs = consolidated.filter((variant) => variant.pos === 'verb').map(toSimple);
+    const nouns = consolidated.filter((variant) => variant.pos === 'noun').map(toSimple);
+    const adjectives = consolidated.filter((variant) => variant.pos === 'adjective').map(toSimple);
+    const other = consolidated
+      .filter((variant) => !['verb', 'noun', 'adjective'].includes(variant.pos as string))
+      .map(toSimple);
+
+    const variantsWithPos: VariantWithPOS[] = consolidated.map((variant) => ({
+      form: variant.form,
+      label: variant.label,
+      pos: (variant.pos || 'other') as PartOfSpeech,
+      sources: ['lingdocs'],
+      count: variant.count,
+      score: variant.score,
+      romanized: variant.romanized,
+      flags: variant.flags,
+    }));
+
+    const posSummary = buildPosSummary(variantsWithPos);
+
+    const posGuess =
+      verbs.length > 0
+        ? 'verb'
+        : nouns.length > 0
+          ? 'noun'
+          : adjectives.length > 0
+            ? 'adjective'
+            : 'other';
+
+    const relatedForms = {
+      root: normalized,
+      total: consolidated.length,
+      verbs,
+      nouns,
+      adjectives,
+      other,
+      forms: {
+        verbs,
+        nouns,
+        adjectives,
+        other,
+      },
+      posGuess,
+      translation,
+      posSummary,
+      metadata: {
+        hasMultiplePos: [verbs.length, nouns.length, adjectives.length, other.length].filter(Boolean).length > 1,
+        primaryPos: posGuess,
+        generationStrategy: 'inline',
+        source: 'lingdocs',
+      },
+    };
+
+    const searchTerms = Array.from(
+      new Set([normalized, ...consolidated.map((variant) => variant.form).filter(Boolean)])
+    );
+
+    return { relatedForms, searchTerms };
+  } catch (error) {
+    console.warn(`⚠️ Failed to build inline related forms for "${word}":`, error);
+    return null;
+  }
+}
 
 // Global audio map cache
 let audioMapCache: Record<string, string> | null = null;
@@ -717,14 +861,14 @@ export async function POST(request: NextRequest) {
     // Use searchVersesByForms if variants are provided, otherwise use regular search
     let d1Verses: any[] = [];
     if (variants && variants.length > 0) {
-      console.log(`🔍 Using searchVersesByForms with ${variants.length} variants`);
+      console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${variants.length} variants:`, variants.slice(0, 10));
       d1Verses = await searchVersesByForms(variants, {
         translation: translation as 'afghan2023' | 'yousafzai2019',
         testament: testamentFilter,
         limit: limit,
       });
     } else {
-      console.log(`🔍 Using searchVersesD1 with query: "${searchQuery}"`);
+      console.log(`🔍 [D1 SEARCH] Using searchVersesD1 with query: "${searchQuery}"`);
       d1Verses = await searchVersesD1(searchQuery, {
         translation: translation as 'afghan2023' | 'yousafzai2019',
         testament: testamentFilter,
@@ -755,25 +899,42 @@ export async function POST(request: NextRequest) {
         };
       });
 
-      // Still fetch related forms even when using variants, so UI can show POS filters
-      let relatedFormsData = null;
+      let relatedFormsData: any = null;
+      let relatedFormTerms: string[] | null = null;
       if (includeRelated && searchLanguage === 'pashto') {
         try {
-          const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query: searchQuery,
-              translation: translation,
-            }),
-          });
-          if (relatedResponse.ok) {
-            relatedFormsData = await relatedResponse.json();
+          console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}"`);
+          const inlineRelated = await buildInlineRelatedForms(
+            searchQuery,
+            translation as 'afghan2023' | 'yousafzai2019',
+            posFilters,
+          );
+          if (inlineRelated) {
+            relatedFormsData = inlineRelated.relatedForms;
+            relatedFormTerms = inlineRelated.searchTerms;
+            console.log(`✅ [D1 FAST PATH] Built related forms:`, {
+              total: relatedFormsData.total,
+              verbsCount: relatedFormsData.forms?.verbs?.length || 0,
+              nounsCount: relatedFormsData.forms?.nouns?.length || 0,
+              posGuess: relatedFormsData.posGuess,
+              searchTermsCount: relatedFormTerms.length,
+            });
+            console.log(`📋 [D1 FAST PATH] Verb forms sample:`, 
+              relatedFormsData.forms?.verbs?.slice(0, 5).map((v: any) => ({ form: v.form, label: v.label }))
+            );
+          } else {
+            console.warn(`⚠️ [D1 FAST PATH] buildInlineRelatedForms returned null for "${searchQuery}"`);
           }
         } catch (error) {
-          console.warn('Failed to fetch related forms for D1 search:', error);
+          console.warn('Failed to build inline related forms for D1 search:', error);
         }
       }
+      
+      console.log(`🔍 [D1 FAST PATH] Final variants:`, {
+        providedVariants: variants?.length || 0,
+        relatedFormTerms: relatedFormTerms?.length || 0,
+        usingVariants: variants?.length ? variants.slice(0, 5) : (relatedFormTerms?.slice(0, 5) || [searchQuery]),
+      });
 
       return NextResponse.json({
         success: true,
@@ -782,10 +943,11 @@ export async function POST(request: NextRequest) {
         processed: {
           original: originalQuery,
           normalized: searchQuery,
-          variants: variants || [],
-          variantsSearched: variants || [],
+          variants: variants?.length ? variants : (relatedFormTerms || [searchQuery]),
+          variantsSearched: variants?.length ? variants : (relatedFormTerms || [searchQuery]),
           searchType: 'd1',
           frequency: d1Verses.length,
+          posSummary: relatedFormsData?.posSummary,
         },
         queryTime: queryTimeMs,
         source: 'd1-r2',
