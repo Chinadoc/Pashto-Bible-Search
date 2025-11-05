@@ -885,7 +885,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   }, [relatedForms?.posGuess, selectedPartOfSpeech]);
 
   // Unified filter application function - handles all parts of speech
-  // NOTE: Must be defined before useEffects that use it
+  // NOTE: Uses executeSearchRef to avoid dependency issues
+  const executeSearchRef = useRef<((opts?: { overrideVariants?: string[] | null; languageOverride?: SearchLanguage; preserveResults?: boolean; reason?: string; limit?: number }) => Promise<void>) | null>(null);
+  
   const applyFiltersAndSearch = useCallback((
     pos: 'verb' | 'noun' | 'adjective',
     filters: MultiVerbFilterState | NounFilterState | AdjectiveFilterState
@@ -914,7 +916,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         // Reset to all forms
         setVariantsOverride(null);
         setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-        executeSearch({ preserveResults: false, reason: 'filter-reset' });
+        if (executeSearchRef.current) {
+          executeSearchRef.current({ preserveResults: false, reason: 'filter-reset' });
+        }
         return;
       }
     } else if (pos === 'noun') {
@@ -955,8 +959,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     variantKeyRef.current = forms.join('|');
     setVariantsOverride(forms);
     setActiveVariantForms(forms);
-    executeSearch({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
-  }, [includeRelated, relatedForms, executeSearch]);
+    if (executeSearchRef.current) {
+      executeSearchRef.current({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
+    }
+  }, [includeRelated, relatedForms]);
 
   // Trigger search when multiVerbFilters change
   const previousMultiVerbFilters = useRef<MultiVerbFilterState>(multiVerbFilters);
