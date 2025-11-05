@@ -15,6 +15,7 @@ import ChapterView from "../components/ChapterView";
 import TopicsBrowser from "../components/TopicsBrowser";
 import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
 import WordAlternativeUses from "../components/WordAlternativeUses";
+import { useSearchFilters } from "./contexts/SearchFiltersContext";
 import type {
   Verse,
   Scope,
@@ -856,10 +857,33 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
 
   // Remove verbFilters - use only multiVerbFilters
   // const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER }); // REMOVED
-  const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
-  const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
-  const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
-  const [selectedPartOfSpeech, setSelectedPartOfSpeech] = useState<'auto' | 'verb' | 'noun' | 'adjective'>('auto');
+  const { filters, dispatch, toAPIPayload } = useSearchFilters();
+  const multiVerbFilters = filters.verb;
+  const nounFilters = filters.noun;
+  const adjectiveFilters = filters.adjective;
+  const selectedPartOfSpeech = filters.pos.selected.length > 0 
+    ? (filters.pos.selected[0] as 'verb' | 'noun' | 'adjective')
+    : 'auto';
+  
+  const setMultiVerbFilters = (newFilters: MultiVerbFilterState) => {
+    dispatch({ type: 'SET_VERB_FILTERS', filters: newFilters });
+  };
+  
+  const setNounFilters = (newFilters: NounFilterState) => {
+    dispatch({ type: 'SET_NOUN_FILTERS', filters: newFilters });
+  };
+  
+  const setAdjectiveFilters = (newFilters: AdjectiveFilterState) => {
+    dispatch({ type: 'SET_ADJECTIVE_FILTERS', filters: newFilters });
+  };
+  
+  const setSelectedPartOfSpeech = (pos: 'auto' | 'verb' | 'noun' | 'adjective') => {
+    if (pos === 'auto') {
+      dispatch({ type: 'CLEAR_POS_FILTERS' });
+    } else {
+      dispatch({ type: 'SET_POS_FILTER', pos: [pos] });
+    }
+  };
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
@@ -1027,12 +1051,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       return;
     }
     
-    savePersisted('scope', scope);
-    savePersisted('includeRelated', includeRelated);
-    savePersisted('multiVerbFilters', multiVerbFilters);
-    savePersisted('nounFilters', nounFilters);
-    savePersisted('adjectiveFilters', adjectiveFilters);
-    savePersisted('searchLanguage', searchLanguage);
+    // Filters are now persisted automatically by SearchFiltersContext
+    // No need to manually save here
   }, [scope, includeRelated, multiVerbFilters, nounFilters, adjectiveFilters, searchLanguage]);
 
 
@@ -1368,9 +1388,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       // Reset filters when starting a new search (manual or query change)
       if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
-        setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-        setNounFilters({ ...DEFAULT_NOUN_FILTER });
-        setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+        dispatch({ type: 'RESET_VERB_FILTERS' });
+        dispatch({ type: 'RESET_NOUN_FILTERS' });
+        dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
+        dispatch({ type: 'RESET_POS_FILTERS' });
         // Clear variant override to ensure fresh analysis
         setVariantsOverride(null);
         setActiveVariantForms([]);
@@ -1388,6 +1409,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         bookFilter,
         language: languageOverride ?? searchLanguage,
         translation: activeTranslation === 'unified' ? undefined : activeTranslation,
+        ...toAPIPayload(),  // Include posFilters from context
       };
 
       if (variantsPayload) {
