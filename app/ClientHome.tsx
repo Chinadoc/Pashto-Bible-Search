@@ -14,6 +14,7 @@ import ChapterNavigator from "../components/ChapterNavigator";
 import ChapterView from "../components/ChapterView";
 import TopicsBrowser from "../components/TopicsBrowser";
 import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
+import WordAlternativeUses from "../components/WordAlternativeUses";
 import type {
   Verse,
   Scope,
@@ -2064,6 +2065,18 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             <DictionaryDisambiguation
               dictionary={dictionaryData}
               query={query}
+            />
+          )}
+
+          {/* Alternative Uses Alert - Show alternative grammatical contexts */}
+          {query.trim() && relatedForms && (
+            <WordAlternativeUses
+              word={query.trim()}
+              pos={relatedForms.posGuess || selectedPartOfSpeech !== 'auto' ? selectedPartOfSpeech : undefined}
+              onSelectForm={(form) => {
+                setQuery(form);
+                handleSearch();
+              }}
             />
           )}
 
