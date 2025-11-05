@@ -351,11 +351,16 @@ function isDefaultVerbFilter(filters: VerbFilterState): boolean {
 
 // Multi-select filter helpers
 function isDefaultMultiVerbFilter(filters: MultiVerbFilterState): boolean {
+  const person = Array.isArray(filters.person) ? filters.person : ['all'];
+  const tense = Array.isArray(filters.tense) ? filters.tense : ['all'];
+  const aspect = Array.isArray(filters.aspect) ? filters.aspect : ['all'];
+  const mood = Array.isArray(filters.mood) ? filters.mood : ['all'];
+  
   return (
-    filters.person.length === 1 && filters.person[0] === 'all' &&
-    filters.tense.length === 1 && filters.tense[0] === 'all' &&
-    filters.aspect.length === 1 && filters.aspect[0] === 'all' &&
-    filters.mood.length === 1 && filters.mood[0] === 'all'
+    person.length === 1 && person[0] === 'all' &&
+    tense.length === 1 && tense[0] === 'all' &&
+    aspect.length === 1 && aspect[0] === 'all' &&
+    mood.length === 1 && mood[0] === 'all'
   );
 }
 
