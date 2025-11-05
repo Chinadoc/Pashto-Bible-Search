@@ -639,7 +639,7 @@ export default function RelatedForms({
               )}
 
               {/* Other forms */}
-              {relatedForms.nouns?.length > 0 && (
+              {(relatedForms.nouns?.length ?? 0) > 0 && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
