@@ -634,12 +634,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get D1 client for POS enrichment
-    let db: any = null;
-    try {
-      db = getD1ClientOrThrow();
-    } catch (error) {
-      console.warn('⚠️ D1 client not available, skipping POS enrichment:', error);
+    // Reuse db from earlier if available, otherwise create new one
+    if (!db) {
+      try {
+        db = getD1ClientOrThrow();
+      } catch (error) {
+        console.warn('⚠️ D1 client not available, skipping POS enrichment:', error);
+      }
     }
 
     // Enrich with POS metadata, frequency counts, and inflection reasons
