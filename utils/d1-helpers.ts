@@ -143,14 +143,6 @@ export async function getPOSMetadata(
   }
 }
 
-export function getD1ClientOrThrow(): D1Client {
-  const d1Db = getD1Database();
-  if (!d1Db) {
-    throw new Error('Database not configured');
-  }
-  return new D1Client(d1Db);
-}
-
 export function parseVerseRef(ref: string): { book: string; chapter: number; verse: number } | null {
   if (!ref) return null;
   const match = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
