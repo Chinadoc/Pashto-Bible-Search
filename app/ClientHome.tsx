@@ -239,17 +239,23 @@ function filterVerbVariantsMulti(
 ): RelatedFormVariant[] {
   if (!verbs?.length) return [];
   
+  // Ensure all filter arrays exist and are arrays
+  const person = Array.isArray(multiFilters.person) ? multiFilters.person : ['all'];
+  const tense = Array.isArray(multiFilters.tense) ? multiFilters.tense : ['all'];
+  const aspect = Array.isArray(multiFilters.aspect) ? multiFilters.aspect : ['all'];
+  const mood = Array.isArray(multiFilters.mood) ? multiFilters.mood : ['all'];
+  
   const labelFilter = (variant: RelatedFormVariant) => {
     const label = normalizeLabel(variant.label);
     
     // Check person filter (multi-select)
     // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const personValues = multiFilters.person.filter(p => p !== 'all');
-    const personMatch = personValues.length === 0 || matchesPersonMulti(label, multiFilters.person);
+    const personValues = person.filter(p => p !== 'all');
+    const personMatch = personValues.length === 0 || matchesPersonMulti(label, person);
     
     // Check tense filter (multi-select)
     // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const tenseValues = multiFilters.tense.filter(t => t !== 'all');
+    const tenseValues = tense.filter(t => t !== 'all');
     const tenseMatch = tenseValues.length === 0 ||
       tenseValues.some(t => {
         const matcher = TENSE_MATCHERS[t as VerbFilterTense];
@@ -258,7 +264,7 @@ function filterVerbVariantsMulti(
     
     // Check aspect filter (multi-select)
     // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const aspectValues = multiFilters.aspect.filter(a => a !== 'all');
+    const aspectValues = aspect.filter(a => a !== 'all');
     const aspectMatch = aspectValues.length === 0 ||
       aspectValues.some(a => {
         const matcher = ASPECT_MATCHERS[a as VerbFilterAspect];
@@ -267,7 +273,7 @@ function filterVerbVariantsMulti(
     
     // Check mood filter (multi-select)
     // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
-    const moodValues = multiFilters.mood.filter(m => m !== 'all');
+    const moodValues = mood.filter(m => m !== 'all');
     const moodMatch = moodValues.length === 0 ||
       moodValues.some(m => {
         const matcher = MOOD_MATCHERS[m as VerbFilterMood];
@@ -275,10 +281,10 @@ function filterVerbVariantsMulti(
       });
 
     console.log(`Filtering variant: "${variant.form}" label: "${variant.label}" (${label})`);
-    console.log(`  Person match (${multiFilters.person.join(',')}): ${personMatch}`);
-    console.log(`  Tense match (${multiFilters.tense.join(',')}): ${tenseMatch}`);
-    console.log(`  Mood match (${multiFilters.mood.join(',')}): ${moodMatch}`);
-    console.log(`  Aspect match (${multiFilters.aspect.join(',')}): ${aspectMatch}`);
+    console.log(`  Person match (${person.join(',')}): ${personMatch}`);
+    console.log(`  Tense match (${tense.join(',')}): ${tenseMatch}`);
+    console.log(`  Mood match (${mood.join(',')}): ${moodMatch}`);
+    console.log(`  Aspect match (${aspect.join(',')}): ${aspectMatch}`);
 
     return personMatch && tenseMatch && moodMatch && aspectMatch;
   };

@@ -39,16 +39,22 @@ export default function WordAlternativeUses({ word, pos, onSelectForm }: WordAlt
     fetch(`/api/word-alternative-uses?word=${encodeURIComponent(word)}${pos ? `&pos=${encodeURIComponent(pos)}` : ''}`)
       .then(res => res.json())
       .then((data: AlternativeUsesResponse) => {
-        setAlternativeUses(data);
+        // Ensure data structure is valid
+        if (data && Array.isArray(data.alternative_uses)) {
+          setAlternativeUses(data);
+        } else {
+          setAlternativeUses(null);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Error fetching alternative uses:', err);
+        setAlternativeUses(null);
         setLoading(false);
       });
   }, [word, pos]);
 
-  if (loading || !alternativeUses || alternativeUses.alternative_uses.length === 0) {
+  if (loading || !alternativeUses || !Array.isArray(alternativeUses.alternative_uses) || alternativeUses.alternative_uses.length === 0) {
     return null;
   }
 
@@ -76,7 +82,7 @@ export default function WordAlternativeUses({ word, pos, onSelectForm }: WordAlt
                 {use.description}:
               </p>
               <div className="flex flex-wrap gap-2">
-                {(expanded ? use.forms : use.forms.slice(0, 5)).map((form, formIdx) => (
+                {Array.isArray(use.forms) && (expanded ? use.forms : use.forms.slice(0, 5)).map((form, formIdx) => (
                   <button
                     key={formIdx}
                     onClick={() => onSelectForm?.(form)}
@@ -85,7 +91,7 @@ export default function WordAlternativeUses({ word, pos, onSelectForm }: WordAlt
                     {form}
                   </button>
                 ))}
-                {use.forms.length > 5 && !expanded && (
+                {Array.isArray(use.forms) && use.forms.length > 5 && !expanded && (
                   <button
                     onClick={() => setExpanded(true)}
                     className="px-2 py-1 text-xs rounded-md bg-yellow-100 dark:bg-yellow-800/50 text-yellow-600 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-600 hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors"
