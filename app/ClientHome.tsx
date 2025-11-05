@@ -1777,6 +1777,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+      // Reset part of speech selector to 'auto' so auto-detection can work
+      setSelectedPartOfSpeech('auto');
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
       setActiveVariantForms([]);
