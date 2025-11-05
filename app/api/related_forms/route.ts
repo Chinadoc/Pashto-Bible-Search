@@ -504,7 +504,7 @@ export async function POST(req: NextRequest) {
     const d1AdjForms = d1Inflections.filter(f => f.pos === 'adjective');
 
     // Verbs: Use LingDocs + D1 data
-    if (posGuess === 'verb' || verbData || d1VerbForms.length > 0) {
+    if (posGuess === 'verb' || d1VerbForms.length > 0) {
       try {
         // Try LingDocs first
         const lingdocsVerbs = await generateVerbVariantsLingDocs(baseWord, { cap: 50 });
@@ -549,7 +549,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Nouns: Use LingDocs + D1 data
-    if (posGuess === 'noun' || nounData || d1NounForms.length > 0) {
+    if (posGuess === 'noun' || d1NounForms.length > 0) {
       try {
         // Try LingDocs first
         const lingdocsNouns = await generateNounVariantsLingDocs(baseWord, { cap: 50 });
