@@ -1032,11 +1032,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   useEffect(() => {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
-    // Load multiVerbFilters instead of verbFilters
-    const savedMultiFilters = loadPersisted<MultiVerbFilterState>('multiVerbFilters', DEFAULT_MULTI_VERB_FILTER);
-    setMultiVerbFilters(savedMultiFilters);
-    setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
-    setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
+    // Filters are now loaded automatically by SearchFiltersContext from localStorage
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
   }, []);
