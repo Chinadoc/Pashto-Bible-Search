@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
     if (pos === 'noun' || pos === 'adjective' || !pos) {
       // Check verbs_lexicon for compound verbs containing this word
       // Compound verbs are stored as "NOUN/ADJ VERB" in verb_root
-      const compoundVerbs = await db.query<{ verb_root: string; verb_type?: string; complement?: string }>(
-        `SELECT DISTINCT verb_root, verb_type, complement
+      const compoundVerbs = await db.query<{ verb_root: string }>(
+        `SELECT DISTINCT verb_root
         FROM verbs_lexicon 
-        WHERE verb_root LIKE ? OR verb_root LIKE ? OR complement = ?
+        WHERE verb_root LIKE ? OR verb_root LIKE ?
         LIMIT 20`,
-        [`%${word} %`, `% ${word}%`, word]
+        [`%${word} %`, `% ${word}%`]
       );
 
       if (Array.isArray(compoundVerbs) && compoundVerbs.length > 0) {
@@ -100,9 +100,8 @@ export async function GET(request: NextRequest) {
     // If it's an adjective, check for stative compounds
     if (pos === 'adjective' || (!pos && word.length < 10)) {
       // Check for stative compounds (adjective + کېدل/کول)
-      // Stative compounds have verb_type = 'stative compound' or complement ending with کېدل/کول
-      const stativeVerbs = await db.query<{ verb_root: string; verb_type?: string }>(
-        `SELECT DISTINCT verb_root, verb_type 
+      const stativeVerbs = await db.query<{ verb_root: string }>(
+        `SELECT DISTINCT verb_root 
         FROM verbs_lexicon 
         WHERE verb_root LIKE ? 
         AND (verb_root LIKE '%کېدل' OR verb_root LIKE '%کول')
