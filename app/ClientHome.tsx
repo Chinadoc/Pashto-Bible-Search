@@ -869,6 +869,21 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const translationEffectGuard = useRef<boolean>(true);
   const initialQueryHandledRef = useRef<boolean>(false);
 
+  // Auto-update selectedPartOfSpeech when posGuess is detected
+  useEffect(() => {
+    if (selectedPartOfSpeech === 'auto' && relatedForms?.posGuess) {
+      // Auto-detect and set the part of speech based on posGuess
+      const detectedPos = relatedForms.posGuess.toLowerCase();
+      if (detectedPos === 'verb' || detectedPos === 'v' || detectedPos.startsWith('verb')) {
+        setSelectedPartOfSpeech('verb');
+      } else if (detectedPos === 'noun' || detectedPos === 'n' || detectedPos.startsWith('noun')) {
+        setSelectedPartOfSpeech('noun');
+      } else if (detectedPos === 'adjective' || detectedPos === 'adj' || detectedPos.startsWith('adjective')) {
+        setSelectedPartOfSpeech('adjective');
+      }
+    }
+  }, [relatedForms?.posGuess, selectedPartOfSpeech]);
+
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
 
