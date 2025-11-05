@@ -22,7 +22,7 @@ function analyzePashtoText(text: string): { wordCount: number, uniqueWords: stri
   };
 }
 
-function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | 'non-pashto' | 'music' | 'empty' {
+function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | 'nonPashto' | 'music' | 'empty' {
   if (!transcript || transcript.trim().length === 0) {
     return 'empty';
   }
@@ -37,7 +37,7 @@ function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | '
   }
 
   if (!pashtoChars && englishChars) {
-    return 'non-pashto';
+    return 'nonPashto';
   }
 
   if (pashtoChars && (englishChars || nonPashtoChars)) {
@@ -48,7 +48,7 @@ function categorizeTranscriptQuality(transcript: string): 'pashto' | 'mixed' | '
     return 'pashto';
   }
 
-  return 'non-pashto';
+  return 'nonPashto';
 }
 
 export async function GET(request: NextRequest) {
