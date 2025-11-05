@@ -232,7 +232,7 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
     });
   };
 
-  const collectVerbBlock = (block: any, baseLabel: string, labels = PERSON_LABELS) => {
+  const collectVerbBlock = (block: any, baseLabel: string, labels: readonly string[] = PERSON_LABELS) => {
     if (!Array.isArray(block)) return;
     const flattenForms = (input: any): any[] => {
       if (!input) return [];
