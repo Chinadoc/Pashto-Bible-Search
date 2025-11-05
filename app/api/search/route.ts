@@ -755,9 +755,30 @@ export async function POST(request: NextRequest) {
         };
       });
 
+      // Still fetch related forms even when using variants, so UI can show POS filters
+      let relatedFormsData = null;
+      if (includeRelated && searchLanguage === 'pashto') {
+        try {
+          const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: searchQuery,
+              translation: translation,
+            }),
+          });
+          if (relatedResponse.ok) {
+            relatedFormsData = await relatedResponse.json();
+          }
+        } catch (error) {
+          console.warn('Failed to fetch related forms for D1 search:', error);
+        }
+      }
+
       return NextResponse.json({
         success: true,
         results: formattedResults.slice(0, limit),
+        relatedForms: relatedFormsData,
         processed: {
           original: originalQuery,
           normalized: searchQuery,

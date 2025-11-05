@@ -435,26 +435,62 @@ export async function POST(req: NextRequest) {
     const { dictionaryByPashto, frequencyMap } = await getLightweightData();
     const dictEntry = dictionaryByPashto.get(baseWord);
 
-    // Check verb data from D1
-    const verbData = await getVerbDataFromD1(baseWord);
-    const nounData = await getNounDataFromD1(baseWord);
+    // Check POS from D1 directly using getPOSMetadata
+    let db: any = null;
+    try {
+      db = getD1ClientOrThrow();
+    } catch (error) {
+      console.warn('⚠️ D1 client not available, using fallback POS detection:', error);
+    }
 
-    // Determine POS
     let posGuess: 'noun' | 'verb' | 'adjective' | 'other' = 'other';
-    if (verbData) {
-      posGuess = 'verb';
-    } else if (nounData) {
-      posGuess = 'noun';
-    } else if (dictEntry?.pos) {
+    
+    // First try D1 POS metadata (most reliable)
+    if (db) {
+      try {
+        const posMetadata = await getPOSMetadata(db, baseWord);
+        if (posMetadata) {
+          const posArray = Array.isArray(posMetadata.pos) ? posMetadata.pos : [posMetadata.pos];
+          if (posArray.includes('verb')) {
+            posGuess = 'verb';
+          } else if (posArray.includes('noun')) {
+            posGuess = 'noun';
+          } else if (posArray.includes('adjective')) {
+            posGuess = 'adjective';
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to get POS metadata from D1:', error);
+      }
+    }
+    
+    // Fallback to dictionary POS if D1 didn't find it
+    if (posGuess === 'other' && dictEntry?.pos) {
       const posLower = dictEntry.pos.toLowerCase();
       if (posLower.startsWith('v.') || posLower.includes('verb')) posGuess = 'verb';
       else if (posLower.startsWith('n.') || posLower.includes('noun')) posGuess = 'noun';
       else if (posLower.includes('adj')) posGuess = 'adjective';
-    } else if (dictEntry?.c) {
+    } else if (posGuess === 'other' && dictEntry?.c) {
       const cLower = dictEntry.c.toLowerCase();
       if (cLower.startsWith('v.')) posGuess = 'verb';
       else if (cLower.startsWith('n.')) posGuess = 'noun';
       else if (cLower.includes('adj')) posGuess = 'adjective';
+    }
+    
+    // Also check D1 inflections for POS hints
+    if (posGuess === 'other' && d1Inflections.length > 0) {
+      const posCounts = { verb: 0, noun: 0, adjective: 0 };
+      for (const infl of d1Inflections) {
+        if (infl.pos === 'verb') posCounts.verb++;
+        else if (infl.pos === 'noun') posCounts.noun++;
+        else if (infl.pos === 'adjective') posCounts.adjective++;
+      }
+      const maxCount = Math.max(posCounts.verb, posCounts.noun, posCounts.adjective);
+      if (maxCount > 0) {
+        if (posCounts.verb === maxCount) posGuess = 'verb';
+        else if (posCounts.noun === maxCount) posGuess = 'noun';
+        else if (posCounts.adjective === maxCount) posGuess = 'adjective';
+      }
     }
 
     console.log(`🔍 POS guess: ${posGuess}`);
