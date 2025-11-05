@@ -195,11 +195,12 @@ function matchesAspect(label: string, aspect: VerbFilterAspect): boolean {
 }
 
 function matchesPersonMulti(label: string, persons: string[]): boolean {
-  if (persons.includes('all') || persons.length === 0) return true;
+  // Filter out 'all' - if only 'all' remains or array is empty, return true
+  const personValues = persons.filter(p => p !== 'all');
+  if (personValues.length === 0) return true;
   
   // Check if label matches any of the selected persons
-  return persons.some(person => {
-    if (person === 'all') return true;
+  return personValues.some(person => {
     const patterns = PERSON_PATTERNS[person as VerbFilterPerson];
     if (!patterns?.length) return true;
     return patterns.some((pattern) => label.toLowerCase().includes(pattern.toLowerCase()));
@@ -242,28 +243,33 @@ function filterVerbVariantsMulti(
     const label = normalizeLabel(variant.label);
     
     // Check person filter (multi-select)
-    const personMatch = matchesPersonMulti(label, multiFilters.person);
+    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
+    const personValues = multiFilters.person.filter(p => p !== 'all');
+    const personMatch = personValues.length === 0 || matchesPersonMulti(label, multiFilters.person);
     
     // Check tense filter (multi-select)
-    const tenseMatch = multiFilters.tense.includes('all') || multiFilters.tense.length === 0 ||
-      multiFilters.tense.some(t => {
-        if (t === 'all') return true;
+    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
+    const tenseValues = multiFilters.tense.filter(t => t !== 'all');
+    const tenseMatch = tenseValues.length === 0 ||
+      tenseValues.some(t => {
         const matcher = TENSE_MATCHERS[t as VerbFilterTense];
         return matcher ? matcher(label) : false;
       });
     
     // Check aspect filter (multi-select)
-    const aspectMatch = multiFilters.aspect.includes('all') || multiFilters.aspect.length === 0 ||
-      multiFilters.aspect.some(a => {
-        if (a === 'all') return true;
+    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
+    const aspectValues = multiFilters.aspect.filter(a => a !== 'all');
+    const aspectMatch = aspectValues.length === 0 ||
+      aspectValues.some(a => {
         const matcher = ASPECT_MATCHERS[a as VerbFilterAspect];
         return matcher ? matcher(label) : false;
       });
     
     // Check mood filter (multi-select)
-    const moodMatch = multiFilters.mood.includes('all') || multiFilters.mood.length === 0 ||
-      multiFilters.mood.some(m => {
-        if (m === 'all') return true;
+    // If "all" is selected AND it's the only value, match all; otherwise filter by specific values
+    const moodValues = multiFilters.mood.filter(m => m !== 'all');
+    const moodMatch = moodValues.length === 0 ||
+      moodValues.some(m => {
         const matcher = MOOD_MATCHERS[m as VerbFilterMood];
         return matcher ? matcher(label) : false;
       });
