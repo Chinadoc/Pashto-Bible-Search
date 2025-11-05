@@ -36,12 +36,13 @@ export async function GET(request: NextRequest) {
     // If it's a noun or adjective, check for compound verbs
     if (pos === 'noun' || pos === 'adjective' || !pos) {
       // Check verbs_lexicon for compound verbs containing this word
-      const compoundVerbs = await db.query<{ verb_root: string; conjugation_pattern?: string }>(
-        `SELECT DISTINCT verb_root, conjugation_pattern 
+      // Compound verbs are stored as "NOUN/ADJ VERB" in verb_root
+      const compoundVerbs = await db.query<{ verb_root: string; verb_type?: string; complement?: string }>(
+        `SELECT DISTINCT verb_root, verb_type, complement
         FROM verbs_lexicon 
-        WHERE verb_root LIKE ? OR verb_root LIKE ?
+        WHERE verb_root LIKE ? OR verb_root LIKE ? OR complement = ?
         LIMIT 20`,
-        [`%${word} %`, `% ${word}%`]
+        [`%${word} %`, `% ${word}%`, word]
       );
 
       if (Array.isArray(compoundVerbs) && compoundVerbs.length > 0) {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Check inflections table for compound verbs
+      // Check inflections table for compound verbs (base_word contains space = compound)
       const compoundInflections = await db.query<{ base_word: string }>(
         `SELECT DISTINCT base_word 
         FROM inflections 
@@ -99,13 +100,14 @@ export async function GET(request: NextRequest) {
     // If it's an adjective, check for stative compounds
     if (pos === 'adjective' || (!pos && word.length < 10)) {
       // Check for stative compounds (adjective + کېدل/کول)
-      const stativeVerbs = await db.query<{ verb_root: string }>(
-        `SELECT DISTINCT verb_root 
+      // Stative compounds have verb_type = 'stative compound' or complement ending with کېدل/کول
+      const stativeVerbs = await db.query<{ verb_root: string; verb_type?: string }>(
+        `SELECT DISTINCT verb_root, verb_type 
         FROM verbs_lexicon 
-        WHERE (verb_root LIKE ? OR verb_root LIKE ?)
+        WHERE verb_root LIKE ? 
         AND (verb_root LIKE '%کېدل' OR verb_root LIKE '%کول')
         LIMIT 10`,
-        [`${word} %`, `${word} %`]
+        [`${word} %`]
       );
 
       if (Array.isArray(stativeVerbs) && stativeVerbs.length > 0) {
