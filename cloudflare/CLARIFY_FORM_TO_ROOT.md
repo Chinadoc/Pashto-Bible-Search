@@ -58,3 +58,5 @@ The `form_to_root` table maps inflected word forms to their base/root words. It'
 - `inflect_adjective()` should generate both masculine and feminine forms
 - Compound verbs need to check adjective gender agreement
 
+
+

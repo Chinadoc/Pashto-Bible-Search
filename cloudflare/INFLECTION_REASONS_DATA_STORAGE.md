@@ -204,3 +204,5 @@ These indexes allow fast queries like:
 This architecture allows comprehensive analysis of Pashto inflection patterns across the entire Bible corpus.
 
 
+
+

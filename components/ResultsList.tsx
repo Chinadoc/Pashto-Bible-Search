@@ -919,13 +919,41 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       )}
 
       <div className="mb-4 flex flex-col gap-2">
-        {/* Search term and dictionary info */}
+        {/* Search term and dictionary info - Full format: "وهل - wahúl v. trans. to hit, strike" */}
         {((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
           <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
             <span className="font-medium">Showing results for </span>
-            {dictionaryData?.entries?.[0] ? (
+            {/* Show filtered form if filters are active, otherwise show dictionary/base form */}
+            {activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
+              // Show filtered forms when filters are active (limited to 10 to avoid clutter)
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {dictionaryData.entries[0].pashto}
+                {activeVariantForms.slice(0, 3).map((form, idx) => (
+                  <React.Fragment key={form}>
+                    <a 
+                      href={`/lexicon?q=${encodeURIComponent(form)}`}
+                      className="hover:underline"
+                      title="View in dictionary"
+                    >
+                      {form}
+                    </a>
+                    {idx < Math.min(activeVariantForms.length, 3) - 1 && <span className="mx-1">, </span>}
+                  </React.Fragment>
+                ))}
+                {activeVariantForms.length > 3 && (
+                  <span className="text-gray-500 dark:text-gray-400 ml-1">
+                    {' '}and {activeVariantForms.length - 3} more
+                  </span>
+                )}
+              </span>
+            ) : dictionaryData?.entries?.[0] ? (
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                <a 
+                  href={`/lexicon?q=${encodeURIComponent(dictionaryData.entries[0].pashto)}`}
+                  className="hover:underline"
+                  title="View in dictionary"
+                >
+                  {dictionaryData.entries[0].pashto}
+                </a>
                 {dictionaryData.entries[0].romanized && (
                   <> - {dictionaryData.entries[0].romanized}</>
                 )}
@@ -942,7 +970,13 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </span>
             ) : processed?.normalized ? (
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {processed.normalized}
+                <a 
+                  href={`/lexicon?q=${encodeURIComponent(processed.normalized)}`}
+                  className="hover:underline"
+                  title="View in dictionary"
+                >
+                  {processed.normalized}
+                </a>
                 {processed.romanization && (
                   <> - {processed.romanization}</>
                 )}
@@ -952,65 +986,6 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                   </span>
                 )}
               </span>
-            ) : null}
-          </div>
-        )}
-        
-        {/* Active filters */}
-        {hasActiveFilters && (
-          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-            <span className="font-medium">Active filters: </span>
-            {multiVerbFilters ? (
-              <>
-                {multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? (
-                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-700 dark:text-blue-300">
-                    {multiVerbFilters.person.filter(p => p !== 'all').map(p => {
-                      if (p === '1st') return '1st person';
-                      if (p === '2nd') return '2nd person';
-                      if (p === '3rd') return '3rd person';
-                      return p;
-                    }).join(', ')}
-                  </span>
-                ) : null}
-                {multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? (
-                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-700 dark:text-purple-300">
-                    {multiVerbFilters.tense.filter(t => t !== 'all').join(', ')}
-                  </span>
-                ) : null}
-                {multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? (
-                  <span className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">
-                    {multiVerbFilters.aspect.filter(a => a !== 'all').join(', ')}
-                  </span>
-                ) : null}
-                {multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? (
-                  <span className="ml-1 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 rounded text-orange-700 dark:text-orange-300">
-                    {multiVerbFilters.mood.filter(m => m !== 'all').join(', ')}
-                  </span>
-                ) : null}
-              </>
-            ) : verbFilters ? (
-              <>
-                {verbFilters.person !== 'all' && (
-                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-700 dark:text-blue-300">
-                    {verbFilters.person === '1st' ? '1st person' : verbFilters.person === '2nd' ? '2nd person' : '3rd person'}
-                  </span>
-                )}
-                {verbFilters.tense !== 'all' && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-700 dark:text-purple-300">
-                    {verbFilters.tense}
-                  </span>
-                )}
-                {verbFilters.aspect !== 'all' && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">
-                    {verbFilters.aspect}
-                  </span>
-                )}
-                {verbFilters.mood !== 'all' && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 rounded text-orange-700 dark:text-orange-300">
-                    {verbFilters.mood}
-                  </span>
-                )}
-              </>
             ) : null}
           </div>
         )}

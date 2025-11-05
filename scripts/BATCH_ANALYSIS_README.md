@@ -163,3 +163,5 @@ The search API (`app/api/search_phrase/route.ts`) automatically uses pre-compute
 
 No changes needed to frontend - it automatically benefits from faster lookups!
 
+
+

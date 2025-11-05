@@ -185,12 +185,14 @@ export default function RelatedForms({
 }) {
   // ✅ Always call hooks first, before any conditional returns
   const [open, setOpen] = useState<boolean>(false)
+  const [inflectionFilter, setInflectionFilter] = useState<string>('all')
 
   // Debug logging to see what data we're receiving (moved to useEffect to avoid render issues)
   useEffect(() => {
     console.log('RelatedForms received data:', {
       total: relatedForms.total,
       verbsCount: relatedForms.verbs?.length || 0,
+      nounsCount: relatedForms.nouns?.length || 0,
       hasVariantDetails: !!relatedForms.variantDetails,
       variantDetailsLength: relatedForms.variantDetails?.length || 0,
       variantDetails: relatedForms.variantDetails
@@ -199,6 +201,46 @@ export default function RelatedForms({
 
   // Show the interface even if no forms found yet, to allow user to see the controls
   const hasAnyForms = (relatedForms.total ?? 0) > 0
+
+  // Filter nouns by inflection type
+  const filteredNouns = useMemo(() => {
+    if (!relatedForms.nouns || relatedForms.nouns.length === 0) return []
+    if (inflectionFilter === 'all') return relatedForms.nouns
+    
+    return relatedForms.nouns.filter((noun: any) => {
+      const inflectionType = (noun as any).inflectionType || 'other'
+      return inflectionType === inflectionFilter
+    })
+  }, [relatedForms.nouns, inflectionFilter])
+
+  // Get available inflection types from nouns
+  const availableInflectionTypes = useMemo(() => {
+    if (!relatedForms.nouns || relatedForms.nouns.length === 0) return []
+    const types = new Set<string>()
+    relatedForms.nouns.forEach((noun: any) => {
+      const inflectionType = (noun as any).inflectionType || 'other'
+      types.add(inflectionType)
+    })
+    return Array.from(types).sort()
+  }, [relatedForms.nouns])
+
+  // Map inflection types to user-friendly labels
+  const inflectionTypeLabels: Record<string, string> = {
+    'plain': 'Plain / Base Form',
+    '1st_m': '1st Inflection (Masculine)',
+    '1st_f': '1st Inflection (Feminine)',
+    '1st_f_stressed': '1st Inflection (Feminine Stressed)',
+    '2nd': '2nd Inflection',
+    'vocative_m': 'Vocative (Masculine)',
+    'vocative_f': 'Vocative (Feminine)',
+    'plural_m': 'Plural (Masculine)',
+    'plural_f': 'Plural (Feminine)',
+    'plural_2nd_m': 'Plural 2nd Inflection (Masculine)',
+    'plural_2nd': 'Plural 2nd Inflection',
+    'plural_inanimate': 'Plural (Inanimate)',
+    'plural_inanimate_2nd': 'Plural 2nd Inflection (Inanimate)',
+    'other': 'Other'
+  }
 
   // Use structured data from Edge function if available, otherwise fall back to legacy data
   const hasStructuredData = relatedForms.variantDetails && relatedForms.variantDetails.length > 0;
@@ -293,14 +335,94 @@ export default function RelatedForms({
   if (!relatedForms) return null
 
   const Section = ({ title, list }: { title: string; list: Array<RelatedFormVariant> }) => {
-    // Group by person for better organization
+    // Group by person for verbs, or by inflection type for nouns
     const groupedByPerson = list.reduce((acc, item) => {
-      const personMatch = item.label?.match(/(\d+)\s*(sg|pl|SG|PL)/i);
-      const person = personMatch ? (personMatch[2].toLowerCase() === 'pl' ? 'plural' : 'singular') : 'other';
-      if (!acc[person]) acc[person] = [];
-      acc[person].push(item);
+      // For verbs, group by person
+      if (item.pos === 'verb' || item.label) {
+        const personMatch = item.label?.match(/(\d+)\s*(sg|pl|SG|PL)/i);
+        const person = personMatch ? (personMatch[2].toLowerCase() === 'pl' ? 'plural' : 'singular') : 'other';
+        if (!acc[person]) acc[person] = [];
+        acc[person].push(item);
+      } else {
+        // For nouns, group by inflection type if available
+        const inflectionType = (item as any).inflectionType || 'other'
+        const typeLabel = inflectionTypeLabels[inflectionType] || inflectionType
+        if (!acc[typeLabel]) acc[typeLabel] = [];
+        acc[typeLabel].push(item);
+      }
       return acc;
     }, {} as Record<string, typeof list>);
+
+    // Function to parse highlighted context and render with colors
+    function renderHighlightedContext(highlightedContext?: string, pattern?: string) {
+      if (!highlightedContext) return null
+      
+      // Parse the bracket notation: [text] indicates highlighted parts
+      const parts: Array<{ text: string; highlighted: boolean; type?: 'pre' | 'form' | 'post' }> = []
+      let current = ''
+      let inBracket = false
+      
+      for (let i = 0; i < highlightedContext.length; i++) {
+        const char = highlightedContext[i]
+        if (char === '[') {
+          if (current) {
+            parts.push({ text: current, highlighted: false })
+            current = ''
+          }
+          inBracket = true
+        } else if (char === ']') {
+          if (current) {
+            // Determine type based on position and pattern
+            let type: 'pre' | 'form' | 'post' = 'form'
+            if (pattern && pattern.includes('...')) {
+              const [leftPart] = pattern.split('...')
+              if (current.includes(leftPart)) type = 'pre'
+              else if (parts.length === 0 || parts[parts.length - 1].type === 'pre') type = 'form'
+              else type = 'post'
+            } else if (pattern) {
+              type = 'pre'
+            } else {
+              type = 'form'
+            }
+            parts.push({ text: current, highlighted: true, type })
+            current = ''
+          }
+          inBracket = false
+        } else {
+          current += char
+        }
+      }
+      
+      if (current) {
+        parts.push({ text: current, highlighted: false })
+      }
+      
+      return (
+        <div className="text-xs font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700 mt-1">
+          {parts.map((part, idx) => {
+            if (!part.highlighted) {
+              return <span key={idx}>{part.text}</span>
+            }
+            
+            // Color based on type
+            const colors = {
+              pre: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700',
+              form: 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 font-semibold',
+              post: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700'
+            }
+            
+            return (
+              <span
+                key={idx}
+                className={`px-1 py-0.5 rounded ${colors[part.type || 'form']}`}
+              >
+                {part.text}
+              </span>
+            )
+          })}
+        </div>
+      )
+    }
 
     return (
       <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -309,23 +431,89 @@ export default function RelatedForms({
           {title} ({list.length})
         </div>
         <div className="space-y-2">
-          {Object.entries(groupedByPerson).map(([person, items]) => (
-            <div key={person}>
+          {Object.entries(groupedByPerson).map(([group, items]) => (
+            <div key={group}>
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 capitalize font-medium">
-                {person} ({items.length})
+                {group} ({items.length})
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {items.map(({ form, count, label }, idx) => (
-                  <button
-                    key={`${title}-${form}-${idx}`}
-                    onClick={() => onPick(form)}
-                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs transition-colors"
-                    title={`Click to search for: ${form}${label ? ` (${label})` : ''}`}
-                  >
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{form}</span>
-                    {(count || 0) > 0 && <span className="ml-1 text-xs opacity-70 text-gray-600 dark:text-gray-400">({count})</span>}
-                  </button>
-                ))}
+                {items.map(({ form, count, label, inflectionType, inflectionReasons }, idx) => {
+                  const inflectionTypeLabel = inflectionType && inflectionTypeLabels[inflectionType] 
+                    ? ` • ${inflectionTypeLabels[inflectionType]}` 
+                    : ''
+                  
+                  // Build inflection reasons tooltip
+                  const reasonsText: string[] = []
+                  if (inflectionReasons) {
+                    if (inflectionReasons.plural > 0) {
+                      reasonsText.push(`${inflectionReasons.plural}x plural`)
+                    }
+                    if (inflectionReasons.sandwich > 0) {
+                      const sandwichTypes = inflectionReasons.sandwich_types.length > 0 
+                        ? ` (${inflectionReasons.sandwich_types.join(', ')})` 
+                        : ''
+                      reasonsText.push(`${inflectionReasons.sandwich}x sandwich${sandwichTypes}`)
+                    }
+                    if (inflectionReasons.transitive_past > 0) {
+                      reasonsText.push(`${inflectionReasons.transitive_past}x transitive past subject`)
+                    }
+                  }
+                  const reasonsTooltip = reasonsText.length > 0 ? ` | Reasons: ${reasonsText.join(', ')}` : ''
+                  
+                  // Get example for this form (prefer sandwich examples for 2nd inflection)
+                  const hasExamples = inflectionReasons?.examples && inflectionReasons.examples.length > 0
+                  const primaryExample = inflectionReasons?.examples?.[0]
+                  const is2ndInflection = inflectionType === '2nd' || inflectionType === 'plural_2nd' || inflectionType === 'plural_2nd_m'
+                  
+                  return (
+                    <div key={`${title}-${form}-${idx}`} className="relative group">
+                      <button
+                        onClick={() => onPick(form)}
+                        className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs transition-colors relative"
+                        title={`Click to search for: ${form}${label ? ` (${label})` : ''}${inflectionTypeLabel}${reasonsTooltip}`}
+                      >
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{form}</span>
+                        {(count || 0) > 0 && <span className="ml-1 text-xs opacity-70 text-gray-600 dark:text-gray-400">({count})</span>}
+                        {inflectionType && inflectionType !== 'other' && (
+                          <span className="ml-1 text-xs opacity-50 text-gray-500 dark:text-gray-400 italic">
+                            {inflectionTypeLabels[inflectionType]?.split('(')[0].trim()}
+                          </span>
+                        )}
+                        {inflectionReasons && (inflectionReasons.plural > 0 || inflectionReasons.sandwich > 0 || inflectionReasons.transitive_past > 0) && (
+                          <span className="ml-1 text-xs opacity-60" title={reasonsText.join(', ')}>
+                            {inflectionReasons.plural > 0 && <span className="inline-flex items-center px-1 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-medium mr-0.5">🔢 {inflectionReasons.plural}</span>}
+                            {inflectionReasons.sandwich > 0 && <span className="inline-flex items-center px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-medium mr-0.5">🥪 {inflectionReasons.sandwich}</span>}
+                            {inflectionReasons.transitive_past > 0 && <span className="inline-flex items-center px-1 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[10px] font-medium mr-0.5">⚡ {inflectionReasons.transitive_past}</span>}
+                          </span>
+                        )}
+                      </button>
+                      
+                      {/* Show example context on hover for 2nd inflection or when examples available */}
+                      {(is2ndInflection || hasExamples) && primaryExample && (
+                        <div className="absolute z-50 hidden group-hover:block mt-1 w-80 bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            {primaryExample.verse_ref}
+                            {primaryExample.reason === 'plural' && (
+                              <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px]">Plural</span>
+                            )}
+                            {primaryExample.reason === 'sandwich' && primaryExample.pattern && (
+                              <span className="ml-2 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px]">Sandwich: {primaryExample.pattern}</span>
+                            )}
+                            {primaryExample.reason === 'transitive_past' && (
+                              <span className="ml-2 px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[10px]">Transitive Past</span>
+                            )}
+                          </div>
+                          {renderHighlightedContext(primaryExample.highlighted_context, primaryExample.pattern)}
+                          {primaryExample.text && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic line-clamp-2">
+                              {primaryExample.text.substring(0, 100)}...
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -451,7 +639,36 @@ export default function RelatedForms({
               )}
 
               {/* Other forms */}
-              {relatedForms.nouns?.length && <Section title="Nouns" list={relatedForms.nouns} />}
+              {relatedForms.nouns?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Noun/Adjective Inflections ({filteredNouns.length} forms)
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                        🔢 Plural • 🥪 Sandwich • ⚡ Transitive Past
+                      </span>
+                    </div>
+                    {availableInflectionTypes.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Filter by inflection:</label>
+                        <select
+                          value={inflectionFilter}
+                          onChange={(e) => setInflectionFilter(e.target.value)}
+                          className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Inflections ({relatedForms.nouns.length})</option>
+                          {availableInflectionTypes.map(type => (
+                            <option key={type} value={type}>
+                              {inflectionTypeLabels[type] || type} ({relatedForms.nouns.filter((n: any) => ((n as any).inflectionType || 'other') === type).length})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  <Section title={inflectionFilter === 'all' ? 'All Inflections' : inflectionTypeLabels[inflectionFilter] || inflectionFilter} list={filteredNouns} />
+                </div>
+              )}
               {relatedForms.other?.length && <Section title="Other" list={relatedForms.other} />}
             </>
           ) : (

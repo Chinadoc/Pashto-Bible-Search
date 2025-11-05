@@ -571,54 +571,6 @@ function SearchControls({
           🔄 Audio
         </button>
 
-        {/* Conjugation Filters (for verbs) */}
-        {includeRelated && verbFilters && setVerbFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-            <span className="text-xs font-semibold text-blue-800 dark:text-blue-200">Verb Filters:</span>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Tense:</label>
-              <select
-                value={verbFilters.tense}
-                onChange={(e) => setVerbFilters({ ...verbFilters, tense: e.target.value as VerbFilterTense })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="present">Present</option>
-                <option value="past">Past</option>
-                <option value="subjunctive">Subjunctive</option>
-                <option value="perfect">Perfect</option>
-                <option value="future">Future</option>
-                <option value="imperative">Imperative</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Aspect:</label>
-              <select
-                value={verbFilters.aspect}
-                onChange={(e) => setVerbFilters({ ...verbFilters, aspect: e.target.value as VerbFilterAspect })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="imperfective">Imperfective</option>
-                <option value="perfective">Perfective</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Mood:</label>
-              <select
-                value={verbFilters.mood}
-                onChange={(e) => setVerbFilters({ ...verbFilters, mood: e.target.value as VerbFilterMood })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="indicative">Indicative</option>
-                <option value="subjunctive">Subjunctive</option>
-                <option value="imperative">Imperative</option>
-              </select>
-            </div>
-          </div>
-        )}
-
         {/* Inflection Filters (for nouns/adjectives) */}
         {includeRelated && nounFilters && setNounFilters && (
           <div className="flex flex-wrap items-center gap-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800">
@@ -737,13 +689,13 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
   );
 }
 
-export default function ClientHome() {
+export default function ClientHome({ initialQuery }: { initialQuery?: string } = {}) {
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
   const [hasMoreResults, setHasMoreResults] = useState(false);
   const [dictionaryData, setDictionaryData] = useState<{
-    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null }>;
+    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null; ts?: number | null }>;
     groupedByPos: Record<string, any[]>;
     needsDisambiguation: boolean;
   } | undefined>();
@@ -822,7 +774,7 @@ export default function ClientHome() {
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
-  const [query, setQuery] = useState<string>('');
+  const [query, setQuery] = useState<string>(initialQuery || '');
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
   const translationEffectGuard = useRef<boolean>(true);
@@ -1455,39 +1407,25 @@ export default function ClientHome() {
         return;
       }
 
-    // Always do client-side filtering when we have existing results
-    // This prevents triggering new searches when filters change
-    if (results && results.length > 0) {
-      console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
-
-      // Use debounced filtering for better performance
-      debouncedFilter(results, forms);
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-    } else {
-      // No existing results - need to restore original results
-      console.log('🔄 No existing results, restoring original search results');
-
-      // If filters are reset to "All", restore original results from the last successful search
+      // Always trigger a new search with filtered forms (not just client-side filtering)
+      // This ensures we search for the actual filtered forms like "وهم" when Present tense is selected
+      console.log('🔄 Verb filter applied, searching for', forms.length, 'filtered forms:', forms.slice(0, 5));
+      
       if (isDefaultVerbFilter(sanitized)) {
-        console.log('🔄 Filters reset to "All", restoring original results');
-        // Clear variant override to show all original forms
+        // Filters reset to "All" - restore original search
+        console.log('🔄 Filters reset to "All", restoring original search');
         setVariantsOverride(null);
         setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-
-        // Re-run the original search to restore results
         executeSearch({ preserveResults: false, reason: 'filter-reset' });
       } else {
-        // Specific filters applied but no results - trigger search with filtered forms
-        console.log('🔄 Specific filters applied, triggering search with filtered forms');
+        // Specific filters applied - search with filtered forms
         variantKeyRef.current = forms.join('|');
         setVariantsOverride(forms);
         setActiveVariantForms(forms);
         executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
       }
-    }
     }, 200), // 200ms debounce for filter changes
-    [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]
+    [includeRelated, relatedForms, query, isDefaultVerbFilter, executeSearch, setVariantsOverride, setActiveVariantForms]
   );
 
   const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
@@ -2537,10 +2475,13 @@ export default function ClientHome() {
       {/* Lexicon Tab */}
       {activeMainTab === 'lexicon' && (
         <div className="w-full">
-          <LexiconPanel onPickForm={(form) => {
-            setQuery(form);
-            router.push('/search');
-          }} />
+          <LexiconPanel 
+            onPickForm={(form) => {
+              setQuery(form);
+              router.push('/search');
+            }}
+            queryProp={initialQuery || query}
+          />
         </div>
       )}
 

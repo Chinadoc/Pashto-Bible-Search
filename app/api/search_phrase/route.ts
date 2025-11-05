@@ -2093,8 +2093,8 @@ export async function POST(request: NextRequest) {
     if (!PASHTO_CHAR_RE.test(originalTerm) && originalTerm.length > 2) {
       try {
         // Try romanized lookup first
-        const dictData = await db.query<{ word: string; pos: string; romanization: string; definition: string }>(
-          `SELECT word, pos, romanization, definition FROM dictionary WHERE romanization LIKE ? OR romanization LIKE ? OR romanization LIKE ? LIMIT 5`,
+        const dictData = await db.query<{ word: string; pos: string; romanization: string; definition: string; ts: number }>(
+          `SELECT word, pos, romanization, definition, ts FROM dictionary WHERE romanization LIKE ? OR romanization LIKE ? OR romanization LIKE ? LIMIT 5`,
           [`${originalTerm}%`, `%${originalTerm}%`, `%${originalTerm}`]
         );
         if (Array.isArray(dictData)) {
@@ -2109,8 +2109,8 @@ export async function POST(request: NextRequest) {
         
         // Also try English lookup (check definition field for English translations)
         if (!variantCollector.list().some((form) => PASHTO_CHAR_RE.test(form))) {
-          const englishDictData = await db.query<{ word: string; pos: string; romanization: string; definition: string }>(
-            `SELECT word, pos, romanization, definition FROM dictionary WHERE definition LIKE ? OR definition LIKE ? LIMIT 5`,
+          const englishDictData = await db.query<{ word: string; pos: string; romanization: string; definition: string; ts: number }>(
+            `SELECT word, pos, romanization, definition, ts FROM dictionary WHERE definition LIKE ? OR definition LIKE ? LIMIT 5`,
             [`%${originalTerm}%`, `%${originalTerm.toLowerCase()}%`]
           );
           if (Array.isArray(englishDictData)) {
@@ -2167,8 +2167,8 @@ export async function POST(request: NextRequest) {
       }
     } else {
       try {
-        const dictRows = await db.query<{ word: string; pos: string; romanization: string }>(
-          `SELECT word, pos, romanization FROM dictionary WHERE word = ? LIMIT 1`,
+          const dictRows = await db.query<{ word: string; pos: string; romanization: string; definition: string; ts: number }>(
+          `SELECT word, pos, romanization, definition, ts FROM dictionary WHERE word = ? LIMIT 1`,
           [originalTerm]
         );
         if (Array.isArray(dictRows) && dictRows.length > 0) {
@@ -3213,10 +3213,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Build dictionary data for the primary term
+    let dictionaryData: {
+      entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null; ts?: number | null }>;
+      groupedByPos: Record<string, any[]>;
+      needsDisambiguation: boolean;
+    } | undefined = undefined;
+
+    try {
+      const dictEntry = await db.queryFirst<{ word: string; pos: string; romanization: string; definition: string; ts: number | null }>(
+        `SELECT word, pos, romanization, definition, ts FROM dictionary WHERE word = ? LIMIT 1`,
+        [primaryTerm]
+      );
+
+      if (dictEntry && dictEntry.word) {
+        dictionaryData = {
+          entries: [{
+            pashto: dictEntry.word,
+            romanized: dictEntry.romanization || null,
+            pos: dictEntry.pos || null,
+            english: dictEntry.definition || null,
+            ts: dictEntry.ts || null
+          }],
+          groupedByPos: {},
+          needsDisambiguation: false
+        };
+      }
+    } catch (error) {
+      console.warn('Error fetching dictionary data:', error);
+    }
+
     const payload = {
       results: uniqueResults,
       coverage,
       relatedForms,
+      dictionary: dictionaryData,
       processed: {
         original: originalTerm,
         normalized: originalTerm,

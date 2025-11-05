@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS dictionary (
   romanization TEXT,
   frequency INTEGER DEFAULT 0,
   examples TEXT, -- JSON string
-  enriched_info TEXT, -- JSON string with additional metadata
+  enriched_info TEXT, -- JSON string with additional metadata (includes ts, r, g, etc.)
+  ts INTEGER, -- LingDocs timestamp (for linking to original entry)
   translation_key TEXT, -- Which translation this dictionary entry applies to
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
   updated_at INTEGER DEFAULT (strftime('%s', 'now'))
@@ -77,6 +78,7 @@ CREATE TABLE IF NOT EXISTS dictionary (
 CREATE INDEX IF NOT EXISTS idx_dictionary_word ON dictionary (word);
 CREATE INDEX IF NOT EXISTS idx_dictionary_pos ON dictionary (pos);
 CREATE INDEX IF NOT EXISTS idx_dictionary_translation ON dictionary (translation_key);
+CREATE INDEX IF NOT EXISTS idx_dictionary_ts ON dictionary (ts);
 
 -- ========================================
 -- 4. FORM OCCURRENCE INDEX
@@ -95,6 +97,20 @@ CREATE TABLE IF NOT EXISTS form_occurrences (
 CREATE INDEX IF NOT EXISTS idx_form_occurrences_form ON form_occurrences (pashto_form);
 CREATE INDEX IF NOT EXISTS idx_form_occurrences_frequency ON form_occurrences (frequency DESC);
 CREATE INDEX IF NOT EXISTS idx_form_occurrences_translation ON form_occurrences (translation_key);
+
+-- ========================================
+-- DICTIONARY METADATA TABLE (for tracking updates)
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS dictionary_metadata (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  release_timestamp INTEGER NOT NULL UNIQUE, -- LingDocs release timestamp
+  entry_count INTEGER DEFAULT 0,
+  updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+  created_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_dictionary_metadata_timestamp ON dictionary_metadata (release_timestamp DESC);
 
 -- ========================================
 -- INFLECTION REASONS ANALYSIS

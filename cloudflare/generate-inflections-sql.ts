@@ -1,10 +1,13 @@
 /**
- * Simple SQL Generator for Inflections Migration
+ * Generate SQL to populate inflections table
  * 
- * Generates SQL file that can be executed with wrangler d1 execute
+ * Reads app/data/inflections_cache.json and generates SQL INSERT statements
+ * to populate the inflections table in D1.
+ * 
+ * Usage: npx tsx cloudflare/generate-inflections-sql.ts > cloudflare/populate-inflections.sql
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 
 interface InflectionEntry {
@@ -22,25 +25,25 @@ function escapeSql(str: string): string {
   return str.replace(/'/g, "''");
 }
 
-function main() {
+function generateInflectionsSQL(): string {
   const cachePath = join(process.cwd(), 'app/data/inflections_cache.json');
-  const sqlPath = join(process.cwd(), '.temp-inflections-migration.sql');
+  // Use stderr for logging, stdout will be pure SQL
+  process.stderr.write(`📖 Loading inflections cache from: ${cachePath}\n`);
   
-  console.log('📖 Loading inflections cache...');
   const cacheContent = readFileSync(cachePath, 'utf-8');
   const cache: InflectionsCache = JSON.parse(cacheContent);
   
-  console.log(`✅ Loaded ${Object.keys(cache).length} base words`);
+  process.stderr.write(`✅ Loaded ${Object.keys(cache).length} base words\n`);
   
   const sql: string[] = [];
-  sql.push('-- Inflections Migration');
-  sql.push('-- Generated from inflections_cache.json');
+  sql.push('-- Populate inflections table from inflections_cache.json');
+  sql.push('-- Generated automatically - do not edit manually');
   sql.push('');
-  sql.push('BEGIN TRANSACTION;');
-  sql.push('');
+  // Note: D1 handles transactions automatically, no BEGIN/COMMIT needed
   
   let totalInflections = 0;
-  const batchSize = 5000;
+  let batchCount = 0;
+  const batchSize = 500;
   
   for (const [baseWord, inflections] of Object.entries(cache)) {
     if (!Array.isArray(inflections) || inflections.length === 0) continue;
@@ -48,49 +51,50 @@ function main() {
     for (const inflection of inflections) {
       if (!inflection.form || inflection.form === baseWord) continue;
       
-      totalInflections++;
-      
+      const base = escapeSql(baseWord);
+      const form = escapeSql(inflection.form);
       const grammaticalInfo = JSON.stringify({
         category: inflection.category || 'unknown',
         label: inflection.label || inflection.category || 'unknown',
         pos: inflection.pos || inflection.category || 'unknown',
         romanization: inflection.romanization || null,
-      });
+      }).replace(/'/g, "''");
       
+      const frequency = inflection.frequency || 0;
       const examples = inflection.romanization 
-        ? JSON.stringify([{ romanization: inflection.romanization }])
-        : null;
+        ? JSON.stringify([{ romanization: inflection.romanization }]).replace(/'/g, "''")
+        : '[]';
       
       sql.push(`INSERT OR IGNORE INTO inflections (base_word, inflected_form, grammatical_info, frequency, examples)`);
-      sql.push(`VALUES ('${escapeSql(baseWord)}', '${escapeSql(inflection.form)}', '${escapeSql(grammaticalInfo)}', ${inflection.frequency || 0}, ${examples ? `'${escapeSql(examples)}'` : 'NULL'});`);
+      sql.push(`VALUES ('${base}', '${form}', '${grammaticalInfo}', ${frequency}, '${examples}');`);
       
-      sql.push(`INSERT OR IGNORE INTO form_to_root (word_form, root_word, frequency)`);
-      sql.push(`VALUES ('${escapeSql(inflection.form)}', '${escapeSql(baseWord)}', ${inflection.frequency || 0});`);
+      totalInflections++;
       
+      // Progress indicator
       if (totalInflections % batchSize === 0) {
-        sql.push('');
-        sql.push('COMMIT;');
-        sql.push('BEGIN TRANSACTION;');
-        sql.push('');
-        console.log(`   Prepared ${totalInflections.toLocaleString()} inflections...`);
+        batchCount++;
+        sql.push(`-- Batch ${batchCount}: ${totalInflections} inflections inserted`);
       }
     }
   }
   
   sql.push('');
-  sql.push('COMMIT;');
+  sql.push('-- Populate form_to_root table from inflections');
+  sql.push('INSERT OR IGNORE INTO form_to_root (word_form, root_word, frequency)');
+  sql.push('SELECT inflected_form, base_word, frequency');
+  sql.push('FROM inflections');
+  sql.push('WHERE inflected_form != base_word;');
+  sql.push('');
   
-  console.log(`\n📝 Writing SQL file...`);
-  writeFileSync(sqlPath, sql.join('\n'), 'utf-8');
+  sql.push(`-- Total inflections: ${totalInflections}`);
+  sql.push(`-- Total base words: ${Object.keys(cache).length}`);
   
-  console.log(`✅ SQL file created: ${sqlPath}`);
-  console.log(`\n📊 Statistics:`);
-  console.log(`   Base words: ${Object.keys(cache).length.toLocaleString()}`);
-  console.log(`   Total inflections: ${totalInflections.toLocaleString()}`);
-  console.log(`\n🚀 To execute migration:`);
-  console.log(`   wrangler d1 execute pashto-bible-db --remote --file=${sqlPath}`);
+  process.stderr.write(`\n✅ Generated SQL for ${totalInflections.toLocaleString()} inflections\n`);
+  process.stderr.write(`   From ${Object.keys(cache).length.toLocaleString()} base words\n`);
+  
+  return sql.join('\n');
 }
 
-main();
-
-
+// Generate and output SQL (stdout only, no console.log)
+const sql = generateInflectionsSQL();
+process.stdout.write(sql);

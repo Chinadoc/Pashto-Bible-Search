@@ -65,11 +65,19 @@ export interface RelatedFormVariant {
   score?: number;
   romanized?: string;
   flags?: string[];
+  inflectionType?: string; // e.g., 'plain', '1st_m', '1st_f', '2nd', 'vocative_m', 'plural_m', etc.
   inflectionReasons?: {
     plural: number;
     sandwich: number;
     transitive_past: number;
     sandwich_types: string[];
+    examples?: Array<{
+      verse_ref: string;
+      text: string;
+      reason: 'plural' | 'sandwich' | 'transitive_past';
+      highlighted_context?: string;
+      pattern?: string;
+    }>;
   };
 }
 

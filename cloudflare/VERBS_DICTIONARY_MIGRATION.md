@@ -166,3 +166,5 @@ After migration, the present tense generation script (`generate-present-tense-ve
 - The `irregularity_type` field for irregular verbs indicates the type of irregularity
 
 
+
+

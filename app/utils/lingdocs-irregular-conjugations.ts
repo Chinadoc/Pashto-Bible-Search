@@ -14,12 +14,11 @@
  * - All person/gender/number combinations
  * 
  * Source: https://github.com/lingdocs/pashto-inflector/blob/main/src/lib/src/irregular-conjugations.ts
+ * 
+ * NOTE: This file now uses D1 database instead of Supabase
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { D1Client, getD1Database } from '@/utils/d1';
 
 interface VerbForm {
   verb_root: string;
@@ -29,48 +28,34 @@ interface VerbForm {
 }
 
 /**
- * Get all conjugated forms for an irregular verb from verb_forms table
- * This uses the comprehensive LingDocs conjugation data
- */
-/**
  * Get all conjugated forms for ANY verb from verb_forms table
  * This uses the comprehensive LingDocs conjugation data
  * Works for both irregular and regular verbs if they're in the table
  */
 export async function getIrregularVerbForms(verbRoot: string): Promise<string[]> {
-  if (!supabaseUrl || !supabaseKey) {
+  const d1Db = getD1Database();
+  if (!d1Db) {
     return [];
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const db = new D1Client(d1Db);
     
     // Query verb_forms table for all forms of this verb
     // Increased limit to get all forms (up to 1000 for comprehensive coverage)
-    const { data, error } = await supabase
-      .from('verb_forms')
-      .select('form')
-      .eq('verb_root', verbRoot)
-      .limit(1000);
+    const data = await db.query<{ form: string }>(
+      `SELECT form FROM verb_forms WHERE verb_root = ? LIMIT 1000`,
+      [verbRoot]
+    );
     
-    if (error) {
-      // If table doesn't exist yet, that's okay - return empty array
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.log(`verb_forms table not yet created - run the integration SQL`);
-        return [];
-      }
-      console.warn(`Error fetching verb forms for ${verbRoot}:`, error);
-      return [];
-    }
-    
-    if (Array.isArray(data)) {
+    if (Array.isArray(data) && data.length > 0) {
       const forms = data.map(row => row.form).filter(Boolean);
       return forms;
     }
     
     return [];
   } catch (error) {
-    // If table doesn't exist, that's okay - fallback to pattern generation
+    // If table doesn't exist yet, that's okay - fallback to pattern generation
     console.warn(`Error in getIrregularVerbForms (may be normal if table doesn't exist yet):`, error);
     return [];
   }
@@ -88,30 +73,38 @@ export async function checkIrregularVerb(verbRoot: string): Promise<string[]> {
   }
   
   // Fallback to irregular_verbs table
-  if (!supabaseUrl || !supabaseKey) {
+  const d1Db = getD1Database();
+  if (!d1Db) {
     return [];
   }
   
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const db = new D1Client(d1Db);
     
-    const { data } = await supabase
-      .from('irregular_verbs')
-      .select('verb_root, roots, stems, past_participle')
-      .eq('verb_root', verbRoot)
-      .limit(1);
+    const data = await db.query<{ verb_root: string; roots: string; stems: string; past_participle: string }>(
+      `SELECT verb_root, roots, stems, past_participle FROM irregular_verbs WHERE verb_root = ? LIMIT 1`,
+      [verbRoot]
+    );
     
     if (Array.isArray(data) && data.length > 0) {
       const verb = data[0];
       const forms: string[] = [verbRoot];
       
+      let stems: Record<string, any> | undefined
+      let roots: Record<string, any> | undefined
+      
+      try {
+        stems = typeof verb.stems === 'string' ? JSON.parse(verb.stems) : verb.stems || {};
+        roots = typeof verb.roots === 'string' ? JSON.parse(verb.roots) : verb.roots || {};
+      } catch {}
+      
       // Add stems
-      if (verb.stems?.imperfective) forms.push(verb.stems.imperfective);
-      if (verb.stems?.perfective) forms.push(verb.stems.perfective);
+      if (stems?.imperfective) forms.push(stems.imperfective);
+      if (stems?.perfective) forms.push(stems.perfective);
       
       // Add roots
-      if (verb.roots?.imperfective) forms.push(verb.roots.imperfective);
-      if (verb.roots?.perfective) forms.push(verb.roots.perfective);
+      if (roots?.imperfective) forms.push(roots.imperfective);
+      if (roots?.perfective) forms.push(roots.perfective);
       
       // Add past participle
       if (verb.past_participle) forms.push(verb.past_participle);

@@ -274,3 +274,5 @@ CREATE INDEX idx_inflection_reasons_base ON inflection_reasons_aggregated (base_
 4. **Update Frequency**: How often do verses change? (Determines update strategy)
 5. **Prioritization**: Should we prioritize high-frequency forms first? (Yes - analyze top 10k first, then rest)
 
+
+

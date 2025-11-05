@@ -87,3 +87,5 @@ Once patterns are stored in D1, the `/api/related_forms` endpoint can:
 This ensures consistency with LingDocs and improves inflection accuracy.
 
 
+
+

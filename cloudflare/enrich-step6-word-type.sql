@@ -9,3 +9,5 @@ END
 WHERE word_type IS NULL OR word_type = 'simple';
 
 
+
+
