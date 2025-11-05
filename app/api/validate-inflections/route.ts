@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       grammatical_info: string | null;
       pos: string | null;
       frequency: number;
-      frequency_total: number | null;
+      frequency_count: number | null;
       word_freq_pos: string | null;
       frequency_status: 'found' | 'missing';
     }>(`
@@ -43,15 +43,15 @@ export async function GET(request: NextRequest) {
         i.id,
         i.inflected_form,
         i.grammatical_info,
-        i.pos,
+        COALESCE(i.pos, '') as pos,
         i.frequency as inflection_frequency,
-        wf.frequency_total,
-        wf.pos as word_freq_pos,
+        wf.frequency_count,
+        '' as word_freq_pos,
         CASE WHEN wf.pashto_word IS NULL THEN 'missing' ELSE 'found' END as frequency_status
       FROM inflections i
       LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
       WHERE i.base_word = ?
-      ORDER BY COALESCE(wf.frequency_total, i.frequency, 0) DESC
+      ORDER BY COALESCE(wf.frequency_count, i.frequency, 0) DESC
     `, [baseWord]);
 
     // Count by part of speech
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       if (row.frequency_status === 'found') {
         current.word_freq_count++;
       }
-      current.total_frequency += row.frequency_total || row.frequency || 0;
+      current.total_frequency += row.frequency_count || row.frequency || 0;
       if (!current.forms.includes(row.inflected_form)) {
         current.forms.push(row.inflected_form);
       }
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         inflected_form: row.inflected_form,
         pos: row.pos || row.word_freq_pos || 'unknown',
         inflection_frequency: row.frequency,
-        word_freq_total: row.frequency_total,
+        word_freq_count: row.frequency_count,
         frequency_status: row.frequency_status,
       })),
     });

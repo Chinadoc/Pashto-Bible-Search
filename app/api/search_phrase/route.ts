@@ -1189,7 +1189,7 @@ async function getGrammaticalIndexData(db: D1Client, term: string): Promise<any>
       `SELECT 
         i.inflected_form, 
         i.grammatical_info, 
-        COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+        COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
         COALESCE(i.pos, wf.pos) as pos
       FROM inflections i
       LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -1691,7 +1691,7 @@ async function enrichVariantsFromD1(
             `SELECT 
               i.inflected_form, 
               i.grammatical_info, 
-              COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+              COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
               COALESCE(i.pos, wf.pos) as pos
             FROM inflections i
             LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -1733,7 +1733,7 @@ async function enrichVariantsFromD1(
             `SELECT 
               i.inflected_form, 
               i.grammatical_info, 
-              COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+              COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
               COALESCE(i.pos, wf.pos) as pos
             FROM inflections i
             LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -1860,7 +1860,7 @@ async function enrichVariantsFromD1(
       `SELECT 
         i.inflected_form, 
         i.grammatical_info, 
-        COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+        COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
         i.pos
       FROM inflections i
       LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -2006,7 +2006,7 @@ export async function POST(request: NextRequest) {
             FROM inflections i
             LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
             WHERE i.base_word = ? 
-            ORDER BY COALESCE(wf.frequency_total, i.frequency, 0) DESC 
+            ORDER BY COALESCE(wf.frequency_count, i.frequency, 0) DESC 
             LIMIT 40`,
             [aux]
           );
@@ -2589,7 +2589,7 @@ export async function POST(request: NextRequest) {
               `SELECT 
                 i.inflected_form, 
                 i.grammatical_info, 
-                COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+                COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
                 COALESCE(i.pos, wf.pos) as pos
               FROM inflections i
               LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -2686,7 +2686,7 @@ export async function POST(request: NextRequest) {
                 `SELECT 
                   i.inflected_form, 
                   i.grammatical_info, 
-                  COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+                  COALESCE(wf.frequency_count, i.frequency, 0) as frequency,
                   COALESCE(i.pos, wf.pos) as pos
                 FROM inflections i
                 LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
@@ -2921,21 +2921,21 @@ export async function POST(request: NextRequest) {
           const formsToCheck = includeRelated ? allPossibleFormsWithVariants : allPossibleFormsWithVariants.slice(0, 30)
           if (formsToCheck.length > 0) {
             const placeholders = formsToCheck.map(() => '?').join(',')
-            const wordFreqData = await db.query<{ pashto_word: string; frequency_total: number }>(
-              `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 100`,
+            const wordFreqData = await db.query<{ pashto_word: string; frequency_count: number }>(
+              `SELECT pashto_word, frequency_count FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_count >= 1 ORDER BY frequency_count DESC LIMIT 100`,
               formsToCheck
             );
 
             if (Array.isArray(wordFreqData)) {
               const typedWordFreqRows = wordFreqData as Array<{
                 pashto_word?: string | null
-                frequency_total?: number | null
+                frequency_count?: number | null
               }>
               for (const row of typedWordFreqRows) {
-                if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
+                if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
                   existingForms.push({
                     form: row.pashto_word,
-                    count: Number(row.frequency_total) || 0
+                    count: Number(row.frequency_count) || 0
                   })
                 }
               }
@@ -2946,21 +2946,21 @@ export async function POST(request: NextRequest) {
           try {
             const formsToCheck = includeRelated ? allPossibleFormsWithVariants : allPossibleFormsWithVariants.slice(0, 30)
             const placeholders = formsToCheck.map(() => '?').join(',')
-            const wordFreqData2 = await db.query<{ pashto_word: string; frequency_total: number }>(
-              `SELECT pashto_word, frequency_total FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_total >= 1 ORDER BY frequency_total DESC LIMIT 20`,
+            const wordFreqData2 = await db.query<{ pashto_word: string; frequency_count: number }>(
+              `SELECT pashto_word, frequency_count FROM word_frequencies WHERE pashto_word IN (${placeholders}) AND frequency_count >= 1 ORDER BY frequency_count DESC LIMIT 20`,
               formsToCheck
             );
 
             if (Array.isArray(wordFreqData2)) {
               const typedWordFreqRows2 = wordFreqData2 as Array<{
                 pashto_word?: string | null
-                frequency_total?: number | null
+                frequency_count?: number | null
               }>
               for (const row of typedWordFreqRows2) {
-                if (row?.pashto_word && row?.frequency_total && !existingForms.find(e => e.form === row.pashto_word)) {
+                if (row?.pashto_word && row?.frequency_count && !existingForms.find(e => e.form === row.pashto_word)) {
                   existingForms.push({
                     form: row.pashto_word,
-                    count: Number(row.frequency_total) || 0
+                    count: Number(row.frequency_count) || 0
                   })
                 }
               }
