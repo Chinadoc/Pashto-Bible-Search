@@ -656,10 +656,10 @@ export default function RelatedForms({
                           onChange={(e) => setInflectionFilter(e.target.value)}
                           className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="all">All Inflections ({relatedForms.nouns.length})</option>
+                          <option value="all">All Inflections ({relatedForms.nouns?.length ?? 0})</option>
                           {availableInflectionTypes.map(type => (
                             <option key={type} value={type}>
-                              {inflectionTypeLabels[type] || type} ({relatedForms.nouns.filter((n: any) => ((n as any).inflectionType || 'other') === type).length})
+                              {inflectionTypeLabels[type] || type} ({relatedForms.nouns?.filter((n: any) => ((n as any).inflectionType || 'other') === type).length ?? 0})
                             </option>
                           ))}
                         </select>
