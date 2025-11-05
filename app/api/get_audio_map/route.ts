@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadAudioMap } from '@/app/lib/audio-map';
-import { loadSupabaseAudioMap } from '@/app/lib/supabase-audio';
 
 export const runtime = 'nodejs';
 
@@ -17,22 +16,12 @@ export async function GET(request: NextRequest) {
       shouldRefresh(params.get('refresh')) || shouldRefresh(params.get('clear_cache'));
     const debug = params.get('debug') === '1';
 
-    const [googleDriveAudioMap, supabaseAudioMap] = await Promise.all([
-      loadAudioMap(forceRefresh),
-      loadSupabaseAudioMap(),
-    ]);
-
-    const combinedAudioMap: Record<string, string> = { ...googleDriveAudioMap };
-    for (const [key, value] of Object.entries(supabaseAudioMap)) {
-      if (!combinedAudioMap[key]) {
-        combinedAudioMap[key] = value;
-      }
-    }
+    // Load audio map from Google Drive (no Supabase dependency)
+    const googleDriveAudioMap = await loadAudioMap(forceRefresh);
 
     const stats = {
       googleDrive: Object.keys(googleDriveAudioMap).length,
-      supabase: Object.keys(supabaseAudioMap).length,
-      combined: Object.keys(combinedAudioMap).length,
+      combined: Object.keys(googleDriveAudioMap).length,
     };
 
     console.log('Audio map stats:', stats);
@@ -40,13 +29,12 @@ export async function GET(request: NextRequest) {
     if (debug) {
       return NextResponse.json({
         stats,
-        supabaseSample: Object.keys(supabaseAudioMap).slice(0, 5),
         googleDriveSample: Object.keys(googleDriveAudioMap).slice(0, 5),
-        combinedSample: Object.keys(combinedAudioMap).slice(0, 5),
+        combinedSample: Object.keys(googleDriveAudioMap).slice(0, 5),
       });
     }
 
-    return NextResponse.json(combinedAudioMap);
+    return NextResponse.json(googleDriveAudioMap);
   } catch (error) {
     console.error('Failed to load audio map:', error);
     return NextResponse.json(

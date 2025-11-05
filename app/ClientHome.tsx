@@ -2126,12 +2126,13 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on selectedPartOfSpeech or posGuess */}
-            {(includeRelated || !isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+            {includeRelated && (
               <>
                 {/* VERB FILTERS */}
-                {((selectedPartOfSpeech === 'verb' || (selectedPartOfSpeech === 'auto' && (relatedForms?.posGuess === 'verb' ||
-                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0)))) ||
-                  (!relatedForms && (!isDefaultVerbFilter(verbFilters) || !isDefaultMultiVerbFilter(multiVerbFilters)))) && (
+                {(selectedPartOfSpeech === 'verb' || (selectedPartOfSpeech === 'auto' && (
+                  relatedForms?.posGuess === 'verb' ||
+                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0)
+                ))) && (
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2316,8 +2317,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* NOUN FILTERS */}
-            {((selectedPartOfSpeech === 'noun' || (selectedPartOfSpeech === 'auto' && (relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0))) ||
-             (!relatedForms && !isDefaultNounFilter(nounFilters))) && (
+            {(selectedPartOfSpeech === 'noun' || (selectedPartOfSpeech === 'auto' && (
+              relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0
+            ))) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2424,8 +2426,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             )}
 
             {/* ADJECTIVE FILTERS */}
-            {((selectedPartOfSpeech === 'adjective' || (selectedPartOfSpeech === 'auto' && ((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0))) ||
-             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters))) && (
+            {(selectedPartOfSpeech === 'adjective' || (selectedPartOfSpeech === 'auto' && (
+              (relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0
+            ))) && (
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

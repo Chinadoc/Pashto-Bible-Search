@@ -179,7 +179,13 @@ function addOrUpdateVariant(map: Map<string, Variant>, incoming: Variant): void 
     if (!existing.romanized && incoming.romanized) {
       existing.romanized = incoming.romanized;
     }
-    if ((!existing.label || existing.label === 'LingDocs Form') && incoming.label) {
+    const existingLabel = existing.label ?? '';
+    const incomingLabel = incoming.label ?? '';
+    const existingIsGeneric =
+      !existingLabel ||
+      existingLabel.includes('LingDocs');
+    const incomingIsGeneric = incomingLabel.includes('LingDocs');
+    if (existingIsGeneric && incoming.label && (!incomingIsGeneric || !existingLabel)) {
       existing.label = incoming.label;
     }
     if (!existing.count && incoming.count) {
@@ -204,7 +210,7 @@ const PERSON_INFLECTION_LABELS: Record<string, string> = {
   femPlur: 'Fem PL',
 };
 
-const PERSON_LABELS = ['1sg', '1pl', '2sg', '2pl', '3sg', '3pl'] as const;
+const PERSON_LABELS = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'] as const;
 const IMPERATIVE_LABELS = ['2sg', '2pl'] as const;
 
 // ---------------------------------------------------------------------------
@@ -228,12 +234,28 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
 
   const collectVerbBlock = (block: any, baseLabel: string, labels = PERSON_LABELS) => {
     if (!Array.isArray(block)) return;
+    const flattenForms = (input: any): any[] => {
+      if (!input) return [];
+      if (Array.isArray(input)) {
+        const acc: any[] = [];
+        input.forEach((item) => {
+          acc.push(...flattenForms(item));
+        });
+        return acc;
+      }
+      return [input];
+    };
+
     block.forEach((personLine: any, idx: number) => {
       if (!Array.isArray(personLine)) return;
       const personLabel = labels[idx] ?? '';
       personLine.forEach((forms: any) => {
-        if (!Array.isArray(forms)) return;
-        forms.forEach((ps) => addVariant(ps, personLabel ? `${personLabel} ${baseLabel}` : baseLabel));
+        const labelPrefix = personLabel ? `${personLabel} ${baseLabel}` : baseLabel;
+        flattenForms(forms).forEach((ps) => {
+          if (ps && typeof ps.p === 'string') {
+            addVariant(ps, labelPrefix);
+          }
+        });
       });
     });
   };
@@ -242,70 +264,16 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
     if (!value) return;
 
     if (Array.isArray(value)) {
-      // Handle deeply nested arrays like modal.nonImperative.long[person][gender][length][form]
-      if (value.length && Array.isArray(value[0])) {
-        // Check if this is a verb block structure (6 persons × 2 genders × 2 lengths)
-        if (value.length === 6 && value.every((item: any) => Array.isArray(item) && item.length === 2)) {
-          // VerbBlock structure: [person1, person2, person3, person4, person5, person6]
-          // Each person is [masc, fem], each gender is [long, short]
-          const persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
-          const lengths = ['long', 'short'];
+      // Handle verb blocks where each index corresponds to a person (and optional gender/length nesting)
+      if (value.length === 6 && value.every((item: any) => Array.isArray(item))) {
+        collectVerbBlock(value, label, PERSON_LABELS);
+        return;
+      }
 
-          value.forEach((personLine: any, personIdx: number) => {
-            if (!Array.isArray(personLine) || personLine.length !== 2) return;
-
-            const personLabel = persons[personIdx] || `${personIdx + 1}`;
-
-            personLine.forEach((genderLine: any, genderIdx: number) => {
-              if (!Array.isArray(genderLine) || genderLine.length !== 2) return;
-
-              const genderLabel = genderIdx === 0 ? 'Masc' : 'Fem';
-
-              genderLine.forEach((lengthLine: any, lengthIdx: number) => {
-                if (!Array.isArray(lengthLine)) return;
-
-                const lengthLabel = lengths[lengthIdx] || `Length${lengthIdx + 1}`;
-
-                lengthLine.forEach((ps: any) => {
-                  if (ps && typeof ps.p === 'string') {
-                    addVariant(ps, `${personLabel} ${label} ${genderLabel} ${lengthLabel}`);
-                  }
-                });
-              });
-            });
-          });
-          return;
-        }
-
-        // Handle imperative blocks (2 persons × 2 genders × 2 lengths)
-        if (value.length === 2 && value.every((item: any) => Array.isArray(item) && item.length === 2)) {
-          const persons = ['2sg', '2pl'];
-
-          value.forEach((personLine: any, personIdx: number) => {
-            if (!Array.isArray(personLine) || personLine.length !== 2) return;
-
-            const personLabel = persons[personIdx] || `${personIdx + 1}`;
-
-            personLine.forEach((genderLine: any, genderIdx: number) => {
-              if (!Array.isArray(genderLine) || genderLine.length !== 2) return;
-
-              const genderLabel = genderIdx === 0 ? 'Masc' : 'Fem';
-
-              genderLine.forEach((lengthLine: any, lengthIdx: number) => {
-                if (!Array.isArray(lengthLine)) return;
-
-                const lengthLabel = lengthIdx === 0 ? 'long' : 'short';
-
-                lengthLine.forEach((ps: any) => {
-                  if (ps && typeof ps.p === 'string') {
-                    addVariant(ps, `${personLabel} Imperative ${genderLabel} ${lengthLabel}`);
-                  }
-                });
-              });
-            });
-          });
-          return;
-        }
+      // Handle imperative blocks (usually two persons: 2sg, 2pl)
+      if (value.length === 2 && value.every((item: any) => Array.isArray(item))) {
+        collectVerbBlock(value, label, IMPERATIVE_LABELS);
+        return;
       }
 
       // Handle simple arrays

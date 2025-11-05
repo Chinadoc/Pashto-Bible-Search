@@ -148,6 +148,62 @@ export class D1Client {
     
     return this.query(sql, params);
   }
+
+  /**
+   * Execute INSERT, UPDATE, DELETE, or other non-SELECT queries
+   * Returns the result with success status and metadata
+   */
+  async execute(sql: string, params: any[] = []): Promise<D1Result> {
+    if (this.db) {
+      try {
+        let stmt = this.db.prepare(sql);
+        if (params.length > 0) {
+          stmt = stmt.bind(...params);
+        }
+        return await stmt.run();
+      } catch (error) {
+        console.warn(`D1 execute error:`, error);
+        throw error;
+      }
+    }
+    
+    throw new Error('D1 database not available');
+  }
+
+  /**
+   * Execute multiple statements in a batch (up to 100 statements)
+   */
+  async batch(statements: Array<{ sql: string; params: any[] }>): Promise<D1Result[]> {
+    if (!this.db) {
+      throw new Error('D1 database not available');
+    }
+
+    // D1 supports up to 100 statements per batch
+    const results: D1Result[] = [];
+    for (let i = 0; i < statements.length; i += 100) {
+      const batch = statements.slice(i, i + 100);
+      const prepared = batch.map(({ sql, params }) => {
+        let stmt = this.db!.prepare(sql);
+        if (params.length > 0) {
+          stmt = stmt.bind(...params);
+        }
+        return stmt;
+      });
+      
+      // Execute batch (D1 batch API)
+      for (const stmt of prepared) {
+        try {
+          const result = await stmt.run();
+          results.push(result);
+        } catch (error) {
+          console.warn(`Batch execute error:`, error);
+          results.push({ success: false, meta: { changes: 0, last_row_id: 0, duration: 0 } });
+        }
+      }
+    }
+    
+    return results;
+  }
 }
 
 /**

@@ -206,3 +206,5 @@ This architecture allows comprehensive analysis of Pashto inflection patterns ac
 
 
 
+
+

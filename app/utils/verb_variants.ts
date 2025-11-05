@@ -33,19 +33,56 @@ function uniqBy<T>(arr: T[], key: (t: T) => string): T[] {
 function labelFromInfo(info?: string): string {
   if (!info) return "Form";
   const s = info.toLowerCase();
-  // Try to normalize common grammatical_info encodings to concise labels
-  if (s.includes("present")) return s.includes("1sg") ? "1sg Present"
-    : s.includes("2sg") ? "2sg Present"
-    : s.includes("3sg") ? "3sg Present"
-    : s.includes("pl") ? "Plural Present"
-    : "Present";
-  if (s.includes("past_participle")) return "Past Participle";
-  if (s.includes("past")) return "Past";
-  if (s.includes("subj")) return "Subjunctive";
-  if (s.includes("future")) return "Future";
-  if (s.includes("imperative")) return "Imperative";
-  if (s.includes("progressive")) return "Progressive";
-  if (s.includes("perfect")) return "Perfect";
+  
+  // Extract person info first (1sg, 1pl, 2sg, 2pl, 3sg, 3pl)
+  const personMatch = s.match(/\b(1sg|1pl|2sg|2pl|3sg|3pl|1st|first|2nd|second|3rd|third)\b/);
+  const personLabel = personMatch ? personMatch[1] : null;
+  
+  // Normalize person labels
+  let normalizedPerson = '';
+  if (personLabel) {
+    if (personLabel === '1st' || personLabel === 'first') {
+      normalizedPerson = s.includes('pl') || s.includes('plural') ? '1pl' : '1sg';
+    } else if (personLabel === '2nd' || personLabel === 'second') {
+      normalizedPerson = s.includes('pl') || s.includes('plural') ? '2pl' : '2sg';
+    } else if (personLabel === '3rd' || personLabel === 'third') {
+      normalizedPerson = s.includes('pl') || s.includes('plural') ? '3pl' : '3sg';
+    } else {
+      normalizedPerson = personLabel;
+    }
+  }
+  
+  // Determine tense/mood
+  let tenseLabel = '';
+  if (s.includes("present")) {
+    tenseLabel = "Present";
+  } else if (s.includes("past_participle")) {
+    tenseLabel = "Past Participle";
+  } else if (s.includes("subj")) {
+    tenseLabel = "Subjunctive";
+  } else if (s.includes("future")) {
+    tenseLabel = "Future";
+  } else if (s.includes("imperative")) {
+    tenseLabel = "Imperative";
+  } else if (s.includes("progressive")) {
+    tenseLabel = "Progressive";
+  } else if (s.includes("perfect")) {
+    tenseLabel = "Perfect";
+  } else if (s.includes("past")) {
+    tenseLabel = "Past";
+  } else {
+    tenseLabel = "Form";
+  }
+  
+  // Combine person and tense labels
+  if (normalizedPerson && tenseLabel) {
+    return `${normalizedPerson} ${tenseLabel}`;
+  } else if (normalizedPerson) {
+    return normalizedPerson;
+  } else if (tenseLabel) {
+    return tenseLabel;
+  }
+  
   return info;
 }
 

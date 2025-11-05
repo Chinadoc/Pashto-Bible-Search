@@ -32,7 +32,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [error, setError] = useState<string | null>(null);
   
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(queryProp || '');
   const [posFilter, setPosFilter] = useState<string>('all');
   const [inflectionFilter, setInflectionFilter] = useState<string>('all');
   const [scopeFilter, setScopeFilter] = useState<string>('all');
@@ -90,10 +90,17 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     }
   };
 
-  // Initial load and when filters change
+  // Sync external query
+  useEffect(() => {
+    if (typeof queryProp === 'string' && queryProp.trim()) {
+      setSearchQuery(queryProp);
+    }
+  }, [queryProp]);
+
+  // Initial load and when filters change (including searchQuery)
   useEffect(() => {
     fetchData();
-  }, [limit, posFilter, inflectionFilter, scopeFilter, sortBy, sortOrder]);
+  }, [limit, posFilter, inflectionFilter, scopeFilter, sortBy, sortOrder, searchQuery]);
 
   // Filter by search query (client-side for instant feedback)
   useEffect(() => {
@@ -110,13 +117,6 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
     setFilteredData(filtered);
   }, [data, searchQuery]);
-
-  // Sync external query
-  useEffect(() => {
-    if (typeof queryProp === 'string') {
-      setSearchQuery(queryProp);
-    }
-  }, [queryProp]);
 
   // Get unique values for dropdowns
   const inflectionTypes = Array.from(new Set(data.map(item => item.inflection_type).filter(Boolean))).sort();

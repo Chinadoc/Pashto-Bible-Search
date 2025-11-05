@@ -1185,8 +1185,17 @@ async function getGrammaticalIndexData(db: D1Client, term: string): Promise<any>
     );
     
     // Query inflections for all forms
-    const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-      `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 100`,
+    const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number; pos?: string }>(
+      `SELECT 
+        i.inflected_form, 
+        i.grammatical_info, 
+        COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+        COALESCE(i.pos, wf.pos) as pos
+      FROM inflections i
+      LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+      WHERE i.base_word = ? 
+      ORDER BY frequency DESC 
+      LIMIT 100`,
       [term]
     );
     
@@ -1678,8 +1687,17 @@ async function enrichVariantsFromD1(
         
         // Query inflections for the main part (e.g., ښکېل)
         try {
-          const mainInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-            `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 50`,
+          const mainInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number; pos?: string }>(
+            `SELECT 
+              i.inflected_form, 
+              i.grammatical_info, 
+              COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+              COALESCE(i.pos, wf.pos) as pos
+            FROM inflections i
+            LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+            WHERE i.base_word = ? 
+            ORDER BY frequency DESC 
+            LIMIT 50`,
             [mainPart]
           );
           
@@ -1711,8 +1729,17 @@ async function enrichVariantsFromD1(
         
         // Also query inflections for the full compound verb
         try {
-          const compoundInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-            `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 50`,
+          const compoundInflections = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number; pos?: string }>(
+            `SELECT 
+              i.inflected_form, 
+              i.grammatical_info, 
+              COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+              COALESCE(i.pos, wf.pos) as pos
+            FROM inflections i
+            LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+            WHERE i.base_word = ? 
+            ORDER BY frequency DESC 
+            LIMIT 50`,
             [term]
           );
           
@@ -1822,12 +1849,28 @@ async function enrichVariantsFromD1(
   try {
     // When includeRelated is true, get more inflections (up to 500 for comprehensive coverage)
     const inflectionLimit = includeRelated ? 500 : baseLimit
-    const data = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-        `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT ?`,
-        [term, inflectionLimit]
-      );
-      if (Array.isArray(data)) {
-        for (const row of data) {
+    // Query inflections table with word frequency join for accurate counts
+    const inflData = await db.query<{ 
+      inflected_form: string; 
+      grammatical_info: string; 
+      frequency: number;
+      frequency_total?: number;
+      pos?: string;
+    }>(
+      `SELECT 
+        i.inflected_form, 
+        i.grammatical_info, 
+        COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+        i.pos
+      FROM inflections i
+      LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+      WHERE i.base_word = ? 
+      ORDER BY frequency DESC 
+      LIMIT ?`,
+      [term, inflectionLimit]
+    );
+      if (Array.isArray(inflData)) {
+        for (const row of inflData) {
           let info: Record<string, any> | null | undefined = null
           
           // Parse grammatical_info if it's a string (JSON stored as string)
@@ -1846,11 +1889,11 @@ async function enrichVariantsFromD1(
           const raw = row?.inflected_form
           const freq = Number(row?.frequency)
           const frequency = Number.isFinite(freq) ? freq : undefined
-          const pos = info && typeof info.pos === 'string'
+          const pos = row?.pos || (info && typeof info.pos === 'string'
             ? info.pos
             : info && typeof info.part_of_speech === 'string'
               ? info.part_of_speech
-              : undefined
+              : undefined)
           const note = info && typeof info.pattern === 'string' ? info.pattern : undefined
           const pattern = info && typeof info.pattern_info === 'string' ? info.pattern_info : (info && typeof info.pattern === 'string' ? info.pattern : undefined)
           const romanization = info && typeof info.romanization === 'string' ? info.romanization : (info && typeof info.romanized === 'string' ? info.romanized : (info && typeof info.phonetic === 'string' ? info.phonetic : undefined))
@@ -1958,10 +2001,15 @@ export async function POST(request: NextRequest) {
       let forms: string[] = []
       try {
         // Prefer DB inflections for the auxiliary
-        const data = await db.query<{ inflected_form: string }>(
-          `SELECT inflected_form FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 40`,
-          [aux]
-        );
+          const data = await db.query<{ inflected_form: string }>(
+            `SELECT i.inflected_form
+            FROM inflections i
+            LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+            WHERE i.base_word = ? 
+            ORDER BY COALESCE(wf.frequency_total, i.frequency, 0) DESC 
+            LIMIT 40`,
+            [aux]
+          );
         if (Array.isArray(data) && data.length > 0) {
           for (const row of data) {
             try {
@@ -2537,8 +2585,17 @@ export async function POST(request: NextRequest) {
         if (includeRelated && !isVerb) {
           try {
             // FIRST: Query inflections table (authoritative source for all inflected forms)
-            const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-              `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 300`,
+            const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number; pos?: string }>(
+              `SELECT 
+                i.inflected_form, 
+                i.grammatical_info, 
+                COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+                COALESCE(i.pos, wf.pos) as pos
+              FROM inflections i
+              LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+              WHERE i.base_word = ? 
+              ORDER BY frequency DESC 
+              LIMIT 300`,
               [normalizedLookup]
             );
             
@@ -2625,8 +2682,17 @@ export async function POST(request: NextRequest) {
             
             // Also query inflections table for verb forms
             try {
-              const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number }>(
-                `SELECT inflected_form, grammatical_info, frequency FROM inflections WHERE base_word = ? ORDER BY frequency DESC LIMIT 200`,
+              const inflData = await db.query<{ inflected_form: string; grammatical_info: string; frequency: number; pos?: string }>(
+                `SELECT 
+                  i.inflected_form, 
+                  i.grammatical_info, 
+                  COALESCE(wf.frequency_total, i.frequency, 0) as frequency,
+                  COALESCE(i.pos, wf.pos) as pos
+                FROM inflections i
+                LEFT JOIN word_frequencies wf ON i.inflected_form = wf.pashto_word
+                WHERE i.base_word = ? 
+                ORDER BY frequency DESC 
+                LIMIT 200`,
                 [normalizedLookup]
               );
               
