@@ -174,12 +174,12 @@ export async function GET(request: NextRequest) {
     if (verbRoot) {
       const verbLexiconEntry = await db.queryFirst<{
         verb_root: string;
-        infinitive: string;
+        infinitive?: string;
         pos: string;
       }>(
-        `SELECT verb_root, infinitive, pos 
+        `SELECT verb_root, COALESCE(infinitive, verb_root) as infinitive, pos 
         FROM verbs_lexicon 
-        WHERE verb_root = ? OR infinitive = ? LIMIT 1`,
+        WHERE verb_root = ? OR COALESCE(infinitive, verb_root) = ? LIMIT 1`,
         [verbRoot, verbRoot]
       );
       
