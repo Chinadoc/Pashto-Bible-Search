@@ -247,7 +247,10 @@ function filterVerbVariantsMulti(
   
   console.log(`🔍 [FILTER] Starting filterVerbVariantsMulti with ${verbs.length} verbs`, {
     filters: multiFilters,
-    sampleVerbs: verbs.slice(0, 5).map(v => ({ form: v.form, label: v.label })),
+    sampleVerbs: verbs.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
+    hasWahum: verbs.some(v => v.form === 'وهم'),
+    hasWahoo: verbs.some(v => v.form === 'وهو'),
+    wahumVariants: verbs.filter(v => v.form === 'وهم').map(v => ({ form: v.form, label: v.label })),
   });
   
   // Only filter by person - ignore tense/aspect/mood
@@ -281,6 +284,9 @@ function filterVerbVariantsMulti(
   console.log(`✅ [FILTER] Filtered ${verbs.length} verb variants down to ${filtered.length}`, {
     filters: multiFilters,
     filteredForms: filtered.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
+    hasWahum: filtered.some(v => v.form === 'وهم'),
+    hasWahoo: filtered.some(v => v.form === 'وهو'),
+    wahumVariants: filtered.filter(v => v.form === 'وهم').map(v => ({ form: v.form, label: v.label })),
   });
   return filtered;
 }
@@ -925,6 +931,13 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
 
       filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, verbFilters);
       forms = formsFromVariants(filteredVariants);
+      
+      console.log(`🔍 [FILTER] After filtering, got ${filteredVariants.length} variants:`, {
+        sampleVariants: filteredVariants.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
+        allForms: forms,
+        hasWahum: forms.includes('وهم'),
+        hasWahoo: forms.includes('وهو'),
+      });
 
       if (isDefaultMultiVerbFilter(verbFilters)) {
         // Reset to all forms
@@ -1324,6 +1337,15 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
     console.log('DEBUG: Reason:', reason);
     console.log('DEBUG: ========================================');
+    console.log('DEBUG: Variants being sent to API:', {
+      overrideVariants,
+      variantsOverride,
+      effectiveVariants,
+      variantsPayload,
+      hasWahum: variantsPayload?.includes('وهم'),
+      hasWahoo: variantsPayload?.includes('وهو'),
+      allVariants: variantsPayload,
+    });
     console.log('DEBUG: Search parameters:', {
       query: normalizedQuery,
       scope,
