@@ -29,21 +29,24 @@ export async function GET(request: NextRequest) {
       const verbs = await db.query<{
         id: number;
         verb_root: string;
-        infinitive: string;
+        infinitive?: string;
         imperfective_stem: string;
         perfective_stem: string;
         perfective_root: string;
         past_participle: string;
         pos: string;
-        transitivity: string;
-        verb_type: string;
+        transitivity?: string;
+        verb_type?: string;
         romanization: string;
       }>(
         `SELECT 
-          id, verb_root, infinitive, imperfective_stem, perfective_stem,
-          perfective_root, past_participle, pos, transitivity, verb_type, romanization
+          id, verb_root, 
+          COALESCE(infinitive, verb_root) as infinitive,
+          imperfective_stem, perfective_stem,
+          perfective_root, past_participle, pos, 
+          transitivity, verb_type, romanization
         FROM verbs_lexicon
-        WHERE verb_root LIKE ? OR infinitive LIKE ?
+        WHERE verb_root LIKE ? OR COALESCE(infinitive, verb_root) LIKE ?
         LIMIT 20`,
         [`%${verbRoot}%`, `%${verbRoot}%`]
       );
@@ -59,10 +62,10 @@ export async function GET(request: NextRequest) {
       
       const samples = await db.query<{
         verb_root: string;
-        infinitive: string;
+        infinitive?: string;
         pos: string;
       }>(
-        `SELECT verb_root, infinitive, pos FROM verbs_lexicon LIMIT 10`
+        `SELECT verb_root, COALESCE(infinitive, verb_root) as infinitive, pos FROM verbs_lexicon LIMIT 10`
       );
       
       results.verbs_lexicon = {
