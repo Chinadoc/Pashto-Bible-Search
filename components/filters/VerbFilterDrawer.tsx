@@ -76,8 +76,8 @@ export default function VerbFilterDrawer({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Person Filter */}
+      <div className="grid grid-cols-1 gap-4">
+        {/* Person Filter Only */}
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
             Person:
@@ -107,111 +107,6 @@ export default function VerbFilterDrawer({
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Tense Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Tense:
-          </label>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.tense.includes('all')}
-                onChange={() => {
-                  const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, tense: newTense });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
-              <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
-                  onChange={() => {
-                    const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
-                    setMultiVerbFilters({ ...multiVerbFilters, tense: newTense });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{tense}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Aspect Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Aspect:
-          </label>
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.aspect.includes('all')}
-                onChange={() => {
-                  const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, aspect: newAspect });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['imperfective', 'perfective'].map((aspect) => (
-              <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
-                  onChange={() => {
-                    const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
-                    setMultiVerbFilters({ ...multiVerbFilters, aspect: newAspect });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{aspect}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Mood Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Mood:
-          </label>
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.mood.includes('all')}
-                onChange={() => {
-                  const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, mood: newMood });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
-              <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
-                  onChange={() => {
-                    const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
-                    setMultiVerbFilters({ ...multiVerbFilters, mood: newMood });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{mood}</span>
               </label>
             ))}
           </div>

@@ -372,30 +372,18 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   
   // Enhanced "No results" message with context
   if (results.length === 0) {
-    // Check for active filters using multi-select filters first, then fallback to single-select
+    // Check for active filters - Only check person filters (tense/aspect/mood removed)
     const hasActiveFilters = multiVerbFilters ? (
-      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ||
-      multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ||
-      multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ||
-      multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')
+      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')
     ) : verbFilters && (
-      verbFilters.person !== 'all' ||
-      verbFilters.tense !== 'all' ||
-      verbFilters.aspect !== 'all' ||
-      verbFilters.mood !== 'all'
+      verbFilters.person !== 'all'
     );
     
-    const activeFilterCount = multiVerbFilters ? [
-      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 'person' : null,
-      multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? 'tense' : null,
-      multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? 'aspect' : null,
-      multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? 'mood' : null,
-    ].filter(Boolean).length : verbFilters ? [
-      verbFilters.person !== 'all' ? 'person' : null,
-      verbFilters.tense !== 'all' ? 'tense' : null,
-      verbFilters.aspect !== 'all' ? 'aspect' : null,
-      verbFilters.mood !== 'all' ? 'mood' : null,
-    ].filter(Boolean).length : 0;
+    const activeFilterCount = multiVerbFilters ? (
+      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
+    ) : verbFilters ? (
+      verbFilters.person !== 'all' ? 1 : 0
+    ) : 0;
     
     if (hasActiveFilters) {
       return (
@@ -475,30 +463,18 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
   
-  // Filter state indicator
+  // Filter state indicator - Only check person filters (tense/aspect/mood removed)
   const hasActiveFilters = multiVerbFilters ? (
-    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ||
-    multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ||
-    multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ||
-    multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')
+    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')
   ) : verbFilters && (
-    verbFilters.person !== 'all' ||
-    verbFilters.tense !== 'all' ||
-    verbFilters.aspect !== 'all' ||
-    verbFilters.mood !== 'all'
+    verbFilters.person !== 'all'
   );
   
-  const activeFilterCount = multiVerbFilters ? [
-    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 'person' : null,
-    multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all') ? 'tense' : null,
-    multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all') ? 'aspect' : null,
-    multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all') ? 'mood' : null,
-  ].filter(Boolean).length : verbFilters ? [
-    verbFilters.person !== 'all' ? 'person' : null,
-    verbFilters.tense !== 'all' ? 'tense' : null,
-    verbFilters.aspect !== 'all' ? 'aspect' : null,
-    verbFilters.mood !== 'all' ? 'mood' : null,
-  ].filter(Boolean).length : 0;
+  const activeFilterCount = multiVerbFilters ? (
+    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
+  ) : verbFilters ? (
+    verbFilters.person !== 'all' ? 1 : 0
+  ) : 0;
   
   // Enable virtual scrolling for large result sets
   const shouldUseVirtualization = results.length > 200;
@@ -864,42 +840,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                         {multiVerbFilters.person.filter(p => p !== 'all').join(', ')}
                       </span>
                     )}
-                    {(multiVerbFilters.tense.length > 1 || multiVerbFilters.tense.some(t => t !== 'all')) && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {multiVerbFilters.tense.filter(t => t !== 'all').join(', ')}
-                      </span>
-                    )}
-                    {(multiVerbFilters.aspect.length > 1 || multiVerbFilters.aspect.some(a => a !== 'all')) && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {multiVerbFilters.aspect.filter(a => a !== 'all').join(', ')}
-                      </span>
-                    )}
-                    {(multiVerbFilters.mood.length > 1 || multiVerbFilters.mood.some(m => m !== 'all')) && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {multiVerbFilters.mood.filter(m => m !== 'all').join(', ')}
-                      </span>
-                    )}
                   </>
                 ) : (
                   <>
                     {verbFilters && verbFilters.person !== 'all' && (
                       <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
                         {verbFilters.person}
-                      </span>
-                    )}
-                    {verbFilters && verbFilters.tense !== 'all' && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {verbFilters.tense}
-                      </span>
-                    )}
-                    {verbFilters && verbFilters.aspect !== 'all' && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {verbFilters.aspect}
-                      </span>
-                    )}
-                    {verbFilters && verbFilters.mood !== 'all' && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {verbFilters.mood}
                       </span>
                     )}
                   </>
@@ -923,9 +869,19 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         {((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
           <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
             <span className="font-medium">Showing results for </span>
-            {/* Show filtered form if filters are active, otherwise show dictionary/base form */}
-            {activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
-              // Show filtered forms when filters are active (limited to 10 to avoid clutter)
+            {/* Show descriptive filter message when person filters are active */}
+            {multiVerbFilters && multiVerbFilters.person.some(p => p !== 'all') ? (
+              <div className="font-semibold text-blue-600 dark:text-blue-400">
+                <div>present agrees w/ subject</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-mono whitespace-pre">
+                  Pers.		Singular		Plural{'\n'}
+                  {multiVerbFilters.person.includes('1st') && '1st\tوهم wahum\tوهو wahoo\n'}
+                  {multiVerbFilters.person.includes('2nd') && '2nd\tوهې wahe\tوهئ wahey\n'}
+                  {multiVerbFilters.person.includes('3rd') && '3rd\tوهي wahee\tوهي wahee\n'}
+                </div>
+              </div>
+            ) : activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
+
               <span className="font-semibold text-blue-600 dark:text-blue-400">
                 {activeVariantForms.slice(0, 3).map((form, idx) => (
                   <React.Fragment key={form}>

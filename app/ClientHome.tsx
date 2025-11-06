@@ -250,61 +250,26 @@ function filterVerbVariantsMulti(
     sampleVerbs: verbs.slice(0, 5).map(v => ({ form: v.form, label: v.label })),
   });
   
-  // Ensure all filter arrays exist and are arrays
+  // Only filter by person - ignore tense/aspect/mood
   const person = Array.isArray(multiFilters.person) ? multiFilters.person : ['all'];
-  const tense = Array.isArray(multiFilters.tense) ? multiFilters.tense : ['all'];
-  const aspect = Array.isArray(multiFilters.aspect) ? multiFilters.aspect : ['all'];
-  const mood = Array.isArray(multiFilters.mood) ? multiFilters.mood : ['all'];
-  
   const personValues = person.filter(p => p !== 'all');
-  const tenseValues = tense.filter(t => t !== 'all');
-  const aspectValues = aspect.filter(a => a !== 'all');
-  const moodValues = mood.filter(m => m !== 'all');
   
-  console.log(`🔍 [FILTER] Filter values:`, {
+  console.log(`🔍 [FILTER] Filter values (person only):`, {
     personValues,
-    tenseValues,
-    aspectValues,
-    moodValues,
   });
   
   const labelFilter = (variant: RelatedFormVariant) => {
     const label = normalizeLabel(variant.label);
     
-    // Check person filter (multi-select)
+    // Only check person filter - ignore tense/aspect/mood
     const personMatch = personValues.length === 0 || matchesPersonMulti(label, person);
-    
-    // Check tense filter (multi-select)
-    const tenseMatch = tenseValues.length === 0 ||
-      tenseValues.some(t => {
-        const matcher = TENSE_MATCHERS[t as VerbFilterTense];
-        const match = matcher ? matcher(label) : false;
-        return match;
-      });
-    
-    // Check aspect filter (multi-select)
-    const aspectMatch = aspectValues.length === 0 ||
-      aspectValues.some(a => {
-        const matcher = ASPECT_MATCHERS[a as VerbFilterAspect];
-        return matcher ? matcher(label) : false;
-      });
-    
-    // Check mood filter (multi-select)
-    const moodMatch = moodValues.length === 0 ||
-      moodValues.some(m => {
-        const matcher = MOOD_MATCHERS[m as VerbFilterMood];
-        return matcher ? matcher(label) : false;
-      });
 
-    const matches = personMatch && tenseMatch && moodMatch && aspectMatch;
+    const matches = personMatch;
     
     // Only log first few to avoid spam
     if (verbs.indexOf(variant) < 5) {
       console.log(`🔍 [FILTER] Variant "${variant.form}" (label: "${variant.label}" → "${label}")`, {
         personMatch,
-        tenseMatch,
-        moodMatch,
-        aspectMatch,
         matches,
       });
     }
