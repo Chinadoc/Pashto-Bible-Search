@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,15 +17,28 @@ export async function GET(request: NextRequest) {
       console.warn('Failed to fetch from Cloudflare D1:', error);
     }
 
-    // Also fetch from Supabase (legacy)
-    const { data: transcripts, error } = await supabase
-      .from('video_transcripts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
+    // Also fetch from Supabase (legacy) - optional if env vars are set
+    let transcripts: any[] | null = null;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (error) {
-      console.error('Supabase error:', error);
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { data, error } = await supabase
+          .from('video_transcripts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error('Supabase error:', error);
+        } else {
+          transcripts = data;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch from Supabase:', error);
+      }
     }
 
     // Combine and deduplicate by video_id
