@@ -14,7 +14,7 @@
  * 4. Result Enrichment → Add frequency, grammar explanations, LingDocs links
  */
 
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database } from '../../utils/d1';
 
 // ============================================================================
 // Types
