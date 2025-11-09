@@ -270,5 +270,49 @@ export async function searchVersesByForms(
   return filtered.slice(0, limit);
 }
 
+/**
+ * Fetch verb conjugated forms from D1 verb_forms table
+ * This uses pre-computed LingDocs-verified conjugations (237K+ forms)
+ * Much faster and more complete than runtime generation
+ */
+export async function fetchVerbFormsFromD1(
+  lemma: string,
+  options: {
+    cap?: number;
+  } = {}
+): Promise<Array<{
+  form: string;
+  tense?: string;
+  person?: string;
+  voice?: string;
+  gender?: string;
+  helper?: string;
+  confidence?: number;
+}>> {
+  const cap = options.cap || 200;
+
+  try {
+    const params = new URLSearchParams({
+      lemma,
+      cap: String(cap),
+    });
+
+    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/verb-forms?${params}`);
+
+    if (!response.ok) {
+      if (response.status === 404 || response.status >= 500) {
+        console.warn(`D1 Worker unavailable for verb-forms (${response.status})`);
+        return [];
+      }
+      throw new Error(`Verb forms fetch failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.forms || [];
+  } catch (error) {
+    console.error(`Failed to fetch verb forms for ${lemma}:`, error);
+    return [];
+  }
+}
 
 

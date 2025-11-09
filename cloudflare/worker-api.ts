@@ -898,6 +898,42 @@ async function getNounData(env: Env, word: string): Promise<Response> {
 }
 
 /**
+ * Get verb conjugated forms from verb_forms table
+ * GET /api/verb-forms?lemma={lemma}&cap={cap}
+ */
+async function getVerbForms(env: Env, lemma: string, cap: number = 200): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT form, tense, person, voice, gender, helper, confidence
+       FROM verb_forms
+       WHERE lemma = ?
+       ORDER BY tense, person
+       LIMIT ?`
+    )
+      .bind(lemma, cap)
+      .all();
+
+    if (!result.results || result.results.length === 0) {
+      return jsonResponse({
+        lemma,
+        forms: [],
+        count: 0,
+        source: 'd1_verified',
+      });
+    }
+
+    return jsonResponse({
+      lemma,
+      forms: result.results,
+      count: result.results.length,
+      source: 'd1_verified',
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get verb forms: ${error.message}`, 500);
+  }
+}
+
+/**
  * Get form occurrences (verse references) for a word form
  * GET /api/form-occurrences?form={form}&translation={translation}
  */
@@ -1755,6 +1791,16 @@ export default {
         return errorResponse('Missing noun word', 400);
       }
       return getNounData(env, decodeURIComponent(word));
+    }
+
+    if (path === '/api/verb-forms' && request.method === 'GET') {
+      const lemma = url.searchParams.get('lemma');
+      const cap = parseInt(url.searchParams.get('cap') || '200', 10);
+
+      if (!lemma) {
+        return errorResponse('Missing lemma parameter', 400);
+      }
+      return getVerbForms(env, decodeURIComponent(lemma), cap);
     }
 
     if (path === '/api/form-occurrences' && request.method === 'GET') {
