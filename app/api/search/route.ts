@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
-import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '../lib/data/load';
-import { generateNounVariants } from '../utils/noun_variants';
-import { generateVerbVariants } from '../utils/verb_variants';
+import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
+import { generateNounVariants } from '@/app/utils/noun_variants';
+import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
-import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef, fetchVerbFormsFromD1 } from '../lib/cloudflare-d1';
-import { normalizeVerses } from '../utils/normalize-results';
+import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef, fetchVerbFormsFromD1 } from '@/app/lib/cloudflare-d1';
+import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
 import type { POSFilters, PartOfSpeech, POSSummary, VariantWithPOS } from '@/types/search';
 
