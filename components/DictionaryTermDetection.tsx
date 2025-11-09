@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 /**
  * Dictionary Term Detection Banner
- * 
+ *
  * Shows when search term matches a LingDocs dictionary entry.
  * Offers user the choice to expand search to all conjugations/inflections.
- * 
+ *
  * Example UX:
  * ┌─────────────────────────────────────────────────────────────┐
  * │ 📘 Found verb: وهل (wahul) - "to hit"                       │
@@ -18,171 +18,194 @@ import { useState } from 'react';
 
 export interface DictionaryTerm {
   // Core identification
-  lemma: string;
-  searchedForm: string; // The form user actually searched for
-  romanization?: string;
-  english?: string;
-  
-  // POS and grammar
-  pos: 'verb' | 'noun' | 'adjective' | 'other';
-  verbType?: 'dynamic' | 'stative' | 'dynamic_compound' | 'stative_compound';
-  helper?: string; // For compound verbs
-  transitivity?: 'transitive' | 'intransitive' | 'both';
-  
-  // Form counts
-  totalForms: number;
-  searchedFormIsLemma: boolean; // True if searched form = lemma
-  
-  // LingDocs integration
-  lingdocsId?: number;
-  
-  // Metadata
+  lemma: string;              // Base form: وهل
+  romanization?: string;      // Romanization: wahul
+  englishTranslation?: string; // to hit, to strike
+  pos: 'verb' | 'noun' | 'adjective' | 'adverb' | 'other';
+
+  // LingDocs metadata
+  lingdocsId?: number;        // 1527815399
+  lingdocsUrl?: string;       // https://dictionary.lingdocs.com/word?id=1527815399
+
+  // Verb-specific
+  verbType?: 'simple' | 'dynamic_compound' | 'stative_compound';
+  helper?: string;            // کول for dynamic compounds
+  transitivity?: 'transitive' | 'intransitive';
+
+  // Variant counts
+  totalForms?: number;        // Total variants in D1
+  verbs?: number;             // Verb conjugations
+  nouns?: number;             // Noun inflections
+  other?: number;             // Other forms
+
+  // Confidence
   confidence: 'high' | 'medium' | 'low';
-  source: 'd1_verbs_lexicon' | 'd1_verb_forms' | 'd1_form_to_root' | 'd1_nouns_lexicon' | 'inferred';
+  source: 'd1_verified' | 'd1_inferred' | 'lingdocs_cache' | 'fallback';
 }
 
-interface Props {
-  term: DictionaryTerm;
+interface DictionaryTermDetectionProps {
+  term: DictionaryTerm | null;
   searchedTerm: string;
   onExpandForms: () => void;
-  onDismiss?: () => void;
-  isExpanded?: boolean;
+  isExpanded: boolean;
+  loading?: boolean;
 }
 
 export default function DictionaryTermDetection({
   term,
   searchedTerm,
   onExpandForms,
-  onDismiss,
-  isExpanded = false,
-}: Props) {
-  const [dismissed, setDismissed] = useState(false);
+  isExpanded,
+  loading = false
+}: DictionaryTermDetectionProps) {
+  const [showDetails, setShowDetails] = useState(false);
 
-  if (dismissed) return null;
+  if (!term || term.confidence === 'low') {
+    return null; // Don't show banner for low confidence
+  }
 
-  const handleDismiss = () => {
-    setDismissed(true);
-    onDismiss?.();
+  const getIcon = (pos: string) => {
+    switch (pos) {
+      case 'verb': return '🔄';
+      case 'noun': return '📦';
+      case 'adjective': return '✨';
+      default: return '📘';
+    }
   };
 
-  const handleExpand = () => {
-    onExpandForms();
+  const getPOSLabel = (pos: string) => {
+    switch (pos) {
+      case 'verb': return 'Verb';
+      case 'noun': return 'Noun';
+      case 'adjective': return 'Adjective';
+      default: return 'Word';
+    }
   };
 
-  // Build grammar description
-  const grammarInfo: string[] = [];
-  if (term.verbType) {
-    grammarInfo.push(term.verbType.replace('_', ' '));
-  }
-  if (term.helper) {
-    grammarInfo.push(`Helper: ${term.helper}`);
-  }
-  if (term.transitivity) {
-    grammarInfo.push(term.transitivity);
-  }
+  const getVerbTypeLabel = (verbType?: string) => {
+    switch (verbType) {
+      case 'dynamic_compound': return 'Dynamic compound verb';
+      case 'stative_compound': return 'Stative compound verb';
+      case 'simple': return 'Simple verb';
+      default: return '';
+    }
+  };
 
-  const lingdocsUrl = term.lingdocsId
-    ? `https://dictionary.lingdocs.com/word?id=${term.lingdocsId}`
-    : `https://dictionary.lingdocs.com/?q=${encodeURIComponent(term.lemma)}`;
+  const totalForms = term.totalForms || (term.verbs || 0) + (term.nouns || 0) + (term.other || 0);
 
   return (
-    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
+    <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
       <div className="flex items-start justify-between gap-4">
+        {/* Left side: Dictionary info */}
         <div className="flex-1">
-          {/* Header */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">📘</span>
-            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-              Found {term.pos}: <strong>{term.lemma}</strong>
-              {term.romanization && (
-                <span className="text-sm font-normal text-blue-700 dark:text-blue-300 ml-2">
-                  ({term.romanization})
+            <span className="text-2xl">{getIcon(term.pos)}</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-blue-900 dark:text-blue-100" dir="rtl">
+                  {term.lemma}
                 </span>
-              )}
-            </h3>
+                {term.romanization && (
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    ({term.romanization})
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <span className="font-medium">{getPOSLabel(term.pos)}</span>
+                {term.englishTranslation && (
+                  <>
+                    <span>•</span>
+                    <span className="italic">"{term.englishTranslation}"</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* English translation */}
-          {term.english && (
-            <p className="text-blue-800 dark:text-blue-200 mb-2 italic">
-              "{term.english}"
-            </p>
-          )}
-
-          {/* Grammar metadata */}
-          {grammarInfo.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {grammarInfo.map((info, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-medium"
-                >
-                  {info}
+          {/* Verb metadata */}
+          {term.verbType && (
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              {getVerbTypeLabel(term.verbType)}
+              {term.helper && (
+                <span className="ml-2">
+                  • Helper: <span className="font-mono" dir="rtl">{term.helper}</span>
                 </span>
-              ))}
+              )}
+              {term.transitivity && (
+                <span className="ml-2">
+                  • {term.transitivity}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Form info */}
-          {!term.searchedFormIsLemma && (
-            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-              You searched for <strong>{searchedTerm}</strong>, which is a conjugated form of <strong>{term.lemma}</strong>.
-            </p>
+          {/* LingDocs link */}
+          {term.lingdocsUrl && (
+            <div className="mt-2">
+              <a
+                href={term.lingdocsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                📖 View in LingDocs dictionary
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                </svg>
+              </a>
+            </div>
           )}
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            {!isExpanded ? (
-              <>
-                <button
-                  onClick={handleExpand}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium shadow-sm"
-                >
-                  Search all {term.totalForms} {term.pos === 'verb' ? 'conjugations' : 'forms'} →
-                </button>
-                <a
-                  href={lingdocsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 rounded-md transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                >
-                  📖 View in LingDocs
-                </a>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-green-600 dark:text-green-400">✓</span>
-                <span className="text-sm text-blue-700 dark:text-blue-300">
-                  Showing all {term.totalForms} {term.pos === 'verb' ? 'conjugations' : 'forms'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Confidence badge */}
-          <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            <span className="inline-flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${
-                term.confidence === 'high' ? 'bg-green-500' :
-                term.confidence === 'medium' ? 'bg-yellow-500' : 'bg-orange-500'
-              }`} />
-              {term.confidence === 'high' ? 'Verified' : 'Inferred'} from {term.source.replace('d1_', '').replace('_', ' ')}
-            </span>
+          {/* Data source badge */}
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+            {term.source === 'd1_verified' && '✓ Verified from LingDocs'}
+            {term.source === 'd1_inferred' && '⚠ Inferred from patterns'}
+            {term.source === 'lingdocs_cache' && '📦 From LingDocs cache'}
+            {term.source === 'fallback' && '⚡ Quick lookup'}
           </div>
         </div>
 
-        {/* Dismiss button */}
-        <button
-          onClick={handleDismiss}
-          className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
-          aria-label="Dismiss"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Right side: Action button */}
+        <div className="flex flex-col items-end gap-2">
+          {!isExpanded ? (
+            <button
+              onClick={onExpandForms}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Search all {totalForms} forms
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm font-medium rounded-lg flex items-center gap-2">
+              <span>✓</span>
+              Showing all {totalForms} forms
+            </div>
+          )}
+
+          {/* Forms breakdown */}
+          {totalForms > 0 && !isExpanded && (
+            <div className="text-xs text-gray-600 dark:text-gray-400 text-right">
+              {term.verbs && term.verbs > 0 && <div>{term.verbs} conjugations</div>}
+              {term.nouns && term.nouns > 0 && <div>{term.nouns} inflections</div>}
+              {term.other && term.other > 0 && <div>{term.other} other forms</div>}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-

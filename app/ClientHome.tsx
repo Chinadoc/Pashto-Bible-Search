@@ -15,6 +15,7 @@ import ChapterNavigator from "../components/ChapterNavigator";
 import ChapterView from "../components/ChapterView";
 import TopicsBrowser from "../components/TopicsBrowser";
 import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
+import DictionaryTermDetection, { type DictionaryTerm } from "../components/DictionaryTermDetection";
 import WordAlternativeUses from "../components/WordAlternativeUses";
 import { useSearchFilters } from "./contexts/SearchFiltersContext";
 import SearchHeader from "../components/SearchHeader";
@@ -796,6 +797,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     groupedByPos: Record<string, any[]>;
     needsDisambiguation: boolean;
   } | undefined>();
+  const [detectedTerm, setDetectedTerm] = useState<DictionaryTerm | null>(null);
+  const [detectingTerm, setDetectingTerm] = useState(false);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019' | 'unified'>('afghan2023');
@@ -1064,6 +1067,40 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
   }, []);
+
+  // Proactive dictionary term detection - shows smart banner as user types
+  useEffect(() => {
+    // Don't detect for very short queries
+    if (query.length < 2) {
+      setDetectedTerm(null);
+      return;
+    }
+
+    // Debounce to avoid excessive API calls
+    setDetectingTerm(true);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/detect-term?term=${encodeURIComponent(query)}`
+        );
+        const data = await response.json();
+        setDetectedTerm(data.term || null);
+
+        if (data.term) {
+          console.log(
+            `[DETECTION] ✓ Found: ${data.term.lemma} (${data.term.totalForms} forms, confidence: ${data.term.confidence})`
+          );
+        }
+      } catch (error) {
+        console.error('[DETECTION] Failed:', error);
+        setDetectedTerm(null);
+      } finally {
+        setDetectingTerm(false);
+      }
+    }, 300); // Wait 300ms after typing stops
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   // Trigger initial search when an initialQuery is provided (e.g., navigating from Results → Lexicon)
 
@@ -1630,6 +1667,14 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     [executeSearch]
   );
 
+  // Handler for expanding dictionary term to all forms
+  const handleExpandForms = useCallback(() => {
+    console.log('[EXPAND_FORMS] User clicked to expand to all forms');
+    setIncludeRelated(true);
+    // Trigger search with expanded forms
+    handleSearch();
+  }, [handleSearch]);
+
   useEffect(() => {
     if (translationEffectGuard.current) {
       translationEffectGuard.current = false;
@@ -1890,6 +1935,19 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             nounFilters={nounFilters}
             setNounFilters={setNounFilters}
           />
+
+          {/* Dictionary Term Detection Banner */}
+          {detectedTerm && (
+            <div className="mb-4">
+              <DictionaryTermDetection
+                term={detectedTerm}
+                searchedTerm={query}
+                onExpandForms={handleExpandForms}
+                isExpanded={includeRelated}
+                loading={isLoading || detectingTerm}
+              />
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
