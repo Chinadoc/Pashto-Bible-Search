@@ -1968,7 +1968,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
                 searchedFormIsLemma: query.trim() === dictionaryMatch.word,
                 lingdocsId: dictionaryMatch.lingdocsId,
                 confidence: 'high',
-                source: 'd1_verbs_lexicon',
+                source: 'd1_verified',
               }}
               searchedTerm={query.trim()}
               onExpandForms={() => {
