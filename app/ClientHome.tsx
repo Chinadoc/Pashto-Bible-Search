@@ -1713,7 +1713,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
 
   // Proactive dictionary term detection as user types
   // This shows the banner BEFORE searching, so user can choose to expand
-  const [detectingTerm, setDetectingTerm] = useState(false);
+  // Note: detectingTerm state is declared earlier in the file (line 800)
   useEffect(() => {
     // Don't detect very short queries
     if (query.length < 2) {
