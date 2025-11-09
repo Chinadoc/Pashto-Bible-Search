@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "functions": {
-    "/api/get-frequency": {},
-    "/api/lexicon_frequency": {},
-    "/api/search_phrase": {}
-  }
-}
