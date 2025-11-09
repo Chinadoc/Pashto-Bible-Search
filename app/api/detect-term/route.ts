@@ -1,286 +1,247 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { D1Database } from '@/utils/d1';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 /**
  * Detect Dictionary Term API
- * 
+ *
  * Queries D1 tables to determine if a search term matches a LingDocs dictionary entry.
  * Returns metadata about the term to show intelligent search expansion options.
- * 
+ *
  * Queries:
  * 1. verbs_lexicon → Check if it's a verb lemma
  * 2. verb_forms → Count conjugations, check if it's an inflected form
  * 3. nouns_lexicon → Check if it's a noun
  * 4. form_to_root → Reverse lookup for inflected forms
- * 
+ *
  * Priority:
  * - Exact lemma match (high confidence)
  * - Inflected form with known root (high confidence)
- * - Form-to-root mapping (medium confidence)
- * - Noun lookup (high confidence)
+ * - Pattern-based inference (medium confidence)
  */
-
-interface DetectionResult {
-  found: boolean;
-  term?: {
-    lemma: string;
-    searchedForm: string;
-    romanization?: string;
-    english?: string;
-    pos: 'verb' | 'noun' | 'adjective' | 'other';
-    verbType?: 'dynamic' | 'stative' | 'dynamic_compound' | 'stative_compound';
-    helper?: string;
-    transitivity?: 'transitive' | 'intransitive' | 'both';
-    totalForms: number;
-    searchedFormIsLemma: boolean;
-    lingdocsId?: number;
-    confidence: 'high' | 'medium' | 'low';
-    source: string;
-  };
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const term = searchParams.get('term');
 
-  if (!term || term.trim().length < 2) {
-    return NextResponse.json({
-      found: false,
-      error: 'Term too short',
-    });
+  if (!term || term.trim().length === 0) {
+    return NextResponse.json(
+      { error: 'Missing term parameter' },
+      { status: 400 }
+    );
   }
 
-  const normalized = term.trim();
-  
   try {
-    const { getD1Database, queryD1, queryD1First } = await import('@/utils/d1');
-    const db = getD1Database();
+    // Get D1 database from Cloudflare Pages binding
+    const db = (process.env as any).DB as D1Database;
 
     if (!db) {
+      console.warn('D1 database not available, skipping dictionary term detection');
+      return NextResponse.json({ term: null });
+    }
+
+    const cleanTerm = term.trim();
+
+    // Step 1: Check if it's a verb lemma (exact match)
+    const verbLemma = await db
+      .prepare(
+        `SELECT
+          lemma, verb_type, helper, transitivity,
+          romanization, english_translation, lingdocs_id,
+          stems, examples
+        FROM verbs_lexicon
+        WHERE lemma = ? OR verb_root = ?
+        LIMIT 1`
+      )
+      .bind(cleanTerm, cleanTerm)
+      .first();
+
+    if (verbLemma) {
+      // Count conjugations
+      const formsCount = await db
+        .prepare(
+          `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
+        )
+        .bind(verbLemma.lemma)
+        .first();
+
+      const lingdocsUrl = verbLemma.lingdocs_id
+        ? `https://dictionary.lingdocs.com/word?id=${verbLemma.lingdocs_id}`
+        : undefined;
+
       return NextResponse.json({
-        found: false,
-        error: 'Database not available',
+        term: {
+          lemma: verbLemma.lemma,
+          romanization: verbLemma.romanization,
+          englishTranslation: verbLemma.english_translation,
+          pos: 'verb' as const,
+          verbType: verbLemma.verb_type as 'simple' | 'dynamic_compound' | 'stative_compound' | undefined,
+          helper: verbLemma.helper,
+          transitivity: verbLemma.transitivity as 'transitive' | 'intransitive' | undefined,
+          lingdocsId: verbLemma.lingdocs_id,
+          lingdocsUrl,
+          totalForms: formsCount?.count || 0,
+          verbs: formsCount?.count || 0,
+          confidence: 'high' as const,
+          source: 'd1_verified' as const,
+        },
       });
     }
 
-    // Priority 1: Check verbs_lexicon for exact lemma match
-    const verbLemma = await queryD1First<{
-      verb_root?: string;
-      infinitive?: string;
-      lingdocs_id?: number;
-      verb_type?: string;
-      helper?: string;
-      transitivity?: string;
-      romanization?: string;
-      english?: string;
-    }>(
-      db,
-      `SELECT verb_root, infinitive, lingdocs_id, verb_type, helper, transitivity, romanization, english
-       FROM verbs_lexicon 
-       WHERE verb_root = ? OR COALESCE(infinitive, verb_root) = ?
-       LIMIT 1`,
-      [normalized, normalized]
-    );
+    // Step 2: Check if it's an inflected verb form (reverse lookup)
+    const inflectedForm = await db
+      .prepare(
+        `SELECT
+          vf.lemma, vf.form, vf.tense, vf.person, vf.voice,
+          vl.verb_type, vl.helper, vl.transitivity,
+          vl.romanization, vl.english_translation, vl.lingdocs_id
+        FROM verb_forms vf
+        LEFT JOIN verbs_lexicon vl ON vf.lemma = vl.lemma
+        WHERE vf.form = ?
+        LIMIT 1`
+      )
+      .bind(cleanTerm)
+      .first();
 
-    if (verbLemma?.verb_root) {
-      // Count total forms for this verb
-      const formCount = await queryD1First<{ count: number }>(
-        db,
-        `SELECT COUNT(DISTINCT form) as count 
-         FROM verb_forms 
-         WHERE verb_root = ? OR base_verb = ? OR root = ?
-         LIMIT 1`,
-        [verbLemma.verb_root, verbLemma.verb_root, verbLemma.verb_root]
-      );
+    if (inflectedForm) {
+      // Count total conjugations for the lemma
+      const formsCount = await db
+        .prepare(
+          `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
+        )
+        .bind(inflectedForm.lemma)
+        .first();
+
+      const lingdocsUrl = inflectedForm.lingdocs_id
+        ? `https://dictionary.lingdocs.com/word?id=${inflectedForm.lingdocs_id}`
+        : undefined;
 
       return NextResponse.json({
-        found: true,
         term: {
-          lemma: verbLemma.verb_root,
-          searchedForm: normalized,
-          romanization: verbLemma.romanization || undefined,
-          english: verbLemma.english || undefined,
-          pos: 'verb',
-          verbType: verbLemma.verb_type as any,
-          helper: verbLemma.helper || undefined,
-          transitivity: verbLemma.transitivity as any,
-          totalForms: formCount?.count || 0,
-          searchedFormIsLemma: normalized === verbLemma.verb_root,
-          lingdocsId: verbLemma.lingdocs_id || undefined,
-          confidence: 'high',
-          source: 'd1_verbs_lexicon',
+          lemma: inflectedForm.lemma,
+          romanization: inflectedForm.romanization,
+          englishTranslation: inflectedForm.english_translation,
+          pos: 'verb' as const,
+          verbType: inflectedForm.verb_type as 'simple' | 'dynamic_compound' | 'stative_compound' | undefined,
+          helper: inflectedForm.helper,
+          transitivity: inflectedForm.transitivity as 'transitive' | 'intransitive' | undefined,
+          lingdocsId: inflectedForm.lingdocs_id,
+          lingdocsUrl,
+          totalForms: formsCount?.count || 0,
+          verbs: formsCount?.count || 0,
+          confidence: 'high' as const,
+          source: 'd1_verified' as const,
+          matchedForm: {
+            form: inflectedForm.form,
+            tense: inflectedForm.tense,
+            person: inflectedForm.person,
+            voice: inflectedForm.voice,
+          },
         },
-      } as DetectionResult);
+      });
     }
 
-    // Priority 2: Check verb_forms for inflected form
-    const verbForm = await queryD1First<{
-      verb_root?: string;
-      base_verb?: string;
-      root?: string;
-      form: string;
-    }>(
-      db,
-      `SELECT DISTINCT 
-         COALESCE(verb_root, base_verb, root) as verb_root,
-         form
-       FROM verb_forms 
-       WHERE form = ?
-       LIMIT 1`,
-      [normalized]
-    );
+    // Step 3: Check form_to_root table (legacy fallback)
+    const rootLookup = await db
+      .prepare(
+        `SELECT root_word, frequency FROM form_to_root WHERE word_form = ? LIMIT 1`
+      )
+      .bind(cleanTerm)
+      .first();
 
-    if (verbForm?.verb_root) {
-      // Get full verb info from lexicon
-      const verbInfo = await queryD1First<{
-        verb_root?: string;
-        lingdocs_id?: number;
-        verb_type?: string;
-        helper?: string;
-        transitivity?: string;
-        romanization?: string;
-        english?: string;
-      }>(
-        db,
-        `SELECT verb_root, lingdocs_id, verb_type, helper, transitivity, romanization, english
-         FROM verbs_lexicon 
-         WHERE verb_root = ?
-         LIMIT 1`,
-        [verbForm.verb_root]
-      );
+    if (rootLookup) {
+      // Try to get metadata for the root
+      const rootMetadata = await db
+        .prepare(
+          `SELECT
+            lemma, verb_type, helper, transitivity,
+            romanization, english_translation, lingdocs_id
+          FROM verbs_lexicon
+          WHERE lemma = ?
+          LIMIT 1`
+        )
+        .bind(rootLookup.root_word)
+        .first();
 
-      // Count total forms
-      const formCount = await queryD1First<{ count: number }>(
-        db,
-        `SELECT COUNT(DISTINCT form) as count 
-         FROM verb_forms 
-         WHERE verb_root = ? OR base_verb = ? OR root = ?
-         LIMIT 1`,
-        [verbForm.verb_root, verbForm.verb_root, verbForm.verb_root]
-      );
+      if (rootMetadata) {
+        const formsCount = await db
+          .prepare(
+            `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
+          )
+          .bind(rootMetadata.lemma)
+          .first();
 
-      if (verbInfo?.verb_root) {
+        const lingdocsUrl = rootMetadata.lingdocs_id
+          ? `https://dictionary.lingdocs.com/word?id=${rootMetadata.lingdocs_id}`
+          : undefined;
+
         return NextResponse.json({
-          found: true,
           term: {
-            lemma: verbInfo.verb_root,
-            searchedForm: normalized,
-            romanization: verbInfo.romanization || undefined,
-            english: verbInfo.english || undefined,
-            pos: 'verb',
-            verbType: verbInfo.verb_type as any,
-            helper: verbInfo.helper || undefined,
-            transitivity: verbInfo.transitivity as any,
-            totalForms: formCount?.count || 0,
-            searchedFormIsLemma: false,
-            lingdocsId: verbInfo.lingdocs_id || undefined,
-            confidence: 'high',
-            source: 'd1_verb_forms',
+            lemma: rootMetadata.lemma,
+            romanization: rootMetadata.romanization,
+            englishTranslation: rootMetadata.english_translation,
+            pos: 'verb' as const,
+            verbType: rootMetadata.verb_type as 'simple' | 'dynamic_compound' | 'stative_compound' | undefined,
+            helper: rootMetadata.helper,
+            transitivity: rootMetadata.transitivity as 'transitive' | 'intransitive' | undefined,
+            lingdocsId: rootMetadata.lingdocs_id,
+            lingdocsUrl,
+            totalForms: formsCount?.count || 0,
+            verbs: formsCount?.count || 0,
+            confidence: 'medium' as const,
+            source: 'd1_inferred' as const,
           },
-        } as DetectionResult);
+        });
       }
     }
 
-    // Priority 3: Check form_to_root mapping
-    const rootMapping = await queryD1First<{ root: string }>(
-      db,
-      `SELECT root FROM form_to_root WHERE form = ? LIMIT 1`,
-      [normalized]
-    );
+    // Step 4: Check nouns_lexicon
+    const nounLemma = await db
+      .prepare(
+        `SELECT
+          pashto_word, gender, animacy, plural_type,
+          romanization, english_translation
+        FROM nouns_lexicon
+        WHERE pashto_word = ?
+        LIMIT 1`
+      )
+      .bind(cleanTerm)
+      .first();
 
-    if (rootMapping?.root) {
-      // Check if root is in verbs_lexicon
-      const verbInfo = await queryD1First<{
-        verb_root?: string;
-        lingdocs_id?: number;
-        verb_type?: string;
-        helper?: string;
-        transitivity?: string;
-        romanization?: string;
-        english?: string;
-      }>(
-        db,
-        `SELECT verb_root, lingdocs_id, verb_type, helper, transitivity, romanization, english
-         FROM verbs_lexicon 
-         WHERE verb_root = ?
-         LIMIT 1`,
-        [rootMapping.root]
-      );
+    if (nounLemma) {
+      // Count inflections (if we have an inflections table for nouns)
+      const inflectionsCount = await db
+        .prepare(
+          `SELECT COUNT(*) as count FROM inflections WHERE base_word = ?`
+        )
+        .bind(nounLemma.pashto_word)
+        .first()
+        .catch(() => ({ count: 0 }));
 
-      if (verbInfo?.verb_root) {
-        const formCount = await queryD1First<{ count: number }>(
-          db,
-          `SELECT COUNT(DISTINCT form) as count 
-           FROM verb_forms 
-           WHERE verb_root = ? OR base_verb = ? OR root = ?
-           LIMIT 1`,
-          [verbInfo.verb_root, verbInfo.verb_root, verbInfo.verb_root]
-        );
-
-        return NextResponse.json({
-          found: true,
-          term: {
-            lemma: verbInfo.verb_root,
-            searchedForm: normalized,
-            romanization: verbInfo.romanization || undefined,
-            english: verbInfo.english || undefined,
-            pos: 'verb',
-            verbType: verbInfo.verb_type as any,
-            helper: verbInfo.helper || undefined,
-            transitivity: verbInfo.transitivity as any,
-            totalForms: formCount?.count || 0,
-            searchedFormIsLemma: false,
-            lingdocsId: verbInfo.lingdocs_id || undefined,
-            confidence: 'medium',
-            source: 'd1_form_to_root',
-          },
-        } as DetectionResult);
-      }
-    }
-
-    // Priority 4: Check nouns_lexicon
-    const nounInfo = await queryD1First<{
-      pashto_word?: string;
-      plural_forms?: string;
-      gender?: string;
-    }>(
-      db,
-      `SELECT pashto_word, plural_forms, gender
-       FROM nouns_lexicon 
-       WHERE pashto_word = ?
-       LIMIT 1`,
-      [normalized]
-    );
-
-    if (nounInfo?.pashto_word) {
       return NextResponse.json({
-        found: true,
         term: {
-          lemma: nounInfo.pashto_word,
-          searchedForm: normalized,
-          pos: 'noun',
-          totalForms: 1, // TODO: Count plural forms when available
-          searchedFormIsLemma: true,
-          confidence: 'high',
-          source: 'd1_nouns_lexicon',
+          lemma: nounLemma.pashto_word,
+          romanization: nounLemma.romanization,
+          englishTranslation: nounLemma.english_translation,
+          pos: 'noun' as const,
+          gender: nounLemma.gender,
+          pluralType: nounLemma.plural_type,
+          totalForms: inflectionsCount?.count || 0,
+          nouns: inflectionsCount?.count || 0,
+          confidence: 'high' as const,
+          source: 'd1_verified' as const,
         },
-      } as DetectionResult);
+      });
     }
 
     // No match found
-    return NextResponse.json({
-      found: false,
-    } as DetectionResult);
-  } catch (error: any) {
-    console.error('Dictionary term detection failed:', error);
+    return NextResponse.json({ term: null });
+  } catch (error) {
+    console.error('Dictionary term detection error:', error);
     return NextResponse.json(
-      {
-        found: false,
-        error: error?.message || 'Detection failed',
-      },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
 }
-
