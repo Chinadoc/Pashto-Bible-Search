@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getD1Database, queryD1, queryD1First } from '@/utils/d1';
 
 export const runtime = 'nodejs';
 
@@ -53,16 +52,18 @@ export async function GET(request: NextRequest) {
   }
 
   const normalized = term.trim();
-  const db = getD1Database();
-
-  if (!db) {
-    return NextResponse.json({
-      found: false,
-      error: 'Database not available',
-    });
-  }
-
+  
   try {
+    const { getD1Database, queryD1, queryD1First } = await import('@/utils/d1');
+    const db = getD1Database();
+
+    if (!db) {
+      return NextResponse.json({
+        found: false,
+        error: 'Database not available',
+      });
+    }
+
     // Priority 1: Check verbs_lexicon for exact lemma match
     const verbLemma = await queryD1First<{
       verb_root?: string;
