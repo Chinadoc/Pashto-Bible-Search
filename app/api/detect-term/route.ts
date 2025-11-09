@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { D1Database } from '../../utils/d1';
+import type { D1Database } from '@/utils/d1';
 
 export const runtime = 'edge';
 
