@@ -1973,8 +1973,8 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
                 setIncludeRelated(true);
                 executeSearchRef.current?.({ preserveResults: false, reason: 'dictionary-expand' });
               }}
-              onDismiss={() => setDictionaryMatch(null)}
               isExpanded={includeRelated}
+              loading={isLoading || detectingTerm}
             />
           )}
 
