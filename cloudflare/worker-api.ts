@@ -494,15 +494,18 @@ async function searchVerses(
  * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
  * Example: afghan2023/nt/matthew27_verse_002.mp3
  */
-function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023'): string {
+function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023', testament?: 'OT' | 'NT'): string {
   // Normalize book name: lowercase, remove spaces
   // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
   
-  // Determine testament based on book name (simplified - most NT books)
-  const testament = translation === 'afghan2023' ? 'nt' : 'ot';
+  // Determine testament - use provided testament or infer from translation
+  let test = testament?.toLowerCase() || (translation === 'afghan2023' ? 'nt' : 'ot');
+  if (test === 'ot') test = 'ot';
+  else if (test === 'nt') test = 'nt';
+  else test = 'nt'; // default
   
-  return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
+  return `${translation}/${test}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
 }
 
 async function getVersesByChapter(
@@ -1650,6 +1653,374 @@ async function getTopicsVerses(
 }
 
 // ========================================
+// R2 Audio Linking Functions
+// ========================================
+
+/**
+ * Parse R2 key to extract book, chapter, verse, translation
+ * Format: {translation}/{testament}/{book}{chapter}_verse_{verse:03d}.mp3
+ * Example: afghan2023/nt/acts10_verse_001.mp3
+ */
+function parseR2Key(key: string): {
+  translation: 'afghan2023' | 'yousafzai2019';
+  testament: 'OT' | 'NT';
+  book: string;
+  chapter: number;
+  verse: number;
+} | null {
+  // Remove leading slash if present
+  const cleanKey = key.startsWith('/') ? key.slice(1) : key;
+  
+  // Match pattern: {translation}/{testament}/{book}{chapter}_verse_{verse}.mp3
+  const match = cleanKey.match(/^(afghan2023|yousafzai2019)\/(ot|nt)\/(.+?)(\d+)_verse_(\d+)\.mp3$/i);
+  
+  if (!match) {
+    return null;
+  }
+  
+  const [, translation, testament, book, chapter, verse] = match;
+  
+  return {
+    translation: translation.toLowerCase() === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+    testament: testament.toUpperCase() === 'OT' ? 'OT' : 'NT',
+    book: book.trim(),
+    chapter: parseInt(chapter, 10),
+    verse: parseInt(verse, 10),
+  };
+}
+
+/**
+ * Normalize book name to match database format
+ * Handles variations like "acts" -> "Acts", "2john" -> "2 John"
+ */
+function normalizeBookName(bookSlug: string): string {
+  // Remove numbers from start/end temporarily
+  const hasLeadingNumber = /^\d+/.test(bookSlug);
+  const hasTrailingNumber = /\d+$/.test(bookSlug);
+  
+  let baseName = bookSlug;
+  let leadingNum = '';
+  let trailingNum = '';
+  
+  if (hasLeadingNumber) {
+    const match = bookSlug.match(/^(\d+)(.+)/);
+    if (match) {
+      leadingNum = match[1];
+      baseName = match[2];
+    }
+  }
+  
+  if (hasTrailingNumber && !hasLeadingNumber) {
+    const match = baseName.match(/^(.+?)(\d+)$/);
+    if (match) {
+      baseName = match[1];
+      trailingNum = match[2];
+    }
+  }
+  
+  // Capitalize first letter
+  const capitalized = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+  
+  // Common book name mappings
+  const bookMap: Record<string, string> = {
+    'acts': 'Acts',
+    'matthew': 'Matthew',
+    'mark': 'Mark',
+    'luke': 'Luke',
+    'john': 'John',
+    'romans': 'Romans',
+    'corinthians': '1 Corinthians',
+    'corinthians1': '1 Corinthians',
+    'corinthians2': '2 Corinthians',
+    'galatians': 'Galatians',
+    'ephesians': 'Ephesians',
+    'philippians': 'Philippians',
+    'colossians': 'Colossians',
+    'thessalonians': '1 Thessalonians',
+    'thessalonians1': '1 Thessalonians',
+    'thessalonians2': '2 Thessalonians',
+    'timothy': '1 Timothy',
+    'timothy1': '1 Timothy',
+    'timothy2': '2 Timothy',
+    'titus': 'Titus',
+    'philemon': 'Philemon',
+    'hebrews': 'Hebrews',
+    'james': 'James',
+    'peter': '1 Peter',
+    'peter1': '1 Peter',
+    'peter2': '2 Peter',
+    'jude': 'Jude',
+    'revelation': 'Revelation',
+    'psalms': 'Psalms',
+    'proverbs': 'Proverbs',
+    'song': 'Song of Solomon',
+    'songofsolomon': 'Song of Solomon',
+  };
+  
+  // Try exact match first
+  if (bookMap[baseName.toLowerCase()]) {
+    return bookMap[baseName.toLowerCase()];
+  }
+  
+  // Try with leading number
+  if (leadingNum && bookMap[baseName.toLowerCase()]) {
+    return `${leadingNum} ${bookMap[baseName.toLowerCase()]}`;
+  }
+  
+  // Try common patterns
+  if (baseName.toLowerCase().includes('john')) {
+    if (leadingNum) return `${leadingNum} John`;
+    if (trailingNum) return `${trailingNum} John`;
+    return 'John';
+  }
+  
+  if (baseName.toLowerCase().includes('peter')) {
+    if (leadingNum) return `${leadingNum} Peter`;
+    if (trailingNum) return `${trailingNum} Peter`;
+    return '1 Peter';
+  }
+  
+  if (baseName.toLowerCase().includes('corinthians')) {
+    if (leadingNum) return `${leadingNum} Corinthians`;
+    if (trailingNum) return `${trailingNum} Corinthians`;
+    return '1 Corinthians';
+  }
+  
+  // Default: return capitalized with numbers
+  if (leadingNum) return `${leadingNum} ${capitalized}`;
+  if (trailingNum) return `${trailingNum} ${capitalized}`;
+  return capitalized;
+}
+
+/**
+ * Find verses without audio_r2_key and link them to R2 files
+ * This is more efficient - it queries verses first, then checks R2
+ */
+async function handleLinkMissingR2Audio(request: Request, env: Env): Promise<Response> {
+  const stats = {
+    versesChecked: 0,
+    filesFound: 0,
+    updated: 0,
+    notFound: 0,
+    errors: 0,
+    sampleNotFound: [] as string[],
+  };
+  
+  console.log('🔍 Finding verses without audio_r2_key...');
+  
+  try {
+    // First, build a Set of all R2 audio file keys for fast lookup
+    console.log('📦 Building R2 file index...');
+    const r2FileSet = new Set<string>();
+    let cursor: string | undefined;
+    let r2FileCount = 0;
+    
+    do {
+      const listResult = await env.AUDIO_BUCKET.list({
+        prefix: 'afghan2023/',
+        limit: 1000,
+        cursor,
+      });
+      
+      if (listResult.objects) {
+        for (const obj of listResult.objects) {
+          if (obj.key.endsWith('.mp3')) {
+            r2FileSet.add(obj.key);
+            r2FileCount++;
+          }
+        }
+      }
+      
+      cursor = listResult.cursor;
+    } while (cursor);
+    
+    console.log(`📦 Found ${r2FileCount} audio files in R2`);
+    
+    // Get all verses without audio_r2_key
+    const versesResult = await env.DB.prepare(
+      `SELECT id, book, chapter, verse, testament, translation_key 
+       FROM verses_afghan2023 
+       WHERE audio_r2_key IS NULL OR audio_r2_key = ''
+       ORDER BY book, chapter, verse
+       LIMIT 10000`
+    ).all();
+    
+    const verses = versesResult.results || [];
+    stats.versesChecked = verses.length;
+    
+    console.log(`📖 Found ${verses.length} verses without audio_r2_key`);
+    
+    if (verses.length === 0) {
+      return jsonResponse({
+        success: true,
+        stats,
+        message: 'All verses already have audio_r2_key',
+      });
+    }
+    
+    // Process verses in batches
+    const batchSize = 500;
+    for (let i = 0; i < verses.length; i += batchSize) {
+      const batch = verses.slice(i, i + batchSize);
+      
+      for (const verse of batch) {
+        try {
+          const book = verse.book as string;
+          const chapter = verse.chapter as number;
+          const verseNum = verse.verse as number;
+          const testament = (verse.testament as string)?.toUpperCase() as 'OT' | 'NT' || 'NT';
+          
+          // Generate expected R2 key
+          const r2Key = generateR2AudioKey(book, chapter, verseNum, 'afghan2023', testament);
+          
+          // Check if file exists in R2 using the Set (fast lookup)
+          if (r2FileSet.has(r2Key)) {
+            // File exists! Update the verse
+            await env.DB.prepare(
+              `UPDATE verses_afghan2023 
+               SET audio_r2_key = ?, updated_at = strftime('%s', 'now')
+               WHERE id = ?`
+            ).bind(r2Key, verse.id).run();
+            
+            stats.filesFound++;
+            stats.updated++;
+            
+            if (stats.updated % 100 === 0) {
+              console.log(`✅ Updated ${stats.updated} verses...`);
+            }
+          } else {
+            stats.notFound++;
+            
+            // Keep track of first few not found for reporting
+            if (stats.sampleNotFound.length < 10) {
+              stats.sampleNotFound.push(`${book} ${chapter}:${verseNum} (expected: ${r2Key})`);
+            }
+          }
+        } catch (error: any) {
+          console.error(`❌ Error processing verse ${verse.id}:`, error.message);
+          stats.errors++;
+        }
+      }
+    }
+    
+    return jsonResponse({
+      success: true,
+      stats,
+      message: `Checked ${stats.versesChecked} verses, found ${stats.filesFound} files, updated ${stats.updated} verses`,
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Linking failed:', error);
+    return errorResponse(`Failed to link missing audio: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Link R2 audio files to verses in database
+ * This scans all R2 files and matches them to verses
+ */
+async function handleLinkR2Audio(request: Request, env: Env): Promise<Response> {
+  const stats = {
+    processed: 0,
+    updated: 0,
+    errors: 0,
+    unmatched: [] as string[],
+  };
+  
+  console.log('🔍 Listing all audio files in R2...');
+  
+  // List all objects in R2 bucket
+  const allObjects: Array<{ key: string; size: number }> = [];
+  let cursor: string | undefined;
+  
+  do {
+    const listResult = await env.AUDIO_BUCKET.list({
+      limit: 1000,
+      cursor,
+    });
+    
+    if (listResult.objects) {
+      allObjects.push(...listResult.objects.map(obj => ({
+        key: obj.key,
+        size: obj.size,
+      })));
+    }
+    
+    cursor = listResult.cursor;
+  } while (cursor);
+  
+  console.log(`📦 Found ${allObjects.length} objects in R2`);
+  
+  // Filter to only .mp3 files
+  const audioFiles = allObjects.filter(obj => obj.key.endsWith('.mp3'));
+  console.log(`🎵 Found ${audioFiles.length} audio files`);
+  
+  // Process each audio file
+  for (const audioFile of audioFiles) {
+    stats.processed++;
+    
+    const parsed = parseR2Key(audioFile.key);
+    
+    if (!parsed) {
+      console.warn(`⚠️  Could not parse R2 key: ${audioFile.key}`);
+      stats.unmatched.push(audioFile.key);
+      continue;
+    }
+    
+    const { translation, testament, book, chapter, verse } = parsed;
+    const normalizedBook = normalizeBookName(book);
+    
+    // Determine table name
+    const tableName = translation === 'yousafzai2019' 
+      ? 'verses_yousafzai' 
+      : 'verses_afghan2023';
+    
+    try {
+      // Check if verse exists
+      const verseCheck = await env.DB.prepare(
+        `SELECT id, audio_r2_key FROM ${tableName} 
+         WHERE book = ? AND chapter = ? AND verse = ? 
+         LIMIT 1`
+      ).bind(normalizedBook, chapter, verse).first();
+      
+      if (!verseCheck) {
+        console.warn(`⚠️  Verse not found: ${normalizedBook} ${chapter}:${verse} (from ${audioFile.key})`);
+        stats.unmatched.push(audioFile.key);
+        continue;
+      }
+      
+      // Skip if already linked
+      if (verseCheck.audio_r2_key === audioFile.key) {
+        continue;
+      }
+      
+      // Update verse with audio_r2_key
+      await env.DB.prepare(
+        `UPDATE ${tableName} 
+         SET audio_r2_key = ?, updated_at = strftime('%s', 'now')
+         WHERE id = ?`
+      ).bind(audioFile.key, verseCheck.id).run();
+      
+      stats.updated++;
+      
+      if (stats.updated % 100 === 0) {
+        console.log(`✅ Updated ${stats.updated} verses...`);
+      }
+      
+    } catch (error: any) {
+      console.error(`❌ Error processing ${audioFile.key}:`, error.message);
+      stats.errors++;
+    }
+  }
+  
+  return jsonResponse({
+    success: true,
+    stats,
+    message: `Processed ${stats.processed} files, updated ${stats.updated} verses`,
+  });
+}
+
+// ========================================
 // Main Request Handler
 // ========================================
 
@@ -1919,6 +2290,16 @@ export default {
       } catch (error: any) {
         return errorResponse(`Query failed: ${error.message}`, 500);
       }
+    }
+
+    // Link R2 audio files to verses in database (scans all R2 files)
+    if (path === '/api/link-r2-audio' && request.method === 'POST') {
+      return handleLinkR2Audio(request, env);
+    }
+
+    // Link missing audio for verses without audio_r2_key (more efficient)
+    if (path === '/api/link-missing-r2-audio' && request.method === 'POST') {
+      return handleLinkMissingR2Audio(request, env);
     }
 
     return errorResponse('Not found', 404);

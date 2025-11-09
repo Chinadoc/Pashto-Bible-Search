@@ -12,6 +12,7 @@ export type Variant = {
   count?: number;
   romanized?: string;
   flags?: string[];
+  sources?: string[];
 };
 
 // Helper verbs that should not get compound expansions

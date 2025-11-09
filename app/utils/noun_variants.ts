@@ -10,6 +10,7 @@ export type Variant = {
   count?: number;
   romanized?: string;
   flags?: string[];
+  sources?: string[];
 };
 
 type InflectionRow = {

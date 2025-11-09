@@ -68,6 +68,34 @@ export async function POST(request: NextRequest) {
       [verbCandidate]
     );
 
+    let inflectionReasonRows: Array<{
+      pashto_form: string;
+      base_word: string;
+      verse_ref: string;
+      inflection_type: string;
+      is_plural: number;
+      is_in_sandwich: number;
+      sandwich_type?: string | null;
+      is_subject_transitive_past: number;
+      context_sentence?: string | null;
+      translation_key?: string | null;
+    }> = [];
+
+    try {
+      inflectionReasonRows = await db.query(
+        `SELECT pashto_form, base_word, verse_ref, inflection_type,
+                is_plural, is_in_sandwich, sandwich_type, is_subject_transitive_past,
+                context_sentence, translation_key
+         FROM inflection_reasons
+         WHERE pashto_form = ? OR base_word = ?
+         ORDER BY updated_at DESC
+         LIMIT 50`,
+        [normalizedWord, normalizedWord]
+      );
+    } catch (error) {
+      console.warn('Failed to load inflection reasons:', error);
+    }
+
     // Build analysis object
     const analysis: any = {
       word: normalizedWord,
@@ -164,6 +192,34 @@ export async function POST(request: NextRequest) {
       analysis.occurrences = {
         count: occurrenceInfo.frequency,
         verse_refs: occurrenceInfo.verseRefs,
+      };
+    }
+
+    if (inflectionReasonRows.length > 0) {
+      const pluralCount = inflectionReasonRows.filter(row => row.is_plural).length;
+      const sandwichCount = inflectionReasonRows.filter(row => row.is_in_sandwich).length;
+      const transitivePastCount = inflectionReasonRows.filter(row => row.is_subject_transitive_past).length;
+
+      analysis.inflection_reasons = {
+        total: inflectionReasonRows.length,
+        counts: {
+          plural: pluralCount,
+          sandwich: sandwichCount,
+          transitivePast: transitivePastCount,
+        },
+        examples: inflectionReasonRows.slice(0, 15).map(row => ({
+          form: row.pashto_form,
+          base: row.base_word,
+          verse_ref: row.verse_ref,
+          inflection_type: row.inflection_type,
+          reasons: {
+            plural: Boolean(row.is_plural),
+            sandwich: row.is_in_sandwich ? { type: row.sandwich_type || null } : null,
+            transitivePast: Boolean(row.is_subject_transitive_past),
+          },
+          context: row.context_sentence,
+          translation: row.translation_key,
+        })),
       };
     }
 

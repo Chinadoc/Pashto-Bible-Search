@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Fuse from 'fuse.js';
 
   import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
-import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants } from '@/app/utils/verb_variants';
+import { generateNounVariants, type Variant as NounVariant } from '@/app/utils/noun_variants';
+import { generateVerbVariants, type Variant as VerbVariant } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
@@ -109,14 +109,9 @@ type SearchRequest = {
   translation?: 'afghan2023' | 'yousafzai2019';
 };
 
-type Variant = {
-  form: string;
-  label: string;
-  pos: 'noun'|'verb'|'adjective'|'other';
-  score?: number;
-  count?: number;
-  romanized?: string;
-  flags?: string[];
+// Unified Variant type that includes sources
+type Variant = (NounVariant | VerbVariant) & {
+  sources?: string[];
 };
 
 type Processed = {
@@ -153,6 +148,755 @@ const YOUSAFZAI_BOOKS = new Set(['Psalms', 'Proverbs', 'Song of Solomon']);
 
 const COMPOUND_HELPERS = new Set(['وهل', 'کول', 'کېدل', 'کړل', 'اخیستل', 'ساتل']);
 const helperVariantCache = new Map<string, string[]>();
+const PASHTO_LETTER_REGEX = /[\u0600-\u06FF]/;
+
+type QueryD1Fn = <T = any>(db: any, sql: string, params?: any[]) => Promise<T[]>;
+type QueryD1FirstFn = <T = any>(db: any, sql: string, params?: any[]) => Promise<T | null>;
+
+type VerbFormRow = {
+  verb_root?: string | null;
+  form: string;
+  form_type?: string | null;
+  person?: string | null;
+  number?: string | null;
+  gender?: string | null;
+  aspect?: string | null;
+  tense?: string | null;
+  mood?: string | null;
+  romanization?: string | null;
+  frequency_count?: number | null;
+  lexicon_pos?: string | null;
+};
+
+type VerbFormsSchema = {
+  rootColumn: string;
+  availableColumns: Set<string>;
+};
+
+const tableColumnCache = new Map<string, Set<string>>();
+let verbFormsSchemaCache: VerbFormsSchema | null = null;
+
+function dedupeSources(sources?: string[]): string[] | undefined {
+  if (!sources || sources.length === 0) {
+    return undefined;
+  }
+  const uniqueSources = sources
+    .map((source) => source?.trim())
+    .filter((source): source is string => Boolean(source));
+  const set = new Set(uniqueSources);
+  return set.size ? Array.from(set) : undefined;
+}
+
+async function getTableColumns(
+  db: any,
+  queryFn: QueryD1Fn,
+  table: string
+): Promise<Set<string>> {
+  const cacheKey = table.toLowerCase();
+  if (tableColumnCache.has(cacheKey)) {
+    return tableColumnCache.get(cacheKey)!;
+  }
+
+  if (!/^[\w]+$/.test(table)) {
+    return new Set();
+  }
+
+  try {
+    const rows = await queryFn<{ name: string }>(db, `PRAGMA table_info('${table}')`);
+    const columns = new Set(
+      (rows || []).map((row) => (row?.name || '').toLowerCase()).filter(Boolean)
+    );
+    tableColumnCache.set(cacheKey, columns);
+    return columns;
+  } catch (error) {
+    console.warn(`Failed to inspect columns for table "${table}":`, error);
+    const empty = new Set<string>();
+    tableColumnCache.set(cacheKey, empty);
+    return empty;
+  }
+}
+
+async function getVerbFormsSchema(
+  db: any,
+  queryFn: QueryD1Fn
+): Promise<VerbFormsSchema | null> {
+  if (verbFormsSchemaCache) {
+    return verbFormsSchemaCache;
+  }
+
+  const columns = await getTableColumns(db, queryFn, 'verb_forms');
+  if (!columns.size) {
+    return null;
+  }
+
+  const rootColumn =
+    columns.has('verb_root')
+      ? 'vf.verb_root'
+      : columns.has('base_verb')
+        ? 'vf.base_verb'
+        : columns.has('root')
+          ? 'vf.root'
+          : null;
+
+  if (!rootColumn) {
+    console.warn('verb_forms table does not expose verb_root/base_verb/root columns');
+    return null;
+  }
+
+  verbFormsSchemaCache = {
+    rootColumn,
+    availableColumns: columns,
+  };
+
+  return verbFormsSchemaCache;
+}
+
+function capitalizeLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[_-]/g, ' ').trim();
+  if (!cleaned) return null;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+function buildVerbLabel(row: VerbFormRow): string {
+  const parts: string[] = [];
+
+  if (row.person) {
+    parts.push(row.person);
+  }
+
+  const number = row.number?.toLowerCase();
+  if (number && !parts.join(' ').toLowerCase().includes(number)) {
+    parts.push(row.number!);
+  }
+
+  const gender = row.gender?.toLowerCase();
+  if (gender && !parts.join(' ').toLowerCase().includes(gender)) {
+    parts.push(row.gender!);
+  }
+
+  const tense = capitalizeLabel(row.tense) || capitalizeLabel(row.form_type);
+  if (tense) {
+    parts.push(tense);
+  }
+
+  const mood = capitalizeLabel(row.mood);
+  if (mood && !parts.includes(mood)) {
+    parts.push(mood);
+  }
+
+  return parts.length ? parts.join(' ').trim() : 'Form';
+}
+
+function buildVerbFlags(row: VerbFormRow, lexiconPos?: string | null): string[] | undefined {
+  const flags = new Set<string>();
+  const lexPos = lexiconPos?.toLowerCase() ?? '';
+
+  if (lexPos.includes('dyn')) flags.add('dynamic');
+  if (lexPos.includes('stat')) flags.add('stative');
+  if (lexPos.includes('comp')) flags.add('compound');
+  if (lexPos.includes('trans')) flags.add('transitive');
+  if (lexPos.includes('intrans')) flags.add('intransitive');
+
+  if (row.mood?.toLowerCase().includes('imperative')) flags.add('imperative');
+  if (row.form_type?.toLowerCase().includes('compound')) flags.add('compound');
+  if ((row.verb_root || '').includes(' ')) flags.add('compound');
+
+  return flags.size ? Array.from(flags) : undefined;
+}
+
+function mergeVariantLists(primary: Variant[], secondary: Variant[]): Variant[] {
+  const map = new Map<string, Variant>();
+
+  const upsert = (variant: Variant) => {
+    if (!variant?.form) return;
+    const key = variant.form;
+    const existing = map.get(key);
+
+    if (!existing) {
+      map.set(key, {
+        ...variant,
+        sources: dedupeSources(variant.sources),
+      });
+      return;
+    }
+
+    const mergedSources = dedupeSources([
+      ...(existing.sources ?? []),
+      ...(variant.sources ?? []),
+    ]);
+    const existingScore = existing.score ?? existing.count ?? 0;
+    const incomingScore = variant.score ?? variant.count ?? 0;
+    const preferred = incomingScore > existingScore ? variant : existing;
+
+    map.set(key, {
+      ...preferred,
+      count: Math.max(existing.count ?? 0, variant.count ?? 0) || preferred.count,
+      score: Math.max(existing.score ?? 0, variant.score ?? 0) || preferred.score,
+      flags: preferred.flags ?? existing.flags,
+      sources: mergedSources,
+    });
+  };
+
+  primary.forEach(upsert);
+  secondary.forEach(upsert);
+
+  return Array.from(map.values());
+}
+
+function sortAndLimitVariants(variants: Variant[], cap: number): Variant[] {
+  const limit = Math.max(1, cap);
+  return [...variants]
+    .sort((a, b) => (b.score ?? b.count ?? 0) - (a.score ?? a.count ?? 0))
+    .slice(0, limit);
+}
+
+async function resolveVerbRoot(
+  db: any,
+  queryFn: QueryD1Fn,
+  queryFirstFn: QueryD1FirstFn,
+  value: string
+): Promise<string> {
+  const normalized = value?.trim();
+  if (!normalized) return '';
+
+  // 1. Check word_frequencies.base_verb if available
+  try {
+    const wfColumns = await getTableColumns(db, queryFn, 'word_frequencies');
+    if (wfColumns.has('base_verb')) {
+      const freqRow = await queryFirstFn<{ base_verb?: string | null }>(
+        db,
+        `SELECT base_verb FROM word_frequencies WHERE pashto_word = ? AND base_verb IS NOT NULL LIMIT 1`,
+        [normalized]
+      );
+      if (freqRow?.base_verb) {
+        return freqRow.base_verb;
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed to resolve base verb via word_frequencies for "${normalized}":`, error);
+  }
+
+  // 2. form_to_root mapping
+  try {
+    const rootRow = await queryFirstFn<{ root: string }>(
+      db,
+      `SELECT root FROM form_to_root WHERE form = ? LIMIT 1`,
+      [normalized]
+    );
+    if (rootRow?.root) {
+      return rootRow.root;
+    }
+  } catch (error) {
+    console.warn(`Failed to resolve root via form_to_root for "${normalized}":`, error);
+  }
+
+  // 3. verbs_lexicon direct match
+  try {
+    const lexRow = await queryFirstFn<{ verb_root?: string | null; infinitive?: string | null }>(
+      db,
+      `SELECT verb_root, COALESCE(infinitive, verb_root) AS infinitive 
+       FROM verbs_lexicon 
+       WHERE verb_root = ? OR COALESCE(infinitive, verb_root) = ?
+       LIMIT 1`,
+      [normalized, normalized]
+    );
+    if (lexRow?.verb_root) {
+      return lexRow.verb_root;
+    }
+    if (lexRow?.infinitive) {
+      return lexRow.infinitive;
+    }
+  } catch (error) {
+    console.warn(`Failed to resolve verb via verbs_lexicon for "${normalized}":`, error);
+  }
+
+  return normalized;
+}
+
+async function fetchVerbVariantsFromD1(
+  word: string,
+  opts?: { cap?: number }
+): Promise<Variant[]> {
+  try {
+    const { getD1Database, queryD1, queryD1First } = await import('@/utils/d1');
+    const db = getD1Database();
+    if (!db) {
+      return [];
+    }
+
+    const schema = await getVerbFormsSchema(db, queryD1);
+    if (!schema) {
+      return [];
+    }
+
+    const cap = Math.max(1, Math.min(opts?.cap ?? 60, 400));
+    const root = await resolveVerbRoot(db, queryD1, queryD1First, word);
+    if (!root) {
+      return [];
+    }
+
+    const hasColumn = (name: string) => schema.availableColumns.has(name);
+    const selectParts = [
+      'vf.form',
+      `${schema.rootColumn} AS verb_root`,
+      hasColumn('form_type') ? 'vf.form_type' : 'NULL AS form_type',
+      hasColumn('person') ? 'vf.person' : 'NULL AS person',
+      hasColumn('number') ? 'vf.number' : 'NULL AS number',
+      hasColumn('gender') ? 'vf.gender' : 'NULL AS gender',
+      hasColumn('aspect') ? 'vf.aspect' : 'NULL AS aspect',
+      hasColumn('tense') ? 'vf.tense' : 'NULL AS tense',
+      hasColumn('mood') ? 'vf.mood' : 'NULL AS mood',
+      hasColumn('romanization') ? 'vf.romanization' : 'NULL AS romanization',
+      'wf.frequency_count AS frequency_count',
+      'vl.pos AS lexicon_pos',
+    ];
+
+    const rows = await queryD1<VerbFormRow>(
+      db,
+      `
+        SELECT ${selectParts.join(', ')}
+        FROM verb_forms vf
+        LEFT JOIN word_frequencies wf ON wf.pashto_word = vf.form
+        LEFT JOIN verbs_lexicon vl ON vl.verb_root = ${schema.rootColumn}
+        WHERE ${schema.rootColumn} = ?
+        ORDER BY COALESCE(wf.frequency_count, 0) DESC, vf.form
+        LIMIT ?
+      `,
+      [root, cap * 4]
+    );
+
+    if (!rows?.length) {
+      return [];
+    }
+
+    const seen = new Set<string>();
+    const variants: Variant[] = [];
+
+    for (const row of rows) {
+      if (!row?.form) continue;
+      const form = row.form.trim();
+      if (!form || seen.has(form)) continue;
+
+      const variant: Variant = {
+        form,
+        label: buildVerbLabel(row),
+        pos: 'verb',
+        flags: buildVerbFlags(row, row.lexicon_pos),
+        count: row.frequency_count ?? undefined,
+        score: row.frequency_count ?? undefined,
+        romanized: row.romanization ?? undefined,
+        sources: ['d1'],
+      };
+
+      variants.push(variant);
+      seen.add(form);
+    }
+
+    if (root && !seen.has(root)) {
+      variants.unshift({
+        form: root,
+        label: 'Root',
+        pos: 'verb',
+        flags: root.includes(' ') ? ['compound'] : undefined,
+        sources: ['d1'],
+      });
+    }
+
+    return sortAndLimitVariants(variants, cap);
+  } catch (error) {
+    console.warn(`Failed to fetch verb variants from D1 for "${word}":`, error);
+    return [];
+  }
+}
+
+async function getVerbVariants(
+  word: string,
+  opts?: { cap?: number; includeCompound?: boolean }
+): Promise<Variant[]> {
+  const cap = Math.max(1, Math.min(opts?.cap ?? 60, 200));
+  
+  // Try D1 first (pre-computed, fast, complete)
+  // D1 has 47 forms for وهل vs ~30 from generation
+  const d1Variants = await fetchVerbVariantsFromD1(word, { cap });
+  
+  // Only fallback if D1 returns nothing (not if it's "too few")
+  // D1 forms are pre-computed from LingDocs and are authoritative
+  const needsFallback = d1Variants.length === 0;
+
+  if (!needsFallback) {
+    console.log(`[VERB_VARIANTS] ✓ Using ${d1Variants.length} D1 forms for "${word}" (cap: ${cap})`);
+    return sortAndLimitVariants(d1Variants, cap);
+  }
+
+  // Fallback to generation only if D1 has nothing
+  console.log(`[VERB_VARIANTS] ⚠️ No D1 forms for "${word}", generating...`);
+  let merged = d1Variants;
+
+  try {
+    const fallback = await generateVerbVariants(word, opts);
+    const enrichedFallback = fallback.map((variant) => ({
+      ...variant,
+      sources: dedupeSources([...(variant.sources ?? []), 'lingdocs']) || ['lingdocs'],
+    }));
+    merged = mergeVariantLists(d1Variants, enrichedFallback);
+    console.log(`[VERB_VARIANTS] Generated ${fallback.length} forms, total: ${merged.length}`);
+  } catch (error) {
+    console.warn(`[VERB_VARIANTS] Fallback generateVerbVariants failed for "${word}":`, error);
+  }
+
+  return sortAndLimitVariants(merged, cap);
+}
+
+/**
+ * Detects if a word matches a dictionary entry (verb root, noun base, etc.)
+ * Returns dictionary metadata including variants if found
+ */
+async function detectDictionaryTerm(
+  word: string
+): Promise<{
+  found: boolean;
+  type: 'verb' | 'noun' | 'adjective' | null;
+  root?: string;
+  variants?: Variant[];
+  lingdocsId?: number;
+  verbType?: string;
+  helper?: string;
+} | null> {
+  const normalized = word?.trim();
+  if (!normalized) return null;
+
+  try {
+    const { getD1Database, queryD1, queryD1First } = await import('@/utils/d1');
+    const db = getD1Database();
+    if (!db) return null;
+
+    // 1. Check verbs_lexicon for direct match
+    try {
+      const verbRow = await queryD1First<{
+        verb_root?: string;
+        infinitive?: string;
+        lingdocs_id?: number;
+        verb_type?: string;
+        helper?: string;
+      }>(
+        db,
+        `SELECT verb_root, infinitive, lingdocs_id, verb_type, helper
+         FROM verbs_lexicon 
+         WHERE verb_root = ? OR COALESCE(infinitive, verb_root) = ?
+         LIMIT 1`,
+        [normalized, normalized]
+      );
+
+      if (verbRow?.verb_root) {
+        // Fetch variants for this verb
+        const variants = await getVerbVariants(verbRow.verb_root, { cap: 20 });
+        return {
+          found: true,
+          type: 'verb',
+          root: verbRow.verb_root,
+          variants,
+          lingdocsId: verbRow.lingdocs_id,
+          verbType: verbRow.verb_type,
+          helper: verbRow.helper,
+        };
+      }
+    } catch (error) {
+      console.warn(`Dictionary detection failed for verbs_lexicon:`, error);
+    }
+
+    // 1b. Check nouns_lexicon for direct match
+    try {
+      const nounRow = await queryD1First<{
+        pashto_word?: string;
+        plural_forms?: string;
+        gender?: string;
+      }>(
+        db,
+        `SELECT pashto_word, plural_forms, gender
+         FROM nouns_lexicon 
+         WHERE pashto_word = ?
+         LIMIT 1`,
+        [normalized]
+      );
+
+      if (nounRow?.pashto_word) {
+        return {
+          found: true,
+          type: 'noun',
+          root: nounRow.pashto_word,
+          // TODO: Add noun variant generation when available
+        };
+      }
+    } catch (error) {
+      console.warn(`Dictionary detection failed for nouns_lexicon:`, error);
+    }
+
+    // 2. Check word_frequencies for base_verb/base_noun mapping
+    try {
+      const wfColumns = await getTableColumns(db, queryD1, 'word_frequencies');
+      if (wfColumns.has('base_verb') || wfColumns.has('base_noun')) {
+        const selectCols: string[] = [];
+        if (wfColumns.has('base_verb')) selectCols.push('base_verb');
+        if (wfColumns.has('base_noun')) selectCols.push('base_noun');
+
+        const freqRow = await queryD1First<{
+          base_verb?: string | null;
+          base_noun?: string | null;
+        }>(
+          db,
+          `SELECT ${selectCols.join(', ')}
+           FROM word_frequencies 
+           WHERE pashto_word = ?
+           LIMIT 1`,
+          [normalized]
+        );
+
+        if (freqRow?.base_verb) {
+          const variants = await getVerbVariants(freqRow.base_verb, { cap: 20 });
+          return {
+            found: true,
+            type: 'verb',
+            root: freqRow.base_verb,
+            variants,
+          };
+        }
+
+        // Check nouns_lexicon for noun base
+        if (freqRow?.base_noun) {
+          // Verify it exists in nouns_lexicon
+          try {
+            const nounRow = await queryD1First<{ pashto_word?: string }>(
+              db,
+              `SELECT pashto_word FROM nouns_lexicon WHERE pashto_word = ? LIMIT 1`,
+              [freqRow.base_noun]
+            );
+            if (nounRow?.pashto_word) {
+              return {
+                found: true,
+                type: 'noun',
+                root: freqRow.base_noun,
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to verify noun in nouns_lexicon:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Dictionary detection failed for word_frequencies:`, error);
+    }
+
+    // 3. Check form_to_root mapping (for inflected forms)
+    try {
+      const rootRow = await queryD1First<{ root: string }>(
+        db,
+        `SELECT root FROM form_to_root WHERE form = ? LIMIT 1`,
+        [normalized]
+      );
+
+      if (rootRow?.root) {
+        // Check if root is a verb in lexicon
+        const verbRow = await queryD1First<{
+          verb_root?: string;
+          lingdocs_id?: number;
+          verb_type?: string;
+          helper?: string;
+        }>(
+          db,
+          `SELECT verb_root, lingdocs_id, verb_type, helper
+           FROM verbs_lexicon 
+           WHERE verb_root = ?
+           LIMIT 1`,
+          [rootRow.root]
+        );
+
+        if (verbRow?.verb_root) {
+          const variants = await getVerbVariants(verbRow.verb_root, { cap: 20 });
+          return {
+            found: true,
+            type: 'verb',
+            root: verbRow.verb_root,
+            variants,
+            lingdocsId: verbRow.lingdocs_id,
+            verbType: verbRow.verb_type,
+            helper: verbRow.helper,
+          };
+        }
+      }
+    } catch (error) {
+      console.warn(`Dictionary detection failed for form_to_root:`, error);
+    }
+
+    return null;
+  } catch (error) {
+    console.warn(`Dictionary detection failed for "${normalized}":`, error);
+    return null;
+  }
+}
+
+type TranscriptSegment = {
+  text?: string;
+  start?: number;
+  end?: number;
+  [key: string]: any;
+};
+
+function parseSegmentPayload(payload: any): TranscriptSegment[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload as TranscriptSegment[];
+  if (typeof payload === 'string') {
+    try {
+      const parsed = JSON.parse(payload);
+      return Array.isArray(parsed) ? (parsed as TranscriptSegment[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function fetchVideoMatches(
+  searchTerms: string[],
+  limit: number = 12
+): Promise<any[]> {
+  const uniqueTerms = Array.from(
+    new Set(
+      searchTerms
+        .map((term) => term?.trim())
+        .filter((term): term is string => Boolean(term) && PASHTO_LETTER_REGEX.test(term))
+    )
+  );
+
+  if (!uniqueTerms.length) {
+    return [];
+  }
+
+  try {
+    const { getD1Database, queryD1 } = await import('@/utils/d1');
+    const db = getD1Database();
+    if (!db) {
+      return [];
+    }
+
+    const limitedTerms = uniqueTerms.slice(0, 25);
+    const placeholders = limitedTerms.map(() => '?').join(',');
+    const rows = await queryD1<{
+      video_id: string;
+      pashto_word: string;
+      frequency: number;
+      youtube_url?: string | null;
+      transcript?: string | null;
+      segments?: string | null;
+      title?: string | null;
+    }>(
+      db,
+      `
+        SELECT vwm.video_id,
+               vwm.pashto_word,
+               vwm.frequency,
+               vt.youtube_url,
+               vt.transcript,
+               vt.segments,
+               vt.title
+        FROM video_word_mappings vwm
+        LEFT JOIN video_transcripts vt ON vt.video_id = vwm.video_id
+        WHERE vwm.pashto_word IN (${placeholders})
+        ORDER BY vwm.frequency DESC
+        LIMIT ?
+      `,
+      [...limitedTerms, Math.max(limit * 3, limit)]
+    );
+
+    if (!rows?.length) {
+      return [];
+    }
+
+    type VideoAggregate = {
+      video_id: string;
+      matches: Set<string>;
+      score: number;
+      youtube_url?: string | null;
+      transcript?: string | null;
+      segments?: string | null;
+      title?: string | null;
+    };
+
+    const grouped = new Map<string, VideoAggregate>();
+
+    for (const row of rows) {
+      if (!row?.video_id) continue;
+      const aggregate = grouped.get(row.video_id) ?? {
+        video_id: row.video_id,
+        matches: new Set<string>(),
+        score: 0,
+        youtube_url: row.youtube_url,
+        transcript: row.transcript,
+        segments: row.segments,
+        title: row.title,
+      };
+
+      if (row.pashto_word) {
+        aggregate.matches.add(row.pashto_word);
+      }
+      aggregate.score += row.frequency ?? 1;
+      if (!aggregate.youtube_url && row.youtube_url) aggregate.youtube_url = row.youtube_url;
+      if (!aggregate.transcript && row.transcript) aggregate.transcript = row.transcript;
+      if (!aggregate.segments && row.segments) aggregate.segments = row.segments;
+      if (!aggregate.title && row.title) aggregate.title = row.title;
+      grouped.set(row.video_id, aggregate);
+    }
+
+    const pattern = limitedTerms.map(escapeRegExp).join('|');
+    const segmentRegex = pattern ? new RegExp(pattern) : null;
+
+    return Array.from(grouped.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((entry) => {
+        const parsedSegments = parseSegmentPayload(entry.segments);
+        let matchingSegments: TranscriptSegment[] = [];
+
+        if (segmentRegex && parsedSegments.length > 0) {
+          matchingSegments = parsedSegments
+            .filter((segment) => typeof segment?.text === 'string' && segmentRegex.test(segment.text as string))
+            .slice(0, 4);
+        }
+
+        const candidateSegments = matchingSegments.length ? matchingSegments : parsedSegments.slice(0, 4);
+        const snippetSource = matchingSegments.length
+          ? matchingSegments
+          : parsedSegments.length
+            ? parsedSegments
+            : [];
+        const textSnippet = snippetSource.length
+          ? snippetSource
+              .map((segment) => (typeof segment?.text === 'string' ? segment.text : ''))
+              .filter(Boolean)
+              .join(' … ')
+              .slice(0, 400)
+          : (entry.transcript || '').slice(0, 400);
+
+        return {
+          ref: `video:${entry.video_id}`,
+          text: textSnippet,
+          video_id: entry.video_id,
+          youtube_url: entry.youtube_url,
+          segments: candidateSegments,
+          source: 'video_word_mapping',
+          matches: Array.from(entry.matches),
+          title: entry.title,
+        };
+      });
+  } catch (error) {
+    console.warn('Failed to load video matches from D1:', error);
+    return [];
+  }
+}
 
 function buildPosSummary(variants: VariantWithPOS[]): POSSummary {
   const summary: POSSummary = {};
@@ -193,7 +937,7 @@ async function buildInlineRelatedForms(
 
   try {
     const [verbVariants, nounVariants] = await Promise.all([
-      generateVerbVariants(normalized, { cap: 60, includeCompound: true }),
+      getVerbVariants(normalized, { cap: 60, includeCompound: true }),
       generateNounVariants(normalized, { cap: 40 }),
     ]);
 
@@ -214,7 +958,19 @@ async function buildInlineRelatedForms(
       if (!variant?.form) continue;
       const existing = uniqueVariants.get(variant.form);
       if (!existing || (variant.count ?? 0) > (existing.count ?? 0)) {
-        uniqueVariants.set(variant.form, variant);
+        uniqueVariants.set(variant.form, {
+          ...variant,
+          sources: dedupeSources(variant.sources),
+        });
+      } else {
+        const mergedSources = dedupeSources([
+          ...(existing.sources ?? []),
+          ...(variant.sources ?? []),
+        ]);
+        uniqueVariants.set(variant.form, {
+          ...existing,
+          sources: mergedSources,
+        });
       }
     }
 
@@ -268,7 +1024,7 @@ async function buildInlineRelatedForms(
       form: variant.form,
       label: variant.label,
       pos: (variant.pos || 'other') as PartOfSpeech,
-      sources: ['lingdocs'],
+      sources: dedupeSources(variant.sources) || ['lingdocs'],
       count: variant.count,
       score: variant.score,
       romanized: variant.romanized,
@@ -551,7 +1307,7 @@ async function getHelperVariants(helper: string): Promise<string[]> {
   if (helperVariantCache.has(helper)) return helperVariantCache.get(helper)!;
 
   try {
-    const variants = await generateVerbVariants(helper, { cap: 60, includeCompound: true });
+    const variants = await getVerbVariants(helper, { cap: 60, includeCompound: true });
     const forms = Array.from(new Set(variants.map(v => v.form).filter(Boolean)));
     helperVariantCache.set(helper, forms);
     return forms;
@@ -660,49 +1416,7 @@ export async function POST(request: NextRequest) {
     let disambiguationResult: any = null;
     let disambiguationAnalysis: DisambiguationResult | null = null;
 
-    // Unified search: Search video transcripts (across all translations)
-    const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
     let videoTranscriptResults: any[] = [];
-    
-    try {
-      const videoResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/video/list`, {
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
-      if (videoResponse.ok) {
-        const videoData = await videoResponse.json();
-        const videos = videoData.videos || [];
-        
-        // Search in video transcripts (unified - searches all videos regardless of translation toggle)
-        videos.forEach((video: any) => {
-          const transcript = video.transcript || '';
-          const segments = video.segments || [];
-          
-          // Check if query matches transcript or any segment
-          const queryLower = originalQuery.toLowerCase();
-          const transcriptMatch = transcript.toLowerCase().includes(queryLower);
-          const segmentMatches = segments.filter((seg: any) => 
-            seg.text?.toLowerCase().includes(queryLower)
-          );
-          
-          if (transcriptMatch || segmentMatches.length > 0) {
-            videoTranscriptResults.push({
-              ref: `video:${video.video_id}`,
-              text: transcript,
-              video_id: video.video_id,
-              youtube_url: video.youtube_url,
-              segments: segmentMatches.length > 0 ? segmentMatches : [],
-              source: 'video_transcript',
-              translation: null, // Videos are unified - not tied to specific translation
-              dialect: null,
-              testament: undefined,
-            });
-          }
-        });
-      }
-    } catch (error) {
-      // Don't fail search if video search fails - just log and continue
-      console.warn('Failed to search video transcripts (non-fatal):', error);
-    }
 
     // Dictionary lookup for disambiguation (parallel to other searches)
     let dictionaryEntries: any[] = [];
@@ -1364,7 +2078,7 @@ export async function POST(request: NextRequest) {
         } else if (isVerb) {
           // It's a verb - only generate verb conjugations
           console.log('✅ Detected as VERB - generating conjugations');
-            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await getVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
           allVariants.push(...verbVariants);
           finalPosGuess = 'verb';
         } else if (isAdjective) {
@@ -1373,13 +2087,13 @@ export async function POST(request: NextRequest) {
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           allVariants.push(...nounVariants);
           // Also check for stative compounds (adj + کېدل/کول)
-            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 20, includeCompound: true });
+            const verbVariants = await getVerbVariants(convertedQuery, { cap: 20, includeCompound: true });
           allVariants.push(...verbVariants);
           finalPosGuess = 'adjective';
         } else {
           // Unknown - try both but prioritize by what generates more results
           console.log('⚠️ Unknown POS - trying both');
-            const verbVariants = await generateVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
+            const verbVariants = await getVerbVariants(convertedQuery, { cap: 40, includeCompound: true });
             const nounVariants = await generateNounVariants(convertedQuery, { cap: 20 });
           
           if (verbVariants.length > nounVariants.length) {
@@ -1505,6 +2219,12 @@ export async function POST(request: NextRequest) {
         ms: 0, // Cached result
         cached: true,
       });
+    }
+
+    try {
+      videoTranscriptResults = await fetchVideoMatches(searchTerms, Math.min(20, Math.max(5, Math.floor(limit / 2) || 10)));
+    } catch (error) {
+      console.warn('Video match lookup failed (non-fatal):', error);
     }
 
       // Get audio map now that we need it for result transformation
@@ -1702,7 +2422,9 @@ export async function POST(request: NextRequest) {
             video_id: video.video_id,
             youtube_url: video.youtube_url,
             segments: video.segments,
-            source: 'video_transcript',
+            source: video.source || 'video_transcript',
+            title: video.title,
+            matches: video.matches,
           }));
           transformed.push(...videoTransformed);
         }
@@ -1754,6 +2476,68 @@ export async function POST(request: NextRequest) {
           dictionaryByPos[pos].push(entry);
         });
 
+        // Detect dictionary term (for Pashto queries only, when not already in related forms mode)
+        let dictionaryMatch: any = null;
+        if (searchLanguage === 'pashto' && !includeRelated && convertedQuery) {
+          try {
+            const detected = await detectDictionaryTerm(convertedQuery);
+            if (detected?.found && detected.variants && detected.variants.length > 0) {
+              // Populate relatedForms from dictionaryMatch so filters can work
+              // Convert Variant[] to RelatedFormVariant[] format
+              const verbVariants = detected.variants.map(v => ({
+                form: v.form,
+                label: v.label || 'Form',
+                pos: v.pos || detected.type || 'verb',
+                count: v.count,
+                score: v.score,
+                romanized: v.romanized,
+                flags: v.flags,
+                sources: v.sources || ['d1'],
+              }));
+              
+              // If relatedForms doesn't exist yet, create it from dictionaryMatch
+              if (!relatedForms && detected.type === 'verb') {
+                relatedForms = {
+                  total: verbVariants.length,
+                  posGuess: detected.type,
+                  forms: {
+                    verbs: verbVariants,
+                    nouns: [],
+                    adjectives: [],
+                    other: [],
+                  },
+                };
+                console.log(`📚 Created relatedForms from dictionaryMatch: ${verbVariants.length} verb variants`);
+              } else if (relatedForms && detected.type === 'verb') {
+                // Merge with existing relatedForms
+                relatedForms.forms = relatedForms.forms || { verbs: [], nouns: [], adjectives: [], other: [] };
+                relatedForms.forms.verbs = verbVariants;
+                relatedForms.total = verbVariants.length;
+                relatedForms.posGuess = detected.type;
+              }
+              
+              dictionaryMatch = {
+                word: detected.root || convertedQuery,
+                pos: detected.type,
+                hasVariants: true,
+                variantCount: detected.variants.length,
+                lingdocsId: detected.lingdocsId,
+                verbType: detected.verbType,
+                helper: detected.helper,
+                // Only include preview variants (first 5) to keep response size manageable
+                previewVariants: detected.variants.slice(0, 5).map(v => ({
+                  form: v.form,
+                  label: v.label,
+                  count: v.count,
+                })),
+              };
+              console.log(`📚 Dictionary match detected: ${dictionaryMatch.word} (${dictionaryMatch.pos}), ${dictionaryMatch.variantCount} variants`);
+            }
+          } catch (error) {
+            console.warn('Dictionary detection failed:', error);
+          }
+        }
+
         return NextResponse.json({
           results: normalizeVerses(transformed),
           relatedForms,
@@ -1775,6 +2559,8 @@ export async function POST(request: NextRequest) {
             groupedByPos: dictionaryByPos,
             needsDisambiguation: dictionaryEntries.length > 1, // Multiple meanings found
           } : undefined,
+          dictionaryMatch, // NEW: Dictionary term detection for form expansion option
+          canExpand: dictionaryMatch?.hasVariants || false,
           count: transformed.length,
           hasMore: hasMoreResults || transformed.length >= limit, // Indicate if there might be more results
           totalEstimatedCount: totalEstimatedCount, // Estimated total from word_frequencies
@@ -1813,7 +2599,9 @@ export async function POST(request: NextRequest) {
           video_id: video.video_id,
           youtube_url: video.youtube_url,
           segments: video.segments,
-          source: 'video_transcript',
+          source: video.source || 'video_transcript',
+          title: video.title,
+          matches: video.matches,
         }));
 
         // Group dictionary entries by POS for disambiguation display

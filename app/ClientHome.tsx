@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
+import DictionaryTermDetection from "../components/DictionaryTermDetection";
 import LexiconPanel from "../components/LexiconPanel";
 import VideosPanel from "../components/VideosPanel";
 import InlineFrequency from "../components/InlineFrequency";
@@ -779,6 +780,17 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
   const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [dictionaryMatch, setDictionaryMatch] = useState<{
+    word: string;
+    pos: 'verb' | 'noun' | 'adjective';
+    hasVariants: boolean;
+    variantCount: number;
+    lingdocsId?: number;
+    verbType?: string;
+    helper?: string;
+    previewVariants: Array<{ form: string; label: string; count?: number }>;
+  } | null>(null);
+  
   const [dictionaryData, setDictionaryData] = useState<{
     entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null; ts?: number | null }>;
     groupedByPos: Record<string, any[]>;
@@ -912,8 +924,11 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     pos: 'verb' | 'noun' | 'adjective',
     filters: MultiVerbFilterState | NounFilterState | AdjectiveFilterState
   ) => {
-    if (!includeRelated) {
-      console.log('Related forms mode not active, filters ignored');
+    // Allow filters to work if includeRelated is true OR if we have dictionaryMatch
+    // (dictionaryMatch is checked via relatedForms existence - if dictionaryMatch exists,
+    // we should have populated relatedForms from it)
+    if (!includeRelated && !relatedForms) {
+      console.log('Related forms mode not active and no dictionary match, filters ignored');
       return;
     }
 
@@ -998,11 +1013,15 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   }, [includeRelated, relatedForms]);
 
   // Trigger search when multiVerbFilters change
+  // Also trigger when dictionaryMatch exists (even if includeRelated=false)
   const previousMultiVerbFilters = useRef<MultiVerbFilterState>(multiVerbFilters);
   useEffect(() => {
-    if (includeRelated && relatedForms && query.trim()) {
+    // Allow filters to work if includeRelated is true OR if we have relatedForms (from dictionaryMatch)
+    const canUseFilters = includeRelated || (relatedForms && relatedForms.forms?.verbs?.length > 0);
+    if (canUseFilters && query.trim()) {
       const filtersChanged = JSON.stringify(previousMultiVerbFilters.current) !== JSON.stringify(multiVerbFilters);
       if (filtersChanged) {
+        console.log('🔄 Verb filters changed, applying filter and searching');
         applyFiltersAndSearch('verb', multiVerbFilters);
       }
     }
@@ -1458,6 +1477,20 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       setTotalEstimatedCount(searchData.totalEstimatedCount);
       setHasMoreResults(searchData.hasMore || false);
       setDictionaryData(searchData.dictionary);
+      
+      // Store dictionaryMatch for UI display and filter functionality
+      if (searchData.dictionaryMatch) {
+        setDictionaryMatch(searchData.dictionaryMatch);
+        console.log('📚 Dictionary match detected:', {
+          word: searchData.dictionaryMatch.word,
+          pos: searchData.dictionaryMatch.pos,
+          variantCount: searchData.dictionaryMatch.variantCount,
+          canExpand: searchData.canExpand,
+        });
+      } else {
+        setDictionaryMatch(null);
+      }
+      
       setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
@@ -1634,6 +1667,66 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     applyFiltersAndSearch('noun', nextFilters);
   }, [applyFiltersAndSearch]);
 
+  // Proactive dictionary term detection as user types
+  // This shows the banner BEFORE searching, so user can choose to expand
+  const [detectingTerm, setDetectingTerm] = useState(false);
+  useEffect(() => {
+    // Don't detect very short queries
+    if (query.length < 2) {
+      setDictionaryMatch(null);
+      return;
+    }
+
+    // Don't detect if already searching or if includeRelated is already enabled
+    // (user already chose to expand)
+    if (isLoading || includeRelated) {
+      return;
+    }
+
+    // Debounce to avoid excessive API calls
+    setDetectingTerm(true);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/detect-term?term=${encodeURIComponent(query.trim())}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Detection failed: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.term) {
+          // Convert API response to dictionaryMatch format
+          setDictionaryMatch({
+            word: data.term.lemma,
+            pos: data.term.pos as 'verb' | 'noun' | 'adjective',
+            hasVariants: true,
+            variantCount: data.term.totalForms || 0,
+            lingdocsId: data.term.lingdocsId,
+            verbType: data.term.verbType,
+            helper: data.term.helper,
+            previewVariants: data.term.previewVariants || [],
+          });
+          console.log('[DETECTION] ✓ Proactive detection found:', data.term.lemma, 
+                      `(${data.term.totalForms} forms, confidence: ${data.term.confidence})`);
+        } else {
+          // Clear dictionary match if no term found
+          setDictionaryMatch(null);
+          console.log('[DETECTION] No dictionary term found for:', query.trim());
+        }
+      } catch (error) {
+        console.error('[DETECTION] Proactive detection failed:', error);
+        // Don't clear dictionaryMatch on error - keep existing if any
+      } finally {
+        setDetectingTerm(false);
+      }
+    }, 300); // Wait 300ms after typing stops
+
+    return () => clearTimeout(timer);
+  }, [query, isLoading, includeRelated]);
+
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
     // Always trigger new search - don't do client-side filtering
     applyFiltersAndSearch('adjective', nextFilters);
@@ -1803,6 +1896,31 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
               {error}
             </div>
+          )}
+
+          {/* Dictionary Match Banner */}
+          {dictionaryMatch && !includeRelated && (
+            <DictionaryTermDetection
+              term={{
+                lemma: dictionaryMatch.word,
+                searchedForm: query.trim(),
+                pos: dictionaryMatch.pos,
+                verbType: dictionaryMatch.verbType as any,
+                helper: dictionaryMatch.helper,
+                totalForms: dictionaryMatch.variantCount,
+                searchedFormIsLemma: query.trim() === dictionaryMatch.word,
+                lingdocsId: dictionaryMatch.lingdocsId,
+                confidence: 'high',
+                source: 'd1_verbs_lexicon',
+              }}
+              searchedTerm={query.trim()}
+              onExpandForms={() => {
+                setIncludeRelated(true);
+                executeSearchRef.current?.({ preserveResults: false, reason: 'dictionary-expand' });
+              }}
+              onDismiss={() => setDictionaryMatch(null)}
+              isExpanded={includeRelated}
+            />
           )}
 
           {/* Main Content Grid */}
