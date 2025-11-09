@@ -3,7 +3,7 @@ import Fuse from 'fuse.js';
 
   import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants, type Variant } from '@/app/utils/verb_variants';
+import { generateVerbVariants } from '@/app/utils/verb_variants';
 import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef, fetchVerbFormsFromD1 } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
