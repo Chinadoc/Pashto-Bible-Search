@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchVersesByForms, getAudioStreamUrl } from '../../../lib/cloudflare-d1';
-import { normalizeVerses } from '../../../utils/normalize-results';
+import { searchVersesByForms, getAudioStreamUrl } from '@/app/lib/cloudflare-d1';
+import { normalizeVerses } from '@/app/utils/normalize-results';
 
 // Import the getVerbVariants function from search route
 // We'll need to duplicate it here or extract to a shared utility
 async function getVerbVariants(word: string, opts?: { cap?: number; includeCompound?: boolean }): Promise<any[]> {
   try {
-    const { getD1Database, queryD1, queryD1First } = await import('../../../utils/d1');
+    const { getD1Database, queryD1, queryD1First } = await import('@/utils/d1');
     const db = getD1Database();
     if (!db) return [];
 
