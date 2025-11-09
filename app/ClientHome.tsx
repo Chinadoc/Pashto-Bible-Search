@@ -1960,12 +1960,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             <DictionaryTermDetection
               term={{
                 lemma: dictionaryMatch.word,
-                searchedForm: query.trim(),
                 pos: dictionaryMatch.pos,
                 verbType: dictionaryMatch.verbType as any,
                 helper: dictionaryMatch.helper,
                 totalForms: dictionaryMatch.variantCount,
-                searchedFormIsLemma: query.trim() === dictionaryMatch.word,
                 lingdocsId: dictionaryMatch.lingdocsId,
                 confidence: 'high',
                 source: 'd1_verified',
