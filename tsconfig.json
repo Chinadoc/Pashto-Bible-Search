@@ -24,8 +24,11 @@
       "@/app/*": ["./app/*"],
       "@/app/lib/*": ["./app/lib/*"],
       "@/app/utils/*": ["./app/utils/*"],
+      "@/components/*": ["./components/*"],
       "@/lib/*": ["./lib/*"],
-      "@/utils/*": ["./utils/*"]
+      "@/utils/*": ["./utils/*"],
+      "@/types/*": ["./types/*"],
+      "@/cloudflare/*": ["./cloudflare/*"]
     }
   },
   "include": [
