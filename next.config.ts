@@ -21,10 +21,8 @@ const nextConfig: NextConfig = {
     // Ensure TS path alias `@/*` resolves at runtime during webpack bundling
     config.resolve = config.resolve || {};
     config.resolve.alias = config.resolve.alias || {};
+    // Base alias: @ resolves to project root, so @/app/lib/data/load -> ./app/lib/data/load
     config.resolve.alias["@"] = path.resolve(__dirname);
-    config.resolve.alias["@/app"] = path.resolve(__dirname, "app");
-    config.resolve.alias["@/app/lib"] = path.resolve(__dirname, "app/lib");
-    config.resolve.alias["@/app/utils"] = path.resolve(__dirname, "app/utils");
 
     // Optimize for large JSON files in production
     if (isServer) {
