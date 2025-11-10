@@ -40,7 +40,7 @@ export interface DictionaryTerm {
 
   // Confidence
   confidence: 'high' | 'medium' | 'low';
-  source: 'd1_verified' | 'd1_inferred' | 'lingdocs_cache' | 'fallback';
+  source: 'd1_verified' | 'd1_inferred' | 'd1_verbs_lexicon' | 'lingdocs_cache' | 'fallback';
 }
 
 interface DictionaryTermDetectionProps {
