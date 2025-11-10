@@ -1882,6 +1882,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
                 term={detectedTerm}
                 searchedTerm={query}
                 onExpandForms={handleExpandForms}
+                onDismiss={() => setDetectedTerm(null)}
                 isExpanded={includeRelated}
                 loading={isLoading || detectingTerm}
               />
