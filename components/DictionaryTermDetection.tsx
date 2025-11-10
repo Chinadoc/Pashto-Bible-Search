@@ -49,6 +49,7 @@ interface DictionaryTermDetectionProps {
   term: DictionaryTerm | null;
   searchedTerm: string;
   onExpandForms: () => void;
+  onDismiss: () => void;
   isExpanded: boolean;
   loading?: boolean;
 }
@@ -57,6 +58,7 @@ export default function DictionaryTermDetection({
   term,
   searchedTerm,
   onExpandForms,
+  onDismiss,
   isExpanded,
   loading = false
 }: DictionaryTermDetectionProps) {
@@ -96,7 +98,18 @@ export default function DictionaryTermDetection({
   const totalForms = term.totalForms || (term.verbs || 0) + (term.nouns || 0) + (term.other || 0);
 
   return (
-    <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+    <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg relative">
+      {/* Close button */}
+      <button
+        onClick={onDismiss}
+        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+        aria-label="Dismiss"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       <div className="flex items-start justify-between gap-4">
         {/* Left side: Dictionary info */}
         <div className="flex-1">
