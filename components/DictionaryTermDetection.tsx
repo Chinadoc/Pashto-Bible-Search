@@ -19,6 +19,8 @@ import { useState } from 'react';
 export interface DictionaryTerm {
   // Core identification
   lemma: string;              // Base form: وهل
+  searchedForm?: string;      // The form that was actually searched (may differ from lemma)
+  searchedFormIsLemma?: boolean; // Whether the searched form matches the lemma
   romanization?: string;      // Romanization: wahul
   englishTranslation?: string; // to hit, to strike
   pos: 'verb' | 'noun' | 'adjective' | 'adverb' | 'other';
