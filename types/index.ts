@@ -1,3 +1,6 @@
+// Re-export search-related types
+export * from './search';
+
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
 export type SearchLanguage = "pashto" | "english" | "topics";
