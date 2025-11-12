@@ -460,12 +460,12 @@ export async function searchVerses(
     verses.push({
       id: row.ref, // Use ref as id since it's unique and already a string
       ref: row.ref,
-      book: row.book,
-      chapter: row.chapter,
-      verse: row.verse,
+      book: row.book || 'Unknown',
+      chapter: row.chapter || 0,
+      verse: row.verse || 0,
       text: row.text,
       translation: options.translation,
-      testament: row.testament,
+      testament: (row.testament === 'NT' ? 'NT' : 'OT') as 'OT' | 'NT',
       matchedForms,
       relevanceScore: score,
     });
