@@ -507,6 +507,8 @@ export async function searchVideos(
   for (const row of rows.results || []) {
     // Parse segments JSON to find exact timestamps
     let matchingSegments: any[] = [];
+    const youtubeUrl = row.youtube_url || '';
+
     try {
       const segments = typeof row.segments === 'string'
         ? JSON.parse(row.segments)
@@ -518,7 +520,7 @@ export async function searchVideos(
         text: seg.text,
         startTime: seg.startTime || 0,
         endTime: seg.endTime || 0,
-        timestampUrl: `${row.youtube_url}&t=${Math.floor(seg.startTime || 0)}s`,
+        timestampUrl: `${youtubeUrl}&t=${Math.floor(seg.startTime || 0)}s`,
       }));
     } catch (err) {
       console.warn(`Failed to parse segments for video ${row.video_id}:`, err);
@@ -527,7 +529,7 @@ export async function searchVideos(
     videos.push({
       videoId: row.video_id,
       title: row.video_title || 'Untitled Video',
-      youtubeUrl: row.youtube_url,
+      youtubeUrl: youtubeUrl,
       matchedWord: row.pashto_word,
       wordFrequency: row.frequency || 0,
       segments: matchingSegments,
