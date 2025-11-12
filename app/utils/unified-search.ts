@@ -93,11 +93,14 @@ interface NounInflectionRow {
 }
 
 interface VerseRow {
+  id?: number;
   ref: string;
   text: string;
   testament?: string;
   translation?: string;
   book?: string;
+  chapter?: number;
+  verse?: number;
 }
 
 interface VideoRow {
