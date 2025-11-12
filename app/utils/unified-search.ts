@@ -48,6 +48,24 @@ export interface TermAnalysis {
   lingdocsUrl?: string;
 }
 
+// Database query result types
+interface VerbLexiconRow {
+  pashto_word: string;
+  verb_type?: string;
+  transitivity?: string;
+  helper?: string;
+  imperfective_stem?: string;
+  perfective_stem?: string;
+  source_word_id?: number;
+  romanization?: string;
+}
+
+interface NounLexiconRow {
+  pashto_word: string;
+  gender?: string;
+  inflection_pattern?: string;
+}
+
 export interface Variant {
   form: string;
   baseWord: string;
@@ -147,7 +165,7 @@ export async function analyzeSearchTerm(
     FROM verbs_lexicon
     WHERE pashto_word = ?
     LIMIT 1
-  `).bind(normalized).first();
+  `).bind(normalized).first() as VerbLexiconRow | null;
 
   if (verbRow) {
     return {
@@ -176,7 +194,7 @@ export async function analyzeSearchTerm(
     FROM nouns_lexicon
     WHERE pashto_word = ?
     LIMIT 1
-  `).bind(normalized).first();
+  `).bind(normalized).first() as NounLexiconRow | null;
 
   if (nounRow) {
     return {
