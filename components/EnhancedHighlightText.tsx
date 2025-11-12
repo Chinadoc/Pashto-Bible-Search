@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
-import GrammarTooltip from './GrammarTooltip';
+import React, { useMemo } from 'react';
 
 interface InflectionReasons {
   plural: number;
@@ -15,7 +14,7 @@ interface Props {
   tokens: string[];
   formToReasons: Map<string, InflectionReasons>;
   formToInflectionType: Map<string, string>;
-  translation?: 'afghan2023' | 'yousafzai2019';
+  translation?: string;
 }
 
 export default function EnhancedHighlightText({
@@ -25,9 +24,6 @@ export default function EnhancedHighlightText({
   formToInflectionType,
   translation
 }: Props) {
-  const [hoveredForm, setHoveredForm] = useState<string | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number } | null>(null);
-
   const highlighted = useMemo(() => {
     if (!tokens.length) return <span>{text}</span>;
 
@@ -102,32 +98,9 @@ export default function EnhancedHighlightText({
               }
             }
             
-            const hasGrammarInfo = reasons && (reasons.plural > 0 || reasons.sandwich > 0 || reasons.transitive_past > 0);
-
             return (
-              <span
-                key={i}
-                className="inline-flex items-center relative"
-                onMouseEnter={(e) => {
-                  if (hasGrammarInfo && matchedForm) {
-                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                    setTooltipPosition({
-                      top: rect.bottom + window.scrollY + 5,
-                      left: rect.left + window.scrollX
-                    });
-                    setHoveredForm(matchedForm);
-                  }
-                }}
-                onMouseLeave={() => {
-                  setHoveredForm(null);
-                  setTooltipPosition(null);
-                }}
-              >
-                <mark
-                  className={`bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded ${
-                    hasGrammarInfo ? 'cursor-help' : ''
-                  }`}
-                >
+              <span key={i} className="inline-flex items-center">
+                <mark className="bg-yellow-200 dark:bg-yellow-700/60 px-0.5 rounded">
                   {part}
                 </mark>
                 {badges.length > 0 && (
@@ -146,30 +119,7 @@ export default function EnhancedHighlightText({
     }
   }, [text, tokens, formToReasons, formToInflectionType]);
 
-  return (
-    <>
-      {highlighted}
-      {hoveredForm && tooltipPosition && (
-        <div
-          style={{
-            position: 'fixed',
-            top: tooltipPosition.top,
-            left: tooltipPosition.left,
-            zIndex: 9999
-          }}
-        >
-          <GrammarTooltip
-            form={hoveredForm}
-            translation={translation}
-            onClose={() => {
-              setHoveredForm(null);
-              setTooltipPosition(null);
-            }}
-          />
-        </div>
-      )}
-    </>
-  );
+  return highlighted;
 }
 
 

@@ -48,6 +48,93 @@ export interface TermAnalysis {
   lingdocsUrl?: string;
 }
 
+// Database query result types
+interface VerbLexiconRow {
+  pashto_word: string;
+  verb_type?: string;
+  transitivity?: string;
+  helper?: string;
+  imperfective_stem?: string;
+  perfective_stem?: string;
+  source_word_id?: number;
+  romanization?: string;
+}
+
+interface NounLexiconRow {
+  pashto_word: string;
+  gender?: string;
+  inflection_pattern?: string;
+}
+
+interface VerbFormRow {
+  base_verb: string;
+  form: string;
+  form_type?: string;
+  tense?: string;
+  person?: string;
+  number?: string;
+  gender?: string;
+  aspect?: string;
+  source_word_id?: number;
+  frequency?: number;
+}
+
+interface D1Result<T> {
+  results: T[];
+  success: boolean;
+  meta?: any;
+}
+
+interface NounInflectionRow {
+  base_form: string;
+  inflected_form: string;
+  grammatical_info?: string;
+  frequency?: number;
+}
+
+interface VerseRow {
+  id?: number;
+  ref: string;
+  text: string;
+  testament?: string;
+  translation?: string;
+  book?: string;
+  chapter?: number;
+  verse?: number;
+}
+
+interface VideoRow {
+  id: string;
+  title: string;
+  transcript?: string;
+  timestamp?: number;
+}
+
+interface VideoWordMappingRow {
+  video_id: string;
+  pashto_word: string;
+  frequency: number;
+  audio_r2_key?: string;
+  video_title?: string;
+  youtube_url?: string;
+  segments?: string | any[];
+}
+
+interface TopicRow {
+  category_key: string;
+  category_name: string;
+  verse_refs?: string;
+  matched_words?: string;
+}
+
+interface InflectionReasonRow {
+  pashto_form: string;
+  base_word: string;
+  inflection_type: string;
+  grammatical_context: string;
+  source_word_id?: number;
+}
+
 export interface Variant {
   form: string;
   baseWord: string;
@@ -147,7 +234,7 @@ export async function analyzeSearchTerm(
     FROM verbs_lexicon
     WHERE pashto_word = ?
     LIMIT 1
-  `).bind(normalized).first();
+  `).bind(normalized).first() as VerbLexiconRow | null;
 
   if (verbRow) {
     return {
@@ -176,7 +263,7 @@ export async function analyzeSearchTerm(
     FROM nouns_lexicon
     WHERE pashto_word = ?
     LIMIT 1
-  `).bind(normalized).first();
+  `).bind(normalized).first() as NounLexiconRow | null;
 
   if (nounRow) {
     return {
@@ -221,7 +308,7 @@ export async function getVerbVariantsFromD1(
     WHERE vf.base_verb = ?
     ORDER BY wf.frequency_total DESC NULLS LAST
     LIMIT ?
-  `).bind(baseVerb, limit).all();
+  `).bind(baseVerb, limit).all() as D1Result<VerbFormRow>;
 
   const variants: Variant[] = [];
 
@@ -271,7 +358,7 @@ export async function getNounVariantsFromD1(
     WHERE inf.base_form = ?
     ORDER BY wf.frequency_total DESC NULLS LAST
     LIMIT ?
-  `).bind(baseNoun, limit).all();
+  `).bind(baseNoun, limit).all() as D1Result<NounInflectionRow>;
 
   const variants: Variant[] = [];
 
@@ -359,7 +446,7 @@ export async function searchVerses(
   sql += ` LIMIT ?`;
   bindings.push(options.limit);
 
-  const rows = await db.prepare(sql).bind(...bindings).all();
+  const rows = await db.prepare(sql).bind(...bindings).all() as D1Result<VerseRow>;
 
   const verses: VerseResult[] = [];
 
@@ -371,14 +458,14 @@ export async function searchVerses(
     const score = calculateRelevanceScore(row.text, matchedForms, variants);
 
     verses.push({
-      id: row.id,
+      id: row.ref, // Use ref as id since it's unique and already a string
       ref: row.ref,
-      book: row.book,
-      chapter: row.chapter,
-      verse: row.verse,
+      book: row.book || 'Unknown',
+      chapter: row.chapter || 0,
+      verse: row.verse || 0,
       text: row.text,
       translation: options.translation,
-      testament: row.testament,
+      testament: (row.testament === 'NT' ? 'NT' : 'OT') as 'OT' | 'NT',
       matchedForms,
       relevanceScore: score,
     });
@@ -413,13 +500,15 @@ export async function searchVideos(
     WHERE vwm.pashto_word IN (${placeholders})
     ORDER BY vwm.frequency DESC
     LIMIT ?
-  `).bind(...forms, limit).all();
+  `).bind(...forms, limit).all() as D1Result<VideoWordMappingRow>;
 
   const videos: VideoResult[] = [];
 
   for (const row of rows.results || []) {
     // Parse segments JSON to find exact timestamps
     let matchingSegments: any[] = [];
+    const youtubeUrl = row.youtube_url || '';
+
     try {
       const segments = typeof row.segments === 'string'
         ? JSON.parse(row.segments)
@@ -431,7 +520,7 @@ export async function searchVideos(
         text: seg.text,
         startTime: seg.startTime || 0,
         endTime: seg.endTime || 0,
-        timestampUrl: `${row.youtube_url}&t=${Math.floor(seg.startTime || 0)}s`,
+        timestampUrl: `${youtubeUrl}&t=${Math.floor(seg.startTime || 0)}s`,
       }));
     } catch (err) {
       console.warn(`Failed to parse segments for video ${row.video_id}:`, err);
@@ -440,7 +529,7 @@ export async function searchVideos(
     videos.push({
       videoId: row.video_id,
       title: row.video_title || 'Untitled Video',
-      youtubeUrl: row.youtube_url,
+      youtubeUrl: youtubeUrl,
       matchedWord: row.pashto_word,
       wordFrequency: row.frequency || 0,
       segments: matchingSegments,
@@ -474,7 +563,7 @@ export async function searchTopics(
     WHERE wcm.pashto_word IN (${placeholders})
     GROUP BY wcm.category_key, wc.category_name
     LIMIT ?
-  `).bind(...forms, limit).all();
+  `).bind(...forms, limit).all() as D1Result<TopicRow>;
 
   const topics: TopicResult[] = [];
 
@@ -514,7 +603,7 @@ export async function getGrammarTooltips(
       ir.source_word_id
     FROM inflection_reasons ir
     WHERE ir.pashto_form IN (${placeholders})
-  `).bind(...forms).all();
+  `).bind(...forms).all() as D1Result<InflectionReasonRow>;
 
   for (const row of rows.results || []) {
     // Build explanation text
