@@ -14,13 +14,15 @@ interface Props {
   tokens: string[];
   formToReasons: Map<string, InflectionReasons>;
   formToInflectionType: Map<string, string>;
+  translation?: string;
 }
 
-export default function EnhancedHighlightText({ 
-  text, 
-  tokens, 
+export default function EnhancedHighlightText({
+  text,
+  tokens,
   formToReasons,
-  formToInflectionType 
+  formToInflectionType,
+  translation
 }: Props) {
   const highlighted = useMemo(() => {
     if (!tokens.length) return <span>{text}</span>;
