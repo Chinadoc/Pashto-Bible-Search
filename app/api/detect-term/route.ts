@@ -3,6 +3,52 @@ import type { D1Database } from '@/utils/d1';
 
 export const runtime = 'edge';
 
+// Type definitions for D1 query results
+interface VerbLexiconRow {
+  lemma: string;
+  verb_type?: string;
+  helper?: string;
+  transitivity?: string;
+  romanization?: string;
+  english_translation?: string;
+  lingdocs_id?: string;
+  stems?: string;
+  examples?: string;
+  verb_root?: string;
+}
+
+interface VerbFormRow {
+  lemma: string;
+  form: string;
+  tense?: string;
+  person?: string;
+  voice?: string;
+  verb_type?: string;
+  helper?: string;
+  transitivity?: string;
+  romanization?: string;
+  english_translation?: string;
+  lingdocs_id?: string;
+}
+
+interface CountRow {
+  count: number;
+}
+
+interface RootLookupRow {
+  root_word: string;
+  frequency?: number;
+}
+
+interface NounLexiconRow {
+  pashto_word: string;
+  gender?: string;
+  animacy?: string;
+  plural_type?: string;
+  romanization?: string;
+  english_translation?: string;
+}
+
 /**
  * Detect Dictionary Term API
  *
@@ -55,7 +101,7 @@ export async function GET(request: NextRequest) {
         LIMIT 1`
       )
       .bind(cleanTerm, cleanTerm)
-      .first();
+      .first() as VerbLexiconRow | null;
 
     if (verbLemma) {
       // Count conjugations
@@ -64,7 +110,7 @@ export async function GET(request: NextRequest) {
           `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
         )
         .bind(verbLemma.lemma)
-        .first();
+        .first() as CountRow | null;
 
       const lingdocsUrl = verbLemma.lingdocs_id
         ? `https://dictionary.lingdocs.com/word?id=${verbLemma.lingdocs_id}`
@@ -102,7 +148,7 @@ export async function GET(request: NextRequest) {
         LIMIT 1`
       )
       .bind(cleanTerm)
-      .first();
+      .first() as VerbFormRow | null;
 
     if (inflectedForm) {
       // Count total conjugations for the lemma
@@ -111,7 +157,7 @@ export async function GET(request: NextRequest) {
           `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
         )
         .bind(inflectedForm.lemma)
-        .first();
+        .first() as CountRow | null;
 
       const lingdocsUrl = inflectedForm.lingdocs_id
         ? `https://dictionary.lingdocs.com/word?id=${inflectedForm.lingdocs_id}`
@@ -148,7 +194,7 @@ export async function GET(request: NextRequest) {
         `SELECT root_word, frequency FROM form_to_root WHERE word_form = ? LIMIT 1`
       )
       .bind(cleanTerm)
-      .first();
+      .first() as RootLookupRow | null;
 
     if (rootLookup) {
       // Try to get metadata for the root
@@ -162,7 +208,7 @@ export async function GET(request: NextRequest) {
           LIMIT 1`
         )
         .bind(rootLookup.root_word)
-        .first();
+        .first() as VerbLexiconRow | null;
 
       if (rootMetadata) {
         const formsCount = await db
@@ -170,7 +216,7 @@ export async function GET(request: NextRequest) {
             `SELECT COUNT(*) as count FROM verb_forms WHERE lemma = ?`
           )
           .bind(rootMetadata.lemma)
-          .first();
+          .first() as CountRow | null;
 
         const lingdocsUrl = rootMetadata.lingdocs_id
           ? `https://dictionary.lingdocs.com/word?id=${rootMetadata.lingdocs_id}`
@@ -207,17 +253,17 @@ export async function GET(request: NextRequest) {
         LIMIT 1`
       )
       .bind(cleanTerm)
-      .first();
+      .first() as NounLexiconRow | null;
 
     if (nounLemma) {
       // Count inflections (if we have an inflections table for nouns)
-      const inflectionsCount = await db
+      const inflectionsCount = (await db
         .prepare(
           `SELECT COUNT(*) as count FROM inflections WHERE base_word = ?`
         )
         .bind(nounLemma.pashto_word)
         .first()
-        .catch(() => ({ count: 0 }));
+        .catch(() => ({ count: 0 }))) as CountRow;
 
       return NextResponse.json({
         term: {
