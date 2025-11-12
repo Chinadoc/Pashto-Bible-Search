@@ -66,6 +66,72 @@ interface NounLexiconRow {
   inflection_pattern?: string;
 }
 
+interface VerbFormRow {
+  base_verb: string;
+  form: string;
+  form_type?: string;
+  tense?: string;
+  person?: string;
+  number?: string;
+  gender?: string;
+  aspect?: string;
+  source_word_id?: number;
+  frequency?: number;
+}
+
+interface D1Result<T> {
+  results: T[];
+  success: boolean;
+  meta?: any;
+}
+
+interface NounInflectionRow {
+  base_form: string;
+  inflected_form: string;
+  grammatical_info?: string;
+  frequency?: number;
+}
+
+interface VerseRow {
+  ref: string;
+  text: string;
+  testament?: string;
+  translation?: string;
+  book?: string;
+}
+
+interface VideoRow {
+  id: string;
+  title: string;
+  transcript?: string;
+  timestamp?: number;
+}
+
+interface VideoWordMappingRow {
+  video_id: string;
+  pashto_word: string;
+  frequency: number;
+  audio_r2_key?: string;
+  video_title?: string;
+  youtube_url?: string;
+  segments?: string | any[];
+}
+
+interface TopicRow {
+  category_key: string;
+  category_name: string;
+  verse_refs?: string;
+  matched_words?: string;
+}
+
+interface InflectionReasonRow {
+  pashto_form: string;
+  base_word: string;
+  inflection_type: string;
+  grammatical_context: string;
+  source_word_id?: number;
+}
+
 export interface Variant {
   form: string;
   baseWord: string;
@@ -239,7 +305,7 @@ export async function getVerbVariantsFromD1(
     WHERE vf.base_verb = ?
     ORDER BY wf.frequency_total DESC NULLS LAST
     LIMIT ?
-  `).bind(baseVerb, limit).all();
+  `).bind(baseVerb, limit).all() as D1Result<VerbFormRow>;
 
   const variants: Variant[] = [];
 
@@ -289,7 +355,7 @@ export async function getNounVariantsFromD1(
     WHERE inf.base_form = ?
     ORDER BY wf.frequency_total DESC NULLS LAST
     LIMIT ?
-  `).bind(baseNoun, limit).all();
+  `).bind(baseNoun, limit).all() as D1Result<NounInflectionRow>;
 
   const variants: Variant[] = [];
 
@@ -377,7 +443,7 @@ export async function searchVerses(
   sql += ` LIMIT ?`;
   bindings.push(options.limit);
 
-  const rows = await db.prepare(sql).bind(...bindings).all();
+  const rows = await db.prepare(sql).bind(...bindings).all() as D1Result<VerseRow>;
 
   const verses: VerseResult[] = [];
 
@@ -431,7 +497,7 @@ export async function searchVideos(
     WHERE vwm.pashto_word IN (${placeholders})
     ORDER BY vwm.frequency DESC
     LIMIT ?
-  `).bind(...forms, limit).all();
+  `).bind(...forms, limit).all() as D1Result<VideoWordMappingRow>;
 
   const videos: VideoResult[] = [];
 
@@ -492,7 +558,7 @@ export async function searchTopics(
     WHERE wcm.pashto_word IN (${placeholders})
     GROUP BY wcm.category_key, wc.category_name
     LIMIT ?
-  `).bind(...forms, limit).all();
+  `).bind(...forms, limit).all() as D1Result<TopicRow>;
 
   const topics: TopicResult[] = [];
 
@@ -532,7 +598,7 @@ export async function getGrammarTooltips(
       ir.source_word_id
     FROM inflection_reasons ir
     WHERE ir.pashto_form IN (${placeholders})
-  `).bind(...forms).all();
+  `).bind(...forms).all() as D1Result<InflectionReasonRow>;
 
   for (const row of rows.results || []) {
     // Build explanation text
