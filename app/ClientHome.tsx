@@ -528,174 +528,111 @@ function SearchControls({
   setNounFilters?: (filters: NounFilterState) => void;
 }) {
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Scope:
-          </label>
-          <select
-            value={scope}
-            onChange={(e) => setScope(e.target.value as Scope)}
-            className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Bible</option>
-            <option value="ot">Old Testament</option>
-            <option value="nt">New Testament</option>
-          </select>
-        </div>
+    <div className="space-y-4 mb-6">
+      {/* Main Controls Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+        <div className="flex flex-wrap items-center gap-6">
+          {/* Scope Selector */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Scope:
+            </label>
+            <select
+              value={scope}
+              onChange={(e) => setScope(e.target.value as Scope)}
+              className="px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
+            >
+              <option value="all">📖 All Bible</option>
+              <option value="ot">📜 Old Testament</option>
+              <option value="nt">✝️ New Testament</option>
+            </select>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Mode:</span>
+          {/* Inflections/Conjugations Toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIncludeRelated(!includeRelated)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 transition-all ${
+                includeRelated
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border-purple-600 shadow-md'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+              {includeRelated ? 'Inflections Active' : 'Include Inflections'}
+            </button>
+          </div>
+
+          {/* Search Type */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIncludeRelated(false)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                !includeRelated
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+              onClick={() => setEnableFuzzy(false)}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                !enableFuzzy
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              Standard Search
+              Exact
             </button>
             <button
-              onClick={() => setIncludeRelated(true)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                includeRelated
-                  ? 'bg-green-500 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+              onClick={() => setEnableFuzzy(true)}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                enableFuzzy
+                  ? 'bg-purple-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              🔍 Related Forms Mode
+              Fuzzy
             </button>
           </div>
-        </div>
 
-        {/* LingDocs-style Inflections/Conjugations Button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIncludeRelated(!includeRelated)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-              includeRelated
-                ? 'bg-purple-600 text-white border-purple-600 shadow-lg transform scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-            </svg>
-            {includeRelated ? 'Search in Inflections/Conjugations' : 'Search Inflections/Conjugations'}
-          </button>
-        </div>
-
-        {/* Show indicator when Inflections/Conjugations search is active */}
-        {includeRelated && (
-          <div className="w-full px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-md">
-            <p className="text-xs text-purple-700 dark:text-purple-300">
-              🔍 Search in Inflections/Conjugations Active - Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
-            </p>
+          {/* Language */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSearchLanguage('pashto')}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
+                searchLanguage === 'pashto'
+                  ? 'bg-sky-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              🕌 Pashto
+            </button>
+            <button
+              onClick={() => setSearchLanguage('english')}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
+                searchLanguage === 'english'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              🇬🇧 English
+            </button>
           </div>
-        )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search:</span>
-          <button
-            onClick={() => setEnableFuzzy(false)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              !enableFuzzy
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Exact
-          </button>
-          <button
-            onClick={() => setEnableFuzzy(true)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              enableFuzzy
-                ? 'bg-purple-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Fuzzy
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</span>
-          <button
-            onClick={() => setSearchLanguage('pashto')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'pashto'
-                ? 'bg-sky-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search directly in Pashto"
-          >
-            🕌 Pashto
-          </button>
-          <button
-            onClick={() => setSearchLanguage('english')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'english'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search in English - finds dictionary matches and searches Pashto equivalents"
-          >
-            🇬🇧 English
-          </button>
-        </div>
-
-        <button
-          onClick={refreshAudioMap}
-          disabled={isLoading}
-          className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded border disabled:opacity-50"
-          title="Refresh audio URLs (get latest Supabase Storage URLs)"
-        >
-          🔄 Audio
-        </button>
-
-        {/* Inflection Filters (for nouns/adjectives) */}
-        {includeRelated && nounFilters && setNounFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800">
-            <span className="text-xs font-semibold text-purple-800 dark:text-purple-200">Inflection Filters:</span>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Type:</label>
-              <select
-                value={nounFilters.inflectionType}
-                onChange={(e) => setNounFilters({ ...nounFilters, inflectionType: e.target.value as NounInflectionType })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="plain">Plain/Base</option>
-                <option value="1st">1st Inflection</option>
-                <option value="2nd">2nd Inflection</option>
-                <option value="plural">Plural</option>
-                <option value="vocative">Vocative</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Reason:</label>
-              <select
-                value={nounFilters.inflectionReason || 'all'}
-                onChange={(e) => setNounFilters({ ...nounFilters, inflectionReason: e.target.value as InflectionReasonFilter })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="plural">Plural</option>
-                <option value="sandwich">Sandwich</option>
-                <option value="transitive_past">Transitive Past</option>
-              </select>
-            </div>
+          {/* Results Count */}
+          <div className="ml-auto text-sm font-semibold text-gray-600 dark:text-gray-400">
+            {resultsCount > 0 && `${resultsCount} results`}
           </div>
-        )}
-
-        <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
-          {resultsCount} results
         </div>
       </div>
+
+      {/* Active Inflections Indicator */}
+      {includeRelated && (
+        <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-700 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-purple-800 dark:text-purple-200">
+              <strong>Inflections Mode Active:</strong> Searching all grammatical forms including conjugated verbs, inflected nouns, and morphological variants
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1881,17 +1818,16 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   // Topics mode - will be used for category browsing
 
   return (
-    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
+    <div className="w-full max-w-7xl mx-auto px-4">
       {/* English Mode Banner */}
       {isEnglishMode && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-2xl">🇬🇧</span>
-            <div className="text-center">
-              <p className="font-bold text-lg">English Search Mode Active</p>
-              <p className="text-sm opacity-90">Searching dictionary for English → Pashto matches</p>
+        <div className="mb-6 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl shadow-sm border border-orange-400 p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl flex-shrink-0">🇬🇧</span>
+            <div>
+              <p className="font-bold text-base">English Search Mode</p>
+              <p className="text-sm opacity-90">Finding Pashto translations from English words</p>
             </div>
-            <span className="text-2xl">🇬🇧</span>
           </div>
         </div>
       )}
