@@ -458,7 +458,7 @@ export async function searchVerses(
     const score = calculateRelevanceScore(row.text, matchedForms, variants);
 
     verses.push({
-      id: row.id,
+      id: row.ref, // Use ref as id since it's unique and already a string
       ref: row.ref,
       book: row.book,
       chapter: row.chapter,
