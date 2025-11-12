@@ -551,10 +551,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               setLoadingAudio(prev => new Set(prev).add(verseRef));
               try {
                 const entry = audioMap[verseRef];
-                // Determine translation from verse
-                const verse = results.find(v => v.ref === verseRef);
-                const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-                const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+                const url = await resolveAudioUrl(verseRef, entry);
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -597,9 +594,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     try {
       const entry = audioMap[verseRef];
-      // Determine translation from verse
-      const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-      const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+      const url = await resolveAudioUrl(verseRef, entry);
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
