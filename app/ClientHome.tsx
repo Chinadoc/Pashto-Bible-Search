@@ -18,7 +18,9 @@ import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
 import WordAlternativeUses from "../components/WordAlternativeUses";
 import { useSearchFilters } from "./contexts/SearchFiltersContext";
 import SearchHeader from "../components/SearchHeader";
+import SearchHero from "../components/SearchHero";
 import ResultsPane from "../components/ResultsPane";
+import ResultsGrid from "../components/ResultsGrid";
 import type {
   Verse,
   Scope,
@@ -825,6 +827,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
   const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
+  const [useNewUI, setUseNewUI] = useState<boolean>(true); // Toggle for new UI design
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -1896,19 +1899,34 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         </div>
       )}
 
-      {/* Search Header - includes title, tabs, translation selector, and search bar */}
-      <SearchHeader
-        query={query}
-        setQuery={setQuery}
-        handleSearch={handleSearch}
-        handleKeyPress={handleKeyPress}
-        isLoading={isLoading}
-        activeMainTab={activeMainTab}
-        activeTranslation={activeTranslation}
-        setActiveTranslation={setActiveTranslation}
-        searchLanguage={searchLanguage}
-        isEnglishMode={isEnglishMode}
-      />
+      {/* Search Header - New Hero UI or Classic Header */}
+      {useNewUI ? (
+        <SearchHero
+          query={query}
+          setQuery={setQuery}
+          handleSearch={handleSearch}
+          handleKeyPress={handleKeyPress}
+          isLoading={isLoading}
+          activeMainTab={activeMainTab}
+          activeTranslation={activeTranslation}
+          setActiveTranslation={setActiveTranslation}
+          searchLanguage={searchLanguage}
+          isEnglishMode={isEnglishMode}
+        />
+      ) : (
+        <SearchHeader
+          query={query}
+          setQuery={setQuery}
+          handleSearch={handleSearch}
+          handleKeyPress={handleKeyPress}
+          isLoading={isLoading}
+          activeMainTab={activeMainTab}
+          activeTranslation={activeTranslation}
+          setActiveTranslation={setActiveTranslation}
+          searchLanguage={searchLanguage}
+          isEnglishMode={isEnglishMode}
+        />
+      )}
 
       {/* Main Content */}
       {activeMainTab === 'search' && (
@@ -1978,55 +1996,64 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             />
           )}
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Results Pane */}
-            <ResultsPane
-              results={results}
-              filteredResults={filteredResults}
-              totalEstimatedCount={totalEstimatedCount}
-              hasMoreResults={hasMoreResults}
+          {/* Main Content - New Grid UI or Classic Layout */}
+          {useNewUI ? (
+            <ResultsGrid
+              results={filteredResults}
               isLoading={isLoading}
-              processed={processed}
-              dictionaryData={dictionaryData}
-              relatedForms={relatedForms}
-              includeRelated={includeRelated}
               query={query}
-              activeVariantForms={activeVariantForms}
-              onPickForm={handlePickForm}
               audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
-              multiVerbFilters={multiVerbFilters}
-              onResetFilters={() => {
-                dispatch({ type: 'RESET_VERB_FILTERS' });
-                dispatch({ type: 'RESET_NOUN_FILTERS' });
-                dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
-                dispatch({ type: 'RESET_POS_FILTERS' });
-              }}
             />
-
-            {/* Sidebar - Always show full coverage, not filtered */}
-            <div className="lg:col-span-1">
-              <CoverageSidebar
-                coverage={coverage}
-                scope={scope}
-                coverageLevel={ComplexityLevel.Basic}
-                onPickBook={(book: string) => {
-                  // Toggle book filter - if already selected, clear it, otherwise select it
-                  if (bookFilter.includes(book)) {
-                    setBookFilter(bookFilter.filter(b => b !== book));
-                  } else {
-                    setBookFilter([...bookFilter, book]);
-                  }
-                }}
-                selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
-                selectedBooks={bookFilter}
-                onClearFilters={() => setBookFilter([])}
-                resultsCount={results.length}
-                filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Results Pane */}
+              <ResultsPane
+                results={results}
+                filteredResults={filteredResults}
+                totalEstimatedCount={totalEstimatedCount}
+                hasMoreResults={hasMoreResults}
+                isLoading={isLoading}
+                processed={processed}
+                dictionaryData={dictionaryData}
+                relatedForms={relatedForms}
+                includeRelated={includeRelated}
+                query={query}
+                activeVariantForms={activeVariantForms}
+                onPickForm={handlePickForm}
                 audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
+                multiVerbFilters={multiVerbFilters}
+                onResetFilters={() => {
+                  dispatch({ type: 'RESET_VERB_FILTERS' });
+                  dispatch({ type: 'RESET_NOUN_FILTERS' });
+                  dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
+                  dispatch({ type: 'RESET_POS_FILTERS' });
+                }}
               />
+
+              {/* Sidebar - Always show full coverage, not filtered */}
+              <div className="lg:col-span-1">
+                <CoverageSidebar
+                  coverage={coverage}
+                  scope={scope}
+                  coverageLevel={ComplexityLevel.Basic}
+                  onPickBook={(book: string) => {
+                    // Toggle book filter - if already selected, clear it, otherwise select it
+                    if (bookFilter.includes(book)) {
+                      setBookFilter(bookFilter.filter(b => b !== book));
+                    } else {
+                      setBookFilter([...bookFilter, book]);
+                    }
+                  }}
+                  selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
+                  selectedBooks={bookFilter}
+                  onClearFilters={() => setBookFilter([])}
+                  resultsCount={results.length}
+                  filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+                  audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 
