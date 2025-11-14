@@ -80,7 +80,7 @@ export default function ResultsGrid({
       {/* Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-in">
         {results.map((verse, index) => {
-          const ref = `${verse.book} ${verse.chapter}:${verse.verse}`;
+          const ref = verse.ref;
           const isExpanded = expandedCards.has(ref);
           const maxLength = 150;
           const needsExpansion = verse.text.length > maxLength;
@@ -90,7 +90,7 @@ export default function ResultsGrid({
 
           return (
             <div
-              key={`${verse.book}-${verse.chapter}-${verse.verse}-${index}`}
+              key={`${verse.ref}-${index}`}
               className="result-card group"
             >
               {/* Reference Badge */}

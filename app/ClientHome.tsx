@@ -21,6 +21,7 @@ import SearchHeader from "../components/SearchHeader";
 import SearchHero from "../components/SearchHero";
 import ResultsPane from "../components/ResultsPane";
 import ResultsGrid from "../components/ResultsGrid";
+import ModernSearchLayout from "../components/ModernSearchLayout";
 import type {
   Verse,
   Scope,
@@ -1996,13 +1997,44 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             />
           )}
 
-          {/* Main Content - New Grid UI or Classic Layout */}
+          {/* Main Content - New Modern UI or Classic Layout */}
           {useNewUI ? (
-            <ResultsGrid
-              results={filteredResults}
+            <ModernSearchLayout
+              results={results}
+              filteredResults={filteredResults}
+              totalEstimatedCount={totalEstimatedCount}
+              hasMoreResults={hasMoreResults}
               isLoading={isLoading}
               query={query}
+              processed={processed}
+              dictionaryData={dictionaryData}
+              relatedForms={relatedForms}
+              includeRelated={includeRelated}
+              activeVariantForms={activeVariantForms}
+              onPickForm={handlePickForm}
               audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
+              multiVerbFilters={multiVerbFilters}
+              onResetFilters={() => {
+                dispatch({ type: 'RESET_VERB_FILTERS' });
+                dispatch({ type: 'RESET_NOUN_FILTERS' });
+                dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
+                dispatch({ type: 'RESET_POS_FILTERS' });
+              }}
+              coverage={coverage}
+              scope={scope}
+              bookFilter={bookFilter}
+              onPickBook={(book: string) => {
+                if (bookFilter.includes(book)) {
+                  setBookFilter(bookFilter.filter(b => b !== book));
+                } else {
+                  setBookFilter([...bookFilter, book]);
+                }
+              }}
+              onClearFilters={() => setBookFilter([])}
+              setIncludeRelated={setIncludeRelated}
+              enableFuzzy={enableFuzzy}
+              setEnableFuzzy={setEnableFuzzy}
+              setScope={setScope}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
