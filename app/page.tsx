@@ -1,4 +1,4 @@
-import ClientHome from '../ClientHome';
+import ClientHome from './ClientHome';
 
 export const dynamic = 'force-dynamic';
 
