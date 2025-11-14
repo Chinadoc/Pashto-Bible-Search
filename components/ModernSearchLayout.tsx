@@ -333,7 +333,12 @@ export default function ModernSearchLayout({
             {query.trim() && (
               <div className="glass-card p-5">
                 <h3 className="text-xs uppercase tracking-[0.35em] text-slate-400 mb-4">Word Analysis</h3>
-                <InlineFrequency word={query.trim()} />
+                <InlineFrequency
+                  term={query.trim()}
+                  scope={scope}
+                  includeRelated={includeRelated}
+                  onPick={onPickForm}
+                />
               </div>
             )}
           </div>
