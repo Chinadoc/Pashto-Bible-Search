@@ -514,7 +514,7 @@ function SearchControls({
             onClick={refreshAudioMap}
             disabled={isLoading}
             className="btn btn--ghost"
-            title="Refresh audio URLs (get latest Supabase Storage URLs)"
+            title="Refresh audio URLs (get latest Cloudflare storage URLs)"
           >
             🔄 Refresh Audio
           </button>
