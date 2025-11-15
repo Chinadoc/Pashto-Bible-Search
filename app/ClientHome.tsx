@@ -30,6 +30,7 @@ import type {
   AdjectiveInflectionType,
   AdjectiveGender,
   SearchLanguage,
+  MultiVerbFilterState,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 import { TextField, Button, IconButton } from '@mui/material';
@@ -53,14 +54,6 @@ const DEFAULT_VERB_FILTER: VerbFilterState = {
   aspect: 'all',
   mood: 'all',
 };
-
-// New multi-select filter state
-interface MultiVerbFilterState {
-  person: VerbFilterPerson[];
-  tense: VerbFilterTense[];
-  aspect: VerbFilterAspect[];
-  mood: VerbFilterMood[];
-}
 
 const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
   person: ['all'],
@@ -403,16 +396,13 @@ function SearchControls({
 }) {
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Scope:
-          </label>
+      <div className="control-bar">
+        <div className="control-block">
+          <span className="control-label">Scope</span>
           <select
             value={scope}
             onChange={(e) => setScope(e.target.value as Scope)}
-            className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="control-select"
           >
             <option value="all">All Bible</option>
             <option value="ot">Old Testament</option>
@@ -420,130 +410,112 @@ function SearchControls({
           </select>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Mode:</span>
-          <div className="flex items-center gap-2">
+        <div className="control-block min-w-[220px]">
+          <span className="control-label">Search Mode</span>
+          <div className="flex flex-wrap gap-2">
             <button
+              type="button"
               onClick={() => setIncludeRelated(false)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                !includeRelated
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+              className={`control-toggle ${!includeRelated ? 'is-active' : ''}`}
             >
               Standard Search
             </button>
             <button
+              type="button"
               onClick={() => setIncludeRelated(true)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                includeRelated
-                  ? 'bg-green-500 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+              className={`control-toggle ${includeRelated ? 'is-active' : ''}`}
             >
-              🔍 Related Forms Mode
+              🔍 Related Forms
             </button>
           </div>
         </div>
 
-        {/* LingDocs-style Inflections/Conjugations Button */}
-        <div className="flex items-center gap-2">
+        <div className="control-block flex-1 min-w-[250px]">
+          <span className="control-label">Inflections / Conjugations</span>
           <button
+            type="button"
             onClick={() => setIncludeRelated(!includeRelated)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-              includeRelated
-                ? 'bg-purple-600 text-white border-purple-600 shadow-lg transform scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-            }`}
+            className={`btn flex items-center gap-2 ${includeRelated ? 'btn--violet' : 'btn--ghost'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
             </svg>
-            {includeRelated ? 'Search in Inflections/Conjugations' : 'Search Inflections/Conjugations'}
+            {includeRelated ? 'Searching Inflections / Conjugations' : 'Search Inflections & Conjugations'}
           </button>
         </div>
 
-        {/* Show indicator when Inflections/Conjugations search is active */}
         {includeRelated && (
-          <div className="w-full px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-md">
-            <p className="text-xs text-purple-700 dark:text-purple-300">
-              🔍 Search in Inflections/Conjugations Active - Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
-            </p>
+          <div className="callout callout--purple w-full">
+            🔍 Search in Inflections/Conjugations Active — Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search:</span>
+        <div className="control-block">
+          <span className="control-label">Match Type</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEnableFuzzy(false)}
+              className={`control-toggle ${!enableFuzzy ? 'is-active' : ''}`}
+            >
+              Exact
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnableFuzzy(true)}
+              className={`control-toggle ${enableFuzzy ? 'is-active' : ''}`}
+            >
+              Fuzzy
+            </button>
+          </div>
+        </div>
+
+        <div className="control-block">
+          <span className="control-label">Language</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('pashto')}
+              className={`control-toggle ${searchLanguage === 'pashto' ? 'is-active' : ''}`}
+              title="Search directly in Pashto"
+            >
+              🕌 Pashto
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('english')}
+              className={`control-toggle ${searchLanguage === 'english' ? 'is-active' : ''}`}
+              title="Search in English - finds dictionary matches and searches Pashto equivalents"
+            >
+              🇬🇧 English
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('anki')}
+              className={`control-toggle ${searchLanguage === 'anki' ? 'is-active' : ''}`}
+              title="Anki Export Mode - search for words and export to Anki flashcards with audio"
+            >
+              📚 Anki
+            </button>
+          </div>
+        </div>
+
+        <div className="control-block min-w-[160px]">
+          <span className="control-label">Audio Map</span>
           <button
-            onClick={() => setEnableFuzzy(false)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              !enableFuzzy
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+            type="button"
+            onClick={refreshAudioMap}
+            disabled={isLoading}
+            className="btn btn--ghost"
+            title="Refresh audio URLs (get latest Cloudflare storage URLs)"
           >
-            Exact
-          </button>
-          <button
-            onClick={() => setEnableFuzzy(true)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              enableFuzzy
-                ? 'bg-purple-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Fuzzy
+            🔄 Refresh Audio
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</span>
-          <button
-            onClick={() => setSearchLanguage('pashto')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'pashto'
-                ? 'bg-sky-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search directly in Pashto"
-          >
-            🕌 Pashto
-          </button>
-          <button
-            onClick={() => setSearchLanguage('english')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'english'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search in English - finds dictionary matches and searches Pashto equivalents"
-          >
-            🇬🇧 English
-          </button>
-          <button
-            onClick={() => setSearchLanguage('anki')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'anki'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Anki Export Mode - search for words and export to Anki flashcards with audio"
-          >
-            📚 Anki
-          </button>
-        </div>
-
-        <button
-          onClick={refreshAudioMap}
-          disabled={isLoading}
-          className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded border disabled:opacity-50"
-          title="Refresh audio URLs (get latest Supabase Storage URLs)"
-        >
-          🔄 Audio
-        </button>
-
-        <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
-          {resultsCount} results
+        <div className="control-block text-right min-w-[140px]">
+          <span className="control-label">Results</span>
+          <div className="text-xl font-semibold text-white">{resultsCount}</div>
         </div>
       </div>
     </div>
@@ -797,9 +769,9 @@ export default function ClientHome() {
           const afghanData = await afghanResponse.json();
           const afghanAudioMap = afghanData || {};
           const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+            console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Cloudflare, ${driveUrls} Drive)`);
           setAudioMap(afghanAudioMap);
 
           if (driveUrls > 0) {
@@ -816,9 +788,9 @@ export default function ClientHome() {
           const yousafzaiData = await yousafzaiResponse.json();
           const yousafzaiAudioMap = yousafzaiData || {};
           const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+            console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
           setYousafzaiAudioMap(yousafzaiAudioMap);
 
           if (yousafzaiDriveUrls > 0) {
@@ -1108,9 +1080,9 @@ export default function ClientHome() {
         const afghanData = await afghanResponse.json();
         const newAfghanAudioMap = afghanData || {};
         const afghanDriveUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-        console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Supabase, ${afghanDriveUrls} Drive)`);
+          console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Cloudflare, ${afghanDriveUrls} Drive)`);
         setAudioMap(newAfghanAudioMap);
 
         // Refresh Yousafzai 2019 audio map
@@ -1119,9 +1091,9 @@ export default function ClientHome() {
           const yousafzaiData = await yousafzaiResponse.json();
           const newYousafzaiAudioMap = yousafzaiData || {};
           const yousafzaiDriveUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+            console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
           setYousafzaiAudioMap(newYousafzaiAudioMap);
 
           const totalDriveUrls = afghanDriveUrls + yousafzaiDriveUrls;
@@ -1130,7 +1102,7 @@ export default function ClientHome() {
           if (totalDriveUrls > 0) {
             alert(`Audio maps refreshed with ${totalDriveUrls} Google Drive URLs still present. Try refreshing again.`);
           } else {
-            alert(`Audio maps refreshed with ${totalStorageUrls} Supabase Storage URLs!`);
+              alert(`Audio maps refreshed with ${totalStorageUrls} Cloudflare storage URLs!`);
           }
         } else {
           alert('Failed to refresh Yousafzai 2019 audio map');

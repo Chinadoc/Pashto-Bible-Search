@@ -17,6 +17,13 @@ export interface VerbFilterState {
   mood: VerbFilterMood;
 }
 
+export interface MultiVerbFilterState {
+  person: VerbFilterPerson[];
+  tense: VerbFilterTense[];
+  aspect: VerbFilterAspect[];
+  mood: VerbFilterMood[];
+}
+
 // Inflection reason filters
 export type InflectionReasonFilter = 'all' | 'plural' | 'sandwich' | 'transitive_past';
 
@@ -37,6 +44,19 @@ export type AdjectiveGender = NounGender;
 export interface AdjectiveFilterState {
   inflectionType: AdjectiveInflectionType;
   gender: AdjectiveGender;
+}
+
+export interface DictionaryEntry {
+  pashto: string;
+  romanized?: string | null;
+  pos?: string | null;
+  english?: string | null;
+}
+
+export interface DictionaryData {
+  entries: DictionaryEntry[];
+  groupedByPos: Record<string, DictionaryEntry[]>;
+  needsDisambiguation: boolean;
 }
 
 export interface Verse {

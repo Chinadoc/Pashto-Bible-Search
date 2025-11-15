@@ -2,7 +2,13 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
-import type { Verse, AudioMap } from '../types';
+import type {
+  Verse,
+  AudioMap,
+  VerbFilterState,
+  MultiVerbFilterState,
+  DictionaryData,
+} from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '@/app/lib/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
 import HighlightText from './HighlightText';
@@ -21,23 +27,9 @@ interface Props {
   terms?: string[]; // preferred: multiple variants to highlight
   highlightBook?: string | null; // book to visually highlight
   processed?: any; // processed data from search for highlighting
-  dictionaryData?: {
-    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null }>;
-    groupedByPos: Record<string, any[]>;
-    needsDisambiguation: boolean;
-  };
-  verbFilters?: {
-    person: 'all' | '1st' | '2nd' | '3rd';
-    tense: 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
-    aspect: 'all' | 'imperfective' | 'perfective';
-    mood: 'all' | 'indicative' | 'subjunctive' | 'imperative' | 'ability';
-  };
-  multiVerbFilters?: {
-    person: string[];
-    tense: string[];
-    aspect: string[];
-    mood: string[];
-  };
+  dictionaryData?: DictionaryData;
+  verbFilters?: VerbFilterState;
+  multiVerbFilters?: MultiVerbFilterState;
   activeVariantForms?: string[];
   onResetFilters?: () => void;
 }
