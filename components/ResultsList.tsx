@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
 import type { Verse, AudioMap } from '../types';
-import { audioUrlFromRef, resolveAudioUrl } from '../app/lib/audio';
+import { audioUrlFromRef, resolveAudioUrl } from '@/app/lib/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
 import HighlightText from './HighlightText';
 import EnhancedHighlightText from './EnhancedHighlightText';
