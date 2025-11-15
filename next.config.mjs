@@ -7,7 +7,6 @@ const nextConfig = {
   experimental: {
     webVitalsAttribution: ["CLS", "LCP"],
   },
-  turbopack: {},
   images: {
     unoptimized: true,
   },

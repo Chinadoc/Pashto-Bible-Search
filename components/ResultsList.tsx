@@ -27,7 +27,7 @@ interface Props {
   terms?: string[]; // preferred: multiple variants to highlight
   highlightBook?: string | null; // book to visually highlight
   processed?: any; // processed data from search for highlighting
-  dictionaryData?: DictionaryData;
+  dictionaryData?: DictionaryData | null;
   verbFilters?: VerbFilterState;
   multiVerbFilters?: MultiVerbFilterState;
   activeVariantForms?: string[];
@@ -540,7 +540,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 // Determine translation from verse
                 const verse = results.find(v => v.ref === verseRef);
                 const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-                const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+                const url = await resolveAudioUrl(verseRef, entry);
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -585,7 +585,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       const entry = audioMap[verseRef];
       // Determine translation from verse
       const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-      const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+      const url = await resolveAudioUrl(verseRef, entry);
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
