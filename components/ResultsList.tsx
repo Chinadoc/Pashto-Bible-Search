@@ -253,16 +253,12 @@ function VerseItem({
   return (
     <div
       key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
-      className={`relative p-3 mb-2 border rounded-md ${
-        isHighlighted
-          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 ring-2 ring-blue-200 dark:ring-blue-700'
-          : 'bg-gray-50 dark:bg-gray-800 dark:border-gray-600'
-      }`}
-      style={{ minHeight: '80px' }} // Reduced space for smaller audio player
+      className={`verse-item ${isHighlighted ? 'highlighted' : ''}`}
+      style={{ minHeight: '80px' }}
     >
-      <div className="flex justify-between items-start mb-2" dir="ltr">
+      <div className="flex justify-between items-start mb-3" dir="ltr">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-blue-600 dark:text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
+          <h3 className="font-semibold text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
           {getTranslationBadge(verse.translation, verse.dialect)}
         </div>
         <div className="flex items-center gap-2">
@@ -273,7 +269,7 @@ function VerseItem({
                 await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
               } catch {}
             }}
-            className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors"
             title="Copy verse"
           >
             Copy
@@ -283,7 +279,7 @@ function VerseItem({
             <button
               type="button"
               onClick={handleDownload}
-              className="text-xs px-2 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+              className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white disabled:opacity-60 transition-colors"
               title="Download audio"
               disabled={isDownloading}
             >
@@ -293,23 +289,21 @@ function VerseItem({
         </div>
       </div>
 
-      {/* Verse text with absolute-positioned verse number chip */}
-      <p className="text-gray-800 dark:text-gray-200 leading-relaxed break-words" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
+      {/* Verse text */}
+      <p className="text-gray-100 leading-relaxed break-words text-base" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
         {verse.text ? highlightWithInflectionReasons(
           cleanVerseText(verse.text),
           termsProp || [],
           processed,
           verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023'
-        ) : <span className="text-gray-500 italic">No text available</span>}
+        ) : <span className="text-gray-400 italic">No text available</span>}
       </p>
 
-      {/* Verse number chip removed as requested */}
-
-      {/* Compact audio player - show load button if not loaded yet */}
+      {/* Audio player */}
       {!audioUrl ? (
-        <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+        <div className="mt-3 pt-3 border-t border-gray-700/50">
           <button
-            className={`px-3 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700 ${isLoadingAudio ? 'opacity-60' : ''}`}
+            className={`px-4 py-2 text-sm rounded-lg border border-gray-600 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors ${isLoadingAudio ? 'opacity-60' : ''}`}
             onClick={loadAudioUrl}
             title="Load audio for this verse"
             disabled={isLoadingAudio}
@@ -318,11 +312,11 @@ function VerseItem({
           </button>
         </div>
       ) : (
-        <div className="mb-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-          <div className="flex items-center gap-1">
+        <div className="mt-3 pt-3 border-t border-gray-700/50">
+          <div className="flex items-center gap-2">
             {/* Play/Pause */}
             <button
-              className="px-2 py-1 text-xs rounded border hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-3 py-1.5 text-sm rounded-lg border border-gray-600 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors"
               onClick={isPlaying ? handlePause : handlePlay}
               title={isPlaying ? 'Pause' : 'Play'}
             >
@@ -551,7 +545,10 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               setLoadingAudio(prev => new Set(prev).add(verseRef));
               try {
                 const entry = audioMap[verseRef];
-                const url = await resolveAudioUrl(verseRef, entry);
+                // Determine translation from verse
+                const verse = results.find(v => v.ref === verseRef);
+                const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+                const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -594,7 +591,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     try {
       const entry = audioMap[verseRef];
-      const url = await resolveAudioUrl(verseRef, entry);
+      // Determine translation from verse
+      const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+      const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));

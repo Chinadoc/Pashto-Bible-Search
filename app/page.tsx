@@ -2,12 +2,13 @@ import ClientHome from './ClientHome';
 
 export const dynamic = 'force-dynamic';
 
-export default function SearchPage() {
+export default function Home() {
   return (
-    <div className="app-shell text-gray-100">
-      <div className="card-surface mx-auto w-full max-w-6xl px-4 sm:px-8 py-6 sm:py-8">
+    <div className="min-h-screen bg-transparent text-slate-100">
+      <div className="search-shell">
         <ClientHome />
       </div>
     </div>
   );
 }
+// Import ClientHome component which contains all the client-side logic

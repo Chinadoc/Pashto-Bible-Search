@@ -1,24 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
-import DictionaryTermDetection, { type DictionaryTerm } from "../components/DictionaryTermDetection";
 import LexiconPanel from "../components/LexiconPanel";
-import VideosPanel from "../components/VideosPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
-import ChapterNavigator from "../components/ChapterNavigator";
-import ChapterView from "../components/ChapterView";
-import TopicsBrowser from "../components/TopicsBrowser";
-import DictionaryDisambiguation from "../components/DictionaryDisambiguation";
-import WordAlternativeUses from "../components/WordAlternativeUses";
-import { useSearchFilters } from "./contexts/SearchFiltersContext";
-import SearchHeader from "../components/SearchHeader";
-import ResultsPane from "../components/ResultsPane";
 import type {
   Verse,
   Scope,
@@ -41,7 +29,6 @@ import type {
   AdjectiveFilterState,
   AdjectiveInflectionType,
   AdjectiveGender,
-  InflectionReasonFilter,
   SearchLanguage,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
@@ -85,16 +72,12 @@ const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
 const DEFAULT_NOUN_FILTER: NounFilterState = {
   inflectionType: 'all',
   gender: 'all',
-  inflectionReason: 'all',
 };
 
 const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
 };
-
-const MAIN_TABS = ['search', 'topics', 'chapters', 'lexicon', 'videos', 'poems'] as const;
-type MainTab = typeof MAIN_TABS[number];
 
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
 const TENSE_VALUES: VerbFilterTense[] = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'];
@@ -103,7 +86,6 @@ const MOOD_VALUES: VerbFilterMood[] = ['all', 'indicative', 'subjunctive', 'impe
 
 const NOUN_INFLECTION_VALUES: NounInflectionType[] = ['all', 'plain', '1st', '2nd', 'plural', 'vocative', 'bundled'];
 const GENDER_VALUES: NounGender[] = ['all', 'masculine', 'feminine'];
-const INFLECTION_REASON_VALUES: InflectionReasonFilter[] = ['all', 'plural', 'sandwich', 'transitive_past'];
 
 function sanitizeVerbFilter(candidate: any): VerbFilterState {
   if (!candidate || typeof candidate !== 'object') {
@@ -198,19 +180,6 @@ function matchesAspect(label: string, aspect: VerbFilterAspect): boolean {
   return matcher ? matcher(label) : true;
 }
 
-function matchesPersonMulti(label: string, persons: string[]): boolean {
-  // Filter out 'all' - if only 'all' remains or array is empty, return true
-  const personValues = persons.filter(p => p !== 'all');
-  if (personValues.length === 0) return true;
-  
-  // Check if label matches any of the selected persons
-  return personValues.some(person => {
-    const patterns = PERSON_PATTERNS[person as VerbFilterPerson];
-    if (!patterns?.length) return true;
-    return patterns.some((pattern) => label.toLowerCase().includes(pattern.toLowerCase()));
-  });
-}
-
 function filterVerbVariants(
   verbs: RelatedFormVariant[] | undefined,
   filters: VerbFilterState
@@ -234,61 +203,6 @@ function filterVerbVariants(
 
   const filtered = verbs.filter(labelFilter);
   console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for filters:`, filters);
-  return filtered;
-}
-
-function filterVerbVariantsMulti(
-  verbs: RelatedFormVariant[] | undefined,
-  multiFilters: MultiVerbFilterState
-): RelatedFormVariant[] {
-  if (!verbs?.length) {
-    console.warn(`⚠️ [FILTER] No verbs provided to filterVerbVariantsMulti`);
-    return [];
-  }
-  
-  console.log(`🔍 [FILTER] Starting filterVerbVariantsMulti with ${verbs.length} verbs`, {
-    filters: multiFilters,
-    sampleVerbs: verbs.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
-    hasWahum: verbs.some(v => v.form === 'وهم'),
-    hasWahoo: verbs.some(v => v.form === 'وهو'),
-    wahumVariants: verbs.filter(v => v.form === 'وهم').map(v => ({ form: v.form, label: v.label })),
-  });
-  
-  // Only filter by person - ignore tense/aspect/mood
-  const person = Array.isArray(multiFilters.person) ? multiFilters.person : ['all'];
-  const personValues = person.filter(p => p !== 'all');
-  
-  console.log(`🔍 [FILTER] Filter values (person only):`, {
-    personValues,
-  });
-  
-  const labelFilter = (variant: RelatedFormVariant) => {
-    const label = normalizeLabel(variant.label);
-    
-    // Only check person filter - ignore tense/aspect/mood
-    const personMatch = personValues.length === 0 || matchesPersonMulti(label, person);
-
-    const matches = personMatch;
-    
-    // Only log first few to avoid spam
-    if (verbs.indexOf(variant) < 5) {
-      console.log(`🔍 [FILTER] Variant "${variant.form}" (label: "${variant.label}" → "${label}")`, {
-        personMatch,
-        matches,
-      });
-    }
-
-    return matches;
-  };
-
-  const filtered = verbs.filter(labelFilter);
-  console.log(`✅ [FILTER] Filtered ${verbs.length} verb variants down to ${filtered.length}`, {
-    filters: multiFilters,
-    filteredForms: filtered.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
-    hasWahum: filtered.some(v => v.form === 'وهم'),
-    hasWahoo: filtered.some(v => v.form === 'وهو'),
-    wahumVariants: filtered.filter(v => v.form === 'وهم').map(v => ({ form: v.form, label: v.label })),
-  });
   return filtered;
 }
 
@@ -349,16 +263,11 @@ function isDefaultVerbFilter(filters: VerbFilterState): boolean {
 
 // Multi-select filter helpers
 function isDefaultMultiVerbFilter(filters: MultiVerbFilterState): boolean {
-  const person = Array.isArray(filters.person) ? filters.person : ['all'];
-  const tense = Array.isArray(filters.tense) ? filters.tense : ['all'];
-  const aspect = Array.isArray(filters.aspect) ? filters.aspect : ['all'];
-  const mood = Array.isArray(filters.mood) ? filters.mood : ['all'];
-  
   return (
-    person.length === 1 && person[0] === 'all' &&
-    tense.length === 1 && tense[0] === 'all' &&
-    aspect.length === 1 && aspect[0] === 'all' &&
-    mood.length === 1 && mood[0] === 'all'
+    filters.person.length === 1 && filters.person[0] === 'all' &&
+    filters.tense.length === 1 && filters.tense[0] === 'all' &&
+    filters.aspect.length === 1 && filters.aspect[0] === 'all' &&
+    filters.mood.length === 1 && filters.mood[0] === 'all'
   );
 }
 
@@ -387,19 +296,11 @@ function toggleMultiFilter<T extends string>(
 }
 
 function multiFilterToSingleFilter(multiFilters: MultiVerbFilterState): VerbFilterState {
-  // If 'all' is included or array is empty, return 'all'
-  // Otherwise, if multiple values are selected, we need to filter for any of them
-  // For now, we'll use the first non-'all' value, but the actual filtering should handle multiple values
-  const personValues = multiFilters.person.filter(p => p !== 'all');
-  const tenseValues = multiFilters.tense.filter(t => t !== 'all');
-  const aspectValues = multiFilters.aspect.filter(a => a !== 'all');
-  const moodValues = multiFilters.mood.filter(m => m !== 'all');
-  
   return {
-    person: multiFilters.person.includes('all') || personValues.length === 0 ? 'all' : personValues[0] as VerbFilterPerson,
-    tense: multiFilters.tense.includes('all') || tenseValues.length === 0 ? 'all' : tenseValues[0] as VerbFilterTense,
-    aspect: multiFilters.aspect.includes('all') || aspectValues.length === 0 ? 'all' : aspectValues[0] as VerbFilterAspect,
-    mood: multiFilters.mood.includes('all') || moodValues.length === 0 ? 'all' : moodValues[0] as VerbFilterMood,
+    person: multiFilters.person.includes('all') || multiFilters.person.length === 0 ? 'all' : multiFilters.person[0],
+    tense: multiFilters.tense.includes('all') || multiFilters.tense.length === 0 ? 'all' : multiFilters.tense[0],
+    aspect: multiFilters.aspect.includes('all') || multiFilters.aspect.length === 0 ? 'all' : multiFilters.aspect[0],
+    mood: multiFilters.mood.includes('all') || multiFilters.mood.length === 0 ? 'all' : multiFilters.mood[0],
   };
 }
 
@@ -428,22 +329,6 @@ function matchesGender(label: string, gender: NounGender): boolean {
   return true;
 }
 
-function matchesInflectionReason(
-  variant: RelatedFormVariant,
-  reason: InflectionReasonFilter
-): boolean {
-  if (reason === 'all') return true;
-  if (!variant.inflectionReasons) return false;
-  
-  const reasons = variant.inflectionReasons;
-  
-  if (reason === 'plural') return reasons.plural > 0;
-  if (reason === 'sandwich') return reasons.sandwich > 0;
-  if (reason === 'transitive_past') return reasons.transitive_past > 0;
-  
-  return true;
-}
-
 function filterNounVariants(
   nouns: RelatedFormVariant[] | undefined,
   filters: NounFilterState
@@ -452,13 +337,10 @@ function filterNounVariants(
   
   const filtered = nouns.filter((variant) => {
     const label = normalizeLabel(variant.label);
-    const inflectionTypeMatch = matchesNounInflectionType(label, filters.inflectionType);
-    const genderMatch = matchesGender(label, filters.gender);
-    const reasonMatch = filters.inflectionReason 
-      ? matchesInflectionReason(variant, filters.inflectionReason)
-      : true;
-    
-    return inflectionTypeMatch && genderMatch && reasonMatch;
+    return (
+      matchesNounInflectionType(label, filters.inflectionType) &&
+      matchesGender(label, filters.gender)
+    );
   });
 
   return filtered;
@@ -472,17 +354,17 @@ function filterAdjectiveVariants(
   
   const filtered = adjectives.filter((variant) => {
     const label = normalizeLabel(variant.label);
-    const inflectionTypeMatch = matchesNounInflectionType(label, filters.inflectionType);
-    const genderMatch = matchesGender(label, filters.gender);
-    
-    return inflectionTypeMatch && genderMatch;
+    return (
+      matchesNounInflectionType(label, filters.inflectionType) &&
+      matchesGender(label, filters.gender)
+    );
   });
 
   return filtered;
 }
 
 function isDefaultNounFilter(filters: NounFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all' && (filters.inflectionReason === 'all' || !filters.inflectionReason);
+  return filters.inflectionType === 'all' && filters.gender === 'all';
 }
 
 function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
@@ -503,11 +385,7 @@ function SearchControls({
   setBookFilter,
   resultsCount,
   refreshAudioMap,
-  isLoading,
-  multiVerbFilters,
-  setMultiVerbFilters,
-  nounFilters,
-  setNounFilters
+  isLoading
 }: {
   scope: Scope;
   setScope: (scope: Scope) => void;
@@ -522,10 +400,6 @@ function SearchControls({
   resultsCount: number;
   refreshAudioMap: () => Promise<void>;
   isLoading: boolean;
-  multiVerbFilters?: MultiVerbFilterState;
-  setMultiVerbFilters?: (filters: MultiVerbFilterState) => void;
-  nounFilters?: NounFilterState;
-  setNounFilters?: (filters: NounFilterState) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -646,6 +520,17 @@ function SearchControls({
           >
             🇬🇧 English
           </button>
+          <button
+            onClick={() => setSearchLanguage('anki')}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              searchLanguage === 'anki'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+            title="Anki Export Mode - search for words and export to Anki flashcards with audio"
+          >
+            📚 Anki
+          </button>
         </div>
 
         <button
@@ -656,41 +541,6 @@ function SearchControls({
         >
           🔄 Audio
         </button>
-
-        {/* Inflection Filters (for nouns/adjectives) */}
-        {includeRelated && nounFilters && setNounFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800">
-            <span className="text-xs font-semibold text-purple-800 dark:text-purple-200">Inflection Filters:</span>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Type:</label>
-              <select
-                value={nounFilters.inflectionType}
-                onChange={(e) => setNounFilters({ ...nounFilters, inflectionType: e.target.value as NounInflectionType })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="plain">Plain/Base</option>
-                <option value="1st">1st Inflection</option>
-                <option value="2nd">2nd Inflection</option>
-                <option value="plural">Plural</option>
-                <option value="vocative">Vocative</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-700 dark:text-gray-300">Reason:</label>
-              <select
-                value={nounFilters.inflectionReason || 'all'}
-                onChange={(e) => setNounFilters({ ...nounFilters, inflectionReason: e.target.value as InflectionReasonFilter })}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="plural">Plural</option>
-                <option value="sandwich">Sandwich</option>
-                <option value="transitive_past">Transitive Past</option>
-              </select>
-            </div>
-          </div>
-        )}
 
         <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
           {resultsCount} results
@@ -775,50 +625,48 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
   );
 }
 
-export default function ClientHome({ initialQuery }: { initialQuery?: string } = {}) {
+export default function ClientHome() {
+  const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
-  const [totalEstimatedCount, setTotalEstimatedCount] = useState<number | undefined>();
-  const [hasMoreResults, setHasMoreResults] = useState(false);
-  const [dictionaryMatch, setDictionaryMatch] = useState<{
-    word: string;
-    pos: 'verb' | 'noun' | 'adjective';
-    hasVariants: boolean;
-    variantCount: number;
-    lingdocsId?: number;
-    verbType?: string;
-    helper?: string;
-    previewVariants: Array<{ form: string; label: string; count?: number }>;
-  } | null>(null);
-  
-  const [dictionaryData, setDictionaryData] = useState<{
-    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null; ts?: number | null }>;
-    groupedByPos: Record<string, any[]>;
-    needsDisambiguation: boolean;
-  } | undefined>();
-  const [detectedTerm, setDetectedTerm] = useState<DictionaryTerm | null>(null);
-  const [detectingTerm, setDetectingTerm] = useState(false);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
-  const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019' | 'unified'>('afghan2023');
-  const pathname = usePathname();
-  const router = useRouter();
-  
-  // Determine active tab from pathname
-  const getActiveTabFromPath = (path: string): MainTab => {
-    if (path === '/topics') return 'topics';
-    if (path === '/chapters') return 'chapters';
-    if (path === '/lexicon') return 'lexicon';
-    if (path === '/videos') return 'videos';
-    if (path === '/poems') return 'poems';
-    return 'search'; // default to search
-  };
-  
-  const activeMainTab = getActiveTabFromPath(pathname || '/search');
-  const [selectedBook, setSelectedBook] = useState<string | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
+  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>('search');
+  const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
+  const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
+  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
+  const [newVideoUrl, setNewVideoUrl] = useState('https://www.youtube.com/watch?v=0tvvnixN7iw&t=252s');
+  const [wordFrequency, setWordFrequency] = useState<any>(null);
+  const [loadingWordFrequency, setLoadingWordFrequency] = useState(false);
+  const [activeVideosTab, setActiveVideosTab] = useState<'videos' | 'frequency' | 'transcripts'>('videos');
+  const [processingVideo, setProcessingVideo] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [playingSentence, setPlayingSentence] = useState<{segmentIndex: number, sentenceIndex: number} | null>(null);
 
+  // Function to play sentence with timing tracking
+  const playSentenceWithTiming = (segmentIndex: number, sentenceIndex: number, audioUrl: string) => {
+    setPlayingSentence({segmentIndex, sentenceIndex});
+
+    const audio = new Audio(audioUrl);
+    audio.play();
+
+    // Clear the playing state when audio ends
+    audio.onended = () => {
+      setPlayingSentence(null);
+    };
+
+    // Also clear if audio is paused/stopped
+    audio.onpause = () => {
+      setPlayingSentence(null);
+    };
+  };
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(true);
@@ -827,31 +675,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Client-side cache for instant loading
-  const clientCacheRef = useRef<Map<string, any>>(new Map());
-
-  // Client-side cache functions
-  const getClientCachedSearch = useCallback((cacheKey: string) => {
-    const cached = clientCacheRef.current.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < 3600000) { // 1 hour TTL
-      console.log('⚡ Client cache hit:', cacheKey);
-      return cached.data;
-    }
-    if (cached) {
-      clientCacheRef.current.delete(cacheKey);
-    }
-    return null;
-  }, []);
-
-  const setClientCachedSearch = useCallback((cacheKey: string, data: any) => {
-    clientCacheRef.current.set(cacheKey, {
-      data,
-      timestamp: Date.now()
-    });
-    console.log('💾 Stored in client cache:', cacheKey);
-  }, []);
   const [processed, setProcessed] = useState<{
     original: string;
     normalized: string;
@@ -865,170 +688,38 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     englishMatches?: Array<{ english: string; pashto: string; romanized?: string; pos?: string; forms?: string[] }>;
   } | null>(null);
 
-  // Remove verbFilters - use only multiVerbFilters
-  // const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER }); // REMOVED
-  const { filters, dispatch, toAPIPayload } = useSearchFilters();
-  const multiVerbFilters = filters.verb;
-  const nounFilters = filters.noun;
-  const adjectiveFilters = filters.adjective;
-  const selectedPartOfSpeech = filters.pos.selected.length > 0 
-    ? (filters.pos.selected[0] as 'verb' | 'noun' | 'adjective')
-    : 'auto';
-  
-  const setMultiVerbFilters = (newFilters: MultiVerbFilterState) => {
-    dispatch({ type: 'SET_VERB_FILTERS', filters: newFilters });
-  };
-  
-  const setNounFilters = (newFilters: NounFilterState) => {
-    dispatch({ type: 'SET_NOUN_FILTERS', filters: newFilters });
-  };
-  
-  const setAdjectiveFilters = (newFilters: AdjectiveFilterState) => {
-    dispatch({ type: 'SET_ADJECTIVE_FILTERS', filters: newFilters });
-  };
-  
-  const setSelectedPartOfSpeech = (pos: 'auto' | 'verb' | 'noun' | 'adjective') => {
-    if (pos === 'auto') {
-      dispatch({ type: 'CLEAR_POS_FILTERS' });
-    } else {
-      dispatch({ type: 'SET_POS_FILTER', pos: [pos] });
-    }
-  };
+  // Verb understanding state
+  const [verbFilters, setVerbFilters] = useState<VerbFilterState>({ ...DEFAULT_VERB_FILTER });
+  const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
+  const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
+  const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
-  const [query, setQuery] = useState<string>(initialQuery || '');
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
-  const translationEffectGuard = useRef<boolean>(true);
-  const initialQueryHandledRef = useRef<boolean>(false);
 
-  // Auto-update selectedPartOfSpeech when posGuess is detected
+  // Trigger search when verb filters change (real-time filtering)
+  const previousVerbState = useRef<VerbFilterState>(verbFilters);
+
+  // useEffect to trigger search when verb filters change
   useEffect(() => {
-    if (selectedPartOfSpeech === 'auto' && relatedForms?.posGuess) {
-      // Auto-detect and set the part of speech based on posGuess
-      const detectedPos = relatedForms.posGuess.toLowerCase();
-      if (detectedPos === 'verb' || detectedPos === 'v' || detectedPos.startsWith('verb')) {
-        setSelectedPartOfSpeech('verb');
-      } else if (detectedPos === 'noun' || detectedPos === 'n' || detectedPos.startsWith('noun')) {
-        setSelectedPartOfSpeech('noun');
-      } else if (detectedPos === 'adjective' || detectedPos === 'adj' || detectedPos.startsWith('adjective')) {
-        setSelectedPartOfSpeech('adjective');
+    // Only trigger if verb state actually changed and we have related forms
+    if (includeRelated && relatedForms && query.trim()) {
+      const stateChanged =
+        previousVerbState.current.person !== verbFilters.person ||
+        previousVerbState.current.tense !== verbFilters.tense ||
+        previousVerbState.current.aspect !== verbFilters.aspect ||
+        previousVerbState.current.mood !== verbFilters.mood;
+
+      if (stateChanged) {
+        console.log('🔄 Verb filter changed, applying filter without re-searching');
+        applyVerbFiltersAndSearch(verbFilters);
       }
     }
-  }, [relatedForms?.posGuess, selectedPartOfSpeech]);
-
-  // Unified filter application function - handles all parts of speech
-  // NOTE: Uses executeSearchRef to avoid dependency issues
-  const executeSearchRef = useRef<((opts?: { overrideVariants?: string[] | null; languageOverride?: SearchLanguage; preserveResults?: boolean; reason?: string; limit?: number }) => Promise<void>) | null>(null);
-  
-  const applyFiltersAndSearch = useCallback((
-    pos: 'verb' | 'noun' | 'adjective',
-    filters: MultiVerbFilterState | NounFilterState | AdjectiveFilterState
-  ) => {
-    // Allow filters to work if includeRelated is true OR if we have dictionaryMatch
-    // (dictionaryMatch is checked via relatedForms existence - if dictionaryMatch exists,
-    // we should have populated relatedForms from it)
-    if (!includeRelated && !relatedForms) {
-      console.log('Related forms mode not active and no dictionary match, filters ignored');
-      return;
-    }
-
-    let filteredVariants: RelatedFormVariant[] = [];
-    let forms: string[] = [];
-
-    if (pos === 'verb') {
-      const verbFilters = filters as MultiVerbFilterState;
-      setMultiVerbFilters(verbFilters);
-      
-      if (!relatedForms?.verbs?.length) {
-        console.log('Verb filters updated, awaiting related forms to refetch results');
-        return;
-      }
-
-      filteredVariants = filterVerbVariantsMulti(relatedForms.verbs, verbFilters);
-      forms = formsFromVariants(filteredVariants);
-      
-      console.log(`🔍 [FILTER] After filtering, got ${filteredVariants.length} variants:`, {
-        sampleVariants: filteredVariants.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
-        allForms: forms,
-        hasWahum: forms.includes('وهم'),
-        hasWahoo: forms.includes('وهو'),
-      });
-
-      if (isDefaultMultiVerbFilter(verbFilters)) {
-        // Reset to all forms
-        setVariantsOverride(null);
-        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-        if (executeSearchRef.current) {
-          executeSearchRef.current({ preserveResults: false, reason: 'filter-reset' });
-        }
-        return;
-      }
-    } else if (pos === 'noun') {
-      const nounFilters = filters as NounFilterState;
-      setNounFilters(nounFilters);
-      
-      if (!relatedForms?.nouns?.length) {
-        console.log('Noun filters updated, awaiting related forms to refetch results');
-        return;
-      }
-
-      filteredVariants = filterNounVariants(relatedForms.nouns, nounFilters);
-      forms = formsFromVariants(filteredVariants);
-    } else if (pos === 'adjective') {
-      const adjectiveFilters = filters as AdjectiveFilterState;
-      setAdjectiveFilters(adjectiveFilters);
-      
-      if (!relatedForms?.other?.length) {
-        console.log('Adjective filters updated, awaiting related forms to refetch results');
-        return;
-      }
-
-      filteredVariants = filterAdjectiveVariants(relatedForms.other, adjectiveFilters);
-      forms = formsFromVariants(filteredVariants);
-    }
-
-    // If no forms match the filters, show no results
-    if (forms.length === 0) {
-      setResults([]);
-      setCoverage([]);
-      setVariantsOverride([]);
-      setActiveVariantForms([]);
-      return;
-    }
-
-    // Always trigger new search with filtered forms
-    console.log(`🔄 [CLIENT] ${pos} filter applied, searching for ${forms.length} filtered forms:`, forms.slice(0, 10));
-    console.log(`🔄 [CLIENT] Filtered variants:`, {
-      before: pos === 'verb' ? relatedForms?.verbs?.length : pos === 'noun' ? relatedForms?.nouns?.length : relatedForms?.other?.length,
-      after: filteredVariants.length,
-      filterApplied: filters,
-    });
-    variantKeyRef.current = forms.join('|');
-    setVariantsOverride(forms);
-    setActiveVariantForms(forms);
-    if (executeSearchRef.current) {
-      console.log(`🔄 [CLIENT] Calling executeSearch with overrideVariants:`, forms.slice(0, 10));
-      executeSearchRef.current({ overrideVariants: forms, preserveResults: false, reason: `${pos}-filter` });
-    }
-  }, [includeRelated, relatedForms]);
-
-  // Trigger search when multiVerbFilters change
-  // Also trigger when dictionaryMatch exists (even if includeRelated=false)
-  const previousMultiVerbFilters = useRef<MultiVerbFilterState>(multiVerbFilters);
-  useEffect(() => {
-    // Allow filters to work if includeRelated is true OR if we have relatedForms (from dictionaryMatch)
-    const canUseFilters = includeRelated || (relatedForms && relatedForms.forms?.verbs && relatedForms.forms.verbs.length > 0);
-    if (canUseFilters && query.trim()) {
-      const filtersChanged = JSON.stringify(previousMultiVerbFilters.current) !== JSON.stringify(multiVerbFilters);
-      if (filtersChanged) {
-        console.log('🔄 Verb filters changed, applying filter and searching');
-        applyFiltersAndSearch('verb', multiVerbFilters);
-      }
-    }
-    previousMultiVerbFilters.current = multiVerbFilters;
-  }, [multiVerbFilters.person, multiVerbFilters.tense, multiVerbFilters.aspect, multiVerbFilters.mood, includeRelated, relatedForms, query, applyFiltersAndSearch]);
+    previousVerbState.current = verbFilters;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verbFilters.person, verbFilters.tense, verbFilters.aspect, verbFilters.mood]);
 
   // useEffect to trigger search when noun filters change
   useEffect(() => {
@@ -1062,46 +753,14 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   useEffect(() => {
     setScope(loadPersisted('scope', 'all'));
     setIncludeRelated(loadPersisted('includeRelated', false));
-    // Filters are now loaded automatically by SearchFiltersContext from localStorage
+    const savedFilters = sanitizeVerbFilter(loadPersisted('verbFilters', DEFAULT_VERB_FILTER));
+    console.log('Loading verb filters from localStorage:', savedFilters);
+    setVerbFilters(savedFilters);
+    setNounFilters(loadPersisted('nounFilters', DEFAULT_NOUN_FILTER));
+    setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
   }, []);
-
-  // Proactive dictionary term detection - shows smart banner as user types
-  useEffect(() => {
-    // Don't detect for very short queries
-    if (query.length < 2) {
-      setDetectedTerm(null);
-      return;
-    }
-
-    // Debounce to avoid excessive API calls
-    setDetectingTerm(true);
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/detect-term?term=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
-        setDetectedTerm(data.term || null);
-
-        if (data.term) {
-          console.log(
-            `[DETECTION] ✓ Found: ${data.term.lemma} (${data.term.totalForms} forms, confidence: ${data.term.confidence})`
-          );
-        }
-      } catch (error) {
-        console.error('[DETECTION] Failed:', error);
-        setDetectedTerm(null);
-      } finally {
-        setDetectingTerm(false);
-      }
-    }, 300); // Wait 300ms after typing stops
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  // Trigger initial search when an initialQuery is provided (e.g., navigating from Results → Lexicon)
 
   // Persist preferences when they change
   useEffect(() => {
@@ -1111,9 +770,14 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       return;
     }
     
-    // Filters are now persisted automatically by SearchFiltersContext
-    // No need to manually save here
-  }, [scope, includeRelated, multiVerbFilters, nounFilters, adjectiveFilters, searchLanguage]);
+    savePersisted('scope', scope);
+    savePersisted('includeRelated', includeRelated);
+    console.log('Persisting verb filters:', verbFilters);
+    savePersisted('verbFilters', verbFilters);
+    savePersisted('nounFilters', nounFilters);
+    savePersisted('adjectiveFilters', adjectiveFilters);
+    savePersisted('searchLanguage', searchLanguage);
+  }, [scope, includeRelated, verbFilters, nounFilters, adjectiveFilters, searchLanguage]);
 
 
   // Clear any problematic initial values on mount
@@ -1124,13 +788,75 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   }, []);
 
   // Load audio map data for both translations
-  // Audio is now handled entirely by D1/R2 via Cloudflare Worker
-  // No need to load audio maps anymore
   useEffect(() => {
-    // Audio maps are no longer needed - all audio comes from D1/R2
-    setAudioMap({});
-    setYousafzaiAudioMap({});
+    const loadAudioMaps = async () => {
+      try {
+        // Load Afghan 2023 audio map
+        const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
+        if (afghanResponse.ok) {
+          const afghanData = await afghanResponse.json();
+          const afghanAudioMap = afghanData || {};
+          const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+
+          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+          setAudioMap(afghanAudioMap);
+
+          if (driveUrls > 0) {
+            console.warn(`⚠️ Afghan 2023 audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
+          }
+        } else {
+          console.warn('Afghan 2023 audio map API returned error:', afghanResponse.status, afghanResponse.statusText);
+          setAudioMap({});
+        }
+
+        // Load Yousafzai 2019 audio map
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
+        if (yousafzaiResponse.ok) {
+          const yousafzaiData = await yousafzaiResponse.json();
+          const yousafzaiAudioMap = yousafzaiData || {};
+          const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
+          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+
+          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+          setYousafzaiAudioMap(yousafzaiAudioMap);
+
+          if (yousafzaiDriveUrls > 0) {
+            console.warn(`⚠️ Yousafzai 2019 audio map contains ${yousafzaiDriveUrls} Google Drive URLs - consider manual refresh`);
+          }
+        } else {
+          console.warn('Yousafzai 2019 audio map API returned error:', yousafzaiResponse.status, yousafzaiResponse.statusText);
+          setYousafzaiAudioMap({});
+        }
+      } catch (error) {
+        console.error('Failed to load audio maps:', error);
+        // Audio maps are optional, so we can continue without them
+        setAudioMap({});
+        setYousafzaiAudioMap({});
+      }
+    };
+    loadAudioMaps();
   }, []);
+
+  // Fetch audio clips when videos tab is active
+  useEffect(() => {
+    if (activeMainTab === 'videos' && audioClips.length === 0) {
+      setLoadingAudio(true);
+      fetch('/api/audio-clips')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setAudioClips(data.clips || []);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching audio clips:', err);
+        })
+        .finally(() => {
+          setLoadingAudio(false);
+        });
+    }
+  }, [activeMainTab, audioClips.length]);
 
   // Fetch poems when poems tab is active
   useEffect(() => {
@@ -1152,16 +878,153 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     }
   }, [activeMainTab, poems.length]);
 
+  // Fetch videos when videos tab is active
+  useEffect(() => {
+    if (activeMainTab === 'videos' && videos.length === 0) {
+      setLoadingVideos(true);
+      fetch('/api/videos')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setVideos(data.videos || []);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching videos:', error);
+        })
+        .finally(() => {
+          setLoadingVideos(false);
+        });
+    }
+  }, [activeMainTab, videos.length]);
 
+  // Fetch word frequency when videos tab and frequency sub-tab are active
+  useEffect(() => {
+    if (activeMainTab === 'videos' && activeVideosTab === 'frequency' && !wordFrequency) {
+      setLoadingWordFrequency(true);
+      fetch('/api/video-word-frequency?categorize=true&limit=100')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setWordFrequency(data);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching word frequency:', error);
+        })
+        .finally(() => {
+          setLoadingWordFrequency(false);
+        });
+    }
+  }, [activeMainTab, activeVideosTab, wordFrequency]);
 
+  // Re-transcribe segment function
+  const retranscribeSegment = async (audioFilename: string, segmentIndex: number) => {
+    setRetranscribingSegments(prev => new Set(prev).add(segmentIndex));
+    
+    try {
+      const response = await fetch('/api/retranscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioFilename }),
+      });
 
-  // Transcript search state
-  const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
-  const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
-  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
+      const data = await response.json();
 
+      if (response.ok && data.success) {
+        // Update the transcript in the videos state
+        setVideos(prevVideos => 
+          prevVideos.map(video => ({
+            ...video,
+            segments: video.segments.map((segment: any, index: number) => 
+              index === segmentIndex 
+                ? { ...segment, transcript: data.transcript }
+                : segment
+            )
+          }))
+        );
+        
+        // Show success message with quality check info
+        const qualityInfo = data.qualityCheck ? `\nQuality check: ${data.qualityCheck.reason}` : '';
+        alert(`Transcript updated successfully!${qualityInfo}`);
+        console.log('Transcript updated successfully', data.qualityCheck);
+      } else {
+        console.error('Failed to re-transcribe:', data.error);
+        const errorMsg = data.reason ? `Quality check failed: ${data.reason}` : 'Failed to re-transcribe segment. Please try again.';
+        alert(errorMsg);
+      }
+    } catch (error) {
+      console.error('Error re-transcribing segment:', error);
+      alert('Error re-transcribing segment. Please try again.');
+    } finally {
+      setRetranscribingSegments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(segmentIndex);
+        return newSet;
+      });
+    }
+  };
 
-  // Transcript search function
+  // Process new video function
+  const processNewVideo = async () => {
+    if (!newVideoUrl.trim()) {
+      alert('Please enter a YouTube URL');
+      return;
+    }
+
+    setProcessingVideo(true);
+    setProcessingStatus('Starting video processing...');
+
+    try {
+      const response = await fetch('/api/process-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ youtubeUrl: newVideoUrl }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setProcessingStatus(`✅ Successfully processed video!`);
+        setProcessingStatus(prev => prev + `\nVideo ID: ${data.videoId}`);
+        setProcessingStatus(prev => prev + `\nTotal chunks: ${data.totalChunks}`);
+        setProcessingStatus(prev => prev + `\nSuccessful transcriptions: ${data.successfulTranscriptions}`);
+        
+        // Refresh videos list
+        setVideos([]);
+        setTimeout(() => {
+          fetch('/api/videos')
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                setVideos(data.videos || []);
+              }
+            })
+            .catch(error => {
+              console.error('Error refreshing videos:', error);
+            });
+        }, 2000);
+        
+        setNewVideoUrl('');
+      } else {
+        setProcessingStatus(`❌ Processing failed: ${data.error}`);
+        if (data.output) {
+          setProcessingStatus(prev => prev + `\n\nDetails:\n${data.output}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing video:', error);
+      setProcessingStatus(`❌ Error: ${error}`);
+    } finally {
+      setProcessingVideo(false);
+    }
+  };
+
+  // Search transcripts function
   const searchTranscripts = async (query: string) => {
     if (!query.trim()) {
       setTranscriptResults([]);
@@ -1170,15 +1033,17 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
 
     setLoadingTranscripts(true);
     try {
-      const response = await fetch('/api/search-transcripts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
-      });
+      const response = await fetch(`/api/search-transcripts?q=${encodeURIComponent(query)}&limit=10`);
       const data = await response.json();
-      setTranscriptResults(data.results || []);
+      
+      if (response.ok) {
+        setTranscriptResults(data.results || []);
+      } else {
+        console.error('Error searching transcripts:', data.error);
+        setTranscriptResults([]);
+      }
     } catch (error) {
-      console.error('Transcript search error:', error);
+      console.error('Error searching transcripts:', error);
       setTranscriptResults([]);
     } finally {
       setLoadingTranscripts(false);
@@ -1200,13 +1065,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     debouncedTranscriptSearch(query);
   };
 
-
   // Refresh audio maps when results change to ensure we have latest URLs
   useEffect(() => {
     // Only refresh if we have results but no audio map for the active translation
-    const currentAudioMap = activeTranslation === 'unified' 
-      ? { ...audioMap, ...yousafzaiAudioMap }
-      : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap);
+    const currentAudioMap = activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap;
     if (results.length > 0 && Object.keys(currentAudioMap).length === 0) {
       const refreshAudioMaps = async () => {
         try {
@@ -1220,7 +1082,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
           }
 
           // Refresh Yousafzai 2019 audio map
-          const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
+          const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
           if (yousafzaiResponse.ok) {
             const yousafzaiData = await yousafzaiResponse.json();
             const newYousafzaiAudioMap = yousafzaiData || {};
@@ -1252,7 +1114,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         setAudioMap(newAfghanAudioMap);
 
         // Refresh Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_aud?clear_cache=1');
+        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
         if (yousafzaiResponse.ok) {
           const yousafzaiData = await yousafzaiResponse.json();
           const newYousafzaiAudioMap = yousafzaiData || {};
@@ -1348,7 +1210,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   // Update coverage state when coverageData changes
   useEffect(() => {
     setCoverage(coverageData);
-  }, [coverageData, setCoverage]);
+  }, [coverageData]);
 
   const executeSearch = useCallback(async (
     opts: {
@@ -1356,7 +1218,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       languageOverride?: SearchLanguage;
       preserveResults?: boolean;
       reason?: string;
-      limit?: number; // Add limit parameter
     } = {}
   ) => {
     const normalizedQuery = query.trim();
@@ -1365,21 +1226,11 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       return;
     }
 
-    // Cancel any ongoing search
-    if (abortControllerRef.current) {
-      console.log('🔄 Cancelling previous search');
-      abortControllerRef.current.abort();
-    }
-
-    // Create new abort controller for this search
-    abortControllerRef.current = new AbortController();
-
     const {
       overrideVariants,
       languageOverride,
       preserveResults = false,
       reason = 'manual',
-      limit = 2000, // Default to 2000, but can be overridden (e.g., 10 for typing)
     } = opts;
 
     const effectiveVariants =
@@ -1392,15 +1243,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     console.log('DEBUG: FRONTEND SEARCH TRIGGERED');
     console.log('DEBUG: Reason:', reason);
     console.log('DEBUG: ========================================');
-    console.log('DEBUG: Variants being sent to API:', {
-      overrideVariants,
-      variantsOverride,
-      effectiveVariants,
-      variantsPayload,
-      hasWahum: variantsPayload?.includes('وهم'),
-      hasWahoo: variantsPayload?.includes('وهو'),
-      allVariants: variantsPayload,
-    });
     console.log('DEBUG: Search parameters:', {
       query: normalizedQuery,
       scope,
@@ -1410,42 +1252,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       language: languageOverride ?? searchLanguage,
       variants: variantsPayload,
     });
-
-    // Generate cache key for client-side caching
-    const searchParams: any = {
-      query: normalizedQuery,
-      scope,
-      includeRelated,
-      enableFuzzy,
-      bookFilter,
-      language: languageOverride ?? searchLanguage,
-      translation: activeTranslation === 'unified' ? undefined : activeTranslation,
-      limit: limit, // Pass limit to API
-    };
-
-    if (variantsPayload) {
-      searchParams.variants = variantsPayload;
-    }
-
-    const variantsString = variantsPayload ? variantsPayload.sort().join(',') : 'none';
-    const cacheKey = `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${languageOverride ?? searchLanguage}:${activeTranslation}:${variantsString}`;
-
-    // Check client-side cache first (ultra-fast)
-    const clientCachedResult = getClientCachedSearch(cacheKey);
-    if (clientCachedResult) {
-      console.log('⚡ Client cache hit, returning instantly');
-      setResults(clientCachedResult.results || []);
-      setRelatedForms(clientCachedResult.relatedForms ? {
-        ...clientCachedResult.relatedForms,
-        searchedForm: clientCachedResult.searchedForm,
-      } : null);
-      setProcessed(clientCachedResult.processed ? {
-        ...clientCachedResult.processed,
-        searchedForm: clientCachedResult.searchedForm,
-      } : null);
-      setIsLoading(false);
-      return;
-    }
 
     setIsLoading(true);
     setError('');
@@ -1457,10 +1263,10 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       // Reset filters when starting a new search (manual or query change)
       if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
-        dispatch({ type: 'RESET_VERB_FILTERS' });
-        dispatch({ type: 'RESET_NOUN_FILTERS' });
-        dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
-        dispatch({ type: 'RESET_POS_FILTERS' });
+        setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+        setVerbFilters({ ...DEFAULT_VERB_FILTER });
+        setNounFilters({ ...DEFAULT_NOUN_FILTER });
+        setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
         // Clear variant override to ensure fresh analysis
         setVariantsOverride(null);
         setActiveVariantForms([]);
@@ -1477,8 +1283,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         enableFuzzy,
         bookFilter,
         language: languageOverride ?? searchLanguage,
-        translation: activeTranslation === 'unified' ? undefined : activeTranslation,
-        ...toAPIPayload(),  // Include posFilters from context
+        translation: activeTranslation,
       };
 
       if (variantsPayload) {
@@ -1489,7 +1294,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(searchParams),
-        signal: abortControllerRef.current?.signal,
       });
 
       if (!response.ok) {
@@ -1504,46 +1308,13 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         variantsSearched: searchData.processed?.variantsSearched || [],
         searchType: searchData.processed?.searchType || 'unknown',
         hasRelatedForms: !!searchData.relatedForms,
-        posGuess: searchData.relatedForms?.posGuess,
-        verbFormsCount: searchData.relatedForms?.forms?.verbs?.length || 0,
-        nounFormsCount: searchData.relatedForms?.forms?.nouns?.length || 0,
       });
 
       setResults(searchData.results || []);
-      setTotalEstimatedCount(searchData.totalEstimatedCount);
-      setHasMoreResults(searchData.hasMore || false);
-      setDictionaryData(searchData.dictionary);
-      
-      // Store dictionaryMatch for UI display and filter functionality
-      if (searchData.dictionaryMatch) {
-        setDictionaryMatch(searchData.dictionaryMatch);
-        console.log('📚 Dictionary match detected:', {
-          word: searchData.dictionaryMatch.word,
-          pos: searchData.dictionaryMatch.pos,
-          variantCount: searchData.dictionaryMatch.variantCount,
-          canExpand: searchData.canExpand,
-        });
-      } else {
-        setDictionaryMatch(null);
-      }
-      
       setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
       } : null);
-      
-      // Log related forms structure for debugging
-      if (searchData.relatedForms) {
-        console.log(`✅ [CLIENT] Received relatedForms:`, {
-          total: searchData.relatedForms.total,
-          posGuess: searchData.relatedForms.posGuess,
-          verbsCount: searchData.relatedForms.forms?.verbs?.length || 0,
-          nounsCount: searchData.relatedForms.forms?.nouns?.length || 0,
-          verbLabels: searchData.relatedForms.forms?.verbs?.slice(0, 5).map((v: any) => ({ form: v.form, label: v.label })),
-        });
-      } else {
-        console.warn(`⚠️ [CLIENT] No relatedForms in API response`);
-      }
       setProcessed(searchData.processed ? {
         ...searchData.processed,
         searchedForm: searchData.searchedForm,
@@ -1561,54 +1332,19 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
       variantKeyRef.current = processedVariants.length ? processedVariants.join('|') : '__all__';
 
       console.log(`DEBUG: Search completed. Found ${searchData.results?.length || 0} results.`);
-
-      // Cache the successful result in client cache for instant future loading
-      setClientCachedSearch(cacheKey, searchData);
-      console.log('💾 Cached result in client cache for future instant loading');
-
     } catch (err) {
-      // Don't show error for aborted searches
-      if (err instanceof Error && err.name === 'AbortError') {
-        console.log('🔄 Search was cancelled');
-        return;
-      }
-
       console.error('Search error:', err);
-      
-      // Check if error is a 500 or network error vs actual no results
-      const isServerError = err instanceof Error && (
-        err.message.includes('500') || 
-        err.message.includes('Search failed') ||
-        err.message.includes('fetch')
-      );
-      
-      if (isServerError) {
-        // Show user-friendly message instead of technical error
-        setError('No results found. Try a different search term or check your connection.');
-      } else {
-        setError(err instanceof Error ? err.message : 'No results found');
-      }
-      
+      setError(err instanceof Error ? err.message : 'Search failed');
       if (!preserveResults) {
       setResults([]);
       setCoverage([]);
       setRelatedForms(null);
-      setDictionaryData(undefined);
       }
       setProcessed(null);
     } finally {
-      // Clear the abort controller when search completes
-      if (abortControllerRef.current) {
-        abortControllerRef.current = null;
-      }
       setIsLoading(false);
     }
-  }, [activeTranslation, bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
-
-  // Update executeSearchRef after executeSearch is defined
-  useEffect(() => {
-    executeSearchRef.current = executeSearch;
-  }, [executeSearch]);
+  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
 
   // Helper to calculate coverage from filtered results
   const calculateCoverageFromResults = useCallback((verses: Verse[]) => {
@@ -1662,119 +1398,196 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   );
 
   const handleSearch = useCallback(
-    (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual', limit: 2000 }), // Use limit 2000 on manual search
+    (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
     [executeSearch]
   );
 
-  // Handler for expanding dictionary term to all forms
-  const handleExpandForms = useCallback(() => {
-    console.log('[EXPAND_FORMS] User clicked to expand to all forms');
-    setIncludeRelated(true);
-    // Trigger search with expanded forms
-    handleSearch();
-  }, [handleSearch]);
+  const debouncedVerbFilterSearch = useMemo(
+    () => debounce((nextFilters: VerbFilterState) => {
+      const sanitized = sanitizeVerbFilter(nextFilters);
+      console.log('Applying verb filters:', { nextFilters, sanitized });
+      setVerbFilters(sanitized);
 
-  useEffect(() => {
-    if (translationEffectGuard.current) {
-      translationEffectGuard.current = false;
-      return;
-    }
-    if (!query.trim()) {
-      return;
-    }
-    executeSearch({ preserveResults: false, reason: 'translation-switch' });
-  }, [activeTranslation, executeSearch, query]);
+      // Guard clauses moved to beginning to avoid early returns after hooks
+      if (!includeRelated) {
+        console.log('Related forms mode not active, filters ignored');
+        return;
+      }
 
-  // Handle initial query when navigating from Results → Lexicon
-  useEffect(() => {
-    const trimmedInitial = (initialQuery || '').trim();
-    if (!trimmedInitial) return;
+      if (!relatedForms?.verbs?.length) {
+        console.log('Verb filters updated, awaiting related forms to refetch results');
+        return;
+      }
 
-    if (trimmedInitial !== query.trim()) {
-      // Update query state to match the incoming initial query; regular query effect will handle searching.
-      initialQueryHandledRef.current = false;
-      setQuery(trimmedInitial);
-      return;
-    }
+      const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
+      const forms = formsFromVariants(filteredVariants);
 
-    if (!initialQueryHandledRef.current) {
-      initialQueryHandledRef.current = true;
-      executeSearch({ preserveResults: false, reason: 'initial-query' });
+      // If no forms match the filters, show no results
+      if (forms.length === 0) {
+        setResults([]);
+        setCoverage([]);
+        setVariantsOverride([]);
+        setActiveVariantForms([]);
+        return;
+      }
+
+    // Always do client-side filtering when we have existing results
+    // This prevents triggering new searches when filters change
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
+
+      // Use debounced filtering for better performance
+      debouncedFilter(results, forms);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+    } else {
+      // No existing results - need to restore original results
+      console.log('🔄 No existing results, restoring original search results');
+
+      // If filters are reset to "All", restore original results from the last successful search
+      if (isDefaultVerbFilter(sanitized)) {
+        console.log('🔄 Filters reset to "All", restoring original results');
+        // Clear variant override to show all original forms
+        setVariantsOverride(null);
+        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+
+        // Re-run the original search to restore results
+        executeSearch({ preserveResults: false, reason: 'filter-reset' });
+      } else {
+        // Specific filters applied but no results - trigger search with filtered forms
+        console.log('🔄 Specific filters applied, triggering search with filtered forms');
+        variantKeyRef.current = forms.join('|');
+        setVariantsOverride(forms);
+        setActiveVariantForms(forms);
+        executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+      }
     }
-  }, [initialQuery, query, executeSearch]);
+    }, 200), // 200ms debounce for filter changes
+    [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]
+  );
+
+  const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
+    debouncedVerbFilterSearch(nextFilters);
+  }, [debouncedVerbFilterSearch]);
 
   const applyMultiVerbFiltersAndSearch = useCallback((nextFilters: MultiVerbFilterState) => {
-    applyFiltersAndSearch('verb', nextFilters);
-  }, [applyFiltersAndSearch]);
+    console.log('Applying multi verb filters:', nextFilters);
+    setMultiVerbFilters(nextFilters);
+
+    // Convert multi-select to single-select for backward compatibility
+    const singleFilter = multiFilterToSingleFilter(nextFilters);
+    applyVerbFiltersAndSearch(singleFilter);
+  }, [applyVerbFiltersAndSearch]);
 
   const applyNounFiltersAndSearch = useCallback((nextFilters: NounFilterState) => {
-    applyFiltersAndSearch('noun', nextFilters);
-  }, [applyFiltersAndSearch]);
+    setNounFilters(nextFilters);
 
-  // Proactive dictionary term detection as user types
-  // This shows the banner BEFORE searching, so user can choose to expand
-  // Note: detectingTerm state is declared earlier in the file (line 800)
-  useEffect(() => {
-    // Don't detect very short queries
-    if (query.length < 2) {
-      setDictionaryMatch(null);
+    // Guard clauses moved to beginning to avoid early returns after hooks
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
       return;
     }
 
-    // Don't detect if already searching or if includeRelated is already enabled
-    // (user already chose to expand)
-    if (isLoading || includeRelated) {
+    if (!relatedForms?.nouns?.length) {
+      console.log('Noun filters updated, awaiting related forms to refetch results');
       return;
     }
 
-    // Debounce to avoid excessive API calls
-    setDetectingTerm(true);
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/detect-term?term=${encodeURIComponent(query.trim())}`
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Detection failed: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.term) {
-          // Convert API response to dictionaryMatch format
-          setDictionaryMatch({
-            word: data.term.lemma,
-            pos: data.term.pos as 'verb' | 'noun' | 'adjective',
-            hasVariants: true,
-            variantCount: data.term.totalForms || 0,
-            lingdocsId: data.term.lingdocsId,
-            verbType: data.term.verbType,
-            helper: data.term.helper,
-            previewVariants: data.term.previewVariants || [],
-          });
-          console.log('[DETECTION] ✓ Proactive detection found:', data.term.lemma, 
-                      `(${data.term.totalForms} forms, confidence: ${data.term.confidence})`);
-        } else {
-          // Clear dictionary match if no term found
-          setDictionaryMatch(null);
-          console.log('[DETECTION] No dictionary term found for:', query.trim());
-        }
-      } catch (error) {
-        console.error('[DETECTION] Proactive detection failed:', error);
-        // Don't clear dictionaryMatch on error - keep existing if any
-      } finally {
-        setDetectingTerm(false);
-      }
-    }, 300); // Wait 300ms after typing stops
+    const filteredVariants = filterNounVariants(relatedForms.nouns, nextFilters);
+    const forms = formsFromVariants(filteredVariants);
 
-    return () => clearTimeout(timer);
-  }, [query, isLoading, includeRelated]);
+    // If no forms match the filters, show no results
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
+      return;
+    }
+
+    // Client-side filtering
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'noun forms');
+
+      const filtered = results.filter((verse) => {
+        const text = verse.text ?? '';
+        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+
+        return forms.some(form => {
+          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          return collapsedText.includes(collapsedForm);
+        });
+      });
+
+      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
+      setResults(filtered);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    } else {
+      console.log('🔄 No existing results, triggering search for filtered forms');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'noun-filter' });
+    }
+  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
 
   const applyAdjectiveFiltersAndSearch = useCallback((nextFilters: AdjectiveFilterState) => {
-    // Always trigger new search - don't do client-side filtering
-    applyFiltersAndSearch('adjective', nextFilters);
-  }, [applyFiltersAndSearch]);
+    setAdjectiveFilters(nextFilters);
+
+    // Guard clauses moved to beginning to avoid early returns after hooks
+    if (!includeRelated) {
+      console.log('Related forms mode not active, filters ignored');
+      return;
+    }
+
+    if (!relatedForms?.other?.length) {
+      console.log('Adjective filters updated, awaiting related forms to refetch results');
+      return;
+    }
+
+    const filteredVariants = filterAdjectiveVariants(relatedForms.other, nextFilters);
+    const forms = formsFromVariants(filteredVariants);
+
+    // If no forms match the filters, show no results
+    if (forms.length === 0) {
+      setResults([]);
+      setCoverage([]);
+      setVariantsOverride([]);
+      setActiveVariantForms([]);
+      return;
+    }
+
+    // Client-side filtering
+    if (results && results.length > 0) {
+      console.log('🔍 Client-side filtering existing results by', forms.length, 'adjective forms');
+
+      const filtered = results.filter((verse) => {
+        const text = verse.text ?? '';
+        const collapsedText = text.replace(/\s+/g, '').toLowerCase();
+
+        return forms.some(form => {
+          const collapsedForm = form.toLowerCase().replace(/\s+/g, '');
+          return collapsedText.includes(collapsedForm);
+        });
+      });
+
+      console.log(`✅ Filtered from ${results.length} to ${filtered.length} results`);
+      setResults(filtered);
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+
+      const newCoverage = calculateCoverageFromResults(filtered);
+      setCoverage(newCoverage);
+    } else {
+      console.log('🔄 No existing results, triggering search for filtered forms');
+      setVariantsOverride(forms);
+      setActiveVariantForms(forms);
+      executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'adjective-filter' });
+    }
+  }, [includeRelated, relatedForms, results, setResults, setCoverage, setVariantsOverride, setActiveVariantForms, calculateCoverageFromResults, executeSearch]);
 
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
@@ -1782,19 +1595,12 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     // Only trigger if includeRelated actually changed (not on initial mount)
     if (previousIncludeRelated.current !== includeRelated && query.trim()) {
       console.log('DEBUG: Related Forms Mode toggled, triggering new search');
-      // Reset variant override and filters when toggling related forms mode
-      setVariantsOverride(null);
-      setActiveVariantForms([]);
-      setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-      setNounFilters({ ...DEFAULT_NOUN_FILTER });
-      setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
-      // Trigger search with updated includeRelated setting
-      executeSearch({ overrideVariants: null, preserveResults: false, reason: 'include-related-toggle' });
+      handleSearch();
     }
     previousIncludeRelated.current = includeRelated;
     // NOTE: Intentionally NOT including results.length to prevent infinite loop!
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeRelated, query, executeSearch]);
+  }, [includeRelated]);
 
   // Re-run search automatically when language switches (if query present)
   const previousLanguage = useRef<SearchLanguage>(searchLanguage);
@@ -1802,6 +1608,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     if (previousLanguage.current !== searchLanguage && query.trim()) {
       console.log('DEBUG: Search language changed to', searchLanguage, '- refreshing results');
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
       setActiveVariantForms([]);
@@ -1810,38 +1617,23 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
     previousLanguage.current = searchLanguage;
   }, [searchLanguage, query, executeSearch]);
 
-  // Cleanup abort controller on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
   // Trigger search when query changes (with debouncing)
   const previousQuery = useRef<string>(query);
   const debouncedSearch = useMemo(
     () => debounce((trimmedQuery: string) => {
       console.log('🔄 Query changed, triggering new search');
-      // Cancel any ongoing search before starting new one
-      if (abortControllerRef.current) {
-        console.log('🔄 Cancelling previous search due to query change');
-        abortControllerRef.current.abort();
-      }
       // Set flag to prevent filter persistence during query change
       isQueryChangingRef.current = true;
       // Reset filters and variant forms when query changes to ensure fresh analysis
       console.log('Clearing variant forms for new query:', trimmedQuery);
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
-      // Reset part of speech selector to 'auto' so auto-detection can work
-      setSelectedPartOfSpeech('auto');
       variantKeyRef.current = ''; // reset variant key to avoid stale matches
       setVariantsOverride(null);
       setActiveVariantForms([]);
-      executeSearch({ preserveResults: false, reason: 'query', limit: 10 }); // Use limit 10 during typing
+      executeSearch({ preserveResults: false, reason: 'query' });
       // Reset flag after a short delay to allow state updates to complete
       setTimeout(() => {
         isQueryChangingRef.current = false;
@@ -1877,11 +1669,81 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
   const resultsCount = results.length;
 
   const isEnglishMode = searchLanguage === 'english';
+  const isAnkiMode = searchLanguage === 'anki';
 
-  // Topics mode - will be used for category browsing
+  // Anki export state
+  const [isExportingAnki, setIsExportingAnki] = useState(false);
+
+  // Anki export function
+  const exportToAnki = useCallback(async () => {
+    if (!results.length || !isAnkiMode) return;
+
+    setIsExportingAnki(true);
+    try {
+      console.log(`🔄 Exporting ${results.length} results to Anki deck...`);
+
+      const response = await fetch('/api/anki-export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          results: results.slice(0, 50), // Limit to 50 cards for performance
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Generate and download Anki deck file
+      await generateAnkiDeckFile(data.deck, data.cards);
+
+      console.log(`✅ Successfully exported ${data.count} cards to Anki`);
+    } catch (error) {
+      console.error('❌ Failed to export to Anki:', error);
+      alert(`Failed to export to Anki: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExportingAnki(false);
+    }
+  }, [results, query, isAnkiMode]);
+
+  // Generate Anki deck file for download
+  const generateAnkiDeckFile = async (deck: any, cards: any[]) => {
+    const deckName = deck.name;
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+
+    // Create CSV content for Anki import with enhanced formatting
+    const csvContent = [
+      'Front,Back,Tags',
+      ...cards.map(card => `"${card.front.replace(/"/g, '""')}","${card.back.replace(/"/g, '""')}","${card.tags?.join(' ') || ''}"`)
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${deckName}_${timestamp}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Show success message with card count
+    alert(`✅ Successfully exported ${cards.length} cards to Anki!\n\nDeck: ${deckName}\nFile: ${deckName}_${timestamp}.csv`);
+  };
 
   return (
-    <div className={`w-full max-w-full mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
+    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1896,162 +1758,78 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         </div>
       )}
 
-      {/* Search Header - includes title, tabs, translation selector, and search bar */}
-      <SearchHeader
-        query={query}
-        setQuery={setQuery}
-        handleSearch={handleSearch}
-        handleKeyPress={handleKeyPress}
-        isLoading={isLoading}
-        activeMainTab={activeMainTab}
-        activeTranslation={activeTranslation}
-        setActiveTranslation={setActiveTranslation}
-        searchLanguage={searchLanguage}
-        isEnglishMode={isEnglishMode}
-      />
-
-      {/* Main Content */}
-      {activeMainTab === 'search' && (
-        <>
-
-          {/* Enhanced Search Controls */}
-          <SearchControls
-            scope={scope}
-            setScope={setScope}
-            includeRelated={includeRelated}
-            setIncludeRelated={setIncludeRelated}
-            enableFuzzy={enableFuzzy}
-            setEnableFuzzy={setEnableFuzzy}
-            searchLanguage={searchLanguage}
-            setSearchLanguage={setSearchLanguage}
-            bookFilter={bookFilter}
-            setBookFilter={setBookFilter}
-            resultsCount={resultsCount}
-            refreshAudioMap={refreshAudioMap}
-            isLoading={isLoading}
-            multiVerbFilters={multiVerbFilters}
-            setMultiVerbFilters={setMultiVerbFilters}
-            nounFilters={nounFilters}
-            setNounFilters={setNounFilters}
-          />
-
-          {/* Dictionary Term Detection Banner */}
-          {detectedTerm && (
-            <div className="mb-4">
-              <DictionaryTermDetection
-                term={detectedTerm}
-                searchedTerm={query}
-                onExpandForms={handleExpandForms}
-                isExpanded={includeRelated}
-                loading={isLoading || detectingTerm}
-              />
+      {/* Anki Mode Banner */}
+      {isAnkiMode && (
+        <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl">📚</span>
+            <div className="text-center">
+              <p className="font-bold text-lg">Anki Export Mode Active</p>
+              <p className="text-sm opacity-90">Search for words and create flashcards with audio</p>
             </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
-              {error}
-            </div>
-          )}
-
-          {/* Dictionary Match Banner */}
-          {dictionaryMatch && !includeRelated && (
-            <DictionaryTermDetection
-              term={{
-                lemma: dictionaryMatch.word,
-                pos: dictionaryMatch.pos,
-                verbType: dictionaryMatch.verbType as any,
-                helper: dictionaryMatch.helper,
-                totalForms: dictionaryMatch.variantCount,
-                lingdocsId: dictionaryMatch.lingdocsId,
-                confidence: 'high',
-                source: 'd1_verified',
-              }}
-              searchedTerm={query.trim()}
-              onExpandForms={() => {
-                setIncludeRelated(true);
-                executeSearchRef.current?.({ preserveResults: false, reason: 'dictionary-expand' });
-              }}
-              isExpanded={includeRelated}
-              loading={isLoading || detectingTerm}
-            />
-          )}
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Results Pane */}
-            <ResultsPane
-              results={results}
-              filteredResults={filteredResults}
-              totalEstimatedCount={totalEstimatedCount}
-              hasMoreResults={hasMoreResults}
-              isLoading={isLoading}
-              processed={processed}
-              dictionaryData={dictionaryData}
-              relatedForms={relatedForms}
-              includeRelated={includeRelated}
-              query={query}
-              activeVariantForms={activeVariantForms}
-              onPickForm={handlePickForm}
-              audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
-              multiVerbFilters={multiVerbFilters}
-              onResetFilters={() => {
-                dispatch({ type: 'RESET_VERB_FILTERS' });
-                dispatch({ type: 'RESET_NOUN_FILTERS' });
-                dispatch({ type: 'RESET_ADJECTIVE_FILTERS' });
-                dispatch({ type: 'RESET_POS_FILTERS' });
-              }}
-            />
-
-            {/* Sidebar - Always show full coverage, not filtered */}
-            <div className="lg:col-span-1">
-              <CoverageSidebar
-                coverage={coverage}
-                scope={scope}
-                coverageLevel={ComplexityLevel.Basic}
-                onPickBook={(book: string) => {
-                  // Toggle book filter - if already selected, clear it, otherwise select it
-                  if (bookFilter.includes(book)) {
-                    setBookFilter(bookFilter.filter(b => b !== book));
-                  } else {
-                    setBookFilter([...bookFilter, book]);
-                  }
-                }}
-                selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
-                selectedBooks={bookFilter}
-                onClearFilters={() => setBookFilter([])}
-                resultsCount={results.length}
-                filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
-                audioMap={activeTranslation === 'unified' ? { ...audioMap, ...yousafzaiAudioMap } : (activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap)}
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Topics Tab */}
-      {activeMainTab === 'topics' && (
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              📚 Browse by Topics
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Click on a topic to see all Bible verses in that category.
-            </p>
-            
-            <TopicsBrowser
-              onCategorySelect={(categoryKey) => {
-                // Category selection is handled internally by TopicsBrowser
-              }}
-            />
+            <span className="text-2xl">📚</span>
           </div>
         </div>
       )}
 
-      {/* Chapters Tab */}
-      {activeMainTab === 'chapters' && (
+      {/* Header */}
+      <header className="text-center mb-6">
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isAnkiMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+          Pashto Bible Search
+        </h1>
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isAnkiMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        </p>
+      </header>
+
+      {/* Main Tabs */}
+      <div className="flex justify-center mb-6">
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+          <button
+            onClick={() => setActiveMainTab('search')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'search'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            🔍 Search
+          </button>
+          <button
+            onClick={() => setActiveMainTab('lexicon')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'lexicon'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📚 Lexicon
+          </button>
+          <button
+            onClick={() => setActiveMainTab('videos')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'videos'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            🎵 Videos/Audio
+          </button>
+          <button
+            onClick={() => setActiveMainTab('poems')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeMainTab === 'poems'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            }`}
+          >
+            📝 Poems
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      {activeMainTab === 'search' && (
         <>
           {/* Translation Tabs */}
           <div className="flex justify-center mb-6">
@@ -2079,60 +1857,1432 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                📖 Browse by Chapter
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Select a book and chapter to view all verses with audio
-              </p>
+      {/* Translation Indicator */}
+      <div className="mb-4 text-center">
+        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+          activeTranslation === 'afghan2023'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+        }`}>
+          {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+          <span className="ml-2">
+            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
+          </span>
+        </div>
+      </div>
 
-              <ChapterNavigator
-              onChapterSelect={(book, chapter) => {
-                setSelectedBook(book);
-                setSelectedChapter(chapter);
-              }}
-            />
+      {/* Search Bar */}
+      <div className="relative z-10 mb-6">
+        <div className={`absolute inset-0 rounded-lg opacity-10 ${
+          activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
+        }`} style={{ zIndex: -1 }}></div>
+        <TextField
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={
+            isAnkiMode
+              ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
+              : isEnglishMode
+                ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
+                : "Enter Pashto text to search..."
+          }
+          variant="outlined"
+          fullWidth
+          inputProps={{
+            dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
+            style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
+              borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
+              color: isEnglishMode ? '#9A3412' : '#F9FAFB',
+              '&:hover': {
+                borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
+              },
+              '&.Mui-focused': {
+                borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
+                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+              }
+            },
+            '& .MuiInputBase-input::placeholder': {
+              color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
+            }
+          }}
+          InputProps={{
+            startAdornment: (
+              <IconButton
+                onClick={() => handleSearch()}
+                disabled={isLoading}
+                sx={{
+                  color: isEnglishMode ? '#9A3412' : '#F9FAFB',
+                  '&:disabled': { color: '#6B7280' }
+                }}
+              >
+                {isEnglishMode ? '🇬🇧' : '🔍'}
+              </IconButton>
+            ),
+            endAdornment: (
+              <Button
+                onClick={() => handleSearch()}
+                disabled={isLoading}
+                variant="contained"
+                sx={{
+                  backgroundColor: '#3B82F6',
+                  color: '#FFFFFF',
+                  minWidth: '80px',
+                  height: '100%',
+                  '&:hover': {
+                    backgroundColor: '#2563EB'
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#6B7280',
+                    color: '#D1D5DB'
+                  }
+                }}
+              >
+                {isLoading ? 'Searching...' : 'Search'}
+              </Button>
+            )
+          }}
+        />
+      </div>
 
-            {selectedBook && selectedChapter && (
-              <div className="mt-6">
-                <ChapterView
-                  book={selectedBook}
-                  chapter={selectedChapter}
-                  translation={activeTranslation === 'unified' ? undefined : activeTranslation}
-                />
-              </div>
-            )}
+      {/* Enhanced Search Controls */}
+      <SearchControls
+        scope={scope}
+        setScope={setScope}
+        includeRelated={includeRelated}
+        setIncludeRelated={setIncludeRelated}
+        enableFuzzy={enableFuzzy}
+        setEnableFuzzy={setEnableFuzzy}
+        searchLanguage={searchLanguage}
+        setSearchLanguage={setSearchLanguage}
+        bookFilter={bookFilter}
+        setBookFilter={setBookFilter}
+        resultsCount={resultsCount}
+        refreshAudioMap={refreshAudioMap}
+        isLoading={isLoading}
+      />
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Results with Inline Filtering */}
+        <div className="lg:col-span-3">
+          {/* Translation Indicator in Results */}
+          <div className="mb-3">
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              activeTranslation === 'afghan2023'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            }`}>
+              {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+              <span className="ml-2">
+                {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+              </span>
             </div>
           </div>
+
+          {/* Results Header */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
+              </h2>
+            </div>
+
+            {processed?.language === 'english' && processed?.englishMatches && processed.englishMatches.length > 0 && (
+              <div className="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-700">
+                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mb-1">
+                  Dictionary matches for "{processed.original}":
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {processed.englishMatches.slice(0, 4).map((match, idx) => (
+                    <span
+                      key={`${match.pashto}-${idx}`}
+                      className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-200 border border-orange-300/50"
+                    >
+                      {match.pashto}
+                      {match.romanized ? ` · ${match.romanized}` : ''}
+                    </span>
+                  ))}
+                  {processed.englishMatches.length > 4 && (
+                    <span className="text-orange-600 dark:text-orange-300">+{processed.englishMatches.length - 4} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
+            {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
+            {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+              <>
+                {/* VERB FILTERS */}
+                {(relatedForms?.posGuess === 'verb' ||
+                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
+                  (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+                          applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER });
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Reset filters
+                      </button>
+                    </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Person Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Person:
+                    </label>
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={multiVerbFilters.person.includes('all')}
+                          onChange={() => {
+                            const newPerson = toggleMultiFilter(multiVerbFilters.person, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
+                      {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
+                        <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={multiVerbFilters.person.includes(option.value as VerbFilterPerson)}
+                            onChange={() => {
+                              const newPerson = toggleMultiFilter(multiVerbFilters.person, option.value as VerbFilterPerson);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tense Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Tense:
+                    </label>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={multiVerbFilters.tense.includes('all')}
+                          onChange={() => {
+                            const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
+                      {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
+                        <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
+                            onChange={() => {
+                              const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{tense}</span>
+                        </label>
+                      ))}
+                          </div>
+                        </div>
+
+                  {/* Aspect Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Aspect:
+                    </label>
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={multiVerbFilters.aspect.includes('all')}
+                          onChange={() => {
+                            const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
+                      {['imperfective', 'perfective'].map((aspect) => (
+                        <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
+                            onChange={() => {
+                              const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{aspect}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mood Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Mood:
+                    </label>
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={multiVerbFilters.mood.includes('all')}
+                          onChange={() => {
+                            const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
+                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="font-medium">All</span>
+                      </label>
+                      {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
+                        <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
+                            onChange={() => {
+                              const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
+                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="capitalize">{mood}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Show which forms are being searched */}
+                {activeVariantForms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {activeVariantForms.length} verb forms
+                      {activeVariantForms.slice(0, 5).map((form) => (
+                        <button
+                          key={form}
+                          onClick={() => handlePickForm(form)}
+                          className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
+                        >
+                          {form}
+                        </button>
+                      ))}
+                      {activeVariantForms.length > 5 && (
+                        <span className="ml-2 text-gray-500">
+                          +{activeVariantForms.length - 5} more
+                        </span>
+                      )}
+                    </p>
+                    </div>
+                )}
+                  </div>
+            )}
+
+            {/* NOUN FILTERS */}
+            {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
+             (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter by noun inflection {!isDefaultNounFilter(nounFilters) && '(Active)'}:
+                  </span>
+                  <button
+                    onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Inflection Type Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Inflection Type:
+                    </label>
+                    <div className="space-y-1">
+                      {NOUN_INFLECTION_VALUES.map((inflType) => (
+                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="noun-inflection"
+                            checked={nounFilters.inflectionType === inflType}
+                            onChange={() => {
+                              if (nounFilters.inflectionType !== inflType) {
+                                applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{inflType}</span>
+                        </label>
+                      ))}
+                    </div>
+        </div>
+
+                  {/* Gender Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Gender:
+                    </label>
+                    <div className="space-y-1">
+                      {GENDER_VALUES.map((gender) => (
+                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="noun-gender"
+                            checked={nounFilters.gender === gender}
+                            onChange={() => {
+                              if (nounFilters.gender !== gender) {
+                                applyNounFiltersAndSearch({ ...nounFilters, gender });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{gender}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {activeVariantForms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {activeVariantForms.length} noun forms
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ADJECTIVE FILTERS */}
+            {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
+             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter by adjective inflection {!isDefaultAdjectiveFilter(adjectiveFilters) && '(Active)'}:
+                  </span>
+                  <button
+                    onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Inflection Type Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Inflection Type:
+                    </label>
+                    <div className="space-y-1">
+                      {NOUN_INFLECTION_VALUES.map((inflType) => (
+                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="adj-inflection"
+                            checked={adjectiveFilters.inflectionType === inflType}
+                            onChange={() => {
+                              if (adjectiveFilters.inflectionType !== inflType) {
+                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{inflType}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gender Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Gender:
+                    </label>
+                    <div className="space-y-1">
+                      {GENDER_VALUES.map((gender) => (
+                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                          <input
+                            type="radio"
+                            name="adj-gender"
+                            checked={adjectiveFilters.gender === gender}
+                            onChange={() => {
+                              if (adjectiveFilters.gender !== gender) {
+                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="capitalize">{gender}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {activeVariantForms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Searching with {activeVariantForms.length} adjective forms
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+            )}
+          </div>
+
+          {/* Anki Export Button */}
+          {isAnkiMode && results.length > 0 && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-green-800 dark:text-green-300">
+                    📚 Export to Anki
+                  </h3>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Create flashcards with audio for {results.length} results
+                  </p>
+                </div>
+                <button
+                  onClick={exportToAnki}
+                  disabled={isExportingAnki || results.length === 0}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    isExportingAnki
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Results List */}
+          <ResultsList
+            results={filteredResults}
+            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+            loading={isLoading}
+            processed={processed}
+            verbFilters={verbFilters}
+            multiVerbFilters={multiVerbFilters}
+            activeVariantForms={activeVariantForms}
+            onResetFilters={() => {
+              setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+              setVerbFilters({ ...DEFAULT_VERB_FILTER });
+              setNounFilters({ ...DEFAULT_NOUN_FILTER });
+              setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+            }}
+          />
+        </div>
+
+        {/* Sidebar - Always show full coverage, not filtered */}
+        <div className="lg:col-span-1">
+          <CoverageSidebar
+            coverage={coverage}
+            scope={scope}
+            coverageLevel={ComplexityLevel.Basic}
+            onPickBook={(book: string) => {
+              // Toggle book filter - if already selected, clear it, otherwise select it
+              if (bookFilter.includes(book)) {
+                setBookFilter(bookFilter.filter(b => b !== book));
+              } else {
+                setBookFilter([...bookFilter, book]);
+              }
+            }}
+            selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
+            selectedBooks={bookFilter}
+            onClearFilters={() => setBookFilter([])}
+            resultsCount={results.length}
+            filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+          />
+        </div>
+      </div>
         </>
       )}
 
       {/* Lexicon Tab */}
       {activeMainTab === 'lexicon' && (
-        <div className="w-full">
-          <LexiconPanel 
-            onPickForm={(form) => {
-              setQuery(form);
-              router.push('/search');
-            }}
-            queryProp={initialQuery || query}
-          />
+        <div className="max-w-4xl mx-auto">
+          <LexiconPanel onPickForm={(form) => {
+            setQuery(form);
+            setActiveMainTab('search');
+          }} />
         </div>
       )}
 
-      {/* Videos Tab */}
+      {/* Enhanced Videos/Audio Tab */}
       {activeMainTab === 'videos' && (
-        <div className="max-w-[95%] mx-auto">
-          <VideosPanel
-            onSelectClip={(clip) => {
-              if (clip?.query) {
-                setQuery(clip.query);
-                router.push('/search');
-              }
-            }}
-          />
+        <div className="max-w-7xl mx-auto">
+          <div className="relative bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-900 dark:via-slate-800 dark:to-blue-900/30 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/60 dark:border-slate-700/60 p-8 overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-gradient-to-tr from-purple-400/20 to-pink-500/20 rounded-full blur-3xl"></div>
+
+            <div className="relative z-10">
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-800 dark:from-slate-200 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent mb-3">
+                  🎵 Videos & Audio Analysis
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                  Explore YouTube videos with intelligent Pashto transcript analysis, word frequency insights, and advanced search capabilities
+                </p>
+              </div>
+
+            {/* Enhanced Sub-tabs for Videos/Audio section */}
+            <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setActiveVideosTab('videos')}
+                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                  activeVideosTab === 'videos'
+                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border-2 border-blue-400'
+                    : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-lg">📺</span>
+                  <span className="hidden sm:inline">Videos</span>
+                </span>
+                {activeVideosTab === 'videos' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveVideosTab('frequency')}
+                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                  activeVideosTab === 'frequency'
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border-2 border-emerald-400'
+                    : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  <span className="hidden sm:inline">Word Frequency</span>
+                </span>
+                {activeVideosTab === 'frequency' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveVideosTab('transcripts')}
+                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                  activeVideosTab === 'transcripts'
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 border-2 border-purple-400'
+                    : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-lg">🔍</span>
+                  <span className="hidden sm:inline">Transcripts</span>
+                </span>
+                {activeVideosTab === 'transcripts' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
+                )}
+              </button>
+            </div>
+            
+              {/* Enhanced Video Upload Section */}
+              <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                    <span className="text-white text-xl">🎬</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                    Process New Video
+                  </h3>
+                </div>
+              <div className="space-y-3">
+                <div>
+                  <input
+                    type="url"
+                    value={newVideoUrl}
+                    onChange={(e) => setNewVideoUrl(e.target.value)}
+                    placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={processingVideo}
+                  />
+                </div>
+                <button
+                  onClick={processNewVideo}
+                  disabled={processingVideo || !newVideoUrl.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  {processingVideo ? 'Processing...' : 'Process Video'}
+                </button>
+                
+                {processingStatus && (
+                  <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded border">
+                    <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                      {processingStatus}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Transcript Search */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                🔍 Search Transcripts
+              </h3>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={transcriptSearchQuery}
+                  onChange={handleTranscriptSearchChange}
+                  placeholder="Enter Pashto text to search in video transcripts..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {loadingTranscripts && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Search Results */}
+              {transcriptResults.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <p className="text-green-800 dark:text-green-300 font-medium">
+                      Found {transcriptResults.length} matching segments
+                    </p>
+                  </div>
+                  
+                  {transcriptResults.map((result, index) => (
+                    <div key={result.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        {result.verse_reference}
+                      </h4>
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Audio: {result.audio_filename} • Duration: {result.duration_seconds}s
+                        </p>
+                        <div className="bg-white dark:bg-gray-800 rounded border p-3 max-h-32 overflow-y-auto">
+                          <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+                            {result.transcript}
+                          </p>
+                        </div>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={`/api/audio-clips/${result.audio_filename}`} type="audio/wav" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {transcriptSearchQuery && transcriptResults.length === 0 && !loadingTranscripts && (
+                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <p className="text-yellow-800 dark:text-yellow-300">
+                    No matching transcripts found for "{transcriptSearchQuery}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Conditional Content Based on Active Sub-tab */}
+            {activeVideosTab === 'videos' && (
+              <>
+                {/* Videos Section */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    📺 YouTube Videos with Transcripts
+                  </h3>
+            
+            {loadingVideos ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
+              </div>
+            ) : videos.length > 0 ? (
+              <div className="space-y-6">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-green-800 dark:text-green-300">
+                    Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
+                  </p>
+                </div>
+                
+                {videos.map((video, index) => (
+                  <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <div className="mb-4">
+                      <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        {video.title}
+                      </h4>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span>{video.totalSegments} segments</span>
+                        <span>{Math.round(video.totalDuration / 60)} minutes total</span>
+                        <a 
+                          href={video.youtubeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          View on YouTube →
+                        </a>
+                      </div>
+                    </div>
+                    
+                    {/* YouTube Embed */}
+                    <div className="mb-6">
+                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className="absolute top-0 left-0 w-full h-full rounded-lg"
+                          src={`https://www.youtube.com/embed/${video.id}`}
+                          title={video.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    </div>
+                    
+                    {/* Video Segments with Transcripts */}
+                    <div className="space-y-4">
+                      <h5 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        Video Segments & Transcripts
+                      </h5>
+                      
+                      {video.segments.map((segment: any, segIndex: number) => (
+                        <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <h6 className="font-medium text-gray-900 dark:text-gray-100">
+                              {segment.type === 'sentence'
+                                ? `Segment ${segment.segmentNumber}, Sentence ${segment.sentenceNumber}`
+                                : `Segment ${segment.segmentNumber}`
+                              }
+                            </h6>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} -
+                              {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
+                              {segment.type === 'sentence' && (
+                                <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
+                                  {segment.duration}s
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Enhanced Transcript Display with Sentence-Level Playback */}
+                          <div className="mb-3">
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-60 overflow-y-auto">
+                              <div className="space-y-2">
+                                {segment.transcript.split(/[.!؟?؟۔]\s+/).filter((s: string) => s.trim()).map((sentence: string, sIndex: number) => {
+                                  const sentenceKey = `${segIndex}-${sIndex}`;
+                                  return (
+                                    <div key={sentenceKey} className="group">
+                                      <div className="flex items-start gap-2 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <button
+                                          onClick={() => {
+                                            // Play individual sentence audio if available
+                                            const sentenceAudio = segment.sentenceClips?.[sIndex];
+                                            if (sentenceAudio) {
+                                              playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceAudio.audio_filename}`);
+                                            }
+                                          }}
+                                          className={`flex-shrink-0 mt-0.5 p-1 rounded ${
+                                            playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                              ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                              : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                          }`}
+                                          title="Play this sentence"
+                                        >
+                                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                          </svg>
+                                        </button>
+                                        <p className={`text-sm leading-relaxed flex-1 ${
+                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                            ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded'
+                                            : 'text-gray-900 dark:text-gray-100'
+                                        }`}>
+                                          {sentence.trim()}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div className="mt-2 flex justify-between items-center">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
+                                  disabled={retranscribingSegments.has(segIndex)}
+                                  className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
+                                </button>
+                                {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      // Play all sentences in sequence for this segment with timing tracking
+                                      const playAllSentences = async () => {
+                                        for (let i = 0; i < segment.sentenceClips.length; i++) {
+                                          const sentenceClip = segment.sentenceClips[i];
+                                          setPlayingSentence({segmentIndex: segIndex, sentenceIndex: i});
+
+                                          // Wait for the audio to complete
+                                          await new Promise<void>((resolve) => {
+                                            const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                            audio.onended = () => {
+                                              if (i === segment.sentenceClips.length - 1) {
+                                                setPlayingSentence(null);
+                                              }
+                                              resolve();
+                                            };
+                                            audio.onpause = () => {
+                                              setPlayingSentence(null);
+                                              resolve();
+                                            };
+                                            audio.play();
+                                          });
+                                        }
+                                      };
+                                      playAllSentences();
+                                    }}
+                                    className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800"
+                                  >
+                                    ▶️ Play All Sentences
+                                  </button>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {segment.sentenceClips ? `${segment.sentenceClips.length} sentences` : 'Full segment'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Enhanced Audio Controls */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Segment:</span>
+                              <audio controls className="flex-1">
+                                <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+
+                            {/* Sentence-Level Audio Clips */}
+                            {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                              <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                  Individual Sentences:
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                  {segment.sentenceClips.map((sentenceClip: any, sIndex: number) => (
+                                    <div key={sIndex} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                      <button
+                                        onClick={() => {
+                                          playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                        }}
+                                        className={`flex-shrink-0 p-1 rounded ${
+                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                            ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                            : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                        }`}
+                                        title={`Play sentence ${sIndex + 1}`}
+                                      >
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                          {sentenceClip.sentence.substring(0, 40)}...
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-500">
+                                          {Math.floor(sentenceClip.start_time / 60)}:{(sentenceClip.start_time % 60).toString().padStart(2, '0')} - {sentenceClip.duration}s
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-blue-800 dark:text-blue-300">
+                  No videos found. Please process YouTube videos first.
+                </p>
+                <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
+                  <p>To process videos:</p>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Install dependencies: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">./setup_audio_processing.sh</code></li>
+                    <li>Run processor: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
+                  </ol>
+                </div>
+              </div>
+            )}
+                </div>
+              </>
+            )}
+
+            {activeVideosTab === 'frequency' && (
+              <>
+                {/* Word Frequency Section */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    📊 Word Frequency Analysis
+                  </h3>
+
+                  {loadingWordFrequency ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-500 dark:text-gray-400">Analyzing word frequency...</p>
+                    </div>
+                  ) : wordFrequency ? (
+                    <div className="space-y-6">
+                      {/* Enhanced Summary Stats */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="group relative bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 dark:from-blue-900/30 dark:via-blue-800/40 dark:to-indigo-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                          <div className="relative z-10">
+                            <div className="text-3xl font-bold bg-gradient-to-br from-blue-700 to-indigo-800 dark:from-blue-300 dark:to-indigo-400 bg-clip-text text-transparent mb-2">
+                              {wordFrequency.wordFrequency.totalWords.toLocaleString()}
+                            </div>
+                            <div className="text-sm font-medium text-blue-700/80 dark:text-blue-300/80">Total Words Analyzed</div>
+                            <div className="mt-2 text-xs text-blue-600/60 dark:text-blue-400/60">
+                              Across all transcripts
+                            </div>
+                          </div>
+                        </div>
+                        <div className="group relative bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 dark:from-emerald-900/30 dark:via-green-800/40 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                          <div className="relative z-10">
+                            <div className="text-3xl font-bold bg-gradient-to-br from-emerald-700 to-teal-800 dark:from-emerald-300 dark:to-teal-400 bg-clip-text text-transparent mb-2">
+                              {wordFrequency.wordFrequency.uniqueWords.toLocaleString()}
+                            </div>
+                            <div className="text-sm font-medium text-emerald-700/80 dark:text-emerald-300/80">Unique Vocabulary</div>
+                            <div className="mt-2 text-xs text-emerald-600/60 dark:text-emerald-400/60">
+                              Distinct Pashto words
+                            </div>
+                          </div>
+                        </div>
+                        <div className="group relative bg-gradient-to-br from-purple-50 via-pink-100 to-rose-100 dark:from-purple-900/30 dark:via-pink-800/40 dark:to-rose-900/30 border border-purple-200/60 dark:border-purple-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                          <div className="relative z-10">
+                            <div className="text-3xl font-bold bg-gradient-to-br from-purple-700 to-pink-800 dark:from-purple-300 dark:to-pink-400 bg-clip-text text-transparent mb-2">
+                              {wordFrequency.wordFrequency.wordFrequency.length}
+                            </div>
+                            <div className="text-sm font-medium text-purple-700/80 dark:text-purple-300/80">Top Words Listed</div>
+                            <div className="mt-2 text-xs text-purple-600/60 dark:text-purple-400/60">
+                              Most frequent terms
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Word Frequency Table */}
+                      <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
+                        <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
+                              <span className="text-white text-lg">📊</span>
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                                Most Frequent Words
+                              </h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                Ranked by occurrence across all video transcripts
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto">
+                          <table className="w-full">
+                            <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
+                              <tr>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  #
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  Pashto Word
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  Count
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                  Usage %
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+                              {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
+                                const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
+                                const isTopTen = index < 10;
+                                return (
+                                  <tr
+                                    key={item.word}
+                                    className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${
+                                      isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
+                                    }`}
+                                  >
+                                    <td className="px-6 py-4">
+                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                        isTopTen
+                                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
+                                          : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                                      }`}>
+                                        {index + 1}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
+                                        {item.word}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                        {item.frequency.toLocaleString()}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
+                                          <div
+                                            className={`h-full transition-all duration-500 ${
+                                              isTopTen
+                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
+                                            }`}
+                                            style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                          {percentage}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Transcript Categorization */}
+                      {wordFrequency.categorization && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {Object.entries(wordFrequency.categorization).map(([category, items]) => {
+                            const itemCount = (items as any[]).length;
+                            const categoryColors = {
+                              pashto: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/50 border-emerald-200 dark:border-emerald-800',
+                              mixed: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/50 border-amber-200 dark:border-amber-800',
+                              'non-pashto': 'from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/50 border-red-200 dark:border-red-800',
+                              music: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/50 border-purple-200 dark:border-purple-800',
+                              empty: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/50 border-slate-200 dark:border-slate-800'
+                            };
+
+                            const categoryIcons = {
+                              pashto: '🗣️',
+                              mixed: '🔄',
+                              'non-pashto': '🌐',
+                              music: '🎵',
+                              empty: '📭'
+                            };
+
+                            return (
+                              <div key={category} className={`group relative bg-gradient-to-br ${categoryColors[category as keyof typeof categoryColors]} rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105`}>
+                                <div className="p-6">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`p-2 rounded-xl shadow-lg ${
+                                        category === 'pashto' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+                                        category === 'mixed' ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
+                                        category === 'non-pashto' ? 'bg-gradient-to-br from-red-500 to-rose-600' :
+                                        category === 'music' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                                        'bg-gradient-to-br from-slate-500 to-gray-600'
+                                      }`}>
+                                        <span className="text-white text-lg">{categoryIcons[category as keyof typeof categoryIcons]}</span>
+                                      </div>
+                                      <div>
+                                        <h5 className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">
+                                          {category.replace('-', ' ')}
+                                        </h5>
+                                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                                          {itemCount} transcript{itemCount !== 1 ? 's' : ''}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${
+                                      category === 'pashto' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
+                                      category === 'mixed' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                      category === 'non-pashto' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
+                                      category === 'music' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                      'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                                    }`}>
+                                      {itemCount}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                                    {(items as any[]).slice(0, 3).map((item: any, index: number) => (
+                                      <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
+                                        <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                                          {item.verseReference}
+                                        </div>
+                                        <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
+                                          {item.transcript.substring(0, 40)}...
+                                        </div>
+                                      </div>
+                                    ))}
+                                    {(items as any[]).length > 3 && (
+                                      <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
+                                        +{(items as any[]).length - 3} more...
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                      <p className="text-yellow-800 dark:text-yellow-300">
+                        No word frequency data available. Please process video transcripts first.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {activeVideosTab === 'transcripts' && (
+              <>
+                {/* Enhanced Transcripts Section */}
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-purple-800 dark:from-purple-300 dark:via-pink-300 dark:to-purple-400 bg-clip-text text-transparent mb-3">
+                      🔍 Enhanced Transcript Search
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Search through video transcripts with intelligent matching
+                    </p>
+                  </div>
+
+                  {/* Enhanced Search Input */}
+                  <div className="relative max-w-2xl mx-auto">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-400 dark:text-slate-500 text-lg">🔍</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={transcriptSearchQuery}
+                        onChange={handleTranscriptSearchChange}
+                        placeholder="Enter Pashto text to search in video transcripts..."
+                        className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none shadow-sm hover:shadow-md transition-all duration-200"
+                      />
+                      {loadingTranscripts && (
+                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {transcriptSearchQuery && (
+                      <div className="mt-3 text-center">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-700 dark:text-purple-300">
+                          <span>🔍</span>
+                          Searching for: <span className="font-semibold">"{transcriptSearchQuery}"</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {transcriptResults.length > 0 ? (
+                    <div className="space-y-6">
+                      {/* Enhanced Results Header */}
+                      <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                            <span className="text-white text-xl">✅</span>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
+                              Found {transcriptResults.length} matching transcript{transcriptResults.length !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                              Results are ranked by relevance and segment order
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Transcript Results */}
+                      <div className="grid gap-4">
+                        {transcriptResults.map((result: any, index: number) => (
+                          <div
+                            key={index}
+                            className="group relative bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                          >
+                            {/* Result Header */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 dark:from-slate-400 dark:to-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-slate-800 dark:text-slate-200">
+                                    {result.videoTitle || 'Unknown Video'}
+                                  </h4>
+                                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
+                                      {result.segmentNumber ? `Segment ${result.segmentNumber}` : 'Segment'}
+                                    </span>
+                                    {result.sentenceNumber && (
+                                      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-full">
+                                        Sentence {result.sentenceNumber}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  Match #{index + 1}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Transcript Content */}
+                            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 max-h-40 overflow-y-auto">
+                              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                                {result.transcript}
+                              </p>
+                            </div>
+
+                            {/* Highlighted Search Terms */}
+                            {transcriptSearchQuery && (
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {transcriptSearchQuery.split(' ').map((term: string, termIndex: number) => (
+                                  <span
+                                    key={termIndex}
+                                    className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-200/50 dark:border-purple-800/50"
+                                  >
+                                    "{term}"
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : transcriptSearchQuery && !loadingTranscripts ? (
+                    <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl p-8 text-center shadow-sm">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                          <span className="text-white text-2xl">🔍</span>
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold text-amber-800 dark:text-amber-200">
+                            No Results Found
+                          </h4>
+                          <p className="text-amber-600 dark:text-amber-400">
+                            Try adjusting your search terms or check spelling
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 border border-amber-200/30 dark:border-amber-800/30">
+                        <p className="text-amber-700 dark:text-amber-300 font-medium">
+                          Searched for: <span className="font-bold">"{transcriptSearchQuery}"</span>
+                        </p>
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                          • Try using different Pashto words or phrases
+                          <br />
+                          • Check for typos in your search query
+                          <br />
+                          • Some transcripts may contain music or unclear audio
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-12 text-center shadow-sm">
+                      <div className="max-w-md mx-auto">
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                          <span className="text-white text-3xl">🔍</span>
+                        </div>
+                        <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">
+                          Ready to Search
+                        </h4>
+                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                          Enter Pashto text above to discover relevant content across all video transcripts. Our intelligent search will find matching segments and sentences.
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                            Pashto text search
+                          </span>
+                          <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">
+                            Real-time results
+                          </span>
+                          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm">
+                            Smart matching
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -2194,7 +3344,6 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
           </div>
         </div>
       )}
-
     </div>
   );
 }

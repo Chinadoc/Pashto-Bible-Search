@@ -39,7 +39,7 @@ export default function CoverageSidebar({
     : undefined;
 
   return (
-    <div className="w-full lg:w-auto">
+    <div className="w-full lg:w-auto sidebar-panel coverage-compact">
       <CoverageGrid
         coverage={sidebarCoverage}
         onPickBook={onPickBook}
