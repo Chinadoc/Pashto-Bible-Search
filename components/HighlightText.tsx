@@ -40,7 +40,7 @@ export default function HighlightText({ text, tokens }: HighlightTextProps) {
         {chunks.map((c, i) => {
           if (!c) return null; // Skip empty chunks
           return i % 2 === 1
-            ? <mark key={i} className="bg-yellow-400/40 rounded px-0.5">{c}</mark>
+            ? <mark key={i} className="search-highlight">{c}</mark>
             : <span key={i}>{c}</span>;
         }).filter(Boolean)}
       </span>

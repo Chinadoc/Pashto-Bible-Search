@@ -13,6 +13,7 @@ import WordAlternativeUses from './WordAlternativeUses';
 import FilterPanel from './FilterPanel';
 import CoverageSidebar from './CoverageSidebar';
 import InlineFrequency from './InlineFrequency';
+import HighlightText from './HighlightText';
 import { ComplexityLevel } from './CoverageGrid';
 
 interface ModernSearchLayoutProps {
@@ -251,13 +252,12 @@ export default function ModernSearchLayout({
                         )}
                       </div>
 
-                      {/* Verse Text */}
-                      <div
-                        className="text-lg leading-relaxed mb-3 text-slate-100"
-                        dir="rtl"
-                        style={{ fontFamily: 'Noto Nastaliq Urdu, serif' }}
-                      >
-                        {displayText}
+                      {/* Verse Text with Highlighting */}
+                      <div className="pashto-text text-slate-100 mb-3">
+                        <HighlightText
+                          text={displayText}
+                          tokens={query.trim() ? [query.trim()] : []}
+                        />
                       </div>
 
                       {/* Expand Button & Translation Badge */}

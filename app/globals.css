@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pashto Font - Noto Nastaliq Urdu */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap');
+
 :root {
   --gradient-start: #667eea;
   --gradient-end: #764ba2;
@@ -11,6 +14,7 @@
   --text-secondary: #64748b;
   --accent: #8b5cf6;
   --border: #e2e8f0;
+  --pashto-font: 'Noto Nastaliq Urdu', 'Scheherazade New', 'Amiri', serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +42,26 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pashto text styling */
+.pashto-text {
+  font-family: var(--pashto-font);
+  direction: rtl;
+  text-align: right;
+  font-size: 1.25rem;
+  line-height: 2;
+  letter-spacing: 0.02em;
+}
+
+/* Highlight matched search terms */
+.search-highlight {
+  background: linear-gradient(120deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+  color: #fbbf24;
+  font-weight: 600;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
 .hero-gradient {
