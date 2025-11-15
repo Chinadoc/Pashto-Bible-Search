@@ -22,6 +22,7 @@ import SearchHero from "../components/SearchHero";
 import ResultsPane from "../components/ResultsPane";
 import ResultsGrid from "../components/ResultsGrid";
 import ModernSearchLayout from "../components/ModernSearchLayout";
+import ClassicSearchLayout from "../components/ClassicSearchLayout";
 import type {
   Verse,
   Scope,
@@ -1900,34 +1901,19 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
         </div>
       )}
 
-      {/* Search Header - New Hero UI or Classic Header */}
-      {useNewUI ? (
-        <SearchHero
-          query={query}
-          setQuery={setQuery}
-          handleSearch={handleSearch}
-          handleKeyPress={handleKeyPress}
-          isLoading={isLoading}
-          activeMainTab={activeMainTab}
-          activeTranslation={activeTranslation}
-          setActiveTranslation={setActiveTranslation}
-          searchLanguage={searchLanguage}
-          isEnglishMode={isEnglishMode}
-        />
-      ) : (
-        <SearchHeader
-          query={query}
-          setQuery={setQuery}
-          handleSearch={handleSearch}
-          handleKeyPress={handleKeyPress}
-          isLoading={isLoading}
-          activeMainTab={activeMainTab}
-          activeTranslation={activeTranslation}
-          setActiveTranslation={setActiveTranslation}
-          searchLanguage={searchLanguage}
-          isEnglishMode={isEnglishMode}
-        />
-      )}
+      {/* Search Header - Classic Header */}
+      <SearchHeader
+        query={query}
+        setQuery={setQuery}
+        handleSearch={handleSearch}
+        handleKeyPress={handleKeyPress}
+        isLoading={isLoading}
+        activeMainTab={activeMainTab}
+        activeTranslation={activeTranslation}
+        setActiveTranslation={setActiveTranslation}
+        searchLanguage={searchLanguage}
+        isEnglishMode={isEnglishMode}
+      />
 
       {/* Main Content */}
       {activeMainTab === 'search' && (
@@ -1997,9 +1983,9 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
             />
           )}
 
-          {/* Main Content - New Modern UI or Classic Layout */}
+          {/* Main Content - Classic Layout */}
           {useNewUI ? (
-            <ModernSearchLayout
+            <ClassicSearchLayout
               results={results}
               filteredResults={filteredResults}
               totalEstimatedCount={totalEstimatedCount}
@@ -2031,10 +2017,7 @@ export default function ClientHome({ initialQuery }: { initialQuery?: string } =
                 }
               }}
               onClearFilters={() => setBookFilter([])}
-              setIncludeRelated={setIncludeRelated}
-              enableFuzzy={enableFuzzy}
-              setEnableFuzzy={setEnableFuzzy}
-              setScope={setScope}
+              activeTranslation={activeTranslation}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
