@@ -1,9 +1,9 @@
-// Re-export search-related types
-export * from './search';
-
 export type Scope = "all" | "ot" | "nt";
 export type Mode = "phrase" | "grammar";
-export type SearchLanguage = "pashto" | "english" | "topics";
+export type SearchLanguage = "pashto" | "english" | "anki";
+
+export * from './search';
+export * from './database';
 
 export type VerbFilterPerson = 'all' | '1st' | '2nd' | '3rd';
 export type VerbFilterTense = 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
@@ -68,11 +68,19 @@ export interface RelatedFormVariant {
   score?: number;
   romanized?: string;
   flags?: string[];
+  inflectionType?: string; // e.g., 'plain', '1st_m', '1st_f', '2nd', 'vocative_m', 'plural_m', etc.
   inflectionReasons?: {
     plural: number;
     sandwich: number;
     transitive_past: number;
     sandwich_types: string[];
+    examples?: Array<{
+      verse_ref: string;
+      text: string;
+      reason: 'plural' | 'sandwich' | 'transitive_past';
+      highlighted_context?: string;
+      pattern?: string;
+    }>;
   };
 }
 
