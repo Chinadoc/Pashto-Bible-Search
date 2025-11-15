@@ -37,7 +37,7 @@ interface ClassicSearchLayoutProps {
   bookFilter: string[];
   onPickBook: (book: string) => void;
   onClearFilters: () => void;
-  activeTranslation: 'afghan2023' | 'yousafzai2019';
+  activeTranslation: 'afghan2023' | 'yousafzai2019' | 'unified';
 }
 
 export default function ClassicSearchLayout({
