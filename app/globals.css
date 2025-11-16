@@ -106,7 +106,7 @@ body {
 .coverage-compact {
   /* Unified sticky glass treatment for both sidebar and coverage panels */
   position: sticky;
-  top: var(--sticky-panel-offset);
+  top: var(--sticky-panel-offset, 1rem);
   background: rgba(7, 11, 27, 0.92);
   border: 1px solid var(--border-soft);
   border-radius: 1.5rem;
