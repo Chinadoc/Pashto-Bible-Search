@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
+const TRANSLATION_CONFIG: Record<
+  'afghan2023' | 'yousafzai2019',
+  { folderAliases: string[]; filenamePrefixes: string[] }
+> = {
+  afghan2023: {
+    folderAliases: ['afghan2023', 'afghan'],
+    filenamePrefixes: ['afghan', 'afghan2023'],
+  },
+  yousafzai2019: {
+    folderAliases: ['yousufzai2019', 'yousafzai2019', 'yousafzai'],
+    filenamePrefixes: ['yousafzai', 'yousafzai2019', 'yousufzai2019'],
+  },
+};
+
 const OT_BOOKS = new Set([
   'genesis','exodus','leviticus','numbers','deuteronomy','joshua','judges','ruth','1samuel','2samuel','1kings','2kings','1chronicles','2chronicles','ezra','nehemiah','esther','job','psalms','proverbs','ecclesiastes','songofsongs','songofsolomon','songofsongs','isaiah','jeremiah','lamentations','ezekiel','daniel','hosea','joel','amos','obadiah','jonah','micah','nahum','habakkuk','zephaniah','haggai','zechariah','malachi',
 ]);
@@ -25,18 +40,54 @@ function inferTestament(book: string, fallback?: string | null): 'ot' | 'nt' {
   return OT_BOOKS.has(slug) ? 'ot' : 'nt';
 }
 
-function buildR2Key(ref: string, translation: 'afghan2023' | 'yousafzai2019', verseMeta?: { book?: string; chapter?: number; verse?: number; testament?: string | null }) {
+function expandKeyWithAliases(key: string, translation: 'afghan2023' | 'yousafzai2019'): string[] {
+  const cleanKey = key.replace(/^\//, '');
+  const aliases = TRANSLATION_CONFIG[translation]?.folderAliases ?? [translation];
+  const parts = cleanKey.split('/');
+  if (parts.length < 2) return [cleanKey];
+
+  const [, ...rest] = parts;
+  const restPath = rest.join('/');
+
+  const variants = new Set<string>([cleanKey]);
+  for (const alias of aliases) {
+    variants.add(`${alias}/${restPath}`);
+  }
+  return Array.from(variants);
+}
+
+function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2019', verseMeta?: { book?: string; chapter?: number; verse?: number; testament?: string | null; audio_r2_key?: string | null }) {
+  const candidates = new Set<string>();
+
   const parsed = parseRef(ref);
   const book = verseMeta?.book || parsed?.book;
   const chapter = verseMeta?.chapter ?? parsed?.chapter;
   const verse = verseMeta?.verse ?? parsed?.verse;
-  if (!book || !chapter || !verse) return null;
 
-  const testament = inferTestament(book, verseMeta?.testament?.toLowerCase?.());
-  const slug = normaliseBookSlug(book);
-  const chapterPart = String(chapter);
-  const versePart = String(verse).padStart(3, '0');
-  return `${translation}/${testament}/${slug}${chapterPart}_verse_${versePart}.mp3`;
+  if (verseMeta?.audio_r2_key) {
+    for (const variant of expandKeyWithAliases(verseMeta.audio_r2_key, translation)) {
+      candidates.add(variant);
+    }
+  }
+
+  if (book && chapter && verse) {
+    const testament = inferTestament(book, verseMeta?.testament?.toLowerCase?.());
+    const slug = normaliseBookSlug(book);
+    const chapterPart3 = String(chapter).padStart(3, '0');
+    const versePart3 = String(verse).padStart(3, '0');
+    const { folderAliases, filenamePrefixes } = TRANSLATION_CONFIG[translation] ?? { folderAliases: [translation], filenamePrefixes: [translation] };
+
+    for (const folder of folderAliases) {
+      for (const prefix of filenamePrefixes) {
+        candidates.add(`${folder}/${testament}/${prefix}_${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+      }
+      candidates.add(`${folder}/${testament}/${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+      // Add a non-padded fallback in case files were uploaded without padding
+      candidates.add(`${folder}/${testament}/${slug}${chapter}_verse_${verse}.mp3`);
+    }
+  }
+
+  return Array.from(candidates);
 }
 
 async function fetchVerse(ref: string, translation: 'afghan2023' | 'yousafzai2019') {
@@ -55,17 +106,25 @@ function toStreamUrl(r2Key: string | null | undefined) {
 async function resolveAudioUrl(ref: string, translation: 'afghan2023' | 'yousafzai2019') {
   try {
     const verse = await fetchVerse(ref, translation);
-    const derivedKey = buildR2Key(ref, translation, verse);
 
     if (verse?.audio_public_url) return verse.audio_public_url as string;
-    if (verse?.audio_r2_key) return toStreamUrl(verse.audio_r2_key);
-    if (derivedKey) return toStreamUrl(derivedKey);
+
+    const candidates = buildCandidateKeys(ref, translation, verse);
+    for (const candidate of candidates) {
+      const url = toStreamUrl(candidate);
+      if (url) return url;
+    }
   } catch (error) {
     console.warn(`Failed to resolve audio for ${ref}:`, error);
   }
 
-  const fallbackKey = buildR2Key(ref, translation);
-  return fallbackKey ? toStreamUrl(fallbackKey) : null;
+  const fallbackCandidates = buildCandidateKeys(ref, translation);
+  for (const candidate of fallbackCandidates) {
+    const url = toStreamUrl(candidate);
+    if (url) return url;
+  }
+
+  return null;
 }
 
 async function handleSingle(request: NextRequest) {
