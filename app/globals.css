@@ -356,6 +356,12 @@ body {
   transition: all 0.2s ease;
 }
 
+.verse-item p {
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .verse-item:hover {
   border-color: rgba(56, 189, 248, 0.4);
   background: rgba(15, 23, 42, 0.75);
