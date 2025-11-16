@@ -102,9 +102,19 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.sidebar-panel,
+.sidebar-panel {
+  position: sticky;
+  top: var(--sticky-panel-offset, 1rem);
+  background: rgba(7, 11, 27, 0.92);
+  border: 1px solid var(--border-soft);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(3, 6, 18, 0.65);
+  padding: 1.25rem;
+  backdrop-filter: blur(20px);
+}
+
 .coverage-compact {
-  /* Unified sticky glass treatment for both sidebar and coverage panels */
+  /* Mirror the sidebar sticky glass treatment while keeping a shared offset */
   position: sticky;
   top: var(--sticky-panel-offset, 1rem);
   background: rgba(7, 11, 27, 0.92);
