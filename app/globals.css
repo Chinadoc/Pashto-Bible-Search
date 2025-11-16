@@ -103,6 +103,7 @@ body {
 
 .sidebar-panel,
 .coverage-compact {
+  /* Unified sticky glass treatment for both sidebar and coverage panels */
   position: sticky;
   top: 1rem;
   background: rgba(7, 11, 27, 0.92);
