@@ -20,6 +20,7 @@
   --border-soft: rgba(120, 145, 190, 0.35);
   --border-strong: rgba(90, 168, 255, 0.45);
   --shadow-strong: 0 35px 60px rgba(3, 6, 18, 0.85);
+  --sticky-panel-offset: 1rem;
 }
 
 body {
@@ -105,7 +106,7 @@ body {
 .coverage-compact {
   /* Unified sticky glass treatment for both sidebar and coverage panels */
   position: sticky;
-  top: 1rem;
+  top: var(--sticky-panel-offset);
   background: rgba(7, 11, 27, 0.92);
   border: 1px solid var(--border-soft);
   border-radius: 1.5rem;
