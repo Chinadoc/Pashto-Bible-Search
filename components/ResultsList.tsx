@@ -470,7 +470,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   ) : 0;
   
   // Enable virtual scrolling for large result sets
-  const shouldUseVirtualization = results.length > 200;
+  // Disable virtualization for now to prevent verse rows from overlapping when content exceeds the fixed item height
+  const shouldUseVirtualization = false;
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results.length]);
@@ -540,7 +541,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 // Determine translation from verse
                 const verse = results.find(v => v.ref === verseRef);
                 const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-                const url = await resolveAudioUrl(verseRef, entry);
+                const url = await resolveAudioUrl(verseRef, entry, { translation: verseTranslation });
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -585,7 +586,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       const entry = audioMap[verseRef];
       // Determine translation from verse
       const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-      const url = await resolveAudioUrl(verseRef, entry);
+      const url = await resolveAudioUrl(verseRef, entry, { translation: verseTranslation });
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
@@ -968,7 +969,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           className="border border-gray-200 dark:border-gray-700 rounded-lg"
         />
       ) : (
-        <>
+        <div className="flex flex-col gap-4">
           {paginatedResults.map((verse, index) => (
             <VerseItem
               key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
@@ -997,7 +998,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           ))}
 
           {showPagination && paginationControl('bottom')}
-        </>
+        </div>
       )}
     </div>
   );
