@@ -2,7 +2,13 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
 // Removed Material-UI Pagination for better dark mode support
-import type { Verse, AudioMap } from '../types';
+import type {
+  Verse,
+  AudioMap,
+  VerbFilterState,
+  MultiVerbFilterState,
+  DictionaryData,
+} from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '@/app/lib/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
 import HighlightText from './HighlightText';
@@ -21,23 +27,9 @@ interface Props {
   terms?: string[]; // preferred: multiple variants to highlight
   highlightBook?: string | null; // book to visually highlight
   processed?: any; // processed data from search for highlighting
-  dictionaryData?: {
-    entries: Array<{ pashto: string; romanized?: string | null; pos?: string | null; english?: string | null }>;
-    groupedByPos: Record<string, any[]>;
-    needsDisambiguation: boolean;
-  };
-  verbFilters?: {
-    person: 'all' | '1st' | '2nd' | '3rd';
-    tense: 'all' | 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
-    aspect: 'all' | 'imperfective' | 'perfective';
-    mood: 'all' | 'indicative' | 'subjunctive' | 'imperative' | 'ability';
-  };
-  multiVerbFilters?: {
-    person: string[];
-    tense: string[];
-    aspect: string[];
-    mood: string[];
-  };
+  dictionaryData?: DictionaryData | null;
+  verbFilters?: VerbFilterState;
+  multiVerbFilters?: MultiVerbFilterState;
   activeVariantForms?: string[];
   onResetFilters?: () => void;
 }
@@ -478,7 +470,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   ) : 0;
   
   // Enable virtual scrolling for large result sets
-  const shouldUseVirtualization = results.length > 200;
+  // Disable virtualization for now to prevent verse rows from overlapping when content exceeds the fixed item height
+  const shouldUseVirtualization = false;
 
   // Reset to page 1 when results change
   useEffect(() => { setPage(1); }, [results.length]);
@@ -548,7 +541,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 // Determine translation from verse
                 const verse = results.find(v => v.ref === verseRef);
                 const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-                const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+                const url = await resolveAudioUrl(verseRef, entry, { translation: verseTranslation });
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
                 }
@@ -593,7 +586,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       const entry = audioMap[verseRef];
       // Determine translation from verse
       const verseTranslation = verse?.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
-      const url = await resolveAudioUrl(verseRef, entry, verseTranslation);
+      const url = await resolveAudioUrl(verseRef, entry, { translation: verseTranslation });
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
@@ -976,7 +969,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           className="border border-gray-200 dark:border-gray-700 rounded-lg"
         />
       ) : (
-        <>
+        <div className="flex flex-col gap-4">
           {paginatedResults.map((verse, index) => (
             <VerseItem
               key={verse.ref || `verse-${(page - 1) * itemsPerPage + index}`}
@@ -1005,7 +998,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           ))}
 
           {showPagination && paginationControl('bottom')}
-        </>
+        </div>
       )}
     </div>
   );

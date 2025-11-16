@@ -30,6 +30,7 @@ import type {
   AdjectiveInflectionType,
   AdjectiveGender,
   SearchLanguage,
+  MultiVerbFilterState,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
 import { TextField, Button, IconButton } from '@mui/material';
@@ -53,14 +54,6 @@ const DEFAULT_VERB_FILTER: VerbFilterState = {
   aspect: 'all',
   mood: 'all',
 };
-
-// New multi-select filter state
-interface MultiVerbFilterState {
-  person: VerbFilterPerson[];
-  tense: VerbFilterTense[];
-  aspect: VerbFilterAspect[];
-  mood: VerbFilterMood[];
-}
 
 const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
   person: ['all'],
@@ -776,9 +769,9 @@ export default function ClientHome() {
           const afghanData = await afghanResponse.json();
           const afghanAudioMap = afghanData || {};
           const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
+            console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Cloudflare, ${driveUrls} Drive)`);
           setAudioMap(afghanAudioMap);
 
           if (driveUrls > 0) {
@@ -795,9 +788,9 @@ export default function ClientHome() {
           const yousafzaiData = await yousafzaiResponse.json();
           const yousafzaiAudioMap = yousafzaiData || {};
           const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+            console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
           setYousafzaiAudioMap(yousafzaiAudioMap);
 
           if (yousafzaiDriveUrls > 0) {
@@ -1087,9 +1080,9 @@ export default function ClientHome() {
         const afghanData = await afghanResponse.json();
         const newAfghanAudioMap = afghanData || {};
         const afghanDriveUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-        console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Supabase, ${afghanDriveUrls} Drive)`);
+          console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Cloudflare, ${afghanDriveUrls} Drive)`);
         setAudioMap(newAfghanAudioMap);
 
         // Refresh Yousafzai 2019 audio map
@@ -1098,9 +1091,9 @@ export default function ClientHome() {
           const yousafzaiData = await yousafzaiResponse.json();
           const newYousafzaiAudioMap = yousafzaiData || {};
           const yousafzaiDriveUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
 
-          console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
+            console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
           setYousafzaiAudioMap(newYousafzaiAudioMap);
 
           const totalDriveUrls = afghanDriveUrls + yousafzaiDriveUrls;
@@ -1109,7 +1102,7 @@ export default function ClientHome() {
           if (totalDriveUrls > 0) {
             alert(`Audio maps refreshed with ${totalDriveUrls} Google Drive URLs still present. Try refreshing again.`);
           } else {
-            alert(`Audio maps refreshed with ${totalStorageUrls} Supabase Storage URLs!`);
+              alert(`Audio maps refreshed with ${totalStorageUrls} Cloudflare storage URLs!`);
           }
         } else {
           alert('Failed to refresh Yousafzai 2019 audio map');

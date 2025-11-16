@@ -3,23 +3,12 @@
  * Centralized state management for all search filters including POS, verb, noun, and adjective filters
  */
 
-import type { 
-  PartOfSpeech, 
-  VerbFilterPerson, 
-  VerbFilterTense, 
-  VerbFilterAspect, 
-  VerbFilterMood,
+import type {
+  PartOfSpeech,
   NounFilterState,
   AdjectiveFilterState,
+  MultiVerbFilterState,
 } from '@/types';
-
-// Multi-select verb filter state
-export interface MultiVerbFilterState {
-  person: VerbFilterPerson[];
-  tense: VerbFilterTense[];
-  aspect: VerbFilterAspect[];
-  mood: VerbFilterMood[];
-}
 
 // Complete filter state
 export interface SearchFiltersState {
