@@ -101,7 +101,8 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.sidebar-panel {
+.sidebar-panel,
+.coverage-compact {
   position: sticky;
   top: 1rem;
   background: rgba(7, 11, 27, 0.92);
