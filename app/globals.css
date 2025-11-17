@@ -20,6 +20,7 @@
   --border-soft: rgba(120, 145, 190, 0.35);
   --border-strong: rgba(90, 168, 255, 0.45);
   --shadow-strong: 0 35px 60px rgba(3, 6, 18, 0.85);
+  --sticky-panel-offset: 1rem;
 }
 
 body {
@@ -103,7 +104,7 @@ body {
 
 .sidebar-panel {
   position: sticky;
-  top: 1rem;
+  top: var(--sticky-panel-offset, 1rem);
   background: rgba(7, 11, 27, 0.92);
   border: 1px solid var(--border-soft);
   border-radius: 1.5rem;
@@ -113,8 +114,15 @@ body {
 }
 
 .coverage-compact {
+  /* Mirror the sidebar sticky glass treatment while keeping a shared offset */
   position: sticky;
-  top: 1rem;
+  top: var(--sticky-panel-offset, 1rem);
+  background: rgba(7, 11, 27, 0.92);
+  border: 1px solid var(--border-soft);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(3, 6, 18, 0.65);
+  padding: 1.25rem;
+  backdrop-filter: blur(20px);
 }
 
 .control-bar {
@@ -353,12 +361,21 @@ body {
 }
 
 .verse-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 16px;
   padding: 1.25rem;
   margin-bottom: 1rem;
   transition: all 0.2s ease;
+}
+
+.verse-item p {
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .verse-item:hover {

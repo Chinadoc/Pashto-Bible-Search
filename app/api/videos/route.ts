@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
@@ -15,30 +14,6 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.warn('Failed to fetch from Cloudflare D1:', error);
-    }
-
-    // Also fetch from Supabase (legacy) - optional if env vars are set
-    let transcripts: any[] | null = null;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (supabaseUrl && supabaseKey) {
-      try {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const { data, error } = await supabase
-          .from('video_transcripts')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(100);
-
-        if (error) {
-          console.error('Supabase error:', error);
-        } else {
-          transcripts = data;
-        }
-      } catch (error) {
-        console.warn('Failed to fetch from Supabase:', error);
-      }
     }
 
     // Combine and deduplicate by video_id
@@ -69,37 +44,6 @@ export async function GET(request: NextRequest) {
       });
     });
     
-    // Add Supabase videos (if not already present)
-    transcripts?.forEach(transcript => {
-      const videoId = transcript.video_id;
-      
-      if (!videosMap.has(videoId)) {
-        videosMap.set(videoId, {
-          video_id: videoId,
-          video_title: transcript.video_title || `Video ${videoId}`,
-          youtube_url: transcript.video_url || `https://www.youtube.com/watch?v=${videoId}`,
-          total_clips: 0,
-          clips: [],
-          created_at: transcript.created_at,
-          updated_at: transcript.updated_at,
-          source: 'supabase',
-        });
-      }
-      
-      const video = videosMap.get(videoId);
-      video.total_clips++;
-      video.clips.push({
-        segment_number: transcript.segment_number,
-        transcript_text: transcript.transcript_text,
-        start_time_seconds: transcript.start_time_seconds,
-        end_time_seconds: transcript.end_time_seconds,
-        google_drive_url: transcript.google_drive_url,
-        audio_file_path: transcript.audio_file_path,
-        validation_score: transcript.validation_score,
-        needs_retry: transcript.needs_retry
-      });
-    });
-
     // Convert map to array
     const videos = Array.from(videosMap.values());
 

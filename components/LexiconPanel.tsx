@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase";
 
 interface FrequencyItem {
   form: string;

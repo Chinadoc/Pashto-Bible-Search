@@ -23,7 +23,7 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
     );
   }
 
-  // Determine if this is a Google Drive URL or R2/Supabase URL
+  // Determine if this is a Google Drive URL or an R2/Cloudflare URL
   const isGoogleDrive = useMemo(() => {
     return audioUrl.includes('drive.google.com');
   }, [audioUrl]);
@@ -50,15 +50,15 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
   }, [audioUrl, isGoogleDrive]);
 
   // Use appropriate URL based on source
-  // R2/Supabase URLs can be used directly, Google Drive needs proxy
+  // R2/Cloudflare URLs can be used directly, Google Drive needs proxy
   const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
   const streamingUrl = isGoogleDrive && fileId
     ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` // Google Drive via proxy
-    : audioUrl; // R2/Supabase URLs work directly
+    : audioUrl; // R2/Cloudflare URLs work directly
 
   const downloadUrl = isGoogleDrive && fileId
     ? `https://drive.google.com/uc?export=download&id=${fileId}` // Google Drive download
-    : audioUrl; // R2/Supabase URLs can be downloaded directly
+    : audioUrl; // R2/Cloudflare URLs can be downloaded directly
 
   // Auto-load audio when component mounts if autoLoad is true
   useEffect(() => {

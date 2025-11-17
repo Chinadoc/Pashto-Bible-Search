@@ -1,0 +1,8 @@
+# Copy to cloudflare/.dev.vars to run wrangler dev locally
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_api_token
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_BUCKET_NAME=pashto-bible-audio
+# Optional: worker URL override if you proxy to a remote worker
+NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=http://127.0.0.1:8787

@@ -1257,9 +1257,10 @@ export async function POST(request: NextRequest) {
             hasNouns: !!relatedForms.forms?.nouns?.length,
             hasVerbs: !!relatedForms.forms?.verbs?.length,
             hasOther: !!relatedForms.forms?.other?.length,
+            hasAdjectives: !!(relatedForms as any)?.forms?.adjectives?.length,
             nounsCount: relatedForms.forms?.nouns?.length || 0,
             verbsCount: relatedForms.forms?.verbs?.length || 0,
-            otherCount: relatedForms.forms?.other?.length || 0
+            otherCount: relatedForms.forms?.other?.length || 0,
           });
 
           // Add all related forms to search terms for comprehensive Bible search
@@ -1281,6 +1282,14 @@ export async function POST(request: NextRequest) {
           });
             allSearchTerms.push(...verbForms);
           }
+          if ((relatedForms as any)?.forms?.adjectives) {
+          const adjectiveForms = (relatedForms as any).forms.adjectives.map((f: any) => {
+            const form = f.form;
+            const convertedForm = romanizedToPashto(form);
+            return convertedForm !== form ? convertedForm : form;
+          });
+            allSearchTerms.push(...adjectiveForms);
+          }
           if (relatedForms.forms?.other) {
           const otherForms = relatedForms.forms.other.map((f: any) => {
             const form = f.form;
@@ -1295,7 +1304,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If English search mode, create a special relatedForms object to show all matches
-    if (effectiveIncludeRelated && searchLanguage === 'english' && englishMatches.length > 0) {
+    if (!relatedForms && effectiveIncludeRelated && searchLanguage === 'english' && englishMatches.length > 0) {
       const matchForms = englishMatches.map(m => ({
         form: m.pashto,
         label: m.english,
@@ -1318,7 +1327,7 @@ export async function POST(request: NextRequest) {
         variantDetails: [],
         posGuess: 'english-search'
       };
-    } else if (effectiveIncludeRelated) {
+    } else if (!relatedForms && effectiveIncludeRelated) {
       try {
           console.log('🔍 Generating related forms for expanded search:', convertedQuery);
 
