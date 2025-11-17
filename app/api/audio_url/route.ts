@@ -98,14 +98,25 @@ function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2
     const versePart3 = String(verse).padStart(3, '0');
     const { folderAliases, filenamePrefixes } = TRANSLATION_CONFIG[translation] ?? { folderAliases: [translation], filenamePrefixes: [translation] };
 
+    const baseNameVariants = new Set<string>();
+    for (const slug of slugVariants) {
+      baseNameVariants.add(`${slug}${chapterPart3}_verse_${versePart3}`);
+      baseNameVariants.add(`${slug}${chapterPart3}_${versePart3}`);
+      baseNameVariants.add(`${slug}_${chapterPart3}_verse_${versePart3}`);
+      baseNameVariants.add(`${slug}_${chapterPart3}_${versePart3}`);
+      baseNameVariants.add(`${slug}${chapter}_verse_${verse}`);
+      baseNameVariants.add(`${slug}${chapter}_${verse}`);
+      baseNameVariants.add(`${slug}_${chapter}_verse_${verse}`);
+      baseNameVariants.add(`${slug}_${chapter}_${verse}`);
+    }
+
     for (const folder of folderAliases) {
-      for (const slug of slugVariants) {
+      for (const base of baseNameVariants) {
         for (const prefix of filenamePrefixes) {
-          candidates.add(`${folder}/${testament}/${prefix}_${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+          candidates.add(`${folder}/${testament}/${prefix}_${base}.mp3`);
+          candidates.add(`${folder}/${testament}/${prefix}-${base}.mp3`);
         }
-        candidates.add(`${folder}/${testament}/${slug}${chapterPart3}_verse_${versePart3}.mp3`);
-        // Add a non-padded fallback in case files were uploaded without padding
-        candidates.add(`${folder}/${testament}/${slug}${chapter}_verse_${verse}.mp3`);
+        candidates.add(`${folder}/${testament}/${base}.mp3`);
       }
     }
   }

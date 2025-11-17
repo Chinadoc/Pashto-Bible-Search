@@ -5,6 +5,14 @@ import type { RelatedFormVariant, RelatedFormsData } from '@/types';
 
 type GrammaticalInfo = Record<string, any> | null;
 
+function normaliseRomanization(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}+/gu, '')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '')
+    .toLowerCase();
+}
+
 function parseGrammaticalInfo(raw: any): GrammaticalInfo {
   if (!raw) return null;
   if (typeof raw === 'object') return raw as Record<string, any>;
@@ -344,6 +352,33 @@ export async function POST(request: Request) {
          LIMIT 1`,
         [form],
       );
+    }
+
+    if (!primary) {
+      const fallbackRomanized = normaliseRomanization(form);
+      const likeTerm = `%${form}%`;
+      const romanizedRows = await queryD1<{
+        pashto_word: string;
+        base_form?: string | null;
+        word_type?: string | null;
+        pos?: string | null;
+        romanization?: string | null;
+        english_translation?: string | null;
+        frequency_total?: number | null;
+      }>(
+        db,
+        `SELECT pashto_word, base_form, word_type, pos, romanization, english_translation, frequency_total
+         FROM word_frequencies
+         WHERE lower(romanization) LIKE lower(?)
+         ORDER BY frequency_total DESC
+         LIMIT 200`,
+        [likeTerm],
+      );
+
+      primary = romanizedRows.find((row) => {
+        const normalisedRow = row.romanization ? normaliseRomanization(row.romanization) : '';
+        return normalisedRow.includes(fallbackRomanized) || fallbackRomanized.includes(normalisedRow);
+      });
     }
 
     const nounLexicon = await queryD1First<{
