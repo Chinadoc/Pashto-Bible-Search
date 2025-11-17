@@ -62,7 +62,7 @@ interface NormalizedVideo {
   total_clips: number;
   total_duration: number;
   updated_at: string | null;
-  source?: 'cloudflare' | 'supabase';
+  source?: 'cloudflare';
   transcription_service?: string;
 }
 
@@ -311,7 +311,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       if (response.ok && result.success) {
         setElevenLabsResult(result.transcript);
         console.log(`✅ Video processed: ${result.clipsCreated} clips created`);
-        console.log(`📊 Saved to Supabase with video ID: ${result.videoId}`);
+        console.log(`📊 Saved to Cloudflare D1 with video ID: ${result.videoId}`);
         
         // Reload videos to show the new one
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -406,7 +406,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
             if (transResponse.ok && transResult.success) {
               transcriptions.push(`[Segment ${segment.segmentIndex + 1}: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}] ${transResult.transcript}`);
 
-              // Store audio segment info for Supabase storage
+              // Store audio segment info for Cloudflare storage
               audioSegments.push({
                 segmentIndex: segment.segmentIndex,
                 startTime: segment.start,
@@ -427,7 +427,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
           }
         }
 
-        // Store the complete transcript in Supabase
+        // Store the complete transcript via the Cloudflare worker API
         try {
           const storeResponse = await fetch('/api/store-video-transcript', {
             method: 'POST',
@@ -451,12 +451,12 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
 
           const storeResult = await storeResponse.json();
           if (storeResponse.ok && storeResult.success) {
-            console.log('✅ Transcript stored in Supabase:', storeResult.transcriptId);
+            console.log('✅ Transcript stored via Cloudflare worker:', storeResult.transcriptId);
           } else {
-            console.warn('⚠️ Failed to store transcript in Supabase:', storeResult.error);
+            console.warn('⚠️ Failed to store transcript via Cloudflare worker:', storeResult.error);
           }
         } catch (error) {
-          console.warn('⚠️ Error storing transcript in Supabase:', error);
+          console.warn('⚠️ Error storing transcript via Cloudflare worker:', error);
         }
 
         setElevenLabsResult(transcriptions.join('\n\n'));
@@ -639,7 +639,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                 </button>
                 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ✨ Creates audio clips, uploads to Google Drive, saves to Supabase, shows in Videos tab
+                  ✨ Creates audio clips, uploads to Google Drive, syncs to Cloudflare, shows in Videos tab
                 </p>
                 
                 <p className="text-xs text-gray-500 dark:text-gray-400">

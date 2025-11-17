@@ -16,6 +16,9 @@ interface AdjectiveFilterDrawerProps {
 const DEFAULT_ADJECTIVE_FILTER = {
   inflectionType: 'all' as AdjectiveInflectionType,
   gender: 'all' as AdjectiveGender,
+  category: 'all' as const,
+  grammaticalCase: 'all' as const,
+  number: 'all' as const,
 };
 
 export default function AdjectiveFilterDrawer({ onApplyFilters }: AdjectiveFilterDrawerProps) {

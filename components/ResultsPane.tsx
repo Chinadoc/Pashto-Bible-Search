@@ -9,7 +9,13 @@ import DictionaryDisambiguation from './DictionaryDisambiguation';
 import WordAlternativeUses from './WordAlternativeUses';
 import FilterPanel from './FilterPanel';
 import ResultsList from './ResultsList';
-import type { Verse, RelatedFormsData, PhraseResponse } from '@/types';
+import type {
+  Verse,
+  RelatedFormsData,
+  PhraseResponse,
+  DictionaryData,
+  MultiVerbFilterState,
+} from '@/types';
 
 interface ResultsPaneProps {
   results: Verse[];
@@ -18,14 +24,14 @@ interface ResultsPaneProps {
   hasMoreResults: boolean;
   isLoading: boolean;
   processed: PhraseResponse['processed'] | null;
-  dictionaryData: any;
+  dictionaryData?: DictionaryData | null;
   relatedForms: RelatedFormsData | null;
   includeRelated: boolean;
   query: string;
   activeVariantForms: string[];
   onPickForm: (form: string) => void;
   audioMap: Record<string, string>;
-  multiVerbFilters: any; // TODO: Type properly
+  multiVerbFilters?: MultiVerbFilterState;
   onResetFilters: () => void;
 }
 
