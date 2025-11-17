@@ -20,17 +20,41 @@ Follow these steps to interact with the Cloudflare data locally or in CI.
    - R2 binding `AUDIO_BUCKET`: set the R2 bucket containing verse audio.
 
 ## Local secrets and env
-Create `.dev.vars` in the repo root to provide any secrets your worker needs (none are required for the default endpoints):
+Create `.dev.vars` (or copy `cloudflare/.dev.vars.example`) in the repo root to provide any secrets your worker needs:
 ```bash
-# example .dev.vars
+cp cloudflare/.dev.vars.example cloudflare/.dev.vars
+# then edit cloudflare/.dev.vars with your real values
+
+# required
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=pashto-bible-audio
+
+# optional: point the Next.js app at a running worker
+NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=http://127.0.0.1:8787
 ```
+
+> **Never commit `.dev.vars` or `.env.local`**—they contain secrets. The copies in version control are examples only.
 
 ## Run the worker locally
 ```bash
 # start the worker against D1 + R2
 wrangler dev --local --test-scheduled
+```
+
+## Verify R2 access
+You can confirm credentials by listing a known audio prefix (replace with your bucket name/prefixes):
+```bash
+wrangler r2 object list AUDIO_BUCKET --prefix afghan2023/nt | head
+```
+If you prefer S3 tooling, set the environment variables from `.dev.vars` and run:
+```bash
+AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+AWS_ENDPOINT_URL="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+aws s3 ls s3://$R2_BUCKET_NAME/afghan2023/nt --no-sign-request
 ```
 
 ## Populate D1 from a backup (optional)
