@@ -1,0 +1,16 @@
+{
+  "name": "pashto-bible-search-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for Pashto Bible Search",
+  "private": true,
+  "scripts": {
+    "catalog": "tsx catalog-r2-audio.ts",
+    "upload": "tsx upload-audio-to-r2.ts",
+    "verify": "tsx verify-audio-r2.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.712.0",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  }
+}
