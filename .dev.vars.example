@@ -1,0 +1,8 @@
+# Local Development Environment Variables for Cloudflare Worker
+# Copy this file to .dev.vars and fill in your values
+# .dev.vars is used by `wrangler dev` for local development
+# DO NOT commit .dev.vars to git (it should be in .gitignore)
+
+# Example environment variables (if needed for your worker)
+# API_KEY=your-api-key-here
+# SECRET_TOKEN=your-secret-token-here

@@ -1,0 +1,27 @@
+{
+  "name": "pashto-bible-search-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for Pashto Bible Search - D1 Database and R2 Audio Storage",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "deploy:development": "wrangler deploy --env development",
+    "tail": "wrangler tail",
+    "tail:production": "wrangler tail --env production",
+    "d1:create": "wrangler d1 create pashto-bible-db",
+    "d1:query": "wrangler d1 execute pashto-bible-db --command",
+    "d1:console": "wrangler d1 execute pashto-bible-db",
+    "r2:create": "wrangler r2 bucket create pashto-bible-audio",
+    "r2:list": "wrangler r2 bucket list",
+    "r2:objects": "wrangler r2 object list pashto-bible-audio",
+    "login": "wrangler login",
+    "logout": "wrangler logout",
+    "whoami": "wrangler whoami"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^4.47.0"
+  }
+}
