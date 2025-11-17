@@ -34,6 +34,7 @@ import type {
   MorphologyFacets,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
+import { resolveAudioUrl } from "@/app/lib/audio";
 import { TextField, Button, IconButton } from '@mui/material';
 import { dedupByRef } from "../utils/highlight";
 
@@ -690,7 +691,7 @@ export default function ClientHome() {
   };
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
-  const [includeRelated, setIncludeRelated] = useState<boolean>(true);
+  const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
   const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
@@ -837,57 +838,6 @@ export default function ClientHome() {
     if (query === 'ldsoc') {
       setQuery('');
     }
-  }, []);
-
-  // Load audio map data for both translations
-  useEffect(() => {
-    const loadAudioMaps = async () => {
-      try {
-        // Load Afghan 2023 audio map
-        const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-        if (afghanResponse.ok) {
-          const afghanData = await afghanResponse.json();
-          const afghanAudioMap = afghanData || {};
-          const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
-
-            console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Cloudflare, ${driveUrls} Drive)`);
-          setAudioMap(afghanAudioMap);
-
-          if (driveUrls > 0) {
-            console.warn(`⚠️ Afghan 2023 audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Afghan 2023 audio map API returned error:', afghanResponse.status, afghanResponse.statusText);
-          setAudioMap({});
-        }
-
-        // Load Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-        if (yousafzaiResponse.ok) {
-          const yousafzaiData = await yousafzaiResponse.json();
-          const yousafzaiAudioMap = yousafzaiData || {};
-          const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
-
-            console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
-          setYousafzaiAudioMap(yousafzaiAudioMap);
-
-          if (yousafzaiDriveUrls > 0) {
-            console.warn(`⚠️ Yousafzai 2019 audio map contains ${yousafzaiDriveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Yousafzai 2019 audio map API returned error:', yousafzaiResponse.status, yousafzaiResponse.statusText);
-          setYousafzaiAudioMap({});
-        }
-      } catch (error) {
-        console.error('Failed to load audio maps:', error);
-        // Audio maps are optional, so we can continue without them
-        setAudioMap({});
-        setYousafzaiAudioMap({});
-      }
-    };
-    loadAudioMaps();
   }, []);
 
   // Fetch audio clips when videos tab is active
@@ -1117,86 +1067,39 @@ export default function ClientHome() {
     debouncedTranscriptSearch(query);
   };
 
-  // Refresh audio maps when results change to ensure we have latest URLs
-  useEffect(() => {
-    // Only refresh if we have results but no audio map for the active translation
-    const currentAudioMap = activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap;
-    if (results.length > 0 && Object.keys(currentAudioMap).length === 0) {
-      const refreshAudioMaps = async () => {
-        try {
-          // Refresh Afghan 2023 audio map
-          const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-          if (afghanResponse.ok) {
-            const afghanData = await afghanResponse.json();
-            const newAfghanAudioMap = afghanData || {};
-            console.log(`Refreshed Afghan 2023 audio map: ${Object.keys(newAfghanAudioMap).length} entries`);
-            setAudioMap(newAfghanAudioMap);
-          }
-
-          // Refresh Yousafzai 2019 audio map
-          const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-          if (yousafzaiResponse.ok) {
-            const yousafzaiData = await yousafzaiResponse.json();
-            const newYousafzaiAudioMap = yousafzaiData || {};
-            console.log(`Refreshed Yousafzai 2019 audio map: ${Object.keys(newYousafzaiAudioMap).length} entries`);
-            setYousafzaiAudioMap(newYousafzaiAudioMap);
-          }
-        } catch (error) {
-          console.error('Failed to refresh audio maps:', error);
-        }
-      };
-      refreshAudioMaps();
-    }
-  }, [results.length, activeTranslation]); // Remove audioMap dependency to prevent excessive re-runs
-
-  // Manual audio map refresh function
+  // Refresh audio URLs by probing the Cloudflare worker for the first batch of visible results
   const refreshAudioMap = useCallback(async () => {
+    const sliceSize = Math.min(100, results.length);
+    const target = results.slice(0, sliceSize);
+
+    if (target.length === 0) {
+      console.warn('No results available to refresh audio URLs');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      
-      // Refresh Afghan 2023 audio map
-      const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-      if (afghanResponse.ok) {
-        const afghanData = await afghanResponse.json();
-        const newAfghanAudioMap = afghanData || {};
-        const afghanDriveUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
+      const resolved: Record<string, string> = {};
 
-          console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Cloudflare, ${afghanDriveUrls} Drive)`);
-        setAudioMap(newAfghanAudioMap);
-
-        // Refresh Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-        if (yousafzaiResponse.ok) {
-          const yousafzaiData = await yousafzaiResponse.json();
-          const newYousafzaiAudioMap = yousafzaiData || {};
-          const yousafzaiDriveUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('cloudflare')).length;
-
-            console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Cloudflare, ${yousafzaiDriveUrls} Drive)`);
-          setYousafzaiAudioMap(newYousafzaiAudioMap);
-
-          const totalDriveUrls = afghanDriveUrls + yousafzaiDriveUrls;
-          const totalStorageUrls = afghanStorageUrls + yousafzaiStorageUrls;
-
-          if (totalDriveUrls > 0) {
-            alert(`Audio maps refreshed with ${totalDriveUrls} Google Drive URLs still present. Try refreshing again.`);
-          } else {
-              alert(`Audio maps refreshed with ${totalStorageUrls} Cloudflare storage URLs!`);
-          }
-        } else {
-          alert('Failed to refresh Yousafzai 2019 audio map');
+      for (const verse of target) {
+        if (!verse?.ref) continue;
+        const translationKey = verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+        const url = await resolveAudioUrl(verse.ref, null, { translation: translationKey });
+        if (url) {
+          resolved[verse.ref] = url;
         }
-      } else {
-        alert('Failed to refresh Afghan 2023 audio map');
+      }
+
+      if (Object.keys(resolved).length > 0) {
+        setAudioMap((prev) => ({ ...prev, ...resolved }));
+        setYousafzaiAudioMap((prev) => ({ ...prev, ...resolved }));
       }
     } catch (error) {
-      console.error('Failed to refresh audio maps:', error);
-      alert('Failed to refresh audio maps');
+      console.error('Failed to refresh audio URLs from Cloudflare:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [setAudioMap, setYousafzaiAudioMap, setIsLoading]);
+  }, [results]);
 
   // Filter results by selected books
   const filteredResults = useMemo(() => {
@@ -1644,6 +1547,13 @@ export default function ClientHome() {
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
   useEffect(() => {
+    // When disabling related-forms mode, clear any cached variants and related data
+    if (!includeRelated && previousIncludeRelated.current) {
+      setRelatedForms(null);
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+    }
+
     // Only trigger if includeRelated actually changed (not on initial mount)
     if (previousIncludeRelated.current !== includeRelated && query.trim()) {
       console.log('DEBUG: Related Forms Mode toggled, triggering new search');

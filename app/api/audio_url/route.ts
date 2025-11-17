@@ -86,24 +86,29 @@ async function getVerseOrdinal(
   verse: number,
   translation: 'afghan2023' | 'yousafzai2019',
 ): Promise<number | null> {
-  if (!verseOrdinalCache[translation]) {
-    const verses = await loadVerses(translation);
-    const map = new Map<string, number>();
-    let ordinal = 1;
+  try {
+    if (!verseOrdinalCache[translation]) {
+      const verses = await loadVerses(translation);
+      const map = new Map<string, number>();
+      let ordinal = 1;
 
-    for (const v of verses) {
-      const key = `${normaliseBookSlug(v.book)} ${v.chapter}:${v.verse}`;
-      if (!map.has(key)) {
-        map.set(key, ordinal++);
+      for (const v of verses) {
+        const key = `${normaliseBookSlug(v.book)} ${v.chapter}:${v.verse}`;
+        if (!map.has(key)) {
+          map.set(key, ordinal++);
+        }
       }
+
+      verseOrdinalCache[translation] = map;
     }
 
-    verseOrdinalCache[translation] = map;
+    const cache = verseOrdinalCache[translation]!;
+    const lookupKey = `${normaliseBookSlug(book)} ${chapter}:${verse}`;
+    return cache.get(lookupKey) ?? null;
+  } catch (error) {
+    console.warn('Skipping ordinal lookup (verse dataset unavailable):', error);
+    return null;
   }
-
-  const cache = verseOrdinalCache[translation]!;
-  const lookupKey = `${normaliseBookSlug(book)} ${chapter}:${verse}`;
-  return cache.get(lookupKey) ?? null;
 }
 
 async function buildCandidateKeys(
@@ -182,7 +187,10 @@ async function fetchVerse(ref: string, translation: 'afghan2023' | 'yousafzai201
 
 function toStreamUrl(r2Key: string | null | undefined) {
   if (!r2Key) return null;
-  return `${WORKER_URL}/api/audio/stream/${encodeURIComponent(r2Key)}`;
+
+  // Encode the key without escaping path separators so nested folders are preserved
+  const safeKey = encodeURI(r2Key);
+  return `${WORKER_URL}/api/audio/stream/${safeKey}`;
 }
 
 async function keyExists(r2Key: string | null | undefined) {
@@ -233,6 +241,12 @@ async function resolveAudioUrl(ref: string, translation: 'afghan2023' | 'yousafz
       const url = toStreamUrl(candidate);
       if (url) return url;
     }
+  }
+
+  // As a last resort, return the first candidate even if existence checks failed
+  if (fallbackCandidates.length > 0) {
+    const url = toStreamUrl(fallbackCandidates[0]);
+    if (url) return url;
   }
 
   return null;
