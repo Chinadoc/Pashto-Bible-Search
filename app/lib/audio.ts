@@ -82,9 +82,8 @@ function extractEntryValue(raw: unknown): string | null {
     'url',
     'publicUrl',
     'public_url',
-    'google_drive_url',
-    'google_drive_file_id',
-    'id',
+    'r2_key',
+    'audio_r2_key',
   ];
 
   for (const key of priorityKeys) {
@@ -160,23 +159,20 @@ export async function resolveAudioUrl(ref: string, entry?: unknown): Promise<str
 
 function audioEntryToUrl(entry: string): string {
   if (!entry) return '';
+
+  // If it's already a full URL, return as-is
   if (entry.startsWith('http://') || entry.startsWith('https://')) {
     return entry;
   }
-  if (entry.startsWith('gs://')) {
-    const publicBase = process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE;
-    if (publicBase) {
-      const withoutScheme = entry.replace(/^gs:\/\//, '');
-      const [bucket, ...rest] = withoutScheme.split('/');
-      const pathPart = rest.join('/');
-      if (!bucket) {
-        return `${publicBase.replace(/\/$/, '')}/${pathPart}`;
-      }
-      if (publicBase.includes(bucket)) {
-        return `${publicBase.replace(/\/$/, '')}/${pathPart}`;
-      }
-      return `${publicBase.replace(/\/$/, '')}/${bucket}/${pathPart}`;
-    }
+
+  // If it's an R2 key, construct Cloudflare Worker streaming URL
+  // Format: afghan2023/nt/matthew1_verse_001.mp3 or yousafzai2019/ot/genesis1_verse_001.mp3
+  if (entry.includes('/') && (entry.startsWith('afghan2023/') || entry.startsWith('yousafzai2019/'))) {
+    const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+    return `${workerUrl}/api/audio/stream/${encodeURIComponent(entry)}`;
   }
-  return `https://drive.google.com/uc?export=download&id=${entry}`;
+
+  // Fallback: assume it's an R2 key and construct URL
+  const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+  return `${workerUrl}/api/audio/stream/${encodeURIComponent(entry)}`;
 }
