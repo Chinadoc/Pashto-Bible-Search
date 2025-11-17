@@ -17,6 +17,13 @@ export interface VerbFilterState {
   mood: VerbFilterMood;
 }
 
+export interface MultiVerbFilterState {
+  person: VerbFilterPerson[];
+  tense: VerbFilterTense[];
+  aspect: VerbFilterAspect[];
+  mood: VerbFilterMood[];
+}
+
 // Inflection reason filters
 export type InflectionReasonFilter = 'all' | 'plural' | 'sandwich' | 'transitive_past';
 
@@ -28,6 +35,11 @@ export interface NounFilterState {
   inflectionType: NounInflectionType;
   gender: NounGender;
   inflectionReason?: InflectionReasonFilter; // Filter by why word is inflected
+  category?: string | 'all';
+  grammaticalCase?: string | 'all';
+  number?: string | 'all';
+  lexicalGender?: string | 'all';
+  pluralType?: string | 'all';
 }
 
 // Adjective inflection filters (same as nouns)
@@ -37,6 +49,36 @@ export type AdjectiveGender = NounGender;
 export interface AdjectiveFilterState {
   inflectionType: AdjectiveInflectionType;
   gender: AdjectiveGender;
+  category?: string | 'all';
+  grammaticalCase?: string | 'all';
+  number?: string | 'all';
+}
+
+export interface MorphologyFacetBucket {
+  value: string;
+  count: number;
+}
+
+export interface MorphologyFacets {
+  inflectionCategories: MorphologyFacetBucket[];
+  inflectionCases: MorphologyFacetBucket[];
+  inflectionNumbers: MorphologyFacetBucket[];
+  inflectionGenders: MorphologyFacetBucket[];
+  nounLexiconGenders: MorphologyFacetBucket[];
+  nounPluralTypes: MorphologyFacetBucket[];
+}
+
+export interface DictionaryEntry {
+  pashto: string;
+  romanized?: string | null;
+  pos?: string | null;
+  english?: string | null;
+}
+
+export interface DictionaryData {
+  entries: DictionaryEntry[];
+  groupedByPos: Record<string, DictionaryEntry[]>;
+  needsDisambiguation: boolean;
 }
 
 export interface Verse {
@@ -67,8 +109,16 @@ export interface RelatedFormVariant {
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   score?: number;
   romanized?: string;
+  source?: string; // Source table or resolver that produced the variant
   flags?: string[];
   inflectionType?: string; // e.g., 'plain', '1st_m', '1st_f', '2nd', 'vocative_m', 'plural_m', etc.
+  inflectionCategory?: string;
+  grammaticalCase?: string;
+  grammaticalNumber?: string;
+  gender?: string;
+  pluralType?: string;
+  lexicalGender?: string;
+  grammaticalInfo?: Record<string, any> | null;
   inflectionReasons?: {
     plural: number;
     sandwich: number;
@@ -89,10 +139,14 @@ export interface RelatedFormsData {
   searchedForm?: string; // The original form that was searched (for conjugated forms)
   verbs?: RelatedFormVariant[];
   nouns?: RelatedFormVariant[];
+  adjectives?: RelatedFormVariant[];
   other?: RelatedFormVariant[];
+  romanization?: string;
+  english?: string;
   forms?: {
     verbs?: RelatedFormVariant[];
     nouns?: RelatedFormVariant[];
+    adjectives?: RelatedFormVariant[];
     other?: RelatedFormVariant[];
   };
   total?: number;

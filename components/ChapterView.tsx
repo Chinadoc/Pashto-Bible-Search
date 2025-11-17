@@ -32,7 +32,7 @@ export default function ChapterView({ book, chapter, translation = 'afghan2023' 
       setError(null);
 
       try {
-        // Fetch chapter verses from Supabase via API (includes audio URLs)
+        // Fetch chapter verses via the API (includes audio URLs from Cloudflare storage)
         const response = await fetch(`/api/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}&translation=${translation}`);
 
         if (!response.ok) {

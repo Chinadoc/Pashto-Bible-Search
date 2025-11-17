@@ -1,19 +1,7 @@
 "use client";
 
 import React from 'react';
-
-interface DictionaryEntry {
-  pashto: string;
-  romanized?: string | null;
-  pos?: string | null;
-  english?: string | null;
-}
-
-interface DictionaryData {
-  entries: DictionaryEntry[];
-  groupedByPos: Record<string, DictionaryEntry[]>;
-  needsDisambiguation: boolean;
-}
+import type { DictionaryEntry, DictionaryData } from '@/types';
 
 interface Props {
   dictionary?: DictionaryData;

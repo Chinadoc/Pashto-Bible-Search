@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 interface AudioPlayerProps {
   audioUrl: string | null | undefined;
@@ -23,9 +23,42 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
     );
   }
 
-  // All audio now comes from Cloudflare R2 via worker streaming endpoint
-  const streamingUrl = audioUrl;
-  const downloadUrl = audioUrl;
+  // Determine if this is a Google Drive URL or an R2/Cloudflare URL
+  const isGoogleDrive = useMemo(() => {
+    return audioUrl.includes('drive.google.com');
+  }, [audioUrl]);
+
+  // Extract file ID from Google Drive URL (only if it's Google Drive)
+  const fileId = useMemo(() => {
+    if (!isGoogleDrive) return null;
+
+    let id: string | null = null;
+
+    // Extract file ID from various formats
+    let match = audioUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)\//);
+    if (match) {
+      id = match[1];
+    }
+    if (!id) {
+      match = audioUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+      if (match) {
+        id = match[1];
+      }
+    }
+
+    return id;
+  }, [audioUrl, isGoogleDrive]);
+
+  // Use appropriate URL based on source
+  // R2/Cloudflare URLs can be used directly, Google Drive needs proxy
+  const CLOUDFLARE_WORKER_URL = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+  const streamingUrl = isGoogleDrive && fileId
+    ? `${CLOUDFLARE_WORKER_URL}?id=${fileId}` // Google Drive via proxy
+    : audioUrl; // R2/Cloudflare URLs work directly
+
+  const downloadUrl = isGoogleDrive && fileId
+    ? `https://drive.google.com/uc?export=download&id=${fileId}` // Google Drive download
+    : audioUrl; // R2/Cloudflare URLs can be downloaded directly
 
   // Auto-load audio when component mounts if autoLoad is true
   useEffect(() => {
@@ -68,6 +101,7 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
       code: errorCode,
       message: errorMessage,
       url: streamingUrl,
+      fileId,
     });
 
     setError(`Audio could not be loaded (Error ${errorCode}). Try downloading instead.`);
@@ -119,10 +153,29 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
               href={downloadUrl}
               download
               className="text-xs text-blue-300 hover:text-blue-200 underline"
-              title="Download audio file"
             >
               Download
             </a>
+            <span className="text-gray-400">|</span>
+            {isGoogleDrive ? (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+              >
+                Open in Drive
+              </a>
+            ) : (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+              >
+                Open
+              </a>
+            )}
           </div>
         </div>
       ) : (
@@ -141,10 +194,32 @@ export default function AudioPlayer({ audioUrl, verseRef, autoLoad = false }: Au
               href={downloadUrl}
               download
               className="text-xs text-blue-300 hover:text-blue-200 underline"
-              title="Download audio file"
+              title="Download audio"
             >
               Download
             </a>
+
+            {isGoogleDrive ? (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+                title="Open in Google Drive"
+              >
+                Open in Drive
+              </a>
+            ) : (
+              <a
+                href={audioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-300 hover:text-blue-200 underline"
+                title="Open audio URL"
+              >
+                Open
+              </a>
+            )}
           </div>
         )
       )}
