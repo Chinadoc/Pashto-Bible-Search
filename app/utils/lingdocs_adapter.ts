@@ -12,7 +12,7 @@ import { generateVerbVariantsLingDocs, generateNounVariantsLingDocs } from './li
 import type { Variant } from './verb_variants';
 
 // LingDocs adapter now uses the actual LingDocs library through lingdocs_integration.ts
-// No need for Supabase client or custom metadata fetching anymore
+// No additional remote metadata clients are required anymore
 
 // Main function that uses LingDocs for enhanced verb variant generation
 export async function generateEnhancedVerbVariants(

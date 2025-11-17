@@ -30,8 +30,11 @@ import type {
   AdjectiveInflectionType,
   AdjectiveGender,
   SearchLanguage,
+  MultiVerbFilterState,
+  MorphologyFacets,
 } from "../types";
 import { ComplexityLevel } from "../components/CoverageGrid";
+import { resolveAudioUrl } from "@/app/lib/audio";
 import { TextField, Button, IconButton } from '@mui/material';
 import { dedupByRef } from "../utils/highlight";
 
@@ -54,14 +57,6 @@ const DEFAULT_VERB_FILTER: VerbFilterState = {
   mood: 'all',
 };
 
-// New multi-select filter state
-interface MultiVerbFilterState {
-  person: VerbFilterPerson[];
-  tense: VerbFilterTense[];
-  aspect: VerbFilterAspect[];
-  mood: VerbFilterMood[];
-}
-
 const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
   person: ['all'],
   tense: ['all'],
@@ -72,11 +67,20 @@ const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
 const DEFAULT_NOUN_FILTER: NounFilterState = {
   inflectionType: 'all',
   gender: 'all',
+  inflectionReason: 'all',
+  category: 'all',
+  grammaticalCase: 'all',
+  number: 'all',
+  lexicalGender: 'all',
+  pluralType: 'all',
 };
 
 const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
+  category: 'all',
+  grammaticalCase: 'all',
+  number: 'all',
 };
 
 const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
@@ -329,17 +333,38 @@ function matchesGender(label: string, gender: NounGender): boolean {
   return true;
 }
 
+function matchesFacet(value: string | undefined, filter?: string | 'all') {
+  if (!filter || filter === 'all') return true;
+  if (!value) return false;
+  return value.toLowerCase() === filter.toLowerCase();
+}
+
 function filterNounVariants(
   nouns: RelatedFormVariant[] | undefined,
   filters: NounFilterState
 ): RelatedFormVariant[] {
   if (!nouns?.length) return [];
-  
+
   const filtered = nouns.filter((variant) => {
     const label = normalizeLabel(variant.label);
+    const reasons = variant.inflectionReasons;
+    const matchesReason = (() => {
+      if (!filters.inflectionReason || filters.inflectionReason === 'all') return true;
+      if (!reasons) return false;
+      if (filters.inflectionReason === 'plural') return (reasons.plural || 0) > 0;
+      if (filters.inflectionReason === 'sandwich') return (reasons.sandwich || 0) > 0 || (reasons.sandwich_types?.length || 0) > 0;
+      if (filters.inflectionReason === 'transitive_past') return (reasons.transitive_past || 0) > 0;
+      return true;
+    })();
     return (
       matchesNounInflectionType(label, filters.inflectionType) &&
-      matchesGender(label, filters.gender)
+      matchesReason &&
+      (matchesGender(label, filters.gender) || matchesFacet(variant.gender, filters.gender)) &&
+      matchesFacet(variant.inflectionCategory || variant.inflectionType, filters.category) &&
+      matchesFacet(variant.grammaticalCase, filters.grammaticalCase) &&
+      matchesFacet(variant.grammaticalNumber, filters.number) &&
+      matchesFacet(variant.gender || variant.lexicalGender, filters.lexicalGender || filters.gender) &&
+      matchesFacet(variant.pluralType, filters.pluralType)
     );
   });
 
@@ -356,7 +381,10 @@ function filterAdjectiveVariants(
     const label = normalizeLabel(variant.label);
     return (
       matchesNounInflectionType(label, filters.inflectionType) &&
-      matchesGender(label, filters.gender)
+      matchesGender(label, filters.gender) &&
+      matchesFacet(variant.inflectionCategory || variant.inflectionType, filters.category) &&
+      matchesFacet(variant.grammaticalCase, filters.grammaticalCase) &&
+      matchesFacet(variant.grammaticalNumber, filters.number)
     );
   });
 
@@ -364,11 +392,26 @@ function filterAdjectiveVariants(
 }
 
 function isDefaultNounFilter(filters: NounFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all';
+  return (
+    filters.inflectionType === 'all' &&
+    filters.gender === 'all' &&
+    (!filters.inflectionReason || filters.inflectionReason === 'all') &&
+    (filters.category === 'all' || !filters.category) &&
+    (filters.grammaticalCase === 'all' || !filters.grammaticalCase) &&
+    (filters.number === 'all' || !filters.number) &&
+    (filters.lexicalGender === 'all' || !filters.lexicalGender) &&
+    (filters.pluralType === 'all' || !filters.pluralType)
+  );
 }
 
 function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
-  return filters.inflectionType === 'all' && filters.gender === 'all';
+  return (
+    filters.inflectionType === 'all' &&
+    filters.gender === 'all' &&
+    (filters.category === 'all' || !filters.category) &&
+    (filters.grammaticalCase === 'all' || !filters.grammaticalCase) &&
+    (filters.number === 'all' || !filters.number)
+  );
 }
 
 // Enhanced search controls component with all filters
@@ -403,16 +446,13 @@ function SearchControls({
 }) {
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Scope:
-          </label>
+      <div className="control-bar">
+        <div className="control-block">
+          <span className="control-label">Scope</span>
           <select
             value={scope}
             onChange={(e) => setScope(e.target.value as Scope)}
-            className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="control-select"
           >
             <option value="all">All Bible</option>
             <option value="ot">Old Testament</option>
@@ -420,130 +460,112 @@ function SearchControls({
           </select>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Mode:</span>
-          <div className="flex items-center gap-2">
+        <div className="control-block min-w-[220px]">
+          <span className="control-label">Search Mode</span>
+          <div className="flex flex-wrap gap-2">
             <button
+              type="button"
               onClick={() => setIncludeRelated(false)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                !includeRelated
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+              className={`control-toggle ${!includeRelated ? 'is-active' : ''}`}
             >
               Standard Search
             </button>
             <button
+              type="button"
               onClick={() => setIncludeRelated(true)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                includeRelated
-                  ? 'bg-green-500 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+              className={`control-toggle ${includeRelated ? 'is-active' : ''}`}
             >
-              🔍 Related Forms Mode
+              🔍 Related Forms
             </button>
           </div>
         </div>
 
-        {/* LingDocs-style Inflections/Conjugations Button */}
-        <div className="flex items-center gap-2">
+        <div className="control-block flex-1 min-w-[250px]">
+          <span className="control-label">Inflections / Conjugations</span>
           <button
+            type="button"
             onClick={() => setIncludeRelated(!includeRelated)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-              includeRelated
-                ? 'bg-purple-600 text-white border-purple-600 shadow-lg transform scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-            }`}
+            className={`btn flex items-center gap-2 ${includeRelated ? 'btn--violet' : 'btn--ghost'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
             </svg>
-            {includeRelated ? 'Search in Inflections/Conjugations' : 'Search Inflections/Conjugations'}
+            {includeRelated ? 'Searching Inflections / Conjugations' : 'Search Inflections & Conjugations'}
           </button>
         </div>
 
-        {/* Show indicator when Inflections/Conjugations search is active */}
         {includeRelated && (
-          <div className="w-full px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-md">
-            <p className="text-xs text-purple-700 dark:text-purple-300">
-              🔍 Search in Inflections/Conjugations Active - Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
-            </p>
+          <div className="callout callout--purple w-full">
+            🔍 Search in Inflections/Conjugations Active — Finding all morphological variants including conjugated verbs, inflected nouns, and related grammatical forms
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search:</span>
+        <div className="control-block">
+          <span className="control-label">Match Type</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEnableFuzzy(false)}
+              className={`control-toggle ${!enableFuzzy ? 'is-active' : ''}`}
+            >
+              Exact
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnableFuzzy(true)}
+              className={`control-toggle ${enableFuzzy ? 'is-active' : ''}`}
+            >
+              Fuzzy
+            </button>
+          </div>
+        </div>
+
+        <div className="control-block">
+          <span className="control-label">Language</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('pashto')}
+              className={`control-toggle ${searchLanguage === 'pashto' ? 'is-active' : ''}`}
+              title="Search directly in Pashto"
+            >
+              🕌 Pashto
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('english')}
+              className={`control-toggle ${searchLanguage === 'english' ? 'is-active' : ''}`}
+              title="Search in English - finds dictionary matches and searches Pashto equivalents"
+            >
+              🇬🇧 English
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchLanguage('anki')}
+              className={`control-toggle ${searchLanguage === 'anki' ? 'is-active' : ''}`}
+              title="Anki Export Mode - search for words and export to Anki flashcards with audio"
+            >
+              📚 Anki
+            </button>
+          </div>
+        </div>
+
+        <div className="control-block min-w-[160px]">
+          <span className="control-label">Audio Map</span>
           <button
-            onClick={() => setEnableFuzzy(false)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              !enableFuzzy
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+            type="button"
+            onClick={refreshAudioMap}
+            disabled={isLoading}
+            className="btn btn--ghost"
+            title="Refresh audio URLs (get latest Cloudflare storage URLs)"
           >
-            Exact
-          </button>
-          <button
-            onClick={() => setEnableFuzzy(true)}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              enableFuzzy
-                ? 'bg-purple-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Fuzzy
+            🔄 Refresh Audio
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language:</span>
-          <button
-            onClick={() => setSearchLanguage('pashto')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'pashto'
-                ? 'bg-sky-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search directly in Pashto"
-          >
-            🕌 Pashto
-          </button>
-          <button
-            onClick={() => setSearchLanguage('english')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'english'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Search in English - finds dictionary matches and searches Pashto equivalents"
-          >
-            🇬🇧 English
-          </button>
-          <button
-            onClick={() => setSearchLanguage('anki')}
-            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-              searchLanguage === 'anki'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-            title="Anki Export Mode - search for words and export to Anki flashcards with audio"
-          >
-            📚 Anki
-          </button>
-        </div>
-
-        <button
-          onClick={refreshAudioMap}
-          disabled={isLoading}
-          className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded border disabled:opacity-50"
-          title="Refresh audio URLs (get latest Supabase Storage URLs)"
-        >
-          🔄 Audio
-        </button>
-
-        <div className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
-          {resultsCount} results
+        <div className="control-block text-right min-w-[140px]">
+          <span className="control-label">Results</span>
+          <div className="text-xl font-semibold text-white">{resultsCount}</div>
         </div>
       </div>
     </div>
@@ -669,7 +691,7 @@ export default function ClientHome() {
   };
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
-  const [includeRelated, setIncludeRelated] = useState<boolean>(true);
+  const [includeRelated, setIncludeRelated] = useState<boolean>(false);
   const [enableFuzzy, setEnableFuzzy] = useState<boolean>(false);
   const [bookFilter, setBookFilter] = useState<string[]>([]);
   const [relatedForms, setRelatedForms] = useState<RelatedFormsData | null>(null);
@@ -693,6 +715,7 @@ export default function ClientHome() {
   const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
+  const [morphologyFacets, setMorphologyFacets] = useState<MorphologyFacets | null>(null);
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
@@ -724,8 +747,7 @@ export default function ClientHome() {
   // useEffect to trigger search when noun filters change
   useEffect(() => {
     if (includeRelated && relatedForms && query.trim()) {
-      const stateChanged =
-        nounFilters.inflectionType !== 'all' || nounFilters.gender !== 'all';
+      const stateChanged = !isDefaultNounFilter(nounFilters);
 
       if (stateChanged) {
         console.log('🔄 Noun filter changed, applying filter without re-searching');
@@ -733,13 +755,21 @@ export default function ClientHome() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nounFilters.inflectionType, nounFilters.gender]);
+  }, [
+    nounFilters.inflectionType,
+    nounFilters.gender,
+    nounFilters.category,
+    nounFilters.grammaticalCase,
+    nounFilters.number,
+    nounFilters.lexicalGender,
+    nounFilters.pluralType,
+    nounFilters.inflectionReason,
+  ]);
 
   // useEffect to trigger search when adjective filters change
   useEffect(() => {
     if (includeRelated && relatedForms && query.trim()) {
-      const stateChanged =
-        adjectiveFilters.inflectionType !== 'all' || adjectiveFilters.gender !== 'all';
+      const stateChanged = !isDefaultAdjectiveFilter(adjectiveFilters);
 
       if (stateChanged) {
         console.log('🔄 Adjective filter changed, applying filter without re-searching');
@@ -747,7 +777,13 @@ export default function ClientHome() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjectiveFilters.inflectionType, adjectiveFilters.gender]);
+  }, [
+    adjectiveFilters.inflectionType,
+    adjectiveFilters.gender,
+    adjectiveFilters.category,
+    adjectiveFilters.grammaticalCase,
+    adjectiveFilters.number,
+  ]);
 
   // Load persisted preferences on mount
   useEffect(() => {
@@ -760,6 +796,23 @@ export default function ClientHome() {
     setAdjectiveFilters(loadPersisted('adjectiveFilters', DEFAULT_ADJECTIVE_FILTER));
     const savedLanguage = loadPersisted<SearchLanguage>('searchLanguage', 'pashto');
     setSearchLanguage(savedLanguage === 'english' ? 'english' : 'pashto');
+  }, []);
+
+  // Load persisted facet buckets from Cloudflare D1 to power morphology filters
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/morphology/facets')
+      .then(res => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setMorphologyFacets(data);
+        }
+      })
+      .catch((err) => console.warn('Failed to load morphology facets', err));
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Persist preferences when they change
@@ -785,57 +838,6 @@ export default function ClientHome() {
     if (query === 'ldsoc') {
       setQuery('');
     }
-  }, []);
-
-  // Load audio map data for both translations
-  useEffect(() => {
-    const loadAudioMaps = async () => {
-      try {
-        // Load Afghan 2023 audio map
-        const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-        if (afghanResponse.ok) {
-          const afghanData = await afghanResponse.json();
-          const afghanAudioMap = afghanData || {};
-          const driveUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const storageUrls = Object.values(afghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-          console.log(`Afghan 2023 audio map loaded: ${Object.keys(afghanAudioMap).length} entries (${storageUrls} Supabase, ${driveUrls} Drive)`);
-          setAudioMap(afghanAudioMap);
-
-          if (driveUrls > 0) {
-            console.warn(`⚠️ Afghan 2023 audio map contains ${driveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Afghan 2023 audio map API returned error:', afghanResponse.status, afghanResponse.statusText);
-          setAudioMap({});
-        }
-
-        // Load Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-        if (yousafzaiResponse.ok) {
-          const yousafzaiData = await yousafzaiResponse.json();
-          const yousafzaiAudioMap = yousafzaiData || {};
-          const yousafzaiDriveUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(yousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-          console.log(`Yousafzai 2019 audio map loaded: ${Object.keys(yousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
-          setYousafzaiAudioMap(yousafzaiAudioMap);
-
-          if (yousafzaiDriveUrls > 0) {
-            console.warn(`⚠️ Yousafzai 2019 audio map contains ${yousafzaiDriveUrls} Google Drive URLs - consider manual refresh`);
-          }
-        } else {
-          console.warn('Yousafzai 2019 audio map API returned error:', yousafzaiResponse.status, yousafzaiResponse.statusText);
-          setYousafzaiAudioMap({});
-        }
-      } catch (error) {
-        console.error('Failed to load audio maps:', error);
-        // Audio maps are optional, so we can continue without them
-        setAudioMap({});
-        setYousafzaiAudioMap({});
-      }
-    };
-    loadAudioMaps();
   }, []);
 
   // Fetch audio clips when videos tab is active
@@ -1065,86 +1067,39 @@ export default function ClientHome() {
     debouncedTranscriptSearch(query);
   };
 
-  // Refresh audio maps when results change to ensure we have latest URLs
-  useEffect(() => {
-    // Only refresh if we have results but no audio map for the active translation
-    const currentAudioMap = activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap;
-    if (results.length > 0 && Object.keys(currentAudioMap).length === 0) {
-      const refreshAudioMaps = async () => {
-        try {
-          // Refresh Afghan 2023 audio map
-          const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-          if (afghanResponse.ok) {
-            const afghanData = await afghanResponse.json();
-            const newAfghanAudioMap = afghanData || {};
-            console.log(`Refreshed Afghan 2023 audio map: ${Object.keys(newAfghanAudioMap).length} entries`);
-            setAudioMap(newAfghanAudioMap);
-          }
-
-          // Refresh Yousafzai 2019 audio map
-          const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-          if (yousafzaiResponse.ok) {
-            const yousafzaiData = await yousafzaiResponse.json();
-            const newYousafzaiAudioMap = yousafzaiData || {};
-            console.log(`Refreshed Yousafzai 2019 audio map: ${Object.keys(newYousafzaiAudioMap).length} entries`);
-            setYousafzaiAudioMap(newYousafzaiAudioMap);
-          }
-        } catch (error) {
-          console.error('Failed to refresh audio maps:', error);
-        }
-      };
-      refreshAudioMaps();
-    }
-  }, [results.length, activeTranslation]); // Remove audioMap dependency to prevent excessive re-runs
-
-  // Manual audio map refresh function
+  // Refresh audio URLs by probing the Cloudflare worker for the first batch of visible results
   const refreshAudioMap = useCallback(async () => {
+    const sliceSize = Math.min(100, results.length);
+    const target = results.slice(0, sliceSize);
+
+    if (target.length === 0) {
+      console.warn('No results available to refresh audio URLs');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      
-      // Refresh Afghan 2023 audio map
-      const afghanResponse = await fetch('/api/get_audio_map?clear_cache=1');
-      if (afghanResponse.ok) {
-        const afghanData = await afghanResponse.json();
-        const newAfghanAudioMap = afghanData || {};
-        const afghanDriveUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-        const afghanStorageUrls = Object.values(newAfghanAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
+      const resolved: Record<string, string> = {};
 
-        console.log(`Afghan 2023 audio map refreshed: ${Object.keys(newAfghanAudioMap).length} entries (${afghanStorageUrls} Supabase, ${afghanDriveUrls} Drive)`);
-        setAudioMap(newAfghanAudioMap);
-
-        // Refresh Yousafzai 2019 audio map
-        const yousafzaiResponse = await fetch('/api/get_yousafzai_audio_map?clear_cache=1');
-        if (yousafzaiResponse.ok) {
-          const yousafzaiData = await yousafzaiResponse.json();
-          const newYousafzaiAudioMap = yousafzaiData || {};
-          const yousafzaiDriveUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('drive.google.com')).length;
-          const yousafzaiStorageUrls = Object.values(newYousafzaiAudioMap).filter((url: unknown) => typeof url === 'string' && url.includes('supabase.co/storage')).length;
-
-          console.log(`Yousafzai 2019 audio map refreshed: ${Object.keys(newYousafzaiAudioMap).length} entries (${yousafzaiStorageUrls} Supabase, ${yousafzaiDriveUrls} Drive)`);
-          setYousafzaiAudioMap(newYousafzaiAudioMap);
-
-          const totalDriveUrls = afghanDriveUrls + yousafzaiDriveUrls;
-          const totalStorageUrls = afghanStorageUrls + yousafzaiStorageUrls;
-
-          if (totalDriveUrls > 0) {
-            alert(`Audio maps refreshed with ${totalDriveUrls} Google Drive URLs still present. Try refreshing again.`);
-          } else {
-            alert(`Audio maps refreshed with ${totalStorageUrls} Supabase Storage URLs!`);
-          }
-        } else {
-          alert('Failed to refresh Yousafzai 2019 audio map');
+      for (const verse of target) {
+        if (!verse?.ref) continue;
+        const translationKey = verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023';
+        const url = await resolveAudioUrl(verse.ref, null, { translation: translationKey });
+        if (url) {
+          resolved[verse.ref] = url;
         }
-      } else {
-        alert('Failed to refresh Afghan 2023 audio map');
+      }
+
+      if (Object.keys(resolved).length > 0) {
+        setAudioMap((prev) => ({ ...prev, ...resolved }));
+        setYousafzaiAudioMap((prev) => ({ ...prev, ...resolved }));
       }
     } catch (error) {
-      console.error('Failed to refresh audio maps:', error);
-      alert('Failed to refresh audio maps');
+      console.error('Failed to refresh audio URLs from Cloudflare:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [setAudioMap, setYousafzaiAudioMap, setIsLoading]);
+  }, [results]);
 
   // Filter results by selected books
   const filteredResults = useMemo(() => {
@@ -1592,6 +1547,13 @@ export default function ClientHome() {
   // Trigger new search when Related Forms Mode is toggled (but only if we have a query)
   const previousIncludeRelated = useRef(includeRelated);
   useEffect(() => {
+    // When disabling related-forms mode, clear any cached variants and related data
+    if (!includeRelated && previousIncludeRelated.current) {
+      setRelatedForms(null);
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+    }
+
     // Only trigger if includeRelated actually changed (not on initial mount)
     if (previousIncludeRelated.current !== includeRelated && query.trim()) {
       console.log('DEBUG: Related Forms Mode toggled, triggering new search');
@@ -2280,6 +2242,158 @@ export default function ClientHome() {
                   </div>
                 </div>
 
+                {morphologyFacets && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Inflection Category:
+                      </label>
+                      <select
+                        value={adjectiveFilters.category || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCategories.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Grammatical Case/State:
+                      </label>
+                      <select
+                        value={adjectiveFilters.grammaticalCase || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCases.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Number:
+                      </label>
+                      <select
+                        value={adjectiveFilters.number || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionNumbers.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {morphologyFacets && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Lexicon Gender (noun metadata):
+                      </label>
+                      <select
+                        value={nounFilters.lexicalGender || 'all'}
+                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, lexicalGender: e.target.value as any })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.nounLexiconGenders.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Plural Type:
+                      </label>
+                      <select
+                        value={nounFilters.pluralType || 'all'}
+                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, pluralType: e.target.value as any })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.nounPluralTypes.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Inflection Category:
+                      </label>
+                      <select
+                        value={nounFilters.category || 'all'}
+                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, category: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCategories.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Grammatical Case/State:
+                      </label>
+                      <select
+                        value={nounFilters.grammaticalCase || 'all'}
+                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, grammaticalCase: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCases.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Number:
+                      </label>
+                      <select
+                        value={nounFilters.number || 'all'}
+                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, number: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionNumbers.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {activeVariantForms.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -2356,6 +2470,69 @@ export default function ClientHome() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Inflection Category */}
+                  {morphologyFacets && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Inflection Category:
+                      </label>
+                      <select
+                        value={adjectiveFilters.category || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCategories.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Grammatical Case */}
+                  {morphologyFacets && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Grammatical Case/State:
+                      </label>
+                      <select
+                        value={adjectiveFilters.grammaticalCase || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionCases.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Number */}
+                  {morphologyFacets && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Number:
+                      </label>
+                      <select
+                        value={adjectiveFilters.number || 'all'}
+                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All</option>
+                        {morphologyFacets.inflectionNumbers.map((bucket) => (
+                          <option key={bucket.value} value={bucket.value}>
+                            {bucket.value} ({bucket.count})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {activeVariantForms.length > 0 && (

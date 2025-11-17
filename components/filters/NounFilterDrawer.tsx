@@ -17,6 +17,11 @@ const DEFAULT_NOUN_FILTER = {
   inflectionType: 'all' as NounInflectionType,
   gender: 'all' as NounGender,
   inflectionReason: 'all' as InflectionReasonFilter,
+  category: 'all' as const,
+  grammaticalCase: 'all' as const,
+  number: 'all' as const,
+  lexicalGender: 'all' as const,
+  pluralType: 'all' as const,
 };
 
 export default function NounFilterDrawer({ onApplyFilters }: NounFilterDrawerProps) {

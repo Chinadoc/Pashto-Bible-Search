@@ -41,9 +41,9 @@ export async function searchVerses(
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/search?${params}`);
   
   if (!response.ok) {
-    // If worker is not available, return empty array (will fallback to Supabase)
+    // If worker is not available, return empty array so callers can decide how to proceed
     if (response.status === 404 || response.status >= 500) {
-      console.warn(`D1 Worker unavailable (${response.status}), falling back to Supabase`);
+      console.warn(`D1 Worker unavailable (${response.status}), returning empty search results`);
       return [];
     }
     throw new Error(`Search failed: ${response.statusText}`);
@@ -70,9 +70,9 @@ export async function getVersesByChapter(
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/chapter?${params}`);
   
   if (!response.ok) {
-    // If worker is not available, return empty array (will fallback to Supabase)
+    // If worker is not available, return empty array so callers can decide how to proceed
     if (response.status === 404 || response.status >= 500) {
-      console.warn(`D1 Worker unavailable (${response.status}), falling back to Supabase`);
+      console.warn(`D1 Worker unavailable (${response.status}), returning empty chapter results`);
       return [];
     }
     throw new Error(`Failed to get verses: ${response.statusText}`);
@@ -101,9 +101,9 @@ export async function getVerseByRef(
   }
 
   if (!response.ok) {
-    // If worker is not available, return null (will fallback to Supabase)
+    // If worker is not available, return null so callers can decide how to proceed
     if (response.status >= 500) {
-      console.warn(`D1 Worker unavailable (${response.status}), falling back to Supabase`);
+      console.warn(`D1 Worker unavailable (${response.status}), returning null verse result`);
       return null;
     }
     throw new Error(`Failed to get verse: ${response.statusText}`);

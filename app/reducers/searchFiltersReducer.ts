@@ -3,23 +3,12 @@
  * Centralized state management for all search filters including POS, verb, noun, and adjective filters
  */
 
-import type { 
-  PartOfSpeech, 
-  VerbFilterPerson, 
-  VerbFilterTense, 
-  VerbFilterAspect, 
-  VerbFilterMood,
+import type {
+  PartOfSpeech,
   NounFilterState,
   AdjectiveFilterState,
+  MultiVerbFilterState,
 } from '@/types';
-
-// Multi-select verb filter state
-export interface MultiVerbFilterState {
-  person: VerbFilterPerson[];
-  tense: VerbFilterTense[];
-  aspect: VerbFilterAspect[];
-  mood: VerbFilterMood[];
-}
 
 // Complete filter state
 export interface SearchFiltersState {
@@ -58,11 +47,19 @@ const DEFAULT_NOUN_FILTER: NounFilterState = {
   inflectionType: 'all',
   gender: 'all',
   inflectionReason: 'all',
+  category: 'all',
+  grammaticalCase: 'all',
+  number: 'all',
+  lexicalGender: 'all',
+  pluralType: 'all',
 };
 
 const DEFAULT_ADJECTIVE_FILTER: AdjectiveFilterState = {
   inflectionType: 'all',
   gender: 'all',
+  category: 'all',
+  grammaticalCase: 'all',
+  number: 'all',
 };
 
 export const INITIAL_FILTERS_STATE: SearchFiltersState = {
@@ -193,7 +190,12 @@ export function isDefaultNounFilter(filters: NounFilterState): boolean {
   return (
     filters.inflectionType === 'all' &&
     filters.gender === 'all' &&
-    (filters.inflectionReason === 'all' || !filters.inflectionReason)
+    (filters.inflectionReason === 'all' || !filters.inflectionReason) &&
+    (filters.category === 'all' || !filters.category) &&
+    (filters.grammaticalCase === 'all' || !filters.grammaticalCase) &&
+    (filters.number === 'all' || !filters.number) &&
+    (filters.lexicalGender === 'all' || !filters.lexicalGender) &&
+    (filters.pluralType === 'all' || !filters.pluralType)
   );
 }
 
@@ -203,7 +205,10 @@ export function isDefaultNounFilter(filters: NounFilterState): boolean {
 export function isDefaultAdjectiveFilter(filters: AdjectiveFilterState): boolean {
   return (
     filters.inflectionType === 'all' &&
-    filters.gender === 'all'
+    filters.gender === 'all' &&
+    (filters.category === 'all' || !filters.category) &&
+    (filters.grammaticalCase === 'all' || !filters.grammaticalCase) &&
+    (filters.number === 'all' || !filters.number)
   );
 }
 

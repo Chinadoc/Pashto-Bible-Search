@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase";
 
 interface FrequencyItem {
   form: string;
@@ -227,24 +226,6 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
     return matrix[b.length][a.length];
   }
-
-  // Load audio map for verse references
-  const loadAudioMap = async () => {
-    try {
-      const response = await fetch('/api/get_audio_map');
-      if (response.ok) {
-        const audioData = await response.json();
-        setAudioMap(audioData);
-      }
-    } catch (err) {
-      console.warn('Failed to load audio map:', err);
-    }
-  };
-
-  // Load audio map on component mount
-  useEffect(() => {
-    loadAudioMap();
-  }, []);
 
   // Load user notes from localStorage
   useEffect(() => {

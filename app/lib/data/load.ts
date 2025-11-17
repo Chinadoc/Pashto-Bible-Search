@@ -152,7 +152,7 @@ async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf
 // Pre-compute verses data to avoid repeated decompression
 const versesCache = new Map<TranslationKey, VerseRecord[]>();
 
-async function loadVerses(translation: TranslationKey = 'afghan2023'): Promise<VerseRecord[]> {
+export async function loadVerses(translation: TranslationKey = 'afghan2023'): Promise<VerseRecord[]> {
   if (versesCache.has(translation)) {
     return versesCache.get(translation)!;
   }
@@ -1039,3 +1039,4 @@ export async function getData(): Promise<DataCache> {
     throw error;
   }
 }
+
