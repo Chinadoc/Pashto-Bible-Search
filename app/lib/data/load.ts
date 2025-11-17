@@ -1040,5 +1040,3 @@ export async function getData(): Promise<DataCache> {
   }
 }
 
-// Explicit re-export for modules that rely on named exports from this loader.
-export { loadVerses };

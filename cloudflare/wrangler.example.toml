@@ -1,0 +1,17 @@
+name = "pashto-bible-search"
+main = "cloudflare/worker-api.ts"
+compatibility_date = "2024-06-20"
+account_id = "YOUR_ACCOUNT_ID"
+workers_dev = true
+
+[vars]
+# Worker-level variables can be added here if needed
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pashto-bible-search"
+# preview_database_id = "<optional-preview-id>"
+
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "pashto-bible-audio"
