@@ -338,7 +338,7 @@ export async function POST(request: Request) {
       lookupForm = romanizedToPashtoMap[normalizedRoman];
     }
 
-    let primary = await queryD1First<{
+    let primary: {
       pashto_word: string;
       base_form?: string | null;
       word_type?: string | null;
@@ -346,17 +346,8 @@ export async function POST(request: Request) {
       romanization?: string | null;
       english_translation?: string | null;
       frequency_total?: number | null;
-    }>(
-      db,
-      `SELECT pashto_word, base_form, word_type, pos, romanization, english_translation, frequency_total
-       FROM word_frequencies
-       WHERE pashto_word = ?
-       LIMIT 1`,
-      [lookupForm],
-    );
-
-    if (!primary) {
-      primary = await queryD1First<{
+    } | null =
+      (await queryD1First<{
         pashto_word: string;
         base_form?: string | null;
         word_type?: string | null;
@@ -368,10 +359,29 @@ export async function POST(request: Request) {
         db,
         `SELECT pashto_word, base_form, word_type, pos, romanization, english_translation, frequency_total
          FROM word_frequencies
-         WHERE lower(romanization) = lower(?)
+         WHERE pashto_word = ?
          LIMIT 1`,
         [lookupForm],
-      );
+      )) || null;
+
+    if (!primary) {
+      primary =
+        (await queryD1First<{
+          pashto_word: string;
+          base_form?: string | null;
+          word_type?: string | null;
+          pos?: string | null;
+          romanization?: string | null;
+          english_translation?: string | null;
+          frequency_total?: number | null;
+        }>(
+          db,
+          `SELECT pashto_word, base_form, word_type, pos, romanization, english_translation, frequency_total
+           FROM word_frequencies
+           WHERE lower(romanization) = lower(?)
+           LIMIT 1`,
+          [lookupForm],
+        )) || null;
     }
 
     if (!primary) {
@@ -395,10 +405,11 @@ export async function POST(request: Request) {
         [likeTerm],
       );
 
-      primary = romanizedRows.find((row) => {
-        const normalisedRow = row.romanization ? normaliseRomanization(row.romanization) : '';
-        return normalisedRow.includes(fallbackRomanized) || fallbackRomanized.includes(normalisedRow);
-      });
+      primary =
+        romanizedRows.find((row) => {
+          const normalisedRow = row.romanization ? normaliseRomanization(row.romanization) : '';
+          return normalisedRow.includes(fallbackRomanized) || fallbackRomanized.includes(normalisedRow);
+        }) || null;
     }
 
     const nounLexicon = await queryD1First<{
