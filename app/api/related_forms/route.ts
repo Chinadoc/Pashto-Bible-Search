@@ -310,7 +310,7 @@ export async function POST(request: Request) {
     }
 
     // Find the primary word entry (for metadata and base form)
-    const primary = await queryD1First<{
+    let primary = await queryD1First<{
       pashto_word: string;
       base_form?: string | null;
       word_type?: string | null;
@@ -326,6 +326,25 @@ export async function POST(request: Request) {
        LIMIT 1`,
       [form],
     );
+
+    if (!primary) {
+      primary = await queryD1First<{
+        pashto_word: string;
+        base_form?: string | null;
+        word_type?: string | null;
+        pos?: string | null;
+        romanization?: string | null;
+        english_translation?: string | null;
+        frequency_total?: number | null;
+      }>(
+        db,
+        `SELECT pashto_word, base_form, word_type, pos, romanization, english_translation, frequency_total
+         FROM word_frequencies
+         WHERE lower(romanization) = lower(?)
+         LIMIT 1`,
+        [form],
+      );
+    }
 
     const nounLexicon = await queryD1First<{
       gender?: string | null;

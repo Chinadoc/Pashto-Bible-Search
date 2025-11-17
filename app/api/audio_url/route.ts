@@ -30,8 +30,29 @@ function parseRef(ref: string): { book: string; chapter: number; verse: number }
   return { book: bookRaw.trim(), chapter, verse };
 }
 
+const BOOK_SLUG_ALIASES: Record<string, string[]> = {
+  '1corinthians': ['1corinthians', '1cor', '1co', 'firstcorinthians', '1_corinthians', 'corinthians1'],
+  '2corinthians': ['2corinthians', '2cor', '2co', 'secondcorinthians', '2_corinthians', 'corinthians2'],
+  '1thessalonians': ['1thessalonians', '1thess', 'firstthessalonians', '1_thessalonians', 'thessalonians1'],
+  '2thessalonians': ['2thessalonians', '2thess', 'secondthessalonians', '2_thessalonians', 'thessalonians2'],
+  '1timothy': ['1timothy', '1tim', 'firsttimothy', '1_timothy', 'timothy1'],
+  '2timothy': ['2timothy', '2tim', 'secondtimothy', '2_timothy', 'timothy2'],
+  '1peter': ['1peter', '1pet', 'firstpeter', '1_peter', 'peter1'],
+  '2peter': ['2peter', '2pet', 'secondpeter', '2_peter', 'peter2'],
+  '1john': ['1john', '1jn', 'firstjohn', '1_john', 'john1'],
+  '2john': ['2john', '2jn', 'secondjohn', '2_john', 'john2'],
+  '3john': ['3john', '3jn', 'thirdjohn', '3_john', 'john3'],
+};
+
 function normaliseBookSlug(book: string): string {
   return book.toLowerCase().replace(/\s+/g, '');
+}
+
+function expandBookSlug(book: string): string[] {
+  const slug = normaliseBookSlug(book);
+  const aliases = BOOK_SLUG_ALIASES[slug] || [slug];
+  const withDashes = aliases.map((alias) => alias.replace(/(?<=\d)([a-z])/, '-$1'));
+  return Array.from(new Set([...aliases, ...withDashes]));
 }
 
 function inferTestament(book: string, fallback?: string | null): 'ot' | 'nt' {
@@ -72,18 +93,20 @@ function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2
 
   if (book && chapter && verse) {
     const testament = inferTestament(book, verseMeta?.testament?.toLowerCase?.());
-    const slug = normaliseBookSlug(book);
+    const slugVariants = expandBookSlug(book);
     const chapterPart3 = String(chapter).padStart(3, '0');
     const versePart3 = String(verse).padStart(3, '0');
     const { folderAliases, filenamePrefixes } = TRANSLATION_CONFIG[translation] ?? { folderAliases: [translation], filenamePrefixes: [translation] };
 
     for (const folder of folderAliases) {
-      for (const prefix of filenamePrefixes) {
-        candidates.add(`${folder}/${testament}/${prefix}_${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+      for (const slug of slugVariants) {
+        for (const prefix of filenamePrefixes) {
+          candidates.add(`${folder}/${testament}/${prefix}_${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+        }
+        candidates.add(`${folder}/${testament}/${slug}${chapterPart3}_verse_${versePart3}.mp3`);
+        // Add a non-padded fallback in case files were uploaded without padding
+        candidates.add(`${folder}/${testament}/${slug}${chapter}_verse_${verse}.mp3`);
       }
-      candidates.add(`${folder}/${testament}/${slug}${chapterPart3}_verse_${versePart3}.mp3`);
-      // Add a non-padded fallback in case files were uploaded without padding
-      candidates.add(`${folder}/${testament}/${slug}${chapter}_verse_${verse}.mp3`);
     }
   }
 
