@@ -16,6 +16,13 @@
 
 import type { D1Database } from '@/utils/d1';
 
+// Type for verb lexicon row from D1
+interface VerbLexiconRow {
+  verb_type?: string;
+  helper?: string;
+  lemma?: string;
+}
+
 /**
  * Common noun stems that combine with dynamic verbs
  * These are high-frequency combinations found in biblical text
@@ -75,7 +82,7 @@ export async function isDynamicCompoundVerb(
          LIMIT 1`
       )
       .bind(lemma, lemma)
-      .first();
+      .first() as VerbLexiconRow | null;
 
     if (!result) {
       return { isCompound: false };
@@ -85,8 +92,8 @@ export async function isDynamicCompoundVerb(
 
     return {
       isCompound,
-      helper: result.helper as string | undefined,
-      verbType: result.verb_type as string | undefined,
+      helper: result.helper,
+      verbType: result.verb_type,
       commonNouns: COMMON_COMPOUND_NOUNS[lemma as keyof typeof COMMON_COMPOUND_NOUNS] || [],
     };
   } catch (error) {
