@@ -109,6 +109,7 @@ export interface RelatedFormVariant {
   pos?: 'noun' | 'verb' | 'adjective' | 'other';
   score?: number;
   romanized?: string;
+  source?: string; // Source table or resolver that produced the variant
   flags?: string[];
   inflectionType?: string; // e.g., 'plain', '1st_m', '1st_f', '2nd', 'vocative_m', 'plural_m', etc.
   inflectionCategory?: string;
