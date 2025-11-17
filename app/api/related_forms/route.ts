@@ -5,6 +5,19 @@ import type { RelatedFormVariant, RelatedFormsData } from '@/types';
 
 type GrammaticalInfo = Record<string, any> | null;
 
+const romanizedToPashtoMap: Record<string, string> = {
+  wahul: 'وهل',
+  wahel: 'وهل',
+};
+
+function normalizeRomanizedInput(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[^A-Za-z'\-\s]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 function normaliseRomanization(value: string): string {
   return value
     .normalize('NFD')
@@ -318,6 +331,13 @@ export async function POST(request: Request) {
     }
 
     // Find the primary word entry (for metadata and base form)
+    let lookupForm = form;
+
+    const normalizedRoman = /^[A-Za-z\s'-]+$/.test(form) ? normalizeRomanizedInput(form) : '';
+    if (normalizedRoman && romanizedToPashtoMap[normalizedRoman]) {
+      lookupForm = romanizedToPashtoMap[normalizedRoman];
+    }
+
     let primary = await queryD1First<{
       pashto_word: string;
       base_form?: string | null;
@@ -332,7 +352,7 @@ export async function POST(request: Request) {
        FROM word_frequencies
        WHERE pashto_word = ?
        LIMIT 1`,
-      [form],
+      [lookupForm],
     );
 
     if (!primary) {
@@ -350,7 +370,7 @@ export async function POST(request: Request) {
          FROM word_frequencies
          WHERE lower(romanization) = lower(?)
          LIMIT 1`,
-        [form],
+        [lookupForm],
       );
     }
 
@@ -391,7 +411,7 @@ export async function POST(request: Request) {
        FROM nouns_lexicon
        WHERE pashto_word = ? OR pashto_word = ?
        LIMIT 1`,
-      [form, primary?.base_form || primary?.pashto_word || form],
+      [lookupForm, primary?.base_form || primary?.pashto_word || lookupForm],
     );
 
     // If not found directly, try to trace through form_to_root
@@ -399,11 +419,11 @@ export async function POST(request: Request) {
       ? await queryD1First<{ root_word: string }>(
           db,
           `SELECT root_word FROM form_to_root WHERE word_form = ? ORDER BY frequency DESC LIMIT 1`,
-          [form],
+          [lookupForm],
         )
       : null;
 
-    const baseForm = primary?.base_form || primary?.pashto_word || tracedRoot?.root_word || form;
+    const baseForm = primary?.base_form || primary?.pashto_word || tracedRoot?.root_word || lookupForm;
     const posGuess = normalisePos(primary?.pos || primary?.word_type || null);
 
     const variants = await collectWordFrequencyVariants(db, baseForm, form, limit);

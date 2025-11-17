@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { loadVerses } from '@/app/lib/data/load';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
@@ -77,7 +78,39 @@ function expandKeyWithAliases(key: string, translation: 'afghan2023' | 'yousafza
   return Array.from(variants);
 }
 
-function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2019', verseMeta?: { book?: string; chapter?: number; verse?: number; testament?: string | null; audio_r2_key?: string | null }) {
+const verseOrdinalCache: Partial<Record<'afghan2023' | 'yousafzai2019', Map<string, number>>> = {};
+
+async function getVerseOrdinal(
+  book: string,
+  chapter: number,
+  verse: number,
+  translation: 'afghan2023' | 'yousafzai2019',
+): Promise<number | null> {
+  if (!verseOrdinalCache[translation]) {
+    const verses = await loadVerses(translation);
+    const map = new Map<string, number>();
+    let ordinal = 1;
+
+    for (const v of verses) {
+      const key = `${normaliseBookSlug(v.book)} ${v.chapter}:${v.verse}`;
+      if (!map.has(key)) {
+        map.set(key, ordinal++);
+      }
+    }
+
+    verseOrdinalCache[translation] = map;
+  }
+
+  const cache = verseOrdinalCache[translation]!;
+  const lookupKey = `${normaliseBookSlug(book)} ${chapter}:${verse}`;
+  return cache.get(lookupKey) ?? null;
+}
+
+async function buildCandidateKeys(
+  ref: string,
+  translation: 'afghan2023' | 'yousafzai2019',
+  verseMeta?: { book?: string; chapter?: number; verse?: number; testament?: string | null; audio_r2_key?: string | null },
+) {
   const candidates = new Set<string>();
 
   const parsed = parseRef(ref);
@@ -97,6 +130,7 @@ function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2
     const chapterPart3 = String(chapter).padStart(3, '0');
     const versePart3 = String(verse).padStart(3, '0');
     const { folderAliases, filenamePrefixes } = TRANSLATION_CONFIG[translation] ?? { folderAliases: [translation], filenamePrefixes: [translation] };
+    const ordinal = await getVerseOrdinal(book, chapter, verse, translation);
 
     const baseNameVariants = new Set<string>();
     for (const slug of slugVariants) {
@@ -108,6 +142,12 @@ function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2
       baseNameVariants.add(`${slug}${chapter}_${verse}`);
       baseNameVariants.add(`${slug}_${chapter}_verse_${verse}`);
       baseNameVariants.add(`${slug}_${chapter}_${verse}`);
+
+      if (ordinal) {
+        const ordinalPad = String(ordinal).padStart(3, '0');
+        baseNameVariants.add(`${slug}Verse_${ordinalPad}`);
+        baseNameVariants.add(`${slug}Verse_${ordinalPad}-1`);
+      }
     }
 
     for (const folder of folderAliases) {
@@ -115,9 +155,17 @@ function buildCandidateKeys(ref: string, translation: 'afghan2023' | 'yousafzai2
         for (const prefix of filenamePrefixes) {
           candidates.add(`${folder}/${testament}/${prefix}_${base}.mp3`);
           candidates.add(`${folder}/${testament}/${prefix}-${base}.mp3`);
+          candidates.add(`${folder}/${prefix}_${base}.mp3`);
+          candidates.add(`${folder}/${prefix}-${base}.mp3`);
         }
         candidates.add(`${folder}/${testament}/${base}.mp3`);
+        candidates.add(`${folder}/${base}.mp3`);
       }
+    }
+
+    // Also allow keys without folder prefixes (in case files live at bucket root)
+    for (const base of baseNameVariants) {
+      candidates.add(`${base}.mp3`);
     }
   }
 
@@ -168,7 +216,7 @@ async function resolveAudioUrl(ref: string, translation: 'afghan2023' | 'yousafz
 
     if (verse?.audio_public_url) return verse.audio_public_url as string;
 
-    const candidates = buildCandidateKeys(ref, translation, verse);
+    const candidates = await buildCandidateKeys(ref, translation, verse);
     for (const candidate of candidates) {
       if (await keyExists(candidate)) {
         const url = toStreamUrl(candidate);
@@ -179,7 +227,7 @@ async function resolveAudioUrl(ref: string, translation: 'afghan2023' | 'yousafz
     console.warn(`Failed to resolve audio for ${ref}:`, error);
   }
 
-  const fallbackCandidates = buildCandidateKeys(ref, translation);
+  const fallbackCandidates = await buildCandidateKeys(ref, translation);
   for (const candidate of fallbackCandidates) {
     if (await keyExists(candidate)) {
       const url = toStreamUrl(candidate);
