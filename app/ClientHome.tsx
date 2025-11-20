@@ -7,6 +7,7 @@ import LexiconPanel from "../components/LexiconPanel";
 import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
+import DictionaryTermDetection, { DictionaryTerm } from "../components/DictionaryTermDetection";
 import type {
   Verse,
   Scope,
@@ -37,13 +38,25 @@ import { ComplexityLevel } from "../components/CoverageGrid";
 import { resolveAudioUrl } from "@/app/lib/audio";
 import { TextField, Button, IconButton } from '@mui/material';
 import { dedupByRef } from "../utils/highlight";
+import {
+  filterVerbVariants,
+  PERSON_PATTERNS,
+  TENSE_MATCHERS,
+  MOOD_MATCHERS,
+  ASPECT_MATCHERS,
+  normalizeLabel,
+  matchesPerson,
+  matchesTense,
+  matchesMood,
+  matchesAspect
+} from "./utils/verb-filters";
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
-  "Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi"
+  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi"
 ];
 const NT_BOOKS = [
-  "Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"
+  "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
 ];
 // Abbreviations omitted (not used directly on this page)
 
@@ -116,99 +129,10 @@ function loadPersisted<T>(key: string, fallback: T): T {
 function savePersisted<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch { }
 }
 
-const PERSON_PATTERNS: Record<VerbFilterPerson, string[]> = {
-  all: [],
-  '1st': ['1sg', '1 pl', '1pl', '1st', 'first', 'i', 'we'],
-  '2nd': ['2sg', '2 pl', '2pl', '2nd', 'second', 'you'],
-  '3rd': ['3sg', '3 pl', '3pl', '3rd', 'third', 'he', 'she', 'they'],
-};
 
-const TENSE_MATCHERS: Record<VerbFilterTense, (label: string) => boolean> = {
-  all: () => true,
-  present: (l) => l.toLowerCase().includes('present'),
-  past: (l) => l.toLowerCase().includes('past') && !l.toLowerCase().includes('participle') && !l.toLowerCase().includes('perfect'),
-  future: (l) => l.toLowerCase().includes('future'),
-  perfect: (l) => l.toLowerCase().includes('perfect') || l.toLowerCase().includes('participle'),
-  subjunctive: (l) => l.toLowerCase().includes('subj'),
-  imperative: (l) => l.toLowerCase().includes('imperativ'),
-  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can'),
-  habitual: (l) => l.toLowerCase().includes('habit'),
-};
-
-const MOOD_MATCHERS: Record<VerbFilterMood, (label: string) => boolean> = {
-  all: () => true,
-  indicative: (l) => !l.toLowerCase().includes('subj') && !l.toLowerCase().includes('imperativ') && !l.toLowerCase().includes('ability'),
-  subjunctive: (l) => l.toLowerCase().includes('subj'),
-  imperative: (l) => l.toLowerCase().includes('imperativ'),
-  ability: (l) => l.toLowerCase().includes('ability') || l.toLowerCase().includes('able') || l.toLowerCase().includes('can') || l.toLowerCase().includes('ش') || l.toLowerCase().includes('sh') || l.includes('ش'),
-};
-
-const ASPECT_MATCHERS: Record<VerbFilterAspect, (label: string) => boolean> = {
-  all: () => true,
-  imperfective: (l) =>
-    l.toLowerCase().includes('present') ||
-    l.toLowerCase().includes('future') ||
-    l.toLowerCase().includes('progressive') ||
-    l.toLowerCase().includes('habit') ||
-    l.toLowerCase().includes('subj') ||
-    l.toLowerCase().includes('ability'),
-  perfective: (l) => l.toLowerCase().includes('past') || l.toLowerCase().includes('perfect') || l.toLowerCase().includes('participle') || l.toLowerCase().includes('subj'),
-};
-
-function normalizeLabel(label?: string): string {
-  return (label || '').toLowerCase();
-}
-
-function matchesPerson(label: string, person: VerbFilterPerson): boolean {
-  if (person === 'all') return true;
-  const patterns = PERSON_PATTERNS[person];
-  if (!patterns?.length) return true;
-  return patterns.some((pattern) => label.toLowerCase().includes(pattern.toLowerCase()));
-}
-
-function matchesTense(label: string, tense: VerbFilterTense): boolean {
-  const matcher = TENSE_MATCHERS[tense];
-  return matcher ? matcher(label) : true;
-}
-
-function matchesMood(label: string, mood: VerbFilterMood): boolean {
-  const matcher = MOOD_MATCHERS[mood];
-  return matcher ? matcher(label) : true;
-}
-
-function matchesAspect(label: string, aspect: VerbFilterAspect): boolean {
-  const matcher = ASPECT_MATCHERS[aspect];
-  return matcher ? matcher(label) : true;
-}
-
-function filterVerbVariants(
-  verbs: RelatedFormVariant[] | undefined,
-  filters: VerbFilterState
-): RelatedFormVariant[] {
-  if (!verbs?.length) return [];
-  const labelFilter = (variant: RelatedFormVariant) => {
-    const label = normalizeLabel(variant.label);
-    const personMatch = matchesPerson(label, filters.person);
-    const tenseMatch = matchesTense(label, filters.tense);
-    const moodMatch = matchesMood(label, filters.mood);
-    const aspectMatch = matchesAspect(label, filters.aspect);
-
-    console.log(`Filtering variant: "${variant.form}" label: "${variant.label}" (${label})`);
-    console.log(`  Person match (${filters.person}): ${personMatch}`);
-    console.log(`  Tense match (${filters.tense}): ${tenseMatch}`);
-    console.log(`  Mood match (${filters.mood}): ${moodMatch}`);
-    console.log(`  Aspect match (${filters.aspect}): ${aspectMatch}`);
-
-    return personMatch && tenseMatch && moodMatch && aspectMatch;
-  };
-
-  const filtered = verbs.filter(labelFilter);
-  console.log(`Filtered ${verbs.length} verb variants down to ${filtered.length} for filters:`, filters);
-  return filtered;
-}
 
 function relaxFilters(filters: VerbFilterState): VerbFilterState {
   return {
@@ -224,7 +148,7 @@ function applyVerbFiltersWithFallback(
 ): RelatedFormVariant[] {
   // Try strict filtering first
   let filtered = filterVerbVariants(verbs, filters);
-  
+
   // If no results, try progressive relaxation
   if (filtered.length === 0) {
     const relaxedFilters = [
@@ -233,13 +157,13 @@ function applyVerbFiltersWithFallback(
       { ...filters, aspect: 'all' as VerbFilterAspect },
       { ...filters, mood: 'all' as VerbFilterMood },
     ];
-    
+
     for (const relaxed of relaxedFilters) {
       filtered = filterVerbVariants(verbs, relaxed);
       if (filtered.length > 0) break;
     }
   }
-  
+
   return filtered;
 }
 
@@ -284,10 +208,10 @@ function toggleMultiFilter<T extends string>(
     // Toggle "all" - if it's selected, deselect everything; if not, select only "all"
     return currentValues.includes(allValue) ? [] : [allValue];
   }
-  
+
   // Remove "all" if it's selected and select the specific value
   const withoutAll = currentValues.filter(v => v !== allValue);
-  
+
   if (withoutAll.includes(value)) {
     // Deselect the value
     const newValues = withoutAll.filter(v => v !== value);
@@ -312,24 +236,24 @@ function multiFilterToSingleFilter(multiFilters: MultiVerbFilterState): VerbFilt
 function matchesNounInflectionType(label: string, inflectionType: NounInflectionType): boolean {
   if (inflectionType === 'all') return true;
   const lower = label.toLowerCase();
-  
+
   if (inflectionType === 'plain') return lower.includes('plain');
   if (inflectionType === '1st') return lower.includes('1st');
   if (inflectionType === '2nd') return lower.includes('2nd');
   if (inflectionType === 'plural') return lower.includes('plural') || lower.includes('plur');
   if (inflectionType === 'vocative') return lower.includes('voc');
   if (inflectionType === 'bundled') return lower.includes('bundled');
-  
+
   return true;
 }
 
 function matchesGender(label: string, gender: NounGender): boolean {
   if (gender === 'all') return true;
   const lower = label.toLowerCase();
-  
+
   if (gender === 'masculine') return lower.includes('masc') || lower.includes('m.');
   if (gender === 'feminine') return lower.includes('fem') || lower.includes('f.');
-  
+
   return true;
 }
 
@@ -376,7 +300,7 @@ function filterAdjectiveVariants(
   filters: AdjectiveFilterState
 ): RelatedFormVariant[] {
   if (!adjectives?.length) return [];
-  
+
   const filtered = adjectives.filter((variant) => {
     const label = normalizeLabel(variant.label);
     return (
@@ -670,11 +594,11 @@ export default function ClientHome() {
   const [activeVideosTab, setActiveVideosTab] = useState<'videos' | 'frequency' | 'transcripts'>('videos');
   const [processingVideo, setProcessingVideo] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
-  const [playingSentence, setPlayingSentence] = useState<{segmentIndex: number, sentenceIndex: number} | null>(null);
+  const [playingSentence, setPlayingSentence] = useState<{ segmentIndex: number, sentenceIndex: number } | null>(null);
 
   // Function to play sentence with timing tracking
   const playSentenceWithTiming = (segmentIndex: number, sentenceIndex: number, audioUrl: string) => {
-    setPlayingSentence({segmentIndex, sentenceIndex});
+    setPlayingSentence({ segmentIndex, sentenceIndex });
 
     const audio = new Audio(audioUrl);
     audio.play();
@@ -721,6 +645,7 @@ export default function ClientHome() {
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
   const variantKeyRef = useRef<string>('');
   const isQueryChangingRef = useRef<boolean>(false);
+  const [dictionaryMatch, setDictionaryMatch] = useState<DictionaryTerm | null>(null);
 
   // Trigger search when verb filters change (real-time filtering)
   const previousVerbState = useRef<VerbFilterState>(verbFilters);
@@ -822,7 +747,7 @@ export default function ClientHome() {
       console.log('Skipping filter persistence during query change');
       return;
     }
-    
+
     savePersisted('scope', scope);
     savePersisted('includeRelated', includeRelated);
     console.log('Persisting verb filters:', verbFilters);
@@ -923,7 +848,7 @@ export default function ClientHome() {
   // Re-transcribe segment function
   const retranscribeSegment = async (audioFilename: string, segmentIndex: number) => {
     setRetranscribingSegments(prev => new Set(prev).add(segmentIndex));
-    
+
     try {
       const response = await fetch('/api/retranscribe', {
         method: 'POST',
@@ -937,17 +862,17 @@ export default function ClientHome() {
 
       if (response.ok && data.success) {
         // Update the transcript in the videos state
-        setVideos(prevVideos => 
+        setVideos(prevVideos =>
           prevVideos.map(video => ({
             ...video,
-            segments: video.segments.map((segment: any, index: number) => 
-              index === segmentIndex 
+            segments: video.segments.map((segment: any, index: number) =>
+              index === segmentIndex
                 ? { ...segment, transcript: data.transcript }
                 : segment
             )
           }))
         );
-        
+
         // Show success message with quality check info
         const qualityInfo = data.qualityCheck ? `\nQuality check: ${data.qualityCheck.reason}` : '';
         alert(`Transcript updated successfully!${qualityInfo}`);
@@ -995,7 +920,7 @@ export default function ClientHome() {
         setProcessingStatus(prev => prev + `\nVideo ID: ${data.videoId}`);
         setProcessingStatus(prev => prev + `\nTotal chunks: ${data.totalChunks}`);
         setProcessingStatus(prev => prev + `\nSuccessful transcriptions: ${data.successfulTranscriptions}`);
-        
+
         // Refresh videos list
         setVideos([]);
         setTimeout(() => {
@@ -1010,7 +935,7 @@ export default function ClientHome() {
               console.error('Error refreshing videos:', error);
             });
         }, 2000);
-        
+
         setNewVideoUrl('');
       } else {
         setProcessingStatus(`❌ Processing failed: ${data.error}`);
@@ -1037,7 +962,7 @@ export default function ClientHome() {
     try {
       const response = await fetch(`/api/search-transcripts?q=${encodeURIComponent(query)}&limit=10`);
       const data = await response.json();
-      
+
       if (response.ok) {
         setTranscriptResults(data.results || []);
       } else {
@@ -1159,7 +1084,7 @@ export default function ClientHome() {
   // This way users see "31 in Luke" even when filtered to Mark
   const coverageData = useMemo(() => {
     // Always show all books, regardless of filter
-      return fullCoverageData;
+    return fullCoverageData;
   }, [fullCoverageData]);
 
   // Update coverage state when coverageData changes
@@ -1214,7 +1139,7 @@ export default function ClientHome() {
       setResults([]);
       setCoverage([]);
       setRelatedForms(null);
-      
+
       // Reset filters when starting a new search (manual or query change)
       if (reason === 'manual' || reason === 'query') {
         console.log('🔄 Resetting filters for new search');
@@ -1229,6 +1154,7 @@ export default function ClientHome() {
       }
     }
     setProcessed(null);
+    setDictionaryMatch(null);
 
     try {
       const searchParams: any = {
@@ -1274,6 +1200,7 @@ export default function ClientHome() {
         ...searchData.processed,
         searchedForm: searchData.searchedForm,
       } : null);
+      setDictionaryMatch(searchData.dictionaryMatch || null);
 
       const processedVariants: string[] = searchData.processed?.variantsSearched
         || searchData.processed?.variants
@@ -1291,9 +1218,9 @@ export default function ClientHome() {
       console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
       if (!preserveResults) {
-      setResults([]);
-      setCoverage([]);
-      setRelatedForms(null);
+        setResults([]);
+        setCoverage([]);
+        setRelatedForms(null);
       }
       setProcessed(null);
     } finally {
@@ -1320,12 +1247,12 @@ export default function ClientHome() {
   // Optimized filtering function for large result sets
   const optimizedVerseFilter = useCallback((verses: Verse[], forms: string[]) => {
     if (forms.length === 0) return verses;
-    
+
     return optimizedFilter(verses, (verse) => {
       const text = verse.text ?? '';
       const normalizedText = text.toLowerCase();
       const collapsedText = normalizedText.replace(/\s+/g, '');
-      
+
       return forms.some(form => {
         const normalizedForm = form.toLowerCase();
         const collapsedForm = normalizedForm.replace(/\s+/g, '');
@@ -1344,7 +1271,7 @@ export default function ClientHome() {
     () => debounce((verses: Verse[], forms: string[]) => {
       const filtered = optimizedVerseFilter(verses, forms);
       setResults(filtered);
-      
+
       // Update coverage based on filtered results
       const newCoverage = calculateCoverageFromResults(filtered);
       setCoverage(newCoverage);
@@ -1356,6 +1283,38 @@ export default function ClientHome() {
     (opts?: { preserveResults?: boolean }) => executeSearch({ ...opts, reason: 'manual' }),
     [executeSearch]
   );
+
+  const handleExpandForms = useCallback(() => {
+    setIncludeRelated(true);
+    // We need to wait for state to update before searching, or pass the override
+    // For now, we'll just set the state and let the user click search again if needed,
+    // OR we can try to force a search.
+    // Since executeSearch depends on includeRelated, we can't call it immediately with the old closure.
+    // But we can use a useEffect to trigger search if a specific flag is set?
+    // Or just rely on the user?
+    // Better UX: Trigger search.
+    // We can pass `includeRelated: true` in the body of executeSearch if we modify it,
+    // but for now let's just set the state. The user will see the toggle switch.
+    // Actually, let's try to trigger it.
+    setTimeout(() => {
+      // This might use the old closure of executeSearch if not careful,
+      // but since we're inside a component, we might get away with it if we trigger a re-render.
+      // A better way is to have a useEffect that watches for a "triggerSearch" flag.
+      // But for simplicity, let's just set the state and assume the user will see the UI update.
+      // Wait, the button says "Search all forms". It should search.
+      // Let's hack it by calling the API directly or reloading the page? No.
+      // Let's just set the state for now.
+    }, 100);
+  }, []);
+
+  // Effect to trigger search when expanding forms
+  useEffect(() => {
+    if (includeRelated && dictionaryMatch && !processed?.variants?.length) {
+      // If we just switched to includeRelated and have a dictionary match but no variants yet,
+      // trigger a search.
+      executeSearch({ reason: 'expand-forms' });
+    }
+  }, [includeRelated, dictionaryMatch, executeSearch, processed]);
 
   const debouncedVerbFilterSearch = useMemo(
     () => debounce((nextFilters: VerbFilterState) => {
@@ -1386,37 +1345,37 @@ export default function ClientHome() {
         return;
       }
 
-    // Always do client-side filtering when we have existing results
-    // This prevents triggering new searches when filters change
-    if (results && results.length > 0) {
-      console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
+      // Always do client-side filtering when we have existing results
+      // This prevents triggering new searches when filters change
+      if (results && results.length > 0) {
+        console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
 
-      // Use debounced filtering for better performance
-      debouncedFilter(results, forms);
-      setVariantsOverride(forms);
-      setActiveVariantForms(forms);
-    } else {
-      // No existing results - need to restore original results
-      console.log('🔄 No existing results, restoring original search results');
-
-      // If filters are reset to "All", restore original results from the last successful search
-      if (isDefaultVerbFilter(sanitized)) {
-        console.log('🔄 Filters reset to "All", restoring original results');
-        // Clear variant override to show all original forms
-        setVariantsOverride(null);
-        setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-
-        // Re-run the original search to restore results
-        executeSearch({ preserveResults: false, reason: 'filter-reset' });
-      } else {
-        // Specific filters applied but no results - trigger search with filtered forms
-        console.log('🔄 Specific filters applied, triggering search with filtered forms');
-        variantKeyRef.current = forms.join('|');
+        // Use debounced filtering for better performance
+        debouncedFilter(results, forms);
         setVariantsOverride(forms);
         setActiveVariantForms(forms);
-        executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+      } else {
+        // No existing results - need to restore original results
+        console.log('🔄 No existing results, restoring original search results');
+
+        // If filters are reset to "All", restore original results from the last successful search
+        if (isDefaultVerbFilter(sanitized)) {
+          console.log('🔄 Filters reset to "All", restoring original results');
+          // Clear variant override to show all original forms
+          setVariantsOverride(null);
+          setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
+
+          // Re-run the original search to restore results
+          executeSearch({ preserveResults: false, reason: 'filter-reset' });
+        } else {
+          // Specific filters applied but no results - trigger search with filtered forms
+          console.log('🔄 Specific filters applied, triggering search with filtered forms');
+          variantKeyRef.current = forms.join('|');
+          setVariantsOverride(forms);
+          setActiveVariantForms(forms);
+          executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
+        }
       }
-    }
     }, 200), // 200ms debounce for filter changes
     [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]
   );
@@ -1607,7 +1566,7 @@ export default function ClientHome() {
   useEffect(() => {
     const trimmedQuery = query.trim();
     const previousTrimmedQuery = previousQuery.current.trim();
-    
+
     // Only trigger if query actually changed and we have a non-empty query
     if (trimmedQuery !== previousTrimmedQuery && trimmedQuery) {
       debouncedSearch(trimmedQuery);
@@ -1749,41 +1708,37 @@ export default function ClientHome() {
         <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
           <button
             onClick={() => setActiveMainTab('search')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'search'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'search'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
           >
             🔍 Search
           </button>
           <button
             onClick={() => setActiveMainTab('lexicon')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'lexicon'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'lexicon'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
           >
             📚 Lexicon
           </button>
           <button
             onClick={() => setActiveMainTab('videos')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'videos'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'videos'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
           >
             🎵 Videos/Audio
           </button>
           <button
             onClick={() => setActiveMainTab('poems')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              activeMainTab === 'poems'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'poems'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
           >
             📝 Poems
           </button>
@@ -1798,824 +1753,827 @@ export default function ClientHome() {
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
               <button
                 onClick={() => setActiveTranslation('afghan2023')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
-                  activeTranslation === 'afghan2023'
-                    ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'afghan2023'
+                  ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
               >
                 🇦🇫 Afghan 2023
               </button>
               <button
                 onClick={() => setActiveTranslation('yousafzai2019')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${
-                  activeTranslation === 'yousafzai2019'
-                    ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'yousafzai2019'
+                  ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
               >
                 🕌 Yousafzai 2019
               </button>
             </div>
           </div>
 
-      {/* Translation Indicator */}
-      <div className="mb-4 text-center">
-        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-          activeTranslation === 'afghan2023'
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-        }`}>
-          {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
-          <span className="ml-2">
-            {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
-          </span>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative z-10 mb-6">
-        <div className={`absolute inset-0 rounded-lg opacity-10 ${
-          activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
-        }`} style={{ zIndex: -1 }}></div>
-        <TextField
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder={
-            isAnkiMode
-              ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
-              : isEnglishMode
-                ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
-                : "Enter Pashto text to search..."
-          }
-          variant="outlined"
-          fullWidth
-          inputProps={{
-            dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
-            style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
-              borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
-              color: isEnglishMode ? '#9A3412' : '#F9FAFB',
-              '&:hover': {
-                borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
-              },
-              '&.Mui-focused': {
-                borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
-                boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
-              }
-            },
-            '& .MuiInputBase-input::placeholder': {
-              color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
-            }
-          }}
-          InputProps={{
-            startAdornment: (
-              <IconButton
-                onClick={() => handleSearch()}
-                disabled={isLoading}
-                sx={{
-                  color: isEnglishMode ? '#9A3412' : '#F9FAFB',
-                  '&:disabled': { color: '#6B7280' }
-                }}
-              >
-                {isEnglishMode ? '🇬🇧' : '🔍'}
-              </IconButton>
-            ),
-            endAdornment: (
-              <Button
-                onClick={() => handleSearch()}
-                disabled={isLoading}
-                variant="contained"
-                sx={{
-                  backgroundColor: '#3B82F6',
-                  color: '#FFFFFF',
-                  minWidth: '80px',
-                  height: '100%',
-                  '&:hover': {
-                    backgroundColor: '#2563EB'
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#6B7280',
-                    color: '#D1D5DB'
-                  }
-                }}
-              >
-                {isLoading ? 'Searching...' : 'Search'}
-              </Button>
-            )
-          }}
-        />
-      </div>
-
-      {/* Enhanced Search Controls */}
-      <SearchControls
-        scope={scope}
-        setScope={setScope}
-        includeRelated={includeRelated}
-        setIncludeRelated={setIncludeRelated}
-        enableFuzzy={enableFuzzy}
-        setEnableFuzzy={setEnableFuzzy}
-        searchLanguage={searchLanguage}
-        setSearchLanguage={setSearchLanguage}
-        bookFilter={bookFilter}
-        setBookFilter={setBookFilter}
-        resultsCount={resultsCount}
-        refreshAudioMap={refreshAudioMap}
-        isLoading={isLoading}
-      />
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Results with Inline Filtering */}
-        <div className="lg:col-span-3">
-          {/* Translation Indicator in Results */}
-          <div className="mb-3">
-            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              activeTranslation === 'afghan2023'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-            }`}>
+          {/* Translation Indicator */}
+          <div className="mb-4 text-center">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${activeTranslation === 'afghan2023'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+              }`}>
               {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
               <span className="ml-2">
-                {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+                {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
               </span>
             </div>
           </div>
 
-          {/* Results Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
-              </h2>
-            </div>
-
-            {processed?.language === 'english' && processed?.englishMatches && processed.englishMatches.length > 0 && (
-              <div className="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-700">
-                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mb-1">
-                  Dictionary matches for "{processed.original}":
-                </p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {processed.englishMatches.slice(0, 4).map((match, idx) => (
-                    <span
-                      key={`${match.pashto}-${idx}`}
-                      className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-200 border border-orange-300/50"
-                    >
-                      {match.pashto}
-                      {match.romanized ? ` · ${match.romanized}` : ''}
-                    </span>
-                  ))}
-                  {processed.englishMatches.length > 4 && (
-                    <span className="text-orange-600 dark:text-orange-300">+{processed.englishMatches.length - 4} more</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
-            {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
-            {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
-              <>
-                {/* VERB FILTERS */}
-                {(relatedForms?.posGuess === 'verb' ||
-                  (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
-                  (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
-                      </span>
-                      <button
-                        onClick={() => {
-                          setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-                          applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER });
-                        }}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Reset filters
-                      </button>
-                    </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Person Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Person:
-                    </label>
-                    <div className="space-y-1">
-                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                        <input
-                          type="checkbox"
-                          checked={multiVerbFilters.person.includes('all')}
-                          onChange={() => {
-                            const newPerson = toggleMultiFilter(multiVerbFilters.person, 'all');
-                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <span className="font-medium">All</span>
-                      </label>
-                      {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
-                        <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={multiVerbFilters.person.includes(option.value as VerbFilterPerson)}
-                            onChange={() => {
-                              const newPerson = toggleMultiFilter(multiVerbFilters.person, option.value as VerbFilterPerson);
-                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                          <span>{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tense Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Tense:
-                    </label>
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                        <input
-                          type="checkbox"
-                          checked={multiVerbFilters.tense.includes('all')}
-                          onChange={() => {
-                            const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
-                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <span className="font-medium">All</span>
-                      </label>
-                      {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
-                        <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
-                            onChange={() => {
-                              const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
-                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                          <span className="capitalize">{tense}</span>
-                        </label>
-                      ))}
-                          </div>
-                        </div>
-
-                  {/* Aspect Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Aspect:
-                    </label>
-                    <div className="space-y-1">
-                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                        <input
-                          type="checkbox"
-                          checked={multiVerbFilters.aspect.includes('all')}
-                          onChange={() => {
-                            const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
-                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <span className="font-medium">All</span>
-                      </label>
-                      {['imperfective', 'perfective'].map((aspect) => (
-                        <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
-                            onChange={() => {
-                              const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
-                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                          <span className="capitalize">{aspect}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mood Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Mood:
-                    </label>
-                    <div className="space-y-1">
-                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                        <input
-                          type="checkbox"
-                          checked={multiVerbFilters.mood.includes('all')}
-                          onChange={() => {
-                            const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
-                            applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <span className="font-medium">All</span>
-                      </label>
-                      {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
-                        <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
-                            onChange={() => {
-                              const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
-                              applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                          <span className="capitalize">{mood}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Show which forms are being searched */}
-                {activeVariantForms.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Searching with {activeVariantForms.length} verb forms
-                      {activeVariantForms.slice(0, 5).map((form) => (
-                        <button
-                          key={form}
-                          onClick={() => handlePickForm(form)}
-                          className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
-                        >
-                          {form}
-                        </button>
-                      ))}
-                      {activeVariantForms.length > 5 && (
-                        <span className="ml-2 text-gray-500">
-                          +{activeVariantForms.length - 5} more
-                        </span>
-                      )}
-                    </p>
-                    </div>
-                )}
-                  </div>
-            )}
-
-            {/* NOUN FILTERS */}
-            {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
-             (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Filter by noun inflection {!isDefaultNounFilter(nounFilters) && '(Active)'}:
-                  </span>
-                  <button
-                    onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          {/* Search Bar */}
+          <div className="relative z-10 mb-6">
+            <div className={`absolute inset-0 rounded-lg opacity-10 ${activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
+              }`} style={{ zIndex: -1 }}></div>
+            <TextField
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={
+                isAnkiMode
+                  ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
+                  : isEnglishMode
+                    ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
+                    : "Enter Pashto text to search..."
+              }
+              variant="outlined"
+              fullWidth
+              inputProps={{
+                dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
+                style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
+                  borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
+                  color: isEnglishMode ? '#9A3412' : '#F9FAFB',
+                  '&:hover': {
+                    borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
+                  },
+                  '&.Mui-focused': {
+                    borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
+                    boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                  }
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <IconButton
+                    onClick={() => handleSearch()}
+                    disabled={isLoading}
+                    sx={{
+                      color: isEnglishMode ? '#9A3412' : '#F9FAFB',
+                      '&:disabled': { color: '#6B7280' }
+                    }}
                   >
-                    Reset filters
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Inflection Type Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Inflection Type:
-                    </label>
-                    <div className="space-y-1">
-                      {NOUN_INFLECTION_VALUES.map((inflType) => (
-                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="radio"
-                            name="noun-inflection"
-                            checked={nounFilters.inflectionType === inflType}
-                            onChange={() => {
-                              if (nounFilters.inflectionType !== inflType) {
-                                applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                          />
-                          <span className="capitalize">{inflType}</span>
-                        </label>
-                      ))}
-                    </div>
-        </div>
-
-                  {/* Gender Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Gender:
-                    </label>
-                    <div className="space-y-1">
-                      {GENDER_VALUES.map((gender) => (
-                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="radio"
-                            name="noun-gender"
-                            checked={nounFilters.gender === gender}
-                            onChange={() => {
-                              if (nounFilters.gender !== gender) {
-                                applyNounFiltersAndSearch({ ...nounFilters, gender });
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                          />
-                          <span className="capitalize">{gender}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {morphologyFacets && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Inflection Category:
-                      </label>
-                      <select
-                        value={adjectiveFilters.category || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCategories.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Grammatical Case/State:
-                      </label>
-                      <select
-                        value={adjectiveFilters.grammaticalCase || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCases.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Number:
-                      </label>
-                      <select
-                        value={adjectiveFilters.number || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionNumbers.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {morphologyFacets && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Lexicon Gender (noun metadata):
-                      </label>
-                      <select
-                        value={nounFilters.lexicalGender || 'all'}
-                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, lexicalGender: e.target.value as any })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.nounLexiconGenders.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Plural Type:
-                      </label>
-                      <select
-                        value={nounFilters.pluralType || 'all'}
-                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, pluralType: e.target.value as any })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.nounPluralTypes.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Inflection Category:
-                      </label>
-                      <select
-                        value={nounFilters.category || 'all'}
-                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, category: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCategories.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Grammatical Case/State:
-                      </label>
-                      <select
-                        value={nounFilters.grammaticalCase || 'all'}
-                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, grammaticalCase: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCases.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Number:
-                      </label>
-                      <select
-                        value={nounFilters.number || 'all'}
-                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, number: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionNumbers.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {activeVariantForms.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Searching with {activeVariantForms.length} noun forms
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ADJECTIVE FILTERS */}
-            {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
-             (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Filter by adjective inflection {!isDefaultAdjectiveFilter(adjectiveFilters) && '(Active)'}:
-                  </span>
-                  <button
-                    onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    {isEnglishMode ? '🇬🇧' : '🔍'}
+                  </IconButton>
+                ),
+                endAdornment: (
+                  <Button
+                    onClick={() => handleSearch()}
+                    disabled={isLoading}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: '#3B82F6',
+                      color: '#FFFFFF',
+                      minWidth: '80px',
+                      height: '100%',
+                      '&:hover': {
+                        backgroundColor: '#2563EB'
+                      },
+                      '&:disabled': {
+                        backgroundColor: '#6B7280',
+                        color: '#D1D5DB'
+                      }
+                    }}
                   >
-                    Reset filters
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Inflection Type Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Inflection Type:
-                    </label>
-                    <div className="space-y-1">
-                      {NOUN_INFLECTION_VALUES.map((inflType) => (
-                        <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="radio"
-                            name="adj-inflection"
-                            checked={adjectiveFilters.inflectionType === inflType}
-                            onChange={() => {
-                              if (adjectiveFilters.inflectionType !== inflType) {
-                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                          />
-                          <span className="capitalize">{inflType}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Gender Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                      Gender:
-                    </label>
-                    <div className="space-y-1">
-                      {GENDER_VALUES.map((gender) => (
-                        <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                          <input
-                            type="radio"
-                            name="adj-gender"
-                            checked={adjectiveFilters.gender === gender}
-                            onChange={() => {
-                              if (adjectiveFilters.gender !== gender) {
-                                applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                          />
-                          <span className="capitalize">{gender}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Inflection Category */}
-                  {morphologyFacets && (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Inflection Category:
-                      </label>
-                      <select
-                        value={adjectiveFilters.category || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCategories.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Grammatical Case */}
-                  {morphologyFacets && (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Grammatical Case/State:
-                      </label>
-                      <select
-                        value={adjectiveFilters.grammaticalCase || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionCases.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Number */}
-                  {morphologyFacets && (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Number:
-                      </label>
-                      <select
-                        value={adjectiveFilters.number || 'all'}
-                        onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="all">All</option>
-                        {morphologyFacets.inflectionNumbers.map((bucket) => (
-                          <option key={bucket.value} value={bucket.value}>
-                            {bucket.value} ({bucket.count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {activeVariantForms.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Searching with {activeVariantForms.length} adjective forms
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-            )}
+                    {isLoading ? 'Searching...' : 'Search'}
+                  </Button>
+                )
+              }}
+            />
           </div>
 
-          {/* Anki Export Button */}
-          {isAnkiMode && results.length > 0 && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-green-800 dark:text-green-300">
-                    📚 Export to Anki
-                  </h3>
-                  <p className="text-sm text-green-600 dark:text-green-400">
-                    Create flashcards with audio for {results.length} results
-                  </p>
-                </div>
-                <button
-                  onClick={exportToAnki}
-                  disabled={isExportingAnki || results.length === 0}
-                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                    isExportingAnki
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
-                </button>
-              </div>
+          {/* Enhanced Search Controls */}
+          <SearchControls
+            scope={scope}
+            setScope={setScope}
+            includeRelated={includeRelated}
+            setIncludeRelated={setIncludeRelated}
+            enableFuzzy={enableFuzzy}
+            setEnableFuzzy={setEnableFuzzy}
+            searchLanguage={searchLanguage}
+            setSearchLanguage={setSearchLanguage}
+            bookFilter={bookFilter}
+            setBookFilter={setBookFilter}
+            resultsCount={resultsCount}
+            refreshAudioMap={refreshAudioMap}
+            isLoading={isLoading}
+          />
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
+              {error}
             </div>
           )}
 
-          {/* Results List */}
-          <ResultsList
-            results={filteredResults}
-            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
-            loading={isLoading}
-            processed={processed}
-            verbFilters={verbFilters}
-            multiVerbFilters={multiVerbFilters}
-            activeVariantForms={activeVariantForms}
-            onResetFilters={() => {
-              setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
-              setVerbFilters({ ...DEFAULT_VERB_FILTER });
-              setNounFilters({ ...DEFAULT_NOUN_FILTER });
-              setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
-            }}
-          />
-        </div>
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Results with Inline Filtering */}
+            <div className="lg:col-span-3">
+              {/* Translation Indicator in Results */}
+              <div className="mb-3">
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${activeTranslation === 'afghan2023'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                  }`}>
+                  {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+                  <span className="ml-2">
+                    {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+                  </span>
+                </div>
+              </div>
 
-        {/* Sidebar - Always show full coverage, not filtered */}
-        <div className="lg:col-span-1">
-          <CoverageSidebar
-            coverage={coverage}
-            scope={scope}
-            coverageLevel={ComplexityLevel.Basic}
-            onPickBook={(book: string) => {
-              // Toggle book filter - if already selected, clear it, otherwise select it
-              if (bookFilter.includes(book)) {
-                setBookFilter(bookFilter.filter(b => b !== book));
-              } else {
-                setBookFilter([...bookFilter, book]);
-              }
-            }}
-            selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
-            selectedBooks={bookFilter}
-            onClearFilters={() => setBookFilter([])}
-            resultsCount={results.length}
-            filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
-            audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
-          />
-        </div>
-      </div>
+              {/* Results Header */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
+                  </h2>
+                </div>
+
+                {processed?.language === 'english' && processed?.englishMatches && processed.englishMatches.length > 0 && (
+                  <div className="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-700">
+                    <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mb-1">
+                      Dictionary matches for "{processed.original}":
+                    </p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {processed.englishMatches.slice(0, 4).map((match, idx) => (
+                        <span
+                          key={`${match.pashto}-${idx}`}
+                          className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-200 border border-orange-300/50"
+                        >
+                          {match.pashto}
+                          {match.romanized ? ` · ${match.romanized}` : ''}
+                        </span>
+                      ))}
+                      {processed.englishMatches.length > 4 && (
+                        <span className="text-orange-600 dark:text-orange-300">+{processed.englishMatches.length - 4} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
+                {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
+                {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+                  <>
+                    {/* VERB FILTERS */}
+                    {(relatedForms?.posGuess === 'verb' ||
+                      (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
+                      (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Filter by verb form {!isDefaultVerbFilter(verbFilters) && '(Active)'}:
+                            </span>
+                            <button
+                              onClick={() => {
+                                setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+                                applyVerbFiltersAndSearch({ ...DEFAULT_VERB_FILTER });
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Reset filters
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {/* Person Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Person:
+                              </label>
+                              <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={multiVerbFilters.person.includes('all')}
+                                    onChange={() => {
+                                      const newPerson = toggleMultiFilter(multiVerbFilters.person, 'all');
+                                      applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                  />
+                                  <span className="font-medium">All</span>
+                                </label>
+                                {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
+                                  <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="checkbox"
+                                      checked={multiVerbFilters.person.includes(option.value as VerbFilterPerson)}
+                                      onChange={() => {
+                                        const newPerson = toggleMultiFilter(multiVerbFilters.person, option.value as VerbFilterPerson);
+                                        applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, person: newPerson });
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                    />
+                                    <span>{option.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Tense Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Tense:
+                              </label>
+                              <div className="space-y-1 max-h-48 overflow-y-auto">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={multiVerbFilters.tense.includes('all')}
+                                    onChange={() => {
+                                      const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
+                                      applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                  />
+                                  <span className="font-medium">All</span>
+                                </label>
+                                {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
+                                  <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="checkbox"
+                                      checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
+                                      onChange={() => {
+                                        const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
+                                        applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, tense: newTense });
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                    />
+                                    <span className="capitalize">{tense}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Aspect Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Aspect:
+                              </label>
+                              <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={multiVerbFilters.aspect.includes('all')}
+                                    onChange={() => {
+                                      const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
+                                      applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                  />
+                                  <span className="font-medium">All</span>
+                                </label>
+                                {['imperfective', 'perfective'].map((aspect) => (
+                                  <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="checkbox"
+                                      checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
+                                      onChange={() => {
+                                        const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
+                                        applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, aspect: newAspect });
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                    />
+                                    <span className="capitalize">{aspect}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Mood Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Mood:
+                              </label>
+                              <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={multiVerbFilters.mood.includes('all')}
+                                    onChange={() => {
+                                      const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
+                                      applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                  />
+                                  <span className="font-medium">All</span>
+                                </label>
+                                {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
+                                  <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="checkbox"
+                                      checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
+                                      onChange={() => {
+                                        const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
+                                        applyMultiVerbFiltersAndSearch({ ...multiVerbFilters, mood: newMood });
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                    />
+                                    <span className="capitalize">{mood}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Show which forms are being searched */}
+                          {activeVariantForms.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Searching with {activeVariantForms.length} verb forms
+                                {activeVariantForms.slice(0, 5).map((form) => (
+                                  <button
+                                    key={form}
+                                    onClick={() => handlePickForm(form)}
+                                    className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
+                                  >
+                                    {form}
+                                  </button>
+                                ))}
+                                {activeVariantForms.length > 5 && (
+                                  <span className="ml-2 text-gray-500">
+                                    +{activeVariantForms.length - 5} more
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    {/* NOUN FILTERS */}
+                    {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
+                      (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Filter by noun inflection {!isDefaultNounFilter(nounFilters) && '(Active)'}:
+                            </span>
+                            <button
+                              onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Reset filters
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Inflection Type Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Inflection Type:
+                              </label>
+                              <div className="space-y-1">
+                                {NOUN_INFLECTION_VALUES.map((inflType) => (
+                                  <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="radio"
+                                      name="noun-inflection"
+                                      checked={nounFilters.inflectionType === inflType}
+                                      onChange={() => {
+                                        if (nounFilters.inflectionType !== inflType) {
+                                          applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="capitalize">{inflType}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Gender Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Gender:
+                              </label>
+                              <div className="space-y-1">
+                                {GENDER_VALUES.map((gender) => (
+                                  <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="radio"
+                                      name="noun-gender"
+                                      checked={nounFilters.gender === gender}
+                                      onChange={() => {
+                                        if (nounFilters.gender !== gender) {
+                                          applyNounFiltersAndSearch({ ...nounFilters, gender });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="capitalize">{gender}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {morphologyFacets && (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Inflection Category:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.category || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCategories.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Grammatical Case/State:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.grammaticalCase || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCases.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Number:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.number || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
+
+                          {morphologyFacets && (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Lexicon Gender (noun metadata):
+                                </label>
+                                <select
+                                  value={nounFilters.lexicalGender || 'all'}
+                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, lexicalGender: e.target.value as any })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.nounLexiconGenders.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Plural Type:
+                                </label>
+                                <select
+                                  value={nounFilters.pluralType || 'all'}
+                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, pluralType: e.target.value as any })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.nounPluralTypes.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Inflection Category:
+                                </label>
+                                <select
+                                  value={nounFilters.category || 'all'}
+                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, category: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCategories.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Grammatical Case/State:
+                                </label>
+                                <select
+                                  value={nounFilters.grammaticalCase || 'all'}
+                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, grammaticalCase: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCases.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Number:
+                                </label>
+                                <select
+                                  value={nounFilters.number || 'all'}
+                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, number: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
+
+                          {activeVariantForms.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Searching with {activeVariantForms.length} noun forms
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    {/* ADJECTIVE FILTERS */}
+                    {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
+                      (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Filter by adjective inflection {!isDefaultAdjectiveFilter(adjectiveFilters) && '(Active)'}:
+                            </span>
+                            <button
+                              onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Reset filters
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Inflection Type Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Inflection Type:
+                              </label>
+                              <div className="space-y-1">
+                                {NOUN_INFLECTION_VALUES.map((inflType) => (
+                                  <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="radio"
+                                      name="adj-inflection"
+                                      checked={adjectiveFilters.inflectionType === inflType}
+                                      onChange={() => {
+                                        if (adjectiveFilters.inflectionType !== inflType) {
+                                          applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="capitalize">{inflType}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Gender Filter */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                Gender:
+                              </label>
+                              <div className="space-y-1">
+                                {GENDER_VALUES.map((gender) => (
+                                  <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
+                                    <input
+                                      type="radio"
+                                      name="adj-gender"
+                                      checked={adjectiveFilters.gender === gender}
+                                      onChange={() => {
+                                        if (adjectiveFilters.gender !== gender) {
+                                          applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="capitalize">{gender}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Inflection Category */}
+                            {morphologyFacets && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Inflection Category:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.category || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCategories.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Grammatical Case */}
+                            {morphologyFacets && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Grammatical Case/State:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.grammaticalCase || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionCases.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Number */}
+                            {morphologyFacets && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Number:
+                                </label>
+                                <select
+                                  value={adjectiveFilters.number || 'all'}
+                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="all">All</option>
+                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
+                                    <option key={bucket.value} value={bucket.value}>
+                                      {bucket.value} ({bucket.count})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+
+                          {activeVariantForms.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Searching with {activeVariantForms.length} adjective forms
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                  </>
+                )}
+              </div>
+
+              {/* Anki Export Button */}
+              {isAnkiMode && results.length > 0 && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-green-800 dark:text-green-300">
+                        📚 Export to Anki
+                      </h3>
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        Create flashcards with audio for {results.length} results
+                      </p>
+                    </div>
+                    <button
+                      onClick={exportToAnki}
+                      disabled={isExportingAnki || results.length === 0}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${isExportingAnki
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                    >
+                      {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Dictionary Term Detection Banner */}
+              <DictionaryTermDetection
+                term={dictionaryMatch}
+                searchedTerm={query}
+                onExpandForms={() => setIncludeRelated(true)}
+                isExpanded={includeRelated}
+                loading={isLoading}
+              />
+
+              {/* Results List */}
+              <ResultsList
+                results={filteredResults}
+                audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+                loading={isLoading}
+                processed={processed}
+                verbFilters={verbFilters}
+                multiVerbFilters={multiVerbFilters}
+                activeVariantForms={activeVariantForms}
+                onResetFilters={() => {
+                  setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+                  setVerbFilters({ ...DEFAULT_VERB_FILTER });
+                  setNounFilters({ ...DEFAULT_NOUN_FILTER });
+                  setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+                }}
+              />
+            </div>
+
+            {/* Sidebar - Always show full coverage, not filtered */}
+            <div className="lg:col-span-1">
+              <CoverageSidebar
+                coverage={coverage}
+                scope={scope}
+                coverageLevel={ComplexityLevel.Basic}
+                onPickBook={(book: string) => {
+                  // Toggle book filter - if already selected, clear it, otherwise select it
+                  if (bookFilter.includes(book)) {
+                    setBookFilter(bookFilter.filter(b => b !== book));
+                  } else {
+                    setBookFilter([...bookFilter, book]);
+                  }
+                }}
+                selectedBook={bookFilter.length === 1 ? bookFilter[0] : null}
+                selectedBooks={bookFilter}
+                onClearFilters={() => setBookFilter([])}
+                resultsCount={results.length}
+                filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+                audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
+              />
+            </div>
+          </div>
         </>
       )}
 
@@ -2647,58 +2605,55 @@ export default function ClientHome() {
                 </p>
               </div>
 
-            {/* Enhanced Sub-tabs for Videos/Audio section */}
-            <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => setActiveVideosTab('videos')}
-                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                  activeVideosTab === 'videos'
+              {/* Enhanced Sub-tabs for Videos/Audio section */}
+              <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => setActiveVideosTab('videos')}
+                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'videos'
                     ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border-2 border-blue-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-lg">📺</span>
-                  <span className="hidden sm:inline">Videos</span>
-                </span>
-                {activeVideosTab === 'videos' && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></div>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveVideosTab('frequency')}
-                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                  activeVideosTab === 'frequency'
+                    }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg">📺</span>
+                    <span className="hidden sm:inline">Videos</span>
+                  </span>
+                  {activeVideosTab === 'videos' && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveVideosTab('frequency')}
+                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'frequency'
                     ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border-2 border-emerald-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-lg">📊</span>
-                  <span className="hidden sm:inline">Word Frequency</span>
-                </span>
-                {activeVideosTab === 'frequency' && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"></div>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveVideosTab('transcripts')}
-                className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                  activeVideosTab === 'transcripts'
+                    }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg">📊</span>
+                    <span className="hidden sm:inline">Word Frequency</span>
+                  </span>
+                  {activeVideosTab === 'frequency' && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveVideosTab('transcripts')}
+                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'transcripts'
                     ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 border-2 border-purple-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-lg">🔍</span>
-                  <span className="hidden sm:inline">Transcripts</span>
-                </span>
-                {activeVideosTab === 'transcripts' && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
-                )}
-              </button>
-            </div>
-            
+                    }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg">🔍</span>
+                    <span className="hidden sm:inline">Transcripts</span>
+                  </span>
+                  {activeVideosTab === 'transcripts' && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
+                  )}
+                </button>
+              </div>
+
               {/* Enhanced Video Upload Section */}
               <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
@@ -2709,755 +2664,747 @@ export default function ClientHome() {
                     Process New Video
                   </h3>
                 </div>
-              <div className="space-y-3">
-                <div>
-                  <input
-                    type="url"
-                    value={newVideoUrl}
-                    onChange={(e) => setNewVideoUrl(e.target.value)}
-                    placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={processingVideo}
-                  />
-                </div>
-                <button
-                  onClick={processNewVideo}
-                  disabled={processingVideo || !newVideoUrl.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
-                >
-                  {processingVideo ? 'Processing...' : 'Process Video'}
-                </button>
-                
-                {processingStatus && (
-                  <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded border">
-                    <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-                      {processingStatus}
-                    </pre>
+                <div className="space-y-3">
+                  <div>
+                    <input
+                      type="url"
+                      value={newVideoUrl}
+                      onChange={(e) => setNewVideoUrl(e.target.value)}
+                      placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={processingVideo}
+                    />
                   </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Transcript Search */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                🔍 Search Transcripts
-              </h3>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={transcriptSearchQuery}
-                  onChange={handleTranscriptSearchChange}
-                  placeholder="Enter Pashto text to search in video transcripts..."
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                {loadingTranscripts && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Search Results */}
-              {transcriptResults.length > 0 && (
-                <div className="mt-4 space-y-3">
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                    <p className="text-green-800 dark:text-green-300 font-medium">
-                      Found {transcriptResults.length} matching segments
-                    </p>
-                  </div>
-                  
-                  {transcriptResults.map((result, index) => (
-                    <div key={result.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        {result.verse_reference}
-                      </h4>
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Audio: {result.audio_filename} • Duration: {result.duration_seconds}s
-                        </p>
-                        <div className="bg-white dark:bg-gray-800 rounded border p-3 max-h-32 overflow-y-auto">
-                          <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
-                            {result.transcript}
-                          </p>
-                        </div>
-                      </div>
-                      <audio controls className="w-full">
-                        <source src={`/api/audio-clips/${result.audio_filename}`} type="audio/wav" />
-                        Your browser does not support the audio element.
-                      </audio>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {transcriptSearchQuery && transcriptResults.length === 0 && !loadingTranscripts && (
-                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                  <p className="text-yellow-800 dark:text-yellow-300">
-                    No matching transcripts found for "{transcriptSearchQuery}"
-                  </p>
-                </div>
-              )}
-            </div>
+                  <button
+                    onClick={processNewVideo}
+                    disabled={processingVideo || !newVideoUrl.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                  >
+                    {processingVideo ? 'Processing...' : 'Process Video'}
+                  </button>
 
-            {/* Conditional Content Based on Active Sub-tab */}
-            {activeVideosTab === 'videos' && (
-              <>
-                {/* Videos Section */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                    📺 YouTube Videos with Transcripts
-                  </h3>
-            
-            {loadingVideos ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
-              </div>
-            ) : videos.length > 0 ? (
-              <div className="space-y-6">
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <p className="text-green-800 dark:text-green-300">
-                    Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
-                  </p>
-                </div>
-                
-                {videos.map((video, index) => (
-                  <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                    <div className="mb-4">
-                      <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        {video.title}
-                      </h4>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span>{video.totalSegments} segments</span>
-                        <span>{Math.round(video.totalDuration / 60)} minutes total</span>
-                        <a 
-                          href={video.youtubeUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          View on YouTube →
-                        </a>
-                      </div>
-                    </div>
-                    
-                    {/* YouTube Embed */}
-                    <div className="mb-6">
-                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                        <iframe
-                          className="absolute top-0 left-0 w-full h-full rounded-lg"
-                          src={`https://www.youtube.com/embed/${video.id}`}
-                          title={video.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      </div>
-                    </div>
-                    
-                    {/* Video Segments with Transcripts */}
-                    <div className="space-y-4">
-                      <h5 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Video Segments & Transcripts
-                      </h5>
-                      
-                      {video.segments.map((segment: any, segIndex: number) => (
-                        <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                          <div className="flex items-center justify-between mb-3">
-                            <h6 className="font-medium text-gray-900 dark:text-gray-100">
-                              {segment.type === 'sentence'
-                                ? `Segment ${segment.segmentNumber}, Sentence ${segment.sentenceNumber}`
-                                : `Segment ${segment.segmentNumber}`
-                              }
-                            </h6>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} -
-                              {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
-                              {segment.type === 'sentence' && (
-                                <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
-                                  {segment.duration}s
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Enhanced Transcript Display with Sentence-Level Playback */}
-                          <div className="mb-3">
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-60 overflow-y-auto">
-                              <div className="space-y-2">
-                                {segment.transcript.split(/[.!؟?؟۔]\s+/).filter((s: string) => s.trim()).map((sentence: string, sIndex: number) => {
-                                  const sentenceKey = `${segIndex}-${sIndex}`;
-                                  return (
-                                    <div key={sentenceKey} className="group">
-                                      <div className="flex items-start gap-2 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                        <button
-                                          onClick={() => {
-                                            // Play individual sentence audio if available
-                                            const sentenceAudio = segment.sentenceClips?.[sIndex];
-                                            if (sentenceAudio) {
-                                              playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceAudio.audio_filename}`);
-                                            }
-                                          }}
-                                          className={`flex-shrink-0 mt-0.5 p-1 rounded ${
-                                            playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
-                                              ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
-                                              : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                                          }`}
-                                          title="Play this sentence"
-                                        >
-                                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                                          </svg>
-                                        </button>
-                                        <p className={`text-sm leading-relaxed flex-1 ${
-                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
-                                            ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded'
-                                            : 'text-gray-900 dark:text-gray-100'
-                                        }`}>
-                                          {sentence.trim()}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <div className="mt-2 flex justify-between items-center">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
-                                  disabled={retranscribingSegments.has(segIndex)}
-                                  className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
-                                </button>
-                                {segment.sentenceClips && segment.sentenceClips.length > 0 && (
-                                  <button
-                                    onClick={() => {
-                                      // Play all sentences in sequence for this segment with timing tracking
-                                      const playAllSentences = async () => {
-                                        for (let i = 0; i < segment.sentenceClips.length; i++) {
-                                          const sentenceClip = segment.sentenceClips[i];
-                                          setPlayingSentence({segmentIndex: segIndex, sentenceIndex: i});
-
-                                          // Wait for the audio to complete
-                                          await new Promise<void>((resolve) => {
-                                            const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
-                                            audio.onended = () => {
-                                              if (i === segment.sentenceClips.length - 1) {
-                                                setPlayingSentence(null);
-                                              }
-                                              resolve();
-                                            };
-                                            audio.onpause = () => {
-                                              setPlayingSentence(null);
-                                              resolve();
-                                            };
-                                            audio.play();
-                                          });
-                                        }
-                                      };
-                                      playAllSentences();
-                                    }}
-                                    className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800"
-                                  >
-                                    ▶️ Play All Sentences
-                                  </button>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {segment.sentenceClips ? `${segment.sentenceClips.length} sentences` : 'Full segment'}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Enhanced Audio Controls */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Segment:</span>
-                              <audio controls className="flex-1">
-                                <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
-                                Your browser does not support the audio element.
-                              </audio>
-                            </div>
-
-                            {/* Sentence-Level Audio Clips */}
-                            {segment.sentenceClips && segment.sentenceClips.length > 0 && (
-                              <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
-                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  Individual Sentences:
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                                  {segment.sentenceClips.map((sentenceClip: any, sIndex: number) => (
-                                    <div key={sIndex} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                                      <button
-                                        onClick={() => {
-                                          playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceClip.audio_filename}`);
-                                        }}
-                                        className={`flex-shrink-0 p-1 rounded ${
-                                          playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
-                                            ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
-                                            : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                                        }`}
-                                        title={`Play sentence ${sIndex + 1}`}
-                                      >
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                                        </svg>
-                                      </button>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                          {sentenceClip.sentence.substring(0, 40)}...
-                                        </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-500">
-                                          {Math.floor(sentenceClip.start_time / 60)}:{(sentenceClip.start_time % 60).toString().padStart(2, '0')} - {sentenceClip.duration}s
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-blue-800 dark:text-blue-300">
-                  No videos found. Please process YouTube videos first.
-                </p>
-                <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
-                  <p>To process videos:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Install dependencies: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">./setup_audio_processing.sh</code></li>
-                    <li>Run processor: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
-                  </ol>
-                </div>
-              </div>
-            )}
-                </div>
-              </>
-            )}
-
-            {activeVideosTab === 'frequency' && (
-              <>
-                {/* Word Frequency Section */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                    📊 Word Frequency Analysis
-                  </h3>
-
-                  {loadingWordFrequency ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-2 text-gray-500 dark:text-gray-400">Analyzing word frequency...</p>
-                    </div>
-                  ) : wordFrequency ? (
-                    <div className="space-y-6">
-                      {/* Enhanced Summary Stats */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="group relative bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 dark:from-blue-900/30 dark:via-blue-800/40 dark:to-indigo-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
-                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                          <div className="relative z-10">
-                            <div className="text-3xl font-bold bg-gradient-to-br from-blue-700 to-indigo-800 dark:from-blue-300 dark:to-indigo-400 bg-clip-text text-transparent mb-2">
-                              {wordFrequency.wordFrequency.totalWords.toLocaleString()}
-                            </div>
-                            <div className="text-sm font-medium text-blue-700/80 dark:text-blue-300/80">Total Words Analyzed</div>
-                            <div className="mt-2 text-xs text-blue-600/60 dark:text-blue-400/60">
-                              Across all transcripts
-                            </div>
-                          </div>
-                        </div>
-                        <div className="group relative bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 dark:from-emerald-900/30 dark:via-green-800/40 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
-                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                          <div className="relative z-10">
-                            <div className="text-3xl font-bold bg-gradient-to-br from-emerald-700 to-teal-800 dark:from-emerald-300 dark:to-teal-400 bg-clip-text text-transparent mb-2">
-                              {wordFrequency.wordFrequency.uniqueWords.toLocaleString()}
-                            </div>
-                            <div className="text-sm font-medium text-emerald-700/80 dark:text-emerald-300/80">Unique Vocabulary</div>
-                            <div className="mt-2 text-xs text-emerald-600/60 dark:text-emerald-400/60">
-                              Distinct Pashto words
-                            </div>
-                          </div>
-                        </div>
-                        <div className="group relative bg-gradient-to-br from-purple-50 via-pink-100 to-rose-100 dark:from-purple-900/30 dark:via-pink-800/40 dark:to-rose-900/30 border border-purple-200/60 dark:border-purple-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
-                          <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                          <div className="relative z-10">
-                            <div className="text-3xl font-bold bg-gradient-to-br from-purple-700 to-pink-800 dark:from-purple-300 dark:to-pink-400 bg-clip-text text-transparent mb-2">
-                              {wordFrequency.wordFrequency.wordFrequency.length}
-                            </div>
-                            <div className="text-sm font-medium text-purple-700/80 dark:text-purple-300/80">Top Words Listed</div>
-                            <div className="mt-2 text-xs text-purple-600/60 dark:text-purple-400/60">
-                              Most frequent terms
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Word Frequency Table */}
-                      <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
-                        <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
-                              <span className="text-white text-lg">📊</span>
-                            </div>
-                            <div>
-                              <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                                Most Frequent Words
-                              </h4>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">
-                                Ranked by occurrence across all video transcripts
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="max-h-96 overflow-y-auto">
-                          <table className="w-full">
-                            <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
-                              <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                  #
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                  Pashto Word
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                  Count
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                  Usage %
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
-                              {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
-                                const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
-                                const isTopTen = index < 10;
-                                return (
-                                  <tr
-                                    key={item.word}
-                                    className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${
-                                      isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
-                                    }`}
-                                  >
-                                    <td className="px-6 py-4">
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                        isTopTen
-                                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
-                                          : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
-                                      }`}>
-                                        {index + 1}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
-                                        {item.word}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
-                                        {item.frequency.toLocaleString()}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <div className="flex items-center gap-2">
-                                        <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
-                                          <div
-                                            className={`h-full transition-all duration-500 ${
-                                              isTopTen
-                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
-                                            }`}
-                                            style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
-                                          ></div>
-                                        </div>
-                                        <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                          {percentage}%
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Transcript Categorization */}
-                      {wordFrequency.categorization && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {Object.entries(wordFrequency.categorization).map(([category, items]) => {
-                            const itemCount = (items as any[]).length;
-                            const categoryColors = {
-                              pashto: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/50 border-emerald-200 dark:border-emerald-800',
-                              mixed: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/50 border-amber-200 dark:border-amber-800',
-                              'non-pashto': 'from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/50 border-red-200 dark:border-red-800',
-                              music: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/50 border-purple-200 dark:border-purple-800',
-                              empty: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/50 border-slate-200 dark:border-slate-800'
-                            };
-
-                            const categoryIcons = {
-                              pashto: '🗣️',
-                              mixed: '🔄',
-                              'non-pashto': '🌐',
-                              music: '🎵',
-                              empty: '📭'
-                            };
-
-                            return (
-                              <div key={category} className={`group relative bg-gradient-to-br ${categoryColors[category as keyof typeof categoryColors]} rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105`}>
-                                <div className="p-6">
-                                  <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`p-2 rounded-xl shadow-lg ${
-                                        category === 'pashto' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
-                                        category === 'mixed' ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
-                                        category === 'non-pashto' ? 'bg-gradient-to-br from-red-500 to-rose-600' :
-                                        category === 'music' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
-                                        'bg-gradient-to-br from-slate-500 to-gray-600'
-                                      }`}>
-                                        <span className="text-white text-lg">{categoryIcons[category as keyof typeof categoryIcons]}</span>
-                                      </div>
-                                      <div>
-                                        <h5 className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">
-                                          {category.replace('-', ' ')}
-                                        </h5>
-                                        <div className="text-xs text-slate-600 dark:text-slate-400">
-                                          {itemCount} transcript{itemCount !== 1 ? 's' : ''}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${
-                                      category === 'pashto' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
-                                      category === 'mixed' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                                      category === 'non-pashto' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
-                                      category === 'music' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
-                                      'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
-                                    }`}>
-                                      {itemCount}
-                                    </div>
-                                  </div>
-
-                                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                                    {(items as any[]).slice(0, 3).map((item: any, index: number) => (
-                                      <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
-                                        <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                                          {item.verseReference}
-                                        </div>
-                                        <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
-                                          {item.transcript.substring(0, 40)}...
-                                        </div>
-                                      </div>
-                                    ))}
-                                    {(items as any[]).length > 3 && (
-                                      <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
-                                        +{(items as any[]).length - 3} more...
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <p className="text-yellow-800 dark:text-yellow-300">
-                        No word frequency data available. Please process video transcripts first.
-                      </p>
+                  {processingStatus && (
+                    <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded border">
+                      <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                        {processingStatus}
+                      </pre>
                     </div>
                   )}
                 </div>
-              </>
-            )}
+              </div>
 
-            {activeVideosTab === 'transcripts' && (
-              <>
-                {/* Enhanced Transcripts Section */}
-                <div className="space-y-6">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-purple-800 dark:from-purple-300 dark:via-pink-300 dark:to-purple-400 bg-clip-text text-transparent mb-3">
-                      🔍 Enhanced Transcript Search
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-400">
-                      Search through video transcripts with intelligent matching
-                    </p>
-                  </div>
+              {/* Transcript Search */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  🔍 Search Transcripts
+                </h3>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={transcriptSearchQuery}
+                    onChange={handleTranscriptSearchChange}
+                    placeholder="Enter Pashto text to search in video transcripts..."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {loadingTranscripts && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Enhanced Search Input */}
-                  <div className="relative max-w-2xl mx-auto">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span className="text-slate-400 dark:text-slate-500 text-lg">🔍</span>
-                      </div>
-                      <input
-                        type="text"
-                        value={transcriptSearchQuery}
-                        onChange={handleTranscriptSearchChange}
-                        placeholder="Enter Pashto text to search in video transcripts..."
-                        className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none shadow-sm hover:shadow-md transition-all duration-200"
-                      />
-                      {loadingTranscripts && (
-                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
-                        </div>
-                      )}
+                {/* Search Results */}
+                {transcriptResults.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                      <p className="text-green-800 dark:text-green-300 font-medium">
+                        Found {transcriptResults.length} matching segments
+                      </p>
                     </div>
 
-                    {transcriptSearchQuery && (
-                      <div className="mt-3 text-center">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-700 dark:text-purple-300">
-                          <span>🔍</span>
-                          Searching for: <span className="font-semibold">"{transcriptSearchQuery}"</span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {transcriptResults.length > 0 ? (
-                    <div className="space-y-6">
-                      {/* Enhanced Results Header */}
-                      <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm">
-                        <div className="flex items-center justify-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
-                            <span className="text-white text-xl">✅</span>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
-                              Found {transcriptResults.length} matching transcript{transcriptResults.length !== 1 ? 's' : ''}
-                            </p>
-                            <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                              Results are ranked by relevance and segment order
+                    {transcriptResults.map((result, index) => (
+                      <div key={result.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                          {result.verse_reference}
+                        </h4>
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            Audio: {result.audio_filename} • Duration: {result.duration_seconds}s
+                          </p>
+                          <div className="bg-white dark:bg-gray-800 rounded border p-3 max-h-32 overflow-y-auto">
+                            <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+                              {result.transcript}
                             </p>
                           </div>
                         </div>
+                        <audio controls className="w-full">
+                          <source src={`/api/audio-clips/${result.audio_filename}`} type="audio/wav" />
+                          Your browser does not support the audio element.
+                        </audio>
                       </div>
+                    ))}
+                  </div>
+                )}
 
-                      {/* Enhanced Transcript Results */}
-                      <div className="grid gap-4">
-                        {transcriptResults.map((result: any, index: number) => (
-                          <div
-                            key={index}
-                            className="group relative bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-                          >
-                            {/* Result Header */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 dark:from-slate-400 dark:to-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                  {index + 1}
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-slate-800 dark:text-slate-200">
-                                    {result.videoTitle || 'Unknown Video'}
-                                  </h4>
-                                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
-                                      {result.segmentNumber ? `Segment ${result.segmentNumber}` : 'Segment'}
-                                    </span>
-                                    {result.sentenceNumber && (
-                                      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-full">
-                                        Sentence {result.sentenceNumber}
-                                      </span>
+                {transcriptSearchQuery && transcriptResults.length === 0 && !loadingTranscripts && (
+                  <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-yellow-800 dark:text-yellow-300">
+                      No matching transcripts found for "{transcriptSearchQuery}"
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Conditional Content Based on Active Sub-tab */}
+              {activeVideosTab === 'videos' && (
+                <>
+                  {/* Videos Section */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                      📺 YouTube Videos with Transcripts
+                    </h3>
+
+                    {loadingVideos ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
+                      </div>
+                    ) : videos.length > 0 ? (
+                      <div className="space-y-6">
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                          <p className="text-green-800 dark:text-green-300">
+                            Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
+                          </p>
+                        </div>
+
+                        {videos.map((video, index) => (
+                          <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                            <div className="mb-4">
+                              <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                {video.title}
+                              </h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                <span>{video.totalSegments} segments</span>
+                                <span>{Math.round(video.totalDuration / 60)} minutes total</span>
+                                <a
+                                  href={video.youtubeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                  View on YouTube →
+                                </a>
+                              </div>
+                            </div>
+
+                            {/* YouTube Embed */}
+                            <div className="mb-6">
+                              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                <iframe
+                                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                  src={`https://www.youtube.com/embed/${video.id}`}
+                                  title={video.title}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                              </div>
+                            </div>
+
+                            {/* Video Segments with Transcripts */}
+                            <div className="space-y-4">
+                              <h5 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                Video Segments & Transcripts
+                              </h5>
+
+                              {video.segments.map((segment: any, segIndex: number) => (
+                                <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h6 className="font-medium text-gray-900 dark:text-gray-100">
+                                      {segment.type === 'sentence'
+                                        ? `Segment ${segment.segmentNumber}, Sentence ${segment.sentenceNumber}`
+                                        : `Segment ${segment.segmentNumber}`
+                                      }
+                                    </h6>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                      {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toString().padStart(2, '0')} -
+                                      {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toString().padStart(2, '0')}
+                                      {segment.type === 'sentence' && (
+                                        <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
+                                          {segment.duration}s
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Enhanced Transcript Display with Sentence-Level Playback */}
+                                  <div className="mb-3">
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded border p-3 max-h-60 overflow-y-auto">
+                                      <div className="space-y-2">
+                                        {segment.transcript.split(/[.!؟?؟۔]\s+/).filter((s: string) => s.trim()).map((sentence: string, sIndex: number) => {
+                                          const sentenceKey = `${segIndex}-${sIndex}`;
+                                          return (
+                                            <div key={sentenceKey} className="group">
+                                              <div className="flex items-start gap-2 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                <button
+                                                  onClick={() => {
+                                                    // Play individual sentence audio if available
+                                                    const sentenceAudio = segment.sentenceClips?.[sIndex];
+                                                    if (sentenceAudio) {
+                                                      playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceAudio.audio_filename}`);
+                                                    }
+                                                  }}
+                                                  className={`flex-shrink-0 mt-0.5 p-1 rounded ${playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                                    ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                                    : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                                    }`}
+                                                  title="Play this sentence"
+                                                >
+                                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                  </svg>
+                                                </button>
+                                                <p className={`text-sm leading-relaxed flex-1 ${playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                                  ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded'
+                                                  : 'text-gray-900 dark:text-gray-100'
+                                                  }`}>
+                                                  {sentence.trim()}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                    <div className="mt-2 flex justify-between items-center">
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => retranscribeSegment(segment.audioFilename, segIndex)}
+                                          disabled={retranscribingSegments.has(segIndex)}
+                                          className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          {retranscribingSegments.has(segIndex) ? 'Re-transcribing...' : 'Re-run Transcription'}
+                                        </button>
+                                        {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                                          <button
+                                            onClick={() => {
+                                              // Play all sentences in sequence for this segment with timing tracking
+                                              const playAllSentences = async () => {
+                                                for (let i = 0; i < segment.sentenceClips.length; i++) {
+                                                  const sentenceClip = segment.sentenceClips[i];
+                                                  setPlayingSentence({ segmentIndex: segIndex, sentenceIndex: i });
+
+                                                  // Wait for the audio to complete
+                                                  await new Promise<void>((resolve) => {
+                                                    const audio = new Audio(`/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                                    audio.onended = () => {
+                                                      if (i === segment.sentenceClips.length - 1) {
+                                                        setPlayingSentence(null);
+                                                      }
+                                                      resolve();
+                                                    };
+                                                    audio.onpause = () => {
+                                                      setPlayingSentence(null);
+                                                      resolve();
+                                                    };
+                                                    audio.play();
+                                                  });
+                                                }
+                                              };
+                                              playAllSentences();
+                                            }}
+                                            className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800"
+                                          >
+                                            ▶️ Play All Sentences
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {segment.sentenceClips ? `${segment.sentenceClips.length} sentences` : 'Full segment'}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Enhanced Audio Controls */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Segment:</span>
+                                      <audio controls className="flex-1">
+                                        <source src={`/api/audio-clips/${segment.audioFilename}`} type="audio/wav" />
+                                        Your browser does not support the audio element.
+                                      </audio>
+                                    </div>
+
+                                    {/* Sentence-Level Audio Clips */}
+                                    {segment.sentenceClips && segment.sentenceClips.length > 0 && (
+                                      <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+                                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                          Individual Sentences:
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                          {segment.sentenceClips.map((sentenceClip: any, sIndex: number) => (
+                                            <div key={sIndex} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                              <button
+                                                onClick={() => {
+                                                  playSentenceWithTiming(segIndex, sIndex, `/api/sentence-clips/${sentenceClip.audio_filename}`);
+                                                }}
+                                                className={`flex-shrink-0 p-1 rounded ${playingSentence?.segmentIndex === segIndex && playingSentence?.sentenceIndex === sIndex
+                                                  ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
+                                                  : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                                  }`}
+                                                title={`Play sentence ${sIndex + 1}`}
+                                              >
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                </svg>
+                                              </button>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                                  {sentenceClip.sentence.substring(0, 40)}...
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-500">
+                                                  {Math.floor(sentenceClip.start_time / 60)}:{(sentenceClip.start_time % 60).toString().padStart(2, '0')} - {sentenceClip.duration}s
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xs text-slate-500 dark:text-slate-400">
-                                  Match #{index + 1}
-                                </div>
-                              </div>
+                              ))}
                             </div>
-
-                            {/* Transcript Content */}
-                            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 max-h-40 overflow-y-auto">
-                              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
-                                {result.transcript}
-                              </p>
-                            </div>
-
-                            {/* Highlighted Search Terms */}
-                            {transcriptSearchQuery && (
-                              <div className="mt-3 flex flex-wrap gap-1">
-                                {transcriptSearchQuery.split(' ').map((term: string, termIndex: number) => (
-                                  <span
-                                    key={termIndex}
-                                    className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-200/50 dark:border-purple-800/50"
-                                  >
-                                    "{term}"
-                                  </span>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : transcriptSearchQuery && !loadingTranscripts ? (
-                    <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl p-8 text-center shadow-sm">
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-                          <span className="text-white text-2xl">🔍</span>
+                    ) : (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <p className="text-blue-800 dark:text-blue-300">
+                          No videos found. Please process YouTube videos first.
+                        </p>
+                        <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
+                          <p>To process videos:</p>
+                          <ol className="list-decimal list-inside mt-2 space-y-1">
+                            <li>Install dependencies: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">./setup_audio_processing.sh</code></li>
+                            <li>Run processor: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
+                          </ol>
                         </div>
-                        <div>
-                          <h4 className="text-xl font-bold text-amber-800 dark:text-amber-200">
-                            No Results Found
-                          </h4>
-                          <p className="text-amber-600 dark:text-amber-400">
-                            Try adjusting your search terms or check spelling
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {activeVideosTab === 'frequency' && (
+                <>
+                  {/* Word Frequency Section */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                      📊 Word Frequency Analysis
+                    </h3>
+
+                    {loadingWordFrequency ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-2 text-gray-500 dark:text-gray-400">Analyzing word frequency...</p>
+                      </div>
+                    ) : wordFrequency ? (
+                      <div className="space-y-6">
+                        {/* Enhanced Summary Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="group relative bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 dark:from-blue-900/30 dark:via-blue-800/40 dark:to-indigo-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                            <div className="relative z-10">
+                              <div className="text-3xl font-bold bg-gradient-to-br from-blue-700 to-indigo-800 dark:from-blue-300 dark:to-indigo-400 bg-clip-text text-transparent mb-2">
+                                {wordFrequency.wordFrequency.totalWords.toLocaleString()}
+                              </div>
+                              <div className="text-sm font-medium text-blue-700/80 dark:text-blue-300/80">Total Words Analyzed</div>
+                              <div className="mt-2 text-xs text-blue-600/60 dark:text-blue-400/60">
+                                Across all transcripts
+                              </div>
+                            </div>
+                          </div>
+                          <div className="group relative bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 dark:from-emerald-900/30 dark:via-green-800/40 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                            <div className="relative z-10">
+                              <div className="text-3xl font-bold bg-gradient-to-br from-emerald-700 to-teal-800 dark:from-emerald-300 dark:to-teal-400 bg-clip-text text-transparent mb-2">
+                                {wordFrequency.wordFrequency.uniqueWords.toLocaleString()}
+                              </div>
+                              <div className="text-sm font-medium text-emerald-700/80 dark:text-emerald-300/80">Unique Vocabulary</div>
+                              <div className="mt-2 text-xs text-emerald-600/60 dark:text-emerald-400/60">
+                                Distinct Pashto words
+                              </div>
+                            </div>
+                          </div>
+                          <div className="group relative bg-gradient-to-br from-purple-50 via-pink-100 to-rose-100 dark:from-purple-900/30 dark:via-pink-800/40 dark:to-rose-900/30 border border-purple-200/60 dark:border-purple-800/60 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full shadow-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                            <div className="relative z-10">
+                              <div className="text-3xl font-bold bg-gradient-to-br from-purple-700 to-pink-800 dark:from-purple-300 dark:to-pink-400 bg-clip-text text-transparent mb-2">
+                                {wordFrequency.wordFrequency.wordFrequency.length}
+                              </div>
+                              <div className="text-sm font-medium text-purple-700/80 dark:text-purple-300/80">Top Words Listed</div>
+                              <div className="mt-2 text-xs text-purple-600/60 dark:text-purple-400/60">
+                                Most frequent terms
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Enhanced Word Frequency Table */}
+                        <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
+                          <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
+                                <span className="text-white text-lg">📊</span>
+                              </div>
+                              <div>
+                                <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                                  Most Frequent Words
+                                </h4>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  Ranked by occurrence across all video transcripts
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="max-h-96 overflow-y-auto">
+                            <table className="w-full">
+                              <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
+                                <tr>
+                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                    #
+                                  </th>
+                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                    Pashto Word
+                                  </th>
+                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                    Count
+                                  </th>
+                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                    Usage %
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+                                {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
+                                  const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
+                                  const isTopTen = index < 10;
+                                  return (
+                                    <tr
+                                      key={item.word}
+                                      className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
+                                        }`}
+                                    >
+                                      <td className="px-6 py-4">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopTen
+                                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
+                                          : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                                          }`}>
+                                          {index + 1}
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
+                                          {item.word}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                          {item.frequency.toLocaleString()}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
+                                            <div
+                                              className={`h-full transition-all duration-500 ${isTopTen
+                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
+                                                }`}
+                                              style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                            {percentage}%
+                                          </span>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Enhanced Transcript Categorization */}
+                        {wordFrequency.categorization && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Object.entries(wordFrequency.categorization).map(([category, items]) => {
+                              const itemCount = (items as any[]).length;
+                              const categoryColors = {
+                                pashto: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/50 border-emerald-200 dark:border-emerald-800',
+                                mixed: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/50 border-amber-200 dark:border-amber-800',
+                                'non-pashto': 'from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/50 border-red-200 dark:border-red-800',
+                                music: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/50 border-purple-200 dark:border-purple-800',
+                                empty: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/50 border-slate-200 dark:border-slate-800'
+                              };
+
+                              const categoryIcons = {
+                                pashto: '🗣️',
+                                mixed: '🔄',
+                                'non-pashto': '🌐',
+                                music: '🎵',
+                                empty: '📭'
+                              };
+
+                              return (
+                                <div key={category} className={`group relative bg-gradient-to-br ${categoryColors[category as keyof typeof categoryColors]} rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105`}>
+                                  <div className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-xl shadow-lg ${category === 'pashto' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+                                          category === 'mixed' ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
+                                            category === 'non-pashto' ? 'bg-gradient-to-br from-red-500 to-rose-600' :
+                                              category === 'music' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                                                'bg-gradient-to-br from-slate-500 to-gray-600'
+                                          }`}>
+                                          <span className="text-white text-lg">{categoryIcons[category as keyof typeof categoryIcons]}</span>
+                                        </div>
+                                        <div>
+                                          <h5 className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">
+                                            {category.replace('-', ' ')}
+                                          </h5>
+                                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                                            {itemCount} transcript{itemCount !== 1 ? 's' : ''}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${category === 'pashto' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
+                                        category === 'mixed' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                          category === 'non-pashto' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
+                                            category === 'music' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                              'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                                        }`}>
+                                        {itemCount}
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                                      {(items as any[]).slice(0, 3).map((item: any, index: number) => (
+                                        <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
+                                          <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                                            {item.verseReference}
+                                          </div>
+                                          <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
+                                            {item.transcript.substring(0, 40)}...
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {(items as any[]).length > 3 && (
+                                        <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
+                                          +{(items as any[]).length - 3} more...
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <p className="text-yellow-800 dark:text-yellow-300">
+                          No word frequency data available. Please process video transcripts first.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {activeVideosTab === 'transcripts' && (
+                <>
+                  {/* Enhanced Transcripts Section */}
+                  <div className="space-y-6">
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-purple-800 dark:from-purple-300 dark:via-pink-300 dark:to-purple-400 bg-clip-text text-transparent mb-3">
+                        🔍 Enhanced Transcript Search
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Search through video transcripts with intelligent matching
+                      </p>
+                    </div>
+
+                    {/* Enhanced Search Input */}
+                    <div className="relative max-w-2xl mx-auto">
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <span className="text-slate-400 dark:text-slate-500 text-lg">🔍</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={transcriptSearchQuery}
+                          onChange={handleTranscriptSearchChange}
+                          placeholder="Enter Pashto text to search in video transcripts..."
+                          className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none shadow-sm hover:shadow-md transition-all duration-200"
+                        />
+                        {loadingTranscripts && (
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
+
+                      {transcriptSearchQuery && (
+                        <div className="mt-3 text-center">
+                          <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-700 dark:text-purple-300">
+                            <span>🔍</span>
+                            Searching for: <span className="font-semibold">"{transcriptSearchQuery}"</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {transcriptResults.length > 0 ? (
+                      <div className="space-y-6">
+                        {/* Enhanced Results Header */}
+                        <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm">
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                              <span className="text-white text-xl">✅</span>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
+                                Found {transcriptResults.length} matching transcript{transcriptResults.length !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                                Results are ranked by relevance and segment order
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Enhanced Transcript Results */}
+                        <div className="grid gap-4">
+                          {transcriptResults.map((result: any, index: number) => (
+                            <div
+                              key={index}
+                              className="group relative bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                            >
+                              {/* Result Header */}
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 dark:from-slate-400 dark:to-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    {index + 1}
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">
+                                      {result.videoTitle || 'Unknown Video'}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
+                                        {result.segmentNumber ? `Segment ${result.segmentNumber}` : 'Segment'}
+                                      </span>
+                                      {result.sentenceNumber && (
+                                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-full">
+                                          Sentence {result.sentenceNumber}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                                    Match #{index + 1}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Transcript Content */}
+                              <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 max-h-40 overflow-y-auto">
+                                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                                  {result.transcript}
+                                </p>
+                              </div>
+
+                              {/* Highlighted Search Terms */}
+                              {transcriptSearchQuery && (
+                                <div className="mt-3 flex flex-wrap gap-1">
+                                  {transcriptSearchQuery.split(' ').map((term: string, termIndex: number) => (
+                                    <span
+                                      key={termIndex}
+                                      className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-200/50 dark:border-purple-800/50"
+                                    >
+                                      "{term}"
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : transcriptSearchQuery && !loadingTranscripts ? (
+                      <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl p-8 text-center shadow-sm">
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                            <span className="text-white text-2xl">🔍</span>
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-bold text-amber-800 dark:text-amber-200">
+                              No Results Found
+                            </h4>
+                            <p className="text-amber-600 dark:text-amber-400">
+                              Try adjusting your search terms or check spelling
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 border border-amber-200/30 dark:border-amber-800/30">
+                          <p className="text-amber-700 dark:text-amber-300 font-medium">
+                            Searched for: <span className="font-bold">"{transcriptSearchQuery}"</span>
+                          </p>
+                          <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                            • Try using different Pashto words or phrases
+                            <br />
+                            • Check for typos in your search query
+                            <br />
+                            • Some transcripts may contain music or unclear audio
                           </p>
                         </div>
                       </div>
-                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 border border-amber-200/30 dark:border-amber-800/30">
-                        <p className="text-amber-700 dark:text-amber-300 font-medium">
-                          Searched for: <span className="font-bold">"{transcriptSearchQuery}"</span>
-                        </p>
-                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                          • Try using different Pashto words or phrases
-                          <br />
-                          • Check for typos in your search query
-                          <br />
-                          • Some transcripts may contain music or unclear audio
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-12 text-center shadow-sm">
-                      <div className="max-w-md mx-auto">
-                        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                          <span className="text-white text-3xl">🔍</span>
-                        </div>
-                        <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">
-                          Ready to Search
-                        </h4>
-                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                          Enter Pashto text above to discover relevant content across all video transcripts. Our intelligent search will find matching segments and sentences.
-                        </p>
-                        <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm">
-                            Pashto text search
-                          </span>
-                          <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">
-                            Real-time results
-                          </span>
-                          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm">
-                            Smart matching
-                          </span>
+                    ) : (
+                      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-12 text-center shadow-sm">
+                        <div className="max-w-md mx-auto">
+                          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <span className="text-white text-3xl">🔍</span>
+                          </div>
+                          <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">
+                            Ready to Search
+                          </h4>
+                          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Enter Pashto text above to discover relevant content across all video transcripts. Our intelligent search will find matching segments and sentences.
+                          </p>
+                          <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                              Pashto text search
+                            </span>
+                            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">
+                              Real-time results
+                            </span>
+                            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm">
+                              Smart matching
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -3473,7 +3420,7 @@ export default function ClientHome() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Transcribed Pashto text from audio clips
             </p>
-            
+
             {loadingPoems ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
@@ -3486,7 +3433,7 @@ export default function ClientHome() {
                     Found {poems.length} poems
                   </p>
                 </div>
-                
+
                 {poems.map((poem, index) => (
                   <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">

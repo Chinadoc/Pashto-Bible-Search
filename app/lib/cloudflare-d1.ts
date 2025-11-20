@@ -15,7 +15,7 @@ import type {
 
 const CLOUDFLARE_WORKER_URL =
   process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL ||
-  'https://pashtobiblesearch.workers.dev';
+  'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 /**
  * Search verses by text query
@@ -39,7 +39,7 @@ export async function searchVerses(
   }
 
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/search?${params}`);
-  
+
   if (!response.ok) {
     // If worker is not available, return empty array so callers can decide how to proceed
     if (response.status === 404 || response.status >= 500) {
@@ -68,7 +68,7 @@ export async function getVersesByChapter(
   });
 
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/chapter?${params}`);
-  
+
   if (!response.ok) {
     // If worker is not available, return empty array so callers can decide how to proceed
     if (response.status === 404 || response.status >= 500) {
@@ -95,7 +95,7 @@ export async function getVerseByRef(
   });
 
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/verse?${params}`);
-  
+
   if (response.status === 404) {
     return null;
   }
@@ -128,7 +128,7 @@ export async function searchWordOccurrences(
   });
 
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/word-occurrences?${params}`);
-  
+
   if (!response.ok) {
     throw new Error(`Search failed: ${response.statusText}`);
   }
@@ -143,7 +143,7 @@ export async function searchWordOccurrences(
 export async function getAudioUrl(r2Key: string): Promise<string> {
   const encodedKey = encodeURIComponent(r2Key);
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/audio/url/${encodedKey}`);
-  
+
   if (!response.ok) {
     throw new Error(`Failed to get audio URL: ${response.statusText}`);
   }
@@ -191,7 +191,7 @@ export async function getFormOccurrences(
     });
 
     const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/form-occurrences?${params}`);
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         return null;
@@ -222,11 +222,11 @@ export async function searchVersesByForms(
 ): Promise<Verse[]> {
   const translation = options.translation || 'afghan2023';
   const limit = options.limit || 100;
-  
+
   // Get verse references for all forms from form_occurrences
   const allVerseRefs = new Set<string>();
   const formsNotFound: string[] = [];
-  
+
   for (const form of forms) {
     const occurrences = await getFormOccurrences(form, translation);
     if (occurrences && occurrences.verse_refs && occurrences.verse_refs.length > 0) {
@@ -238,7 +238,7 @@ export async function searchVersesByForms(
       formsNotFound.push(form);
     }
   }
-  
+
   // For forms not in form_occurrences, search verses directly
   if (formsNotFound.length > 0) {
     for (const form of formsNotFound) {
@@ -252,21 +252,21 @@ export async function searchVersesByForms(
       }
     }
   }
-  
+
   // Fetch verses by reference
-  const versePromises = Array.from(allVerseRefs).slice(0, limit).map(ref => 
+  const versePromises = Array.from(allVerseRefs).slice(0, limit).map(ref =>
     getVerseByRef(ref, translation)
   );
-  
+
   const verses = await Promise.all(versePromises);
-  
+
   // Filter out nulls and apply testament filter
   let filtered = verses.filter((v): v is Verse => v !== null);
-  
+
   if (options.testament) {
     filtered = filtered.filter(v => v.testament === options.testament);
   }
-  
+
   return filtered.slice(0, limit);
 }
 
@@ -297,7 +297,13 @@ export async function fetchVerbFormsFromD1(
       cap: String(cap),
     });
 
-    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/verb-forms?${params}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/verb-forms?${params}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 404 || response.status >= 500) {
@@ -312,6 +318,50 @@ export async function fetchVerbFormsFromD1(
   } catch (error) {
     console.error(`Failed to fetch verb forms for ${lemma}:`, error);
     return [];
+  }
+}
+
+/**
+ * Fetch verb lexicon metadata from D1 verbs_lexicon table
+ */
+export async function fetchVerbLexicon(
+  lemma: string
+): Promise<{
+  id: number;
+  lemma: string;
+  romanization?: string;
+  english?: string;
+  type?: string;
+  helper?: string;
+  transitivity?: string;
+  root?: string;
+} | null> {
+  try {
+    const params = new URLSearchParams({
+      lemma,
+    });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/verb-lexicon?${params}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      console.warn(`D1 Worker unavailable for verb-lexicon (${response.status})`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.entry || null;
+  } catch (error) {
+    console.error(`Failed to fetch verb lexicon for ${lemma}:`, error);
+    return null;
   }
 }
 

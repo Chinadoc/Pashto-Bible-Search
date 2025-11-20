@@ -15,7 +15,7 @@ interface SearchHeaderProps {
   handleSearch: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
   isLoading: boolean;
-  activeMainTab: 'search' | 'topics' | 'chapters' | 'lexicon' | 'videos' | 'poems';
+  activeMainTab: 'search' | 'topics' | 'chapters' | 'lexicon' | 'videos' | 'poems' | 'typer';
   activeTranslation: 'afghan2023' | 'yousafzai2019' | 'unified';
   setActiveTranslation: (translation: 'afghan2023' | 'yousafzai2019' | 'unified') => void;
   searchLanguage: SearchLanguage;
@@ -29,6 +29,7 @@ const NAV_TABS = [
   { href: '/lexicon', label: '📚 Lexicon', key: 'lexicon' },
   { href: '/videos', label: '🎬 Videos', key: 'videos' },
   { href: '/poems', label: '📝 Poems', key: 'poems' },
+  { href: '/typer', label: '⌨️ Typer', key: 'typer' },
 ] as const;
 
 const TRANSLATION_META = {
@@ -67,16 +68,14 @@ export default function SearchHeader({
     <>
       <header className="search-header">
         <h1
-          className={`text-3xl sm:text-4xl font-bold mb-2 transition-colors ${
-            isEnglishMode ? 'text-orange-200' : 'text-white'
-          }`}
+          className={`text-3xl sm:text-4xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-200' : 'text-white'
+            }`}
         >
           Pashto Bible Search
         </h1>
         <p
-          className={`search-subtitle text-base sm:text-lg ${
-            isEnglishMode ? 'text-orange-200/80' : 'text-slate-200/80'
-          }`}
+          className={`search-subtitle text-base sm:text-lg ${isEnglishMode ? 'text-orange-200/80' : 'text-slate-200/80'
+            }`}
         >
           {isEnglishMode
             ? 'Searching in English — Finding Pashto translations'
@@ -105,27 +104,24 @@ export default function SearchHeader({
           <button
             type="button"
             onClick={() => setActiveTranslation('afghan2023')}
-            className={`translation-toggle__button translation-toggle__button--afghan ${
-              activeTranslation === 'afghan2023' ? 'is-active' : ''
-            }`}
+            className={`translation-toggle__button translation-toggle__button--afghan ${activeTranslation === 'afghan2023' ? 'is-active' : ''
+              }`}
           >
             🇦🇫 Afghan 2023
           </button>
           <button
             type="button"
             onClick={() => setActiveTranslation('yousafzai2019')}
-            className={`translation-toggle__button translation-toggle__button--yousafzai ${
-              activeTranslation === 'yousafzai2019' ? 'is-active' : ''
-            }`}
+            className={`translation-toggle__button translation-toggle__button--yousafzai ${activeTranslation === 'yousafzai2019' ? 'is-active' : ''
+              }`}
           >
             🕌 Yousafzai 2019
           </button>
           <button
             type="button"
             onClick={() => setActiveTranslation('unified')}
-            className={`translation-toggle__button translation-toggle__button--unified ${
-              activeTranslation === 'unified' ? 'is-active' : ''
-            }`}
+            className={`translation-toggle__button translation-toggle__button--unified ${activeTranslation === 'unified' ? 'is-active' : ''
+              }`}
           >
             🔀 Unified Search
           </button>
