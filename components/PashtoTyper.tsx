@@ -286,18 +286,31 @@ export default function PashtoTyper() {
             const wordRect = word.getBoundingClientRect();
 
             const wordTopRelativeToArea = wordRect.top - scrollAreaRect.top;
+            const wordBottomRelativeToArea = wordRect.bottom - scrollAreaRect.top;
 
-            // On mobile, account for keyboard height (roughly 300-350px)
-            // Position word higher up so it stays visible above keyboard
-            const keyboardOffset = isMobile ? 200 : 0;
-            const targetOffset = (scrollAreaRect.height / 2) - (wordRect.height / 2) - keyboardOffset;
+            // Strategy: Keep current word in the UPPER THIRD of visible area
+            // This shows more context below (upcoming words) while keeping current word visible
+            // On mobile with keyboard, position even higher to account for keyboard
+            const keyboardOffset = isMobile ? 250 : 0;
 
-            const scrollAmount = wordTopRelativeToArea - targetOffset;
+            // Target position: 1/3 from top (shows more upcoming content)
+            const targetPosition = (scrollAreaRect.height / 3) - keyboardOffset;
 
-            scrollArea.scrollTo({
-                top: scrollArea.scrollTop + scrollAmount,
-                behavior: 'smooth'
-            });
+            // Calculate how much to scroll
+            const scrollAmount = wordTopRelativeToArea - targetPosition;
+
+            // Only scroll if:
+            // 1. Word is below the target position (need to scroll down), OR
+            // 2. Word is above visible area (need to scroll up)
+            const needsScrollDown = wordTopRelativeToArea > targetPosition + 50; // 50px buffer
+            const needsScrollUp = wordTopRelativeToArea < 0;
+
+            if (needsScrollDown || needsScrollUp) {
+                scrollArea.scrollTo({
+                    top: scrollArea.scrollTop + scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
         }
     }, [index, isMobile]);
 
