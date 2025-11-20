@@ -288,24 +288,19 @@ export default function PashtoTyper() {
             const wordTopRelativeToArea = wordRect.top - scrollAreaRect.top;
             const wordBottomRelativeToArea = wordRect.bottom - scrollAreaRect.top;
 
-            // Strategy: Keep current word in the UPPER THIRD of visible area
-            // This shows more context below (upcoming words) while keeping current word visible
-            // On mobile with keyboard, position even higher to account for keyboard
-            const keyboardOffset = isMobile ? 250 : 0;
+            // Strategy: Center the current word in the visible area
+            // On real mobile devices, the viewport height shrinks when the keyboard opens
+            // So scrollAreaRect.height is already the "visible" space above the keyboard
 
-            // Target position: 1/3 from top (shows more upcoming content)
-            const targetPosition = (scrollAreaRect.height / 3) - keyboardOffset;
+            const targetPosition = (scrollAreaRect.height / 2) - (wordRect.height / 2);
 
             // Calculate how much to scroll
             const scrollAmount = wordTopRelativeToArea - targetPosition;
 
-            // Only scroll if:
-            // 1. Word is below the target position (need to scroll down), OR
-            // 2. Word is above visible area (need to scroll up)
-            const needsScrollDown = wordTopRelativeToArea > targetPosition + 50; // 50px buffer
-            const needsScrollUp = wordTopRelativeToArea < 0;
+            // Only scroll if the word is significantly off-center (50px buffer)
+            const distFromCenter = Math.abs(wordTopRelativeToArea - targetPosition);
 
-            if (needsScrollDown || needsScrollUp) {
+            if (distFromCenter > 50) {
                 scrollArea.scrollTo({
                     top: scrollArea.scrollTop + scrollAmount,
                     behavior: 'smooth'
