@@ -474,7 +474,7 @@ export default function PashtoTyper() {
 
     return (
         <div
-            className="flex-grow flex flex-col outline-none bg-slate-900"
+            className="flex-grow flex flex-col outline-none bg-slate-900 h-full"
             onKeyDown={handleKeyDown}
             tabIndex={0}
             ref={containerRef}
