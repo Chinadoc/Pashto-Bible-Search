@@ -29,19 +29,13 @@ export default function TyperPage() {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setViewMode('desktop')}
-                            className={`px-2 py-1 rounded text-xs font-medium transition ${viewMode === 'desktop'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
+                            className="px-2 py-1 rounded text-xs font-medium bg-blue-600 text-white"
                         >
                             🖥️
                         </button>
                         <button
                             onClick={() => setViewMode('mobile')}
-                            className={`px-2 py-1 rounded text-xs font-medium transition ${viewMode === 'mobile'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
+                            className="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition"
                         >
                             📱
                         </button>
