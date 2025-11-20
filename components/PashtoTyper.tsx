@@ -208,6 +208,7 @@ export default function PashtoTyper() {
     const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set());
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
     const currentWordRef = useRef<HTMLSpanElement>(null);
 
     // Initialize Hidden Words for Stage 2
@@ -233,12 +234,29 @@ export default function PashtoTyper() {
         if (containerRef.current) containerRef.current.focus();
     }, [isComplete, stage]);
 
-    // Scroll into view
+    // --- AUTO SCROLL LOGIC ---
     useEffect(() => {
-        if (currentWordRef.current) {
-            currentWordRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
+        if (currentWordRef.current && scrollAreaRef.current) {
+            const word = currentWordRef.current;
+            const scrollArea = scrollAreaRef.current;
+
+            // We calculate the center manually to ensure it handles the header/footer offset correctly
+            const scrollAreaRect = scrollArea.getBoundingClientRect();
+            const wordRect = word.getBoundingClientRect();
+
+            // Relative position of word inside the visible window of scrollArea
+            const wordTopRelativeToArea = wordRect.top - scrollAreaRect.top;
+
+            // Target position: We want the word in the middle of the scrollArea height
+            // center = (scrollAreaHeight / 2) - (wordHeight / 2)
+            const targetOffset = (scrollAreaRect.height / 2) - (wordRect.height / 2);
+
+            // How much we need to scroll from current position
+            const scrollAmount = wordTopRelativeToArea - targetOffset;
+
+            scrollArea.scrollTo({
+                top: scrollArea.scrollTop + scrollAmount,
+                behavior: 'smooth'
             });
         }
     }, [index]);
@@ -305,7 +323,7 @@ export default function PashtoTyper() {
             ref={containerRef}
         >
             {/* Navbar */}
-            <div className="bg-slate-800/90 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-20 shadow-md backdrop-blur">
+            <div className="bg-slate-800/90 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-20 shadow-md backdrop-blur flex-shrink-0">
                 <div className="flex items-center gap-4">
                     <h1 className="font-bold text-emerald-400 text-lg md:text-xl tracking-wide">Matthew 6:9-13</h1>
                 </div>
@@ -344,7 +362,7 @@ export default function PashtoTyper() {
             </div>
 
             {/* Mobile Stage Selector */}
-            <div className="md:hidden flex justify-center gap-2 p-2 bg-slate-800 border-b border-slate-700">
+            <div className="md:hidden flex justify-center gap-2 p-2 bg-slate-800 border-b border-slate-700 flex-shrink-0">
                 {[1, 2, 3].map(s => (
                     <button
                         key={s}
@@ -357,9 +375,12 @@ export default function PashtoTyper() {
                 </div>
             </div>
 
-            {/* Main Text Area */}
-            <div className="flex-grow overflow-y-auto flex justify-center bg-[#0b1221]">
-                <div className="max-w-3xl w-full p-6 pb-32">
+            {/* Main Text Area (Scrollable) */}
+            <div
+                className="flex-grow overflow-y-auto flex justify-center bg-[#0b1221] relative"
+                ref={scrollAreaRef}
+            >
+                <div className="max-w-3xl w-full p-6 pb-48 pt-10">
                     <div className="flex flex-col gap-4 md:gap-6" dir="rtl">
                         {prayerData.map((line, lineIdx) => (
                             <div
@@ -452,7 +473,7 @@ export default function PashtoTyper() {
                         <div className="animate-fade-in space-y-4">
                             <div className="text-emerald-400 font-bold text-xl flex items-center justify-center gap-2">
                                 <Icons.Trophy className="w-6 h-6" />
-                                Stage {stage} Complete!
+                                stage {stage} Complete!
                             </div>
                             <div className="flex justify-center gap-3">
                                 <button
