@@ -426,9 +426,11 @@ export default function PashtoTyper() {
     };
 
     const handleMobileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const key = e.target.value.slice(-1); // Get last character
+        const key = e.target.value; // Get the input value
         if (key) {
             handleKeyPress(key);
+            // Reset input immediately to keep it empty
+            e.target.value = '';
         }
     };
 
@@ -452,17 +454,13 @@ export default function PashtoTyper() {
 
     return (
         <div
-            className="flex-grow flex flex-col outline-none bg-slate-900 h-screen"
+            className="flex-grow flex flex-col outline-none bg-slate-900"
             onKeyDown={handleKeyDown}
             tabIndex={0}
             ref={containerRef}
         >
-            {/* Navbar */}
+            {/* Top bar with stage selectors and fullscreen */}
             <div className="bg-slate-800/90 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-20 shadow-md backdrop-blur flex-shrink-0">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-bold text-emerald-400 text-lg md:text-xl tracking-wide">Matthew 6:9-13</h1>
-                </div>
-
                 {/* Stage Selectors (Desktop) */}
                 <div className="hidden md:flex gap-2">
                     {[
@@ -632,22 +630,25 @@ export default function PashtoTyper() {
                 </div>
             </div>
 
-            {/* Mobile system keyboard trigger */}
-            {isMobile && !isComplete && (
-                <input
-                    ref={mobileInputRef}
-                    type="text"
-                    inputMode="text"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck="false"
-                    onChange={handleMobileInput}
-                    onBlur={() => mobileInputRef.current?.focus()}
-                    className="fixed top-20 left-1/2 -translate-x-1/2 w-48 px-4 py-2 text-center text-xl bg-emerald-600/90 border-2 border-emerald-400 rounded-full text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-300 z-30 backdrop-blur shadow-lg font-bold"
-                    placeholder={`Type: ${currentWord.t?.charAt(0)?.toUpperCase() || ''}`}
-                />
-            )}
-        </div>
+            {/* Mobile system keyboard trigger - invisible input that captures typing */}
+            {
+                isMobile && !isComplete && (
+                    <input
+                        ref={mobileInputRef}
+                        type="text"
+                        inputMode="text"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        value=""
+                        onChange={handleMobileInput}
+                        onBlur={() => mobileInputRef.current?.focus()}
+                        className="fixed top-20 left-1/2 -translate-x-1/2 w-12 h-12 opacity-0 pointer-events-auto z-30"
+                        aria-label="Type here"
+                    />
+                )
+            }
+        </div >
     );
 }

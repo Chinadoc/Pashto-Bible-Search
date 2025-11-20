@@ -1,10 +1,17 @@
-import PashtoTyper from '@/components/PashtoTyper';
+'use client';
 
-export const metadata = {
-    title: 'Pashto Scripture Typer - Lord\'s Prayer',
-    description: 'Learn and memorize the Lord\'s Prayer in Pashto through interactive typing',
-};
+import PashtoTyper from '@/components/PashtoTyper';
+import SearchHeader from '@/components/SearchHeader';
 
 export default function TyperPage() {
-    return <PashtoTyper />;
+    return (
+        <div className="flex flex-col h-screen">
+            <SearchHeader
+                activeMainTab="typer"
+                activeTranslation="afghan2023"
+                onTranslationChange={() => { }}
+            />
+            <PashtoTyper />
+        </div>
+    );
 }
