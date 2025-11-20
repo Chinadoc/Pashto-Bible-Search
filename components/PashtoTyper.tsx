@@ -630,9 +630,9 @@ export default function PashtoTyper() {
                 </div>
             </div>
 
-            {/* Mobile system keyboard trigger - invisible input that captures typing */}
-            {
-                isMobile && !isComplete && (
+            {/* Mobile typing input - visible but stays empty via controlled value */}
+            {isMobile && !isComplete && (
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30">
                     <input
                         ref={mobileInputRef}
                         type="text"
@@ -644,11 +644,11 @@ export default function PashtoTyper() {
                         value=""
                         onChange={handleMobileInput}
                         onBlur={() => mobileInputRef.current?.focus()}
-                        className="fixed top-20 left-1/2 -translate-x-1/2 w-12 h-12 opacity-0 pointer-events-auto z-30"
-                        aria-label="Type here"
+                        className="w-64 px-4 py-3 text-center text-lg bg-slate-800/95 border-2 border-emerald-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 backdrop-blur shadow-lg"
+                        placeholder="Tap to type..."
                     />
-                )
-            }
+                </div>
+            )}
         </div >
     );
 }
