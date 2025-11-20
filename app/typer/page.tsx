@@ -2,50 +2,47 @@
 
 import { useState } from 'react';
 import PashtoTyper from '@/components/PashtoTyper';
-import SearchHeader from '@/components/SearchHeader';
+import Link from 'next/link';
 
 export default function TyperPage() {
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
 
     return (
         <div className="flex flex-col h-screen">
-            <SearchHeader
-                query=""
-                setQuery={() => { }}
-                handleSearch={() => { }}
-                handleKeyPress={() => { }}
-                isLoading={false}
-                activeMainTab="typer"
-                activeTranslation="afghan2023"
-                setActiveTranslation={() => { }}
-                searchLanguage="pashto"
-                isEnglishMode={false}
-            />
+            {/* Compact header strip - same height as main site header */}
+            <div className="bg-slate-800/90 border-b border-slate-700 px-4 py-3 flex items-center justify-between z-20 shadow-md backdrop-blur flex-shrink-0">
+                <Link
+                    href="/"
+                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span className="text-sm font-medium">Home</span>
+                </Link>
 
-            {/* Mobile/Desktop Preview Toggle */}
-            <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                <h1 className="font-bold text-emerald-400 text-lg">Matthew 6:9-13 - Scripture Typer</h1>
+
                 <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">View:</span>
                     <button
                         onClick={() => setViewMode('desktop')}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${viewMode === 'desktop'
+                        className={`px-2 py-1 rounded text-xs font-medium transition ${viewMode === 'desktop'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                             }`}
                     >
-                        🖥️ Desktop
+                        🖥️
                     </button>
                     <button
                         onClick={() => setViewMode('mobile')}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${viewMode === 'mobile'
+                        className={`px-2 py-1 rounded text-xs font-medium transition ${viewMode === 'mobile'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                             }`}
                     >
-                        📱 Mobile (375px)
+                        📱
                     </button>
                 </div>
-                <span className="text-emerald-400 text-sm font-bold">Matthew 6:9-13</span>
             </div>
 
             {/* Content with responsive preview */}
