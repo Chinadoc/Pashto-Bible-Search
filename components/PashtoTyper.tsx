@@ -206,10 +206,41 @@ export default function PashtoTyper() {
     const [errors, setErrors] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set());
+    const [audioUrls, setAudioUrls] = useState<Map<number, string>>(new Map());
+    const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+    const [lastCompletedVerse, setLastCompletedVerse] = useState<number | null>(null);
+    const [showMobileKeyboard, setShowMobileKeyboard] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const currentWordRef = useRef<HTMLSpanElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Map to track which verse each line belongs to
+    const lineToVerse = [9, 9, 10, 10, 10, 11, 12, 12, 12, 13, 13, 13];
+
+    // Fetch audio URLs on mount
+    useEffect(() => {
+        const fetchAudioUrls = async () => {
+            try {
+                const response = await fetch('/api/typer/verses?book=Matthew&chapter=6&start=9&end=13&translation=afghan2023');
+                const data = await response.json();
+
+                const urlMap = new Map<number, string>();
+                data.verses.forEach((verse: any) => {
+                    if (verse.audio_url) {
+                        urlMap.set(verse.verseNumber, verse.audio_url);
+                    }
+                });
+                setAudioUrls(urlMap);
+                console.log('Loaded audio URLs:', urlMap);
+            } catch (error) {
+                console.error('Failed to fetch audio URLs:', error);
+            }
+        };
+
+        fetchAudioUrls();
+    }, []);
 
     // Initialize Hidden Words for Stage 2
     useEffect(() => {
@@ -221,7 +252,7 @@ export default function PashtoTyper() {
             });
             setHiddenIndices(indices);
         } else if (stage === 3) {
-            const indices = new Set(flatList.map((_, i) => i)); // Hide all
+            const indices = new Set<number>(flatList.map((_, i) => i)); // Hide all
             setHiddenIndices(indices);
         } else {
             setHiddenIndices(new Set());
@@ -233,6 +264,12 @@ export default function PashtoTyper() {
     useEffect(() => {
         if (containerRef.current) containerRef.current.focus();
     }, [isComplete, stage]);
+
+    // Check if mobile device
+    useEffect(() => {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        setShowMobileKeyboard(isMobile);
+    }, []);
 
     // --- AUTO SCROLL LOGIC ---
     useEffect(() => {
@@ -261,6 +298,77 @@ export default function PashtoTyper() {
         }
     }, [index]);
 
+    // Check for verse completion and play audio
+    useEffect(() => {
+        if (index === 0) return; // Don't check on initial render
+
+        // Determine the current line index based on the global word index
+        let currentLineIdx = 0;
+        let wordsCount = 0;
+        for (let i = 0; i < prayerData.length; i++) {
+            wordsCount += prayerData[i].words.length;
+            if (index < wordsCount) {
+                currentLineIdx = i;
+                break;
+            }
+        }
+
+        const currentVerse = lineToVerse[currentLineIdx];
+
+        // Check if we just completed a verse
+        let wordsUpToCurrentVerseEnd = 0;
+        for (let i = 0; i < lineToVerse.length; i++) {
+            wordsUpToCurrentVerseEnd += prayerData[i].words.length;
+            if (lineToVerse[i] === currentVerse && (i === lineToVerse.length - 1 || lineToVerse[i + 1] !== currentVerse)) {
+                // This is the last line of the current verse
+                if (index === wordsUpToCurrentVerseEnd && currentVerse !== lastCompletedVerse) {
+                    setLastCompletedVerse(currentVerse);
+                    playAudioForVerse(currentVerse);
+                }
+                break;
+            }
+        }
+    }, [index, lastCompletedVerse, audioUrls]);
+
+
+    const playAudioForVerse = async (verseNumber: number) => {
+        const audioUrl = audioUrls.get(verseNumber);
+        if (!audioUrl) {
+            console.log(`No audio URL for verse ${verseNumber}`);
+            return;
+        }
+
+        setIsPlayingAudio(true);
+
+        // Stop any currently playing audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+            setIsPlayingAudio(false);
+            audioRef.current = null;
+        };
+
+        audio.onerror = (e) => {
+            console.error(`Failed to play audio for verse ${verseNumber}:`, e);
+            setIsPlayingAudio(false);
+            audioRef.current = null;
+        };
+
+        try {
+            await audio.play();
+            console.log(`Playing audio for verse ${verseNumber}`);
+        } catch (error) {
+            console.error('Audio playback failed:', error);
+            setIsPlayingAudio(false);
+        }
+    };
+
     const toggleFullscreen = async () => {
         try {
             if (!document.fullscreenElement) {
@@ -279,13 +387,12 @@ export default function PashtoTyper() {
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyPress = (key: string) => {
         if (isComplete) return;
-        if (e.key.length > 1) return; // Ignore modifiers
 
         const currentWord = flatList[index];
         const targetKey = currentWord.t.charAt(0).toLowerCase();
-        const pressedKey = e.key.toLowerCase();
+        const pressedKey = key.toLowerCase();
 
         setAttempts(prev => prev + 1);
 
@@ -303,11 +410,24 @@ export default function PashtoTyper() {
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key.length === 1) {
+            e.preventDefault();
+            handleKeyPress(e.key);
+        }
+    };
+
     const reset = () => {
         setIndex(0);
         setIsComplete(false);
         setErrors(0);
         setAttempts(0);
+        setLastCompletedVerse(null);
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        setIsPlayingAudio(false);
         if (containerRef.current) containerRef.current.focus();
     };
 
@@ -380,7 +500,7 @@ export default function PashtoTyper() {
                 className="flex-grow overflow-y-auto flex justify-center bg-[#0b1221] relative"
                 ref={scrollAreaRef}
             >
-                <div className="max-w-3xl w-full p-6 pb-48 pt-10">
+                <div className="max-w-3xl w-full p-6 pb-96 pt-10">
                     <div className="flex flex-col gap-4 md:gap-6" dir="rtl">
                         {prayerData.map((line, lineIdx) => (
                             <div
@@ -492,9 +612,34 @@ export default function PashtoTyper() {
                                 )}
                             </div>
                         </div>
+
                     )}
                 </div>
             </div>
+
+            {/* Mobile Virtual Keyboard */}
+            {showMobileKeyboard && !isComplete && (
+                <div className="md:hidden bg-slate-800/95 border-t border-slate-700 p-4 z-30 backdrop-blur flex-shrink-0">
+                    <div className="text-slate-400 text-xs text-center mb-2">Tap the letter to type</div>
+                    <div className="grid grid-cols-7 gap-2 max-w-lg mx-auto">
+                        {['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm'].map(key => (
+                            <button
+                                key={key}
+                                onClick={() => handleKeyPress(key)}
+                                className={
+                                    `px-3 py-3 rounded-lg font-bold text-white transition-all active:scale-95 ${
+                                        currentWord.t?.charAt(0).toLowerCase() === key
+                                            ? 'bg-blue-600 ring-2 ring-blue-400'
+                                            : 'bg-slate-700 hover:bg-slate-600'
+                                    }`
+                                }
+                            >
+                                {key.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
