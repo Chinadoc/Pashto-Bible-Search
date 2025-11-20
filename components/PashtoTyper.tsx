@@ -209,12 +209,13 @@ export default function PashtoTyper() {
     const [audioUrls, setAudioUrls] = useState<Map<number, string>>(new Map());
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [lastCompletedVerse, setLastCompletedVerse] = useState<number | null>(null);
-    const [showMobileKeyboard, setShowMobileKeyboard] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const currentWordRef = useRef<HTMLSpanElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const mobileInputRef = useRef<HTMLInputElement>(null);
 
     // Map to track which verse each line belongs to
     const lineToVerse = [9, 9, 10, 10, 10, 11, 12, 12, 12, 13, 13, 13];
@@ -265,11 +266,15 @@ export default function PashtoTyper() {
         if (containerRef.current) containerRef.current.focus();
     }, [isComplete, stage]);
 
-    // Check if mobile device
+    // Check if mobile device and focus input
     useEffect(() => {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        setShowMobileKeyboard(isMobile);
-    }, []);
+        const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        setIsMobile(mobile);
+        if (mobile && mobileInputRef.current && !isComplete) {
+            // Focus the input to trigger system keyboard
+            setTimeout(() => mobileInputRef.current?.focus(), 100);
+        }
+    }, [isComplete]);
 
     // --- AUTO SCROLL LOGIC ---
     useEffect(() => {
@@ -408,12 +413,24 @@ export default function PashtoTyper() {
             setErrors(prev => prev + 1);
             setTimeout(() => setMistake(false), 300);
         }
+
+        // Clear mobile input after processing
+        if (mobileInputRef.current) {
+            mobileInputRef.current.value = '';
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key.length === 1) {
             e.preventDefault();
             handleKeyPress(e.key);
+        }
+    };
+
+    const handleMobileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const key = e.target.value.slice(-1); // Get last character
+        if (key) {
+            handleKeyPress(key);
         }
     };
 
@@ -617,28 +634,21 @@ export default function PashtoTyper() {
                 </div>
             </div>
 
-            {/* Mobile Virtual Keyboard */}
-            {showMobileKeyboard && !isComplete && (
-                <div className="md:hidden bg-slate-800/95 border-t border-slate-700 p-4 z-30 backdrop-blur flex-shrink-0">
-                    <div className="text-slate-400 text-xs text-center mb-2">Tap the letter to type</div>
-                    <div className="grid grid-cols-7 gap-2 max-w-lg mx-auto">
-                        {['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm'].map(key => (
-                            <button
-                                key={key}
-                                onClick={() => handleKeyPress(key)}
-                                className={
-                                    `px-3 py-3 rounded-lg font-bold text-white transition-all active:scale-95 ${
-                                        currentWord.t?.charAt(0).toLowerCase() === key
-                                            ? 'bg-blue-600 ring-2 ring-blue-400'
-                                            : 'bg-slate-700 hover:bg-slate-600'
-                                    }`
-                                }
-                            >
-                                {key.toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+            {/* Mobile system keyboard trigger */}
+            {isMobile && !isComplete && (
+                <input
+                    ref={mobileInputRef}
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    onChange={handleMobileInput}
+                    onBlur={() => mobileInputRef.current?.focus()}
+                    className="fixed bottom-4 left-1/2 -translate-x-1/2 w-64 px-4 py-3 text-center text-lg bg-slate-800/95 border-2 border-blue-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 z-30"
+                    placeholder={`Type: ${currentWord.t?.charAt(0) || ''}`}
+                />
             )}
         </div>
     );
