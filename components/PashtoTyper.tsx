@@ -282,18 +282,16 @@ export default function PashtoTyper() {
             const word = currentWordRef.current;
             const scrollArea = scrollAreaRef.current;
 
-            // We calculate the center manually to ensure it handles the header/footer offset correctly
             const scrollAreaRect = scrollArea.getBoundingClientRect();
             const wordRect = word.getBoundingClientRect();
 
-            // Relative position of word inside the visible window of scrollArea
             const wordTopRelativeToArea = wordRect.top - scrollAreaRect.top;
 
-            // Target position: We want the word in the middle of the scrollArea height
-            // center = (scrollAreaHeight / 2) - (wordHeight / 2)
-            const targetOffset = (scrollAreaRect.height / 2) - (wordRect.height / 2);
+            // On mobile, account for keyboard height (roughly 300-350px)
+            // Position word higher up so it stays visible above keyboard
+            const keyboardOffset = isMobile ? 200 : 0;
+            const targetOffset = (scrollAreaRect.height / 2) - (wordRect.height / 2) - keyboardOffset;
 
-            // How much we need to scroll from current position
             const scrollAmount = wordTopRelativeToArea - targetOffset;
 
             scrollArea.scrollTo({
@@ -301,7 +299,7 @@ export default function PashtoTyper() {
                 behavior: 'smooth'
             });
         }
-    }, [index]);
+    }, [index, isMobile]);
 
     // Check for verse completion and play audio
     useEffect(() => {
@@ -646,8 +644,8 @@ export default function PashtoTyper() {
                     spellCheck="false"
                     onChange={handleMobileInput}
                     onBlur={() => mobileInputRef.current?.focus()}
-                    className="fixed bottom-4 left-1/2 -translate-x-1/2 w-64 px-4 py-3 text-center text-lg bg-slate-800/95 border-2 border-blue-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 z-30"
-                    placeholder={`Type: ${currentWord.t?.charAt(0) || ''}`}
+                    className="fixed top-20 left-1/2 -translate-x-1/2 w-48 px-4 py-2 text-center text-xl bg-emerald-600/90 border-2 border-emerald-400 rounded-full text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-300 z-30 backdrop-blur shadow-lg font-bold"
+                    placeholder={`Type: ${currentWord.t?.charAt(0)?.toUpperCase() || ''}`}
                 />
             )}
         </div>
