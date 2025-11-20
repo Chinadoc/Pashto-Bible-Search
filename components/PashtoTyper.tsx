@@ -439,12 +439,24 @@ export default function PashtoTyper() {
     };
 
     const handleMobileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const key = e.target.value; // Get the input value
-        if (key) {
-            handleKeyPress(key);
-            // Reset input immediately to keep it empty
-            e.target.value = '';
+        const inputValue = e.target.value;
+
+        // Only process if there's a new character
+        if (inputValue && inputValue.length > 0) {
+            // Get the last character typed (in case of autocomplete/paste)
+            const lastChar = inputValue[inputValue.length - 1];
+
+            // Process the keystroke
+            handleKeyPress(lastChar);
         }
+
+        // CRITICAL: Clear input immediately in the next tick
+        // This prevents text accumulation in the input field
+        setTimeout(() => {
+            if (mobileInputRef.current) {
+                mobileInputRef.current.value = '';
+            }
+        }, 0);
     };
 
     const reset = () => {
@@ -643,7 +655,7 @@ export default function PashtoTyper() {
                 </div>
             </div>
 
-            {/* Mobile typing input - visible but stays empty via controlled value */}
+            {/* Mobile typing input - uncontrolled, manually cleared after each keystroke */}
             {isMobile && !isComplete && (
                 <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30">
                     <input
@@ -654,7 +666,7 @@ export default function PashtoTyper() {
                         autoCorrect="off"
                         autoCapitalize="off"
                         spellCheck="false"
-                        value=""
+                        defaultValue=""
                         onChange={handleMobileInput}
                         onBlur={() => mobileInputRef.current?.focus()}
                         className="w-64 px-4 py-3 text-center text-lg bg-slate-800/95 border-2 border-emerald-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 backdrop-blur shadow-lg"
