@@ -7,27 +7,28 @@ export async function GET(request: NextRequest) {
     const translation = (url.searchParams.get('translation') || 'afghan2023') as 'afghan2023' | 'yousafzai2019';
 
     try {
-        // Import the function
-        const { fetchVerbFormsFromD1 } = await import('@/app/lib/cloudflare-d1');
+        // Import the actual function used in search
+        const { getVerbVariantsWithD1Fallback } = await import('@/app/api/search/route');
 
-        console.log(`Testing verb forms lookup for: "${word}"`);
+        console.log(`Testing verb variants lookup for: "${word}"`);
 
-        const forms = await fetchVerbFormsFromD1(word, { cap: 20 });
+        const variants = await getVerbVariantsWithD1Fallback(word, { cap: 20 });
 
         return NextResponse.json({
             success: true,
             word,
             translation,
-            formsCount: forms.length,
-            forms: forms.slice(0, 10),
-            message: forms.length > 0
-                ? `Found ${forms.length} forms`
-                : 'No forms found - check if lemma exists in verb_forms table'
+            variantsCount: variants.length,
+            variants: variants.slice(0, 10).map(v => ({ form: v.form, label: v.label })),
+            message: variants.length > 0
+                ? `Found ${variants.length} variants (includes algorithmic generation)`
+                : 'No variants found - check if function exists'
         });
     } catch (error: any) {
         return NextResponse.json({
             success: false,
             error: error.message,
+            stack: error.stack,
             word,
         }, { status: 500 });
     }
