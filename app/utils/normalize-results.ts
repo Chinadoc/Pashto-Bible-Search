@@ -10,6 +10,7 @@ type ApiResult = {
   tags: any[][];
   audio_verse_url: string | null;
   id: number;
+  matchedForms?: string[]; // Forms that were matched in this verse
 };
 
 /**
@@ -25,6 +26,7 @@ export function normalizeSearchResults(results: Verse[]): Verse[] {
     dialect: result.dialect || null,
     tags: Array.isArray(result.tags) ? result.tags : [],
     audio_verse_url: result.audio_verse_url || null,
+    matchedForms: result.matchedForms || undefined, // Preserve matched forms
   }));
 }
 
@@ -33,7 +35,7 @@ export function normalizeSearchResults(results: Verse[]): Verse[] {
  */
 function normalizeText(text: string | undefined): string {
   if (!text) return '';
-  
+
   return text
     .trim()
     .replace(/\s+/g, ' ') // Normalize whitespace
@@ -48,7 +50,7 @@ function normalizeText(text: string | undefined): string {
  */
 function normalizeRef(ref: string): string {
   if (!ref) return '';
-  
+
   return ref
     .trim()
     .replace(/\s+/g, ' ') // Normalize whitespace
@@ -61,7 +63,7 @@ function normalizeRef(ref: string): string {
  */
 export function normalizeAudioUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  
+
   // Remove query parameters and fragments for consistency
   try {
     const urlObj = new URL(url);
@@ -98,7 +100,7 @@ export function filterValidVerses(verses: Verse[]): Verse[] {
 export function deduplicateVerses(verses: Verse[]): Verse[] {
   const seen = new Set<string>();
   const unique: Verse[] = [];
-  
+
   for (const verse of verses) {
     const key = verse.ref.toLowerCase().trim();
     if (!seen.has(key)) {
@@ -106,7 +108,7 @@ export function deduplicateVerses(verses: Verse[]): Verse[] {
       unique.push(verse);
     }
   }
-  
+
   return unique;
 }
 
@@ -130,29 +132,29 @@ export function sortVersesByBook(verses: Verse[]): Verse[] {
     '1 Peter', '2 Peter', '1 John', '2 John', '3 John',
     'Jude', 'Revelation'
   ];
-  
+
   return verses.sort((a, b) => {
     const bookA = a.ref.split(' ')[0];
     const bookB = b.ref.split(' ')[0];
-    
+
     const indexA = bookOrder.indexOf(bookA);
     const indexB = bookOrder.indexOf(bookB);
-    
+
     if (indexA === -1 && indexB === -1) return 0;
     if (indexA === -1) return 1;
     if (indexB === -1) return -1;
-    
+
     if (indexA !== indexB) return indexA - indexB;
-    
+
     // Same book, sort by chapter:verse
     const [, chapterA, verseA] = a.ref.match(/(\d+):(\d+)/) || ['', '0', '0'];
     const [, chapterB, verseB] = b.ref.match(/(\d+):(\d+)/) || ['', '0', '0'];
-    
+
     const chapterNumA = parseInt(chapterA, 10);
     const chapterNumB = parseInt(chapterB, 10);
     const verseNumA = parseInt(verseA, 10);
     const verseNumB = parseInt(verseB, 10);
-    
+
     if (chapterNumA !== chapterNumB) return chapterNumA - chapterNumB;
     return verseNumA - verseNumB;
   });
@@ -170,6 +172,7 @@ function convertApiResultToVerse(apiResult: ApiResult): Verse {
     tags: apiResult.tags,
     audio_verse_url: apiResult.audio_verse_url,
     testament: apiResult.testament as 'OT' | 'NT' | undefined,
+    matchedForms: apiResult.matchedForms, // Preserve matched forms!
   };
 }
 
