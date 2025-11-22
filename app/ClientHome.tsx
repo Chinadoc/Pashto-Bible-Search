@@ -1226,7 +1226,7 @@ export default function ClientHome() {
     } finally {
       setIsLoading(false);
     }
-  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride]);
+  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride, activeTranslation]);
 
   // Helper to calculate coverage from filtered results
   const calculateCoverageFromResults = useCallback((verses: Verse[]) => {

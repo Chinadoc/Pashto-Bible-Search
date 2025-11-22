@@ -499,8 +499,12 @@ function generateR2AudioKey(book: string, chapter: number, verse: number, transl
   // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
 
-  // Determine testament based on book name (simplified - most NT books)
-  const testament = translation === 'afghan2023' ? 'nt' : 'ot';
+  // Determine testament based on book name
+  const OT_BOOKS = new Set([
+    'genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges', 'ruth', '1samuel', '2samuel', '1kings', '2kings', '1chronicles', '2chronicles', 'ezra', 'nehemiah', 'esther', 'job', 'psalms', 'proverbs', 'ecclesiastes', 'songofsongs', 'songofsolomon', 'isaiah', 'jeremiah', 'lamentations', 'ezekiel', 'daniel', 'hosea', 'joel', 'amos', 'obadiah', 'jonah', 'micah', 'nahum', 'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi'
+  ]);
+
+  const testament = OT_BOOKS.has(bookSlug) ? 'ot' : 'nt';
 
   return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
 }
