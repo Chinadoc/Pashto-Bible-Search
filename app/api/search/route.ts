@@ -919,7 +919,14 @@ export async function POST(request: NextRequest) {
         searchQuery = transliterated;
         console.log(`🔄 Transliterated "${originalQuery}" to "${searchQuery}" via fallback map`);
       } else {
-        console.log(`⚠️ No transliteration found for "${originalQuery}" in fallback map`);
+        // Try algorithmic transliteration as last resort
+        const algorithmic = romanizedToPashto(originalQuery.toLowerCase());
+        if (algorithmic !== originalQuery.toLowerCase()) {
+          searchQuery = algorithmic;
+          console.log(`🔄 Algorithmic transliteration "${originalQuery}" to "${searchQuery}"`);
+        } else {
+          console.log(`⚠️ No transliteration found for "${originalQuery}" in fallback map or algorithm`);
+        }
       }
     } else if (romanizedDictionaryMatch) {
       console.log('🔄 Using dictionary-backed romanized conversion result');
@@ -940,16 +947,42 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
-      console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
+
+      // If related forms requested but no variants provided, generate them first
+      let searchVariants = variants;
+      let precomputedRelatedForms = null;
+      let precomputedSearchTerms = null;
+
+      if (includeRelated && (!variants || variants.length === 0)) {
+        try {
+          console.log(`🔍 [D1 PRE-EXPANSION] Generating related forms for "${searchQuery}" before search`);
+          const inlineRelated = await buildInlineRelatedForms(
+            searchQuery,
+            translation as 'afghan2023' | 'yousafzai2019',
+            posFilters,
+          );
+
+          if (inlineRelated && inlineRelated.searchTerms && inlineRelated.searchTerms.length > 0) {
+            searchVariants = inlineRelated.searchTerms;
+            precomputedRelatedForms = inlineRelated.relatedForms;
+            precomputedSearchTerms = inlineRelated.searchTerms;
+            console.log(`✅ [D1 PRE-EXPANSION] Expanded to ${searchVariants.length} variants`);
+          }
+        } catch (error) {
+          console.warn('Failed to pre-expand variants:', error);
+        }
+      }
+
+      console.log(`🔍 Variants provided:`, searchVariants && searchVariants.length > 0 ? searchVariants.slice(0, 10) : 'none');
       try {
         // Map scope to testament filter
         const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
 
         // Use searchVersesByForms if variants are provided, otherwise use regular search
         let d1Verses: any[] = [];
-        if (variants && variants.length > 0) {
-          console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${variants.length} variants:`, variants.slice(0, 10));
-          d1Verses = await searchVersesByForms(variants, {
+        if (searchVariants && searchVariants.length > 0) {
+          console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${searchVariants.length} variants:`, searchVariants.slice(0, 10));
+          d1Verses = await searchVersesByForms(searchVariants, {
             translation: translation as 'afghan2023' | 'yousafzai2019',
             testament: testamentFilter,
             limit: limit,
@@ -990,15 +1023,25 @@ export async function POST(request: NextRequest) {
           let relatedFormTerms: string[] | null = null;
           if (includeRelated && searchLanguage === 'pashto') {
             try {
-              console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}"`);
-              const inlineRelated = await buildInlineRelatedForms(
-                searchQuery,
-                translation as 'afghan2023' | 'yousafzai2019',
-                posFilters,
-              );
-              if (inlineRelated) {
-                relatedFormsData = inlineRelated.relatedForms;
-                relatedFormTerms = inlineRelated.searchTerms;
+              // Use precomputed forms if available
+              if (precomputedRelatedForms) {
+                relatedFormsData = precomputedRelatedForms;
+                relatedFormTerms = precomputedSearchTerms;
+                console.log(`✅ [D1 FAST PATH] Using pre-expanded related forms`);
+              } else {
+                console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}"`);
+                const inlineRelated = await buildInlineRelatedForms(
+                  searchQuery,
+                  translation as 'afghan2023' | 'yousafzai2019',
+                  posFilters,
+                );
+                if (inlineRelated) {
+                  relatedFormsData = inlineRelated.relatedForms;
+                  relatedFormTerms = inlineRelated.searchTerms;
+                }
+              }
+
+              if (relatedFormsData) {
                 console.log(`✅ [D1 FAST PATH] Built related forms:`, {
                   total: relatedFormsData.total,
                   verbsCount: relatedFormsData.forms?.verbs?.length || 0,
