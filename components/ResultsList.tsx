@@ -14,9 +14,10 @@ import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, hig
 import HighlightText from './HighlightText';
 import EnhancedHighlightText from './EnhancedHighlightText';
 import VirtualizedResults from './VirtualizedResults';
+import VerbDetails from './VerbDetails';
 
 const OT_BOOKS = new Set([
-  'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
 ]);
 
 interface Props {
@@ -90,7 +91,7 @@ function highlightWithInflectionReasons(
   // Build a map of form -> inflection reasons
   const formToReasons = new Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>();
   const formToInflectionType = new Map<string, string>();
-  
+
   // Extract inflection data from variantDetails
   if (processed.variantDetails) {
     for (const detail of processed.variantDetails) {
@@ -102,7 +103,7 @@ function highlightWithInflectionReasons(
       }
     }
   }
-  
+
   // Also check relatedForms for inflection data
   if (processed.relatedForms) {
     const allForms = [
@@ -110,7 +111,7 @@ function highlightWithInflectionReasons(
       ...(processed.relatedForms.verbs || []),
       ...(processed.relatedForms.other || [])
     ];
-    
+
     for (const form of allForms) {
       if (form.form && form.inflectionReasons) {
         formToReasons.set(form.form, form.inflectionReasons);
@@ -131,7 +132,7 @@ function highlightWithInflectionReasons(
 
   // Use HighlightText for basic highlighting
   const basicHighlighted = <HighlightText text={text} tokens={tokens} />;
-  
+
   // If no inflection reasons, return basic highlighting
   if (formToReasons.size === 0) {
     return basicHighlighted;
@@ -154,11 +155,10 @@ function getTranslationBadge(translation?: string | null, dialect?: string | nul
 
   const isYousafzai = translation === 'Yousafzai 2019';
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-      isYousafzai
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isYousafzai
         ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-300'
         : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300'
-    }`}>
+      }`}>
       {isYousafzai ? '🕌' : '📖'} {translation}
     </span>
   );
@@ -259,7 +259,7 @@ function VerseItem({
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(`${verse.ref || 'Unknown Reference'}\n${verse.text || ''}`);
-              } catch {}
+              } catch { }
             }}
             className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors"
             title="Copy verse"
@@ -362,7 +362,7 @@ function VerseItem({
 export default function ResultsList({ results, audioMap, loading, query, terms: termsProp, highlightBook, processed, dictionaryData, verbFilters, multiVerbFilters, activeVariantForms, onResetFilters }: Props) {
   // Early returns BEFORE any hooks to avoid React hooks violations
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
-  
+
   // Enhanced "No results" message with context
   if (results.length === 0) {
     // Check for active filters - Only check person filters (tense/aspect/mood removed)
@@ -371,24 +371,24 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     ) : verbFilters && (
       verbFilters.person !== 'all'
     );
-    
+
     const activeFilterCount = multiVerbFilters ? (
       multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
     ) : verbFilters ? (
       verbFilters.person !== 'all' ? 1 : 0
     ) : 0;
-    
+
     if (hasActiveFilters) {
       return (
         <div className="text-center text-gray-500 p-6">
           <div className="mb-4">
             <p className="text-lg font-medium mb-2">No results match your current filters.</p>
             <p className="text-sm text-gray-600 mb-4">
-              The corpus may not contain these specific conjugated forms. 
+              The corpus may not contain these specific conjugated forms.
               Try removing some filters or searching for the base form.
             </p>
           </div>
-          
+
           {activeFilterCount > 0 && (
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex items-center justify-between mb-2">
@@ -396,7 +396,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                   {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
                 </span>
                 {onResetFilters && (
-                  <button 
+                  <button
                     onClick={onResetFilters}
                     className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 underline"
                   >
@@ -404,13 +404,13 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                   </button>
                 )}
               </div>
-              
+
               <div className="text-xs text-blue-700 dark:text-blue-300">
                 💡 Tip: Try removing tense or person filters to see more results
               </div>
             </div>
           )}
-          
+
           {activeVariantForms && activeVariantForms.length > 0 && (
             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -418,7 +418,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </p>
               <div className="flex flex-wrap gap-1 justify-center">
                 {activeVariantForms.slice(0, 8).map((form, i) => (
-                  <span 
+                  <span
                     key={i}
                     className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                   >
@@ -433,9 +433,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </div>
             </div>
           )}
-          
+
           {onResetFilters && (
-            <button 
+            <button
               onClick={onResetFilters}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
@@ -445,7 +445,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         </div>
       );
     }
-    
+
     return <p className="text-center text-gray-500">No results found.</p>;
   }
 
@@ -455,20 +455,55 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string | null>>({});
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>({});
-  
+
+  // Verb details state
+  const [verbData, setVerbData] = useState<{
+    metadata: any;
+    conjugations: any[];
+    lingdocs_url: string | null;
+  } | null>(null);
+
+  // Fetch verb details when query changes
+  useEffect(() => {
+    const fetchVerbDetails = async () => {
+      // Use the searched form from processed data if available, otherwise use query
+      const searchTerm = processed?.searchedForm || query;
+
+      if (!searchTerm || searchTerm.length < 2) {
+        setVerbData(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/verbs/lookup?word=${encodeURIComponent(searchTerm)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setVerbData(data);
+        } else {
+          setVerbData(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch verb details:', error);
+        setVerbData(null);
+      }
+    };
+
+    fetchVerbDetails();
+  }, [query, processed?.searchedForm]);
+
   // Filter state indicator - Only check person filters (tense/aspect/mood removed)
   const hasActiveFilters = multiVerbFilters ? (
     multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')
   ) : verbFilters && (
     verbFilters.person !== 'all'
   );
-  
+
   const activeFilterCount = multiVerbFilters ? (
     multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
   ) : verbFilters ? (
     verbFilters.person !== 'all' ? 1 : 0
   ) : 0;
-  
+
   // Enable virtual scrolling for large result sets
   // Disable virtualization for now to prevent verse rows from overlapping when content exceeds the fixed item height
   const shouldUseVirtualization = false;
@@ -509,7 +544,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       for (const translation of ['afghan2023', 'yousafzai2019'] as const) {
         const versesNeedingAudio = versesByTranslation[translation];
         if (versesNeedingAudio.length === 0) continue;
-        
+
         // Process in batches of 5 to avoid overwhelming the server
         const batchSize = 5;
         for (let i = 0; i < versesNeedingAudio.length; i += batchSize) {
@@ -746,7 +781,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   const paginationControl = (position: 'top' | 'bottom') => {
     const totalPages = Math.ceil(results.length / itemsPerPage)
     if (totalPages <= 1) return null
-    
+
     return (
       <div className={position === 'bottom' ? 'mt-6 flex justify-center' : 'flex justify-end'}>
         <div className="flex items-center gap-2">
@@ -847,7 +882,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </div>
             </div>
             {onResetFilters && (
-              <button 
+              <button
                 onClick={onResetFilters}
                 className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 underline"
               >
@@ -879,7 +914,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               <span className="font-semibold text-blue-600 dark:text-blue-400">
                 {activeVariantForms.slice(0, 3).map((form, idx) => (
                   <React.Fragment key={form}>
-                    <a 
+                    <a
                       href={`/lexicon?q=${encodeURIComponent(form)}`}
                       className="hover:underline"
                       title="View in dictionary"
@@ -897,7 +932,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </span>
             ) : dictionaryData?.entries?.[0] ? (
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                <a 
+                <a
                   href={`/lexicon?q=${encodeURIComponent(dictionaryData.entries[0].pashto)}`}
                   className="hover:underline"
                   title="View in dictionary"
@@ -920,7 +955,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </span>
             ) : processed?.normalized ? (
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                <a 
+                <a
                   href={`/lexicon?q=${encodeURIComponent(processed.normalized)}`}
                   className="hover:underline"
                   title="View in dictionary"
@@ -939,7 +974,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             ) : null}
           </div>
         )}
-        
+
         {/* Results count */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
           <span>
@@ -955,6 +990,16 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </span>
             )}
           </span>
+          {/* Verb Details Card */}
+          {verbData && (
+            <VerbDetails
+              word={processed?.searchedForm || query || ''}
+              metadata={verbData.metadata}
+              conjugations={verbData.conjugations}
+              lingdocsUrl={verbData.lingdocs_url}
+            />
+          )}
+
           {!shouldUseVirtualization && showPagination && paginationControl('top')}
         </div>
       </div>

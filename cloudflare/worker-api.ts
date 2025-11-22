@@ -66,7 +66,7 @@ function inferVerbRootFromForm(form: string): {
 } {
   let prefix: string | null = null;
   let stem = form;
-  
+
   // Remove verb prefixes (check longer prefixes first)
   if (form.startsWith('به')) {
     prefix = 'به';
@@ -78,16 +78,16 @@ function inferVerbRootFromForm(form: string): {
     prefix = 'و';
     stem = form.slice(1);
   }
-  
+
   const isPerfective = prefix === 'و';
   let isTransitive = false;
   let confidence: 'high' | 'medium' | 'low' = 'low';
   let root: string | null = null;
-  
+
   // Check for verb endings (person/mood markers)
   const verbEndings = ['م', 'ې', 'ي', 'و', 'ئ', 'ه', 'ل'];
   let foundEnding = false;
-  
+
   for (const ending of verbEndings) {
     if (stem.endsWith(ending) && stem.length > ending.length + 1) {
       const potentialStem = stem.slice(0, -ending.length);
@@ -100,7 +100,7 @@ function inferVerbRootFromForm(form: string): {
       }
     }
   }
-  
+
   // Check for verb root markers to infer the base root
   if (stem.endsWith('ول')) {
     // Transitive verb root: e.g., "فرمايول"
@@ -136,7 +136,7 @@ function inferVerbRootFromForm(form: string): {
       confidence = prefix ? 'medium' : 'low';
     }
   }
-  
+
   // If we couldn't find a clear root and no prefix, return null
   if (!root && !prefix && !foundEnding) {
     return {
@@ -146,7 +146,7 @@ function inferVerbRootFromForm(form: string): {
       confidence: 'low',
     };
   }
-  
+
   return {
     root: root || stem || form,
     isTransitive,
@@ -161,7 +161,7 @@ function inferVerbRootFromForm(form: string): {
 async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
   // Extract words
   const words = extractPashtoWords(transcript);
-  
+
   // Count words
   const wordCounts = new Map<string, number>();
   for (const word of words) {
@@ -192,22 +192,22 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_video_word_video ON video_word_mappings(video_id)
-  `).run().catch(() => {});
+  `).run().catch(() => { });
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_video_word_word ON video_word_mappings(pashto_word)
-  `).run().catch(() => {});
+  `).run().catch(() => { });
 
   // Get dictionary metadata for words (POS, inflections, etc.)
   const allWords = Array.from(wordCounts.keys());
   const wordMetadata = new Map<string, any>();
-  
+
   // Query dictionary for metadata in batches
   const batchSize = 100;
   for (let i = 0; i < allWords.length; i += batchSize) {
     const batch = allWords.slice(i, i + batchSize);
     const placeholders = batch.map(() => '?').join(',');
-    
+
     try {
       // First, try direct lookup
       const dictResults = await env.DB.prepare(`
@@ -216,24 +216,24 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
         FROM word_frequencies
         WHERE pashto_word IN (${placeholders})
       `).bind(...batch).all();
-      
+
       for (const row of dictResults.results || []) {
         wordMetadata.set(row.pashto_word as string, row);
       }
-      
+
       // For words not found, try inferring base form and looking that up
       // This handles cases like "وفرمایيل" → "فرمایل" (LingDocs dictionary entry)
       const notFound = batch.filter(w => !wordMetadata.has(w));
       if (notFound.length > 0) {
         const inferredRoots = new Map<string, string[]>(); // form -> [possible_roots]
-        
+
         for (const form of notFound) {
           const analysis = inferVerbRootFromForm(form);
           const possibleRoots: string[] = [];
-          
+
           if (analysis.root && analysis.confidence !== 'low' && analysis.root !== form) {
             possibleRoots.push(analysis.root);
-            
+
             // Also try removing "ول" suffix to get potential base form
             // e.g., "فرمایيول" → "فرمایي" → try "فرمایل" (LingDocs form)
             if (analysis.root.endsWith('ول') && analysis.root.length > 2) {
@@ -243,7 +243,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
                 possibleRoots.push(withoutOl + 'ل');
               }
             }
-            
+
             // Try the stem directly (might match LingDocs imperfective root)
             if (form.startsWith('و')) {
               const stem = form.slice(1);
@@ -258,35 +258,35 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
               }
             }
           }
-          
+
           if (possibleRoots.length > 0) {
             inferredRoots.set(form, [...new Set(possibleRoots)]); // Remove duplicates
           }
         }
-        
+
         // Look up all possible roots
         if (inferredRoots.size > 0) {
           const allRoots = new Set<string>();
           for (const roots of inferredRoots.values()) {
             roots.forEach(r => allRoots.add(r));
           }
-          
+
           const rootsToLookup = Array.from(allRoots);
           const rootPlaceholders = rootsToLookup.map(() => '?').join(',');
-          
+
           const rootResults = await env.DB.prepare(`
             SELECT pashto_word, pos, word_type, inflection_type, compound_type,
                    base_form, romanization, english_translation
             FROM word_frequencies
             WHERE pashto_word IN (${rootPlaceholders})
           `).bind(...rootsToLookup).all();
-          
+
           // Map roots back to forms (prefer exact matches, then try variations)
           const rootMap = new Map<string, any>();
           for (const row of rootResults.results || []) {
             rootMap.set(row.pashto_word as string, row);
           }
-          
+
           // Associate root metadata with original forms
           for (const [form, roots] of inferredRoots.entries()) {
             // Try roots in order (most specific first)
@@ -318,12 +318,12 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
     for (const word of batch) {
       const count = wordCounts.get(word) || 0;
       const metadata = wordMetadata.get(word);
-      
+
       try {
         // Get or create audio R2 key for this word in this video
         // Use the segment where the word appears most frequently
         const audioKey = `videos/${videoId}/full.mp3`; // Full video audio for now
-        
+
         // Update or insert word_frequencies with metadata preservation
         if (metadata) {
           // Word exists in dictionary - update frequency, preserve all metadata (pos, inflection_type, etc.)
@@ -340,21 +340,21 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
           let inferredWordType: string | null = null;
           let inferredInflectionType: string | null = null;
           let inferredBaseForm: string | null = null;
-          
+
           // Simple verb detection: check for verb markers
-          if (word.match(/^(و|به|تر)/) || word.match(/(ول|ېدل|یدل|کول|کېدل)$/) || 
-              word.match(/(م|ې|ي|و|ئ)$/)) {
+          if (word.match(/^(و|به|تر)/) || word.match(/(ول|ېدل|یدل|کول|کېدل)$/) ||
+            word.match(/(م|ې|ي|و|ئ)$/)) {
             // Looks like a verb - try to infer root
             const verbAnalysis = inferVerbRootFromForm(word);
             if (verbAnalysis.root && verbAnalysis.confidence !== 'low') {
               inferredPos = verbAnalysis.isTransitive ? 'v. trans.' : 'v. intrans.';
               inferredWordType = 'verb';
-              inferredInflectionType = verbAnalysis.isPerfective ? 'perfective_past' : 
-                                     word.startsWith('به') ? 'future_subjunctive' : 'imperfective_present';
+              inferredInflectionType = verbAnalysis.isPerfective ? 'perfective_past' :
+                word.startsWith('به') ? 'future_subjunctive' : 'imperfective_present';
               inferredBaseForm = verbAnalysis.root;
             }
           }
-          
+
           // Insert with inferred metadata if available
           await env.DB.prepare(`
             INSERT INTO word_frequencies (
@@ -396,7 +396,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
   if (processed > 0) {
     const affectedWords = Array.from(wordCounts.keys());
     const placeholders = affectedWords.map(() => '?').join(',');
-    
+
     // Update frequency_video from video_word_mappings
     await env.DB.prepare(`
       UPDATE word_frequencies
@@ -433,7 +433,7 @@ async function extractWordsFromVideoTranscript(env: Env, videoId: string, transc
         FROM word_frequencies wf2
         WHERE wf2.frequency_total > word_frequencies.frequency_total
       )
-    `).run().catch(() => {});
+    `).run().catch(() => { });
   }
 
   console.log(`   Processed ${processed} unique words from video ${videoId}`);
@@ -498,10 +498,10 @@ function generateR2AudioKey(book: string, chapter: number, verse: number, transl
   // Normalize book name: lowercase, remove spaces
   // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
-  
+
   // Determine testament based on book name (simplified - most NT books)
   const testament = translation === 'afghan2023' ? 'nt' : 'ot';
-  
+
   return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
 }
 
@@ -525,21 +525,21 @@ async function getVersesByChapter(
     const verses = result.results?.map((verse: any) => {
       let audioPublicUrl: string | null = null;
       let audioR2Key: string | null = verse.audio_r2_key || null;
-      
+
       // If no audio_r2_key in DB, try to generate it and check if it exists in R2
       if (!audioR2Key) {
         const generatedKey = generateR2AudioKey(verse.book, verse.chapter, verse.verse, translation);
         // Don't set it here - we'll verify it exists before using it
         audioR2Key = generatedKey;
       }
-      
+
       // Build audio URL from R2 key if we have one
       if (audioR2Key) {
         // Verify the file exists in R2 before creating URL
         // (We'll check in parallel, but for now just create the URL)
         audioPublicUrl = `${workerUrl}/api/audio/stream/${encodeURIComponent(audioR2Key)}`;
       }
-      
+
       return {
         ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
         book: verse.book,
@@ -718,7 +718,7 @@ async function uploadToR2(env: Env, request: Request): Promise<Response> {
 
     // Decode base64 data
     const buffer = Uint8Array.from(atob(data), c => c.charCodeAt(0));
-    
+
     console.log(`Uploading to R2: key=${key}, size=${buffer.length} bytes`);
 
     // Upload to R2
@@ -727,14 +727,14 @@ async function uploadToR2(env: Env, request: Request): Promise<Response> {
         contentType: 'audio/mpeg',
       },
     });
-    
+
     // Verify the upload by trying to get it back
     const verify = await env.AUDIO_BUCKET.get(key);
     if (verify === null) {
       console.error(`❌ Upload verification failed: file not found after upload`);
       return errorResponse('Upload verification failed', 500);
     }
-    
+
     console.log(`✅ Successfully uploaded and verified: ${key} (${verify.size} bytes)`);
 
     return jsonResponse({ success: true, key, size: buffer.length });
@@ -934,6 +934,31 @@ async function getVerbForms(env: Env, lemma: string, cap: number = 200): Promise
 }
 
 /**
+ * Get verb lexicon metadata from verbs_lexicon table
+ * GET /api/verb-lexicon?lemma={lemma}
+ */
+async function getVerbLexicon(env: Env, lemma: string): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM verbs_lexicon WHERE pashto_word = ?`
+    )
+      .bind(lemma)
+      .first();
+
+    if (!result) {
+      return errorResponse('Verb not found in lexicon', 404);
+    }
+
+    return jsonResponse({
+      entry: result,
+      source: 'd1_verified',
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to get verb lexicon: ${error.message}`, 500);
+  }
+}
+
+/**
  * Get form occurrences (verse references) for a word form
  * GET /api/form-occurrences?form={form}&translation={translation}
  */
@@ -960,8 +985,8 @@ async function getFormOccurrences(
       return errorResponse('Form not found', 404);
     }
 
-    const verseRefs = typeof result.verse_refs === 'string' 
-      ? JSON.parse(result.verse_refs) 
+    const verseRefs = typeof result.verse_refs === 'string'
+      ? JSON.parse(result.verse_refs)
       : result.verse_refs || [];
 
     return jsonResponse({
@@ -987,12 +1012,12 @@ async function getInflectionReasons(
 ): Promise<Response> {
   try {
     let query: any;
-    
+
     if (form) {
       query = env.DB.prepare(
         `SELECT * FROM inflection_reasons WHERE pashto_form = ?`
       ).bind(form);
-      
+
       if (translation) {
         query = env.DB.prepare(
           `SELECT * FROM inflection_reasons 
@@ -1004,7 +1029,7 @@ async function getInflectionReasons(
       query = env.DB.prepare(
         `SELECT * FROM inflection_reasons WHERE base_word = ?`
       ).bind(baseWord);
-      
+
       if (translation) {
         query = env.DB.prepare(
           `SELECT * FROM inflection_reasons 
@@ -1058,7 +1083,7 @@ async function getInflectionReasons(
           total_occurrences: 0,
         };
       }
-      
+
       const agg = aggregated[reason.pashto_form];
       agg.total_occurrences++;
       if (reason.is_plural) agg.reasons.plural++;
@@ -1181,7 +1206,7 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
           updated_at TEXT
         )
       `).run();
-      
+
       // Try to add title column if it doesn't exist (SQLite doesn't support IF NOT EXISTS for ALTER TABLE)
       try {
         await env.DB.prepare(`ALTER TABLE video_transcripts ADD COLUMN title TEXT`).run();
@@ -1194,13 +1219,13 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
 
       // Ensure segments JSON is properly stringified (don't truncate!)
       const segmentsJson = JSON.stringify(finalSegments);
-      
+
       // Generate R2 keys for all segments (comma-separated)
       const r2Keys = finalSegments.map((_, index) => `videos/${videoId}/segment_${index + 1}.mp3`).join(',');
-      
+
       // Check if title column exists, if not we'll handle it gracefully
       const titleValue = title || null;
-      
+
       await env.DB.prepare(`
         INSERT OR REPLACE INTO video_transcripts 
         (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, title, created_at, updated_at)
@@ -1216,7 +1241,7 @@ async function processVideo(env: Env, request: Request): Promise<Response> {
         metadata.created_at,
         metadata.created_at
       ).run();
-      
+
       console.log(`✅ Stored ${finalSegments.length} segments in D1`);
       console.log(`✅ Segments JSON length: ${segmentsJson.length} characters`);
     } catch (dbError: any) {
@@ -1362,13 +1387,13 @@ async function deleteVideo(env: Env, videoId: string): Promise<Response> {
     const videoWordsResult = await env.DB.prepare(
       `SELECT pashto_word, frequency FROM video_word_mappings WHERE video_id = ?`
     ).bind(videoId).all();
-    
+
     const affectedWords: string[] = [];
     if (videoWordsResult.results && videoWordsResult.results.length > 0) {
       // Decrement frequency_video for each word
       for (const mapping of videoWordsResult.results as any[]) {
         affectedWords.push(mapping.pashto_word);
-        
+
         await env.DB.prepare(`
           UPDATE word_frequencies 
           SET frequency_video = MAX(0, COALESCE(frequency_video, 0) - ?),
@@ -1378,7 +1403,7 @@ async function deleteVideo(env: Env, videoId: string): Promise<Response> {
           console.warn(`Failed to update frequency_video for ${mapping.pashto_word}: ${err.message}`);
         });
       }
-      
+
       // Recalculate frequency_total for affected words (safety check)
       if (affectedWords.length > 0) {
         const placeholders = affectedWords.map(() => '?').join(',');
@@ -1395,12 +1420,12 @@ async function deleteVideo(env: Env, videoId: string): Promise<Response> {
         });
       }
     }
-    
+
     // Delete video_word_mappings entries
     await env.DB.prepare(`DELETE FROM video_word_mappings WHERE video_id = ?`)
       .bind(videoId)
       .run();
-    
+
     // Delete video_transcripts entry
     await env.DB.prepare(`DELETE FROM video_transcripts WHERE video_id = ?`)
       .bind(videoId)
@@ -1468,14 +1493,14 @@ async function getVideoAudioFull(env: Env, videoId: string, request: Request): P
       `videos/${videoId}/audio.mp3`,
       `videos/${videoId.toLowerCase()}/full.mp3`,  // Lowercase video ID
     ];
-    
+
     console.log(`Requesting full audio for video ${videoId}`);
-    
+
     for (const r2Key of possiblePaths) {
       try {
         console.log(`Trying R2 path: ${r2Key}`);
         const object = await env.AUDIO_BUCKET.get(r2Key);
-        
+
         if (object !== null) {
           console.log(`✅ Found full audio at: ${r2Key}`);
           return streamAudio(env, r2Key, request);
@@ -1486,7 +1511,7 @@ async function getVideoAudioFull(env: Env, videoId: string, request: Request): P
         console.log(`Path ${r2Key} error: ${pathError.message}, trying next...`);
       }
     }
-    
+
     // If full audio not found, try to concatenate segments or return error
     console.warn(`⚠️ Full audio not found for video ${videoId}`);
     console.warn(`Tried paths: ${possiblePaths.join(', ')}`);
@@ -1509,14 +1534,14 @@ async function getVideoAudio(env: Env, videoId: string, segment: number, request
       `videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,  // Lowercase video ID
       `pashto-bible-audio/videos/${videoId.toLowerCase()}/segment_${segment}.mp3`,  // Lowercase with prefix
     ];
-    
+
     console.log(`Requesting audio for video ${videoId}, segment ${segment}`);
-    
+
     for (const r2Key of possiblePaths) {
       try {
         console.log(`Trying R2 path: ${r2Key}`);
         const object = await env.AUDIO_BUCKET.get(r2Key);
-        
+
         // Check if object exists (get() returns null if not found)
         if (object !== null) {
           console.log(`✅ Found audio at: ${r2Key}`);
@@ -1529,7 +1554,7 @@ async function getVideoAudio(env: Env, videoId: string, segment: number, request
         console.log(`Path ${r2Key} error: ${pathError.message}, trying next...`);
       }
     }
-    
+
     // None of the paths worked
     console.error(`❌ Audio file not found for video ${videoId}, segment ${segment}`);
     console.error(`Tried paths: ${possiblePaths.join(', ')}`);
@@ -1568,7 +1593,7 @@ async function getTopicsCategories(env: Env): Promise<Response> {
 
     const categories = result.results?.map((cat: any) => ({
       category_key: cat.category_key,
-      category_name: cat.category_name || cat.category_key.split('_').map((w: string) => 
+      category_name: cat.category_name || cat.category_key.split('_').map((w: string) =>
         w.charAt(0).toUpperCase() + w.slice(1)
       ).join(' '),
       description: cat.description,
@@ -1647,8 +1672,8 @@ async function getTopicsVerses(
       .all();
 
     // Build base URL for audio streaming
-    const baseUrl = request 
-      ? new URL(request.url).origin 
+    const baseUrl = request
+      ? new URL(request.url).origin
       : 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
     const verses = result.results?.map((verse: any) => {
@@ -1803,10 +1828,19 @@ export default {
       return getVerbForms(env, decodeURIComponent(lemma), cap);
     }
 
+    if (path === '/api/verb-lexicon' && request.method === 'GET') {
+      const lemma = url.searchParams.get('lemma');
+
+      if (!lemma) {
+        return errorResponse('Missing lemma parameter', 400);
+      }
+      return getVerbLexicon(env, decodeURIComponent(lemma));
+    }
+
     if (path === '/api/form-occurrences' && request.method === 'GET') {
       const form = url.searchParams.get('form');
       const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
-      
+
       if (!form) {
         return errorResponse('Missing form parameter', 400);
       }
@@ -1817,7 +1851,7 @@ export default {
       const form = url.searchParams.get('form');
       const baseWord = url.searchParams.get('base_word');
       const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
-      
+
       if (!form && !baseWord) {
         return errorResponse('Missing form or base_word parameter', 400);
       }
@@ -1840,7 +1874,7 @@ export default {
     if (path === '/api/topics/verses' && request.method === 'GET') {
       const category = url.searchParams.get('category');
       const limit = Math.min(200, Math.max(10, parseInt(url.searchParams.get('limit') || '200')));
-      
+
       if (!category) {
         return errorResponse('Missing category parameter', 400);
       }
@@ -1861,7 +1895,7 @@ export default {
       // Path format: /api/video/{videoId}/audio-full
       const pathParts = path.split('/');
       const videoId = pathParts[pathParts.length - 2];
-      
+
       if (!videoId) {
         return errorResponse('Missing video ID', 400);
       }
@@ -1874,7 +1908,7 @@ export default {
       const pathParts = path.split('/');
       const videoId = pathParts[pathParts.length - 2];
       const segment = parseInt(url.searchParams.get('segment') || '1');
-      
+
       if (!videoId) {
         return errorResponse('Missing video ID', 400);
       }
@@ -1886,7 +1920,7 @@ export default {
       // Path format: /api/video/{videoId}
       const pathParts = path.split('/');
       const videoId = pathParts[pathParts.length - 1];
-      
+
       if (!videoId) {
         return errorResponse('Missing video ID', 400);
       }
@@ -1909,14 +1943,14 @@ export default {
       try {
         const objects: any[] = [];
         let cursor: string | undefined;
-        
+
         do {
           const listResult = await env.AUDIO_BUCKET.list({
             prefix,
             limit: 1000,
             cursor,
           });
-          
+
           if (listResult.objects) {
             objects.push(...listResult.objects.map((obj: any) => ({
               key: obj.key,
@@ -1924,10 +1958,10 @@ export default {
               uploaded: obj.uploaded,
             })));
           }
-          
+
           cursor = listResult.cursor;
         } while (cursor);
-        
+
         return jsonResponse({
           prefix,
           count: objects.length,
@@ -1943,20 +1977,20 @@ export default {
       try {
         const body = await request.json();
         const { sql } = body;
-        
+
         if (!sql || typeof sql !== 'string') {
           return errorResponse('Missing or invalid SQL query', 400);
         }
-        
+
         // Security: Only allow SELECT queries
         const sqlUpper = sql.trim().toUpperCase();
         if (!sqlUpper.startsWith('SELECT')) {
           return errorResponse('Only SELECT queries are allowed', 400);
         }
-        
+
         // Execute query
         const result = await env.DB.prepare(sql).all();
-        
+
         return jsonResponse({
           success: true,
           results: result.results || [],

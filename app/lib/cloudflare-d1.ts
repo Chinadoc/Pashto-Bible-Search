@@ -366,3 +366,19 @@ export async function fetchVerbLexicon(
 }
 
 
+
+/**
+ * Get verb metadata (alias for fetchVerbLexicon)
+ * Used by the verb lookup API
+ */
+export async function getVerbMetadata(word: string) {
+  return fetchVerbLexicon(word);
+}
+
+/**
+ * Get verb conjugations (alias for fetchVerbFormsFromD1)
+ * Used by the verb lookup API
+ */
+export async function getVerbConjugations(word: string) {
+  return fetchVerbFormsFromD1(word);
+}

@@ -3,7 +3,7 @@ import Fuse from 'fuse.js';
 
 import { getData, getLightweightData, getSearchData, hybridSearch, warmCaches } from '@/app/lib/data/load';
 import { generateNounVariants } from '@/app/utils/noun_variants';
-import { generateVerbVariants } from '@/app/utils/verb_variants';
+
 import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef, fetchVerbFormsFromD1, fetchVerbLexicon } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
@@ -109,8 +109,8 @@ async function getVerbVariantsWithD1Fallback(
   }
 
   // Fallback to runtime generation if D1 has no data or fails
-  console.log(`[VERB_VARIANTS] ⚠️ No D1 forms for "${lemma}", falling back to generation`);
-  return await generateVerbVariants(lemma, opts);
+  console.log(`[VERB_VARIANTS] ⚠️ No D1 forms for "${lemma}", returning empty`);
+  return [];
 }
 
 // Helper function to search with multiple terms
