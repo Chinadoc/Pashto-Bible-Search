@@ -1047,7 +1047,7 @@ export async function POST(request: NextRequest) {
                   verbsCount: relatedFormsData.forms?.verbs?.length || 0,
                   nounsCount: relatedFormsData.forms?.nouns?.length || 0,
                   posGuess: relatedFormsData.posGuess,
-                  searchTermsCount: relatedFormTerms.length,
+                  searchTermsCount: relatedFormTerms?.length || 0,
                 });
                 console.log(`📋 [D1 FAST PATH] Verb forms sample:`,
                   relatedFormsData.forms?.verbs?.slice(0, 5).map((v: any) => ({ form: v.form, label: v.label }))
