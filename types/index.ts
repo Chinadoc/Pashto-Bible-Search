@@ -91,6 +91,7 @@ export interface Verse {
   testament?: 'OT' | 'NT'; // Old Testament or New Testament
   audio_storage_path?: string | null; // Storage path for verse audio file
   audio_public_url?: string | null; // Public URL for verse audio playback
+  matchedForms?: string[]; // Forms that were actually matched in this verse (for related forms search)
 }
 
 export interface CoverageItem {

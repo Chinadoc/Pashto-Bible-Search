@@ -281,6 +281,21 @@ function VerseItem({
         </div>
       </div>
 
+      {/* Matched Forms Badges */}
+      {verse.matchedForms && verse.matchedForms.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2" dir="ltr">
+          {verse.matchedForms.map((form, idx) => (
+            <span
+              key={`${form}-${idx}`}
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
+              title="Matched form in this verse"
+            >
+              {form}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Verse text */}
       <p className="text-gray-100 leading-relaxed break-words text-base" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
         {verse.text ? highlightWithInflectionReasons(
@@ -297,8 +312,8 @@ function VerseItem({
           <button
             onClick={loadAudioUrl}
             className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-2 ${audioUrl === 'MISSING'
-                ? 'border-red-200 bg-red-50 text-red-400 cursor-not-allowed dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-500'
-                : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40'
+              ? 'border-red-200 bg-red-50 text-red-400 cursor-not-allowed dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-500'
+              : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40'
               }`}
             title={audioUrl === 'MISSING' ? 'No audio available for this verse' : 'Load audio for this verse'}
             disabled={isLoadingAudio || audioUrl === 'MISSING'}
