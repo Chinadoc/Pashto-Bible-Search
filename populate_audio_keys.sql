@@ -1,6 +1,8 @@
 -- Populate audio_r2_key in D1 database
+-- Generated on 2025-11-22T16:45:28.622Z
+-- Total updates: 100
 
--- Afghan 2023 updates:
+-- Afghan 2023 updates (100 verses):
 UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts10_verse_001.mp3' WHERE book = 'Acts' AND chapter = 10 AND verse = 1;
 UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts10_verse_002.mp3' WHERE book = 'Acts' AND chapter = 10 AND verse = 2;
 UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts10_verse_003.mp3' WHERE book = 'Acts' AND chapter = 10 AND verse = 3;
@@ -102,4 +104,4 @@ UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts12_verse_020.mp3'
 UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts12_verse_021.mp3' WHERE book = 'Acts' AND chapter = 12 AND verse = 21;
 UPDATE verses_afghan2023 SET audio_r2_key = 'afghan2023/nt/acts12_verse_022.mp3' WHERE book = 'Acts' AND chapter = 12 AND verse = 22;
 
--- Yousafzai updates:
+-- Yousafzai updates (0 verses):

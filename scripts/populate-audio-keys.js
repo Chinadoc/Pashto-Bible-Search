@@ -63,18 +63,43 @@ function parseAudioFileName(key) {
 }
 
 async function populateAudioKeys() {
-    console.log('🎵 Fetching R2 audio file list...');
+    console.log('🎵 Fetching ALL R2 audio files...');
 
-    // Fetch all audio files
-    const response = await fetch(`${WORKER_URL}/api/r2/list`);
-    const data = await response.json();
+    // Fetch ALL audio files by paginating through the bucket
+    let allObjects = [];
+    let cursor = undefined;
+    let page = 0;
 
-    console.log(`📦 Found ${data.count} total files in R2`);
+    do {
+        page++;
+        const url = cursor
+            ? `${WORKER_URL}/api/r2/list?cursor=${encodeURIComponent(cursor)}`
+            : `${WORKER_URL}/api/r2/list`;
+
+        console.log(`  Fetching page ${page}...`);
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.objects && data.objects.length > 0) {
+            allObjects = allObjects.concat(data.objects);
+            console.log(`  → Got ${data.objects.length} files (total: ${allObjects.length})`);
+        }
+
+        cursor = data.cursor;
+
+        // Safety limit to prevent infinite loops
+        if (page > 1000) {
+            console.warn('⚠️  Reached page limit of 1000, stopping pagination');
+            break;
+        }
+    } while (cursor);
+
+    console.log(`\n📦 Found ${allObjects.length} total files in R2`);
 
     // Parse all file names
     const updates = [];
 
-    for (const obj of data.objects) {
+    for (const obj of allObjects) {
         const parsed = parseAudioFileName(obj.key);
         if (parsed) {
             updates.push(parsed);
@@ -90,66 +115,33 @@ async function populateAudioKeys() {
     console.log(`  - Afghan 2023: ${afghan.length} files`);
     console.log(`  - Yousafzai: ${yousafzai.length} files`);
 
-    // Update database
-    console.log('\n🔄 Updating database...');
+    // Group by book to show coverage
+    const afghanBooks = new Set(afghan.map(u => u.book));
+    const yousafzaiBooks = new Set(yousafzai.map(u => u.book));
 
-    for (const update of updates) {
-        const table = update.translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
-        const sql = `UPDATE ${table} SET audio_r2_key = '${update.audioKey}' WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse}`;
-
-        try {
-            const response = await fetch(`${WORKER_URL}/api/d1/query`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sql: `SELECT id FROM ${table} WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse} LIMIT 1` })
-            });
-
-            const result = await response.json();
-
-            if (result.results && result.results.length > 0) {
-                // Verse exists - we would update it here but the D1 API only allows SELECT
-                // We need to use wrangler for updates
-                console.log(`  ✓ ${update.translation} ${update.book} ${update.chapter}:${update.verse}`);
-            }
-        } catch (error) {
-            console.error(`  ✗ Failed to check ${update.book} ${update.chapter}:${update.verse}:`, error.message);
-        }
-    }
-
-    console.log('\n⚠️  Note: To actually update the database, we need to use wrangler CLI');
-    console.log('The D1 API only allows SELECT queries for security.');
-
-    // Generate SQL statements for manual execution
-    console.log('\n📝 Generated SQL statements (save to file and execute with wrangler):');
-    console.log('\n-- Afghan 2023 updates:');
-    for (const update of afghan.slice(0, 5)) {
-        console.log(`UPDATE verses_afghan2023 SET audio_r2_key = '${update.audioKey}' WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse};`);
-    }
-    console.log(`-- ... (${afghan.length - 5} more)`);
-
-    console.log('\n-- Yousafzai updates:');
-    for (const update of yousafzai.slice(0, 5)) {
-        console.log(`UPDATE verses_yousafzai SET audio_r2_key = '${update.audioKey}' WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse};`);
-    }
-    console.log(`-- ... (${yousafzai.length - 5} more)`);
+    console.log(`\n📚 Book coverage:`);
+    console.log(`  - Afghan 2023: ${afghanBooks.size} books - ${Array.from(afghanBooks).sort().join(', ')}`);
+    console.log(`  - Yousafzai: ${yousafzaiBooks.size} books - ${Array.from(yousafzaiBooks).sort().join(', ')}`);
 
     // Save to file
     const fs = require('fs');
-    let sqlFile = '-- Populate audio_r2_key in D1 database\n\n';
+    let sqlFile = `-- Populate audio_r2_key in D1 database\n`;
+    sqlFile += `-- Generated on ${new Date().toISOString()}\n`;
+    sqlFile += `-- Total updates: ${updates.length}\n\n`;
 
-    sqlFile += '-- Afghan 2023 updates:\n';
+    sqlFile += `-- Afghan 2023 updates (${afghan.length} verses):\n`;
     for (const update of afghan) {
         sqlFile += `UPDATE verses_afghan2023 SET audio_r2_key = '${update.audioKey}' WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse};\n`;
     }
 
-    sqlFile += '\n-- Yousafzai updates:\n';
+    sqlFile += `\n-- Yousafzai updates (${yousafzai.length} verses):\n`;
     for (const update of yousafzai) {
         sqlFile += `UPDATE verses_yousafzai SET audio_r2_key = '${update.audioKey}' WHERE book = '${update.book}' AND chapter = ${update.chapter} AND verse = ${update.verse};\n`;
     }
 
     fs.writeFileSync('populate_audio_keys.sql', sqlFile);
-    console.log('\n✅ SQL file written to populate_audio_keys.sql');
-    console.log('Run with: wrangler d1 execute pashto-bible-db --file=populate_audio_keys.sql');
+    console.log(`\n✅ SQL file written to populate_audio_keys.sql (${updates.length} updates)`);
+    console.log('Run with: npx wrangler d1 execute pashto-bible-db --remote --file=populate_audio_keys.sql');
 }
 
 populateAudioKeys().catch(console.error);

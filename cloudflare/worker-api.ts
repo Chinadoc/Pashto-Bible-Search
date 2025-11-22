@@ -1976,7 +1976,7 @@ export default {
         return jsonResponse({
           prefix,
           count: objects.length,
-          objects: objects.slice(0, 100), // Limit to first 100 for response size
+          objects: objects, // Return all objects
         });
       } catch (error: any) {
         return errorResponse(`Failed to list R2 objects: ${error.message}`, 500);
