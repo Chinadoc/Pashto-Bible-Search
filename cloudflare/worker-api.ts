@@ -487,16 +487,13 @@ async function searchVerses(
 }
 
 /**
- * Get verses by book and chapter
- */
-/**
  * Generate R2 audio key from book, chapter, verse
- * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
- * Example: afghan2023/nt/matthew27_verse_002.mp3
+ * Based on actual R2 bucket structure:
+ * - Afghan2023: afghan2023/nt/acts10_verse_001.mp3 (no prefix, chapter not padded)
+ * - Yousafzai: yousafzai/nt/yousafzai_acts001_verse_001.mp3 (with prefix, 3-digit chapter)
  */
 function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023'): string {
   // Normalize book name: lowercase, remove spaces
-  // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
 
   // Determine testament based on book name
@@ -506,7 +503,17 @@ function generateR2AudioKey(book: string, chapter: number, verse: number, transl
 
   const testament = OT_BOOKS.has(bookSlug) ? 'ot' : 'nt';
 
-  return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
+  // Format differs by translation
+  if (translation === 'yousafzai2019') {
+    // Yousafzai: yousafzai/nt/yousafzai_acts001_verse_001.mp3
+    const chapterPadded = String(chapter).padStart(3, '0');
+    const versePadded = String(verse).padStart(3, '0');
+    return `yousafzai/${testament}/yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
+  } else {
+    // Afghan2023: afghan2023/nt/acts10_verse_001.mp3 (chapter NOT padded)
+    const versePadded = String(verse).padStart(3, '0');
+    return `afghan2023/${testament}/${bookSlug}${chapter}_verse_${versePadded}.mp3`;
+  }
 }
 
 async function getVersesByChapter(
