@@ -32,17 +32,17 @@ function parseRef(ref: string): { book: string; chapter: number; verse: number }
 }
 
 const BOOK_SLUG_ALIASES: Record<string, string[]> = {
-  '1corinthians': ['1corinthians', '1cor', '1co', 'firstcorinthians', '1_corinthians', 'corinthians1'],
-  '2corinthians': ['2corinthians', '2cor', '2co', 'secondcorinthians', '2_corinthians', 'corinthians2'],
-  '1thessalonians': ['1thessalonians', '1thess', 'firstthessalonians', '1_thessalonians', 'thessalonians1'],
-  '2thessalonians': ['2thessalonians', '2thess', 'secondthessalonians', '2_thessalonians', 'thessalonians2'],
-  '1timothy': ['1timothy', '1tim', 'firsttimothy', '1_timothy', 'timothy1'],
-  '2timothy': ['2timothy', '2tim', 'secondtimothy', '2_timothy', 'timothy2'],
-  '1peter': ['1peter', '1pet', 'firstpeter', '1_peter', 'peter1'],
-  '2peter': ['2peter', '2pet', 'secondpeter', '2_peter', 'peter2'],
-  '1john': ['1john', '1jn', 'firstjohn', '1_john', 'john1'],
-  '2john': ['2john', '2jn', 'secondjohn', '2_john', 'john2'],
-  '3john': ['3john', '3jn', 'thirdjohn', '3_john', 'john3'],
+  '1corinthians': ['1corinthians', '1cor', '1co', 'firstcorinthians', '1_corinthians', 'corinthians1', '1_cor', 'first_corinthians'],
+  '2corinthians': ['2corinthians', '2cor', '2co', 'secondcorinthians', '2_corinthians', 'corinthians2', '2_cor', 'second_corinthians'],
+  '1thessalonians': ['1thessalonians', '1thess', 'firstthessalonians', '1_thessalonians', 'thessalonians1', '1_thess', 'first_thessalonians'],
+  '2thessalonians': ['2thessalonians', '2thess', 'secondthessalonians', '2_thessalonians', 'thessalonians2', '2_thess', 'second_thessalonians'],
+  '1timothy': ['1timothy', '1tim', 'firsttimothy', '1_timothy', 'timothy1', '1_tim', 'first_timothy'],
+  '2timothy': ['2timothy', '2tim', 'secondtimothy', '2_timothy', 'timothy2', '2_tim', 'second_timothy'],
+  '1peter': ['1peter', '1pet', 'firstpeter', '1_peter', 'peter1', '1_pet', 'first_peter'],
+  '2peter': ['2peter', '2pet', 'secondpeter', '2_peter', 'peter2', '2_pet', 'second_peter'],
+  '1john': ['1john', '1jn', 'firstjohn', '1_john', 'john1', '1_jn', 'first_john'],
+  '2john': ['2john', '2jn', 'secondjohn', '2_john', 'john2', '2_jn', 'second_john'],
+  '3john': ['3john', '3jn', 'thirdjohn', '3_john', 'john3', '3_jn', 'third_john'],
 };
 
 function normaliseBookSlug(book: string): string {
