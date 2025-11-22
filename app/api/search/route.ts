@@ -1834,16 +1834,24 @@ export async function POST(request: NextRequest) {
         });
 
         if (d1Verses && d1Verses.length > 0) {
-          searchResults = d1Verses.map((verse: any) => ({
-            ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
-            text: verse.text,
-            testament: verse.testament,
-            book: verse.book,
-            chapter: verse.chapter,
-            verse: verse.verse,
-            audio_verse_url: verse.audio_r2_key ? getAudioStreamUrl(verse.audio_r2_key) : null,
-            audio_r2_key: verse.audio_r2_key || null,
-          }));
+          searchResults = d1Verses.map((verse: any) => {
+            // Find which search terms (forms) actually appear in this verse
+            const matchedForms = searchTerms.filter(term =>
+              verse.text && verse.text.includes(term)
+            );
+
+            return {
+              ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+              text: verse.text,
+              testament: verse.testament,
+              book: verse.book,
+              chapter: verse.chapter,
+              verse: verse.verse,
+              audio_verse_url: verse.audio_r2_key ? getAudioStreamUrl(verse.audio_r2_key) : null,
+              audio_r2_key: verse.audio_r2_key || null,
+              matchedForms: matchedForms.length > 0 ? matchedForms : undefined,
+            };
+          });
           searchType = 'enhanced';
           console.log(`✅ D1 form_occurrences search: found ${searchResults.length} results`);
         } else {
