@@ -156,8 +156,8 @@ function getTranslationBadge(translation?: string | null, dialect?: string | nul
   const isYousafzai = translation === 'Yousafzai 2019';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isYousafzai
-        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-300'
-        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300'
+      ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-300'
+      : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300'
       }`}>
       {isYousafzai ? '🕌' : '📖'} {translation}
     </span>
@@ -295,12 +295,15 @@ function VerseItem({
       {!audioUrl ? (
         <div className="mt-3 pt-3 border-t border-gray-700/50">
           <button
-            className={`px-4 py-2 text-sm rounded-lg border border-gray-600 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors ${isLoadingAudio ? 'opacity-60' : ''}`}
             onClick={loadAudioUrl}
-            title="Load audio for this verse"
-            disabled={isLoadingAudio}
+            className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-2 ${audioUrl === 'MISSING'
+                ? 'border-red-200 bg-red-50 text-red-400 cursor-not-allowed dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-500'
+                : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40'
+              }`}
+            title={audioUrl === 'MISSING' ? 'No audio available for this verse' : 'Load audio for this verse'}
+            disabled={isLoadingAudio || audioUrl === 'MISSING'}
           >
-            {isLoadingAudio ? '⏳ Loading...' : '🔊 Load Audio'}
+            {isLoadingAudio ? '⏳ Loading...' : audioUrl === 'MISSING' ? '❌ No Audio' : '🔊 Load Audio'}
           </button>
         </div>
       ) : (
@@ -579,6 +582,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 const url = await resolveAudioUrl(verseRef, entry, { translation: verseTranslation });
                 if (url) {
                   setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
+                } else {
+                  setVerseAudioUrls(prev => ({ ...prev, [verseRef]: 'MISSING' }));
                 }
               } catch (error) {
                 console.warn(`Failed to preload audio for ${verseRef}:`, error);
@@ -625,6 +630,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       if (url) {
         setVerseAudioUrls(prev => ({ ...prev, [verseRef]: url }));
         setResolvedUrls(prev => ({ ...prev, [verseRef]: url }));
+      } else {
+        setVerseAudioUrls(prev => ({ ...prev, [verseRef]: 'MISSING' }));
       }
     } catch (error) {
       console.warn(`Failed to load audio for ${verseRef}:`, error);

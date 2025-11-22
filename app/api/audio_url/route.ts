@@ -18,7 +18,7 @@ const TRANSLATION_CONFIG: Record<
 };
 
 const OT_BOOKS = new Set([
-  'genesis','exodus','leviticus','numbers','deuteronomy','joshua','judges','ruth','1samuel','2samuel','1kings','2kings','1chronicles','2chronicles','ezra','nehemiah','esther','job','psalms','proverbs','ecclesiastes','songofsongs','songofsolomon','songofsongs','isaiah','jeremiah','lamentations','ezekiel','daniel','hosea','joel','amos','obadiah','jonah','micah','nahum','habakkuk','zephaniah','haggai','zechariah','malachi',
+  'genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges', 'ruth', '1samuel', '2samuel', '1kings', '2kings', '1chronicles', '2chronicles', 'ezra', 'nehemiah', 'esther', 'job', 'psalms', 'proverbs', 'ecclesiastes', 'songofsongs', 'songofsolomon', 'songofsongs', 'isaiah', 'jeremiah', 'lamentations', 'ezekiel', 'daniel', 'hosea', 'joel', 'amos', 'obadiah', 'jonah', 'micah', 'nahum', 'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi',
 ]);
 
 function parseRef(ref: string): { book: string; chapter: number; verse: number } | null {
@@ -171,6 +171,13 @@ async function buildCandidateKeys(
     // Also allow keys without folder prefixes (in case files live at bucket root)
     for (const base of baseNameVariants) {
       candidates.add(`${base}.mp3`);
+      // Add variants with just the translation folder but no prefix in filename
+      // e.g. afghan2023/mark1_verse_001.mp3
+      const { folderAliases } = TRANSLATION_CONFIG[translation] ?? { folderAliases: [translation] };
+      for (const folder of folderAliases) {
+        candidates.add(`${folder}/${testament}/${base}.mp3`);
+        candidates.add(`${folder}/${base}.mp3`);
+      }
     }
   }
 
@@ -243,12 +250,7 @@ async function resolveAudioUrl(ref: string, translation: 'afghan2023' | 'yousafz
     }
   }
 
-  // As a last resort, return the first candidate even if existence checks failed
-  if (fallbackCandidates.length > 0) {
-    const url = toStreamUrl(fallbackCandidates[0]);
-    if (url) return url;
-  }
-
+  // Removed "last resort" fallback to prevent returning 404 URLs
   return null;
 }
 
