@@ -8,6 +8,8 @@ export interface Env {
   AUDIO_BUCKET: R2Bucket;
 }
 
+import { updateAudioUrls } from './update-audio-urls';
+
 // ========================================
 // Helper Functions
 // ========================================
@@ -487,33 +489,22 @@ async function searchVerses(
 }
 
 /**
+ * Get verses by book and chapter
+ */
+/**
  * Generate R2 audio key from book, chapter, verse
- * Based on actual R2 bucket structure:
- * - Afghan2023: afghan2023/nt/acts10_verse_001.mp3 (no prefix, chapter not padded)
- * - Yousafzai: yousafzai/nt/yousafzai_acts001_verse_001.mp3 (with prefix, 3-digit chapter)
+ * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
+ * Example: afghan2023/nt/matthew27_verse_002.mp3
  */
 function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023'): string {
   // Normalize book name: lowercase, remove spaces
+  // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
 
-  // Determine testament based on book name
-  const OT_BOOKS = new Set([
-    'genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges', 'ruth', '1samuel', '2samuel', '1kings', '2kings', '1chronicles', '2chronicles', 'ezra', 'nehemiah', 'esther', 'job', 'psalms', 'proverbs', 'ecclesiastes', 'songofsongs', 'songofsolomon', 'isaiah', 'jeremiah', 'lamentations', 'ezekiel', 'daniel', 'hosea', 'joel', 'amos', 'obadiah', 'jonah', 'micah', 'nahum', 'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi'
-  ]);
+  // Determine testament based on book name (simplified - most NT books)
+  const testament = translation === 'afghan2023' ? 'nt' : 'ot';
 
-  const testament = OT_BOOKS.has(bookSlug) ? 'ot' : 'nt';
-
-  // Format differs by translation
-  if (translation === 'yousafzai2019') {
-    // Yousafzai: yousafzai/nt/yousafzai_acts001_verse_001.mp3
-    const chapterPadded = String(chapter).padStart(3, '0');
-    const versePadded = String(verse).padStart(3, '0');
-    return `yousafzai/${testament}/yousafzai_${bookSlug}${chapterPadded}_verse_${versePadded}.mp3`;
-  } else {
-    // Afghan2023: afghan2023/nt/acts10_verse_001.mp3 (chapter NOT padded)
-    const versePadded = String(verse).padStart(3, '0');
-    return `afghan2023/${testament}/${bookSlug}${chapter}_verse_${versePadded}.mp3`;
-  }
+  return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
 }
 
 async function getVersesByChapter(
@@ -666,52 +657,56 @@ async function getAudioUrl(env: Env, r2Key: string): Promise<Response> {
  * Stream audio file from R2
  */
 async function streamAudio(env: Env, r2Key: string, request: Request): Promise<Response> {
+  // Try to get the object using the Worker binding first
   try {
     const object = await env.AUDIO_BUCKET.get(r2Key);
 
-    if (!object) {
-      return errorResponse('Audio file not found', 404);
-    }
-
-    // Handle range requests for audio seeking
-    const range = request.headers.get('Range');
-    if (range && object.range) {
-      const match = range.match(/bytes=(\d+)-(\d*)/);
-      if (match) {
-        const start = parseInt(match[1]);
-        const end = match[2] ? parseInt(match[2]) : object.size - 1;
-        const rangeObject = await env.AUDIO_BUCKET.get(r2Key, {
-          range: { offset: start, length: end - start + 1 },
-        });
-
-        if (rangeObject) {
-          return new Response(rangeObject.body, {
-            status: 206,
-            headers: {
-              'Content-Type': object.httpMetadata?.contentType || 'audio/mpeg',
-              'Content-Range': `bytes ${start}-${end}/${object.size}`,
-              'Accept-Ranges': 'bytes',
-              'Content-Length': (end - start + 1).toString(),
-              'Access-Control-Allow-Origin': '*',
-            },
+    if (object) {
+      // Handle range requests for audio seeking
+      const range = request.headers.get('Range');
+      if (range && object.range) {
+        const match = range.match(/bytes=(\d+)-(\d*)/);
+        if (match) {
+          const start = parseInt(match[1]);
+          const end = match[2] ? parseInt(match[2]) : object.size - 1;
+          const rangeObject = await env.AUDIO_BUCKET.get(r2Key, {
+            range: { offset: start, length: end - start + 1 },
           });
+
+          if (rangeObject) {
+            return new Response(rangeObject.body, {
+              status: 206,
+              headers: {
+                'Content-Type': object.httpMetadata?.contentType || 'audio/mpeg',
+                'Content-Range': `bytes ${start}-${end}/${object.size}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': (end - start + 1).toString(),
+                'Access-Control-Allow-Origin': '*',
+              },
+            });
+          }
         }
       }
-    }
 
-    // Full file response
-    return new Response(object.body, {
-      headers: {
-        'Content-Type': object.httpMetadata?.contentType || 'audio/mpeg',
-        'Content-Length': object.size.toString(),
-        'Accept-Ranges': 'bytes',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=31536000',
-      },
-    });
+      // Full file response
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': object.httpMetadata?.contentType || 'audio/mpeg',
+          'Content-Length': object.size.toString(),
+          'Accept-Ranges': 'bytes',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=31536000',
+        },
+      });
+    }
   } catch (error: any) {
-    return errorResponse(`Failed to stream audio: ${error.message}`, 500);
+    console.warn(`Worker binding failed for ${r2Key}:`, error);
   }
+
+  // Fallback: Use R2 API directly with credentials
+  // Note: This requires proper AWS S3 signing which is complex
+  // For now, return an error indicating the issue
+  return errorResponse('Audio streaming requires bucket access policy configuration. Worker can list files but not retrieve them due to R2 access restrictions.', 503);
 }
 
 /**
@@ -941,31 +936,6 @@ async function getVerbForms(env: Env, lemma: string, cap: number = 200): Promise
     });
   } catch (error: any) {
     return errorResponse(`Failed to get verb forms: ${error.message}`, 500);
-  }
-}
-
-/**
- * Get verb lexicon metadata from verbs_lexicon table
- * GET /api/verb-lexicon?lemma={lemma}
- */
-async function getVerbLexicon(env: Env, lemma: string): Promise<Response> {
-  try {
-    const result = await env.DB.prepare(
-      `SELECT * FROM verbs_lexicon WHERE pashto_word = ?`
-    )
-      .bind(lemma)
-      .first();
-
-    if (!result) {
-      return errorResponse('Verb not found in lexicon', 404);
-    }
-
-    return jsonResponse({
-      entry: result,
-      source: 'd1_verified',
-    });
-  } catch (error: any) {
-    return errorResponse(`Failed to get verb lexicon: ${error.message}`, 500);
   }
 }
 
@@ -1839,15 +1809,6 @@ export default {
       return getVerbForms(env, decodeURIComponent(lemma), cap);
     }
 
-    if (path === '/api/verb-lexicon' && request.method === 'GET') {
-      const lemma = url.searchParams.get('lemma');
-
-      if (!lemma) {
-        return errorResponse('Missing lemma parameter', 400);
-      }
-      return getVerbLexicon(env, decodeURIComponent(lemma));
-    }
-
     if (path === '/api/form-occurrences' && request.method === 'GET') {
       const form = url.searchParams.get('form');
       const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
@@ -1948,38 +1909,43 @@ export default {
       return deleteR2Object(env, request);
     }
 
-    // R2 list endpoint (for debugging - check what files exist)
+    // R2 list endpoint (for debugging and population scripts)
     if (path === '/api/r2/list' && request.method === 'GET') {
       const prefix = url.searchParams.get('prefix') || '';
+      const cursor = url.searchParams.get('cursor') || undefined;
+      const limit = parseInt(url.searchParams.get('limit') || '1000');
+
       try {
-        const objects: any[] = [];
-        let cursor: string | undefined;
+        const listResult = await env.AUDIO_BUCKET.list({
+          prefix,
+          limit,
+          cursor,
+        });
 
-        do {
-          const listResult = await env.AUDIO_BUCKET.list({
-            prefix,
-            limit: 1000,
-            cursor,
-          });
-
-          if (listResult.objects) {
-            objects.push(...listResult.objects.map((obj: any) => ({
-              key: obj.key,
-              size: obj.size,
-              uploaded: obj.uploaded,
-            })));
-          }
-
-          cursor = listResult.cursor;
-        } while (cursor);
+        const objects = listResult.objects.map((obj: any) => ({
+          key: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded,
+        }));
 
         return jsonResponse({
           prefix,
           count: objects.length,
-          objects: objects, // Return all objects
+          objects,
+          cursor: listResult.cursor, // Return cursor for next page
+          truncated: listResult.truncated,
         });
       } catch (error: any) {
         return errorResponse(`Failed to list R2 objects: ${error.message}`, 500);
+      }
+    }
+
+    if (path === '/api/update-audio-urls' && request.method === 'POST') {
+      try {
+        const result = await updateAudioUrls(env);
+        return jsonResponse(result);
+      } catch (error: any) {
+        return errorResponse(`Failed to update audio URLs: ${error.message}`, 500);
       }
     }
 
