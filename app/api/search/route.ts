@@ -1050,7 +1050,7 @@ export async function POST(request: NextRequest) {
         usingVariants: variants?.length ? variants.slice(0, 5) : (relatedFormTerms?.slice(0, 5) || [searchQuery]),
       });
 
-      return NextResponse.json({
+      const d1Result: any = {
         success: true,
         results: formattedResults.slice(0, limit),
         relatedForms: relatedFormsData,
@@ -1065,7 +1065,14 @@ export async function POST(request: NextRequest) {
         },
         queryTime: queryTimeMs,
         source: 'd1-r2',
-      });
+      };
+
+      // Add debug info if requested
+      if (req.nextUrl.searchParams.get('debug') === 'true') {
+        d1Result.debug = debugInfo;
+      }
+
+      return NextResponse.json(d1Result);
     } else {
       console.log(`⚠️ D1 search returned ${d1Verses?.length || 0} results`);
     }
