@@ -775,6 +775,14 @@ export async function POST(request: NextRequest) {
 
     const searchLanguage: 'pashto' | 'english' | 'anki' = language === 'anki' ? 'anki' : language === 'english' ? 'english' : 'pashto';
 
+    const debugInfo = {
+      env: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
+      lang: searchLanguage,
+      latinOnly: isLatinOnly(searchQuery),
+      query: searchQuery,
+      workerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL
+    };
+
     // Add transliteration support for common Pashto words
     const transliterationMap: Record<string, string> = {
       'weenum': 'وینم',
