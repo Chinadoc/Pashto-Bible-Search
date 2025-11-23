@@ -1100,7 +1100,7 @@ export async function POST(request: NextRequest) {
       };
 
       // Add debug info if requested
-      if (req.nextUrl.searchParams.get('debug') === 'true') {
+      if (request.nextUrl.searchParams.get('debug') === 'true') {
         d1Result.debug = debugInfo;
       }
 
