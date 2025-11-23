@@ -135,6 +135,7 @@ type SearchRequest = {
   includeRelated?: boolean;
   variants?: string[];
   posFilters?: POSFilters;  // NEW: POS filtering support
+  morphologicalFilters?: MorphologicalFilters;  // NEW: Morphological filtering for verbs
   enableFuzzy?: boolean;
   language?: 'pashto' | 'english' | 'anki';
   bookFilter?: string[];
@@ -674,6 +675,7 @@ export async function POST(request: NextRequest) {
       includeRelated = false,
       variants = [],
       posFilters,
+      morphologicalFilters,
       enableFuzzy = false,
       language = 'pashto',
       limit = 2000,
@@ -930,16 +932,43 @@ export async function POST(request: NextRequest) {
 
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
+
+      // If morphological filters are provided, get verb forms and filter them
+      let morphologicalVariants: string[] = [];
+      if (morphologicalFilters && Object.keys(morphologicalFilters).length > 0) {
+        try {
+          console.log(`🔍 [MORPHOLOGICAL FILTERING] Getting verb forms for "${searchQuery}" with filters:`, morphologicalFilters);
+          const allVerbForms = await fetchVerbFormsFromD1(searchQuery, { cap: 1000 });
+
+          // Filter forms based on morphological criteria
+          morphologicalVariants = allVerbForms
+            .filter(form => {
+              if (morphologicalFilters.person && form.person !== morphologicalFilters.person) return false;
+              if (morphologicalFilters.tense && form.tense !== morphologicalFilters.tense) return false;
+              if (morphologicalFilters.aspect && form.aspect !== morphologicalFilters.aspect) return false;
+              if (morphologicalFilters.mood && form.mood !== morphologicalFilters.mood) return false;
+              return true;
+            })
+            .map(form => form.form);
+
+          console.log(`✅ [MORPHOLOGICAL FILTERING] Found ${morphologicalVariants.length} matching forms:`, morphologicalVariants.slice(0, 10));
+        } catch (error) {
+          console.warn('Failed to apply morphological filtering:', error);
+        }
+      }
+
   console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
   try {
     // Map scope to testament filter
     const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
     
-    // Use searchVersesByForms if variants are provided, otherwise use regular search
+    // Use searchVersesByForms if variants are provided (morphological or regular), otherwise use regular search
     let d1Verses: any[] = [];
-    if (variants && variants.length > 0) {
-      console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${variants.length} variants:`, variants.slice(0, 10));
-      d1Verses = await searchVersesByForms(variants, {
+    const searchForms = morphologicalVariants.length > 0 ? morphologicalVariants : variants;
+
+    if (searchForms && searchForms.length > 0) {
+      console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${searchForms.length} forms (${morphologicalVariants.length > 0 ? 'morphological' : 'regular'}):`, searchForms.slice(0, 10));
+      d1Verses = await searchVersesByForms(searchForms, {
         translation: translation as 'afghan2023' | 'yousafzai2019',
         testament: testamentFilter,
         limit: limit,
@@ -957,24 +986,30 @@ export async function POST(request: NextRequest) {
       const queryTimeMs = Date.now() - startedAt;
       console.log(`✅ D1 hit! ${d1Verses.length} results in ${queryTimeMs}ms`);
       
-      // Format D1 results to match expected format with R2 audio support
-      const formattedResults = d1Verses.map((verse: any, index: number) => {
-        // Generate R2 audio URL if audio_r2_key exists
-        let audioUrl = null;
-        if (verse.audio_r2_key) {
-          audioUrl = getAudioStreamUrl(verse.audio_r2_key);
-        }
-        
-        return {
-          ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
-          text: verse.text,
-          testament: verse.testament,
-          translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
-          audio_verse_url: audioUrl,
-          audio_r2_key: verse.audio_r2_key || null, // Include R2 key for future use
-          id: verse.id || index + 1,
-        };
-      });
+          // Format D1 results to match expected format with R2 audio support
+          const formattedResults = d1Verses.map((verse: any, index: number) => {
+            // Generate R2 audio URL if audio_r2_key exists
+            let audioUrl = null;
+            if (verse.audio_r2_key) {
+              audioUrl = getAudioStreamUrl(verse.audio_r2_key);
+            }
+
+            // Find which search forms actually appear in this verse
+            const matchedForms = searchForms ? searchForms.filter(form =>
+              verse.text && verse.text.includes(form)
+            ) : undefined;
+
+            return {
+              ref: `${verse.book} ${verse.chapter}:${verse.verse}`,
+              text: verse.text,
+              testament: verse.testament,
+              translation: translation === 'yousafzai2019' ? 'yousafzai2019' : 'afghan2023',
+              audio_verse_url: audioUrl,
+              audio_r2_key: verse.audio_r2_key || null, // Include R2 key for future use
+              matchedForms: matchedForms && matchedForms.length > 0 ? matchedForms : undefined,
+              id: verse.id || index + 1,
+            };
+          });
 
       let relatedFormsData: any = null;
       let relatedFormTerms: string[] | null = null;

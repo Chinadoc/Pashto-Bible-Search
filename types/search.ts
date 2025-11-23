@@ -18,6 +18,17 @@ export interface POSFilters {
 }
 
 /**
+ * Morphological filtering for verbs
+ * Filters verb forms by grammatical features
+ */
+export interface MorphologicalFilters {
+  person?: '1st' | '2nd' | '3rd';
+  tense?: 'present' | 'past' | 'future' | 'perfect' | 'subjunctive' | 'imperative' | 'ability' | 'habitual';
+  aspect?: 'imperfective' | 'perfective';
+  mood?: 'indicative' | 'subjunctive' | 'imperative' | 'ability';
+}
+
+/**
  * Summary of POS distribution in search results
  * Tracks count and data sources for each part of speech
  */
