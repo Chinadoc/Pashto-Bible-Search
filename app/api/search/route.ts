@@ -934,24 +934,62 @@ export async function POST(request: NextRequest) {
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
-      // If morphological filters are provided, get verb forms and filter them
+      // If morphological filters are provided, generate verb forms and filter them
       let morphologicalVariants: string[] = [];
       if (morphologicalFilters && Object.keys(morphologicalFilters).length > 0) {
         console.log(`🔍 [MORPHOLOGICAL FILTERING] STARTING for "${searchQuery}" with filters:`, morphologicalFilters);
         try {
-          console.log(`🔍 [MORPHOLOGICAL FILTERING] Getting verb forms for "${searchQuery}" with filters:`, morphologicalFilters);
-          const allVerbForms = await fetchVerbFormsFromD1(searchQuery, { cap: 1000 });
+          // Generate all possible verb variants for this root
+          const allVariants = await generateVerbVariants(searchQuery, { cap: 200 });
 
-          // Filter forms based on morphological criteria
-          morphologicalVariants = allVerbForms
-            .filter(form => {
-              if (morphologicalFilters.person && form.person !== morphologicalFilters.person) return false;
-              if (morphologicalFilters.tense && form.tense !== morphologicalFilters.tense) return false;
-              if (morphologicalFilters.aspect && form.aspect !== morphologicalFilters.aspect) return false;
-              if (morphologicalFilters.mood && form.mood !== morphologicalFilters.mood) return false;
+          // Filter variants based on morphological criteria
+          morphologicalVariants = allVariants
+            .filter(variant => {
+              // Check if this variant matches the morphological filters
+              // Note: The current variant generation doesn't include morphological tags,
+              // so we need to infer them from the variant labels or implement proper tagging
+              const label = variant.label.toLowerCase();
+
+              if (morphologicalFilters.person) {
+                const personNum = morphologicalFilters.person === '1st' ? '1' :
+                                 morphologicalFilters.person === '2nd' ? '2' : '3';
+                if (!label.includes(` ${personNum}`) && !label.includes(`${personNum}.`)) return false;
+              }
+
+              if (morphologicalFilters.tense) {
+                const tenseMap: Record<string, string[]> = {
+                  'present': ['present', 'pres', 'non-past'],
+                  'past': ['past', 'preterite'],
+                  'future': ['future'],
+                  'perfect': ['perfect'],
+                  'subjunctive': ['subjunctive', 'subj'],
+                  'imperative': ['imperative', 'imp'],
+                  'ability': ['ability', 'pot'],
+                  'habitual': ['habitual', 'hab']
+                };
+                const tenseTerms = tenseMap[morphologicalFilters.tense] || [];
+                if (!tenseTerms.some(term => label.includes(term))) return false;
+              }
+
+              if (morphologicalFilters.mood) {
+                const moodMap: Record<string, string[]> = {
+                  'indicative': ['indicative', 'ind'],
+                  'subjunctive': ['subjunctive', 'subj'],
+                  'imperative': ['imperative', 'imp'],
+                  'ability': ['ability', 'pot']
+                };
+                const moodTerms = moodMap[morphologicalFilters.mood] || [];
+                if (!moodTerms.some(term => label.includes(term))) return false;
+              }
+
+              if (morphologicalFilters.aspect) {
+                const aspectTerms = morphologicalFilters.aspect === 'perfective' ? ['perfective', 'pfv'] : ['imperfective', 'ipfv'];
+                if (!aspectTerms.some(term => label.includes(term))) return false;
+              }
+
               return true;
             })
-            .map(form => form.form);
+            .map(variant => variant.form);
 
           console.log(`✅ [MORPHOLOGICAL FILTERING] Found ${morphologicalVariants.length} matching forms:`, morphologicalVariants.slice(0, 10));
         } catch (error) {
