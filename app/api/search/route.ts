@@ -931,7 +931,8 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 DEBUG:`, debugInfo);
     console.log(`🔍 CONDITIONS: env=${!!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL}, lang=${searchLanguage}, latinOnly=${isLatinOnly(searchQuery)}, query="${searchQuery}"`);
 
-    if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
+    // TEMP: Force D1 search for debugging
+    if (true || (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery))) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
       // If morphological filters are provided, get verb forms and filter them
