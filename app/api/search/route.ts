@@ -921,13 +921,7 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     // TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
     // ============================================================================
-    const debugInfo = {
-      env: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
-      lang: searchLanguage,
-      latinOnly: isLatinOnly(searchQuery),
-      query: searchQuery,
-      workerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL
-    };
+    
     console.log(`🔍 DEBUG:`, debugInfo);
     console.log(`🔍 CONDITIONS: env=${!!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL}, lang=${searchLanguage}, latinOnly=${isLatinOnly(searchQuery)}, query="${searchQuery}"`);
 
