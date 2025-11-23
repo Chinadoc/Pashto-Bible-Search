@@ -2111,8 +2111,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Add debug info if requested
-    if (req.nextUrl.searchParams.get('debug') === 'true') {
-      response.debug = debugInfo;
+    if (request.nextUrl.searchParams.get('debug') === 'true') {
+      response.debug = {
+        timestamp: new Date().toISOString(),
+        workerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
+        env: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL
+      };
     }
 
     return NextResponse.json(response);
