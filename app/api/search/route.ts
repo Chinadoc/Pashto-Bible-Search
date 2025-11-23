@@ -8,7 +8,7 @@ import { audioUrlFromRef } from '@/utils/audio';
 import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms, getVerseByRef, fetchVerbFormsFromD1 } from '@/app/lib/cloudflare-d1';
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
-import type { POSFilters, PartOfSpeech, POSSummary, VariantWithPOS } from '@/types/search';
+import type { POSFilters, MorphologicalFilters, PartOfSpeech, POSSummary, VariantWithPOS } from '@/types/search';
 
   // Romanized to Pashto conversion utility
   function romanizedToPashto(romanized: string): string {
