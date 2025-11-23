@@ -911,7 +911,15 @@ export async function POST(request: NextRequest) {
     // ============================================================================
     // TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
     // ============================================================================
-    console.log(`🔍 DEBUG: env=${!!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL}, lang=${searchLanguage}, latinOnly=${isLatinOnly(searchQuery)}, query="${searchQuery}"`);
+    const debugInfo = {
+      env: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
+      lang: searchLanguage,
+      latinOnly: isLatinOnly(searchQuery),
+      query: searchQuery,
+      workerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL
+    };
+    console.log(`🔍 DEBUG:`, debugInfo);
+
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
   console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
@@ -1994,7 +2002,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const response: any = {
       cache: {
         searchResults: {
           size: searchResultCache.size,
@@ -2016,7 +2024,14 @@ export async function POST(request: NextRequest) {
           totalMisses: cacheMissCount,
         },
       },
-    });
+    };
+
+    // Add debug info if requested
+    if (req.nextUrl.searchParams.get('debug') === 'true') {
+      response.debug = debugInfo;
+    }
+
+    return NextResponse.json(response);
   }
 
 // Helper function to check scope
