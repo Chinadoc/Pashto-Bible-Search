@@ -780,8 +780,8 @@ export async function POST(request: NextRequest) {
     const debugInfo = {
       env: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
       lang: searchLanguage,
-      latinOnly: isLatinOnly(searchQuery),
-      query: searchQuery,
+      latinOnly: isLatinOnly(originalQuery),
+      query: originalQuery,
       workerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL
     };
 
