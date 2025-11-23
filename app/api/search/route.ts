@@ -938,6 +938,7 @@ export async function POST(request: NextRequest) {
       // If morphological filters are provided, get verb forms and filter them
       let morphologicalVariants: string[] = [];
       if (morphologicalFilters && Object.keys(morphologicalFilters).length > 0) {
+        console.log(`🔍 [MORPHOLOGICAL FILTERING] STARTING for "${searchQuery}" with filters:`, morphologicalFilters);
         try {
           console.log(`🔍 [MORPHOLOGICAL FILTERING] Getting verb forms for "${searchQuery}" with filters:`, morphologicalFilters);
           const allVerbForms = await fetchVerbFormsFromD1(searchQuery, { cap: 1000 });
