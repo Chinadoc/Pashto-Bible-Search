@@ -1756,6 +1756,39 @@ export default {
       return searchWordOccurrences(env, word, translation, limit);
     }
 
+    // Get all verses by testament
+    if (path === '/api/verses' && request.method === 'GET') {
+      const translation = (url.searchParams.get('translation') as any) || 'afghan2023';
+      const testament = url.searchParams.get('testament') as 'OT' | 'NT' | undefined;
+      const limit = parseInt(url.searchParams.get('limit') || '10000'); // High default for bulk retrieval
+
+      try {
+        const tableName = `verses_${translation}`;
+        let query = `SELECT book, chapter, verse, text, testament, audio_r2_key FROM ${tableName}`;
+        const params: any[] = [];
+
+        // Filter by testament if specified
+        if (testament) {
+          query += ` WHERE testament = ?`;
+          params.push(testament);
+        }
+
+        query += ` LIMIT ?`;
+        params.push(limit);
+
+        const result = await env.DB.prepare(query).bind(...params).all();
+
+        return jsonResponse({
+          verses: result.results || [],
+          count: result.results?.length || 0,
+          testament: testament || 'all',
+          translation,
+        });
+      } catch (error: any) {
+        return errorResponse(`Failed to fetch verses: ${error.message}`, 500);
+      }
+    }
+
     if (path.startsWith('/api/audio/url/') && request.method === 'GET') {
       const r2Key = path.replace('/api/audio/url/', '');
       return getAudioUrl(env, decodeURIComponent(r2Key));
