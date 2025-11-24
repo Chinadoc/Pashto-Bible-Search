@@ -78,57 +78,72 @@ async function getVerbVariantsWithD1Fallback(
   lemma: string,
   opts?: { cap?: number; includeCompound?: boolean }
 ): Promise<Variant[]> {
-  const cap = opts?.cap ?? 100; // Increased for comprehensive forms
+  const cap = opts?.cap ?? 100;
 
-  console.log(`[VERB_VARIANTS] Getting comprehensive forms for "${lemma}"`);
+  console.log(`[VERB_VARIANTS] Fast verb expansion for "${lemma}"`);
 
   const allForms: Variant[] = [];
+  let d1Count = 0;
+  let comprehensiveCount = 0;
 
-  // 1. Get D1 forms (LingDocs theoretical conjugations)
+  // STRATEGY: Use pre-computed D1 data for speed, add comprehensive forms for coverage
+
+  // 1. Try D1 first (FAST - pre-computed in Cloudflare)
   try {
-    const d1Forms = await fetchVerbFormsFromD1(lemma, { cap: 60 });
+    const d1Forms = await fetchVerbFormsFromD1(lemma, { cap: 100 });
     if (d1Forms.length > 0) {
-      console.log(`[VERB_VARIANTS] ✓ Found ${d1Forms.length} D1 forms`);
+      d1Count = d1Forms.length;
+      console.log(`[VERB_VARIANTS] ✓ D1 cache: ${d1Count} forms`);
       allForms.push(...d1Forms.map(form => ({
         form: form.form,
         label: form.tense && form.person
           ? `${form.tense} ${form.person}`
           : form.tense || 'verb',
         pos: 'verb' as const,
-        score: form.confidence || 1.0,
+        score: 1.0, // Highest score for D1 verified forms
       })));
     }
   } catch (error) {
     console.warn(`[VERB_VARIANTS] D1 lookup failed:`, error);
   }
 
-  // 2. Generate comprehensive forms using LingDocs grammar rules
-  console.log(`[VERB_VARIANTS] Generating comprehensive forms using grammar rules`);
+  // 2. Add comprehensive forms ONLY if D1 had limited coverage
+  // This avoids regenerating forms every time when D1 already has good data
+  if (d1Count < 30) {
+    console.log(`[VERB_VARIANTS] D1 had limited coverage (${d1Count} forms), adding comprehensive forms`);
 
-  // Import the comprehensive conjugator
-  const { expandVerbForms } = await import('@/app/utils/pashto-verb-conjugator');
-  const comprehensiveForms = expandVerbForms(lemma);
+    try {
+      const { expandVerbForms } = await import('@/app/utils/pashto-verb-conjugator');
+      const comprehensiveForms = expandVerbForms(lemma);
+      comprehensiveCount = comprehensiveForms.length;
 
-  console.log(`[VERB_VARIANTS] ✓ Generated ${comprehensiveForms.length} comprehensive forms`);
+      // Add comprehensive forms
+      allForms.push(...comprehensiveForms.map(form => ({
+        form,
+        label: 'comprehensive',
+        pos: 'verb' as const,
+        score: 0.95,
+      })));
 
-  // Add comprehensive forms
-  allForms.push(...comprehensiveForms.map(form => ({
-    form,
-    label: 'comprehensive',
-    pos: 'verb' as const,
-    score: 0.95, // High score for grammar-based forms
-  })));
+      console.log(`[VERB_VARIANTS] ✓ Added ${comprehensiveCount} comprehensive forms`);
+    } catch (error) {
+      console.warn(`[VERB_VARIANTS] Comprehensive conjugation failed:`, error);
+    }
+  } else {
+    console.log(`[VERB_VARIANTS] D1 has good coverage (${d1Count} forms), skipping comprehensive generation`);
+  }
 
-  // 3. Deduplicate by form text
+  // 3. Deduplicate by form text (keep highest score)
   const uniqueForms = new Map<string, Variant>();
   allForms.forEach(variant => {
-    if (!uniqueForms.has(variant.form)) {
+    const existing = uniqueForms.get(variant.form);
+    if (!existing || variant.score > existing.score) {
       uniqueForms.set(variant.form, variant);
     }
   });
 
   const result = Array.from(uniqueForms.values()).slice(0, cap);
-  console.log(`[VERB_VARIANTS] Final: ${result.length} unique forms (D1 + comprehensive + Bible patterns)`);
+  console.log(`[VERB_VARIANTS] ✅ Returning ${result.length} forms (${d1Count} D1 + ${comprehensiveCount} comprehensive)`);
 
   return result;
 }
@@ -1237,7 +1252,18 @@ export async function POST(request: NextRequest) {
     // Apply enhanced disambiguation for ambiguous Pashto terms with Bible context
 
     // If filtered variants are provided, use only those for search
-    const effectiveIncludeRelated = variants && variants.length > 0 ? false : includeRelated;
+    // Auto-detect verbs: if search term looks like a Pashto verb (ends in ل, یل, ېدل), always expand it
+    // This ensures searching "وهل" shows all conjugations even without "Related Forms" toggle
+    const looksLikeVerb = convertedQuery.endsWith('ل') || convertedQuery.endsWith('یل') || convertedQuery.endsWith('ېدل');
+    const autoExpandVerb = looksLikeVerb && searchLanguage === 'pashto';
+
+    // If variants override exists, don't generate related forms (user clicked a specific inflection)
+    // Otherwise, include related forms if toggle is on OR if we auto-detected a verb
+    const effectiveIncludeRelated = variants && variants.length > 0 ? false : (includeRelated || autoExpandVerb);
+
+    if (autoExpandVerb && !includeRelated) {
+      console.log(`🔍 Auto-detected verb "${convertedQuery}" - expanding to conjugations automatically`);
+    }
 
     // Parallelize disambiguation and related forms operations
     const disambiguationPromise = (searchLanguage === 'pashto' && searchTerms.length === 1 && !englishSearchTerms.length)
