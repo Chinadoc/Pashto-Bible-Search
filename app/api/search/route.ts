@@ -78,29 +78,59 @@ async function getVerbVariantsWithD1Fallback(
   lemma: string,
   opts?: { cap?: number; includeCompound?: boolean }
 ): Promise<Variant[]> {
-  const cap = opts?.cap ?? 60;
+  const cap = opts?.cap ?? 100; // Increased for comprehensive forms
 
-  // Try D1 first (pre-computed, fast, complete)
-  console.log(`[VERB_VARIANTS] Checking D1 for "${lemma}" (cap: ${cap})`);
-  const d1Forms = await fetchVerbFormsFromD1(lemma, { cap });
+  console.log(`[VERB_VARIANTS] Getting comprehensive forms for "${lemma}"`);
 
-  if (d1Forms.length > 0) {
-    console.log(`[VERB_VARIANTS] ✓ Found ${d1Forms.length} D1 forms for "${lemma}"`);
+  const allForms: Variant[] = [];
 
-    // Transform D1 forms to Variant format
-    return d1Forms.map(form => ({
-      form: form.form,
-      label: form.tense && form.person
-        ? `${form.tense} ${form.person}`
-        : form.tense || 'verb',
-      pos: 'verb' as const,
-      score: form.confidence || 1.0,
-    }));
+  // 1. Get D1 forms (LingDocs theoretical conjugations)
+  try {
+    const d1Forms = await fetchVerbFormsFromD1(lemma, { cap: 60 });
+    if (d1Forms.length > 0) {
+      console.log(`[VERB_VARIANTS] ✓ Found ${d1Forms.length} D1 forms`);
+      allForms.push(...d1Forms.map(form => ({
+        form: form.form,
+        label: form.tense && form.person
+          ? `${form.tense} ${form.person}`
+          : form.tense || 'verb',
+        pos: 'verb' as const,
+        score: form.confidence || 1.0,
+      })));
+    }
+  } catch (error) {
+    console.warn(`[VERB_VARIANTS] D1 lookup failed:`, error);
   }
 
-  // Fallback to runtime generation if D1 has no data
-  console.log(`[VERB_VARIANTS] ⚠️ No D1 forms for "${lemma}", falling back to generation`);
-  return await generateVerbVariants(lemma, opts);
+  // 2. Generate comprehensive forms using LingDocs grammar rules
+  console.log(`[VERB_VARIANTS] Generating comprehensive forms using grammar rules`);
+
+  // Import the comprehensive conjugator
+  const { expandVerbForms } = await import('@/app/utils/pashto-verb-conjugator');
+  const comprehensiveForms = expandVerbForms(lemma);
+
+  console.log(`[VERB_VARIANTS] ✓ Generated ${comprehensiveForms.length} comprehensive forms`);
+
+  // Add comprehensive forms
+  allForms.push(...comprehensiveForms.map(form => ({
+    form,
+    label: 'comprehensive',
+    pos: 'verb' as const,
+    score: 0.95, // High score for grammar-based forms
+  })));
+
+  // 3. Deduplicate by form text
+  const uniqueForms = new Map<string, Variant>();
+  allForms.forEach(variant => {
+    if (!uniqueForms.has(variant.form)) {
+      uniqueForms.set(variant.form, variant);
+    }
+  });
+
+  const result = Array.from(uniqueForms.values()).slice(0, cap);
+  console.log(`[VERB_VARIANTS] Final: ${result.length} unique forms (D1 + comprehensive + Bible patterns)`);
+
+  return result;
 }
 
 // Helper function to search with multiple terms
