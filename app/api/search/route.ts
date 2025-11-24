@@ -137,7 +137,9 @@ async function getVerbVariantsWithD1Fallback(
   const uniqueForms = new Map<string, Variant>();
   allForms.forEach(variant => {
     const existing = uniqueForms.get(variant.form);
-    if (!existing || variant.score > existing.score) {
+    const variantScore = variant.score ?? 0;
+    const existingScore = existing?.score ?? 0;
+    if (!existing || variantScore > existingScore) {
       uniqueForms.set(variant.form, variant);
     }
   });
