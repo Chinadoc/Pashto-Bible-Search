@@ -241,11 +241,12 @@ export async function searchVersesByForms(
 
   // For forms not in form_occurrences, search verses directly
   if (formsNotFound.length > 0) {
+    console.log(`⚠️ ${formsNotFound.length} forms not in form_occurrences, searching verses directly`);
     for (const form of formsNotFound) {
       const verses = await searchVerses(form, {
         translation,
         testament: options.testament,
-        limit: 50, // Limit per form to avoid too many results
+        limit: 1000, // CRITICAL FIX: Increased from 50 to allow full expansion
       });
       for (const verse of verses) {
         allVerseRefs.add(verse.ref);
