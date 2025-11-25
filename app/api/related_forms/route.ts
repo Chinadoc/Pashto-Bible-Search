@@ -196,22 +196,74 @@ async function collectWordFrequencyVariants(
   return variants;
 }
 
+// Helper to normalize D1 person values to our filter format
+function normalizePersonFromD1(d1Person?: string): string | undefined {
+  if (!d1Person) return undefined;
+  const clean = d1Person.toLowerCase().trim();
+  if (clean.startsWith('1')) return '1st';
+  if (clean.startsWith('2')) return '2nd';
+  if (clean.startsWith('3')) return '3rd';
+  return undefined;
+}
+
+// Helper to infer tense from D1 data
+function inferTenseFromD1(d1Tense?: string, d1Voice?: string): string | undefined {
+  const tense = d1Tense?.toLowerCase();
+  const voice = d1Voice?.toLowerCase();
+  
+  if (tense === 'imperative') return 'imperative';
+  
+  // Infer from aspect (stored in voice field sometimes)
+  if (voice === 'imperfective' || voice?.includes('imperfective')) return 'present';
+  if (voice === 'perfective' || voice?.includes('perfective')) return 'past';
+  
+  return undefined;
+}
+
+// Helper to infer aspect from D1 data
+function inferAspectFromD1(d1Voice?: string): string | undefined {
+  const voice = d1Voice?.toLowerCase();
+  if (voice?.includes('imperfective')) return 'imperfective';
+  if (voice?.includes('perfective')) return 'perfective';
+  return undefined;
+}
+
+// Helper to infer mood from D1 data
+function inferMoodFromD1(d1Tense?: string): string | undefined {
+  if (d1Tense?.toLowerCase() === 'imperative') return 'imperative';
+  return 'indicative'; // Default to indicative
+}
+
 async function collectVerbForms(db: any, baseForm: string, limit: number) {
   const variants = new Map<string, RelatedFormVariant>();
 
   const verbForms = await fetchVerbFormsFromD1(baseForm, { cap: limit });
   for (const vf of verbForms) {
+    // Normalize D1 values to our filter format
+    const normalizedPerson = normalizePersonFromD1(vf.person);
+    const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
+    const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
+    const inferredMood = inferMoodFromD1(vf.tense);
+    
+    // Build a descriptive label
+    const labelParts = [];
+    if (inferredTense) labelParts.push(inferredTense);
+    if (normalizedPerson) labelParts.push(normalizedPerson);
+    if (inferredAspect) labelParts.push(inferredAspect);
+    const label = labelParts.length > 0 ? labelParts.join(' ') : 'verb';
+    
     upsertVariant(
       variants,
       {
         form: vf.form,
         pos: 'verb',
-        label: vf.tense && vf.person ? `${vf.tense} ${vf.person}` : vf.tense || 'verb',
+        label,
         score: vf.confidence,
-        person: vf.person,
-        tense: vf.tense,
-        aspect: (vf as any).aspect, // passthrough if available from D1
-        mood: (vf as any).mood,
+        // Include normalized grammatical fields for filtering
+        person: normalizedPerson || vf.person,
+        tense: inferredTense || vf.tense,
+        aspect: inferredAspect,
+        mood: inferredMood,
         voice: vf.voice,
         helper: vf.helper,
       },
@@ -230,18 +282,31 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
     if (rooted?.root_word && rooted.root_word !== baseForm) {
       const fallbackForms = await fetchVerbFormsFromD1(rooted.root_word, { cap: limit });
       for (const vf of fallbackForms) {
+        // Normalize D1 values to our filter format
+        const normalizedPerson = normalizePersonFromD1(vf.person);
+        const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
+        const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
+        const inferredMood = inferMoodFromD1(vf.tense);
+        
+        // Build a descriptive label
+        const labelParts = [];
+        if (inferredTense) labelParts.push(inferredTense);
+        if (normalizedPerson) labelParts.push(normalizedPerson);
+        if (inferredAspect) labelParts.push(inferredAspect);
+        const label = labelParts.length > 0 ? labelParts.join(' ') : 'verb';
+        
         upsertVariant(
           variants,
           {
             form: vf.form,
             pos: 'verb',
-            label: vf.tense && vf.person ? `${vf.tense} ${vf.person}` : vf.tense || 'verb',
+            label,
             score: vf.confidence,
             flags: ['root-trace'],
-            person: vf.person,
-            tense: vf.tense,
-            aspect: (vf as any).aspect,
-            mood: (vf as any).mood,
+            person: normalizedPerson || vf.person,
+            tense: inferredTense || vf.tense,
+            aspect: inferredAspect,
+            mood: inferredMood,
             voice: vf.voice,
             helper: vf.helper,
           },

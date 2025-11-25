@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from 'next/server';
  * Morphology Facets API
  * Returns facet counts for verb filters based on D1 verb_forms table
  * Counts are context-aware: applying one filter updates counts for other facets
+ * 
+ * D1 verb_forms schema:
+ *   - person: "1sg", "2sg", "3sg", "1pl", "2pl", "3pl"
+ *   - tense: "imperative", "non-imperative" (limited from LingDocs)
+ *   - aspect: "imperfective", "perfective" (from voice field or conjugation structure)
+ *   - gender: "masculine", "feminine"
+ *   
+ * We normalize these to our UI filter values.
  */
 
 const CLOUDFLARE_WORKER_URL =
@@ -34,119 +42,79 @@ interface VerbForm {
   gender?: string;
   aspect?: string;
   mood?: string;
+  helper?: string;
 }
 
-// Mapping for tense values (normalize D1 data to our filter values)
-const TENSE_NORMALIZATION: Record<string, string> = {
-  'present': 'present',
-  'pres': 'present',
-  'non-past': 'present',
-  'past': 'past',
-  'preterite': 'past',
-  'future': 'future',
-  'fut': 'future',
-  'perfect': 'perfect',
-  'perf': 'perfect',
-  'subjunctive': 'subjunctive',
-  'subj': 'subjunctive',
-  'imperative': 'imperative',
-  'imp': 'imperative',
-  'ability': 'ability',
-  'pot': 'ability',
-  'potential': 'ability',
-  'habitual': 'habitual',
-  'hab': 'habitual',
-};
-
-const PERSON_NORMALIZATION: Record<string, string> = {
+// Person normalization: D1 "1sg" → our "1st"
+const PERSON_D1_TO_FILTER: Record<string, string> = {
   '1': '1st',
-  '1st': '1st',
-  'first': '1st',
+  '1sg': '1st',
+  '1pl': '1st',
   '2': '2nd',
-  '2nd': '2nd',
-  'second': '2nd',
+  '2sg': '2nd',
+  '2pl': '2nd',
   '3': '3rd',
-  '3rd': '3rd',
-  'third': '3rd',
+  '3sg': '3rd',
+  '3pl': '3rd',
 };
 
-const ASPECT_NORMALIZATION: Record<string, string> = {
-  'imperfective': 'imperfective',
-  'ipfv': 'imperfective',
-  'impfv': 'imperfective',
-  'perfective': 'perfective',
-  'pfv': 'perfective',
-  'perf': 'perfective',
-};
-
-const MOOD_NORMALIZATION: Record<string, string> = {
-  'indicative': 'indicative',
-  'ind': 'indicative',
-  'subjunctive': 'subjunctive',
-  'subj': 'subjunctive',
-  'imperative': 'imperative',
-  'imp': 'imperative',
-  'ability': 'ability',
-  'pot': 'ability',
-  'potential': 'ability',
-};
-
-function normalizeValue(value: string | undefined, mapping: Record<string, string>): string | null {
-  if (!value) return null;
-  const lower = value.toLowerCase().trim();
-  return mapping[lower] || null;
+// Tense inference: Since D1 only has "imperative"/"non-imperative",
+// we need to infer tense from aspect + tense combination
+// - imperfective + non-imperative = present
+// - perfective + non-imperative = past
+// - imperative = imperative
+function inferTenseFromForm(form: VerbForm): string | null {
+  const d1Tense = form.tense?.toLowerCase();
+  const aspect = form.voice?.toLowerCase() || form.aspect?.toLowerCase();
+  
+  // Imperative is clear
+  if (d1Tense === 'imperative') return 'imperative';
+  
+  // Non-imperative with aspect info
+  if (d1Tense === 'non-imperative' || !d1Tense) {
+    if (aspect === 'imperfective') return 'present';
+    if (aspect === 'perfective') return 'past';
+  }
+  
+  // Try to infer from the form text itself
+  if (form.form) {
+    // Perfective marker: و- prefix typically indicates past/perfective
+    if (form.form.startsWith('و') || form.form.startsWith('وا')) {
+      return 'past';
+    }
+  }
+  
+  return null;
 }
 
-function extractFacetFromLabel(label: string | undefined): {
-  person?: string;
-  tense?: string;
-  aspect?: string;
-  mood?: string;
-} {
-  if (!label) return {};
-  const lower = label.toLowerCase();
+function inferMoodFromForm(form: VerbForm): string | null {
+  const d1Tense = form.tense?.toLowerCase();
   
-  const result: {
-    person?: string;
-    tense?: string;
-    aspect?: string;
-    mood?: string;
-  } = {};
+  if (d1Tense === 'imperative') return 'imperative';
   
-  // Extract person
-  if (lower.includes('1st') || lower.includes(' 1 ') || lower.match(/\b1\.?\s/)) {
-    result.person = '1st';
-  } else if (lower.includes('2nd') || lower.includes(' 2 ') || lower.match(/\b2\.?\s/)) {
-    result.person = '2nd';
-  } else if (lower.includes('3rd') || lower.includes(' 3 ') || lower.match(/\b3\.?\s/)) {
-    result.person = '3rd';
-  }
+  // Default to indicative for non-imperative forms
+  return 'indicative';
+}
+
+function normalizePersonFromD1(d1Person?: string): string | null {
+  if (!d1Person) return null;
+  const clean = d1Person.toLowerCase().trim();
   
-  // Extract tense
-  for (const [pattern, normalized] of Object.entries(TENSE_NORMALIZATION)) {
-    if (lower.includes(pattern)) {
-      result.tense = normalized;
-      break;
-    }
-  }
+  // Handle both "1sg" format and just "1" format
+  if (clean.startsWith('1')) return '1st';
+  if (clean.startsWith('2')) return '2nd';
+  if (clean.startsWith('3')) return '3rd';
   
-  // Extract aspect
-  for (const [pattern, normalized] of Object.entries(ASPECT_NORMALIZATION)) {
-    if (lower.includes(pattern)) {
-      result.aspect = normalized;
-      break;
-    }
-  }
+  return PERSON_D1_TO_FILTER[clean] || null;
+}
+
+function normalizeAspectFromD1(d1Voice?: string, d1Aspect?: string): string | null {
+  const value = (d1Aspect || d1Voice || '').toLowerCase();
   
-  // Extract mood
-  for (const [pattern, normalized] of Object.entries(MOOD_NORMALIZATION)) {
-    if (lower.includes(pattern)) {
-      result.mood = normalized;
-      break;
-    }
-  }
+  if (value.includes('imperfective') || value.includes('ipfv')) return 'imperfective';
+  if (value.includes('perfective') || value.includes('pfv')) return 'perfective';
   
-  return result;
+  return null;
 }
 
 async function fetchVerbFormsFromD1(lemma: string, cap: number = 500): Promise<VerbForm[]> {
@@ -185,11 +153,9 @@ export async function POST(request: NextRequest) {
     const { 
       lemma, 
       filters = {},
-      translation = 'afghan2023',
     }: { 
       lemma: string; 
       filters?: MorphologyFilters;
-      translation?: string;
     } = body;
 
     if (!lemma || typeof lemma !== 'string') {
@@ -218,39 +184,28 @@ export async function POST(request: NextRequest) {
 
     console.log(`[FACETS] Found ${allForms.length} forms for "${lemma}"`);
 
-    // Normalize and enrich forms with facet data
+    // Normalize and enrich forms with inferred grammatical features
     const enrichedForms = allForms.map(form => {
-      // Try to extract facets from the form's tense/person fields first
-      let person = normalizeValue(form.person, PERSON_NORMALIZATION);
-      let tense = normalizeValue(form.tense, TENSE_NORMALIZATION);
-      let aspect = normalizeValue(form.voice, ASPECT_NORMALIZATION); // voice sometimes contains aspect
-      let mood = normalizeValue(form.tense, MOOD_NORMALIZATION); // mood sometimes in tense field
-      
-      // If not found, try to extract from label (constructed from tense + person)
-      if (!person || !tense) {
-        const label = [form.tense, form.person].filter(Boolean).join(' ');
-        const extracted = extractFacetFromLabel(label);
-        person = person || extracted.person || null;
-        tense = tense || extracted.tense || null;
-        aspect = aspect || extracted.aspect || null;
-        mood = mood || extracted.mood || null;
-      }
+      const normalizedPerson = normalizePersonFromD1(form.person);
+      const normalizedAspect = normalizeAspectFromD1(form.voice, form.aspect);
+      const inferredTense = inferTenseFromForm(form);
+      const inferredMood = inferMoodFromForm(form);
       
       return {
         ...form,
-        normalizedPerson: person,
-        normalizedTense: tense,
-        normalizedAspect: aspect,
-        normalizedMood: mood,
+        normalizedPerson,
+        normalizedAspect,
+        normalizedTense: inferredTense,
+        normalizedMood: inferredMood,
       };
     });
 
-    // Apply current filters to get base set of forms
+    // Parse active filters (exclude 'all' values)
     const activeFilters = {
-      person: (filters.person && filters.person.length > 0 && !filters.person.includes('all')) ? filters.person : null,
-      tense: (filters.tense && filters.tense.length > 0 && !filters.tense.includes('all')) ? filters.tense : null,
-      aspect: (filters.aspect && filters.aspect.length > 0 && !filters.aspect.includes('all')) ? filters.aspect : null,
-      mood: (filters.mood && filters.mood.length > 0 && !filters.mood.includes('all')) ? filters.mood : null,
+      person: (filters.person?.length && !filters.person.includes('all')) ? filters.person : null,
+      tense: (filters.tense?.length && !filters.tense.includes('all')) ? filters.tense : null,
+      aspect: (filters.aspect?.length && !filters.aspect.includes('all')) ? filters.aspect : null,
+      mood: (filters.mood?.length && !filters.mood.includes('all')) ? filters.mood : null,
     };
 
     // Filter forms based on current selections (for context-aware counts)
@@ -259,21 +214,25 @@ export async function POST(request: NextRequest) {
       excludeFacet?: 'person' | 'tense' | 'aspect' | 'mood'
     ) => {
       return forms.filter(form => {
+        // Person filter
         if (excludeFacet !== 'person' && activeFilters.person) {
           if (!form.normalizedPerson || !activeFilters.person.includes(form.normalizedPerson)) {
             return false;
           }
         }
+        // Tense filter
         if (excludeFacet !== 'tense' && activeFilters.tense) {
           if (!form.normalizedTense || !activeFilters.tense.includes(form.normalizedTense)) {
             return false;
           }
         }
+        // Aspect filter
         if (excludeFacet !== 'aspect' && activeFilters.aspect) {
           if (!form.normalizedAspect || !activeFilters.aspect.includes(form.normalizedAspect)) {
             return false;
           }
         }
+        // Mood filter
         if (excludeFacet !== 'mood' && activeFilters.mood) {
           if (!form.normalizedMood || !activeFilters.mood.includes(form.normalizedMood)) {
             return false;
@@ -332,7 +291,7 @@ export async function POST(request: NextRequest) {
       aspect: ensureAllKeys(aspectCounts, ['imperfective', 'perfective']),
       mood: ensureAllKeys(moodCounts, ['indicative', 'subjunctive', 'imperative', 'ability']),
       totalForms: enrichedForms.length,
-      matchingVerses: matchingForms.length, // Forms matching current filters
+      matchingVerses: matchingForms.length,
     };
 
     console.log(`[FACETS] Computed facets in ${Date.now() - startTime}ms:`, {
@@ -340,6 +299,7 @@ export async function POST(request: NextRequest) {
       matchingForms: facets.matchingVerses,
       personCounts: facets.person,
       tenseCounts: facets.tense,
+      aspectCounts: facets.aspect,
     });
 
     return NextResponse.json({
