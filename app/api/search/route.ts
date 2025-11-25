@@ -9,6 +9,8 @@ import { searchVerses as searchVersesD1, getAudioStreamUrl, searchVersesByForms,
 import { normalizeVerses } from '@/app/utils/normalize-results';
 import { PashtoDisambiguator, type DisambiguationResult } from '@/utils/enhanced_disambiguation';
 import type { POSFilters, MorphologicalFilters, PartOfSpeech, POSSummary, VariantWithPOS } from '@/types/search';
+import type { VerbFilterAspect, VerbFilterMood, VerbFilterPerson, VerbFilterState, VerbFilterTense } from '@/types';
+import { filterVerbVariants } from '@/app/utils/verb-filters';
 
 // Romanized to Pashto conversion utility
 function romanizedToPashto(romanized: string): string {
@@ -68,6 +70,36 @@ function normalizeRomanizedInput(value: string): string {
     .replace(/[^A-Za-z'\-\s]/g, '')
     .toLowerCase()
     .trim();
+}
+
+const DEFAULT_VERB_FILTER: VerbFilterState = {
+  person: 'all',
+  tense: 'all',
+  aspect: 'all',
+  mood: 'all',
+};
+
+const PERSON_VALUES: VerbFilterPerson[] = ['all', '1st', '2nd', '3rd'];
+const TENSE_VALUES: VerbFilterTense[] = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'];
+const ASPECT_VALUES: VerbFilterAspect[] = ['all', 'imperfective', 'perfective'];
+const MOOD_VALUES: VerbFilterMood[] = ['all', 'indicative', 'subjunctive', 'imperative', 'ability'];
+
+function sanitizeVerbFilters(raw: any): VerbFilterState {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_VERB_FILTER };
+  const person = PERSON_VALUES.includes(raw.person) ? raw.person : 'all';
+  const tense = TENSE_VALUES.includes(raw.tense) ? raw.tense : 'all';
+  const aspect = ASPECT_VALUES.includes(raw.aspect) ? raw.aspect : 'all';
+  const mood = MOOD_VALUES.includes(raw.mood) ? raw.mood : 'all';
+  return { person, tense, aspect, mood };
+}
+
+function isDefaultVerbFilter(filters: VerbFilterState): boolean {
+  return (
+    filters.person === 'all' &&
+    filters.tense === 'all' &&
+    filters.aspect === 'all' &&
+    filters.mood === 'all'
+  );
 }
 
 /**
@@ -181,6 +213,7 @@ type SearchRequest = {
   scope?: Scope;
   includeRelated?: boolean;
   variants?: string[];
+  verbFilters?: VerbFilterState;
   posFilters?: POSFilters;  // NEW: POS filtering support
   morphologicalFilters?: MorphologicalFilters;  // NEW: Morphological filtering for verbs
   enableFuzzy?: boolean;
@@ -721,6 +754,7 @@ export async function POST(request: NextRequest) {
       query,
       includeRelated = false,
       variants = [],
+      verbFilters = DEFAULT_VERB_FILTER,
       posFilters,
       morphologicalFilters,
       enableFuzzy = false,
@@ -729,6 +763,7 @@ export async function POST(request: NextRequest) {
       translation = 'afghan2023',
     } = body;
     const scope = normaliseScope(body.scope);
+    const sanitizedVerbFilters = sanitizeVerbFilters(verbFilters);
 
     // Validate query first
     if (!query || typeof query !== 'string' || !query.trim()) {
@@ -983,21 +1018,35 @@ export async function POST(request: NextRequest) {
           // Generate all possible verb variants for this root
           const allVariants = await generateVerbVariants(searchQuery, { cap: 200 });
 
-          // Filter variants based on morphological criteria
+          // Helper to normalize filter values to arrays
+          const toArray = <T>(value: T | T[] | undefined): T[] => {
+            if (!value) return [];
+            return Array.isArray(value) ? value : [value];
+          };
+
+          // Get filter arrays
+          const personFilters = toArray(morphologicalFilters.person).filter(v => v !== 'all');
+          const tenseFilters = toArray(morphologicalFilters.tense).filter(v => v !== 'all');
+          const moodFilters = toArray(morphologicalFilters.mood).filter(v => v !== 'all');
+          const aspectFilters = toArray(morphologicalFilters.aspect).filter(v => v !== 'all');
+
+          // Filter variants based on morphological criteria (supports multi-select)
           morphologicalVariants = allVariants
             .filter(variant => {
-              // Check if this variant matches the morphological filters
-              // Note: The current variant generation doesn't include morphological tags,
-              // so we need to infer them from the variant labels or implement proper tagging
               const label = variant.label.toLowerCase();
 
-              if (morphologicalFilters.person) {
-                const personNum = morphologicalFilters.person === '1st' ? '1' :
-                  morphologicalFilters.person === '2nd' ? '2' : '3';
-                if (!label.includes(` ${personNum}`) && !label.includes(`${personNum}.`)) return false;
+              // Person filter (any of the selected values must match)
+              if (personFilters.length > 0) {
+                const personMatched = personFilters.some(personFilter => {
+                  const personNum = personFilter === '1st' ? '1' :
+                    personFilter === '2nd' ? '2' : '3';
+                  return label.includes(` ${personNum}`) || label.includes(`${personNum}.`);
+                });
+                if (!personMatched) return false;
               }
 
-              if (morphologicalFilters.tense) {
+              // Tense filter (any of the selected values must match)
+              if (tenseFilters.length > 0) {
                 const tenseMap: Record<string, string[]> = {
                   'present': ['present', 'pres', 'non-past'],
                   'past': ['past', 'preterite'],
@@ -1008,24 +1057,35 @@ export async function POST(request: NextRequest) {
                   'ability': ['ability', 'pot'],
                   'habitual': ['habitual', 'hab']
                 };
-                const tenseTerms = tenseMap[morphologicalFilters.tense] || [];
-                if (!tenseTerms.some(term => label.includes(term))) return false;
+                const tenseMatched = tenseFilters.some(tenseFilter => {
+                  const tenseTerms = tenseMap[tenseFilter] || [];
+                  return tenseTerms.some(term => label.includes(term));
+                });
+                if (!tenseMatched) return false;
               }
 
-              if (morphologicalFilters.mood) {
+              // Mood filter (any of the selected values must match)
+              if (moodFilters.length > 0) {
                 const moodMap: Record<string, string[]> = {
                   'indicative': ['indicative', 'ind'],
                   'subjunctive': ['subjunctive', 'subj'],
                   'imperative': ['imperative', 'imp'],
                   'ability': ['ability', 'pot']
                 };
-                const moodTerms = moodMap[morphologicalFilters.mood] || [];
-                if (!moodTerms.some(term => label.includes(term))) return false;
+                const moodMatched = moodFilters.some(moodFilter => {
+                  const moodTerms = moodMap[moodFilter] || [];
+                  return moodTerms.some(term => label.includes(term));
+                });
+                if (!moodMatched) return false;
               }
 
-              if (morphologicalFilters.aspect) {
-                const aspectTerms = morphologicalFilters.aspect === 'perfective' ? ['perfective', 'pfv'] : ['imperfective', 'ipfv'];
-                if (!aspectTerms.some(term => label.includes(term))) return false;
+              // Aspect filter (any of the selected values must match)
+              if (aspectFilters.length > 0) {
+                const aspectMatched = aspectFilters.some(aspectFilter => {
+                  const aspectTerms = aspectFilter === 'perfective' ? ['perfective', 'pfv'] : ['imperfective', 'ipfv'];
+                  return aspectTerms.some(term => label.includes(term));
+                });
+                if (!aspectMatched) return false;
               }
 
               return true;
@@ -1105,6 +1165,16 @@ export async function POST(request: NextRequest) {
               if (inlineRelated) {
                 relatedFormsData = inlineRelated.relatedForms;
                 relatedFormTerms = inlineRelated.searchTerms;
+                // Apply verb filters server-side for inline related forms
+                if (relatedFormsData?.forms?.verbs && !isDefaultVerbFilter(sanitizedVerbFilters)) {
+                  const filteredVerbs = filterVerbVariants(relatedFormsData.forms.verbs, sanitizedVerbFilters);
+                  const allowedForms = new Set(filteredVerbs.map((v: any) => v.form));
+                  relatedFormsData.forms.verbs = filteredVerbs;
+                  relatedFormsData.total = filteredVerbs.length + (relatedFormsData.forms.nouns?.length || 0) + (relatedFormsData.forms.other?.length || 0);
+                  if (relatedFormTerms) {
+                    relatedFormTerms = relatedFormTerms.filter(term => allowedForms.has(term) || term === searchQuery);
+                  }
+                }
                 console.log(`✅ [D1 FAST PATH] Built related forms:`, {
                   total: relatedFormsData.total,
                   verbsCount: relatedFormsData.forms?.verbs?.length || 0,
@@ -1286,11 +1356,12 @@ export async function POST(request: NextRequest) {
           const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              form: convertedQuery,
-              translation: translation, // Include translation for demarcation
-            }),
-          });
+              body: JSON.stringify({
+                form: convertedQuery,
+                translation: translation, // Include translation for demarcation
+                verbFilters: sanitizedVerbFilters,
+              }),
+            });
 
           if (relatedResponse.ok) {
             const relatedFormsText = await relatedResponse.text();

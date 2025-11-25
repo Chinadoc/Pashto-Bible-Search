@@ -2,17 +2,30 @@
 
 /**
  * VerbFilterDrawer Component
- * Multi-select filters for verb forms: person, tense, aspect, mood
+ * Multi-select filters for verb forms with D1-backed facet counts
+ * Shows context-aware counts that update dynamically as filters change
  */
 
+import { useMemo, useCallback } from 'react';
 import { useSearchFilters } from '@/app/contexts/SearchFiltersContext';
 import { isDefaultMultiVerbFilter } from '@/app/reducers/searchFiltersReducer';
-import type { VerbFilterPerson, VerbFilterTense, VerbFilterAspect, VerbFilterMood } from '@/types';
+import { useMorphologyFacets } from '@/hooks/useMorphologyFacets';
+import FacetGroup, { FacetOption } from './FacetGroup';
+import ActiveChips from './ActiveChips';
+import VerbFormsStrip from './VerbFormsStrip';
+import type { 
+  VerbFilterPerson, 
+  VerbFilterTense, 
+  VerbFilterAspect, 
+  VerbFilterMood,
+  MultiVerbFilterState,
+} from '@/types';
 
 interface VerbFilterDrawerProps {
   onApplyFilters: () => void;
   activeVariantForms?: string[];
   onPickForm?: (form: string) => void;
+  lemma?: string; // The verb lemma being searched (for facet counts)
 }
 
 function toggleMultiFilter<T extends string>(
@@ -38,209 +51,211 @@ function toggleMultiFilter<T extends string>(
   }
 }
 
-const DEFAULT_MULTI_VERB_FILTER = {
+const DEFAULT_MULTI_VERB_FILTER: MultiVerbFilterState = {
   person: ['all'] as VerbFilterPerson[],
   tense: ['all'] as VerbFilterTense[],
   aspect: ['all'] as VerbFilterAspect[],
   mood: ['all'] as VerbFilterMood[],
 };
 
+// Define tense display order and labels
+const TENSE_OPTIONS: Array<{ value: VerbFilterTense; label: string }> = [
+  { value: 'present', label: 'Present' },
+  { value: 'past', label: 'Past' },
+  { value: 'future', label: 'Future' },
+  { value: 'perfect', label: 'Perfect' },
+  { value: 'subjunctive', label: 'Subjunctive' },
+  { value: 'imperative', label: 'Imperative' },
+  { value: 'ability', label: 'Ability' },
+  { value: 'habitual', label: 'Habitual' },
+];
+
+const PERSON_OPTIONS: Array<{ value: VerbFilterPerson; label: string }> = [
+  { value: '1st', label: '1st (I/we)' },
+  { value: '2nd', label: '2nd (you)' },
+  { value: '3rd', label: '3rd (he/she/they)' },
+];
+
+const ASPECT_OPTIONS: Array<{ value: VerbFilterAspect; label: string }> = [
+  { value: 'imperfective', label: 'Imperfective' },
+  { value: 'perfective', label: 'Perfective' },
+];
+
+const MOOD_OPTIONS: Array<{ value: VerbFilterMood; label: string }> = [
+  { value: 'indicative', label: 'Indicative' },
+  { value: 'subjunctive', label: 'Subjunctive' },
+  { value: 'imperative', label: 'Imperative' },
+  { value: 'ability', label: 'Ability' },
+];
+
 export default function VerbFilterDrawer({
   onApplyFilters,
   activeVariantForms = [],
   onPickForm,
+  lemma,
 }: VerbFilterDrawerProps) {
   const { filters, dispatch } = useSearchFilters();
   const multiVerbFilters = filters.verb;
 
-  const setMultiVerbFilters = (newFilters: typeof multiVerbFilters) => {
+  // Fetch facet counts from D1
+  const { facets, matchingForms, isLoading } = useMorphologyFacets({
+    lemma: lemma || null,
+    filters: multiVerbFilters,
+    enabled: !!lemma,
+    debounceMs: 150,
+  });
+
+  const setMultiVerbFilters = useCallback((newFilters: typeof multiVerbFilters) => {
     dispatch({ type: 'SET_VERB_FILTERS', filters: newFilters });
     onApplyFilters();
-  };
+  }, [dispatch, onApplyFilters]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setMultiVerbFilters(DEFAULT_MULTI_VERB_FILTER);
-  };
+  }, [setMultiVerbFilters]);
+
+  const handleRemoveChip = useCallback((facet: keyof MultiVerbFilterState, value: string) => {
+    const currentValues = multiVerbFilters[facet] as string[];
+    const newValues = currentValues.filter(v => v !== value);
+    setMultiVerbFilters({
+      ...multiVerbFilters,
+      [facet]: newValues.length === 0 ? ['all'] : newValues,
+    });
+  }, [multiVerbFilters, setMultiVerbFilters]);
+
+  // Build FacetOption arrays with counts
+  const personOptions: FacetOption[] = useMemo(() => {
+    return PERSON_OPTIONS.map(opt => ({
+      value: opt.value,
+      label: opt.label,
+      count: facets?.person[opt.value] || 0,
+      disabled: (facets?.person[opt.value] || 0) === 0,
+    }));
+  }, [facets]);
+
+  const tenseOptions: FacetOption[] = useMemo(() => {
+    return TENSE_OPTIONS.map(opt => ({
+      value: opt.value,
+      label: opt.label,
+      count: facets?.tense[opt.value] || 0,
+      disabled: (facets?.tense[opt.value] || 0) === 0,
+    }));
+  }, [facets]);
+
+  const aspectOptions: FacetOption[] = useMemo(() => {
+    return ASPECT_OPTIONS.map(opt => ({
+      value: opt.value,
+      label: opt.label,
+      count: facets?.aspect[opt.value] || 0,
+      disabled: (facets?.aspect[opt.value] || 0) === 0,
+    }));
+  }, [facets]);
+
+  const moodOptions: FacetOption[] = useMemo(() => {
+    return MOOD_OPTIONS.map(opt => ({
+      value: opt.value,
+      label: opt.label,
+      count: facets?.mood[opt.value] || 0,
+      disabled: (facets?.mood[opt.value] || 0) === 0,
+    }));
+  }, [facets]);
+
+  const isDefault = isDefaultMultiVerbFilter(multiVerbFilters);
+
+  // Use matching forms from facets API or fall back to provided forms
+  const displayForms = matchingForms.length > 0 ? matchingForms : activeVariantForms;
 
   return (
-    <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Filter by verb form {!isDefaultMultiVerbFilter(multiVerbFilters) && '(Active)'}:
-        </span>
-        <button
-          onClick={handleReset}
-          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-        >
-          Reset filters
-        </button>
+    <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      {/* Active chips bar */}
+      <ActiveChips
+        filters={multiVerbFilters}
+        onRemove={handleRemoveChip}
+        onReset={handleReset}
+        matchingCount={facets?.matchingVerses}
+        isLoading={isLoading}
+      />
+
+      {/* Main filter panel */}
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Filter by verb form
+          </span>
+          {!isDefault && (
+            <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full">
+              Active
+            </span>
+          )}
+          {lemma && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+              Verb: <span className="font-medium" style={{ direction: 'rtl' }}>{lemma}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Responsive grid layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Person Filter */}
+          <FacetGroup
+            title="Person"
+            options={personOptions}
+            selected={multiVerbFilters.person.filter(v => v !== 'all')}
+            onToggle={(value) => {
+              const newPerson = toggleMultiFilter(multiVerbFilters.person, value as VerbFilterPerson);
+              setMultiVerbFilters({ ...multiVerbFilters, person: newPerson });
+            }}
+            isLoading={isLoading}
+          />
+
+          {/* Tense Filter */}
+          <div className="sm:col-span-1 lg:col-span-1">
+            <FacetGroup
+              title="Tense"
+              options={tenseOptions}
+              selected={multiVerbFilters.tense.filter(v => v !== 'all')}
+              onToggle={(value) => {
+                const newTense = toggleMultiFilter(multiVerbFilters.tense, value as VerbFilterTense);
+                setMultiVerbFilters({ ...multiVerbFilters, tense: newTense });
+              }}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Aspect Filter */}
+          <FacetGroup
+            title="Aspect"
+            options={aspectOptions}
+            selected={multiVerbFilters.aspect.filter(v => v !== 'all')}
+            onToggle={(value) => {
+              const newAspect = toggleMultiFilter(multiVerbFilters.aspect, value as VerbFilterAspect);
+              setMultiVerbFilters({ ...multiVerbFilters, aspect: newAspect });
+            }}
+            isLoading={isLoading}
+          />
+
+          {/* Mood Filter */}
+          <FacetGroup
+            title="Mood"
+            options={moodOptions}
+            selected={multiVerbFilters.mood.filter(v => v !== 'all')}
+            onToggle={(value) => {
+              const newMood = toggleMultiFilter(multiVerbFilters.mood, value as VerbFilterMood);
+              setMultiVerbFilters({ ...multiVerbFilters, mood: newMood });
+            }}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Verb forms strip */}
+        {displayForms.length > 0 && (
+          <VerbFormsStrip
+            forms={displayForms}
+            onPickForm={onPickForm}
+            isLoading={isLoading}
+          />
+        )}
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Person Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Person:
-          </label>
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.person.includes('all')}
-                onChange={() => {
-                  const newPerson = toggleMultiFilter(multiVerbFilters.person, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, person: newPerson });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {[{ value: '1st', label: '1st (I/we)' }, { value: '2nd', label: '2nd (you)' }, { value: '3rd', label: '3rd (he/she/they)' }].map((option) => (
-              <label key={option.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.person.includes(option.value as VerbFilterPerson)}
-                  onChange={() => {
-                    const newPerson = toggleMultiFilter(multiVerbFilters.person, option.value as VerbFilterPerson);
-                    setMultiVerbFilters({ ...multiVerbFilters, person: newPerson });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Tense Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Tense:
-          </label>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.tense.includes('all')}
-                onChange={() => {
-                  const newTense = toggleMultiFilter(multiVerbFilters.tense, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, tense: newTense });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'].map((tense) => (
-              <label key={tense} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.tense.includes(tense as VerbFilterTense)}
-                  onChange={() => {
-                    const newTense = toggleMultiFilter(multiVerbFilters.tense, tense as VerbFilterTense);
-                    setMultiVerbFilters({ ...multiVerbFilters, tense: newTense });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{tense}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Aspect Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Aspect:
-          </label>
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.aspect.includes('all')}
-                onChange={() => {
-                  const newAspect = toggleMultiFilter(multiVerbFilters.aspect, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, aspect: newAspect });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['imperfective', 'perfective'].map((aspect) => (
-              <label key={aspect} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.aspect.includes(aspect as VerbFilterAspect)}
-                  onChange={() => {
-                    const newAspect = toggleMultiFilter(multiVerbFilters.aspect, aspect as VerbFilterAspect);
-                    setMultiVerbFilters({ ...multiVerbFilters, aspect: newAspect });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{aspect}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Mood Filter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Mood:
-          </label>
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input
-                type="checkbox"
-                checked={multiVerbFilters.mood.includes('all')}
-                onChange={() => {
-                  const newMood = toggleMultiFilter(multiVerbFilters.mood, 'all');
-                  setMultiVerbFilters({ ...multiVerbFilters, mood: newMood });
-                }}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span className="font-medium">All</span>
-            </label>
-            {['indicative', 'subjunctive', 'imperative', 'ability'].map((mood) => (
-              <label key={mood} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={multiVerbFilters.mood.includes(mood as VerbFilterMood)}
-                  onChange={() => {
-                    const newMood = toggleMultiFilter(multiVerbFilters.mood, mood as VerbFilterMood);
-                    setMultiVerbFilters({ ...multiVerbFilters, mood: newMood });
-                  }}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="capitalize">{mood}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Show which forms are being searched */}
-      {activeVariantForms.length > 0 && onPickForm && (
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            Searching with {activeVariantForms.length} verb forms
-            {activeVariantForms.slice(0, 5).map((form) => (
-              <button
-                key={form}
-                onClick={() => onPickForm(form)}
-                className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-blue-200 dark:hover:bg-blue-800"
-              >
-                {form}
-              </button>
-            ))}
-            {activeVariantForms.length > 5 && (
-              <span className="ml-2 text-gray-500">
-                +{activeVariantForms.length - 5} more
-              </span>
-            )}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
-

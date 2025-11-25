@@ -83,6 +83,7 @@ export default function ResultsPane({
         onApplyFilters={handleApplyFilters}
         activeVariantForms={activeVariantForms}
         onPickForm={onPickForm}
+        searchQuery={query}
       />
 
       {/* Results Header */}

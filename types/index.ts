@@ -120,6 +120,13 @@ export interface RelatedFormVariant {
   pluralType?: string;
   lexicalGender?: string;
   grammaticalInfo?: Record<string, any> | null;
+  // Verb metadata (when available from D1 verb_forms)
+  person?: string;
+  tense?: string;
+  aspect?: string;
+  mood?: string;
+  voice?: string;
+  helper?: string;
   inflectionReasons?: {
     plural: number;
     sandwich: number;

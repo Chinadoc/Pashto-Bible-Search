@@ -3,6 +3,7 @@
 /**
  * FilterPanel Component
  * Consolidates POS filter bar and POS-specific filter drawers
+ * Now with D1-backed facet counts for dynamic filtering
  */
 
 import POSFilterBar from './POSFilterBar';
@@ -18,6 +19,7 @@ interface FilterPanelProps {
   onApplyFilters: () => void;
   activeVariantForms?: string[];
   onPickForm?: (form: string) => void;
+  searchQuery?: string; // The current search query (lemma for verbs)
 }
 
 export default function FilterPanel({
@@ -26,12 +28,16 @@ export default function FilterPanel({
   onApplyFilters,
   activeVariantForms = [],
   onPickForm,
+  searchQuery,
 }: FilterPanelProps) {
   const { filters } = useSearchFilters();
   
   const selectedPartOfSpeech = filters.pos.selected.length > 0 
     ? (filters.pos.selected[0] as 'verb' | 'noun' | 'adjective')
     : 'auto';
+    
+  // Determine the lemma for verb facet counts
+  const verbLemma = relatedForms?.root || searchQuery;
 
   if (!includeRelated) {
     return null;
@@ -73,6 +79,7 @@ export default function FilterPanel({
           onApplyFilters={onApplyFilters}
           activeVariantForms={activeVariantForms}
           onPickForm={onPickForm}
+          lemma={verbLemma}
         />
       )}
 

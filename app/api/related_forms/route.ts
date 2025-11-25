@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fetchVerbFormsFromD1 } from '@/app/lib/cloudflare-d1';
 import { getD1Database, queryD1, queryD1First } from '@/utils/d1';
-import type { RelatedFormVariant, RelatedFormsData } from '@/types';
+import type { RelatedFormVariant, RelatedFormsData, VerbFilterState } from '@/types';
+import { filterVerbVariants } from '@/app/utils/verb-filters';
 
 type GrammaticalInfo = Record<string, any> | null;
 
@@ -24,6 +25,38 @@ function normaliseRomanization(value: string): string {
     .replace(/\p{Diacritic}+/gu, '')
     .replace(/[^\p{Letter}\p{Number}]+/gu, '')
     .toLowerCase();
+}
+
+const DEFAULT_VERB_FILTER: VerbFilterState = {
+  person: 'all',
+  tense: 'all',
+  aspect: 'all',
+  mood: 'all',
+};
+
+const PERSON_VALUES = ['all', '1st', '2nd', '3rd'] as const;
+const TENSE_VALUES = ['all', 'present', 'past', 'future', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual'] as const;
+const ASPECT_VALUES = ['all', 'imperfective', 'perfective'] as const;
+const MOOD_VALUES = ['all', 'indicative', 'subjunctive', 'imperative', 'ability'] as const;
+
+function sanitizeVerbFilters(raw: any): VerbFilterState {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_VERB_FILTER };
+
+  const person = PERSON_VALUES.includes(raw.person) ? raw.person : 'all';
+  const tense = TENSE_VALUES.includes(raw.tense) ? raw.tense : 'all';
+  const aspect = ASPECT_VALUES.includes(raw.aspect) ? raw.aspect : 'all';
+  const mood = MOOD_VALUES.includes(raw.mood) ? raw.mood : 'all';
+
+  return { person, tense, aspect, mood };
+}
+
+function isDefaultVerbFilter(filters: VerbFilterState): boolean {
+  return (
+    filters.person === 'all' &&
+    filters.tense === 'all' &&
+    filters.aspect === 'all' &&
+    filters.mood === 'all'
+  );
 }
 
 function parseGrammaticalInfo(raw: any): GrammaticalInfo {
@@ -175,6 +208,12 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
         pos: 'verb',
         label: vf.tense && vf.person ? `${vf.tense} ${vf.person}` : vf.tense || 'verb',
         score: vf.confidence,
+        person: vf.person,
+        tense: vf.tense,
+        aspect: (vf as any).aspect, // passthrough if available from D1
+        mood: (vf as any).mood,
+        voice: vf.voice,
+        helper: vf.helper,
       },
       'verb_forms',
     );
@@ -199,6 +238,12 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
             label: vf.tense && vf.person ? `${vf.tense} ${vf.person}` : vf.tense || 'verb',
             score: vf.confidence,
             flags: ['root-trace'],
+            person: vf.person,
+            tense: vf.tense,
+            aspect: (vf as any).aspect,
+            mood: (vf as any).mood,
+            voice: vf.voice,
+            helper: vf.helper,
           },
           'verb_forms',
         );
@@ -320,6 +365,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const form = (body?.form || '').toString().trim();
     const limit = Math.min(Math.max(Number(body?.limit) || 120, 10), 400);
+    const verbFilters = sanitizeVerbFilters(body?.verbFilters);
 
     if (!form) {
       return NextResponse.json({ error: 'Missing form in request body' }, { status: 400 });
@@ -447,6 +493,22 @@ export async function POST(request: Request) {
     if (posGuess === 'verb' || Array.from(variants.values()).some(v => v.pos === 'verb')) {
       const verbVariants = await collectVerbForms(db, baseForm, limit);
       verbVariants.forEach(v => upsertVariant(variants, v, 'verb_forms'));
+    }
+
+    // Apply server-side verb filters (keeps results in sync as data changes)
+    if (!isDefaultVerbFilter(verbFilters)) {
+      const verbs = Array.from(variants.values()).filter(v => v.pos === 'verb');
+      const filteredVerbs = filterVerbVariants(verbs, verbFilters);
+      const allowedForms = new Set(filteredVerbs.map(v => v.form));
+
+      if (verbs.length > 0) {
+        verbs.forEach(v => {
+          if (!allowedForms.has(v.form)) {
+            variants.delete(v.form);
+          }
+        });
+        console.log(`✅ Server-side verb filter applied: ${verbs.length} → ${filteredVerbs.length}`);
+      }
     }
 
     if (!variants.has(baseForm)) {

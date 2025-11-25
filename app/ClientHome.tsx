@@ -635,28 +635,6 @@ export default function ClientHome() {
   const isQueryChangingRef = useRef<boolean>(false);
   const [dictionaryMatch, setDictionaryMatch] = useState<DictionaryTerm | null>(null);
 
-  // Trigger search when verb filters change (real-time filtering)
-  const previousVerbState = useRef<VerbFilterState>(verbFilters);
-
-  // useEffect to trigger search when verb filters change
-  useEffect(() => {
-    // Only trigger if verb state actually changed and we have related forms
-    if (includeRelated && relatedForms && query.trim()) {
-      const stateChanged =
-        previousVerbState.current.person !== verbFilters.person ||
-        previousVerbState.current.tense !== verbFilters.tense ||
-        previousVerbState.current.aspect !== verbFilters.aspect ||
-        previousVerbState.current.mood !== verbFilters.mood;
-
-      if (stateChanged) {
-        console.log('🔄 Verb filter changed, applying filter without re-searching');
-        applyVerbFiltersAndSearch(verbFilters);
-      }
-    }
-    previousVerbState.current = verbFilters;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verbFilters.person, verbFilters.tense, verbFilters.aspect, verbFilters.mood]);
-
   // useEffect to trigger search when noun filters change
   useEffect(() => {
     if (includeRelated && relatedForms && query.trim()) {
@@ -1086,6 +1064,7 @@ export default function ClientHome() {
       languageOverride?: SearchLanguage;
       preserveResults?: boolean;
       reason?: string;
+      verbFiltersOverride?: VerbFilterState;
     } = {}
   ) => {
     const normalizedQuery = query.trim();
@@ -1099,6 +1078,7 @@ export default function ClientHome() {
       languageOverride,
       preserveResults = false,
       reason = 'manual',
+      verbFiltersOverride,
     } = opts;
 
     const effectiveVariants =
@@ -1145,19 +1125,25 @@ export default function ClientHome() {
     setDictionaryMatch(null);
 
     try {
-      const searchParams: any = {
-        query: normalizedQuery,
-        scope,
-        includeRelated,
-        enableFuzzy,
-        bookFilter,
-        language: languageOverride ?? searchLanguage,
-        translation: activeTranslation,
-      };
+    const searchParams: any = {
+      query: normalizedQuery,
+      scope,
+      includeRelated,
+      enableFuzzy,
+      bookFilter,
+      language: languageOverride ?? searchLanguage,
+      translation: activeTranslation,
+    };
 
-      if (variantsPayload) {
-        searchParams.variants = variantsPayload;
-      }
+    const verbFiltersPayload = verbFiltersOverride ?? verbFilters;
+
+    if (variantsPayload) {
+      searchParams.variants = variantsPayload;
+    }
+
+    if (verbFiltersPayload) {
+      searchParams.verbFilters = verbFiltersPayload;
+    }
 
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -1214,7 +1200,7 @@ export default function ClientHome() {
     } finally {
       setIsLoading(false);
     }
-  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride, activeTranslation]);
+  }, [bookFilter, enableFuzzy, includeRelated, query, scope, searchLanguage, variantsOverride, activeTranslation, verbFilters]);
 
   // Helper to calculate coverage from filtered results
   const calculateCoverageFromResults = useCallback((verses: Verse[]) => {
@@ -1309,63 +1295,20 @@ export default function ClientHome() {
       const sanitized = sanitizeVerbFilter(nextFilters);
       console.log('Applying verb filters:', { nextFilters, sanitized });
       setVerbFilters(sanitized);
+      savePersisted('verbFilters', sanitized);
 
-      // Guard clauses moved to beginning to avoid early returns after hooks
-      if (!includeRelated) {
+      if (!includeRelated || !query.trim()) {
         console.log('Related forms mode not active, filters ignored');
         return;
       }
 
-      if (!relatedForms?.verbs?.length) {
-        console.log('Verb filters updated, awaiting related forms to refetch results');
-        return;
-      }
-
-      const filteredVariants = applyVerbFiltersWithFallback(relatedForms.verbs, sanitized);
-      const forms = formsFromVariants(filteredVariants);
-
-      // If no forms match the filters, show no results
-      if (forms.length === 0) {
-        setResults([]);
-        setCoverage([]);
-        setVariantsOverride([]);
-        setActiveVariantForms([]);
-        return;
-      }
-
-      // Always do client-side filtering when we have existing results
-      // This prevents triggering new searches when filters change
-      if (results && results.length > 0) {
-        console.log('🔍 Client-side filtering existing results by', forms.length, 'forms');
-
-        // Use debounced filtering for better performance
-        debouncedFilter(results, forms);
-        setVariantsOverride(forms);
-        setActiveVariantForms(forms);
-      } else {
-        // No existing results - need to restore original results
-        console.log('🔄 No existing results, restoring original search results');
-
-        // If filters are reset to "All", restore original results from the last successful search
-        if (isDefaultVerbFilter(sanitized)) {
-          console.log('🔄 Filters reset to "All", restoring original results');
-          // Clear variant override to show all original forms
-          setVariantsOverride(null);
-          setActiveVariantForms(relatedForms?.forms?.verbs?.map(v => v.form) || []);
-
-          // Re-run the original search to restore results
-          executeSearch({ preserveResults: false, reason: 'filter-reset' });
-        } else {
-          // Specific filters applied but no results - trigger search with filtered forms
-          console.log('🔄 Specific filters applied, triggering search with filtered forms');
-          variantKeyRef.current = forms.join('|');
-          setVariantsOverride(forms);
-          setActiveVariantForms(forms);
-          executeSearch({ overrideVariants: forms, preserveResults: false, reason: 'verb-filter' });
-        }
-      }
+      // Always re-run the server search so filters stay in sync with D1 updates
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+      variantKeyRef.current = '';
+      executeSearch({ preserveResults: false, reason: 'verb-filter', verbFiltersOverride: sanitized });
     }, 200), // 200ms debounce for filter changes
-    [includeRelated, relatedForms, results, query, isDefaultVerbFilter, debouncedFilter, executeSearch, setResults, setCoverage, setVariantsOverride, setActiveVariantForms]
+    [includeRelated, query, executeSearch]
   );
 
   const applyVerbFiltersAndSearch = useCallback((nextFilters: VerbFilterState) => {
