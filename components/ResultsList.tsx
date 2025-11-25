@@ -792,11 +792,94 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     }
   };
 
+  import {
+    matchesPerson,
+    matchesTense,
+    matchesMood,
+    matchesAspect,
+    normalizeLabel
+  } from '@/app/utils/verb-filters';
+
+  // ... existing imports ...
+
+  // Filter results based on verb filters
+  const filteredResults = useMemo(() => {
+    // If no filters active, return all results
+    if (!multiVerbFilters && !verbFilters) return results;
+
+    // Check if any filter is actually active
+    const hasActiveFilters = multiVerbFilters ? (
+      multiVerbFilters.person.some(p => p !== 'all') ||
+      multiVerbFilters.tense.some(t => t !== 'all') ||
+      multiVerbFilters.aspect.some(a => a !== 'all') ||
+      multiVerbFilters.mood.some(m => m !== 'all')
+    ) : verbFilters && (
+      verbFilters.person !== 'all' ||
+      verbFilters.tense !== 'all' ||
+      verbFilters.aspect !== 'all' ||
+      verbFilters.mood !== 'all'
+    );
+
+    if (!hasActiveFilters) return results;
+
+    // Build map of form -> label for filtering
+    const formToLabel = new Map<string, string>();
+    if (processed?.verbs) {
+      processed.verbs.forEach((v: any) => formToLabel.set(v.form, v.label));
+    }
+    if (processed?.variantGroups?.verbs) {
+      processed.variantGroups.verbs.forEach((v: any) => formToLabel.set(v.form, v.label));
+    }
+
+    return results.filter(verse => {
+      // If verse has no matched forms, it might be a literal match or we can't filter it
+      // For safety, if filters are active, we only show verses that match the filter
+      if (!verse.matchedForms || verse.matchedForms.length === 0) {
+        // If it's a literal match of the query, maybe keep it? 
+        // But if user wants "1st person", literal match might not be 1st person.
+        // Let's exclude for now to be strict.
+        return false;
+      }
+
+      // Check if ANY of the matched forms in this verse satisfies the filter
+      return verse.matchedForms.some(form => {
+        const label = formToLabel.get(form);
+        if (!label) return false; // Can't filter without label
+
+        const normLabel = normalizeLabel(label);
+
+        if (multiVerbFilters) {
+          // Multi-select logic: (Person A OR Person B) AND (Tense A OR Tense B) ...
+          const personMatch = multiVerbFilters.person.every(p => p === 'all') ||
+            multiVerbFilters.person.some(p => matchesPerson(normLabel, p));
+
+          const tenseMatch = multiVerbFilters.tense.every(t => t === 'all') ||
+            multiVerbFilters.tense.some(t => matchesTense(normLabel, t));
+
+          const aspectMatch = multiVerbFilters.aspect.every(a => a === 'all') ||
+            multiVerbFilters.aspect.some(a => matchesAspect(normLabel, a));
+
+          const moodMatch = multiVerbFilters.mood.every(m => m === 'all') ||
+            multiVerbFilters.mood.some(m => matchesMood(normLabel, m));
+
+          return personMatch && tenseMatch && aspectMatch && moodMatch;
+        } else if (verbFilters) {
+          // Single-select logic
+          return matchesPerson(normLabel, verbFilters.person) &&
+            matchesTense(normLabel, verbFilters.tense) &&
+            matchesAspect(normLabel, verbFilters.aspect) &&
+            matchesMood(normLabel, verbFilters.mood);
+        }
+        return true;
+      });
+    });
+  }, [results, multiVerbFilters, verbFilters, processed]);
+
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
-  const paginatedResults = results.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedResults = filteredResults.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   const showPagination = results.length > itemsPerPage
 
