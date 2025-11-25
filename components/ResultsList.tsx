@@ -194,7 +194,8 @@ function VerseItem({
   isLoadingAudio,
   handleDownload,
   handlePlay,
-  handlePause
+  handlePause,
+  filteredResultsLength
 }: {
   verse: Verse;
   index: number;
@@ -218,6 +219,7 @@ function VerseItem({
   handleDownload?: () => void;
   handlePlay?: () => void;
   handlePause?: () => void;
+  filteredResultsLength?: number;
 }) {
   // Parse verse number from ref only (never from text)
   const refParts = verse.ref?.startsWith('video:') ? null : parseRef(verse.ref);
@@ -257,9 +259,7 @@ function VerseItem({
     >
       <div className="flex justify-between items-start mb-3" dir="ltr">
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold text-slate-200">
-            Results ({filteredResultsLength})
-          </h2>  {getTranslationBadge(verse.translation, verse.dialect)}
+          {getTranslationBadge(verse.translation, verse.dialect)}
         </div>
         <div className="flex items-center gap-2">
           {/* Copy verse */}
@@ -886,7 +886,22 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     setPage(value);
   };
 
-  const paginatedResults = filteredResults.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const start = (page - 1) * itemsPerPage;
+  const end = page * itemsPerPage;
+  const paginatedResults = filteredResults.slice(start, end);
+
+  console.log('ResultsList Debug:', {
+    resultsLength: results.length,
+    filteredResultsLength: filteredResults.length,
+    page,
+    itemsPerPage,
+    start,
+    end,
+    paginatedResultsLength: paginatedResults.length,
+    firstFilteredResult: filteredResults[0],
+    firstPaginatedResult: paginatedResults[0],
+    hasActiveFilters
+  });
 
   const showPagination = filteredResults.length > itemsPerPage
 
@@ -1153,6 +1168,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               handleDownload={() => handleVerseDownload(verse)}
               handlePlay={() => handleVersePlay(verse)}
               handlePause={() => handleVersePause(verse)}
+              filteredResultsLength={filteredResults.length}
             />
           ))}
 
