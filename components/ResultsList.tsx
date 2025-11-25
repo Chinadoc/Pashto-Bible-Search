@@ -257,8 +257,9 @@ function VerseItem({
     >
       <div className="flex justify-between items-start mb-3" dir="ltr">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-blue-400">{verse.ref || 'Unknown Reference'}</h3>
-          {getTranslationBadge(verse.translation, verse.dialect)}
+          <h2 className="text-xl font-semibold text-slate-200">
+            Results ({filteredResultsLength})
+          </h2>  {getTranslationBadge(verse.translation, verse.dialect)}
         </div>
         <div className="flex items-center gap-2">
           {/* Copy verse */}
@@ -876,16 +877,21 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     });
   }, [results, multiVerbFilters, verbFilters, processed]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [multiVerbFilters, verbFilters]);
+
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
   const paginatedResults = filteredResults.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  const showPagination = results.length > itemsPerPage
+  const showPagination = filteredResults.length > itemsPerPage
 
   const paginationControl = (position: 'top' | 'bottom') => {
-    const totalPages = Math.ceil(results.length / itemsPerPage)
+    const totalPages = Math.ceil(filteredResults.length / itemsPerPage)
     if (totalPages <= 1) return null
 
     return (
@@ -954,6 +960,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       handleDownload={() => handleVerseDownload(verse)}
       handlePlay={() => handleVersePlay(verse)}
       handlePause={() => handleVersePause(verse)}
+      filteredResultsLength={filteredResults.length} // Pass the length
     />
   );
 
@@ -1084,10 +1091,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         {/* Results count */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
           <span>
-            Showing {shouldUseVirtualization ? results.length : paginatedResults.length} of {results.length} results
-            {!shouldUseVirtualization && results.length > itemsPerPage && (
+            <div className="text-sm text-slate-400 mb-4">
+              Showing {paginatedResults.length} of {filteredResults.length} results
+            </div>      {!shouldUseVirtualization && filteredResults.length > itemsPerPage && (
               <span className="ml-2 text-xs">
-                (Page {page} of {Math.ceil(results.length / itemsPerPage)})
+                (Page {page} of {Math.ceil(filteredResults.length / itemsPerPage)})
               </span>
             )}
             {shouldUseVirtualization && (
