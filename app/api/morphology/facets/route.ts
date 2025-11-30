@@ -36,13 +36,16 @@ export interface FacetCounts {
 
 interface VerbForm {
   form: string;
-  tense?: string;
-  person?: string;
-  voice?: string;
+  tense?: string;      // Now unified: present, past, perfect, subjunctive, imperative, ability
+  person?: string;     // D1 format: 1sg, 1pl, 2sg, 2pl, 3sg, 3pl
+  aspect?: string;     // Now returned: imperfective, perfective
+  mood?: string;       // Now returned: indicative, subjunctive, imperative, ability
+  voice?: string;      // Legacy field
   gender?: string;
-  aspect?: string;
-  mood?: string;
   helper?: string;
+  // Raw D1 values for debugging
+  _form_type?: string;
+  _tense?: string;
 }
 
 // Person normalization: D1 "1sg" → our "1st"
@@ -58,22 +61,25 @@ const PERSON_D1_TO_FILTER: Record<string, string> = {
   '3pl': '3rd',
 };
 
-// Tense inference: Since D1 only has "imperative"/"non-imperative",
-// we need to infer tense from aspect + tense combination
-// - imperfective + non-imperative = present
-// - perfective + non-imperative = past
-// - imperative = imperative
+// The Worker now returns normalized tense values: present, past, perfect, subjunctive, imperative, ability
+// Just pass through the value, or infer from form if missing
 function inferTenseFromForm(form: VerbForm): string | null {
-  const d1Tense = form.tense?.toLowerCase();
-  const aspect = form.voice?.toLowerCase() || form.aspect?.toLowerCase();
+  const tense = form.tense?.toLowerCase();
   
-  // Imperative is clear
-  if (d1Tense === 'imperative') return 'imperative';
+  // Unified tense values from Worker
+  if (tense && ['present', 'past', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual', 'future'].includes(tense)) {
+    return tense;
+  }
   
-  // Non-imperative with aspect info
-  if (d1Tense === 'non-imperative' || !d1Tense) {
-    if (aspect === 'imperfective') return 'present';
-    if (aspect === 'perfective') return 'past';
+  // Legacy fallback: Try to infer from _form_type
+  if (form._form_type) {
+    const formType = form._form_type.toLowerCase();
+    if (formType === 'present') return 'present';
+    if (formType === 'past' || formType === 'simple_past') return 'past';
+    if (formType === 'perfect' || formType === 'past_participle') return 'perfect';
+    if (formType === 'subjunctive') return 'subjunctive';
+    if (formType === 'imperative') return 'imperative';
+    if (formType === 'ability') return 'ability';
   }
   
   // Try to infer from the form text itself
@@ -87,12 +93,20 @@ function inferTenseFromForm(form: VerbForm): string | null {
   return null;
 }
 
+// The Worker now returns normalized mood values: indicative, subjunctive, imperative, ability
 function inferMoodFromForm(form: VerbForm): string | null {
-  const d1Tense = form.tense?.toLowerCase();
+  const mood = form.mood?.toLowerCase();
   
-  if (d1Tense === 'imperative') return 'imperative';
+  if (mood && ['indicative', 'subjunctive', 'imperative', 'ability'].includes(mood)) {
+    return mood;
+  }
   
-  // Default to indicative for non-imperative forms
+  // Fallback inference
+  const tense = form.tense?.toLowerCase();
+  if (tense === 'imperative') return 'imperative';
+  if (tense === 'subjunctive') return 'subjunctive';
+  if (tense === 'ability') return 'ability';
+  
   return 'indicative';
 }
 
@@ -108,11 +122,19 @@ function normalizePersonFromD1(d1Person?: string): string | null {
   return PERSON_D1_TO_FILTER[clean] || null;
 }
 
-function normalizeAspectFromD1(d1Voice?: string, d1Aspect?: string): string | null {
+// The Worker now returns normalized aspect values: imperfective, perfective
+function normalizeAspectFromD1(d1Voice?: string, d1Aspect?: string, form?: VerbForm): string | null {
   const value = (d1Aspect || d1Voice || '').toLowerCase();
   
   if (value.includes('imperfective') || value.includes('ipfv')) return 'imperfective';
   if (value.includes('perfective') || value.includes('pfv')) return 'perfective';
+  
+  // Infer from tense if aspect not explicitly set
+  if (form?.tense) {
+    const tense = form.tense.toLowerCase();
+    if (tense === 'present' || tense === 'habitual' || tense === 'future') return 'imperfective';
+    if (tense === 'past' || tense === 'perfect') return 'perfective';
+  }
   
   return null;
 }
@@ -187,8 +209,8 @@ export async function POST(request: NextRequest) {
     // Normalize and enrich forms with inferred grammatical features
     const enrichedForms = allForms.map(form => {
       const normalizedPerson = normalizePersonFromD1(form.person);
-      const normalizedAspect = normalizeAspectFromD1(form.voice, form.aspect);
       const inferredTense = inferTenseFromForm(form);
+      const normalizedAspect = normalizeAspectFromD1(form.voice, form.aspect, form);
       const inferredMood = inferMoodFromForm(form);
       
       return {

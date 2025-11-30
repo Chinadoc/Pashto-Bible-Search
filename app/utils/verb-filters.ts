@@ -4,11 +4,17 @@
  * Supports filtering verb variants by person, tense, aspect, and mood.
  * Works with both label-based matching AND dedicated D1 fields.
  * 
- * D1 verb_forms table stores:
- *   - person: "1sg", "2sg", "3sg", "1pl", "2pl", "3pl"
- *   - tense: "imperative", "non-imperative" (limited from LingDocs)
- *   - aspect: "imperfective", "perfective"
- *   - voice: "active", "passive"
+ * D1 verb_forms table stores (raw):
+ *   - base_verb: lemma (e.g., "آبادول")
+ *   - form: conjugated form (e.g., "آبادوم")
+ *   - form_type: present, past, subjunctive, imperative, ability, perfect, past_participle, root
+ *   - tense: present, past, simple_past, continuous, imperfective, perfective, etc.
+ *   - person: "1sg", "2sg", "3sg", "1pl", "2pl", "3pl", "3sg_m", "3sg_f"
+ * 
+ * Worker returns normalized values:
+ *   - tense: present, past, perfect, subjunctive, imperative, ability (unified from form_type)
+ *   - aspect: imperfective, perfective (inferred from form_type/tense)
+ *   - mood: indicative, subjunctive, imperative, ability (inferred from form_type)
  *   
  * Our filter values:
  *   - person: "1st", "2nd", "3rd"
@@ -46,27 +52,29 @@ export const PERSON_PATTERNS: Record<VerbFilterPerson, string[]> = {
   '3rd': ['3sg', '3 pl', '3pl', '3rd', 'third', '3.', ' 3 '],
 };
 
-// Tense inference from aspect + mood
-// In Pashto:
-// - imperfective non-imperative = present/future
-// - perfective non-imperative = past (simple/narrative)
-// - imperative = imperative mood
-// - imperfective subjunctive = present subjunctive
-// - perfective subjunctive = past subjunctive
+// Tense matchers - now the Worker returns normalized tense values directly
+// Priority: 1) exact tense match, 2) aspect inference, 3) label fallback
 export const TENSE_MATCHERS: Record<VerbFilterTense, (label: string, variant?: RelatedFormVariant) => boolean> = {
   all: () => true,
   present: (l, v) => {
-    // Present = imperfective aspect + non-imperative
-    if (v?.aspect === 'imperfective' && v?.tense !== 'imperative') return true;
+    // Direct match from Worker's normalized tense
+    if (v?.tense === 'present') return true;
+    // Infer from aspect
+    if (v?.aspect === 'imperfective' && !['imperative', 'subjunctive', 'ability'].includes(v?.mood || '')) return true;
+    // Label fallback
     return l.includes('present') || l.includes('pres') || l.includes('non-past');
   },
   past: (l, v) => {
-    // Past = perfective aspect
-    if (v?.aspect === 'perfective') return true;
-    return (l.includes('past') || l.includes('preterite')) && !l.includes('participle') && !l.includes('perfect');
+    // Direct match
+    if (v?.tense === 'past') return true;
+    // Infer: perfective without perfect/participle = simple past
+    if (v?.aspect === 'perfective' && v?.tense !== 'perfect') return true;
+    // Label fallback
+    return (l.includes('past') || l.includes('preterite') || l.includes('simple')) && 
+           !l.includes('participle') && !l.includes('perfect');
   },
   future: (l, v) => {
-    // Future = به + imperfective (we can't detect به prefix easily)
+    // Future marker به is typically not in the form itself
     if (v?.tense === 'future') return true;
     return l.includes('future') || l.includes('fut');
   },
@@ -75,20 +83,20 @@ export const TENSE_MATCHERS: Record<VerbFilterTense, (label: string, variant?: R
     return l.includes('perfect') || l.includes('participle');
   },
   subjunctive: (l, v) => {
-    if (v?.mood === 'subjunctive' || v?.tense === 'subjunctive') return true;
+    if (v?.tense === 'subjunctive' || v?.mood === 'subjunctive') return true;
     return l.includes('subj');
   },
   imperative: (l, v) => {
     if (v?.tense === 'imperative' || v?.mood === 'imperative') return true;
-    return l.includes('imperativ') || l.includes('imp');
+    return l.includes('imperativ') || l.includes('imp.');
   },
   ability: (l, v) => {
-    if (v?.mood === 'ability' || v?.tense === 'ability') return true;
+    if (v?.tense === 'ability' || v?.mood === 'ability') return true;
     return l.includes('ability') || l.includes('able') || l.includes('potential') || l.includes('pot');
   },
   habitual: (l, v) => {
     if (v?.tense === 'habitual') return true;
-    return l.includes('habit');
+    return l.includes('habit') || l.includes('continuous');
   },
 };
 

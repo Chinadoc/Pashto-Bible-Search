@@ -906,14 +906,32 @@ async function getNounData(env: Env, word: string): Promise<Response> {
 /**
  * Get verb conjugated forms from verb_forms table
  * GET /api/verb-forms?lemma={lemma}&cap={cap}
+ * 
+ * D1 Schema: verb_forms(id, base_verb, form, form_type, tense, person, created_at)
+ * - form_type: present, past, subjunctive, imperative, ability, perfect, past_participle, root
+ * - tense: present, past, simple_past, continuous, continuous_past, imperfective, perfective, etc.
+ * - person: 1sg, 1pl, 2sg, 2pl, 3sg, 3pl, 3sg_m, 3sg_f
  */
 async function getVerbForms(env: Env, lemma: string, cap: number = 200): Promise<Response> {
   try {
+    // D1 uses "base_verb" not "lemma"
     const result = await env.DB.prepare(
-      `SELECT form, tense, person, voice, gender, helper, confidence
+      `SELECT form, form_type, tense, person
        FROM verb_forms
-       WHERE lemma = ?
-       ORDER BY tense, person
+       WHERE base_verb = ?
+       ORDER BY 
+         CASE form_type 
+           WHEN 'present' THEN 1
+           WHEN 'past' THEN 2
+           WHEN 'perfect' THEN 3
+           WHEN 'subjunctive' THEN 4
+           WHEN 'imperative' THEN 5
+           WHEN 'ability' THEN 6
+           WHEN 'past_participle' THEN 7
+           WHEN 'root' THEN 8
+           ELSE 9
+         END,
+         person
        LIMIT ?`
     )
       .bind(lemma, cap)
@@ -928,14 +946,96 @@ async function getVerbForms(env: Env, lemma: string, cap: number = 200): Promise
       });
     }
 
+    // Map D1 form_type/tense to unified grammatical categories
+    const forms = result.results.map((row: any) => ({
+      form: row.form,
+      // Unify tense: use form_type as primary, tense as secondary
+      tense: mapToUnifiedTense(row.form_type, row.tense),
+      person: row.person,
+      // Infer aspect from form_type/tense
+      aspect: inferAspectFromFormType(row.form_type, row.tense),
+      // Infer mood from form_type
+      mood: inferMoodFromFormType(row.form_type),
+      // Keep original values for debugging
+      _form_type: row.form_type,
+      _tense: row.tense,
+    }));
+
     return jsonResponse({
       lemma,
-      forms: result.results,
-      count: result.results.length,
+      forms,
+      count: forms.length,
       source: 'd1_verified',
     });
   } catch (error: any) {
     return errorResponse(`Failed to get verb forms: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Map D1 form_type/tense to unified tense values for UI
+ */
+function mapToUnifiedTense(formType: string, tense: string): string {
+  // form_type is more reliable for UI categories
+  switch (formType) {
+    case 'present':
+      return 'present';
+    case 'past':
+    case 'simple_past':
+      return 'past';
+    case 'perfect':
+    case 'past_participle':
+      return 'perfect';
+    case 'subjunctive':
+      return 'subjunctive';
+    case 'imperative':
+      return 'imperative';
+    case 'ability':
+      return 'ability';
+    case 'root':
+      return 'root';
+    default:
+      // Fall back to tense field
+      if (tense?.includes('present')) return 'present';
+      if (tense?.includes('past') && !tense?.includes('participle')) return 'past';
+      if (tense?.includes('perfect') || tense?.includes('participle')) return 'perfect';
+      if (tense?.includes('continuous')) return 'present'; // continuous is present-based
+      if (tense?.includes('imperfective')) return 'present';
+      if (tense?.includes('perfective')) return 'past';
+      return formType || tense || 'unknown';
+  }
+}
+
+/**
+ * Infer aspect from form_type/tense
+ */
+function inferAspectFromFormType(formType: string, tense: string): string {
+  // Present tenses are generally imperfective
+  if (formType === 'present' || tense?.includes('present') || tense?.includes('imperfective')) {
+    return 'imperfective';
+  }
+  // Past, perfect, and subjunctive are generally perfective
+  if (formType === 'past' || formType === 'perfect' || formType === 'subjunctive' ||
+      tense?.includes('past') || tense?.includes('perfective') || tense?.includes('perfect')) {
+    return 'perfective';
+  }
+  // Ability and imperative can be either
+  return 'imperfective';
+}
+
+/**
+ * Infer mood from form_type
+ */
+function inferMoodFromFormType(formType: string): string {
+  switch (formType) {
+    case 'imperative':
+      return 'imperative';
+    case 'subjunctive':
+      return 'subjunctive';
+    case 'ability':
+      return 'ability';
+    default:
+      return 'indicative';
   }
 }
 
