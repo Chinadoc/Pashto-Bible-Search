@@ -824,53 +824,87 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     if (!hasActiveFilters) return results;
 
-    // Build map of form -> label for filtering
+    // Build map of form -> {label, person, tense, aspect, mood} for filtering
+    // Look in multiple places where verb data might be stored
     const formToLabel = new Map<string, string>();
+    const formToVariant = new Map<string, any>();
+    
+    // Check processed.verbs (direct format)
     if (processed?.verbs) {
-      processed.verbs.forEach((v: any) => formToLabel.set(v.form, v.label));
+      processed.verbs.forEach((v: any) => {
+        formToLabel.set(v.form, v.label);
+        formToVariant.set(v.form, v);
+      });
     }
+    // Check processed.variantGroups.verbs
     if (processed?.variantGroups?.verbs) {
-      processed.variantGroups.verbs.forEach((v: any) => formToLabel.set(v.form, v.label));
+      processed.variantGroups.verbs.forEach((v: any) => {
+        formToLabel.set(v.form, v.label);
+        formToVariant.set(v.form, v);
+      });
+    }
+    // Check processed.relatedForms.forms.verbs (from relatedForms API)
+    if (processed?.relatedForms?.forms?.verbs) {
+      processed.relatedForms.forms.verbs.forEach((v: any) => {
+        formToLabel.set(v.form, v.label);
+        formToVariant.set(v.form, v);
+      });
+    }
+    
+    // If we still have no labels, try to use activeVariantForms with default labels
+    // This ensures verses can still be filtered even without detailed metadata
+    if (formToLabel.size === 0 && activeVariantForms && activeVariantForms.length > 0) {
+      console.log('Warning: No verb labels found, using form text as label fallback');
+      activeVariantForms.forEach((form: string) => {
+        formToLabel.set(form, form); // Use form as its own label
+      });
     }
 
+    console.log(`Filter: Built formToLabel map with ${formToLabel.size} entries`);
+
     return results.filter(verse => {
-      // If verse has no matched forms, it might be a literal match or we can't filter it
-      // For safety, if filters are active, we only show verses that match the filter
-      if (!verse.matchedForms || verse.matchedForms.length === 0) {
-        // If it's a literal match of the query, maybe keep it? 
-        // But if user wants "1st person", literal match might not be 1st person.
-        // Let's exclude for now to be strict.
+      // If verse has no matched forms, check if the verse text contains any of the active forms
+      let matchedFormsToCheck = verse.matchedForms || [];
+      
+      // If matchedForms is empty but we have activeVariantForms, check the verse text
+      if (matchedFormsToCheck.length === 0 && activeVariantForms && activeVariantForms.length > 0 && verse.text) {
+        matchedFormsToCheck = activeVariantForms.filter((form: string) => verse.text.includes(form));
+      }
+      
+      if (matchedFormsToCheck.length === 0) {
+        // No forms matched - exclude this verse
         return false;
       }
 
       // Check if ANY of the matched forms in this verse satisfies the filter
-      return verse.matchedForms.some(form => {
-        const label = formToLabel.get(form);
-        if (!label) return false; // Can't filter without label
-
+      return matchedFormsToCheck.some((form: string) => {
+        const variant = formToVariant.get(form);
+        const label = formToLabel.get(form) || form;
+        
+        // If no variant data, use the form text in label-based matching
         const normLabel = normalizeLabel(label);
 
         if (multiVerbFilters) {
           // Multi-select logic: (Person A OR Person B) AND (Tense A OR Tense B) ...
           const personMatch = multiVerbFilters.person.every(p => p === 'all') ||
-            multiVerbFilters.person.some(p => matchesPerson(normLabel, p));
+            multiVerbFilters.person.some(p => matchesPerson(normLabel, p, variant));
 
           const tenseMatch = multiVerbFilters.tense.every(t => t === 'all') ||
-            multiVerbFilters.tense.some(t => matchesTense(normLabel, t));
+            multiVerbFilters.tense.some(t => matchesTense(normLabel, t, variant));
 
           const aspectMatch = multiVerbFilters.aspect.every(a => a === 'all') ||
-            multiVerbFilters.aspect.some(a => matchesAspect(normLabel, a));
+            multiVerbFilters.aspect.some(a => matchesAspect(normLabel, a, variant));
 
           const moodMatch = multiVerbFilters.mood.every(m => m === 'all') ||
-            multiVerbFilters.mood.some(m => matchesMood(normLabel, m));
+            multiVerbFilters.mood.some(m => matchesMood(normLabel, m, variant));
 
           return personMatch && tenseMatch && aspectMatch && moodMatch;
         } else if (verbFilters) {
           // Single-select logic
-          return matchesPerson(normLabel, verbFilters.person) &&
-            matchesTense(normLabel, verbFilters.tense) &&
-            matchesAspect(normLabel, verbFilters.aspect) &&
-            matchesMood(normLabel, verbFilters.mood);
+          return matchesPerson(normLabel, verbFilters.person, variant) &&
+            matchesTense(normLabel, verbFilters.tense, variant) &&
+            matchesAspect(normLabel, verbFilters.aspect, variant) &&
+            matchesMood(normLabel, verbFilters.mood, variant);
         }
         return true;
       });
