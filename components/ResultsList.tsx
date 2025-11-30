@@ -824,43 +824,44 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     if (!hasActiveFilters) return results;
 
-    // Build map of form -> {label, person, tense, aspect, mood} for filtering
-    // Look in multiple places where verb data might be stored
-    const formToLabel = new Map<string, string>();
-    const formToVariant = new Map<string, any>();
+    // Build map of form -> array of variants (handles ambiguous forms like وهلو which can be 1pl or 3sg_m)
+    const formToVariants = new Map<string, any[]>();
+    
+    const addVariant = (v: any) => {
+      if (!v?.form) return;
+      const existing = formToVariants.get(v.form) || [];
+      // Only add if this person/tense combination isn't already present
+      const isDuplicate = existing.some(e => 
+        e.person === v.person && e.tense === v.tense && e.aspect === v.aspect && e.mood === v.mood
+      );
+      if (!isDuplicate) {
+        existing.push(v);
+        formToVariants.set(v.form, existing);
+      }
+    };
     
     // Check processed.verbs (direct format)
     if (processed?.verbs) {
-      processed.verbs.forEach((v: any) => {
-        formToLabel.set(v.form, v.label);
-        formToVariant.set(v.form, v);
-      });
+      processed.verbs.forEach(addVariant);
     }
     // Check processed.variantGroups.verbs
     if (processed?.variantGroups?.verbs) {
-      processed.variantGroups.verbs.forEach((v: any) => {
-        formToLabel.set(v.form, v.label);
-        formToVariant.set(v.form, v);
-      });
+      processed.variantGroups.verbs.forEach(addVariant);
     }
     // Check processed.relatedForms.forms.verbs (from relatedForms API)
     if (processed?.relatedForms?.forms?.verbs) {
-      processed.relatedForms.forms.verbs.forEach((v: any) => {
-        formToLabel.set(v.form, v.label);
-        formToVariant.set(v.form, v);
-      });
+      processed.relatedForms.forms.verbs.forEach(addVariant);
     }
     
     // If we still have no labels, try to use activeVariantForms with default labels
-    // This ensures verses can still be filtered even without detailed metadata
-    if (formToLabel.size === 0 && activeVariantForms && activeVariantForms.length > 0) {
+    if (formToVariants.size === 0 && activeVariantForms && activeVariantForms.length > 0) {
       console.log('Warning: No verb labels found, using form text as label fallback');
       activeVariantForms.forEach((form: string) => {
-        formToLabel.set(form, form); // Use form as its own label
+        formToVariants.set(form, [{ form, label: form }]);
       });
     }
 
-    console.log(`Filter: Built formToLabel map with ${formToLabel.size} entries`);
+    console.log(`Filter: Built formToVariants map with ${formToVariants.size} unique forms`);
 
     return results.filter(verse => {
       // If verse has no matched forms, check if the verse text contains any of the active forms
@@ -872,39 +873,75 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       }
       
       if (matchedFormsToCheck.length === 0) {
-        // No forms matched - exclude this verse
         return false;
       }
 
       // Check if ANY of the matched forms in this verse satisfies the filter
+      // For ambiguous forms (like وهلو = 1pl OR 3sg_m), ALL variants must match the filter
+      // This prevents false positives where a 3rd person form is shown in 1st person results
       return matchedFormsToCheck.some((form: string) => {
-        const variant = formToVariant.get(form);
-        const label = formToLabel.get(form) || form;
+        const variants = formToVariants.get(form);
         
-        // If no variant data, use the form text in label-based matching
-        const normLabel = normalizeLabel(label);
-
+        // If no variant data, exclude (strict filtering)
+        if (!variants || variants.length === 0) {
+          return false;
+        }
+        
+        // For ambiguous forms: require ALL variants to match the person filter
+        // This is conservative - only shows forms that are UNAMBIGUOUSLY the selected person
         if (multiVerbFilters) {
-          // Multi-select logic: (Person A OR Person B) AND (Tense A OR Tense B) ...
-          const personMatch = multiVerbFilters.person.every(p => p === 'all') ||
-            multiVerbFilters.person.some(p => matchesPerson(normLabel, p, variant));
-
-          const tenseMatch = multiVerbFilters.tense.every(t => t === 'all') ||
-            multiVerbFilters.tense.some(t => matchesTense(normLabel, t, variant));
-
-          const aspectMatch = multiVerbFilters.aspect.every(a => a === 'all') ||
-            multiVerbFilters.aspect.some(a => matchesAspect(normLabel, a, variant));
-
-          const moodMatch = multiVerbFilters.mood.every(m => m === 'all') ||
-            multiVerbFilters.mood.some(m => matchesMood(normLabel, m, variant));
+          const personFilters = multiVerbFilters.person.filter(p => p !== 'all');
+          const tenseFilters = multiVerbFilters.tense.filter(t => t !== 'all');
+          const aspectFilters = multiVerbFilters.aspect.filter(a => a !== 'all');
+          const moodFilters = multiVerbFilters.mood.filter(m => m !== 'all');
+          
+          // For person filter: ALL variants of this form must match (strict for ambiguous forms)
+          const personMatch = personFilters.length === 0 || variants.every(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return personFilters.some(p => matchesPerson(normLabel, p, variant));
+          });
+          
+          // For tense/aspect/mood: at least ONE variant must match (standard behavior)
+          const tenseMatch = tenseFilters.length === 0 || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return tenseFilters.some(t => matchesTense(normLabel, t, variant));
+          });
+          
+          const aspectMatch = aspectFilters.length === 0 || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return aspectFilters.some(a => matchesAspect(normLabel, a, variant));
+          });
+          
+          const moodMatch = moodFilters.length === 0 || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return moodFilters.some(m => matchesMood(normLabel, m, variant));
+          });
 
           return personMatch && tenseMatch && aspectMatch && moodMatch;
         } else if (verbFilters) {
-          // Single-select logic
-          return matchesPerson(normLabel, verbFilters.person, variant) &&
-            matchesTense(normLabel, verbFilters.tense, variant) &&
-            matchesAspect(normLabel, verbFilters.aspect, variant) &&
-            matchesMood(normLabel, verbFilters.mood, variant);
+          // Single-select: ALL variants must match person (strict for ambiguous forms)
+          const personMatch = verbFilters.person === 'all' || variants.every(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return matchesPerson(normLabel, verbFilters.person, variant);
+          });
+          
+          // Other filters: at least one variant matches
+          const tenseMatch = verbFilters.tense === 'all' || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return matchesTense(normLabel, verbFilters.tense, variant);
+          });
+          
+          const aspectMatch = verbFilters.aspect === 'all' || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return matchesAspect(normLabel, verbFilters.aspect, variant);
+          });
+          
+          const moodMatch = verbFilters.mood === 'all' || variants.some(variant => {
+            const normLabel = normalizeLabel(variant.label);
+            return matchesMood(normLabel, verbFilters.mood, variant);
+          });
+          
+          return personMatch && tenseMatch && aspectMatch && moodMatch;
         }
         return true;
       });

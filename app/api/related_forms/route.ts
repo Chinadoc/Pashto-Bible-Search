@@ -94,6 +94,11 @@ function normalisePos(value?: string | null): 'verb' | 'noun' | 'adjective' | 'o
   return 'other';
 }
 
+/**
+ * Upsert a variant into the map.
+ * For ambiguous forms (same form, different person), we use a compound key
+ * to preserve all grammatical variants (e.g., وهلو can be 1pl or 3sg_m).
+ */
 function upsertVariant(
   map: Map<string, RelatedFormVariant>,
   variant: RelatedFormVariant,
@@ -101,10 +106,16 @@ function upsertVariant(
 ) {
   if (!variant.form) return;
 
-  const existing = map.get(variant.form);
+  // Create compound key to preserve different person/tense variants of the same form
+  // e.g., "وهلو" with 1pl and "وهلو" with 3sg_m become separate entries
+  const personKey = variant.person || '';
+  const tenseKey = variant.tense || '';
+  const compoundKey = `${variant.form}::${personKey}::${tenseKey}`;
+
+  const existing = map.get(compoundKey);
   if (existing) {
     // Merge metadata while keeping the highest frequency
-    map.set(variant.form, {
+    map.set(compoundKey, {
       ...existing,
       ...variant,
       count: Math.max(existing.count || 0, variant.count || 0),
@@ -113,7 +124,7 @@ function upsertVariant(
     return;
   }
 
-  map.set(variant.form, {
+  map.set(compoundKey, {
     ...variant,
     flags: variant.flags || [],
     source,
