@@ -64,23 +64,28 @@ const PERSON_D1_TO_FILTER: Record<string, string> = {
 // The Worker now returns normalized tense values: present, past, perfect, subjunctive, imperative, ability
 // Just pass through the value, or infer from form if missing
 function inferTenseFromForm(form: VerbForm): string | null {
+  // Check the normalized tense field from Worker first
   const tense = form.tense?.toLowerCase();
   
-  // Unified tense values from Worker
-  if (tense && ['present', 'past', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual', 'future'].includes(tense)) {
+  // Unified tense values from Worker (these should match directly)
+  const validTenses = ['present', 'past', 'perfect', 'subjunctive', 'imperative', 'ability', 'habitual', 'future', 'root'];
+  if (tense && validTenses.includes(tense)) {
     return tense;
   }
   
-  // Legacy fallback: Try to infer from _form_type
-  if (form._form_type) {
-    const formType = form._form_type.toLowerCase();
-    if (formType === 'present') return 'present';
-    if (formType === 'past' || formType === 'simple_past') return 'past';
-    if (formType === 'perfect' || formType === 'past_participle') return 'perfect';
-    if (formType === 'subjunctive') return 'subjunctive';
-    if (formType === 'imperative') return 'imperative';
-    if (formType === 'ability') return 'ability';
-  }
+  // Legacy fallback: Try to infer from _form_type (raw D1 value)
+  const formType = (form._form_type || form.tense || '').toLowerCase();
+  if (formType === 'present') return 'present';
+  if (formType === 'past' || formType === 'simple_past') return 'past';
+  if (formType === 'perfect' || formType === 'past_participle') return 'perfect';
+  if (formType === 'subjunctive') return 'subjunctive';
+  if (formType === 'imperative') return 'imperative';
+  if (formType === 'ability') return 'ability';
+  
+  // Try to infer from aspect (if imperfective and not already categorized)
+  const aspect = form.aspect?.toLowerCase();
+  if (aspect === 'imperfective') return 'present';
+  if (aspect === 'perfective' && !tense) return 'past';
   
   // Try to infer from the form text itself
   if (form.form) {

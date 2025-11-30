@@ -61,7 +61,9 @@ async function uploadFile(filePath, r2Key) {
             Body: fileContent,
             ContentType: 'audio/mpeg',
         });
+        console.log(`Uploading ${r2Key}...`);
         await client.send(command);
+        console.log(`Uploaded ${r2Key}`);
         return true;
     } catch (error) {
         console.error(`Error uploading ${r2Key}:`, error.message);
@@ -108,7 +110,7 @@ async function fixMissingAudio() {
     console.log(`Found ${missingFiles.length} missing files.`);
 
     // Upload with concurrency
-    const CONCURRENCY = 100;
+    const CONCURRENCY = 10;
     let uploadedCount = 0;
     let errorCount = 0;
 
