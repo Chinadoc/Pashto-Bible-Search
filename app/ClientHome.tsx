@@ -1473,27 +1473,50 @@ export default function ClientHome() {
   }, [searchLanguage, query, executeSearch]);
 
   // Trigger search when query changes (with debouncing)
+  // Use LONGER debounce for Latin/romanized input (user still typing)
   const previousQuery = useRef<string>(query);
-  const debouncedSearch = useMemo(
+  
+  // Check if input is Latin/romanized (requires conversion)
+  const isLatinInput = (text: string) => /^[A-Za-z\s'-]+$/.test(text);
+  const MIN_ROMANIZED_LENGTH = 3; // Wait for at least 3 characters for romanized
+  
+  const debouncedSearchPashto = useMemo(
     () => debounce((trimmedQuery: string) => {
-      console.log('🔄 Query changed, triggering new search');
-      // Set flag to prevent filter persistence during query change
+      console.log('🔄 Query changed (Pashto), triggering search');
       isQueryChangingRef.current = true;
-      // Reset filters and variant forms when query changes to ensure fresh analysis
-      console.log('Clearing variant forms for new query:', trimmedQuery);
       setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
       setVerbFilters({ ...DEFAULT_VERB_FILTER });
       setNounFilters({ ...DEFAULT_NOUN_FILTER });
       setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
-      variantKeyRef.current = ''; // reset variant key to avoid stale matches
+      variantKeyRef.current = '';
       setVariantsOverride(null);
       setActiveVariantForms([]);
       executeSearch({ preserveResults: false, reason: 'query' });
-      // Reset flag after a short delay to allow state updates to complete
-      setTimeout(() => {
-        isQueryChangingRef.current = false;
-      }, 100);
-    }, 300), // 300ms debounce delay
+      setTimeout(() => { isQueryChangingRef.current = false; }, 100);
+    }, 300), // 300ms for Pashto input
+    [executeSearch]
+  );
+  
+  const debouncedSearchRomanized = useMemo(
+    () => debounce((trimmedQuery: string) => {
+      // Only search romanized if it's a complete-looking word (ends in vowel or common consonant)
+      const looksComplete = /[aeiouln]$/i.test(trimmedQuery) || trimmedQuery.length >= 5;
+      if (!looksComplete && trimmedQuery.length < 5) {
+        console.log('⏳ Romanized input too short, waiting...', trimmedQuery);
+        return;
+      }
+      console.log('🔄 Query changed (Romanized), triggering search:', trimmedQuery);
+      isQueryChangingRef.current = true;
+      setMultiVerbFilters({ ...DEFAULT_MULTI_VERB_FILTER });
+      setVerbFilters({ ...DEFAULT_VERB_FILTER });
+      setNounFilters({ ...DEFAULT_NOUN_FILTER });
+      setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
+      variantKeyRef.current = '';
+      setVariantsOverride(null);
+      setActiveVariantForms([]);
+      executeSearch({ preserveResults: false, reason: 'query' });
+      setTimeout(() => { isQueryChangingRef.current = false; }, 100);
+    }, 600), // 600ms for romanized - user needs more time to type
     [executeSearch]
   );
 
@@ -1503,10 +1526,18 @@ export default function ClientHome() {
 
     // Only trigger if query actually changed and we have a non-empty query
     if (trimmedQuery !== previousTrimmedQuery && trimmedQuery) {
-      debouncedSearch(trimmedQuery);
+      if (isLatinInput(trimmedQuery)) {
+        // Romanized input - use longer debounce and min length
+        if (trimmedQuery.length >= MIN_ROMANIZED_LENGTH) {
+          debouncedSearchRomanized(trimmedQuery);
+        }
+      } else {
+        // Pashto/other input - use normal debounce
+        debouncedSearchPashto(trimmedQuery);
+      }
     }
     previousQuery.current = query;
-  }, [query, debouncedSearch]);
+  }, [query, debouncedSearchPashto, debouncedSearchRomanized]);
 
   // Trigger new search when verb filters change (already implemented above)
 

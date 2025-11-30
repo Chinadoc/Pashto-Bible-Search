@@ -1011,67 +1011,16 @@ export async function POST(request: NextRequest) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
       // ========================================================================
-      // FETCH VERB FORMS FIRST if includeRelated is true
-      // This ensures D1 search uses ALL conjugated forms, not just the base form
-      // Uses Cloudflare Worker API (works in production, unlike direct D1 access)
+      // PARALLEL FETCH: Get verb forms and do search simultaneously
+      // This avoids the sequential latency of fetch-then-search
       // ========================================================================
       let relatedFormsForD1: string[] = [];
       let relatedFormsData: any = null;
       
-      if (includeRelated) {
-        console.log(`🔍 [RELATED FORMS] Fetching verb forms for "${searchQuery}" BEFORE D1 search`);
-        try {
-          // Use fetchVerbFormsFromD1 which calls the Cloudflare Worker (works in production)
-          const verbForms = await fetchVerbFormsFromD1(searchQuery, { cap: 200 });
-          
-          if (verbForms && verbForms.length > 0) {
-            // Build a Set of all form strings
-            const allForms = new Set<string>([searchQuery]); // Include original query
-            
-            // Map verb forms to our format and collect unique form strings
-            const verbs = verbForms.map((vf: any) => {
-              allForms.add(vf.form);
-              return {
-                form: vf.form,
-                label: [vf.tense, vf.person].filter(Boolean).join(' ') || 'verb',
-                pos: 'verb',
-                person: vf.person,
-                tense: vf.tense,
-                voice: vf.voice,
-                gender: vf.gender,
-              };
-            });
-            
-            // Also try noun inflections
-            const nounForms = await generateNounVariants(searchQuery);
-            if (nounForms?.length) {
-              nounForms.forEach((nf: any) => {
-                if (nf.form) allForms.add(nf.form);
-              });
-            }
-            
-            relatedFormsForD1 = Array.from(allForms);
-            
-            // Build relatedFormsData structure for response
-            relatedFormsData = {
-              baseForm: searchQuery,
-              total: verbs.length + (nounForms?.length || 0),
-              forms: {
-                verbs: verbs,
-                nouns: nounForms || [],
-                other: [],
-              },
-              posGuess: 'verb',
-            };
-            
-            console.log(`✅ [RELATED FORMS] Found ${relatedFormsForD1.length} forms for D1 search:`, relatedFormsForD1.slice(0, 10), '...');
-          } else {
-            console.log(`⚠️ [RELATED FORMS] No verb forms found for "${searchQuery}", will use fallback`);
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to fetch related forms:`, error);
-        }
-      }
+      // Start verb forms fetch in parallel (non-blocking) if includeRelated
+      const verbFormsPromise = includeRelated 
+        ? fetchVerbFormsFromD1(searchQuery, { cap: 100 }).catch(() => [])  // Reduced cap for speed
+        : Promise.resolve([]);
 
       // If morphological filters are provided, generate verb forms and filter them
       let morphologicalVariants: string[] = [];
@@ -1162,6 +1111,35 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
+      
+      // Await verb forms if includeRelated (this was started in parallel earlier)
+      if (includeRelated && !variants?.length && !morphologicalVariants.length) {
+        const verbForms = await verbFormsPromise;
+        if (verbForms && verbForms.length > 0) {
+          const allForms = new Set<string>([searchQuery]);
+          const verbs = verbForms.map((vf: any) => {
+            allForms.add(vf.form);
+            return {
+              form: vf.form,
+              label: [vf.tense, vf.person].filter(Boolean).join(' ') || 'verb',
+              pos: 'verb',
+              person: vf.person,
+              tense: vf.tense,
+              voice: vf.voice,
+              gender: vf.gender,
+            };
+          });
+          relatedFormsForD1 = Array.from(allForms);
+          relatedFormsData = {
+            baseForm: searchQuery,
+            total: verbs.length,
+            forms: { verbs, nouns: [], other: [] },
+            posGuess: 'verb',
+          };
+          console.log(`✅ [RELATED FORMS] Got ${relatedFormsForD1.length} forms from parallel fetch`);
+        }
+      }
+      
       console.log(`🔍 Related forms for D1:`, relatedFormsForD1.length > 0 ? relatedFormsForD1.slice(0, 10) : 'none');
       
       try {
