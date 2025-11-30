@@ -234,6 +234,79 @@ function inferMoodFromD1(d1Tense?: string): string | undefined {
   return 'indicative'; // Default to indicative
 }
 
+// Auxiliary verbs that form compound verbs
+const AUXILIARY_VERBS = ['وهل', 'کول', 'کېدل', 'راوړل', 'وړل', 'اخیستل', 'راتلل'];
+
+/**
+ * Collect forms from compound verbs that use a specific auxiliary verb
+ * e.g., for وهل, find چیغې وهل، منډه وهل، ټوپ وهل and their conjugated forms
+ */
+async function collectCompoundVerbForms(
+  db: any,
+  auxiliaryVerb: string,
+  limit: number
+): Promise<Map<string, RelatedFormVariant>> {
+  const variants = new Map<string, RelatedFormVariant>();
+
+  try {
+    // Find all compound verbs that use this auxiliary
+    const compoundVerbs = await queryD1<{ base_verb: string }>(
+      db,
+      `SELECT DISTINCT base_verb FROM verb_forms 
+       WHERE base_verb LIKE ? AND base_verb != ?
+       LIMIT 50`,
+      [`%${auxiliaryVerb}`, auxiliaryVerb],
+    );
+
+    if (!compoundVerbs || compoundVerbs.length === 0) {
+      return variants;
+    }
+
+    // For each compound verb, get its conjugated forms
+    for (const cv of compoundVerbs) {
+      // Extract the object part (e.g., "چیغې" from "چیغې وهل")
+      const objectPart = cv.base_verb.replace(auxiliaryVerb, '').trim();
+      
+      const forms = await fetchVerbFormsFromD1(cv.base_verb, { cap: Math.floor(limit / compoundVerbs.length) || 10 });
+      
+      for (const vf of forms) {
+        const normalizedPerson = normalizePersonFromD1(vf.person);
+        const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
+        const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
+        const inferredMood = inferMoodFromD1(vf.tense);
+        
+        // Label includes the compound verb info
+        const labelParts = [`${objectPart}+`];
+        if (inferredTense) labelParts.push(inferredTense);
+        if (normalizedPerson) labelParts.push(normalizedPerson);
+        const label = labelParts.join(' ');
+        
+        upsertVariant(
+          variants,
+          {
+            form: vf.form,
+            pos: 'verb',
+            label,
+            score: vf.confidence,
+            person: normalizedPerson || vf.person,
+            tense: inferredTense || vf.tense,
+            aspect: inferredAspect,
+            mood: inferredMood,
+            voice: vf.voice,
+            helper: objectPart, // Store the object as the "helper" for compound identification
+            flags: ['compound'],
+          },
+          'compound_verb',
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error collecting compound verb forms:', error);
+  }
+
+  return variants;
+}
+
 async function collectVerbForms(db: any, baseForm: string, limit: number) {
   const variants = new Map<string, RelatedFormVariant>();
 
@@ -269,6 +342,14 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
       },
       'verb_forms',
     );
+  }
+
+  // If this is an auxiliary verb, also collect compound verb forms
+  if (AUXILIARY_VERBS.includes(baseForm)) {
+    const compoundForms = await collectCompoundVerbForms(db, baseForm, Math.floor(limit / 2));
+    for (const [form, variant] of compoundForms) {
+      upsertVariant(variants, variant, 'compound_verb');
+    }
   }
 
   // If nothing came back, try using form_to_root to trace the lemma
