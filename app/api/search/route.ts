@@ -1010,6 +1010,56 @@ export async function POST(request: NextRequest) {
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
+      // ========================================================================
+      // FETCH RELATED FORMS FIRST if includeRelated is true
+      // This ensures D1 search uses ALL conjugated forms, not just the base form
+      // ========================================================================
+      let relatedFormsForD1: string[] = [];
+      let relatedFormsData: any = null;
+      
+      if (includeRelated) {
+        console.log(`🔍 [RELATED FORMS] Fetching verb forms for "${searchQuery}" BEFORE D1 search`);
+        try {
+          const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form: searchQuery,
+              translation: translation,
+              limit: 200,
+            }),
+          });
+          
+          if (relatedResponse.ok) {
+            relatedFormsData = await relatedResponse.json();
+            
+            // Extract all form strings from the response
+            const allForms = new Set<string>([searchQuery]); // Include original query
+            
+            if (relatedFormsData.forms?.verbs) {
+              relatedFormsData.forms.verbs.forEach((v: any) => {
+                if (v.form) allForms.add(v.form);
+              });
+            }
+            if (relatedFormsData.forms?.nouns) {
+              relatedFormsData.forms.nouns.forEach((v: any) => {
+                if (v.form) allForms.add(v.form);
+              });
+            }
+            if (relatedFormsData.forms?.other) {
+              relatedFormsData.forms.other.forEach((v: any) => {
+                if (v.form) allForms.add(v.form);
+              });
+            }
+            
+            relatedFormsForD1 = Array.from(allForms);
+            console.log(`✅ [RELATED FORMS] Found ${relatedFormsForD1.length} forms for D1 search:`, relatedFormsForD1.slice(0, 10), '...');
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to fetch related forms:`, error);
+        }
+      }
+
       // If morphological filters are provided, generate verb forms and filter them
       let morphologicalVariants: string[] = [];
       if (morphologicalFilters && Object.keys(morphologicalFilters).length > 0) {
@@ -1099,16 +1149,24 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
+      console.log(`🔍 Related forms for D1:`, relatedFormsForD1.length > 0 ? relatedFormsForD1.slice(0, 10) : 'none');
+      
       try {
         // Map scope to testament filter
         const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
 
-        // Use searchVersesByForms if variants are provided (morphological or regular), otherwise use regular search
+        // Priority: morphologicalVariants > variants from request > relatedFormsForD1 > single query
         let d1Verses: any[] = [];
-        const searchForms = morphologicalVariants.length > 0 ? morphologicalVariants : variants;
+        const searchForms = morphologicalVariants.length > 0 
+          ? morphologicalVariants 
+          : (variants && variants.length > 0 
+            ? variants 
+            : (relatedFormsForD1.length > 0 ? relatedFormsForD1 : null));
 
         if (searchForms && searchForms.length > 0) {
-          console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${searchForms.length} forms (${morphologicalVariants.length > 0 ? 'morphological' : 'regular'}):`, searchForms.slice(0, 10));
+          const formSource = morphologicalVariants.length > 0 ? 'morphological' : 
+            (variants && variants.length > 0 ? 'request variants' : 'related forms');
+          console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${searchForms.length} forms (${formSource}):`, searchForms.slice(0, 10));
           d1Verses = await searchVersesByForms(searchForms, {
             translation: translation as 'afghan2023' | 'yousafzai2019',
             testament: testamentFilter,
@@ -1152,11 +1210,13 @@ export async function POST(request: NextRequest) {
             };
           });
 
-          let relatedFormsData: any = null;
-          let relatedFormTerms: string[] | null = null;
-          if (includeRelated && searchLanguage === 'pashto') {
+          // Use the relatedFormsData we already fetched earlier (if available)
+          // Only build inline related forms if we don't already have them
+          let relatedFormTerms: string[] | null = relatedFormsForD1.length > 0 ? relatedFormsForD1 : null;
+          
+          if (!relatedFormsData && includeRelated && searchLanguage === 'pashto') {
             try {
-              console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}"`);
+              console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}" (fallback)`);
               const inlineRelated = await buildInlineRelatedForms(
                 searchQuery,
                 translation as 'afghan2023' | 'yousafzai2019',
@@ -1165,38 +1225,38 @@ export async function POST(request: NextRequest) {
               if (inlineRelated) {
                 relatedFormsData = inlineRelated.relatedForms;
                 relatedFormTerms = inlineRelated.searchTerms;
-                // Apply verb filters server-side for inline related forms
-                if (relatedFormsData?.forms?.verbs && !isDefaultVerbFilter(sanitizedVerbFilters)) {
-                  const filteredVerbs = filterVerbVariants(relatedFormsData.forms.verbs, sanitizedVerbFilters);
-                  const allowedForms = new Set(filteredVerbs.map((v: any) => v.form));
-                  relatedFormsData.forms.verbs = filteredVerbs;
-                  relatedFormsData.total = filteredVerbs.length + (relatedFormsData.forms.nouns?.length || 0) + (relatedFormsData.forms.other?.length || 0);
-                  if (relatedFormTerms) {
-                    relatedFormTerms = relatedFormTerms.filter(term => allowedForms.has(term) || term === searchQuery);
-                  }
-                }
-                console.log(`✅ [D1 FAST PATH] Built related forms:`, {
-                  total: relatedFormsData.total,
-                  verbsCount: relatedFormsData.forms?.verbs?.length || 0,
-                  nounsCount: relatedFormsData.forms?.nouns?.length || 0,
-                  posGuess: relatedFormsData.posGuess,
-                  searchTermsCount: relatedFormTerms.length,
-                });
-                console.log(`📋 [D1 FAST PATH] Verb forms sample:`,
-                  relatedFormsData.forms?.verbs?.slice(0, 5).map((v: any) => ({ form: v.form, label: v.label }))
-                );
-              } else {
-                console.warn(`⚠️ [D1 FAST PATH] buildInlineRelatedForms returned null for "${searchQuery}"`);
               }
             } catch (error) {
               console.warn('Failed to build inline related forms for D1 search:', error);
             }
           }
+          
+          // Apply verb filters server-side for related forms
+          if (relatedFormsData?.forms?.verbs && !isDefaultVerbFilter(sanitizedVerbFilters)) {
+            const filteredVerbs = filterVerbVariants(relatedFormsData.forms.verbs, sanitizedVerbFilters);
+            const allowedForms = new Set(filteredVerbs.map((v: any) => v.form));
+            relatedFormsData.forms.verbs = filteredVerbs;
+            relatedFormsData.total = filteredVerbs.length + (relatedFormsData.forms.nouns?.length || 0) + (relatedFormsData.forms.other?.length || 0);
+            if (relatedFormTerms) {
+              relatedFormTerms = relatedFormTerms.filter(term => allowedForms.has(term) || term === searchQuery);
+            }
+          }
+          
+          console.log(`✅ [D1 FAST PATH] Related forms for response:`, {
+            total: relatedFormsData?.total || 0,
+            verbsCount: relatedFormsData?.forms?.verbs?.length || 0,
+            nounsCount: relatedFormsData?.forms?.nouns?.length || 0,
+            searchFormsCount: searchForms?.length || 0,
+          });
 
-          console.log(`🔍 [D1 FAST PATH] Final variants:`, {
+          // Determine what was actually searched
+          const actualSearchForms = searchForms || [searchQuery];
+          
+          console.log(`🔍 [D1 FAST PATH] Final search summary:`, {
             providedVariants: variants?.length || 0,
-            relatedFormTerms: relatedFormTerms?.length || 0,
-            usingVariants: variants?.length ? variants.slice(0, 5) : (relatedFormTerms?.slice(0, 5) || [searchQuery]),
+            relatedFormsForD1: relatedFormsForD1?.length || 0,
+            actualSearchForms: actualSearchForms.length,
+            sampleForms: actualSearchForms.slice(0, 10),
           });
 
           const d1Result: any = {
@@ -1206,14 +1266,16 @@ export async function POST(request: NextRequest) {
             processed: {
               original: originalQuery,
               normalized: searchQuery,
-              variants: variants?.length ? variants : (relatedFormTerms || [searchQuery]),
-              variantsSearched: variants?.length ? variants : (relatedFormTerms || [searchQuery]),
+              variants: actualSearchForms,
+              variantsSearched: actualSearchForms,
               searchType: 'd1',
               frequency: d1Verses.length,
               posSummary: relatedFormsData?.posSummary,
             },
             queryTime: queryTimeMs,
             source: 'd1-r2',
+            // Include count of forms searched for debugging
+            formsSearched: actualSearchForms.length,
           };
 
           // Add debug info if requested
