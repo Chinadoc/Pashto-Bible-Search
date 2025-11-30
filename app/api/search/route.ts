@@ -1011,8 +1011,9 @@ export async function POST(request: NextRequest) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
       // ========================================================================
-      // FETCH RELATED FORMS FIRST if includeRelated is true
+      // FETCH VERB FORMS FIRST if includeRelated is true
       // This ensures D1 search uses ALL conjugated forms, not just the base form
+      // Uses Cloudflare Worker API (works in production, unlike direct D1 access)
       // ========================================================================
       let relatedFormsForD1: string[] = [];
       let relatedFormsData: any = null;
@@ -1020,40 +1021,52 @@ export async function POST(request: NextRequest) {
       if (includeRelated) {
         console.log(`🔍 [RELATED FORMS] Fetching verb forms for "${searchQuery}" BEFORE D1 search`);
         try {
-          const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              form: searchQuery,
-              translation: translation,
-              limit: 200,
-            }),
-          });
+          // Use fetchVerbFormsFromD1 which calls the Cloudflare Worker (works in production)
+          const verbForms = await fetchVerbFormsFromD1(searchQuery, { cap: 200 });
           
-          if (relatedResponse.ok) {
-            relatedFormsData = await relatedResponse.json();
-            
-            // Extract all form strings from the response
+          if (verbForms && verbForms.length > 0) {
+            // Build a Set of all form strings
             const allForms = new Set<string>([searchQuery]); // Include original query
             
-            if (relatedFormsData.forms?.verbs) {
-              relatedFormsData.forms.verbs.forEach((v: any) => {
-                if (v.form) allForms.add(v.form);
-              });
-            }
-            if (relatedFormsData.forms?.nouns) {
-              relatedFormsData.forms.nouns.forEach((v: any) => {
-                if (v.form) allForms.add(v.form);
-              });
-            }
-            if (relatedFormsData.forms?.other) {
-              relatedFormsData.forms.other.forEach((v: any) => {
-                if (v.form) allForms.add(v.form);
+            // Map verb forms to our format and collect unique form strings
+            const verbs = verbForms.map((vf: any) => {
+              allForms.add(vf.form);
+              return {
+                form: vf.form,
+                label: [vf.tense, vf.person].filter(Boolean).join(' ') || 'verb',
+                pos: 'verb',
+                person: vf.person,
+                tense: vf.tense,
+                voice: vf.voice,
+                gender: vf.gender,
+              };
+            });
+            
+            // Also try noun inflections
+            const nounForms = await generateNounVariants(searchQuery);
+            if (nounForms?.length) {
+              nounForms.forEach((nf: any) => {
+                if (nf.form) allForms.add(nf.form);
               });
             }
             
             relatedFormsForD1 = Array.from(allForms);
+            
+            // Build relatedFormsData structure for response
+            relatedFormsData = {
+              baseForm: searchQuery,
+              total: verbs.length + (nounForms?.length || 0),
+              forms: {
+                verbs: verbs,
+                nouns: nounForms || [],
+                other: [],
+              },
+              posGuess: 'verb',
+            };
+            
             console.log(`✅ [RELATED FORMS] Found ${relatedFormsForD1.length} forms for D1 search:`, relatedFormsForD1.slice(0, 10), '...');
+          } else {
+            console.log(`⚠️ [RELATED FORMS] No verb forms found for "${searchQuery}", will use fallback`);
           }
         } catch (error) {
           console.warn(`⚠️ Failed to fetch related forms:`, error);
