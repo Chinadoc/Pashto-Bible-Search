@@ -1170,9 +1170,12 @@ export default function ClientHome() {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
       } : null);
+      // Include relatedForms data in processed so ResultsList can access verb labels
       setProcessed(searchData.processed ? {
         ...searchData.processed,
         searchedForm: searchData.searchedForm,
+        // Merge relatedForms into processed for filtering access
+        relatedForms: searchData.relatedForms,
       } : null);
       setDictionaryMatch(searchData.dictionaryMatch || null);
 
