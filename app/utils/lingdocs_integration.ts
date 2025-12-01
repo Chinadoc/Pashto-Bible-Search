@@ -339,6 +339,19 @@ function flattenVerbForms(conjugation: any, lemma: string): Variant[] {
   if (conjugation?.perfective?.nonImperative) {
     collectFromNode(conjugation.perfective.nonImperative, 'Subjunctive');
   }
+  
+  // Past tense forms (Pashto uses past roots with personal endings)
+  // LingDocs stores these under imperfective.past and perfective.past
+  if (conjugation?.imperfective?.past) {
+    collectFromNode(conjugation.imperfective.past, 'Continuous Past');
+  }
+  if (conjugation?.perfective?.past) {
+    collectFromNode(conjugation.perfective.past, 'Past');  // Simple past
+  }
+  // Also check for legacy past structure
+  if (conjugation?.past) {
+    collectFromNode(conjugation.past, 'Past');
+  }
 
   if (conjugation?.participle?.past) {
     collectFromNode(conjugation.participle.past, 'Past Participle');

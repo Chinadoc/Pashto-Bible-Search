@@ -1098,13 +1098,13 @@ export async function POST(request: NextRequest) {
               if (tenseFilters.length > 0) {
                 const tenseMap: Record<string, string[]> = {
                   'present': ['present', 'pres', 'non-past'],
-                  'past': ['past', 'preterite'],
+                  'past': ['past', 'preterite', 'continuous past', 'simple past'],
                   'future': ['future'],
-                  'perfect': ['perfect'],
+                  'perfect': ['perfect', 'participle'],
                   'subjunctive': ['subjunctive', 'subj'],
                   'imperative': ['imperative', 'imp'],
                   'ability': ['ability', 'pot'],
-                  'habitual': ['habitual', 'hab']
+                  'habitual': ['habitual', 'hab', 'continuous']
                 };
                 const tenseMatched = tenseFilters.some(tenseFilter => {
                   const tenseTerms = tenseMap[tenseFilter] || [];
