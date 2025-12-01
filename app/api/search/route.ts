@@ -881,6 +881,7 @@ export async function POST(request: NextRequest) {
 
     // Add transliteration support for common Pashto words
     const transliterationMap: Record<string, string> = {
+      // Verbs
       'weenum': 'وینم',
       'winam': 'وینم',
       'wina': 'وینا',
@@ -891,6 +892,14 @@ export async function POST(request: NextRequest) {
       'kawral': 'کړل',
       'akhistal': 'اخیستل',
       'satal': 'ساتل',
+      'wahul': 'وهل',
+      'wahel': 'وهل',
+      'raatlal': 'راتلل',
+      'tlal': 'تلل',
+      // Nouns
+      'mrasta': 'مرسته',
+      'mraste': 'مرستې',
+      'mrasto': 'مرستو',
       'khuda': 'خدا',
       'khudai': 'خدای',
       'khuday': 'خدای',
@@ -901,6 +910,14 @@ export async function POST(request: NextRequest) {
       'mor': 'مور',
       'wror': 'ورور',
       'khor': 'خور',
+      'laar': 'لار',
+      'wradz': 'ورځ',
+      'myaasht': 'میاشت',
+      'kor': 'کور',
+      'koTa': 'کوټه',
+      'xudza': 'ښځه',
+      'saray': 'سړی',
+      // Pronouns/Others
       'zama': 'زما',
       'sta': 'ستا',
       'da': 'دا',

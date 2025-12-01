@@ -204,9 +204,19 @@ async function processChapter(book, chapter) {
 async function main() {
     if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
-    console.log(`Starting recovery for ${BOOKS_TO_RECOVER.length} books...`);
+    const targetBook = process.argv[2];
+    const booksToProcess = targetBook
+        ? BOOKS_TO_RECOVER.filter(b => b.name === targetBook)
+        : BOOKS_TO_RECOVER;
 
-    for (const book of BOOKS_TO_RECOVER) {
+    if (booksToProcess.length === 0) {
+        console.error(`Book '${targetBook}' not found in list.`);
+        return;
+    }
+
+    console.log(`Starting recovery for ${booksToProcess.length} books...`);
+
+    for (const book of booksToProcess) {
         console.log(`\n📘 Processing Book: ${book.name} (${book.chapters} chapters)`);
         for (let chapter = 1; chapter <= book.chapters; chapter++) {
             await processChapter(book, chapter);
