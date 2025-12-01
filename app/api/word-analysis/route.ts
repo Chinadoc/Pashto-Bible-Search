@@ -39,6 +39,12 @@ interface WordAnalysisResult {
   auxiliaryVerb: string | null;
   confidence: number;
   source: string;
+  // Pronoun-specific fields
+  isClitic?: boolean;
+  cliticType?: 'subject' | 'object' | 'possessive';
+  cliticNotes?: string;
+  possibleReferents?: string[];
+  grammaticalCase?: string;
 }
 
 // Sandwich patterns for context analysis
@@ -63,6 +69,78 @@ const INFLECTION_PATTERNS = {
   'pattern5': 'Pattern #5 Squish',
   'pattern6': 'Pattern #5½ Fem ي',
 };
+
+// Pashto mini-pronouns (clitics) with their forms and meanings
+// These attach to verbs and show who is doing/receiving the action
+const PASHTO_CLITICS: Record<string, {
+  type: 'subject' | 'object' | 'possessive';
+  person: string;
+  number: string;
+  gender?: string;
+  meaning: string;
+  notes: string;
+}> = {
+  'مې': { type: 'subject', person: '1st', number: 'singular', meaning: 'I / me / my', notes: 'First person singular clitic' },
+  'دې': { type: 'subject', person: '2nd', number: 'singular', meaning: 'you / your', notes: 'Second person singular clitic' },
+  'یې': { type: 'subject', person: '3rd', number: 'singular', meaning: 'he/she/it/they', notes: 'Third person clitic - can be singular OR plural. Check context for referent.' },
+  'مو': { type: 'subject', person: '1st', number: 'plural', meaning: 'we / us / our', notes: 'First person plural OR second person formal' },
+  'یی': { type: 'subject', person: '3rd', number: 'singular', meaning: 'he/she/it', notes: 'Alternative spelling of یې' },
+  'ورته': { type: 'object', person: '3rd', number: 'singular', meaning: 'to him/her/it', notes: 'Oblique directional clitic' },
+  'راته': { type: 'object', person: '1st', number: 'singular', meaning: 'to me', notes: 'Directional clitic toward speaker' },
+  'درته': { type: 'object', person: '2nd', number: 'singular', meaning: 'to you', notes: 'Directional clitic toward listener' },
+};
+
+// Common Pashto pronouns
+const PASHTO_PRONOUNS: Record<string, {
+  person: string;
+  number: string;
+  case: string;
+  gender?: string;
+  meaning: string;
+}> = {
+  'زه': { person: '1st', number: 'singular', case: 'nominative', meaning: 'I' },
+  'ته': { person: '2nd', number: 'singular', case: 'nominative', meaning: 'you' },
+  'هغه': { person: '3rd', number: 'singular', case: 'nominative', gender: 'masculine', meaning: 'he / that' },
+  'هغې': { person: '3rd', number: 'singular', case: 'oblique', gender: 'feminine', meaning: 'she / her' },
+  'هغوی': { person: '3rd', number: 'plural', case: 'nominative', meaning: 'they / them' },
+  'موږ': { person: '1st', number: 'plural', case: 'nominative', meaning: 'we' },
+  'تاسو': { person: '2nd', number: 'plural', case: 'nominative', meaning: 'you (plural/formal)' },
+  'دا': { person: '3rd', number: 'singular', case: 'nominative', meaning: 'this / he / she / it' },
+  'دوی': { person: '3rd', number: 'plural', case: 'nominative', meaning: 'they' },
+  'ما': { person: '1st', number: 'singular', case: 'oblique', meaning: 'me' },
+  'تا': { person: '2nd', number: 'singular', case: 'oblique', meaning: 'you' },
+};
+
+// Analyze context to find potential referents for a pronoun
+function findPronounReferent(pronoun: string, context: string): string[] {
+  const referents: string[] = [];
+  const words = context.split(/\s+/);
+  const pronounIndex = words.findIndex(w => w === pronoun || w.includes(pronoun));
+  
+  // Look for nouns before the pronoun that could be referents
+  const nounsBeforePronoun: string[] = [];
+  
+  // Common subject markers in Pashto Biblical text
+  const subjectPatterns = [
+    { pattern: /څښتن|خداوند/, referent: 'the Lord (څښتن)' },
+    { pattern: /شاګردان/, referent: 'the disciples (شاګردان)' },
+    { pattern: /عیسی/, referent: 'Jesus (عیسی)' },
+    { pattern: /خدای/, referent: 'God (خدای)' },
+    { pattern: /پولس/, referent: 'Paul (پولس)' },
+    { pattern: /پطرس/, referent: 'Peter (پطرس)' },
+    { pattern: /هغوی/, referent: 'they (هغوی)' },
+    { pattern: /هغه/, referent: 'he/she (هغه)' },
+  ];
+  
+  // Check for common referents in context
+  for (const { pattern, referent } of subjectPatterns) {
+    if (pattern.test(context)) {
+      referents.push(referent);
+    }
+  }
+  
+  return referents;
+}
 
 // Detect inflection state from word ending
 function detectInflectionState(word: string, baseForm: string | null): string | null {
@@ -225,6 +303,52 @@ export async function GET(request: NextRequest) {
       confidence: 0.5,
       source: 'inferred',
     };
+    
+    // 0. Check if it's a mini-pronoun (clitic) - these are very common in Pashto
+    if (PASHTO_CLITICS[cleanWord]) {
+      const clitic = PASHTO_CLITICS[cleanWord];
+      result.pos = 'pronoun';
+      result.isClitic = true;
+      result.cliticType = clitic.type;
+      result.person = clitic.person;
+      result.number = clitic.number;
+      result.english = clitic.meaning;
+      result.cliticNotes = clitic.notes;
+      result.confidence = 0.95;
+      result.source = 'clitic_table';
+      
+      // Find possible referents in context
+      if (context) {
+        result.possibleReferents = findPronounReferent(cleanWord, context);
+      }
+      
+      // Special handling for یې which can be ambiguous
+      if (cleanWord === 'یې' || cleanWord === 'یی') {
+        result.cliticNotes = '⚠️ Ambiguous: Can be 3rd person singular (he/she/it) OR plural (they). Check nearby nouns for referent.';
+        
+        // If we found multiple referents, note the ambiguity
+        if (result.possibleReferents && result.possibleReferents.length > 1) {
+          result.cliticNotes += ` Possible referents: ${result.possibleReferents.join(', ')}`;
+        }
+      }
+      
+      return NextResponse.json(result);
+    }
+    
+    // Check if it's a regular pronoun
+    if (PASHTO_PRONOUNS[cleanWord]) {
+      const pronoun = PASHTO_PRONOUNS[cleanWord];
+      result.pos = 'pronoun';
+      result.person = pronoun.person;
+      result.number = pronoun.number;
+      result.grammaticalCase = pronoun.case;
+      result.gender = pronoun.gender || null;
+      result.english = pronoun.meaning;
+      result.confidence = 0.95;
+      result.source = 'pronoun_table';
+      
+      return NextResponse.json(result);
+    }
     
     // 1. Check word_frequencies for basic info
     try {

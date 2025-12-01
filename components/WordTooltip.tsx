@@ -45,9 +45,16 @@ export interface WordAnalysis {
   compoundType?: 'dynamic' | 'stative' | null;
   auxiliaryVerb?: string | null; // کول, کېدل, etc.
   
+  // Pronoun/Clitic-specific
+  isClitic?: boolean;
+  cliticType?: 'subject' | 'object' | 'possessive';
+  cliticNotes?: string;
+  possibleReferents?: string[];
+  grammaticalCase?: string;
+  
   // Source
   confidence: number;
-  source: 'verb_forms' | 'word_frequencies' | 'inflections' | 'inflection_reasons' | 'inferred';
+  source: 'verb_forms' | 'word_frequencies' | 'inflections' | 'inflection_reasons' | 'inferred' | 'clitic_table' | 'pronoun_table';
 }
 
 interface WordTooltipProps {
@@ -265,6 +272,67 @@ export default function WordTooltip({
                           + {analysis.auxiliaryVerb}
                         </span>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Pronoun/Clitic-specific info */}
+              {analysis.pos === 'pronoun' && (
+                <div className="pt-1 space-y-2">
+                  {/* Clitic badge */}
+                  {analysis.isClitic && (
+                    <div className="flex items-center gap-1.5" dir="ltr">
+                      <span className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 rounded text-xs font-medium">
+                        mini-pronoun (clitic)
+                      </span>
+                      {analysis.cliticType && (
+                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs">
+                          {analysis.cliticType}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Person/Number */}
+                  {analysis.person && (
+                    <div className="text-sm" dir="ltr">
+                      <span className="text-gray-500">Refers to: </span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        {analysis.person} person {analysis.number}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Grammatical case for regular pronouns */}
+                  {analysis.grammaticalCase && (
+                    <div className="text-xs" dir="ltr">
+                      <span className="text-gray-500">Case: </span>
+                      <span>{analysis.grammaticalCase}</span>
+                    </div>
+                  )}
+                  
+                  {/* Possible referents */}
+                  {analysis.possibleReferents && analysis.possibleReferents.length > 0 && (
+                    <div className="pt-1 border-t border-gray-200 dark:border-gray-700" dir="ltr">
+                      <div className="text-xs text-gray-500 mb-1">Possible referent(s) in context:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {analysis.possibleReferents.map((ref, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded text-xs"
+                          >
+                            {ref}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Notes/disambiguation */}
+                  {analysis.cliticNotes && (
+                    <div className="text-xs text-amber-600 dark:text-amber-400 pt-1 border-t border-gray-200 dark:border-gray-700" dir="ltr">
+                      {analysis.cliticNotes}
                     </div>
                   )}
                 </div>

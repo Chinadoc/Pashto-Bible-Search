@@ -260,6 +260,7 @@ export default function InteractiveVerse({
                 ${highlighted ? 'bg-yellow-200/60 dark:bg-yellow-700/40 px-0.5' : ''}
                 ${analysis?.pos === 'verb' ? 'hover:underline decoration-green-500 decoration-2 underline-offset-4' : ''}
                 ${analysis?.pos === 'noun' ? 'hover:underline decoration-blue-500 decoration-2 underline-offset-4' : ''}
+                ${analysis?.pos === 'pronoun' ? 'hover:underline decoration-pink-500 decoration-2 underline-offset-4' : ''}
               `}
             >
               {word}
