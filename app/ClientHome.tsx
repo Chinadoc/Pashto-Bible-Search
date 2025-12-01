@@ -1031,9 +1031,10 @@ export default function ClientHome() {
       }
     };
     
-    if (processed?.verbs) processed.verbs.forEach(addVariant);
-    if (processed?.variantGroups?.verbs) processed.variantGroups.verbs.forEach(addVariant);
-    if (processed?.relatedForms?.forms?.verbs) processed.relatedForms.forms.verbs.forEach(addVariant);
+    const p = processed as any;
+    if (p?.verbs) p.verbs.forEach(addVariant);
+    if (p?.variantGroups?.verbs) p.variantGroups.verbs.forEach(addVariant);
+    if (p?.relatedForms?.forms?.verbs) p.relatedForms.forms.verbs.forEach(addVariant);
     
     return map;
   }, [processed]);
