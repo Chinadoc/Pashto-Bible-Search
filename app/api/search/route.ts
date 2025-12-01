@@ -962,10 +962,19 @@ export async function POST(request: NextRequest) {
     let searchQuery = originalQuery;
     let romanizedDictionaryMatch: { pashto: string; romanized: string } | null = null;
     let romanizedSuggestions: Array<{ pashto: string; romanized: string; pos?: string; english?: string; isCompound?: boolean }> = [];
+    let transliterationMapMatch: string | null = null;
     console.log(`🔍 Original query: "${originalQuery}", searchLanguage: "${searchLanguage}"`);
     const isLatinScriptQuery = searchLanguage === 'pashto' && isLatinOnly(originalQuery);
 
     if (isLatinScriptQuery) {
+      // FIRST: Check the transliteration map for exact matches (higher priority)
+      const exactTransliteration = transliterationMap[originalQuery.toLowerCase()];
+      if (exactTransliteration) {
+        transliterationMapMatch = exactTransliteration;
+        searchQuery = exactTransliteration;
+        console.log(`✅ Transliteration map EXACT match: "${originalQuery}" → "${exactTransliteration}"`);
+      }
+
       try {
         const normalizedRoman = normalizeRomanizedInput(originalQuery);
         console.log(`🔍 Normalized romanized key: "${normalizedRoman}"`);
@@ -1036,18 +1045,34 @@ export async function POST(request: NextRequest) {
               isCompound: entry.pos?.includes('comp') || false,
             }));
             
-            // Best match
+            // Best match from dictionary
             const bestEntry = scoredCandidates[0].entry;
             const bestScore = scoredCandidates[0].score;
 
-            romanizedDictionaryMatch = {
-              pashto: bestEntry.pashto,
-              romanized: typeof bestEntry.romanized === 'string' ? bestEntry.romanized : originalQuery,
-            };
-            searchQuery = bestEntry.pashto;
-            console.log(
-              `✅ Dictionary romanized lookup matched "${originalQuery}" → "${searchQuery}" (score=${Number.isFinite(bestScore) ? bestScore.toFixed(1) : 'n/a'})`,
-            );
+            // If transliteration map had an exact match, use that instead
+            // but still include the dictionary match in suggestions if different
+            if (transliterationMapMatch) {
+              // Use transliteration map match as primary
+              romanizedDictionaryMatch = {
+                pashto: transliterationMapMatch,
+                romanized: originalQuery,
+              };
+              // Add dictionary suggestions (excluding the transliteration match to avoid duplicates)
+              const translitEntry = { pashto: transliterationMapMatch, romanized: originalQuery, pos: 'n. m.', english: '' };
+              if (!romanizedSuggestions.some(s => s.pashto === transliterationMapMatch)) {
+                romanizedSuggestions = [translitEntry, ...romanizedSuggestions.filter(s => s.pashto !== transliterationMapMatch)].slice(0, 5);
+              }
+              console.log(`✅ Using transliteration map match "${transliterationMapMatch}" over dictionary match "${bestEntry.pashto}"`);
+            } else {
+              romanizedDictionaryMatch = {
+                pashto: bestEntry.pashto,
+                romanized: typeof bestEntry.romanized === 'string' ? bestEntry.romanized : originalQuery,
+              };
+              searchQuery = bestEntry.pashto;
+              console.log(
+                `✅ Dictionary romanized lookup matched "${originalQuery}" → "${searchQuery}" (score=${Number.isFinite(bestScore) ? bestScore.toFixed(1) : 'n/a'})`,
+              );
+            }
             console.log(`📝 Romanized suggestions:`, romanizedSuggestions.map(s => `${s.pashto} (${s.pos})`).join(', '));
           } else {
             console.log(`⚠️ Dictionary romanized lookup had no match for "${normalizedRoman}"`);

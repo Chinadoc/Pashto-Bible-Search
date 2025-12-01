@@ -59,15 +59,25 @@ function SaveVerseButton({ verseRef }: { verseRef: string }) {
     }
   };
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <button
+        disabled
+        className="text-xs px-3 py-1.5 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
+        title="Log in to save verses"
+      >
+        Save
+      </button>
+    );
+  }
 
   return (
     <button
       onClick={handleSave}
       disabled={saved || loading}
       className={`text-xs px-3 py-1.5 border border-gray-600 rounded-lg transition-colors ${saved
-        ? 'bg-green-600/20 text-green-400 border-green-600/50'
-        : 'hover:bg-gray-700/50 text-gray-300 hover:text-white'
+          ? 'bg-green-600/20 text-green-400 border-green-600/50'
+          : 'hover:bg-gray-700/50 text-gray-300 hover:text-white'
         }`}
     >
       {loading ? 'Saving...' : saved ? 'Saved' : 'Save'}
@@ -350,6 +360,34 @@ function VerseItem({
           )}
           {/* Save Verse Button */}
           <SaveVerseButton verseRef={verse.ref} />
+
+          {/* Practice in Typer */}
+          <a
+            href={`/typer?ref=${encodeURIComponent(verse.ref || '')}`}
+            className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors flex items-center gap-1"
+            title="Practice typing this verse"
+          >
+            ⌨️ Practice
+          </a>
+
+          {/* Anki Export */}
+          <button
+            onClick={() => {
+              import('@/app/lib/anki-export').then(({ generateAnkiDeck }) => {
+                generateAnkiDeck([{
+                  verseRef: verse.ref || '',
+                  verseText: verse.text || '',
+                  definition: 'Definition placeholder', // TODO: Fetch real definition
+                  romanization: 'Romanization placeholder', // TODO: Fetch real romanization
+                  audioUrl: audioUrl
+                }], `Pashto_Verse_${verse.ref}`);
+              });
+            }}
+            className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors flex items-center gap-1"
+            title="Export to Anki"
+          >
+            📚 Anki
+          </button>
         </div>
       </div>
 

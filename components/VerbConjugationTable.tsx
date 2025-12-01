@@ -129,14 +129,20 @@ export default function VerbConjugationTable({
     return counts;
   }, [verbs, verseCounts]);
 
-  // Group verbs by tense and then by person/number
+  // Group verbs by tense and then by person/number (deduplicate by form)
   const conjugationTable = useMemo(() => {
     const table: Record<string, Record<string, RelatedFormVariant[]>> = {};
+    const seenForms = new Set<string>(); // Track seen forms to avoid duplicates
     
     for (const verb of verbs) {
       const tense = verb.tense || 'other';
       const personInfo = getPersonNumber(verb.person);
       const key = personInfo ? `${personInfo.person}${personInfo.number}` : 'unknown';
+      
+      // Create a unique key for deduplication (form + tense + person)
+      const dedupeKey = `${verb.form}-${tense}-${key}`;
+      if (seenForms.has(dedupeKey)) continue;
+      seenForms.add(dedupeKey);
       
       if (!table[tense]) {
         table[tense] = {};

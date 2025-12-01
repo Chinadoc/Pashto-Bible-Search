@@ -2054,67 +2054,63 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   </div>
                 )}
 
-                {/* "Did you mean..." for romanized queries */}
-                {processed?.isRomanizedQuery && processed?.romanizedSuggestions && processed.romanizedSuggestions.length > 1 && (
-                  <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-700">
-                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-2">
-                      🔤 Did you mean:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {processed.romanizedSuggestions.map((suggestion: { pashto: string; romanized: string; pos?: string; english?: string; isCompound?: boolean }, idx: number) => (
-                        <button
-                          key={`${suggestion.pashto}-${idx}`}
-                          onClick={() => {
-                            // Search for this specific term
-                            setQuery(suggestion.pashto);
-                            executeSearch({ reason: 'romanized-suggestion' });
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
-                            ${idx === 0 
-                              ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                              : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                        >
-                          <span className="font-bold" dir="rtl">{suggestion.pashto}</span>
-                          {suggestion.romanized && (
-                            <span className="text-xs opacity-80 ml-1">({suggestion.romanized})</span>
-                          )}
-                          {suggestion.pos && (
-                            <span className={`ml-1 text-xs px-1 py-0.5 rounded ${
-                              suggestion.pos.includes('v.') || suggestion.pos.includes('verb') 
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                                : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
-                                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                            }`}>
-                              {suggestion.pos.split('.')[0]}
-                            </span>
-                          )}
-                          {suggestion.isCompound && (
-                            <span className="ml-1 text-xs px-1 py-0.5 rounded bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
-                              compound
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                    {processed.romanizedSuggestions[0]?.english && (
-                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
-                        {processed.romanizedSuggestions[0].pashto}: {processed.romanizedSuggestions[0].english}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Show what we're searching for (romanized → Pashto conversion) */}
+                {/* Romanized query info: "Showing results for X" + "Did you mean..." */}
                 {processed?.isRomanizedQuery && processed?.root && processed.original !== processed.root && (
-                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Showing results for <span className="font-bold text-gray-900 dark:text-gray-100" dir="rtl">{processed.root}</span>
+                  <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-blue-200 dark:border-blue-700">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Showing results for
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-lg" dir="rtl">
+                        {processed.root}
+                      </span>
                       {processed.romanization && (
-                        <span className="text-gray-500 dark:text-gray-500 ml-1">({processed.romanization})</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 italic">
+                          ({processed.romanization})
+                        </span>
                       )}
-                    </p>
+                      
+                      {/* Did you mean suggestions inline */}
+                      {processed?.romanizedSuggestions && processed.romanizedSuggestions.length > 1 && (
+                        <>
+                          <span className="text-sm text-gray-400 dark:text-gray-500 mx-1">—</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Did you mean:</span>
+                          {processed.romanizedSuggestions.slice(1, 4).map((suggestion: { pashto: string; romanized: string; pos?: string; english?: string; isCompound?: boolean }, idx: number) => (
+                            <button
+                              key={`${suggestion.pashto}-${idx}`}
+                              onClick={() => {
+                                setQuery(suggestion.pashto);
+                                executeSearch({ reason: 'romanized-suggestion' });
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium
+                                bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 
+                                border border-gray-300 dark:border-gray-600 
+                                hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-blue-400 
+                                transition-colors"
+                            >
+                              <span dir="rtl" className="font-semibold">{suggestion.pashto}</span>
+                              {suggestion.romanized && (
+                                <span className="text-xs opacity-70">({suggestion.romanized})</span>
+                              )}
+                              {suggestion.pos && (
+                                <span className={`text-xs px-1 rounded ${
+                                  suggestion.pos.includes('v.') || suggestion.pos.includes('verb') 
+                                    ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                    : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
+                                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                      : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300'
+                                }`}>
+                                  {suggestion.pos.includes('comp') ? 'compound' : suggestion.pos.split('.')[0]}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                          {processed.romanizedSuggestions.length > 4 && (
+                            <span className="text-xs text-gray-400">+{processed.romanizedSuggestions.length - 4} more</span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -2310,8 +2306,9 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                       )}
 
                     {/* NOUN FILTERS */}
-                    {(relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
-                      (!relatedForms && !isDefaultNounFilter(nounFilters)) && (
+                    {((relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
+                      (!relatedForms?.posGuess && relatedForms?.nouns && relatedForms.nouns.length > 0) ||
+                      (!relatedForms && !isDefaultNounFilter(nounFilters))) && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

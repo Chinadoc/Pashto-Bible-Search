@@ -21,6 +21,16 @@ const nextConfig = {
       config.performance.maxAssetSize = 20 * 1024 * 1024;
     }
 
+    // Fallbacks for node modules that don't work in browser
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+
     return config;
   },
 };
