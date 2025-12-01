@@ -47,6 +47,17 @@ interface WordAnalysisResult {
   cliticNotes?: string;
   possibleReferents?: string[];
   grammaticalCase?: string;
+  // Compound verb fields (when this word is part of a compound verb with next word)
+  compoundVerbInfo?: {
+    fullForm: string; // e.g., "پاتې شم"
+    infinitive: string; // e.g., "پاتې کېدل"
+    meaning: string;
+    transitivity: 'transitive' | 'intransitive';
+    person: string;
+    number: string;
+    tense: string;
+    note: string;
+  };
 }
 
 // Sandwich patterns for context analysis
@@ -91,6 +102,126 @@ const PASHTO_CLITICS: Record<string, {
   'راته': { type: 'object', person: '1st', number: 'singular', meaning: 'to me', notes: 'Directional clitic toward speaker' },
   'درته': { type: 'object', person: '2nd', number: 'singular', meaning: 'to you', notes: 'Directional clitic toward listener' },
 };
+
+// Stative compound verb complements (adjective/noun + auxiliary)
+// These combine with کېدل (to become, intransitive) or کول (to make, transitive)
+const COMPOUND_VERB_COMPLEMENTS: Record<string, {
+  meaning: string;
+  transitiveAux: 'کول';
+  intransitiveAux: 'کېدل';
+  transitiveInfinitive: string;
+  intransitiveInfinitive: string;
+}> = {
+  'پاتې': { meaning: 'to stay/remain', transitiveAux: 'کول', intransitiveAux: 'کېدل', 
+    transitiveInfinitive: 'پاتې کول (to make stay)', intransitiveInfinitive: 'پاتې کېدل (to stay)' },
+  'تېر': { meaning: 'to pass/cross', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'تېرول / تېر کول (to pass sth.)', intransitiveInfinitive: 'تېر کېدل (to pass)' },
+  'پوره': { meaning: 'complete/full', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'پوره کول (to complete)', intransitiveInfinitive: 'پوره کېدل (to be completed)' },
+  'خوشحاله': { meaning: 'happy', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'خوشحاله کول (to make happy)', intransitiveInfinitive: 'خوشحاله کېدل (to become happy)' },
+  'پیدا': { meaning: 'to find/be born', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'پیدا کول (to find)', intransitiveInfinitive: 'پیدا کېدل (to be born)' },
+  'ختم': { meaning: 'to end/finish', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'ختم کول (to finish)', intransitiveInfinitive: 'ختم کېدل (to end)' },
+  'شروع': { meaning: 'to start', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'شروع کول (to start sth.)', intransitiveInfinitive: 'شروع کېدل (to begin)' },
+  'بند': { meaning: 'to close', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'بند کول (to close)', intransitiveInfinitive: 'بند کېدل (to be closed)' },
+  'خبر': { meaning: 'aware/news', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'خبر کول (to inform)', intransitiveInfinitive: 'خبر کېدل (to be informed)' },
+  'صبر': { meaning: 'patience', transitiveAux: 'کول', intransitiveAux: 'کېدل',
+    transitiveInfinitive: 'صبر کول (to be patient)', intransitiveInfinitive: 'صبر کېدل (to become patient)' },
+};
+
+// Auxiliary verb conjugations - کېدل (to become) and کول (to make)
+const KEDUL_CONJUGATIONS: Record<string, { person: string; number: string; tense: string }> = {
+  // Present
+  'کېږم': { person: '1st', number: 'singular', tense: 'present' },
+  'کېږې': { person: '2nd', number: 'singular', tense: 'present' },
+  'کېږي': { person: '3rd', number: 'singular', tense: 'present' },
+  'کېږو': { person: '1st', number: 'plural', tense: 'present' },
+  'کېږئ': { person: '2nd', number: 'plural', tense: 'present' },
+  // Subjunctive/Short Present
+  'شم': { person: '1st', number: 'singular', tense: 'present' },
+  'شې': { person: '2nd', number: 'singular', tense: 'present' },
+  'شي': { person: '3rd', number: 'singular', tense: 'present' },
+  'شو': { person: '1st', number: 'plural', tense: 'present' }, // Note: also 3sg past (شو)
+  'شئ': { person: '2nd', number: 'plural', tense: 'present' },
+  // Past
+  'شوم': { person: '1st', number: 'singular', tense: 'past' },
+  'شوې': { person: '2nd', number: 'singular', tense: 'past' },
+  // Note: شو (3sg past) is same as 1pl present, listed above
+  'شول': { person: '3rd', number: 'plural', tense: 'past' },
+  'شوو': { person: '1st', number: 'plural', tense: 'past' },
+  'شوئ': { person: '2nd', number: 'plural', tense: 'past' },
+};
+
+const KAWUL_CONJUGATIONS: Record<string, { person: string; number: string; tense: string }> = {
+  // Present (imperfective)
+  'کوم': { person: '1st', number: 'singular', tense: 'present' },
+  'کوې': { person: '2nd', number: 'singular', tense: 'present' },
+  'کوي': { person: '3rd', number: 'singular', tense: 'present' },
+  'کوو': { person: '1st', number: 'plural', tense: 'present' },
+  'کوئ': { person: '2nd', number: 'plural', tense: 'present' },
+  // Subjunctive/Perfective stem - also used for past with different meaning
+  // Note: کړم can be subjunctive OR simple past depending on context
+  'کړم': { person: '1st', number: 'singular', tense: 'subjunctive' },
+  'کړې': { person: '2nd', number: 'singular', tense: 'subjunctive' },
+  'کړي': { person: '3rd', number: 'singular', tense: 'subjunctive' },
+  'کړو': { person: '1st', number: 'plural', tense: 'subjunctive' },
+  'کړئ': { person: '2nd', number: 'plural', tense: 'subjunctive' },
+  // Past tense specific forms
+  'کړ': { person: '3rd', number: 'singular', tense: 'past' },
+  'کړل': { person: '3rd', number: 'plural', tense: 'past' },
+};
+
+// Function to detect if two words form a compound verb
+function detectCompoundVerb(complement: string, nextWord: string): {
+  isCompound: boolean;
+  compoundType: 'stative' | 'dynamic' | null;
+  transitivity: 'transitive' | 'intransitive' | null;
+  infinitive: string | null;
+  meaning: string | null;
+  person: string | null;
+  number: string | null;
+  tense: string | null;
+} | null {
+  const complementInfo = COMPOUND_VERB_COMPLEMENTS[complement];
+  if (!complementInfo) return null;
+  
+  // Check if nextWord is a کېدل conjugation (intransitive)
+  const kedulInfo = KEDUL_CONJUGATIONS[nextWord];
+  if (kedulInfo) {
+    return {
+      isCompound: true,
+      compoundType: 'stative',
+      transitivity: 'intransitive',
+      infinitive: complementInfo.intransitiveInfinitive,
+      meaning: complementInfo.meaning,
+      person: kedulInfo.person,
+      number: kedulInfo.number,
+      tense: kedulInfo.tense,
+    };
+  }
+  
+  // Check if nextWord is a کول conjugation (transitive)
+  const kawulInfo = KAWUL_CONJUGATIONS[nextWord];
+  if (kawulInfo) {
+    return {
+      isCompound: true,
+      compoundType: 'stative',
+      transitivity: 'transitive',
+      infinitive: complementInfo.transitiveInfinitive,
+      meaning: complementInfo.meaning,
+      person: kawulInfo.person,
+      number: kawulInfo.number,
+      tense: kawulInfo.tense,
+    };
+  }
+  
+  return null;
+}
 
 // Common Pashto pronouns
 const PASHTO_PRONOUNS: Record<string, {
@@ -506,6 +637,36 @@ export async function GET(request: NextRequest) {
           isErgative,
         };
         result.confidence = Math.min(result.confidence, 0.6);
+      }
+    }
+    
+    // 6. Check if this word + next word form a compound verb
+    // This is important for stative compounds like پاتې شم (to stay), تېر کړم (to pass)
+    if (context && (result.pos === 'adjective' || COMPOUND_VERB_COMPLEMENTS[cleanWord])) {
+      const words = context.split(/\s+/);
+      const wordIndex = words.findIndex(w => w === cleanWord || w.includes(cleanWord));
+      
+      if (wordIndex !== -1 && wordIndex < words.length - 1) {
+        const nextWord = words[wordIndex + 1].replace(/[،.؟!؛:«»\-]/g, '');
+        
+        const compoundInfo = detectCompoundVerb(cleanWord, nextWord);
+        if (compoundInfo && compoundInfo.isCompound) {
+          result.compoundVerbInfo = {
+            fullForm: `${cleanWord} ${nextWord}`,
+            infinitive: compoundInfo.infinitive || '',
+            meaning: compoundInfo.meaning || '',
+            transitivity: compoundInfo.transitivity || 'intransitive',
+            person: compoundInfo.person || '',
+            number: compoundInfo.number || '',
+            tense: compoundInfo.tense || '',
+            note: `This is the ${compoundInfo.person} ${compoundInfo.number} ${compoundInfo.tense} of the ${compoundInfo.transitivity} compound verb ${compoundInfo.infinitive}`,
+          };
+          
+          // Also update isCompound flag
+          result.isCompound = true;
+          result.compoundType = 'stative';
+          result.auxiliaryVerb = compoundInfo.transitivity === 'transitive' ? 'کول' : 'کېدل';
+        }
       }
     }
     

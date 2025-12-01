@@ -52,6 +52,18 @@ export interface WordAnalysis {
   possibleReferents?: string[];
   grammaticalCase?: string;
   
+  // Compound verb info (when word + next word form compound verb)
+  compoundVerbInfo?: {
+    fullForm: string; // e.g., "پاتې شم"
+    infinitive: string; // e.g., "پاتې کېدل"
+    meaning: string;
+    transitivity: 'transitive' | 'intransitive';
+    person: string;
+    number: string;
+    tense: string;
+    note: string;
+  };
+  
   // Source
   confidence: number;
   source: 'verb_forms' | 'word_frequencies' | 'inflections' | 'inflection_reasons' | 'inferred' | 'clitic_table' | 'pronoun_table';
@@ -162,7 +174,8 @@ export default function WordTooltip({
     analysis.english || 
     analysis.tense || 
     analysis.person ||
-    analysis.inflectionReason
+    analysis.inflectionReason ||
+    analysis.compoundVerbInfo
   );
 
   return (
@@ -382,6 +395,49 @@ export default function WordTooltip({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+              
+              {/* Compound verb info - shown for adjectives that form compound verbs with next word */}
+              {analysis.compoundVerbInfo && (
+                <div className="mt-2 pt-2 border-t border-dashed border-gray-300 dark:border-gray-600" dir="ltr">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded text-xs font-medium">
+                      🔗 Compound Verb
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-xs ${
+                      analysis.compoundVerbInfo.transitivity === 'intransitive'
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                        : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                    }`}>
+                      {analysis.compoundVerbInfo.transitivity}
+                    </span>
+                  </div>
+                  
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 text-right" dir="rtl">
+                    {analysis.compoundVerbInfo.fullForm}
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {analysis.compoundVerbInfo.infinitive}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {analysis.compoundVerbInfo.person && (
+                      <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs">
+                        {analysis.compoundVerbInfo.person} {analysis.compoundVerbInfo.number}
+                      </span>
+                    )}
+                    {analysis.compoundVerbInfo.tense && (
+                      <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded text-xs">
+                        {analysis.compoundVerbInfo.tense}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 italic">
+                    "{analysis.compoundVerbInfo.meaning}"
+                  </div>
                 </div>
               )}
               

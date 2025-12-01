@@ -221,13 +221,13 @@ function normalizePersonFromD1(d1Person?: string): string | undefined {
 function inferTenseFromD1(d1Tense?: string, d1Voice?: string): string | undefined {
   const tense = d1Tense?.toLowerCase();
   const voice = d1Voice?.toLowerCase();
-  
+
   if (tense === 'imperative') return 'imperative';
-  
+
   // Infer from aspect (stored in voice field sometimes)
   if (voice === 'imperfective' || voice?.includes('imperfective')) return 'present';
   if (voice === 'perfective' || voice?.includes('perfective')) return 'past';
-  
+
   return undefined;
 }
 
@@ -277,21 +277,21 @@ async function collectCompoundVerbForms(
     for (const cv of compoundVerbs) {
       // Extract the object part (e.g., "چیغې" from "چیغې وهل")
       const objectPart = cv.base_verb.replace(auxiliaryVerb, '').trim();
-      
+
       const forms = await fetchVerbFormsFromD1(cv.base_verb, { cap: Math.floor(limit / compoundVerbs.length) || 10 });
-      
+
       for (const vf of forms) {
         const normalizedPerson = normalizePersonFromD1(vf.person);
         const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
         const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
         const inferredMood = inferMoodFromD1(vf.tense);
-        
+
         // Label includes the compound verb info
         const labelParts = [`${objectPart}+`];
         if (inferredTense) labelParts.push(inferredTense);
         if (normalizedPerson) labelParts.push(normalizedPerson);
         const label = labelParts.join(' ');
-        
+
         upsertVariant(
           variants,
           {
@@ -328,14 +328,14 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
     const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
     const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
     const inferredMood = inferMoodFromD1(vf.tense);
-    
+
     // Build a descriptive label
     const labelParts = [];
     if (inferredTense) labelParts.push(inferredTense);
     if (normalizedPerson) labelParts.push(normalizedPerson);
     if (inferredAspect) labelParts.push(inferredAspect);
     const label = labelParts.length > 0 ? labelParts.join(' ') : 'verb';
-    
+
     upsertVariant(
       variants,
       {
@@ -379,14 +379,14 @@ async function collectVerbForms(db: any, baseForm: string, limit: number) {
         const inferredTense = inferTenseFromD1(vf.tense, vf.voice);
         const inferredAspect = inferAspectFromD1(vf.voice) || (vf as any).aspect;
         const inferredMood = inferMoodFromD1(vf.tense);
-        
+
         // Build a descriptive label
         const labelParts = [];
         if (inferredTense) labelParts.push(inferredTense);
         if (normalizedPerson) labelParts.push(normalizedPerson);
         if (inferredAspect) labelParts.push(inferredAspect);
         const label = labelParts.length > 0 ? labelParts.join(' ') : 'verb';
-        
+
         upsertVariant(
           variants,
           {
@@ -469,24 +469,26 @@ async function fetchInflectionReasons(
   baseWord: string,
 ): Promise<Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>> {
   const reasonsMap = new Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>();
-  
-  if (!process.env.NEXT_PUBLIC_WORKER_URL || forms.length === 0) {
+
+  const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
+  if (!workerUrl || forms.length === 0) {
     return reasonsMap;
   }
 
   try {
     // Fetch inflection reasons for the base word (gets all related forms)
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WORKER_URL}/api/inflection-reasons?base_word=${encodeURIComponent(baseWord)}`
+      `${workerUrl}/api/inflection-reasons?base_word=${encodeURIComponent(baseWord)}`
     );
-    
+
     if (!response.ok) {
       console.warn(`Inflection reasons API returned ${response.status}`);
       return reasonsMap;
     }
-    
+
     const data = await response.json();
-    
+
     // The API returns aggregated reasons per form
     if (data.aggregated) {
       for (const [form, info] of Object.entries(data.aggregated)) {
@@ -494,12 +496,12 @@ async function fetchInflectionReasons(
         reasonsMap.set(form, typedInfo.reasons);
       }
     }
-    
+
     console.log(`✅ Fetched inflection reasons for ${reasonsMap.size} forms`);
   } catch (error) {
     console.warn('Failed to fetch inflection reasons:', error);
   }
-  
+
   return reasonsMap;
 }
 
@@ -518,7 +520,7 @@ function buildResponse(
     if (inflectionReasons?.has(variant.form)) {
       variant.inflectionReasons = inflectionReasons.get(variant.form);
     }
-    
+
     const bucket = variant.pos || normalisePos(variant.pos);
     if (bucket === 'verb') verbs.push(variant);
     else if (bucket === 'noun') nouns.push(variant);
@@ -680,10 +682,10 @@ export async function POST(request: Request) {
     // If not found directly, try to trace through form_to_root
     const tracedRoot = !primary
       ? await queryD1First<{ root_word: string }>(
-          db,
-          `SELECT root_word FROM form_to_root WHERE word_form = ? ORDER BY frequency DESC LIMIT 1`,
-          [lookupForm],
-        )
+        db,
+        `SELECT root_word FROM form_to_root WHERE word_form = ? ORDER BY frequency DESC LIMIT 1`,
+        [lookupForm],
+      )
       : null;
 
     const baseForm = primary?.base_form || primary?.pashto_word || tracedRoot?.root_word || lookupForm;
@@ -737,7 +739,7 @@ export async function POST(request: Request) {
     // Fetch inflection reasons for all collected forms
     const allForms = Array.from(variants.keys());
     const inflectionReasons = await fetchInflectionReasons(allForms, baseForm);
-    
+
     const response = buildResponse(variants, {
       baseForm,
       searchedForm: form,

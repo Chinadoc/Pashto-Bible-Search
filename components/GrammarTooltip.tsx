@@ -31,7 +31,7 @@ export default function GrammarTooltip({ form, translation, onClose }: GrammarTo
       setError(null);
 
       try {
-        const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.workers.dev';
+        const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
         const params = new URLSearchParams({
           form,
           ...(translation && { translation }),

@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
             verseNumber: verse.verse,
             text: verse.text,
             audio_url: verse.audio_r2_key ?
-                `${process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}` :
+                `${process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev'}/api/audio/stream/${encodeURIComponent(verse.audio_r2_key)}` :
                 null,
         }));
 

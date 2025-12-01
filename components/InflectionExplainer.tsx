@@ -83,8 +83,9 @@ export default function InflectionExplainer({
       setError(null);
 
       try {
+        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_WORKER_URL}/api/analyze-inflections`,
+          `${workerUrl}/api/analyze-inflections`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -116,15 +117,15 @@ export default function InflectionExplainer({
   // Filter to only show inflections for highlighted search forms
   const relevantInflections = useMemo(() => {
     if (!analysis?.inflected_words) return [];
-    
+
     if (highlightedForms.length === 0) {
       return analysis.inflected_words;
     }
 
     // Only show inflections for words that match our search
     return analysis.inflected_words.filter(inf =>
-      highlightedForms.some(form => 
-        inf.word === form || 
+      highlightedForms.some(form =>
+        inf.word === form ||
         inf.baseWord === form ||
         form.includes(inf.word) ||
         inf.word.includes(form)
