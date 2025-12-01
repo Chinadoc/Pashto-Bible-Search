@@ -538,8 +538,15 @@ async function searchVersesBatch(
         verse.text && verse.text.includes(form)
       );
       
+      // Generate audio_r2_key if not present in DB (same logic as getVersesByChapter)
+      let audioR2Key: string | null = verse.audio_r2_key || null;
+      if (!audioR2Key && verse.book && verse.chapter && verse.verse) {
+        audioR2Key = generateR2AudioKey(verse.book, verse.chapter, verse.verse, translation);
+      }
+      
       return {
         ...verse,
+        audio_r2_key: audioR2Key,
         matchedForms,
         created_at: verse.created_at ? new Date(verse.created_at * 1000).toISOString() : null,
         updated_at: verse.updated_at ? new Date(verse.updated_at * 1000).toISOString() : null,
@@ -560,9 +567,18 @@ async function searchVersesBatch(
   }
 }
 
+// NT books for testament detection
+const NT_BOOKS = new Set([
+  'matthew', 'mark', 'luke', 'john', 'acts', 'romans',
+  '1corinthians', '2corinthians', 'galatians', 'ephesians',
+  'philippians', 'colossians', '1thessalonians', '2thessalonians',
+  '1timothy', '2timothy', 'titus', 'philemon', 'hebrews',
+  'james', '1peter', '2peter', '1john', '2john', '3john', 'jude', 'revelation'
+]);
+
 /**
  * Generate R2 audio key from book, chapter, verse
- * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
+ * Format: afghan2023/{ot|nt}/{bookname}{chapter}_verse_{verse:03d}.mp3
  * Example: afghan2023/nt/matthew27_verse_002.mp3
  */
 function generateR2AudioKey(book: string, chapter: number, verse: number, translation: 'afghan2023' | 'yousafzai2019' = 'afghan2023'): string {
@@ -570,8 +586,8 @@ function generateR2AudioKey(book: string, chapter: number, verse: number, transl
   // Handle numbered books: "1 John" -> "1john", "Philippians" -> "philippians"
   let bookSlug = book.toLowerCase().replace(/\s+/g, '');
 
-  // Determine testament based on book name (simplified - most NT books)
-  const testament = translation === 'afghan2023' ? 'nt' : 'ot';
+  // Determine testament based on book name
+  const testament = NT_BOOKS.has(bookSlug) ? 'nt' : 'ot';
 
   return `${translation}/${testament}/${bookSlug}${chapter}_verse_${String(verse).padStart(3, '0')}.mp3`;
 }
