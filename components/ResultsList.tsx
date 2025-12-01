@@ -61,7 +61,7 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     return <HighlightText text={text} tokens={tokens} />;
   }
 
-  // Fallback to simple highlighting with word boundary protection
+  // Fallback to simple highlighting
   const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
   if (cleanTerms.length === 0) return <span>{text}</span>;
 
@@ -70,11 +70,8 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     cleanTerms.sort((a, b) => b.length - a.length);
     const pattern = cleanTerms.map(escapeRegExp).join('|');
     
-    // Use word boundaries for Arabic/Pashto text to avoid matching substrings
-    // within larger words (e.g., don't match وه inside پوهېږئ)
-    const wordBoundaryStart = "(?<![\\p{Script=Arabic}])";
-    const wordBoundaryEnd = "(?![\\p{Script=Arabic}])";
-    const re = new RegExp(`${wordBoundaryStart}(${pattern})${wordBoundaryEnd}`, 'giu');
+    // Simple regex - longer matches take priority due to sort order
+    const re = new RegExp(`(${pattern})`, 'gi');
     const parts = text.split(re);
 
     // Ensure all parts are properly wrapped in React elements
@@ -406,20 +403,47 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
   // Enhanced "No results" message with context
   if (results.length === 0) {
-    // Check for active filters - Only check person filters (tense/aspect/mood removed)
-    const hasActiveFilters = multiVerbFilters ? (
-      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')
+    // Check for active filters - Check ALL filters
+    const hasActiveFiltersNoResults = multiVerbFilters ? (
+      multiVerbFilters.person.some(p => p !== 'all') ||
+      multiVerbFilters.tense.some(t => t !== 'all') ||
+      multiVerbFilters.aspect.some(a => a !== 'all') ||
+      multiVerbFilters.mood.some(m => m !== 'all')
     ) : verbFilters && (
-      verbFilters.person !== 'all'
+      verbFilters.person !== 'all' ||
+      verbFilters.tense !== 'all' ||
+      verbFilters.aspect !== 'all' ||
+      verbFilters.mood !== 'all'
     );
 
-    const activeFilterCount = multiVerbFilters ? (
-      multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
+    // Count active filters from each category
+    const activeFilterCountNoResults = multiVerbFilters ? (
+      (multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0) +
+      (multiVerbFilters.tense.some(t => t !== 'all') ? 1 : 0) +
+      (multiVerbFilters.aspect.some(a => a !== 'all') ? 1 : 0) +
+      (multiVerbFilters.mood.some(m => m !== 'all') ? 1 : 0)
     ) : verbFilters ? (
-      verbFilters.person !== 'all' ? 1 : 0
+      (verbFilters.person !== 'all' ? 1 : 0) +
+      (verbFilters.tense !== 'all' ? 1 : 0) +
+      (verbFilters.aspect !== 'all' ? 1 : 0) +
+      (verbFilters.mood !== 'all' ? 1 : 0)
     ) : 0;
+    
+    // Collect active filter labels
+    const activeLabelsNoResults: string[] = [];
+    if (multiVerbFilters) {
+      activeLabelsNoResults.push(...multiVerbFilters.person.filter(p => p !== 'all'));
+      activeLabelsNoResults.push(...multiVerbFilters.tense.filter(t => t !== 'all'));
+      activeLabelsNoResults.push(...multiVerbFilters.aspect.filter(a => a !== 'all'));
+      activeLabelsNoResults.push(...multiVerbFilters.mood.filter(m => m !== 'all'));
+    } else if (verbFilters) {
+      if (verbFilters.person !== 'all') activeLabelsNoResults.push(verbFilters.person);
+      if (verbFilters.tense !== 'all') activeLabelsNoResults.push(verbFilters.tense);
+      if (verbFilters.aspect !== 'all') activeLabelsNoResults.push(verbFilters.aspect);
+      if (verbFilters.mood !== 'all') activeLabelsNoResults.push(verbFilters.mood);
+    }
 
-    if (hasActiveFilters) {
+    if (hasActiveFiltersNoResults) {
       return (
         <div className="text-center text-gray-500 p-6">
           <div className="mb-4">
@@ -430,24 +454,34 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             </p>
           </div>
 
-          {activeFilterCount > 0 && (
+          {activeFilterCountNoResults > 0 && (
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col items-center gap-2 mb-2">
                 <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                  {activeFilterCountNoResults} filter{activeFilterCountNoResults !== 1 ? 's' : ''} active:
                 </span>
+                <div className="flex gap-1 flex-wrap justify-center">
+                  {activeLabelsNoResults.map((label, idx) => (
+                    <span 
+                      key={`${label}-${idx}`}
+                      className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded capitalize"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
                 {onResetFilters && (
                   <button
                     onClick={onResetFilters}
                     className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 underline"
                   >
-                    Reset all
+                    Reset all filters
                   </button>
                 )}
               </div>
 
               <div className="text-xs text-blue-700 dark:text-blue-300">
-                💡 Tip: Try removing tense or person filters to see more results
+                💡 Tip: Try removing some filters to see more results
               </div>
             </div>
           )}
@@ -532,18 +566,53 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     fetchVerbDetails();
   }, [query, processed?.searchedForm]);
 
-  // Filter state indicator - Only check person filters (tense/aspect/mood removed)
+  // Filter state indicator - Check ALL filters (person, tense, aspect, mood)
   const hasActiveFilters = multiVerbFilters ? (
-    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')
+    multiVerbFilters.person.some(p => p !== 'all') ||
+    multiVerbFilters.tense.some(t => t !== 'all') ||
+    multiVerbFilters.aspect.some(a => a !== 'all') ||
+    multiVerbFilters.mood.some(m => m !== 'all')
   ) : verbFilters && (
-    verbFilters.person !== 'all'
+    verbFilters.person !== 'all' ||
+    verbFilters.tense !== 'all' ||
+    verbFilters.aspect !== 'all' ||
+    verbFilters.mood !== 'all'
   );
 
+  // Count active filters from each category
   const activeFilterCount = multiVerbFilters ? (
-    multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0
+    (multiVerbFilters.person.some(p => p !== 'all') ? 1 : 0) +
+    (multiVerbFilters.tense.some(t => t !== 'all') ? 1 : 0) +
+    (multiVerbFilters.aspect.some(a => a !== 'all') ? 1 : 0) +
+    (multiVerbFilters.mood.some(m => m !== 'all') ? 1 : 0)
   ) : verbFilters ? (
-    verbFilters.person !== 'all' ? 1 : 0
+    (verbFilters.person !== 'all' ? 1 : 0) +
+    (verbFilters.tense !== 'all' ? 1 : 0) +
+    (verbFilters.aspect !== 'all' ? 1 : 0) +
+    (verbFilters.mood !== 'all' ? 1 : 0)
   ) : 0;
+  
+  // Collect active filter labels for display
+  const activeFilterLabels: string[] = [];
+  if (multiVerbFilters) {
+    if (multiVerbFilters.person.some(p => p !== 'all')) {
+      activeFilterLabels.push(...multiVerbFilters.person.filter(p => p !== 'all'));
+    }
+    if (multiVerbFilters.tense.some(t => t !== 'all')) {
+      activeFilterLabels.push(...multiVerbFilters.tense.filter(t => t !== 'all'));
+    }
+    if (multiVerbFilters.aspect.some(a => a !== 'all')) {
+      activeFilterLabels.push(...multiVerbFilters.aspect.filter(a => a !== 'all'));
+    }
+    if (multiVerbFilters.mood.some(m => m !== 'all')) {
+      activeFilterLabels.push(...multiVerbFilters.mood.filter(m => m !== 'all'));
+    }
+  } else if (verbFilters) {
+    if (verbFilters.person !== 'all') activeFilterLabels.push(verbFilters.person);
+    if (verbFilters.tense !== 'all') activeFilterLabels.push(verbFilters.tense);
+    if (verbFilters.aspect !== 'all') activeFilterLabels.push(verbFilters.aspect);
+    if (verbFilters.mood !== 'all') activeFilterLabels.push(verbFilters.mood);
+  }
 
   // Enable virtual scrolling for large result sets
   // Disable virtualization for now to prevent verse rows from overlapping when content exceeds the fixed item height
@@ -1070,29 +1139,20 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       {/* Filter State Indicator */}
       {hasActiveFilters && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                🔍 {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                🔍 {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active:
               </span>
-              <div className="flex gap-1">
-                {multiVerbFilters ? (
-                  <>
-                    {(multiVerbFilters.person.length > 1 || multiVerbFilters.person.some(p => p !== 'all')) && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {multiVerbFilters.person.filter(p => p !== 'all').join(', ')}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {verbFilters && verbFilters.person !== 'all' && (
-                      <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
-                        {verbFilters.person}
-                      </span>
-                    )}
-                  </>
-                )}
+              <div className="flex gap-1 flex-wrap">
+                {activeFilterLabels.map((label, idx) => (
+                  <span 
+                    key={`${label}-${idx}`}
+                    className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded capitalize"
+                  >
+                    {label}
+                  </span>
+                ))}
               </div>
             </div>
             {onResetFilters && (

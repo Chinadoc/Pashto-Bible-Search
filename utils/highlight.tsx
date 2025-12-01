@@ -24,18 +24,14 @@ export function buildHighlightRegex(tokens: string[]){
   if (!pashto.length) return null;
   
   // Sort by length (longest first) to ensure longer matches take priority
+  // This way longer forms like "پوهېږئ" will match before shorter ones like "وهې"
   pashto.sort((a, b) => b.length - a.length);
   
   const parts = pashto.map(t => withDia(t.normalize("NFC")));
   
-  // Use word boundaries for Arabic/Pashto text:
-  // - (?<![\\p{Script=Arabic}]) = not preceded by Arabic letter
-  // - (?![\\p{Script=Arabic}]) = not followed by Arabic letter
-  // This ensures we only match complete words, not substrings within larger words
-  const wordBoundaryStart = "(?<![\\p{Script=Arabic}])";
-  const wordBoundaryEnd = "(?![\\p{Script=Arabic}])";
-  
-  return new RegExp(`${wordBoundaryStart}(${parts.join("|")})${wordBoundaryEnd}`, "giu");
+  // Simple regex - rely on backend to return correct verses
+  // The sort by length ensures longer matches take priority over shorter substrings
+  return new RegExp(`(${parts.join("|")})`, "giu");
 }
 
 export function renderHighlightedText(text: string, rx: RegExp): string {
