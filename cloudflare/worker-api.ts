@@ -2904,6 +2904,126 @@ export default {
       }
     }
 
+    // Top words by frequency for lexicon
+    if (path === '/api/top-words' && request.method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit') || '100');
+      const pos = url.searchParams.get('pos') || '';
+      
+      try {
+        let query = `
+          SELECT pashto_word, pos, word_type, romanization, english_translation, frequency_total
+          FROM word_frequencies
+        `;
+        const params: any[] = [];
+        
+        // Apply POS filter
+        if (pos && pos !== 'all') {
+          if (pos === 'verb') {
+            query += ` WHERE (word_type LIKE '%verb%' OR pos LIKE '%v%')`;
+          } else if (pos === 'noun') {
+            query += ` WHERE (word_type LIKE '%noun%' OR pos LIKE '%n.%')`;
+          } else if (pos === 'adj') {
+            query += ` WHERE (word_type LIKE '%adj%' OR pos LIKE '%adj%')`;
+          }
+        }
+        
+        query += ` ORDER BY frequency_total DESC LIMIT ?`;
+        params.push(Math.min(limit, 500)); // Max 500 to prevent abuse
+        
+        const result = await env.DB.prepare(query).bind(...params).all();
+        
+        return jsonResponse({
+          words: result.results || [],
+          total: result.results?.length || 0,
+        });
+      } catch (error: any) {
+        return errorResponse(`Top words query failed: ${error.message}`, 500);
+      }
+    }
+
+    // Dictionary search
+    if (path === '/api/dictionary/search' && request.method === 'GET') {
+      const query = url.searchParams.get('q') || '';
+      const limit = parseInt(url.searchParams.get('limit') || '20');
+      
+      if (!query || query.length < 2) {
+        return jsonResponse({ entries: [] });
+      }
+      
+      try {
+        // Check if query is romanized (starts with ASCII letter)
+        const isRomanized = /^[a-zA-Z]/.test(query);
+        
+        let sql: string;
+        let params: any[];
+        
+        if (isRomanized) {
+          // Search in romanization
+          sql = `
+            SELECT pashto_word as pashto, romanization, english_translation as english, 
+                   pos, word_type, frequency_total as frequency
+            FROM word_frequencies 
+            WHERE romanization LIKE ? OR english_translation LIKE ?
+            ORDER BY frequency_total DESC
+            LIMIT ?
+          `;
+          params = [`%${query}%`, `%${query}%`, limit];
+        } else {
+          // Search in Pashto
+          sql = `
+            SELECT pashto_word as pashto, romanization, english_translation as english, 
+                   pos, word_type, frequency_total as frequency
+            FROM word_frequencies 
+            WHERE pashto_word LIKE ?
+            ORDER BY 
+              CASE WHEN pashto_word = ? THEN 0 ELSE 1 END,
+              frequency_total DESC
+            LIMIT ?
+          `;
+          params = [`%${query}%`, query, limit];
+        }
+        
+        const result = await env.DB.prepare(sql).bind(...params).all();
+        
+        const entries = (result.results || []).map((r: any) => ({
+          id: r.pashto,
+          pashto: r.pashto,
+          romanization: r.romanization || '',
+          english: r.english || '',
+          pos: r.pos || r.word_type || '',
+          frequency: r.frequency || 0,
+        }));
+        
+        return jsonResponse({ entries, total: entries.length });
+      } catch (error: any) {
+        return errorResponse(`Dictionary search failed: ${error.message}`, 500);
+      }
+    }
+
+    // Noun inflections lookup
+    if (path === '/api/noun-inflections' && request.method === 'GET') {
+      const base = url.searchParams.get('base');
+      if (!base) {
+        return errorResponse('Missing base parameter', 400);
+      }
+      
+      try {
+        const result = await env.DB.prepare(
+          `SELECT base_word, inflected_form, inflection_type, grammatical_info, frequency
+           FROM inflections 
+           WHERE base_word = ?
+           ORDER BY inflection_type`
+        ).bind(base).all();
+        
+        return jsonResponse({
+          base,
+          inflections: result.results || [],
+        });
+      } catch (error: any) {
+        return errorResponse(`Noun inflections lookup failed: ${error.message}`, 500);
+      }
+    }
+
     return errorResponse('Not found', 404);
   },
 };

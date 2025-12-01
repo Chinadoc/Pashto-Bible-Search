@@ -1,595 +1,415 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
-interface FrequencyItem {
-  form: string;
-  root?: string;
-  pos?: 'verb' | 'noun';
-  frequency: number;
-  dictionary?: {
-    definition?: string;
-    romanized?: string;
-    pos?: string;
-    english?: string;
-  };
-  morphological?: {
-    relatedForms?: Array<{ form: string; count: number }>;
-    inflections?: Array<{ form: string; grammatical_info: any; frequency: number }>;
-  };
-  verseContexts?: Array<{
-    verse_ref: string;
-    verse_text: string;
-    book: string;
-    chapter: number;
-    verse: number;
-  }>;
+interface DictionaryEntry {
+  id: string;
+  pashto: string;
+  romanization: string;
+  english: string;
+  pos: string;
+  frequency?: number;
+  lingdocs_id?: string;
 }
 
-interface Props { onPickForm?: (form: string) => void; queryProp?: string }
+interface Props {
+  onPickForm?: (form: string) => void;
+  queryProp?: string;
+}
+
+const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 export default function LexiconPanel({ onPickForm, queryProp }: Props) {
-  const [frequencyData, setFrequencyData] = useState<FrequencyItem[]>([]);
-  const [filteredData, setFilteredData] = useState<FrequencyItem[]>([]);
+  const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [posFilter, setPosFilter] = useState<'any' | 'verb' | 'noun'>('any');
-  const [scope, setScope] = useState<'all' | 'ot' | 'nt'>('all');
-  const [limit, setLimit] = useState(300);
-  const [sortBy, setSortBy] = useState<'frequency' | 'form'>('frequency');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [audioMap, setAudioMap] = useState<Record<string, string>>({});
-  const [searchMode, setSearchMode] = useState<'exact' | 'fuzzy' | 'regex' | 'root'>('exact');
-  const [showStats, setShowStats] = useState(false);
-  const [userNotes, setUserNotes] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState(queryProp || '');
+  const [selectedEntry, setSelectedEntry] = useState<DictionaryEntry | null>(null);
+  const [verbForms, setVerbForms] = useState<any[]>([]);
+  const [nounForms, setNounForms] = useState<any[]>([]);
+  const [loadingForms, setLoadingForms] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dictionary' | 'frequency' | 'roots'>('dictionary');
+  const [frequencyData, setFrequencyData] = useState<any[]>([]);
+  const [posFilter, setPosFilter] = useState<'all' | 'verb' | 'noun' | 'adj' | 'other'>('all');
 
-  const [showNoteForm, setShowNoteForm] = useState<string | null>(null);
-  const [showDefinitions, setShowDefinitions] = useState(true);
+  // Debounced search
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  // Fetch frequency data
-  const fetchFrequencyData = async () => {
+  // Fetch dictionary entries
+  const fetchEntries = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setEntries([]);
+      return;
+    }
+
     setLoading(true);
-    setError(null);
-
     try {
-      const params = new URLSearchParams({
-        scope,
-        limit: limit.toString(),
-        pos: posFilter,
-      });
-
-      const response = await fetch(`/api/lexicon_frequency?${params}`);
-      const data = await response.json();
-
-      console.log('API Response:', { ok: response.ok, status: response.status, itemsCount: data.items?.length });
-      console.log('Sample item:', data.items?.[0]);
-
-      if (response.ok && data.items && data.items.length > 0) {
-        console.log('Using API data with', data.items.length, 'items');
-        setFrequencyData(data.items || []);
+      // Try the word-frequency endpoint for dictionary data
+      const response = await fetch(`${WORKER_URL}/api/word-frequency?word=${encodeURIComponent(query)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setEntries([{
+            id: data.pashto_word || query,
+            pashto: data.pashto_word || query,
+            romanization: data.romanization || '',
+            english: data.english_translation || '',
+            pos: data.word_type || data.pos || '',
+            frequency: data.frequency_total,
+          }]);
+        } else {
+          setEntries([]);
+        }
       } else {
-        // Fallback to static JSON data
-        console.log('Using fallback JSON data');
-        const fallbackResponse = await fetch('/word_frequency_list.json');
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          let filteredItems: FrequencyItem[] = fallbackData.slice(0, limit).map((item: any) => ({
-            form: item.pashto,
-            frequency: item.frequency,
-            pos: item.pos === 'verb' ? 'verb' : item.pos === 'noun' ? 'noun' : undefined,
-            dictionary: item.romanization || item.definition ? {
-              romanized: item.romanization || '',
-              definition: item.definition || '',
-              pos: item.pos || '',
-              english: item.english || '',
-            } : undefined,
-          }));
-
-          // Apply POS filter for fallback data
-          if (posFilter !== 'any') {
-            filteredItems = filteredItems.filter(item => item.pos === posFilter);
-          }
-
-          setFrequencyData(filteredItems);
+        // Fallback to local dictionary search
+        const localResponse = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
+        if (localResponse.ok) {
+          const data = await localResponse.json();
+          setEntries(data.entries || []);
         } else {
-          setError('Failed to fetch frequency data');
+          setEntries([]);
         }
       }
-    } catch (err) {
-      // Fallback to static JSON data on error
-      console.log('Using fallback JSON data due to error');
-      try {
-        const fallbackResponse = await fetch('/word_frequency_list.json');
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          let filteredItems: FrequencyItem[] = fallbackData.slice(0, limit).map((item: any) => ({
-            form: item.pashto,
-            frequency: item.frequency,
-            pos: item.pos === 'verb' ? 'verb' : item.pos === 'noun' ? 'noun' : undefined,
-            dictionary: item.romanization || item.definition ? {
-              romanized: item.romanization || '',
-              definition: item.definition || '',
-              pos: item.pos || '',
-              english: item.english || '',
-            } : undefined,
-          }));
-
-          // Apply POS filter for fallback data
-          if (posFilter !== 'any') {
-            filteredItems = filteredItems.filter(item => item.pos === posFilter);
-          }
-
-          setFrequencyData(filteredItems);
-        } else {
-          setError('Failed to fetch frequency data');
-        }
-      } catch (fallbackErr) {
-        setError('Failed to fetch frequency data');
-        console.error('Error fetching frequency data:', err);
-        console.error('Fallback also failed:', fallbackErr);
-      }
+    } catch (error) {
+      console.error('Error fetching dictionary entries:', error);
+      setEntries([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Initial load and when filters change
-  useEffect(() => {
-    fetchFrequencyData();
-  }, [scope, limit, posFilter]);
-
-  // Filter and search data
-  useEffect(() => {
-    let filtered = frequencyData;
-
-    // Apply search query filter with advanced modes
-    if (searchQuery.trim()) {
-      const query = searchQuery.trim();
-
-      filtered = filtered.filter(item => {
-        const form = item.form.toLowerCase();
-        const root = (item.root || '').toLowerCase();
-
-        switch (searchMode) {
-          case 'exact':
-            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
-
-          case 'fuzzy':
-            // Simple fuzzy matching - check for similar characters
-            return form.includes(query.toLowerCase()) ||
-              root.includes(query.toLowerCase()) ||
-              levenshteinDistance(form, query.toLowerCase()) <= 2 ||
-              levenshteinDistance(root, query.toLowerCase()) <= 2;
-
-          case 'regex':
-            try {
-              const regex = new RegExp(query, 'i');
-              return regex.test(item.form) || regex.test(item.root || '');
-            } catch {
-              // Invalid regex, fall back to exact match
-              return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
-            }
-
-          case 'root':
-            // Search for words that could be related to this root pattern
-            return root.includes(query.toLowerCase()) ||
-              form.includes(query.toLowerCase()) ||
-              // Check if this looks like a root pattern (typically 2-4 consonants)
-              (query.length >= 2 && query.length <= 4 && /^[بپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+$/.test(query) && root.includes(query));
-
-          default:
-            return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
+  // Fetch top frequency words for frequency tab
+  const fetchTopFrequency = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${WORKER_URL}/api/top-words?limit=100&pos=${posFilter}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFrequencyData(data.words || []);
+      } else {
+        // Fallback to local API
+        const localResponse = await fetch(`/api/lexicon_frequency?limit=100&pos=${posFilter}`);
+        if (localResponse.ok) {
+          const data = await localResponse.json();
+          setFrequencyData(data.items || []);
         }
-      });
+      }
+    } catch (error) {
+      console.error('Error fetching frequency data:', error);
+      setFrequencyData([]);
+    } finally {
+      setLoading(false);
     }
+  }, [posFilter]);
 
-    // Apply POS filter for local data (API data already filtered)
-    if (posFilter !== 'any') {
-      filtered = filtered.filter(item => item.pos === posFilter);
-    }
+  // Fetch verb/noun forms when entry is selected
+  const fetchForms = useCallback(async (entry: DictionaryEntry) => {
+    setLoadingForms(true);
+    setVerbForms([]);
+    setNounForms([]);
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      let comparison = 0;
-
-      if (sortBy === 'frequency') {
-        comparison = a.frequency - b.frequency;
-      } else if (sortBy === 'form') {
-        comparison = a.form.localeCompare(b.form);
+    try {
+      // Check if it's a verb
+      if (entry.pos?.toLowerCase().includes('v')) {
+        const response = await fetch(`${WORKER_URL}/api/verb-forms?lemma=${encodeURIComponent(entry.pashto)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setVerbForms(data.forms || []);
+        }
       }
 
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    setFilteredData(filtered);
-  }, [frequencyData, searchQuery, sortBy, sortOrder, posFilter, searchMode]);
-
-  // Simple Levenshtein distance for fuzzy matching
-  function levenshteinDistance(a: string, b: string): number {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-
-    for (let j = 1; j <= b.length; j++) {
-      for (let i = 1; i <= a.length; i++) {
-        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,     // deletion
-          matrix[j - 1][i] + 1,     // insertion
-          matrix[j - 1][i - 1] + indicator // substitution
-        );
+      // Check if it's a noun
+      if (entry.pos?.toLowerCase().includes('n')) {
+        const response = await fetch(`${WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(entry.pashto)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setNounForms(data.inflections || []);
+        }
       }
-    }
-
-    return matrix[b.length][a.length];
-  }
-
-  // Load user notes from localStorage
-  useEffect(() => {
-    const savedNotes = localStorage.getItem('pashto-lexicon-notes');
-    if (savedNotes) {
-      try {
-        setUserNotes(JSON.parse(savedNotes));
-      } catch (err) {
-        console.warn('Failed to load user notes:', err);
-      }
+    } catch (error) {
+      console.error('Error fetching forms:', error);
+    } finally {
+      setLoadingForms(false);
     }
   }, []);
 
-  // Save user notes to localStorage
-  const saveUserNotes = (notes: Record<string, string>) => {
-    localStorage.setItem('pashto-lexicon-notes', JSON.stringify(notes));
-    setUserNotes(notes);
-  };
-
-  // Add or update a user note
-  const addUserNote = (word: string, note: string) => {
-    const newNotes = { ...userNotes, [word]: note };
-    saveUserNotes(newNotes);
-    setShowNoteForm(null);
-  };
-
-  // Submit correction to API
-  const submitCorrection = async (word: string, correction: string) => {
-    try {
-      await fetch('/api/user-corrections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word, correction, timestamp: new Date().toISOString() }),
-      });
-      alert('Your correction has been submitted. Thank you!');
-      setShowNoteForm(null);
-    } catch (err) {
-      console.error('Failed to submit correction:', err);
-      alert('Error submitting correction. Please try again.');
-    }
-  };
-
-  // Export functionality
-  const exportToCSV = (data: FrequencyItem[]) => {
-    const headers = [
-      'Rank',
-      'Word',
-      'Root',
-      'Type',
-      'Frequency',
-      'Romanized',
-      'Definition',
-      'POS',
-      'Related Forms',
-      'Inflections',
-      'Verses',
-      'User Notes'
-    ];
-
-    const csvData = data.map((item, index) => [
-      (index + 1).toString(),
-      item.form,
-      item.root || '',
-      item.pos === 'verb' ? 'Verb' : item.pos === 'noun' ? 'Noun' : 'Unknown',
-      item.frequency.toString(),
-      item.dictionary?.romanized || '',
-      item.dictionary?.definition || '',
-      item.dictionary?.pos || '',
-      item.morphological?.relatedForms?.map(f => `${f.form}(${f.count})`).join('; ') || '',
-      item.morphological?.inflections?.map(i =>
-        `${i.form}(${typeof i.grammatical_info === 'object' ?
-          Object.entries(i.grammatical_info).map(([k, v]) => `${k}:${v}`).join(',') :
-          i.grammatical_info}${i.frequency > 0 ? `;${i.frequency}` : ''})`
-      ).join('; ') || '',
-      item.verseContexts?.map(c => c.verse_ref).join('; ') || '',
-      userNotes[item.form] || ''
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `pashto_frequency_list_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Sync external query if provided
+  // Search effect
   useEffect(() => {
-    if (typeof queryProp === 'string') {
+    if (activeTab === 'dictionary' && debouncedQuery) {
+      fetchEntries(debouncedQuery);
+    }
+  }, [debouncedQuery, activeTab, fetchEntries]);
+
+  // Frequency tab effect
+  useEffect(() => {
+    if (activeTab === 'frequency') {
+      fetchTopFrequency();
+    }
+  }, [activeTab, posFilter, fetchTopFrequency]);
+
+  // Select entry effect
+  useEffect(() => {
+    if (selectedEntry) {
+      fetchForms(selectedEntry);
+    }
+  }, [selectedEntry, fetchForms]);
+
+  // Sync external query
+  useEffect(() => {
+    if (queryProp) {
       setSearchQuery(queryProp);
     }
   }, [queryProp]);
 
-  if (error) {
-    return <div className="p-4 text-center text-red-500">Error: {error}</div>;
-  }
+  const getPosColor = (pos: string) => {
+    const lower = pos?.toLowerCase() || '';
+    if (lower.includes('v.') || lower.includes('verb')) return 'bg-blue-500';
+    if (lower.includes('n.') || lower.includes('noun')) return 'bg-emerald-500';
+    if (lower.includes('adj')) return 'bg-purple-500';
+    if (lower.includes('adv')) return 'bg-orange-500';
+    if (lower.includes('prep') || lower.includes('part')) return 'bg-pink-500';
+    return 'bg-gray-500';
+  };
+
+  const getPosLabel = (pos: string) => {
+    const lower = pos?.toLowerCase() || '';
+    if (lower.includes('v.') || lower.includes('verb')) return 'Verb';
+    if (lower.includes('n.') || lower.includes('noun')) return 'Noun';
+    if (lower.includes('adj')) return 'Adjective';
+    if (lower.includes('adv')) return 'Adverb';
+    return pos || 'Other';
+  };
 
   return (
-    <div className="p-4" dir="rtl">
-      <h2 className="text-xl font-bold mb-4">Lexicon - Word Frequency List</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Pashto Lexicon - Word frequency list from Bible text
-      </p>
+    <div className="min-h-[600px]">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
+          📚 Pashto Dictionary
+        </h1>
+        <p className="text-slate-400">
+          Search words, explore conjugations, and discover frequencies
+        </p>
+      </div>
 
-      {/* Controls */}
-      <div className="mb-6 space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-        {/* Search Input */}
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                searchMode === 'exact' ? 'Search words or roots...' :
-                  searchMode === 'fuzzy' ? 'Fuzzy search...' :
-                    searchMode === 'regex' ? 'Regex pattern...' :
-                      'Root pattern search...'
-              }
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-          </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 p-1 bg-slate-800/50 rounded-xl">
+        {[
+          { id: 'dictionary', label: '📖 Dictionary', icon: '📖' },
+          { id: 'frequency', label: '📊 Frequency', icon: '📊' },
+          { id: 'roots', label: '🌳 Roots', icon: '🌳' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+              activeTab === tab.id
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-          <div className="flex gap-2">
-            <select
-              value={searchMode}
-              onChange={(e) => setSearchMode(e.target.value as 'exact' | 'fuzzy' | 'regex' | 'root')}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value="exact">Exact</option>
-              <option value="fuzzy">Fuzzy</option>
-              <option value="regex">Regex</option>
-              <option value="root">Root</option>
-            </select>
-            <button
-              onClick={fetchFrequencyData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Reload'}
-            </button>
-          </div>
-        </div>
-
-        {/* Filters and Actions */}
-        <div className="flex flex-wrap gap-4 justify-between items-end">
-          <div className="flex flex-wrap gap-3 flex-1">
-            <div className="w-32">
-              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Scope</label>
-              <select
-                value={scope}
-                onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="all">All Bible</option>
-                <option value="ot">Old Testament</option>
-                <option value="nt">New Testament</option>
-              </select>
-            </div>
-
-            <div className="w-32">
-              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Word Type</label>
-              <select
-                value={posFilter}
-                onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="any">All</option>
-                <option value="verb">Verbs</option>
-                <option value="noun">Nouns</option>
-              </select>
-            </div>
-
-            <div className="w-32">
-              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Sort By</label>
-              <div className="flex gap-1">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
-                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                >
-                  <option value="frequency">Frequency</option>
-                  <option value="form">Alphabetical</option>
-                </select>
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-600"
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowStats(!showStats)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${showStats
-                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
-                }`}
-            >
-              📊 Stats
-            </button>
-            <button
-              onClick={() => exportToCSV(filteredData)}
-              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
-            >
-              📥 Export CSV
-            </button>
-          </div>
-        </div>
-
-        {/* View Toggles */}
-        <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showDefinitions}
-              onChange={(e) => setShowDefinitions(e.target.checked)}
-              className="rounded text-blue-600 focus:ring-blue-500"
-            />
-            Show Definitions
-          </label>
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Pashto or English..."
+          className="w-full px-5 py-4 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+          dir="auto"
+        />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+          {loading ? (
+            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+          ) : (
+            <span className="text-xl">🔍</span>
+          )}
         </div>
       </div>
 
-      {/* Results Grid */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading lexicon data...</p>
-        </div>
-      ) : filteredData.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-          <p className="text-gray-500 text-lg">No words found matching your criteria</p>
-          <button
-            onClick={() => { setSearchQuery(''); setPosFilter('any'); }}
-            className="mt-4 text-blue-600 hover:underline"
-          >
-            Clear filters
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredData.map((item, index) => (
-            <div
-              key={`${item.form}-${index}`}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 flex flex-col"
-            >
-              {/* Card Header */}
-              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400">#{index + 1}</span>
-                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${item.pos?.includes('v.') || item.pos?.includes('verb')
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    : item.pos?.includes('n.') || item.pos?.includes('noun')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
-                    {item.pos || 'Unknown'}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium" title="Frequency">
-                  {item.frequency.toLocaleString()}
-                </div>
+      {/* Dictionary Tab */}
+      {activeTab === 'dictionary' && (
+        <div className="space-y-4">
+          {entries.length === 0 && !loading && searchQuery.length >= 2 && (
+            <div className="text-center py-12 text-slate-500">
+              <div className="text-5xl mb-4">📭</div>
+              <p>No entries found for "{searchQuery}"</p>
+              <button
+                onClick={() => onPickForm?.(searchQuery)}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Search in Bible instead
+              </button>
+            </div>
+          )}
+
+          {entries.length === 0 && !loading && searchQuery.length < 2 && (
+            <div className="text-center py-12 text-slate-500">
+              <div className="text-5xl mb-4">📚</div>
+              <p>Type at least 2 characters to search</p>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                <p className="w-full text-sm mb-2">Try these common words:</p>
+                {['کول', 'کېدل', 'وهل', 'ورکول', 'مرسته', 'خدای'].map((word) => (
+                  <button
+                    key={word}
+                    onClick={() => setSearchQuery(word)}
+                    className="px-4 py-2 bg-slate-700/50 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                    dir="rtl"
+                  >
+                    {word}
+                  </button>
+                ))}
               </div>
+            </div>
+          )}
 
-              {/* Card Body */}
-              <div className="p-4 flex-1 flex flex-col items-center text-center">
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 font-mono" dir="rtl">
-                  {item.form}
-                </h3>
-
-                {item.root && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-mono">
-                    Root: {item.root}
+          {entries.map((entry, idx) => (
+            <div
+              key={entry.id || idx}
+              className={`p-5 rounded-xl border transition-all cursor-pointer ${
+                selectedEntry?.id === entry.id
+                  ? 'bg-slate-700/80 border-blue-500 shadow-lg shadow-blue-500/20'
+                  : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+              }`}
+              onClick={() => setSelectedEntry(entry)}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-2xl font-bold text-white" dir="rtl">
+                      {entry.pashto}
+                    </h3>
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full text-white ${getPosColor(entry.pos)}`}>
+                      {getPosLabel(entry.pos)}
+                    </span>
+                    {entry.frequency && (
+                      <span className="text-xs text-slate-400 bg-slate-700 px-2 py-0.5 rounded">
+                        {entry.frequency.toLocaleString()}×
+                      </span>
+                    )}
                   </div>
-                )}
+                  
+                  {entry.romanization && (
+                    <p className="text-blue-400 font-medium mb-1">
+                      {entry.romanization}
+                    </p>
+                  )}
+                  
+                  {entry.english && (
+                    <p className="text-slate-300 leading-relaxed">
+                      {entry.english}
+                    </p>
+                  )}
+                </div>
 
-                {/* Definition Section (Toggleable) */}
-                <div className={`w-full transition-all duration-300 ${showDefinitions ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-                  {item.dictionary?.definition ? (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 w-full mt-2">
-                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-                        {item.dictionary.romanized || '-'}
-                      </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {item.dictionary.definition}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-400 italic mt-2">No definition available</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPickForm?.(entry.pashto);
+                    }}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Search Bible
+                  </button>
+                  {entry.lingdocs_id && (
+                    <a
+                      href={`https://dictionary.lingdocs.com/word?id=${entry.lingdocs_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      LingDocs
+                    </a>
                   )}
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 rounded-b-xl flex justify-between items-center gap-2">
-                <button
-                  onClick={() => onPickForm?.(item.form)}
-                  className="flex-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
-                >
-                  <span>🔍</span> Search Bible
-                </button>
+              {/* Expanded Forms Section */}
+              {selectedEntry?.id === entry.id && (
+                <div className="mt-5 pt-5 border-t border-slate-600">
+                  {loadingForms ? (
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                      Loading conjugations...
+                    </div>
+                  ) : (
+                    <>
+                      {verbForms.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-semibold text-blue-400 mb-3">
+                            🔄 Verb Conjugations ({verbForms.length} forms)
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                            {verbForms.slice(0, 12).map((form, i) => (
+                              <button
+                                key={i}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPickForm?.(form.form || form);
+                                }}
+                                className="px-3 py-2 bg-blue-900/30 hover:bg-blue-800/50 border border-blue-700/50 rounded-lg text-sm text-white transition-colors text-right"
+                                dir="rtl"
+                              >
+                                <div className="font-medium">{form.form || form}</div>
+                                {form.label && (
+                                  <div className="text-xs text-blue-400 mt-0.5">{form.label}</div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          {verbForms.length > 12 && (
+                            <p className="text-xs text-slate-500 mt-2">
+                              + {verbForms.length - 12} more forms
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                <button
-                  onClick={() => setShowNoteForm(item.form)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${userNotes[item.form]
-                    ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400'
-                    }`}
-                  title={userNotes[item.form] ? 'Edit Note' : 'Add Note'}
-                >
-                  {userNotes[item.form] ? '📝' : '➕'}
-                </button>
-              </div>
+                      {nounForms.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-emerald-400 mb-3">
+                            📋 Noun Inflections ({nounForms.length} forms)
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                            {nounForms.slice(0, 8).map((form, i) => (
+                              <button
+                                key={i}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPickForm?.(form.inflected_form || form.form);
+                                }}
+                                className="px-3 py-2 bg-emerald-900/30 hover:bg-emerald-800/50 border border-emerald-700/50 rounded-lg text-sm text-white transition-colors text-right"
+                                dir="rtl"
+                              >
+                                <div className="font-medium">{form.inflected_form || form.form}</div>
+                                {form.inflection_type && (
+                                  <div className="text-xs text-emerald-400 mt-0.5">{form.inflection_type}</div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-              {/* Note Form Overlay */}
-              {showNoteForm === item.form && (
-                <div className="absolute inset-0 bg-white dark:bg-gray-800 z-10 p-4 rounded-xl flex flex-col animate-in fade-in zoom-in duration-200">
-                  <h4 className="text-sm font-bold mb-2">Add Note for {item.form}</h4>
-                  <textarea
-                    className="flex-1 w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 resize-none mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Write your note or correction..."
-                    defaultValue={userNotes[item.form] || ''}
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.ctrlKey) {
-                        const note = (e.target as HTMLTextAreaElement).value.trim();
-                        if (note) addUserNote(item.form, note);
-                      }
-                      if (e.key === 'Escape') setShowNoteForm(null);
-                    }}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        const textarea = (e.target as HTMLElement).parentElement?.previousElementSibling as HTMLTextAreaElement;
-                        const note = textarea.value.trim();
-                        if (note) addUserNote(item.form, note);
-                      }}
-                      className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setShowNoteForm(null)}
-                      className="flex-1 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                      {verbForms.length === 0 && nounForms.length === 0 && (
+                        <p className="text-slate-500 text-sm">
+                          No additional forms found for this entry.
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -597,120 +417,97 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
         </div>
       )}
 
-      {/* Statistics Panel */}
-      {showStats && filteredData.length > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-lg">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">📊 Frequency Statistics</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Basic Statistics */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {filteredData.length.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Words</div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {Math.round(filteredData.reduce((sum, item) => sum + item.frequency, 0) / filteredData.length).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Average Frequency</div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {filteredData[0]?.frequency.toLocaleString() || 0}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Highest Frequency</div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {filteredData.reduce((sum, item) => sum + item.frequency, 0).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Occurrences</div>
-            </div>
+      {/* Frequency Tab */}
+      {activeTab === 'frequency' && (
+        <div>
+          {/* POS Filter */}
+          <div className="flex gap-2 mb-6">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'verb', label: 'Verbs' },
+              { id: 'noun', label: 'Nouns' },
+              { id: 'adj', label: 'Adjectives' },
+              { id: 'other', label: 'Other' },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setPosFilter(filter.id as any)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  posFilter === filter.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
 
-          {/* Distribution Charts */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* POS Distribution */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Distribution by Word Type</h4>
-              <div className="space-y-2">
-                {Object.entries(
-                  filteredData.reduce((acc, item) => {
-                    const pos = item.pos === 'verb' ? 'Verbs' : item.pos === 'noun' ? 'Nouns' : 'Unknown';
-                    acc[pos] = (acc[pos] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>)
-                ).map(([pos, count]) => (
-                  <div key={pos} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{pos}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${pos === 'Verbs' ? 'bg-blue-500' :
-                            pos === 'Nouns' ? 'bg-green-500' : 'bg-gray-500'
-                            }`}
-                          style={{ width: `${(count / filteredData.length) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{count}</span>
-                    </div>
+          {/* Frequency List */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-slate-500">Loading frequency data...</p>
+            </div>
+          ) : frequencyData.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <div className="text-5xl mb-4">📊</div>
+              <p>No frequency data available</p>
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              {frequencyData.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setSearchQuery(item.form || item.pashto_word);
+                    setActiveTab('dictionary');
+                  }}
+                >
+                  <div className="w-8 text-center text-slate-500 font-mono text-sm">
+                    #{idx + 1}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Frequency Ranges */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Frequency Distribution</h4>
-              <div className="space-y-2">
-                {[
-                  { label: 'Low (1-10)', min: 1, max: 10 },
-                  { label: 'Medium (11-100)', min: 11, max: 100 },
-                  { label: 'High (101-1000)', min: 101, max: 1000 },
-                  { label: 'Very High (1000+)', min: 1001, max: Infinity },
-                ].map(range => {
-                  const count = filteredData.filter(item => item.frequency >= range.min && item.frequency <= range.max).length;
-                  return (
-                    <div key={range.label} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{range.label}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div
-                            className="h-2 bg-purple-500 rounded-full"
-                            style={{ width: `${(count / filteredData.length) * 100}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
+                  <div className="flex-1">
+                    <span className="text-xl font-bold text-white" dir="rtl">
+                      {item.form || item.pashto_word}
+                    </span>
+                    {item.romanization && (
+                      <span className="ml-3 text-blue-400 text-sm">
+                        {item.romanization}
+                      </span>
+                    )}
+                    {item.dictionary?.english && (
+                      <span className="ml-3 text-slate-400 text-sm">
+                        {item.dictionary.english}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-emerald-400">
+                      {(item.frequency || item.frequency_total || 0).toLocaleString()}
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="text-xs text-slate-500">occurrences</div>
+                  </div>
+                  <div className={`px-2 py-1 text-xs font-semibold rounded text-white ${getPosColor(item.pos || item.word_type || '')}`}>
+                    {getPosLabel(item.pos || item.word_type || '')}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Summary */}
-      {filteredData.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-          Showing {filteredData.length} results from {frequencyData.length} words
+      {/* Roots Tab */}
+      {activeTab === 'roots' && (
+        <div className="text-center py-12 text-slate-500">
+          <div className="text-5xl mb-4">🌳</div>
+          <h3 className="text-xl font-bold text-white mb-2">Root Analysis</h3>
+          <p>Explore Pashto word roots and their derived forms</p>
+          <p className="text-sm mt-4">Coming soon...</p>
         </div>
       )}
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
