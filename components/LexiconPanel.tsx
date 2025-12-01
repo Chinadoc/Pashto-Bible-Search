@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from 'next/navigation';
 
 interface DictionaryEntry {
   id: string;
@@ -20,9 +21,12 @@ interface Props {
 const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 export default function LexiconPanel({ onPickForm, queryProp }: Props) {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams?.get('q') || '';
+  
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(queryProp || '');
+  const [searchQuery, setSearchQuery] = useState(urlQuery || queryProp || '');
   const [selectedEntry, setSelectedEntry] = useState<DictionaryEntry | null>(null);
   const [verbForms, setVerbForms] = useState<any[]>([]);
   const [nounForms, setNounForms] = useState<any[]>([]);
@@ -48,32 +52,44 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
 
     setLoading(true);
     try {
-      // Try the word-frequency endpoint for dictionary data
-      const response = await fetch(`${WORKER_URL}/api/word-frequency?word=${encodeURIComponent(query)}`);
+      const isRomanized = /^[a-zA-Z]/.test(query);
+      
+      // Use dictionary/search endpoint for all searches
+      const response = await fetch(`${WORKER_URL}/api/dictionary/search?q=${encodeURIComponent(query)}`);
       
       if (response.ok) {
         const data = await response.json();
-        if (data) {
+        if (data.entries && data.entries.length > 0) {
+          setEntries(data.entries);
+          return;
+        }
+      }
+      
+      // Fallback: Try exact word-frequency lookup
+      const freqResponse = await fetch(`${WORKER_URL}/api/word-frequency?word=${encodeURIComponent(query)}`);
+      
+      if (freqResponse.ok) {
+        const data = await freqResponse.json();
+        if (data && data.pashto_word) {
           setEntries([{
-            id: data.pashto_word || query,
-            pashto: data.pashto_word || query,
+            id: data.pashto_word,
+            pashto: data.pashto_word,
             romanization: data.romanization || '',
             english: data.english_translation || '',
             pos: data.word_type || data.pos || '',
             frequency: data.frequency_total,
           }]);
-        } else {
-          setEntries([]);
+          return;
         }
+      }
+
+      // Fallback to local dictionary search
+      const localResponse = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
+      if (localResponse.ok) {
+        const data = await localResponse.json();
+        setEntries(data.entries || []);
       } else {
-        // Fallback to local dictionary search
-        const localResponse = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
-        if (localResponse.ok) {
-          const data = await localResponse.json();
-          setEntries(data.entries || []);
-        } else {
-          setEntries([]);
-        }
+        setEntries([]);
       }
     } catch (error) {
       console.error('Error fetching dictionary entries:', error);
@@ -159,12 +175,14 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
     }
   }, [selectedEntry, fetchForms]);
 
-  // Sync external query
+  // Sync external query or URL query
   useEffect(() => {
-    if (queryProp) {
+    if (urlQuery) {
+      setSearchQuery(urlQuery);
+    } else if (queryProp) {
       setSearchQuery(queryProp);
     }
-  }, [queryProp]);
+  }, [queryProp, urlQuery]);
 
   const getPosColor = (pos: string) => {
     const lower = pos?.toLowerCase() || '';

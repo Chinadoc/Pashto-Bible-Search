@@ -1,11 +1,15 @@
 "use client";
 
 import ClientHome from '../ClientHome';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 function LexiconContent() {
+  const searchParams = useSearchParams();
+  const queryFromUrl = searchParams.get('q') || '';
+  
   return (
     <div className="min-h-screen bg-transparent text-slate-100">
       <div className="search-shell">
@@ -28,4 +32,3 @@ export default function LexiconPage() {
     </Suspense>
   );
 }
-
