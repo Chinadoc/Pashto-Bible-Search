@@ -1126,7 +1126,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             lemma={processed.normalized || processed.relatedForms?.baseForm || ''}
             romanized={processed.romanization || processed.relatedForms?.romanized}
             english={dictionaryData?.entries?.[0]?.english || processed.relatedForms?.english}
-            verbType={dictionaryData?.entries?.[0]?.transitivity || processed.relatedForms?.posGuess}
+            verbType={dictionaryData?.entries?.[0]?.pos || processed.relatedForms?.posGuess}
             verbs={processed.relatedForms.forms.verbs as RelatedFormVariant[]}
             filters={multiVerbFilters}
           />
