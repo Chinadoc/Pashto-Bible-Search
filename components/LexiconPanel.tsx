@@ -43,7 +43,9 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
   const [searchMode, setSearchMode] = useState<'exact' | 'fuzzy' | 'regex' | 'root'>('exact');
   const [showStats, setShowStats] = useState(false);
   const [userNotes, setUserNotes] = useState<Record<string, string>>({});
+
   const [showNoteForm, setShowNoteForm] = useState<string | null>(null);
+  const [showDefinitions, setShowDefinitions] = useState(true);
 
   // Fetch frequency data
   const fetchFrequencyData = async () => {
@@ -156,9 +158,9 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
           case 'fuzzy':
             // Simple fuzzy matching - check for similar characters
             return form.includes(query.toLowerCase()) ||
-                   root.includes(query.toLowerCase()) ||
-                   levenshteinDistance(form, query.toLowerCase()) <= 2 ||
-                   levenshteinDistance(root, query.toLowerCase()) <= 2;
+              root.includes(query.toLowerCase()) ||
+              levenshteinDistance(form, query.toLowerCase()) <= 2 ||
+              levenshteinDistance(root, query.toLowerCase()) <= 2;
 
           case 'regex':
             try {
@@ -172,9 +174,9 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
           case 'root':
             // Search for words that could be related to this root pattern
             return root.includes(query.toLowerCase()) ||
-                   form.includes(query.toLowerCase()) ||
-                   // Check if this looks like a root pattern (typically 2-4 consonants)
-                   (query.length >= 2 && query.length <= 4 && /^[بپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+$/.test(query) && root.includes(query));
+              form.includes(query.toLowerCase()) ||
+              // Check if this looks like a root pattern (typically 2-4 consonants)
+              (query.length >= 2 && query.length <= 4 && /^[بپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+$/.test(query) && root.includes(query));
 
           default:
             return form.includes(query.toLowerCase()) || root.includes(query.toLowerCase());
@@ -341,365 +343,259 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
       {/* Controls */}
       <div className="mb-6 space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
         {/* Search Input */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={
-              searchMode === 'exact' ? 'Search words or roots...' :
-              searchMode === 'fuzzy' ? 'Fuzzy search...' :
-              searchMode === 'regex' ? 'Regex pattern...' :
-              'Root pattern search...'
-            }
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-          />
-          <select
-            value={searchMode}
-            onChange={(e) => setSearchMode(e.target.value as 'exact' | 'fuzzy' | 'regex' | 'root')}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-          >
-            <option value="exact">Exact</option>
-            <option value="fuzzy">Fuzzy</option>
-            <option value="regex">Regex</option>
-            <option value="root">Root</option>
-          </select>
-          <button
-            onClick={fetchFrequencyData}
-            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Reload'}
-          </button>
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                searchMode === 'exact' ? 'Search words or roots...' :
+                  searchMode === 'fuzzy' ? 'Fuzzy search...' :
+                    searchMode === 'regex' ? 'Regex pattern...' :
+                      'Root pattern search...'
+              }
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+          </div>
+
+          <div className="flex gap-2">
+            <select
+              value={searchMode}
+              onChange={(e) => setSearchMode(e.target.value as 'exact' | 'fuzzy' | 'regex' | 'root')}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+            >
+              <option value="exact">Exact</option>
+              <option value="fuzzy">Fuzzy</option>
+              <option value="regex">Regex</option>
+              <option value="root">Root</option>
+            </select>
+            <button
+              onClick={fetchFrequencyData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : 'Reload'}
+            </button>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-between items-center">
-          <button
-            onClick={() => setShowStats(!showStats)}
-            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center gap-2"
-          >
-            📊 Statistics {showStats ? 'Hide' : 'Show'}
-          </button>
-          <button
-            onClick={() => exportToCSV(filteredData)}
-            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
-          >
-            📥 Export CSV
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-medium mb-1">Scope</label>
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value="all">All Bible</option>
-              <option value="ot">Old Testament</option>
-              <option value="nt">New Testament</option>
-            </select>
-      </div>
-
-          <div>
-            <label className="block text-xs font-medium mb-1">Word Type</label>
-            <select
-              value={posFilter}
-              onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-            >
-              <option value="any">All</option>
-              <option value="verb">Verbs</option>
-              <option value="noun">Nouns</option>
-            </select>
+        {/* Filters and Actions */}
+        <div className="flex flex-wrap gap-4 justify-between items-end">
+          <div className="flex flex-wrap gap-3 flex-1">
+            <div className="w-32">
+              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Scope</label>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value as 'all' | 'ot' | 'nt')}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="all">All Bible</option>
+                <option value="ot">Old Testament</option>
+                <option value="nt">New Testament</option>
+              </select>
             </div>
 
-          <div>
-            <label className="block text-xs font-medium mb-1">Result Count</label>
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+            <div className="w-32">
+              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Word Type</label>
+              <select
+                value={posFilter}
+                onChange={(e) => setPosFilter(e.target.value as 'any' | 'verb' | 'noun')}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+              >
+                <option value="any">All</option>
+                <option value="verb">Verbs</option>
+                <option value="noun">Nouns</option>
+              </select>
+            </div>
+
+            <div className="w-32">
+              <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Sort By</label>
+              <div className="flex gap-1">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                >
+                  <option value="frequency">Frequency</option>
+                  <option value="form">Alphabetical</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowStats(!showStats)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${showStats
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                }`}
             >
-              <option value={100}>100</option>
-              <option value={300}>300</option>
-              <option value={500}>500</option>
-              <option value={1000}>1000</option>
-            </select>
+              📊 Stats
+            </button>
+            <button
+              onClick={() => exportToCSV(filteredData)}
+              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
+            >
+              📥 Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* View Toggles */}
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showDefinitions}
+              onChange={(e) => setShowDefinitions(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+            Show Definitions
+          </label>
+        </div>
+      </div>
+
+      {/* Results Grid */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading lexicon data...</p>
+        </div>
+      ) : filteredData.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+          <p className="text-gray-500 text-lg">No words found matching your criteria</p>
+          <button
+            onClick={() => { setSearchQuery(''); setPosFilter('any'); }}
+            className="mt-4 text-blue-600 hover:underline"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredData.map((item, index) => (
+            <div
+              key={`${item.form}-${index}`}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 flex flex-col"
+            >
+              {/* Card Header */}
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-gray-400">#{index + 1}</span>
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${item.pos?.includes('v.') || item.pos?.includes('verb')
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : item.pos?.includes('n.') || item.pos?.includes('noun')
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                    }`}>
+                    {item.pos || 'Unknown'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium" title="Frequency">
+                  {item.frequency.toLocaleString()}
+                </div>
               </div>
 
-          <div>
-            <label className="block text-xs font-medium mb-1">Sort By</label>
-            <div className="flex gap-1">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'frequency' | 'form')}
-                className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="frequency">Frequency</option>
-                <option value="form">Alphabetical</option>
-              </select>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
-          </div>
-                </div>
-            </div>
+              {/* Card Body */}
+              <div className="p-4 flex-1 flex flex-col items-center text-center">
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 font-mono" dir="rtl">
+                  {item.form}
+                </h3>
 
-      {/* Results Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
-              <tr>
-                <th className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Rank
-                </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Word
-                </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Root
-                </th>
-                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Frequency
-                </th>
-                <th className="w-80 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Dictionary
-                </th>
-                <th className="w-48 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Related Forms
-                </th>
-                <th className="w-16 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Audio
-                </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Verses
-                </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Notes
-                </th>
-                <th className="w-24 px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {loading ? (
-                <tr>
-                  <td colSpan={11} className="px-3 py-4 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="px-3 py-4 text-center text-gray-500">
-                    No results found
-                  </td>
-                </tr>
-              ) : (
-                filteredData.map((item, index) => (
-                  <tr key={`${item.form}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {index + 1}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
-                      {item.form}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.root || '-'}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        item.pos?.includes('v.') || item.pos?.includes('verb')
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : item.pos?.includes('n.') || item.pos?.includes('noun')
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : item.pos?.includes('adpos') || item.pos?.includes('adp')
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                          : item.pos?.includes('conj')
-                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                          : item.pos?.includes('adv')
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          : item.pos?.includes('pron')
-                          ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
-                          : item.pos?.includes('adj')
-                          ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
-                          : item.pos?.includes('num')
-                          ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
-                          : item.pos?.includes('part')
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                      }`}>
-                        {item.pos || 'Unknown'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.frequency.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                      {item.dictionary?.definition ? (
-                        <div>
-                          <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                            {item.dictionary.romanized || item.form}
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400" title={item.dictionary.definition}>
-                            {item.dictionary.definition}
-                          </div>
-                          {item.dictionary.pos && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400">
-                              {item.dictionary.pos}
+                {item.root && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-mono">
+                    Root: {item.root}
+                  </div>
+                )}
+
+                {/* Definition Section (Toggleable) */}
+                <div className={`w-full transition-all duration-300 ${showDefinitions ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+                  {item.dictionary?.definition ? (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 w-full mt-2">
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+                        {item.dictionary.romanized || '-'}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                        {item.dictionary.definition}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400 italic mt-2">No definition available</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Footer */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 rounded-b-xl flex justify-between items-center gap-2">
+                <button
+                  onClick={() => onPickForm?.(item.form)}
+                  className="flex-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
+                >
+                  <span>🔍</span> Search Bible
+                </button>
+
+                <button
+                  onClick={() => setShowNoteForm(item.form)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${userNotes[item.form]
+                    ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400'
+                    }`}
+                  title={userNotes[item.form] ? 'Edit Note' : 'Add Note'}
+                >
+                  {userNotes[item.form] ? '📝' : '➕'}
+                </button>
+              </div>
+
+              {/* Note Form Overlay */}
+              {showNoteForm === item.form && (
+                <div className="absolute inset-0 bg-white dark:bg-gray-800 z-10 p-4 rounded-xl flex flex-col animate-in fade-in zoom-in duration-200">
+                  <h4 className="text-sm font-bold mb-2">Add Note for {item.form}</h4>
+                  <textarea
+                    className="flex-1 w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 resize-none mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Write your note or correction..."
+                    defaultValue={userNotes[item.form] || ''}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey) {
+                        const note = (e.target as HTMLTextAreaElement).value.trim();
+                        if (note) addUserNote(item.form, note);
+                      }
+                      if (e.key === 'Escape') setShowNoteForm(null);
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        const textarea = (e.target as HTMLElement).parentElement?.previousElementSibling as HTMLTextAreaElement;
+                        const note = textarea.value.trim();
+                        if (note) addUserNote(item.form, note);
+                      }}
+                      className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setShowNoteForm(null)}
+                      className="flex-1 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                      {item.morphological?.relatedForms && item.morphological.relatedForms.length > 0 ? (
-                        <div>
-                          <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
-                            Related Forms:
-                          </div>
-                          {item.morphological.relatedForms.slice(0, 3).map((form, idx) => (
-                            <div key={idx} className="text-xs">
-                              <span className="font-mono">{form.form}</span>
-                              <span className="text-gray-500">({form.count})</span>
-          </div>
-                          ))}
-                          {item.morphological.relatedForms.length > 3 && (
-                            <div className="text-xs text-gray-400">+{item.morphological.relatedForms.length - 3} more</div>
-                          )}
-                          {item.morphological?.inflections && item.morphological.inflections.length > 0 && (
-                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-2 mb-1">
-                              Inflections:
-          </div>
-                          )}
-                          {item.morphological?.inflections && item.morphological.inflections.slice(0, 2).map((inflection, idx) => (
-                            <div key={idx} className="text-xs">
-                              <span className="font-mono">{inflection.form}</span>
-                              {inflection.grammatical_info && (
-                                <span className="text-gray-500 ml-1">
-                                  ({typeof inflection.grammatical_info === 'object' ?
-                                    Object.entries(inflection.grammatical_info).map(([k, v]) => `${k}:${v}`).join(', ') :
-                                    inflection.grammatical_info})
-                                </span>
-                              )}
-                              {inflection.frequency > 0 && (
-                                <span className="text-blue-500 ml-1">({inflection.frequency})</span>
-                              )}
-                            </div>
-                          ))}
-
-          </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {Object.keys(audioMap).length > 0 ? (
-                        <span className="text-xs">
-                          📊
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {item.verseContexts && item.verseContexts.length > 0 ? (
-                        <div className="max-w-xs">
-                          {item.verseContexts.slice(0, 2).map((ctx, idx) => (
-                            <div key={idx} className="text-xs">
-                              {ctx.verse_ref}
-                            </div>
-                          ))}
-                          {item.verseContexts.length > 2 && (
-                            <div className="text-xs text-gray-400">+{item.verseContexts.length - 2} more</div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {showNoteForm === item.form ? (
-                        <div className="space-y-2">
-                          <textarea
-                            className="w-full p-2 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
-                            placeholder="Write your note or correction..."
-                            rows={2}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && e.ctrlKey) {
-                                const note = (e.target as HTMLTextAreaElement).value.trim();
-                                if (note) {
-                                  submitCorrection(item.form, note);
-                                }
-                              }
-                              if (e.key === 'Escape') {
-                                setShowNoteForm(null);
-                              }
-                            }}
-                          />
-                          <div className="flex gap-1">
-                            <button
-                              onClick={(e) => {
-                                const note = (e.target as any).previousElementSibling?.querySelector('textarea')?.value?.trim();
-                                if (note) {
-                                  submitCorrection(item.form, note);
-                                }
-                              }}
-                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                              Submit
-                            </button>
-                            <button
-                              onClick={() => setShowNoteForm(null)}
-                              className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          {userNotes[item.form] && (
-                            <span className="text-xs text-blue-600 dark:text-blue-400">✓</span>
-                          )}
-                          <button
-                            onClick={() => setShowNoteForm(item.form)}
-                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
-                          >
-                            {userNotes[item.form] ? 'Edit' : 'Add'}
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => onPickForm?.(item.form)}
-                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                      >
-                        Search
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Statistics Panel */}
       {showStats && filteredData.length > 0 && (
@@ -755,10 +651,9 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     <div className="flex items-center gap-2">
                       <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full ${
-                            pos === 'Verbs' ? 'bg-blue-500' :
+                          className={`h-2 rounded-full ${pos === 'Verbs' ? 'bg-blue-500' :
                             pos === 'Nouns' ? 'bg-green-500' : 'bg-gray-500'
-                          }`}
+                            }`}
                           style={{ width: `${(count / filteredData.length) * 100}%` }}
                         ></div>
                       </div>
@@ -766,7 +661,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                     </div>
                   </div>
                 ))}
-        </div>
+              </div>
             </div>
 
             {/* Frequency Ranges */}
@@ -792,7 +687,7 @@ export default function LexiconPanel({ onPickForm, queryProp }: Props) {
                         </div>
                         <span className="text-sm font-medium">{count}</span>
                       </div>
-                </div>
+                    </div>
                   );
                 })}
               </div>
