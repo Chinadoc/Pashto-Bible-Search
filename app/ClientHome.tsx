@@ -559,14 +559,14 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
   );
 }
 
-export default function ClientHome() {
+export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'search' | 'lexicon' | 'videos' | 'poems' }) {
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
-  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>('search');
+  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>(initialTab);
   const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -601,6 +601,7 @@ export default function ClientHome() {
       setPlayingSentence(null);
     };
   };
+
   const [loadingPoems, setLoadingPoems] = useState(false);
   const [scope, setScope] = useState<Scope>('all');
   const [includeRelated, setIncludeRelated] = useState<boolean>(false);
@@ -1018,11 +1019,11 @@ export default function ClientHome() {
   // Build form-to-variants map for verb filtering (same logic as ResultsList)
   const formToVariants = useMemo(() => {
     const map = new Map<string, any[]>();
-    
+
     const addVariant = (v: any) => {
       if (!v?.form) return;
       const existing = map.get(v.form) || [];
-      const isDuplicate = existing.some(e => 
+      const isDuplicate = existing.some(e =>
         e.person === v.person && e.tense === v.tense && e.aspect === v.aspect && e.mood === v.mood
       );
       if (!isDuplicate) {
@@ -1030,19 +1031,19 @@ export default function ClientHome() {
         map.set(v.form, existing);
       }
     };
-    
+
     const p = processed as any;
     if (p?.verbs) p.verbs.forEach(addVariant);
     if (p?.variantGroups?.verbs) p.variantGroups.verbs.forEach(addVariant);
     if (p?.relatedForms?.forms?.verbs) p.relatedForms.forms.verbs.forEach(addVariant);
-    
+
     return map;
   }, [processed]);
 
   // Helper function to check if a verse matches verb filters
   const verseMatchesVerbFilters = useCallback((verse: Verse): boolean => {
     if (!hasActiveVerbFilters || !multiVerbFilters) return true;
-    
+
     // Get matched forms from the verse
     let matchedFormsToCheck = verse.matchedForms || [];
     if (matchedFormsToCheck.length === 0 && verse.text) {
@@ -1050,19 +1051,19 @@ export default function ClientHome() {
       const allForms = Array.from(formToVariants.keys());
       matchedFormsToCheck = allForms.filter(form => verse.text.includes(form));
     }
-    
+
     if (matchedFormsToCheck.length === 0) return false;
-    
+
     const personFilters = multiVerbFilters.person.filter(p => p !== 'all');
     const tenseFilters = multiVerbFilters.tense.filter(t => t !== 'all');
     const aspectFilters = multiVerbFilters.aspect.filter(a => a !== 'all');
     const moodFilters = multiVerbFilters.mood.filter(m => m !== 'all');
-    
+
     // Check if any matched form satisfies the filter
     return matchedFormsToCheck.some(form => {
       const variants = formToVariants.get(form);
       if (!variants || variants.length === 0) return false;
-      
+
       const personMatch = personFilters.length === 0 || variants.every(v => {
         const normLabel = (v.label || '').toLowerCase();
         return personFilters.some(p => {
@@ -1072,22 +1073,22 @@ export default function ClientHome() {
           return false;
         });
       });
-      
+
       const tenseMatch = tenseFilters.length === 0 || variants.some(v => {
         const normLabel = (v.label || '').toLowerCase();
         return tenseFilters.some(t => normLabel.includes(t));
       });
-      
+
       const aspectMatch = aspectFilters.length === 0 || variants.some(v => {
         const normLabel = (v.label || '').toLowerCase();
         return aspectFilters.some(a => normLabel.includes(a));
       });
-      
+
       const moodMatch = moodFilters.length === 0 || variants.some(v => {
         const normLabel = (v.label || '').toLowerCase();
         return moodFilters.some(m => normLabel.includes(m));
       });
-      
+
       return personMatch && tenseMatch && aspectMatch && moodMatch;
     });
   }, [hasActiveVerbFilters, multiVerbFilters, formToVariants]);
@@ -1249,25 +1250,25 @@ export default function ClientHome() {
     setDictionaryMatch(null);
 
     try {
-    const searchParams: any = {
-      query: normalizedQuery,
-      scope,
-      includeRelated,
-      enableFuzzy,
-      bookFilter,
-      language: languageOverride ?? searchLanguage,
-      translation: activeTranslation,
-    };
+      const searchParams: any = {
+        query: normalizedQuery,
+        scope,
+        includeRelated,
+        enableFuzzy,
+        bookFilter,
+        language: languageOverride ?? searchLanguage,
+        translation: activeTranslation,
+      };
 
-    const verbFiltersPayload = verbFiltersOverride ?? verbFilters;
+      const verbFiltersPayload = verbFiltersOverride ?? verbFilters;
 
-    if (variantsPayload) {
-      searchParams.variants = variantsPayload;
-    }
+      if (variantsPayload) {
+        searchParams.variants = variantsPayload;
+      }
 
-    if (verbFiltersPayload) {
-      searchParams.verbFilters = verbFiltersPayload;
-    }
+      if (verbFiltersPayload) {
+        searchParams.verbFilters = verbFiltersPayload;
+      }
 
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -1599,11 +1600,11 @@ export default function ClientHome() {
   // Trigger search when query changes (with debouncing)
   // Use LONGER debounce for Latin/romanized input (user still typing)
   const previousQuery = useRef<string>(query);
-  
+
   // Check if input is Latin/romanized (requires conversion)
   const isLatinInput = (text: string) => /^[A-Za-z\s'-]+$/.test(text);
   const MIN_ROMANIZED_LENGTH = 3; // Wait for at least 3 characters for romanized
-  
+
   const debouncedSearchPashto = useMemo(
     () => debounce((trimmedQuery: string) => {
       console.log('🔄 Query changed (Pashto), triggering search');
@@ -1620,7 +1621,7 @@ export default function ClientHome() {
     }, 300), // 300ms for Pashto input
     [executeSearch]
   );
-  
+
   const debouncedSearchRomanized = useMemo(
     () => debounce((trimmedQuery: string) => {
       // Only search romanized if it's a complete-looking word (ends in vowel or common consonant)
@@ -1831,6 +1832,12 @@ export default function ClientHome() {
           >
             📝 Poems
           </button>
+          <a
+            href="/typer"
+            className="px-4 py-2 rounded-md font-medium transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            ⌨️ Typer
+          </a>
         </div>
       </div>
 
