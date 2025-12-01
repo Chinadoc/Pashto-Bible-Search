@@ -489,8 +489,77 @@ async function searchVerses(
 }
 
 /**
- * Get verses by book and chapter
+ * BATCH SEARCH: Search verses for MULTIPLE forms in ONE query
+ * POST /api/search-batch
+ * Body: { forms: string[], translation?: string, testament?: string, limit?: number }
+ * 
+ * Uses a single SQL query with OR conditions - MUCH faster than multiple calls!
  */
+async function searchVersesBatch(
+  env: Env,
+  forms: string[],
+  options: {
+    translation?: 'afghan2023' | 'yousafzai2019';
+    testament?: 'OT' | 'NT';
+    limit?: number;
+  } = {}
+): Promise<Response> {
+  const { translation = 'afghan2023', testament, limit = 600 } = options;
+  const table = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
+
+  if (!forms || forms.length === 0) {
+    return jsonResponse({ verses: [], count: 0, forms: [] });
+  }
+
+  // Limit forms to prevent SQL query size explosion
+  const formsToSearch = forms.slice(0, 100);
+  const startTime = Date.now();
+
+  try {
+    // Build OR conditions for all forms
+    const conditions = formsToSearch.map(() => `text LIKE ?`).join(' OR ');
+    const params: any[] = formsToSearch.map(f => `%${f}%`);
+
+    let sql = `SELECT * FROM ${table} WHERE (${conditions})`;
+
+    if (testament) {
+      sql += ` AND testament = ?`;
+      params.push(testament);
+    }
+
+    sql += ` ORDER BY book, chapter, verse LIMIT ?`;
+    params.push(limit);
+
+    const result = await env.DB.prepare(sql).bind(...params).all();
+
+    // Convert SQLite timestamps and determine which forms matched each verse
+    const verses = result.results?.map((verse: any) => {
+      const matchedForms = formsToSearch.filter(form => 
+        verse.text && verse.text.includes(form)
+      );
+      
+      return {
+        ...verse,
+        matchedForms,
+        created_at: verse.created_at ? new Date(verse.created_at * 1000).toISOString() : null,
+        updated_at: verse.updated_at ? new Date(verse.updated_at * 1000).toISOString() : null,
+        tags: verse.tags ? parseJsonSafe(verse.tags, []) : [],
+      };
+    }) || [];
+
+    const queryTime = Date.now() - startTime;
+
+    return jsonResponse({ 
+      verses, 
+      count: verses.length, 
+      formsSearched: formsToSearch.length,
+      queryTime,
+    });
+  } catch (error: any) {
+    return errorResponse(`Batch search failed: ${error.message}`, 500);
+  }
+}
+
 /**
  * Generate R2 audio key from book, chapter, verse
  * Format: afghan2023/nt/{bookname}{chapter}_verse_{verse:03d}.mp3
@@ -1819,6 +1888,30 @@ export default {
       const limit = parseInt(url.searchParams.get('limit') || '100');
 
       return searchVerses(env, query, { translation, testament, limit });
+    }
+
+    // BATCH SEARCH: Search for multiple forms in ONE query (POST)
+    if (path === '/api/search-batch' && request.method === 'POST') {
+      try {
+        const body = await request.json() as {
+          forms?: string[];
+          translation?: 'afghan2023' | 'yousafzai2019';
+          testament?: 'OT' | 'NT';
+          limit?: number;
+        };
+        
+        if (!body.forms || !Array.isArray(body.forms)) {
+          return errorResponse('Missing or invalid forms array', 400);
+        }
+        
+        return searchVersesBatch(env, body.forms, {
+          translation: body.translation,
+          testament: body.testament,
+          limit: body.limit,
+        });
+      } catch (error: any) {
+        return errorResponse(`Invalid request body: ${error.message}`, 400);
+      }
     }
 
     if (path === '/api/chapter' && request.method === 'GET') {

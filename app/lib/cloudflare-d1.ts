@@ -221,73 +221,55 @@ export async function searchVersesByForms(
   } = {}
 ): Promise<Verse[]> {
   const translation = options.translation || 'afghan2023';
-  const limit = options.limit || 100;
+  const limit = options.limit || 600;
 
-  // PARALLEL: Get verse references for all forms from form_occurrences
-  const allVerseRefs = new Set<string>();
-  const formsNotFound: string[] = [];
-
-  // Batch lookup - all forms in parallel (much faster than sequential!)
-  const occurrenceResults = await Promise.all(
-    forms.map(form => getFormOccurrences(form, translation).catch(() => null))
-  );
-
-  forms.forEach((form, idx) => {
-    const occurrences = occurrenceResults[idx];
-    if (occurrences && occurrences.verse_refs && occurrences.verse_refs.length > 0) {
-      for (const ref of occurrences.verse_refs) {
-        allVerseRefs.add(ref);
-      }
-    } else {
-      formsNotFound.push(form);
-    }
-  });
-
-  // For forms not indexed, search directly - but limit to avoid slowdown
-  if (formsNotFound.length > 0) {
-    const formsToSearch = formsNotFound.slice(0, 8); // Limit fallback to 8 forms max
-    console.log(`⚠️ ${formsNotFound.length} forms not indexed, searching ${formsToSearch.length} directly`);
-    
-    const searchResults = await Promise.all(
-      formsToSearch.map(form => 
-        searchVerses(form, {
-          translation,
-          testament: options.testament,
-          limit: 150, // Reduced limit per form for speed
-        }).catch(() => [])
-      )
-    );
-    
-    searchResults.flat().forEach(verse => {
-      if (verse.ref) allVerseRefs.add(verse.ref);
+  // Use the NEW batch search endpoint - ONE request for ALL forms!
+  try {
+    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/search-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        forms,
+        translation,
+        testament: options.testament,
+        limit,
+      }),
     });
-  }
 
-  if (allVerseRefs.size === 0) {
+    if (!response.ok) {
+      console.warn(`Batch search failed (${response.status}), falling back to sequential`);
+      throw new Error('Batch search unavailable');
+    }
+
+    const data = await response.json();
+    console.log(`✅ Batch search: ${data.count} results for ${data.formsSearched} forms in ${data.queryTime}ms`);
+    
+    // Convert to Verse format
+    return (data.verses || []).map((v: any) => ({
+      ref: `${v.book} ${v.chapter}:${v.verse}`,
+      text: v.text,
+      book: v.book,
+      chapter: v.chapter,
+      verse: v.verse,
+      testament: v.testament,
+      translation: v.translation || translation,
+      matchedForms: v.matchedForms,
+      audio_r2_key: v.audio_r2_key,
+    }));
+  } catch (error) {
+    console.warn('Batch search failed, using fallback:', error);
+    
+    // Fallback: Single form search for first form only (fast)
+    if (forms.length > 0) {
+      const firstForm = forms[0];
+      return searchVerses(firstForm, {
+        translation,
+        testament: options.testament,
+        limit,
+      });
+    }
     return [];
   }
-
-  // PARALLEL: Fetch verses by reference in batches
-  const refs = Array.from(allVerseRefs).slice(0, limit);
-  const batchSize = 40;
-  let allVersesData: (Verse | null)[] = [];
-  
-  for (let i = 0; i < refs.length; i += batchSize) {
-    const batch = refs.slice(i, i + batchSize);
-    const batchResults = await Promise.all(
-      batch.map(ref => getVerseByRef(ref, translation).catch(() => null))
-    );
-    allVersesData = allVersesData.concat(batchResults);
-  }
-
-  // Filter out nulls and apply testament filter
-  let filtered = allVersesData.filter((v): v is Verse => v !== null);
-
-  if (options.testament) {
-    filtered = filtered.filter(v => v.testament === options.testament);
-  }
-
-  return filtered.slice(0, limit);
 }
 
 /**
