@@ -1057,6 +1057,31 @@ export async function POST(request: NextRequest) {
       const verbFormsPromise = includeRelated 
         ? fetchVerbFormsFromD1(searchQuery, { cap: 100 }).catch(() => [])  // Reduced cap for speed
         : Promise.resolve([]);
+      
+      // Also fetch word info to get correct POS (noun vs verb)
+      let wordPosGuess: 'verb' | 'noun' | 'adjective' | 'other' = 'other';
+      try {
+        const wordInfoResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_WORKER_URL}/api/word-frequency?word=${encodeURIComponent(searchQuery)}`
+        );
+        if (wordInfoResponse.ok) {
+          const wordInfo = await wordInfoResponse.json();
+          if (wordInfo?.pos) {
+            const posLower = wordInfo.pos.toLowerCase();
+            if (posLower.includes('n.') || posLower.includes('noun')) wordPosGuess = 'noun';
+            else if (posLower.includes('v.') || posLower.includes('verb')) wordPosGuess = 'verb';
+            else if (posLower.includes('adj')) wordPosGuess = 'adjective';
+          } else if (wordInfo?.word_type) {
+            const typeLower = wordInfo.word_type.toLowerCase();
+            if (typeLower.includes('noun')) wordPosGuess = 'noun';
+            else if (typeLower.includes('verb')) wordPosGuess = 'verb';
+            else if (typeLower.includes('adj')) wordPosGuess = 'adjective';
+          }
+          console.log(`📚 Word POS for "${searchQuery}": ${wordPosGuess} (from: ${wordInfo?.pos || wordInfo?.word_type})`);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch word POS:', e);
+      }
 
       // If morphological filters are provided, generate verb forms and filter them
       let morphologicalVariants: string[] = [];
@@ -1173,30 +1198,78 @@ export async function POST(request: NextRequest) {
       // Await verb forms if includeRelated AND no morphological filters were applied
       // If morphological filters ARE applied, we use only those filtered forms (even if empty = no results)
       if (includeRelated && !variants?.length && !morphologicalVariants.length && !hasMorphFilters) {
-        const verbForms = await verbFormsPromise;
-        if (verbForms && verbForms.length > 0) {
-          const allForms = new Set<string>([searchQuery]);
-          const verbs = verbForms.map((vf: any) => {
-            allForms.add(vf.form);
-            return {
-              form: vf.form,
-              label: [vf.tense, vf.person].filter(Boolean).join(' ') || 'verb',
-              pos: 'verb',
-              person: vf.person,
-              tense: vf.tense,
-              voice: vf.voice,
-              gender: vf.gender,
-            };
-          });
-          relatedFormsForD1 = Array.from(allForms);
-          relatedFormsData = {
-            baseForm: searchQuery,
-            total: verbs.length,
-            forms: { verbs, nouns: [], other: [] },
-            posGuess: 'verb',
-          };
-          console.log(`✅ [RELATED FORMS] Got ${relatedFormsForD1.length} forms from parallel fetch`);
+        const allForms = new Set<string>([searchQuery]);
+        const verbs: any[] = [];
+        const nouns: any[] = [];
+        
+        // For nouns, fetch noun inflections from D1
+        if (wordPosGuess === 'noun') {
+          try {
+            const nounResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
+            );
+            if (nounResponse.ok) {
+              const nounData = await nounResponse.json();
+              if (nounData?.found) {
+                // Add the base form
+                allForms.add(nounData.base_word);
+                nouns.push({
+                  form: searchQuery,
+                  label: 'noun form',
+                  pos: 'noun',
+                });
+                
+                // Fetch all inflections for this noun
+                const inflectionsResponse = await fetch(
+                  `${process.env.NEXT_PUBLIC_WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(nounData.base_word)}`
+                );
+                if (inflectionsResponse.ok) {
+                  const inflData = await inflectionsResponse.json();
+                  if (inflData?.inflections) {
+                    for (const inf of inflData.inflections) {
+                      allForms.add(inf.form);
+                      nouns.push({
+                        form: inf.form,
+                        label: inf.label || 'inflection',
+                        pos: 'noun',
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch noun inflections:', e);
+          }
         }
+        
+        // For verbs, fetch verb conjugations
+        if (wordPosGuess === 'verb' || wordPosGuess === 'other') {
+          const verbForms = await verbFormsPromise;
+          if (verbForms && verbForms.length > 0) {
+            for (const vf of verbForms) {
+              allForms.add(vf.form);
+              verbs.push({
+                form: vf.form,
+                label: [vf.tense, vf.person].filter(Boolean).join(' ') || 'verb',
+                pos: 'verb',
+                person: vf.person,
+                tense: vf.tense,
+                voice: vf.voice,
+                gender: vf.gender,
+              });
+            }
+          }
+        }
+        
+        relatedFormsForD1 = Array.from(allForms);
+        relatedFormsData = {
+          baseForm: searchQuery,
+          total: verbs.length + nouns.length,
+          forms: { verbs, nouns, other: [] },
+          posGuess: wordPosGuess,
+        };
+        console.log(`✅ [RELATED FORMS] Got ${relatedFormsForD1.length} forms (${nouns.length} nouns, ${verbs.length} verbs)`);
       } else if (hasMorphFilters && morphologicalVariants.length === 0) {
         console.log(`⚠️ [MORPHOLOGICAL FILTERING] No forms match the filter criteria`);
         // Return early with 0 results - user asked for forms that don't exist

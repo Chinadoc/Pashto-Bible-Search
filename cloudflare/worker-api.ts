@@ -2627,6 +2627,50 @@ export default {
       }
     }
 
+    // Get all inflections for a noun base form
+    if (path === '/api/noun-inflections' && request.method === 'GET') {
+      const base = url.searchParams.get('base');
+      if (!base) {
+        return errorResponse('Missing base parameter', 400);
+      }
+      
+      try {
+        const results = await env.DB.prepare(
+          `SELECT inflected_form as form, grammatical_info, frequency
+           FROM inflections WHERE base_word = ?
+           ORDER BY frequency DESC
+           LIMIT 20`
+        ).bind(base).all();
+        
+        const inflections = (results.results || []).map((row: any) => {
+          let label = 'inflection';
+          if (row.grammatical_info) {
+            try {
+              const gi = typeof row.grammatical_info === 'string' 
+                ? JSON.parse(row.grammatical_info) 
+                : row.grammatical_info;
+              label = gi.label || gi.case || gi.number || 'inflection';
+            } catch (e) {
+              // ignore
+            }
+          }
+          return {
+            form: row.form,
+            label,
+            frequency: row.frequency || 0,
+          };
+        });
+        
+        return jsonResponse({
+          base,
+          inflections,
+          count: inflections.length,
+        });
+      } catch (error: any) {
+        return errorResponse(`Noun inflections lookup failed: ${error.message}`, 500);
+      }
+    }
+
     if (path === '/api/form-occurrences' && request.method === 'GET') {
       const form = url.searchParams.get('form');
       const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;
