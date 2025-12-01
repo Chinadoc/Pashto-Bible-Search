@@ -373,14 +373,39 @@ function VerseItem({
           {/* Anki Export */}
           <button
             onClick={() => {
+              // Get search word and definition from processed data
+              const searchWord = processed?.root || processed?.normalized || '';
+              const searchWordRomanized = processed?.romanization || '';
+              const definition = processed?.englishMatches?.[0]?.english || 
+                                 processed?.disambiguation?.recommendedAction || '';
+              
+              // Create highlighted verse text
+              const highlightTokens = [
+                processed?.normalized,
+                ...(processed?.variants ?? []),
+              ].filter(Boolean) as string[];
+              
+              let verseTextHighlighted = verse.text || '';
+              for (const token of highlightTokens) {
+                if (token && verseTextHighlighted.includes(token)) {
+                  verseTextHighlighted = verseTextHighlighted.replace(
+                    new RegExp(`(${token})`, 'g'),
+                    '<span class="highlight">$1</span>'
+                  );
+                }
+              }
+
               import('@/app/lib/anki-export').then(({ generateAnkiDeck }) => {
                 generateAnkiDeck([{
                   verseRef: verse.ref || '',
                   verseText: verse.text || '',
-                  definition: 'Definition placeholder', // TODO: Fetch real definition
-                  romanization: 'Romanization placeholder', // TODO: Fetch real romanization
+                  verseTextHighlighted,
+                  searchWord,
+                  searchWordRomanized,
+                  definition,
+                  romanization: searchWordRomanized,
                   audioUrl: audioUrl
-                }], `Pashto_Verse_${verse.ref}`);
+                }], `Pashto_${searchWord || 'Verse'}_${verse.ref?.replace(/[: ]/g, '_')}`);
               });
             }}
             className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors flex items-center gap-1"

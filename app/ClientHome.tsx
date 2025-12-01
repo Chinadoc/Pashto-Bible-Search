@@ -1701,82 +1701,16 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   // Calculate results count
   const resultsCount = results.length;
 
+
   const isEnglishMode = searchLanguage === 'english';
-  const isAnkiMode = searchLanguage === 'anki';
+  // Anki mode removed as per user request
 
-  // Anki export state
-  const [isExportingAnki, setIsExportingAnki] = useState(false);
 
-  // Anki export function
-  const exportToAnki = useCallback(async () => {
-    if (!results.length || !isAnkiMode) return;
-
-    setIsExportingAnki(true);
-    try {
-      console.log(`🔄 Exporting ${results.length} results to Anki deck...`);
-
-      const response = await fetch('/api/anki-export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          results: results.slice(0, 50), // Limit to 50 cards for performance
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Generate and download Anki deck file
-      await generateAnkiDeckFile(data.deck, data.cards);
-
-      console.log(`✅ Successfully exported ${data.count} cards to Anki`);
-    } catch (error) {
-      console.error('❌ Failed to export to Anki:', error);
-      alert(`Failed to export to Anki: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsExportingAnki(false);
-    }
-  }, [results, query, isAnkiMode]);
-
-  // Generate Anki deck file for download
-  const generateAnkiDeckFile = async (deck: any, cards: any[]) => {
-    const deckName = deck.name;
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-
-    // Create CSV content for Anki import with enhanced formatting
-    const csvContent = [
-      'Front,Back,Tags',
-      ...cards.map(card => `"${card.front.replace(/"/g, '""')}","${card.back.replace(/"/g, '""')}","${card.tags?.join(' ') || ''}"`)
-    ].join('\n');
-
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${deckName}_${timestamp}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Show success message with card count
-    alert(`✅ Successfully exported ${cards.length} cards to Anki!\n\nDeck: ${deckName}\nFile: ${deckName}_${timestamp}.csv`);
-  };
+  // Anki export functionality removed as per user request (Anki mode removed)
+  // The closing brace for the useCallback was here, now removed.
 
   return (
-    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
+    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1791,30 +1725,17 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         </div>
       )}
 
-      {/* Anki Mode Banner */}
-      {isAnkiMode && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-2xl">📚</span>
-            <div className="text-center">
-              <p className="font-bold text-lg">Anki Export Mode Active</p>
-              <p className="text-sm opacity-90">Search for words and create flashcards with audio</p>
-            </div>
-            <span className="text-2xl">📚</span>
-          </div>
-        </div>
-      )}
 
       {/* Header */}
       <header className="text-center mb-6 relative">
         <div className="absolute right-0 top-0">
           <AuthButton />
         </div>
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isAnkiMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isAnkiMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -1914,34 +1835,27 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={
-                isAnkiMode
-                  ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
-                  : isEnglishMode
-                    ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
-                    : "Enter Pashto text to search..."
-              }
-              variant="outlined"
+              placeholder={isEnglishMode ? "Search in English (e.g., 'love', 'peace')..." : "Search in Pashto (e.g., 'مینه', 'سوله')..."} variant="outlined"
               fullWidth
               inputProps={{
-                dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
-                style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
+                dir: isEnglishMode ? 'ltr' : 'rtl',
+                style: { textAlign: isEnglishMode ? 'left' : 'right', padding: '12px 16px' }
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
-                  borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
+                  backgroundColor: isEnglishMode ? '#FFF7ED' : '#374151',
+                  borderColor: isEnglishMode ? '#F97316' : '#4B5563',
                   color: isEnglishMode ? '#9A3412' : '#F9FAFB',
                   '&:hover': {
-                    borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
+                    borderColor: isEnglishMode ? '#EA580C' : '#6B7280'
                   },
                   '&.Mui-focused': {
-                    borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
-                    boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                    borderColor: isEnglishMode ? '#F97316' : '#3B82F6',
+                    boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
                   }
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
+                  color: isEnglishMode ? '#C2410C' : '#9CA3AF'
                 }
               }}
               InputProps={{
@@ -2069,7 +1983,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           ({processed.romanization})
                         </span>
                       )}
-                      
+
                       {/* Did you mean suggestions inline */}
                       {processed?.romanizedSuggestions && processed.romanizedSuggestions.length > 1 && (
                         <>
@@ -2093,13 +2007,12 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                                 <span className="text-xs opacity-70">({suggestion.romanized})</span>
                               )}
                               {suggestion.pos && (
-                                <span className={`text-xs px-1 rounded ${
-                                  suggestion.pos.includes('v.') || suggestion.pos.includes('verb') 
-                                    ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                    : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
-                                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                                      : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300'
-                                }`}>
+                                <span className={`text-xs px-1 rounded ${suggestion.pos.includes('v.') || suggestion.pos.includes('verb')
+                                  ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                  : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
+                                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                    : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300'
+                                  }`}>
                                   {suggestion.pos.includes('comp') ? 'compound' : suggestion.pos.split('.')[0]}
                                 </span>
                               )}
@@ -2681,30 +2594,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               </div>
 
               {/* Anki Export Button */}
-              {isAnkiMode && results.length > 0 && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-green-800 dark:text-green-300">
-                        📚 Export to Anki
-                      </h3>
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        Create flashcards with audio for {results.length} results
-                      </p>
-                    </div>
-                    <button
-                      onClick={exportToAnki}
-                      disabled={isExportingAnki || results.length === 0}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${isExportingAnki
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                    >
-                      {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
-                    </button>
-                  </div>
-                </div>
-              )}
+
 
               {/* Dictionary Term Detection Banner */}
               <DictionaryTermDetection
@@ -3235,365 +3125,362 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           </div>
                         </div>
 
-                        {/* Enhanced Word Frequency Table */}
-                        <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
-                          <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
-                                <span className="text-white text-lg">📊</span>
-                              </div>
-                              <div>
-                                <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                                  Most Frequent Words
-                                </h4>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">
-                                  Ranked by occurrence across all video transcripts
-                                </p>
-                              </div>
-                            </div>
+                      {/* Enhanced Word Frequency Table */}
+                      <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
+                      <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
+                            <span className="text-white text-lg">📊</span>
                           </div>
-                          <div className="max-h-96 overflow-y-auto">
-                            <table className="w-full">
-                              <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
-                                <tr>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    #
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Pashto Word
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Count
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Usage %
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
-                                {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
-                                  const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
-                                  const isTopTen = index < 10;
-                                  return (
-                                    <tr
-                                      key={item.word}
-                                      className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
-                                        }`}
-                                    >
-                                      <td className="px-6 py-4">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopTen
-                                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
-                                          : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
-                                          }`}>
-                                          {index + 1}
-                                        </div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
-                                          {item.word}
-                                        </span>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
-                                          {item.frequency.toLocaleString()}
-                                        </span>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                          <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
-                                            <div
-                                              className={`h-full transition-all duration-500 ${isTopTen
-                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
-                                                }`}
-                                              style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
-                                            ></div>
-                                          </div>
-                                          <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                            {percentage}%
-                                          </span>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
+                          <div>
+                            <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                              Most Frequent Words
+                            </h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              Ranked by occurrence across all video transcripts
+                            </p>
                           </div>
                         </div>
-
-                        {/* Enhanced Transcript Categorization */}
-                        {wordFrequency.categorization && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {Object.entries(wordFrequency.categorization).map(([category, items]) => {
-                              const itemCount = (items as any[]).length;
-                              const categoryColors = {
-                                pashto: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/50 border-emerald-200 dark:border-emerald-800',
-                                mixed: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/50 border-amber-200 dark:border-amber-800',
-                                'non-pashto': 'from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/50 border-red-200 dark:border-red-800',
-                                music: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/50 border-purple-200 dark:border-purple-800',
-                                empty: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/50 border-slate-200 dark:border-slate-800'
-                              };
-
-                              const categoryIcons = {
-                                pashto: '🗣️',
-                                mixed: '🔄',
-                                'non-pashto': '🌐',
-                                music: '🎵',
-                                empty: '📭'
-                              };
-
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        <table className="w-full">
+                          <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
+                            <tr>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                #
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                Pashto Word
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                Count
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                Usage %
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+                            {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
+                              const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
+                              const isTopTen = index < 10;
                               return (
-                                <div key={category} className={`group relative bg-gradient-to-br ${categoryColors[category as keyof typeof categoryColors]} rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105`}>
-                                  <div className="p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-xl shadow-lg ${category === 'pashto' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
-                                          category === 'mixed' ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
-                                            category === 'non-pashto' ? 'bg-gradient-to-br from-red-500 to-rose-600' :
-                                              category === 'music' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
-                                                'bg-gradient-to-br from-slate-500 to-gray-600'
-                                          }`}>
-                                          <span className="text-white text-lg">{categoryIcons[category as keyof typeof categoryIcons]}</span>
-                                        </div>
-                                        <div>
-                                          <h5 className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">
-                                            {category.replace('-', ' ')}
-                                          </h5>
-                                          <div className="text-xs text-slate-600 dark:text-slate-400">
-                                            {itemCount} transcript{itemCount !== 1 ? 's' : ''}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${category === 'pashto' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
-                                        category === 'mixed' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                                          category === 'non-pashto' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
-                                            category === 'music' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
-                                              'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
-                                        }`}>
-                                        {itemCount}
-                                      </div>
+                                <tr
+                                  key={item.word}
+                                  className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
+                                    }`}
+                                >
+                                  <td className="px-6 py-4">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopTen
+                                      ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
+                                      : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                                      }`}>
+                                      {index + 1}
                                     </div>
-
-                                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                                      {(items as any[]).slice(0, 3).map((item: any, index: number) => (
-                                        <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
-                                          <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                                            {item.verseReference}
-                                          </div>
-                                          <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
-                                            {item.transcript.substring(0, 40)}...
-                                          </div>
-                                        </div>
-                                      ))}
-                                      {(items as any[]).length > 3 && (
-                                        <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
-                                          +{(items as any[]).length - 3} more...
-                                        </div>
-                                      )}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
+                                      {item.word}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                      {item.frequency.toLocaleString()}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
+                                        <div
+                                          className={`h-full transition-all duration-500 ${isTopTen
+                                            ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                                            : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
+                                            }`}
+                                          style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                        {percentage}%
+                                      </span>
                                     </div>
-                                  </div>
-                                </div>
+                                  </td>
+                                </tr>
                               );
                             })}
-                          </div>
-                        )}
+                          </tbody>
+                        </table>
                       </div>
-                    ) : (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                        <p className="text-yellow-800 dark:text-yellow-300">
-                          No word frequency data available. Please process video transcripts first.
-                        </p>
+                    </div>
+
+                    {/* Enhanced Transcript Categorization */}
+                    {wordFrequency.categorization && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Object.entries(wordFrequency.categorization).map(([category, items]) => {
+                          const itemCount = (items as any[]).length;
+                          const categoryColors = {
+                            pashto: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/50 border-emerald-200 dark:border-emerald-800',
+                            mixed: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/50 border-amber-200 dark:border-amber-800',
+                            'non-pashto': 'from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/50 border-red-200 dark:border-red-800',
+                            music: 'from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/50 border-purple-200 dark:border-purple-800',
+                            empty: 'from-slate-50 to-gray-100 dark:from-slate-900/30 dark:to-gray-900/50 border-slate-200 dark:border-slate-800'
+                          };
+
+                          const categoryIcons = {
+                            pashto: '🗣️',
+                            mixed: '🔄',
+                            'non-pashto': '🌐',
+                            music: '🎵',
+                            empty: '📭'
+                          };
+
+                          return (
+                            <div key={category} className={`group relative bg-gradient-to-br ${categoryColors[category as keyof typeof categoryColors]} rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105`}>
+                              <div className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-xl shadow-lg ${category === 'pashto' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+                                      category === 'mixed' ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
+                                        category === 'non-pashto' ? 'bg-gradient-to-br from-red-500 to-rose-600' :
+                                          category === 'music' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                                            'bg-gradient-to-br from-slate-500 to-gray-600'
+                                      }`}>
+                                      <span className="text-white text-lg">{categoryIcons[category as keyof typeof categoryIcons]}</span>
+                                    </div>
+                                    <div>
+                                      <h5 className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">
+                                        {category.replace('-', ' ')}
+                                      </h5>
+                                      <div className="text-xs text-slate-600 dark:text-slate-400">
+                                        {itemCount} transcript{itemCount !== 1 ? 's' : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${category === 'pashto' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
+                                    category === 'mixed' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                      category === 'non-pashto' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
+                                        category === 'music' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                          'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                                    }`}>
+                                    {itemCount}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2 max-h-32 overflow-y-auto">
+                                  {(items as any[]).slice(0, 3).map((item: any, index: number) => (
+                                    <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
+                                      <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                                        {item.verseReference}
+                                      </div>
+                                      <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
+                                        {item.transcript.substring(0, 40)}...
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {(items as any[]).length > 3 && (
+                                    <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
+                                      +{(items as any[]).length - 3} more...
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                </>
+                  ) : (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <p className="text-yellow-800 dark:text-yellow-300">
+                      No word frequency data available. Please process video transcripts first.
+                    </p>
+                  </div>
+                    )}
+                </div>
+            </>
               )}
 
-              {activeVideosTab === 'transcripts' && (
-                <>
-                  {/* Enhanced Transcripts Section */}
-                  <div className="space-y-6">
-                    <div className="text-center mb-8">
-                      <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-purple-800 dark:from-purple-300 dark:via-pink-300 dark:to-purple-400 bg-clip-text text-transparent mb-3">
-                        🔍 Enhanced Transcript Search
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-400">
-                        Search through video transcripts with intelligent matching
-                      </p>
-                    </div>
+            {activeVideosTab === 'transcripts' && (
+              <>
+                {/* Enhanced Transcripts Section */}
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-purple-800 dark:from-purple-300 dark:via-pink-300 dark:to-purple-400 bg-clip-text text-transparent mb-3">
+                      🔍 Enhanced Transcript Search
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Search through video transcripts with intelligent matching
+                    </p>
+                  </div>
 
-                    {/* Enhanced Search Input */}
-                    <div className="relative max-w-2xl mx-auto">
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <span className="text-slate-400 dark:text-slate-500 text-lg">🔍</span>
-                        </div>
-                        <input
-                          type="text"
-                          value={transcriptSearchQuery}
-                          onChange={handleTranscriptSearchChange}
-                          placeholder="Enter Pashto text to search in video transcripts..."
-                          className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none shadow-sm hover:shadow-md transition-all duration-200"
-                        />
-                        {loadingTranscripts && (
-                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
-                          </div>
-                        )}
+                  {/* Enhanced Search Input */}
+                  <div className="relative max-w-2xl mx-auto">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-400 dark:text-slate-500 text-lg">🔍</span>
                       </div>
-
-                      {transcriptSearchQuery && (
-                        <div className="mt-3 text-center">
-                          <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-700 dark:text-purple-300">
-                            <span>🔍</span>
-                            Searching for: <span className="font-semibold">"{transcriptSearchQuery}"</span>
-                          </span>
+                      <input
+                        type="text"
+                        value={transcriptSearchQuery}
+                        onChange={handleTranscriptSearchChange}
+                        placeholder="Enter Pashto text to search in video transcripts..."
+                        className="w-full pl-12 pr-12 py-4 text-lg border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none shadow-sm hover:shadow-md transition-all duration-200"
+                      />
+                      {loadingTranscripts && (
+                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
                         </div>
                       )}
                     </div>
 
-                    {transcriptResults.length > 0 ? (
-                      <div className="space-y-6">
-                        {/* Enhanced Results Header */}
-                        <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm">
-                          <div className="flex items-center justify-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
-                              <span className="text-white text-xl">✅</span>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
-                                Found {transcriptResults.length} matching transcript{transcriptResults.length !== 1 ? 's' : ''}
-                              </p>
-                              <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                                Results are ranked by relevance and segment order
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Enhanced Transcript Results */}
-                        <div className="grid gap-4">
-                          {transcriptResults.map((result: any, index: number) => (
-                            <div
-                              key={index}
-                              className="group relative bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-                            >
-                              {/* Result Header */}
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 dark:from-slate-400 dark:to-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                    {index + 1}
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">
-                                      {result.videoTitle || 'Unknown Video'}
-                                    </h4>
-                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
-                                        {result.segmentNumber ? `Segment ${result.segmentNumber}` : 'Segment'}
-                                      </span>
-                                      {result.sentenceNumber && (
-                                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-full">
-                                          Sentence {result.sentenceNumber}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                                    Match #{index + 1}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Transcript Content */}
-                              <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 max-h-40 overflow-y-auto">
-                                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
-                                  {result.transcript}
-                                </p>
-                              </div>
-
-                              {/* Highlighted Search Terms */}
-                              {transcriptSearchQuery && (
-                                <div className="mt-3 flex flex-wrap gap-1">
-                                  {transcriptSearchQuery.split(' ').map((term: string, termIndex: number) => (
-                                    <span
-                                      key={termIndex}
-                                      className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-200/50 dark:border-purple-800/50"
-                                    >
-                                      "{term}"
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : transcriptSearchQuery && !loadingTranscripts ? (
-                      <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl p-8 text-center shadow-sm">
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-                            <span className="text-white text-2xl">🔍</span>
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-bold text-amber-800 dark:text-amber-200">
-                              No Results Found
-                            </h4>
-                            <p className="text-amber-600 dark:text-amber-400">
-                              Try adjusting your search terms or check spelling
-                            </p>
-                          </div>
-                        </div>
-                        <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 border border-amber-200/30 dark:border-amber-800/30">
-                          <p className="text-amber-700 dark:text-amber-300 font-medium">
-                            Searched for: <span className="font-bold">"{transcriptSearchQuery}"</span>
-                          </p>
-                          <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                            • Try using different Pashto words or phrases
-                            <br />
-                            • Check for typos in your search query
-                            <br />
-                            • Some transcripts may contain music or unclear audio
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-12 text-center shadow-sm">
-                        <div className="max-w-md mx-auto">
-                          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                            <span className="text-white text-3xl">🔍</span>
-                          </div>
-                          <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">
-                            Ready to Search
-                          </h4>
-                          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                            Enter Pashto text above to discover relevant content across all video transcripts. Our intelligent search will find matching segments and sentences.
-                          </p>
-                          <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm">
-                              Pashto text search
-                            </span>
-                            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">
-                              Real-time results
-                            </span>
-                            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm">
-                              Smart matching
-                            </span>
-                          </div>
-                        </div>
+                    {transcriptSearchQuery && (
+                      <div className="mt-3 text-center">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-700 dark:text-purple-300">
+                          <span>🔍</span>
+                          Searching for: <span className="font-semibold">"{transcriptSearchQuery}"</span>
+                        </span>
                       </div>
                     )}
                   </div>
-                </>
-              )}
-            </div>
+
+                  {transcriptResults.length > 0 ? (
+                    <div className="space-y-6">
+                      {/* Enhanced Results Header */}
+                      <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/30 dark:to-teal-900/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                            <span className="text-white text-xl">✅</span>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
+                              Found {transcriptResults.length} matching transcript{transcriptResults.length !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                              Results are ranked by relevance and segment order
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Transcript Results */}
+                      <div className="grid gap-4">
+                        {transcriptResults.map((result: any, index: number) => (
+                          <div
+                            key={index}
+                            className="group relative bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                          >
+                            {/* Result Header */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 dark:from-slate-400 dark:to-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-slate-800 dark:text-slate-200">
+                                    {result.videoTitle || 'Unknown Video'}
+                                  </h4>
+                                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
+                                      {result.segmentNumber ? `Segment ${result.segmentNumber}` : 'Segment'}
+                                    </span>
+                                    {result.sentenceNumber && (
+                                      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-full">
+                                        Sentence {result.sentenceNumber}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  Match #{index + 1}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Transcript Content */}
+                            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 p-4 max-h-40 overflow-y-auto">
+                              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                                {result.transcript}
+                              </p>
+                            </div>
+
+                            {/* Highlighted Search Terms */}
+                            {transcriptSearchQuery && (
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {transcriptSearchQuery.split(' ').map((term: string, termIndex: number) => (
+                                  <span
+                                    key={termIndex}
+                                    className="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-200/50 dark:border-purple-800/50"
+                                  >
+                                    "{term}"
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : transcriptSearchQuery && !loadingTranscripts ? (
+                    <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl p-8 text-center shadow-sm">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                          <span className="text-white text-2xl">🔍</span>
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold text-amber-800 dark:text-amber-200">
+                            No Results Found
+                          </h4>
+                          <p className="text-amber-600 dark:text-amber-400">
+                            Try adjusting your search terms or check spelling
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 border border-amber-200/30 dark:border-amber-800/30">
+                        <p className="text-amber-700 dark:text-amber-300 font-medium">
+                          Searched for: <span className="font-bold">"{transcriptSearchQuery}"</span>
+                        </p>
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                          • Try using different Pashto words or phrases
+                          <br />
+                          • Check for typos in your search query
+                          <br />
+                          • Some transcripts may contain music or unclear audio
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-12 text-center shadow-sm">
+                      <div className="max-w-md mx-auto">
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                          <span className="text-white text-3xl">🔍</span>
+                        </div>
+                        <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">
+                          Ready to Search
+                        </h4>
+                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                          Enter Pashto text above to discover relevant content across all video transcripts. Our intelligent search will find matching segments and sentences.
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                            Pashto text search
+                          </span>
+                          <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">
+                            Real-time results
+                          </span>
+                          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm">
+                            Smart matching
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
-
       {/* Poems Tab */}
       {activeMainTab === 'poems' && (
         <div className="max-w-4xl mx-auto">

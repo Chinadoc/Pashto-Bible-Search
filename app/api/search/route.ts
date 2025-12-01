@@ -13,8 +13,8 @@ import type { VerbFilterAspect, VerbFilterMood, VerbFilterPerson, VerbFilterStat
 import { filterVerbVariants } from '@/app/utils/verb-filters';
 
 // Cloudflare Worker URL with fallback
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 
-  process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ||
+  process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL ||
   'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 // Romanized to Pashto conversion utility
@@ -501,18 +501,18 @@ function generateCacheKey(query: string, scope: string, includeRelated: boolean,
 // Enhanced cache key that includes more context for better hit rates
 // IMPORTANT: Include morphological filters to prevent cache collision
 function generateEnhancedCacheKey(
-  query: string, 
-  scope: string, 
-  includeRelated: boolean, 
-  enableFuzzy: boolean, 
-  searchLanguage: string, 
+  query: string,
+  scope: string,
+  includeRelated: boolean,
+  enableFuzzy: boolean,
+  searchLanguage: string,
   translation?: string,
   morphologicalFilters?: any
 ): string {
   const normalizedQuery = query.trim().toLowerCase();
   const translationKey = translation || 'afghan2023';
   // Add morphological filter hash to differentiate filtered searches
-  const filterKey = morphologicalFilters ? 
+  const filterKey = morphologicalFilters ?
     JSON.stringify(morphologicalFilters).replace(/[{}"\[\]]/g, '').slice(0, 50) : '';
   return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}:${translationKey}:${filterKey}`;
 }
@@ -1003,7 +1003,7 @@ export async function POST(request: NextRequest) {
           if (candidates && candidates.length > 0) {
             // Score and sort ALL candidates to build suggestions
             const scoredCandidates: Array<{ entry: any; score: number }> = [];
-            
+
             for (const candidate of candidates) {
               if (!candidate?.pashto) continue;
               const candidateRoman = typeof candidate.romanized === 'string' ? normalizeRomanizedInput(candidate.romanized) : '';
@@ -1014,28 +1014,28 @@ export async function POST(request: NextRequest) {
                 .join(' ');
 
               let score = freq > 0 ? Math.log10(freq + 1) * 10 : 0;
-              
+
               // EXACT romanization match gets MUCH higher priority
               if (candidateRoman === normalizedRoman) score += 100;
               else if (candidateG === normalizedRoman) score += 80;
               // Penalize if romanization is much longer than query (e.g., "dawul" shouldn't match "warkawul")
               else if (candidateRoman.length > normalizedRoman.length + 3) score -= 50;
-              
+
               // Mild POS bonus
               if (posField.includes('noun')) score += 5;
               else if (posField.includes('verb')) score += 3;
-              
+
               // Prefer shorter Pashto words (more likely to be base forms)
               if (typeof candidate.pashto === 'string' && candidate.pashto.length) {
                 score += Math.max(0, 8 - candidate.pashto.length);
               }
-              
+
               scoredCandidates.push({ entry: candidate, score });
             }
-            
+
             // Sort by score descending
             scoredCandidates.sort((a, b) => b.score - a.score);
-            
+
             // Build suggestions from top candidates (up to 5)
             romanizedSuggestions = scoredCandidates.slice(0, 5).map(({ entry }) => ({
               pashto: entry.pashto,
@@ -1044,7 +1044,7 @@ export async function POST(request: NextRequest) {
               english: entry.e || entry.english || '',
               isCompound: entry.pos?.includes('comp') || false,
             }));
-            
+
             // Best match from dictionary
             const bestEntry = scoredCandidates[0].entry;
             const bestScore = scoredCandidates[0].score;
@@ -1107,6 +1107,60 @@ export async function POST(request: NextRequest) {
     let englishSearchTerms: string[] = [];
     let englishMatches: Array<{ english: string; pashto: string; romanized?: string; pos?: string }> = [];
 
+    // English Reverse Search Logic
+    if (searchLanguage === 'english') {
+      console.log(`🔍 Performing English reverse search for "${originalQuery}"`);
+      try {
+        const { getD1Database, queryD1 } = await import('@/utils/d1');
+        const db = getD1Database();
+
+        if (db) {
+          // 1. Query word_frequencies for English translation match
+          const freqMatches = await queryD1<{ pashto_word: string, english_translation: string }>(
+            db,
+            `SELECT pashto_word, english_translation FROM word_frequencies WHERE english_translation LIKE ? LIMIT 20`,
+            [`%${originalQuery}%`]
+          );
+
+          // 2. Query dictionary for definition match
+          const dictMatches = await queryD1<{ word: string, definition: string }>(
+            db,
+            `SELECT word, definition FROM dictionary WHERE definition LIKE ? LIMIT 20`,
+            [`%${originalQuery}%`]
+          );
+
+          const terms = new Set<string>();
+          const matches: typeof englishMatches = [];
+
+          freqMatches.forEach(m => {
+            if (m.pashto_word) {
+              terms.add(m.pashto_word);
+              matches.push({
+                english: m.english_translation,
+                pashto: m.pashto_word
+              });
+            }
+          });
+
+          dictMatches.forEach(m => {
+            if (m.word) {
+              terms.add(m.word);
+              matches.push({
+                english: m.definition,
+                pashto: m.word
+              });
+            }
+          });
+
+          englishSearchTerms = Array.from(terms);
+          englishMatches = matches;
+          console.log(`✅ Found ${englishSearchTerms.length} Pashto matches for English query:`, englishSearchTerms);
+        }
+      } catch (err) {
+        console.error('English search failed:', err);
+      }
+    }
+
     // ============================================================================
     // TRY CLOUDFLARE D1 SEARCH FIRST (NEW - prioritized for R2 audio support)
     // ============================================================================
@@ -1121,6 +1175,42 @@ export async function POST(request: NextRequest) {
     };
     console.log(`🔍 CONDITIONS:`, d1Conditions);
 
+    // Execute English Search if terms found
+    if (searchLanguage === 'english' && englishSearchTerms.length > 0) {
+      console.log(`🔍 Executing multi-term search for English matches:`, englishSearchTerms);
+      const results = await searchWithMultipleTerms(englishSearchTerms, scope);
+
+      const processed: Processed = {
+        original: originalQuery,
+        normalized: originalQuery,
+        variants: englishSearchTerms,
+        searchType: 'enhanced',
+        language: 'english',
+        englishMatches: englishMatches.map(m => ({
+          english: m.english,
+          pashto: m.pashto,
+          forms: [m.pashto]
+        }))
+      };
+
+      const apiResults = transformResults(results);
+
+      // Cache the result
+      const cacheKey = generateEnhancedCacheKey(originalQuery, body.scope || 'all', includeRelated, enableFuzzy, 'english');
+      setCachedSearch(cacheKey, apiResults, null, processed);
+
+      return NextResponse.json({
+        results: apiResults,
+        relatedForms: null,
+        processed,
+        metadata: {
+          count: apiResults.length,
+          executionTimeMs: Date.now() - startedAt,
+          cached: false
+        }
+      });
+    }
+
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
 
@@ -1130,12 +1220,12 @@ export async function POST(request: NextRequest) {
       // ========================================================================
       let relatedFormsForD1: string[] = [];
       let relatedFormsData: any = null;
-      
+
       // Start verb forms fetch in parallel (non-blocking) if includeRelated
-      const verbFormsPromise = includeRelated 
+      const verbFormsPromise = includeRelated
         ? fetchVerbFormsFromD1(searchQuery, { cap: 100 }).catch(() => [])  // Reduced cap for speed
         : Promise.resolve([]);
-      
+
       // Also fetch word info to get correct POS (noun vs verb)
       let wordPosGuess: 'verb' | 'noun' | 'adjective' | 'other' = 'other';
       try {
@@ -1188,10 +1278,10 @@ export async function POST(request: NextRequest) {
           // Capture sample labels for debugging
           const sampleLabels = allVariants.slice(0, 10).map(v => `${v.form}:"${v.label}"`);
           console.log(`🔍 [MORPHOLOGICAL FILTERING] Sample variant labels:`, sampleLabels);
-          
+
           // Also store for response debugging
           const debugLabels = allVariants.slice(0, 20).map(v => ({ form: v.form, label: v.label }));
-          
+
           morphologicalVariants = allVariants
             .filter(variant => {
               const label = variant.label.toLowerCase();
@@ -1269,17 +1359,17 @@ export async function POST(request: NextRequest) {
 
       console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
       console.log(`🔍 Morphological variants:`, morphologicalVariants.length > 0 ? morphologicalVariants.slice(0, 10) : 'none');
-      
+
       // Check if morphological filters were requested (even if results are empty)
       const hasMorphFilters = morphologicalFilters && Object.keys(morphologicalFilters).length > 0;
-      
+
       // Await verb forms if includeRelated AND no morphological filters were applied
       // If morphological filters ARE applied, we use only those filtered forms (even if empty = no results)
       if (includeRelated && !variants?.length && !morphologicalVariants.length && !hasMorphFilters) {
         const allForms = new Set<string>([searchQuery]);
         const verbs: any[] = [];
         const nouns: any[] = [];
-        
+
         // For nouns, fetch noun inflections from D1
         if (wordPosGuess === 'noun') {
           try {
@@ -1296,7 +1386,7 @@ export async function POST(request: NextRequest) {
                   label: 'noun form',
                   pos: 'noun',
                 });
-                
+
                 // Fetch all inflections for this noun
                 const inflectionsResponse = await fetch(
                   `${WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(nounData.base_word)}`
@@ -1320,7 +1410,7 @@ export async function POST(request: NextRequest) {
             console.warn('Failed to fetch noun inflections:', e);
           }
         }
-        
+
         // For verbs, fetch verb conjugations
         if (wordPosGuess === 'verb' || wordPosGuess === 'other') {
           const verbForms = await verbFormsPromise;
@@ -1339,7 +1429,7 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-        
+
         relatedFormsForD1 = Array.from(allForms);
         relatedFormsData = {
           baseForm: searchQuery,
@@ -1359,7 +1449,7 @@ export async function POST(request: NextRequest) {
         // Include debug info to help diagnose filtering issues
         const allVariantsForDebug = await generateVerbVariants(searchQuery, { cap: 30 }).catch(() => []);
         const debugLabels = allVariantsForDebug.slice(0, 20).map((v: any) => ({ form: v.form, label: v.label }));
-        
+
         return NextResponse.json({
           results: [],
           relatedForms: null,
@@ -1381,23 +1471,23 @@ export async function POST(request: NextRequest) {
           message: 'No verb forms match the selected filter criteria',
         });
       }
-      
+
       console.log(`🔍 Related forms for D1:`, relatedFormsForD1.length > 0 ? relatedFormsForD1.slice(0, 10) : 'none');
-      
+
       try {
         // Map scope to testament filter
         const testamentFilter = scope === 'ot' ? 'OT' : scope === 'nt' ? 'NT' : undefined;
 
         // Priority: morphologicalVariants > variants from request > relatedFormsForD1 > single query
         let d1Verses: any[] = [];
-        const searchForms = morphologicalVariants.length > 0 
-          ? morphologicalVariants 
-          : (variants && variants.length > 0 
-            ? variants 
+        const searchForms = morphologicalVariants.length > 0
+          ? morphologicalVariants
+          : (variants && variants.length > 0
+            ? variants
             : (relatedFormsForD1.length > 0 ? relatedFormsForD1 : null));
 
         if (searchForms && searchForms.length > 0) {
-          const formSource = morphologicalVariants.length > 0 ? 'morphological' : 
+          const formSource = morphologicalVariants.length > 0 ? 'morphological' :
             (variants && variants.length > 0 ? 'request variants' : 'related forms');
           console.log(`🔍 [D1 SEARCH] Using searchVersesByForms with ${searchForms.length} forms (${formSource}):`, searchForms.slice(0, 10));
           d1Verses = await searchVersesByForms(searchForms, {
@@ -1446,7 +1536,7 @@ export async function POST(request: NextRequest) {
           // Use the relatedFormsData we already fetched earlier (if available)
           // Only build inline related forms if we don't already have them
           let relatedFormTerms: string[] | null = relatedFormsForD1.length > 0 ? relatedFormsForD1 : null;
-          
+
           if (!relatedFormsData && includeRelated && searchLanguage === 'pashto') {
             try {
               console.log(`🔍 [D1 FAST PATH] Building inline related forms for "${searchQuery}" (fallback)`);
@@ -1463,7 +1553,7 @@ export async function POST(request: NextRequest) {
               console.warn('Failed to build inline related forms for D1 search:', error);
             }
           }
-          
+
           // Apply verb filters server-side for related forms
           if (relatedFormsData?.forms?.verbs && !isDefaultVerbFilter(sanitizedVerbFilters)) {
             const filteredVerbs = filterVerbVariants(relatedFormsData.forms.verbs, sanitizedVerbFilters);
@@ -1474,7 +1564,7 @@ export async function POST(request: NextRequest) {
               relatedFormTerms = relatedFormTerms.filter(term => allowedForms.has(term) || term === searchQuery);
             }
           }
-          
+
           console.log(`✅ [D1 FAST PATH] Related forms for response:`, {
             total: relatedFormsData?.total || 0,
             verbsCount: relatedFormsData?.forms?.verbs?.length || 0,
@@ -1484,12 +1574,12 @@ export async function POST(request: NextRequest) {
 
           // Determine what was actually searched
           const actualSearchForms = searchForms || [searchQuery];
-          
+
           // Debug: track which path was used
           const filteringPath = morphologicalVariants.length > 0 ? 'morphological' :
-            (variants && variants.length > 0 ? 'variants' : 
-             (relatedFormsForD1.length > 0 ? 'relatedForms' : 'fallback'));
-          
+            (variants && variants.length > 0 ? 'variants' :
+              (relatedFormsForD1.length > 0 ? 'relatedForms' : 'fallback'));
+
           console.log(`🔍 [D1 FAST PATH] Final search summary:`, {
             providedVariants: variants?.length || 0,
             relatedFormsForD1: relatedFormsForD1?.length || 0,
@@ -1533,7 +1623,7 @@ export async function POST(request: NextRequest) {
         (debugInfo as any).d1Error = d1Error instanceof Error ? d1Error.message : String(d1Error);
       }
     }
-    
+
     // Add d1 conditions to debug info for response
     (debugInfo as any).d1Conditions = {
       hasWorkerUrl: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
@@ -1668,12 +1758,12 @@ export async function POST(request: NextRequest) {
           const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/related_forms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                form: convertedQuery,
-                translation: translation, // Include translation for demarcation
-                verbFilters: sanitizedVerbFilters,
-              }),
-            });
+            body: JSON.stringify({
+              form: convertedQuery,
+              translation: translation, // Include translation for demarcation
+              verbFilters: sanitizedVerbFilters,
+            }),
+          });
 
           if (relatedResponse.ok) {
             const relatedFormsText = await relatedResponse.text();

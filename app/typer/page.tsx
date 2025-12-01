@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PashtoTyper from '@/components/PashtoTyper';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -14,11 +15,20 @@ interface SRSItem {
 
 export default function TyperPage() {
     const { data: session } = useSession();
+    const searchParams = useSearchParams();
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
     const [srsItems, setSrsItems] = useState<SRSItem[]>([]);
     const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
     const [verseData, setVerseData] = useState<any>(null);
     const [loadingData, setLoadingData] = useState(false);
+
+    // Load verse from URL parameter on mount
+    useEffect(() => {
+        const refFromUrl = searchParams.get('ref');
+        if (refFromUrl && refFromUrl !== selectedVerse) {
+            loadVerse(refFromUrl);
+        }
+    }, [searchParams]);
 
     // Fetch SRS items
     useEffect(() => {
