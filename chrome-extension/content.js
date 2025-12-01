@@ -12,7 +12,7 @@
   const API_URL = 'https://pashto-bible-search.vercel.app/api/word-analysis';
   const PASHTO_REGEX = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+/;
   
-  // State
+  // State (session-only, no persistence)
   let isEnabled = false;
   let isCompoundMode = false;
   let currentPopup = null;
@@ -20,6 +20,7 @@
   let modeIndicator = null;
   let cache = new Map();
   let debounceTimer = null;
+  let hasAskedForPermission = false;
   
   // Create mode indicator
   function createModeIndicator() {
@@ -402,14 +403,12 @@
       return true; // Keep channel open for async response
     });
     
-    // Check initial state
-    chrome.storage.sync.get(['enabled', 'compoundMode'], (result) => {
-      isEnabled = result.enabled ?? false;
-      isCompoundMode = result.compoundMode ?? false;
-      updateModeIndicator();
-    });
+    // Extension starts disabled - user can toggle with Alt+P
+    isEnabled = false;
+    isCompoundMode = false;
+    updateModeIndicator();
     
-    console.log('Pashto Dictionary Extension loaded');
+    console.log('Pashto Dictionary Extension loaded - Press Alt+P to enable');
   }
   
   // Start when DOM is ready
