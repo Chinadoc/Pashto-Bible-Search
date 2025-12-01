@@ -36,32 +36,40 @@ export default function FilterPanel({
     ? (filters.pos.selected[0] as 'verb' | 'noun' | 'adjective')
     : 'auto';
     
-  // Determine the lemma for verb facet counts
-  const verbLemma = relatedForms?.root || searchQuery;
+  // Determine the lemma for verb/noun facet counts
+  const lemma = relatedForms?.root || searchQuery;
 
   if (!includeRelated) {
     return null;
   }
 
-  // Determine which POS filters to show based on selectedPartOfSpeech or auto-detection
-  const showVerbFilters = selectedPartOfSpeech === 'verb' || 
-    (selectedPartOfSpeech === 'auto' && (
-      relatedForms?.posGuess === 'verb' ||
-      (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0)
-    ));
+  // Helper to check if there are forms of a given type
+  const hasNouns = (relatedForms?.nouns?.length ?? 0) > 0 || 
+                   (relatedForms?.forms?.nouns?.length ?? 0) > 0;
+  const hasVerbs = (relatedForms?.verbs?.length ?? 0) > 0 || 
+                   (relatedForms?.forms?.verbs?.length ?? 0) > 0;
+  const hasAdjectives = (relatedForms?.adjectives?.length ?? 0) > 0 || 
+                        (relatedForms?.forms?.adjectives?.length ?? 0) > 0 ||
+                        (relatedForms?.other?.length ?? 0) > 0 ||
+                        (relatedForms?.forms?.other?.length ?? 0) > 0;
+
+  // Priority: posGuess takes precedence, then fallback to what forms exist
+  // IMPORTANT: Noun takes priority over verb when posGuess is 'noun'
+  const posGuess = relatedForms?.posGuess;
 
   const showNounFilters = selectedPartOfSpeech === 'noun' || 
+    (selectedPartOfSpeech === 'auto' && posGuess === 'noun');
+
+  const showVerbFilters = selectedPartOfSpeech === 'verb' || 
     (selectedPartOfSpeech === 'auto' && (
-      relatedForms?.posGuess === 'noun' && 
-      relatedForms.nouns && 
-      relatedForms.nouns.length > 0
+      posGuess === 'verb' ||
+      // Only show verb filters if no posGuess AND there are verbs but no nouns
+      (!posGuess && hasVerbs && !hasNouns)
     ));
 
   const showAdjectiveFilters = selectedPartOfSpeech === 'adjective' || 
     (selectedPartOfSpeech === 'auto' && (
-      (relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && 
-      relatedForms.other && 
-      relatedForms.other.length > 0
+      posGuess === 'adjective' || posGuess === 'adj'
     ));
 
   return (
@@ -79,16 +87,24 @@ export default function FilterPanel({
           onApplyFilters={onApplyFilters}
           activeVariantForms={activeVariantForms}
           onPickForm={onPickForm}
-          lemma={verbLemma}
+          lemma={lemma}
         />
       )}
 
       {showNounFilters && (
-        <NounFilterDrawer onApplyFilters={onApplyFilters} />
+        <NounFilterDrawer 
+          onApplyFilters={onApplyFilters} 
+          lemma={lemma}
+          nounForms={relatedForms?.nouns || relatedForms?.forms?.nouns || []}
+        />
       )}
 
       {showAdjectiveFilters && (
-        <AdjectiveFilterDrawer onApplyFilters={onApplyFilters} />
+        <AdjectiveFilterDrawer 
+          onApplyFilters={onApplyFilters} 
+          lemma={lemma}
+          adjectiveForms={relatedForms?.adjectives || relatedForms?.forms?.adjectives || relatedForms?.other || relatedForms?.forms?.other || []}
+        />
       )}
     </div>
   );
