@@ -336,8 +336,8 @@ export default function PashtoTyper({ data, onComplete }: Props) {
         // Determine the current line index based on the global word index
         let currentLineIdx = 0;
         let wordsCount = 0;
-        for (let i = 0; i < prayerData.length; i++) {
-            wordsCount += prayerData[i].words.length;
+        for (let i = 0; i < activeData.length; i++) {
+            wordsCount += activeData[i].words.length;
             if (index < wordsCount) {
                 currentLineIdx = i;
                 break;
@@ -348,9 +348,14 @@ export default function PashtoTyper({ data, onComplete }: Props) {
 
         // Check if we just completed a verse
         let wordsUpToCurrentVerseEnd = 0;
-        for (let i = 0; i < lineToVerse.length; i++) {
-            wordsUpToCurrentVerseEnd += prayerData[i].words.length;
-            if (lineToVerse[i] === currentVerse && (i === lineToVerse.length - 1 || lineToVerse[i + 1] !== currentVerse)) {
+        for (let i = 0; i < activeData.length; i++) {
+            wordsUpToCurrentVerseEnd += activeData[i].words.length;
+
+            // Safe access to lineToVerse
+            const thisLineVerse = i < lineToVerse.length ? lineToVerse[i] : 0;
+            const nextLineVerse = (i + 1) < lineToVerse.length ? lineToVerse[i + 1] : 0;
+
+            if (thisLineVerse === currentVerse && (i === activeData.length - 1 || nextLineVerse !== currentVerse)) {
                 // This is the last line of the current verse
                 if (index === wordsUpToCurrentVerseEnd && currentVerse !== lastCompletedVerse) {
                     setLastCompletedVerse(currentVerse);
@@ -568,7 +573,7 @@ export default function PashtoTyper({ data, onComplete }: Props) {
             >
                 <div className="max-w-3xl w-full p-6 pb-96 pt-10">
                     <div className="flex flex-col gap-4 md:gap-6" dir="rtl">
-                        {prayerData.map((line, lineIdx) => (
+                        {activeData.map((line, lineIdx) => (
                             <div
                                 key={lineIdx}
                                 className="flex flex-wrap gap-3 md:gap-4 leading-loose justify-start border-b border-slate-800/50 pb-4 last:border-0"
@@ -576,7 +581,7 @@ export default function PashtoTyper({ data, onComplete }: Props) {
                                 {line.words.map((word, wordIdx) => {
                                     // Calculate global index
                                     let globalIdx = 0;
-                                    for (let i = 0; i < lineIdx; i++) globalIdx += prayerData[i].words.length;
+                                    for (let i = 0; i < lineIdx; i++) globalIdx += activeData[i].words.length;
                                     globalIdx += wordIdx;
 
                                     const isTyped = globalIdx < index;

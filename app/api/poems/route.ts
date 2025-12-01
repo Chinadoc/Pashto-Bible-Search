@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 /**
- * GET /api/videos
- * Returns available videos with transcripts (placeholder for now)
+ * GET /api/poems
+ * Returns available poems (placeholder for now)
  */
 export async function GET() {
   try {
@@ -10,14 +10,15 @@ export async function GET() {
     // In the future, this could fetch from database
     return NextResponse.json({
       success: true,
-      videos: [],
-      message: 'Video system - coming soon'
+      poems: [],
+      message: 'Poems system - coming soon'
     });
   } catch (error) {
-    console.error('Error fetching videos:', error);
+    console.error('Error fetching poems:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch videos' },
+      { success: false, error: 'Failed to fetch poems' },
       { status: 500 }
     );
   }
 }
+

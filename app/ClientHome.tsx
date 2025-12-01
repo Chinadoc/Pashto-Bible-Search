@@ -731,14 +731,20 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     if (activeMainTab === 'videos' && audioClips.length === 0) {
       setLoadingAudio(true);
       fetch('/api/audio-clips')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
-          if (data.success) {
-            setAudioClips(data.clips || []);
+          if (data && data.success && Array.isArray(data.clips)) {
+            setAudioClips(data.clips);
+          } else {
+            setAudioClips([]);
           }
         })
         .catch(err => {
           console.error('Error fetching audio clips:', err);
+          setAudioClips([]);
         })
         .finally(() => {
           setLoadingAudio(false);
@@ -751,14 +757,20 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     if (activeMainTab === 'poems' && poems.length === 0) {
       setLoadingPoems(true);
       fetch('/api/poems')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
-          if (data.success) {
-            setPoems(data.poems || []);
+          if (data && data.success && Array.isArray(data.poems)) {
+            setPoems(data.poems);
+          } else {
+            setPoems([]);
           }
         })
         .catch(err => {
           console.error('Error fetching poems:', err);
+          setPoems([]);
         })
         .finally(() => {
           setLoadingPoems(false);
@@ -771,14 +783,20 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     if (activeMainTab === 'videos' && videos.length === 0) {
       setLoadingVideos(true);
       fetch('/api/videos')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
-          if (data.success) {
-            setVideos(data.videos || []);
+          if (data && data.success && Array.isArray(data.videos)) {
+            setVideos(data.videos);
+          } else {
+            setVideos([]);
           }
         })
         .catch(error => {
           console.error('Error fetching videos:', error);
+          setVideos([]);
         })
         .finally(() => {
           setLoadingVideos(false);
