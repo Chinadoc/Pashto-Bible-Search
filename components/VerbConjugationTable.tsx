@@ -12,6 +12,8 @@ interface VerbConjugationTableProps {
   filters?: MultiVerbFilterState | VerbFilterState;
   compact?: boolean;
   defaultExpanded?: boolean; // Start expanded or collapsed
+  verseCounts?: Map<string, number>; // Map of form -> verse count
+  totalVerses?: number; // Total verses containing any form of this verb
 }
 
 // Grammatical explanations based on LingDocs grammar
@@ -107,8 +109,26 @@ export default function VerbConjugationTable({
   filters,
   compact = false,
   defaultExpanded = false,
+  verseCounts,
+  totalVerses,
 }: VerbConjugationTableProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  
+  // Compute verse counts per tense
+  const tenseVerseCounts = useMemo(() => {
+    if (!verseCounts) return new Map<string, number>();
+    
+    const counts = new Map<string, number>();
+    for (const verb of verbs) {
+      const tense = verb.tense || 'other';
+      const formCount = verseCounts.get(verb.form) || 0;
+      if (formCount > 0) {
+        counts.set(tense, (counts.get(tense) || 0) + formCount);
+      }
+    }
+    return counts;
+  }, [verbs, verseCounts]);
+
   // Group verbs by tense and then by person/number
   const conjugationTable = useMemo(() => {
     const table: Record<string, Record<string, RelatedFormVariant[]>> = {};
@@ -321,6 +341,7 @@ export default function VerbConjugationTable({
         if (!tenseTable) return null;
 
         const tenseInfo = GRAMMAR_EXPLANATIONS[tense];
+        const tenseCount = tenseVerseCounts.get(tense) || 0;
         
         return (
           <div key={tense} className="mb-4">
@@ -328,6 +349,11 @@ export default function VerbConjugationTable({
               <h4 className="font-semibold text-slate-700 dark:text-slate-300 capitalize">
                 {tenseInfo?.title || tense}
               </h4>
+              {tenseCount > 0 && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full">
+                  {tenseCount} {tenseCount === 1 ? 'verse' : 'verses'}
+                </span>
+              )}
               {tenseInfo?.link && (
                 <a
                   href={tenseInfo.link}

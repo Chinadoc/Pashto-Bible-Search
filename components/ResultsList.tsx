@@ -1032,6 +1032,31 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     });
   }, [results, multiVerbFilters, verbFilters, processed]);
 
+  // Compute verse counts per verb form (for conjugation table)
+  const verseCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    
+    // Count how many times each form appears across all results
+    for (const verse of results) {
+      const matchedForms = verse.matchedForms || [];
+      // Also check if forms from activeVariantForms appear in verse text
+      const allForms = new Set(matchedForms);
+      if (activeVariantForms && verse.text) {
+        for (const form of activeVariantForms) {
+          if (verse.text.includes(form)) {
+            allForms.add(form);
+          }
+        }
+      }
+      
+      for (const form of allForms) {
+        counts.set(form, (counts.get(form) || 0) + 1);
+      }
+    }
+    
+    return counts;
+  }, [results, activeVariantForms]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
@@ -1202,6 +1227,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             verbType={dictionaryData?.entries?.[0]?.pos || processed.relatedForms?.posGuess}
             verbs={processed.relatedForms.forms.verbs as RelatedFormVariant[]}
             filters={multiVerbFilters}
+            verseCounts={verseCounts}
+            totalVerses={results.length}
           />
         )}
 

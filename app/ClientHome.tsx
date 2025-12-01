@@ -992,8 +992,19 @@ export default function ClientHome() {
     }
   }, [results]);
 
+  // Check if any verb filter is active
+  const hasActiveVerbFilters = useMemo(() => {
+    if (!multiVerbFilters) return false;
+    return (
+      multiVerbFilters.person.some(p => p !== 'all') ||
+      multiVerbFilters.tense.some(t => t !== 'all') ||
+      multiVerbFilters.aspect.some(a => a !== 'all') ||
+      multiVerbFilters.mood.some(m => m !== 'all')
+    );
+  }, [multiVerbFilters]);
+
   // Filter results by selected books
-  const filteredResults = useMemo(() => {
+  const filteredByBooks = useMemo(() => {
     if (bookFilter.length === 0) return results;
     return results.filter(verse => {
       if (!verse.ref) return false;
@@ -1003,6 +1014,91 @@ export default function ClientHome() {
       return bookFilter.includes(bookName);
     });
   }, [results, bookFilter]);
+
+  // Build form-to-variants map for verb filtering (same logic as ResultsList)
+  const formToVariants = useMemo(() => {
+    const map = new Map<string, any[]>();
+    
+    const addVariant = (v: any) => {
+      if (!v?.form) return;
+      const existing = map.get(v.form) || [];
+      const isDuplicate = existing.some(e => 
+        e.person === v.person && e.tense === v.tense && e.aspect === v.aspect && e.mood === v.mood
+      );
+      if (!isDuplicate) {
+        existing.push(v);
+        map.set(v.form, existing);
+      }
+    };
+    
+    if (processed?.verbs) processed.verbs.forEach(addVariant);
+    if (processed?.variantGroups?.verbs) processed.variantGroups.verbs.forEach(addVariant);
+    if (processed?.relatedForms?.forms?.verbs) processed.relatedForms.forms.verbs.forEach(addVariant);
+    
+    return map;
+  }, [processed]);
+
+  // Helper function to check if a verse matches verb filters
+  const verseMatchesVerbFilters = useCallback((verse: Verse): boolean => {
+    if (!hasActiveVerbFilters || !multiVerbFilters) return true;
+    
+    // Get matched forms from the verse
+    let matchedFormsToCheck = verse.matchedForms || [];
+    if (matchedFormsToCheck.length === 0 && verse.text) {
+      // Check which forms appear in the verse text
+      const allForms = Array.from(formToVariants.keys());
+      matchedFormsToCheck = allForms.filter(form => verse.text.includes(form));
+    }
+    
+    if (matchedFormsToCheck.length === 0) return false;
+    
+    const personFilters = multiVerbFilters.person.filter(p => p !== 'all');
+    const tenseFilters = multiVerbFilters.tense.filter(t => t !== 'all');
+    const aspectFilters = multiVerbFilters.aspect.filter(a => a !== 'all');
+    const moodFilters = multiVerbFilters.mood.filter(m => m !== 'all');
+    
+    // Check if any matched form satisfies the filter
+    return matchedFormsToCheck.some(form => {
+      const variants = formToVariants.get(form);
+      if (!variants || variants.length === 0) return false;
+      
+      const personMatch = personFilters.length === 0 || variants.every(v => {
+        const normLabel = (v.label || '').toLowerCase();
+        return personFilters.some(p => {
+          if (p === '1st') return normLabel.includes('1sg') || normLabel.includes('1pl') || normLabel.includes('1.');
+          if (p === '2nd') return normLabel.includes('2sg') || normLabel.includes('2pl') || normLabel.includes('2.');
+          if (p === '3rd') return normLabel.includes('3sg') || normLabel.includes('3pl') || normLabel.includes('3.');
+          return false;
+        });
+      });
+      
+      const tenseMatch = tenseFilters.length === 0 || variants.some(v => {
+        const normLabel = (v.label || '').toLowerCase();
+        return tenseFilters.some(t => normLabel.includes(t));
+      });
+      
+      const aspectMatch = aspectFilters.length === 0 || variants.some(v => {
+        const normLabel = (v.label || '').toLowerCase();
+        return aspectFilters.some(a => normLabel.includes(a));
+      });
+      
+      const moodMatch = moodFilters.length === 0 || variants.some(v => {
+        const normLabel = (v.label || '').toLowerCase();
+        return moodFilters.some(m => normLabel.includes(m));
+      });
+      
+      return personMatch && tenseMatch && aspectMatch && moodMatch;
+    });
+  }, [hasActiveVerbFilters, multiVerbFilters, formToVariants]);
+
+  // Filter results by verb filters (for coverage calculation)
+  const verbFilteredResults = useMemo(() => {
+    if (!hasActiveVerbFilters) return filteredByBooks;
+    return filteredByBooks.filter(verseMatchesVerbFilters);
+  }, [filteredByBooks, hasActiveVerbFilters, verseMatchesVerbFilters]);
+
+  // For ResultsList, use book-filtered results (it applies verb filters internally)
+  const filteredResults = filteredByBooks;
 
   // Group ALL results by book for coverage calculation (always show full coverage)
   const fullCoverageData = useMemo(() => {
@@ -1046,12 +1142,39 @@ export default function ClientHome() {
     }
   }, [results]);
 
-  // Always show full coverage (all books) but highlight the filtered one
-  // This way users see "31 in Luke" even when filtered to Mark
+  // Compute coverage from verb-filtered results (for accurate sidebar display)
+  const filteredCoverageData = useMemo(() => {
+    try {
+      const bookCounts: Record<string, number> = {};
+      verbFilteredResults.forEach((verse) => {
+        try {
+          if (!verse.ref || typeof verse.ref !== 'string') return;
+          const parts = verse.ref.trim().split(' ');
+          if (parts.length === 0) return;
+          const book = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0];
+          if (book) {
+            bookCounts[book] = (bookCounts[book] || 0) + 1;
+          }
+        } catch (err) {
+          console.warn('Error processing verse for filtered coverage:', err);
+        }
+      });
+
+      return Object.entries(bookCounts).map(([book, count]) => ({
+        book,
+        count,
+        translation: OT_BOOKS_SET.has(book) || NT_BOOKS_SET.has(book) ? 'KJV' : undefined
+      }));
+    } catch (err) {
+      console.error('Error calculating filtered coverage:', err);
+      return [];
+    }
+  }, [verbFilteredResults]);
+
+  // Use filtered coverage when verb filters are active, otherwise full coverage
   const coverageData = useMemo(() => {
-    // Always show all books, regardless of filter
-    return fullCoverageData;
-  }, [fullCoverageData]);
+    return hasActiveVerbFilters ? filteredCoverageData : fullCoverageData;
+  }, [hasActiveVerbFilters, filteredCoverageData, fullCoverageData]);
 
   // Update coverage state when coverageData changes
   useEffect(() => {
@@ -1872,7 +1995,7 @@ export default function ClientHome() {
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                    Results ({filteredResults.length}{results.length !== filteredResults.length ? ` of ${results.length}` : ''})
+                    Results ({hasActiveVerbFilters ? `${verbFilteredResults.length} of ${results.length}` : filteredResults.length}{!hasActiveVerbFilters && results.length !== filteredResults.length ? ` of ${results.length}` : ''})
                   </h2>
                 </div>
 
@@ -2516,7 +2639,7 @@ export default function ClientHome() {
               />
             </div>
 
-            {/* Sidebar - Always show full coverage, not filtered */}
+            {/* Sidebar - Shows filtered coverage when filters are active */}
             <div className="lg:col-span-1">
               <CoverageSidebar
                 coverage={coverage}
@@ -2534,7 +2657,7 @@ export default function ClientHome() {
                 selectedBooks={bookFilter}
                 onClearFilters={() => setBookFilter([])}
                 resultsCount={results.length}
-                filteredCount={bookFilter.length > 0 ? filteredResults.length : undefined}
+                filteredCount={hasActiveVerbFilters || bookFilter.length > 0 ? verbFilteredResults.length : undefined}
                 audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
               />
             </div>
