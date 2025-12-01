@@ -1,0 +1,301 @@
+/* Pashto Dictionary Extension Styles */
+
+/* Highlight the word being hovered */
+.pashto-dict-highlight {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+
+.pashto-dict-highlight-compound {
+  background-color: rgba(147, 51, 234, 0.3) !important;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+
+/* Popup dictionary tooltip */
+.pashto-dict-popup {
+  position: fixed;
+  z-index: 2147483647 !important;
+  max-width: 420px;
+  min-width: 280px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  font-family: 'Noto Naskh Arabic', 'Amiri', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e2e8f0;
+  padding: 0;
+  overflow: hidden;
+  animation: pashto-dict-fade-in 0.15s ease;
+}
+
+@keyframes pashto-dict-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header with Pashto word */
+.pashto-dict-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  direction: rtl;
+}
+
+.pashto-dict-word {
+  font-size: 32px;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.3;
+  direction: rtl;
+  text-align: right;
+}
+
+.pashto-dict-pos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  direction: ltr;
+}
+
+.pashto-dict-pos-verb {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+}
+
+.pashto-dict-pos-noun {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.pashto-dict-pos-adjective {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+}
+
+.pashto-dict-pos-other {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+/* Body content */
+.pashto-dict-body {
+  padding: 16px 20px;
+}
+
+/* Romanization */
+.pashto-dict-romanized {
+  font-size: 16px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-bottom: 8px;
+  direction: ltr;
+  text-align: left;
+}
+
+/* English definition */
+.pashto-dict-english {
+  font-size: 15px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Base form section */
+.pashto-dict-base {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pashto-dict-base-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pashto-dict-base-word {
+  font-size: 18px;
+  color: #93c5fd;
+  direction: rtl;
+}
+
+/* Grammatical info */
+.pashto-dict-grammar {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pashto-dict-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pashto-dict-tag-person {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.pashto-dict-tag-tense {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.pashto-dict-tag-mood {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.pashto-dict-tag-gender {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.pashto-dict-tag-inflection {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+/* Compound verb info */
+.pashto-dict-compound {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.pashto-dict-compound-title {
+  font-size: 11px;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.pashto-dict-compound-form {
+  font-size: 22px;
+  color: #e9d5ff;
+  direction: rtl;
+  text-align: right;
+  margin-bottom: 4px;
+}
+
+.pashto-dict-compound-meaning {
+  font-size: 14px;
+  color: #a5b4fc;
+  direction: ltr;
+}
+
+/* Footer with keyboard hints */
+.pashto-dict-footer {
+  padding: 10px 20px;
+  background: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 10px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pashto-dict-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pashto-dict-key {
+  display: inline-block;
+  padding: 2px 5px;
+  background: rgba(71, 85, 105, 0.5);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+/* Mode indicator */
+.pashto-dict-mode {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 2147483646;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.pashto-dict-mode.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pashto-dict-mode-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pashto-dict-pulse 1.5s infinite;
+}
+
+@keyframes pashto-dict-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pashto-dict-mode.compound .pashto-dict-mode-dot {
+  background: #a855f7;
+}
+
+/* Hide popup when not active */
+.pashto-dict-popup.hidden {
+  display: none !important;
+}
+

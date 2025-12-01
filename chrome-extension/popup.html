@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pashto Dictionary</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo">📚</div>
+    <div class="title">Pashto Dictionary</div>
+    <div class="pashto-title">پښتو قاموس</div>
+    <div id="status" class="status disabled">
+      <span class="status-dot"></span>
+      <span>Inactive</span>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="toggle-section">
+      <span class="toggle-label">Enable Dictionary</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="enableToggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-section">
+      <span class="toggle-label">Compound Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="compoundToggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <div class="shortcuts">
+      <div class="shortcuts-title">Keyboard Shortcuts</div>
+      <div class="shortcut">
+        <span class="shortcut-desc">Toggle dictionary</span>
+        <span class="shortcut-key">Alt+P</span>
+      </div>
+      <div class="shortcut">
+        <span class="shortcut-desc">Toggle compound mode</span>
+        <span class="shortcut-key">Alt+C</span>
+      </div>
+      <div class="shortcut">
+        <span class="shortcut-desc">Next word</span>
+        <span class="shortcut-key">N</span>
+      </div>
+      <div class="shortcut">
+        <span class="shortcut-desc">Previous word</span>
+        <span class="shortcut-key">B</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <a href="https://pashto-bible-search.vercel.app" target="_blank">
+      Visit Pashto Bible Search
+    </a>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+
