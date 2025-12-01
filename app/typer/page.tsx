@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PashtoTyper from '@/components/PashtoTyper';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ interface SRSItem {
     repetitions: number;
 }
 
-export default function TyperPage() {
+function TyperPageContent() {
     const { data: session } = useSession();
     const searchParams = useSearchParams();
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -242,5 +242,19 @@ export default function TyperPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Wrap with Suspense for useSearchParams
+export default function TyperPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col h-screen bg-slate-900 items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                <p className="mt-4 text-slate-400">Loading Typer...</p>
+            </div>
+        }>
+            <TyperPageContent />
+        </Suspense>
     );
 }
