@@ -17,6 +17,7 @@ import EnhancedHighlightText from './EnhancedHighlightText';
 import VirtualizedResults from './VirtualizedResults';
 import VerbDetails from './VerbDetails';
 import VerbConjugationTable from './VerbConjugationTable';
+import InflectionExplainer from './InflectionExplainer';
 import {
   matchesPerson,
   matchesTense,
@@ -325,6 +326,16 @@ function VerseItem({
           verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023'
         ) : <span className="text-gray-400 italic">No text available</span>}
       </p>
+
+      {/* Inflection Explainer - dynamically shows grammatical reasons for inflected words */}
+      {verse.text && verse.ref && (
+        <InflectionExplainer
+          verseRef={verse.ref}
+          verseText={cleanVerseText(verse.text)}
+          highlightedForms={verse.matchedForms || termsProp}
+          compact={false}
+        />
+      )}
 
       {/* Audio player */}
       {!audioUrl ? (

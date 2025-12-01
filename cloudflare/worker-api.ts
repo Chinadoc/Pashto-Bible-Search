@@ -1188,7 +1188,7 @@ async function getInflectionReasons(
         query = env.DB.prepare(
           `SELECT * FROM inflection_reasons 
            WHERE pashto_form = ? AND (translation_key = ? OR translation_key IS NULL)
-           ORDER BY frequency DESC`
+           ORDER BY verse_ref`
         ).bind(form, translation);
       }
     } else if (baseWord) {
@@ -1200,7 +1200,7 @@ async function getInflectionReasons(
         query = env.DB.prepare(
           `SELECT * FROM inflection_reasons 
            WHERE base_word = ? AND (translation_key = ? OR translation_key IS NULL)
-           ORDER BY frequency DESC`
+           ORDER BY pashto_form, verse_ref`
         ).bind(baseWord, translation);
       }
     } else {
@@ -1270,6 +1270,364 @@ async function getInflectionReasons(
     });
   } catch (error: any) {
     return errorResponse(`Failed to get inflection reasons: ${error.message}`, 500);
+  }
+}
+
+// Common Pashto sandwich patterns for inflection detection
+const SANDWICH_PATTERNS = [
+  { start: 'په', end: 'کې', type: 'locative_in' },
+  { start: 'په', end: 'باندې', type: 'locative_on' },
+  { start: 'په', end: 'سره', type: 'comitative' },
+  { start: 'د', end: null, type: 'genitive' },
+  { start: 'له', end: 'سره', type: 'comitative_from' },
+  { start: 'له', end: 'نه', type: 'ablative' },
+  { start: 'له', end: 'څخه', type: 'ablative_from' },
+  { start: null, end: 'ته', type: 'dative' },
+  { start: 'تر', end: 'پورې', type: 'terminative' },
+];
+
+// Plural/oblique noun endings
+const NOUN_INFLECTION_ENDINGS = [
+  { ending: 'انو', type: 'oblique_plural_animate', isPlural: true },
+  { ending: 'یانو', type: 'oblique_plural_animate', isPlural: true },
+  { ending: 'ونو', type: 'oblique_plural_inanimate', isPlural: true },
+  { ending: 'ان', type: 'direct_plural_animate', isPlural: true },
+  { ending: 'یان', type: 'direct_plural_animate', isPlural: true },
+  { ending: 'ونه', type: 'direct_plural_inanimate', isPlural: true },
+  { ending: 'ې', type: 'oblique_or_plural_feminine', isPlural: false },
+  { ending: 'و', type: 'oblique', isPlural: false },
+];
+
+// Past tense verb patterns (for ergative detection)
+const PAST_TENSE_MARKERS = ['ل', 'لو', 'له', 'لې', 'لم', 'لئ'];
+
+interface InflectedWord {
+  word: string;
+  position: number;
+  isInflected: boolean;
+  isPlural: boolean;
+  inflectionType: string | null;
+  isInSandwich: boolean;
+  sandwichType: string | null;
+  isSubjectTransitivePast: boolean;
+  baseWord: string | null;
+  explanation: string;
+}
+
+/**
+ * Analyze a verse text for inflected words
+ * POST /api/analyze-inflections
+ * Body: { text: string, verse_ref?: string, translation?: string }
+ */
+async function analyzeInflections(
+  env: Env,
+  text: string,
+  verseRef: string | null,
+  translation: 'afghan2023' | 'yousafzai2019' | null
+): Promise<Response> {
+  try {
+    const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+    const results: InflectedWord[] = [];
+    
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      if (word.length < 2) continue;
+      
+      // Check for inflection endings
+      let isInflected = false;
+      let isPlural = false;
+      let inflectionType: string | null = null;
+      
+      for (const ending of NOUN_INFLECTION_ENDINGS) {
+        if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
+          isInflected = true;
+          isPlural = ending.isPlural;
+          inflectionType = ending.type;
+          break;
+        }
+      }
+      
+      if (!isInflected) continue;
+      
+      // Check if word is in a sandwich construction
+      let isInSandwich = false;
+      let sandwichType: string | null = null;
+      
+      for (const pattern of SANDWICH_PATTERNS) {
+        if (pattern.start && pattern.end) {
+          // Look for start before and end after current word
+          for (let j = 0; j < i; j++) {
+            if (words[j] === pattern.start) {
+              for (let k = i + 1; k < words.length && k < i + 6; k++) {
+                if (words[k] === pattern.end) {
+                  isInSandwich = true;
+                  sandwichType = pattern.type;
+                  break;
+                }
+              }
+            }
+            if (isInSandwich) break;
+          }
+        } else if (pattern.start && !pattern.end) {
+          // Word follows pattern start (e.g., "د X")
+          if (i > 0 && words[i - 1] === pattern.start) {
+            isInSandwich = true;
+            sandwichType = pattern.type;
+          }
+        } else if (!pattern.start && pattern.end) {
+          // Word precedes pattern end (e.g., "X ته")
+          if (i < words.length - 1 && words[i + 1] === pattern.end) {
+            isInSandwich = true;
+            sandwichType = pattern.type;
+          }
+        }
+        if (isInSandwich) break;
+      }
+      
+      // Check if word is subject of transitive past tense verb
+      let isSubjectTransitivePast = false;
+      for (let j = i + 1; j < words.length; j++) {
+        const potentialVerb = words[j];
+        for (const marker of PAST_TENSE_MARKERS) {
+          if (potentialVerb.endsWith(marker) && potentialVerb.length > marker.length + 2) {
+            isSubjectTransitivePast = true;
+            break;
+          }
+        }
+        if (isSubjectTransitivePast) break;
+      }
+      
+      // Try to find base word from D1
+      let baseWord: string | null = null;
+      try {
+        const baseResult = await env.DB.prepare(
+          `SELECT root_word FROM form_to_root WHERE word_form = ? LIMIT 1`
+        ).bind(word).first();
+        if (baseResult) {
+          baseWord = baseResult.root_word as string;
+        }
+      } catch (e) {
+        // Ignore lookup errors
+      }
+      
+      // Build explanation based on LingDocs 3 reasons
+      const reasons: string[] = [];
+      if (isPlural) {
+        reasons.push('plural (جمع)');
+      }
+      if (isInSandwich) {
+        const sandwichNames: Record<string, string> = {
+          'locative_in': 'په...کې (in)',
+          'locative_on': 'په...باندې (on)',
+          'comitative': 'په...سره (with)',
+          'genitive': 'د (of)',
+          'comitative_from': 'له...سره (with)',
+          'ablative': 'له...نه (from)',
+          'ablative_from': 'له...څخه (from)',
+          'dative': 'ته (to)',
+          'terminative': 'تر...پورې (until)',
+        };
+        reasons.push(`in sandwich: ${sandwichNames[sandwichType || ''] || sandwichType}`);
+      }
+      if (isSubjectTransitivePast && !isPlural && !isInSandwich) {
+        reasons.push('subject of transitive past verb (ergative)');
+      }
+      
+      const explanation = reasons.length > 0 
+        ? `Inflected because: ${reasons.join('; ')}`
+        : 'Inflected form (reason unclear)';
+      
+      results.push({
+        word,
+        position: i,
+        isInflected,
+        isPlural,
+        inflectionType,
+        isInSandwich,
+        sandwichType,
+        isSubjectTransitivePast,
+        baseWord,
+        explanation,
+      });
+    }
+    
+    return jsonResponse({
+      verse_ref: verseRef,
+      translation,
+      text,
+      inflected_words: results,
+      count: results.length,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to analyze inflections: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Bulk analyze verses and store inflection reasons in D1
+ * POST /api/populate-inflection-reasons
+ * Body: { book?: string, chapter?: number, limit?: number, translation?: string }
+ */
+async function populateInflectionReasons(
+  env: Env,
+  book: string | null,
+  chapter: number | null,
+  limit: number,
+  translation: 'afghan2023' | 'yousafzai2019'
+): Promise<Response> {
+  try {
+    const table = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
+    
+    // Build query based on filters
+    let sql = `SELECT book, chapter, verse, text FROM ${table}`;
+    const params: any[] = [];
+    
+    if (book) {
+      sql += ` WHERE book = ?`;
+      params.push(book);
+      if (chapter) {
+        sql += ` AND chapter = ?`;
+        params.push(chapter);
+      }
+    }
+    
+    sql += ` ORDER BY book, chapter, verse LIMIT ?`;
+    params.push(limit);
+    
+    const versesResult = await env.DB.prepare(sql).bind(...params).all();
+    const verses = versesResult.results || [];
+    
+    let insertedCount = 0;
+    const errors: string[] = [];
+    
+    for (const verse of verses) {
+      try {
+        const verseRef = `${verse.book} ${verse.chapter}:${verse.verse}`;
+        const text = verse.text as string;
+        
+        // Analyze the verse
+        const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+        
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          if (word.length < 2) continue;
+          
+          // Check for inflection
+          let isInflected = false;
+          let isPlural = false;
+          let inflectionType: string | null = null;
+          
+          for (const ending of NOUN_INFLECTION_ENDINGS) {
+            if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
+              isInflected = true;
+              isPlural = ending.isPlural;
+              inflectionType = ending.type;
+              break;
+            }
+          }
+          
+          if (!isInflected) continue;
+          
+          // Check sandwich
+          let isInSandwich = false;
+          let sandwichType: string | null = null;
+          
+          for (const pattern of SANDWICH_PATTERNS) {
+            if (pattern.start && pattern.end) {
+              for (let j = 0; j < i; j++) {
+                if (words[j] === pattern.start) {
+                  for (let k = i + 1; k < words.length && k < i + 6; k++) {
+                    if (words[k] === pattern.end) {
+                      isInSandwich = true;
+                      sandwichType = pattern.type;
+                      break;
+                    }
+                  }
+                }
+                if (isInSandwich) break;
+              }
+            } else if (pattern.start && !pattern.end) {
+              if (i > 0 && words[i - 1] === pattern.start) {
+                isInSandwich = true;
+                sandwichType = pattern.type;
+              }
+            } else if (!pattern.start && pattern.end) {
+              if (i < words.length - 1 && words[i + 1] === pattern.end) {
+                isInSandwich = true;
+                sandwichType = pattern.type;
+              }
+            }
+            if (isInSandwich) break;
+          }
+          
+          // Check ergative
+          let isSubjectTransitivePast = false;
+          for (let j = i + 1; j < words.length; j++) {
+            for (const marker of PAST_TENSE_MARKERS) {
+              if (words[j].endsWith(marker) && words[j].length > marker.length + 2) {
+                isSubjectTransitivePast = true;
+                break;
+              }
+            }
+            if (isSubjectTransitivePast) break;
+          }
+          
+          // Try to find base word from form_to_root or by stripping ending
+          let baseWord = word;
+          try {
+            const baseResult = await env.DB.prepare(
+              `SELECT root_word FROM form_to_root WHERE word_form = ? LIMIT 1`
+            ).bind(word).first();
+            if (baseResult) {
+              baseWord = baseResult.root_word as string;
+            } else {
+              // Strip the inflection ending to guess the base
+              for (const ending of NOUN_INFLECTION_ENDINGS) {
+                if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
+                  baseWord = word.slice(0, -ending.ending.length);
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            // Use stripped form as fallback
+          }
+          
+          // Insert into D1
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO inflection_reasons 
+             (pashto_form, base_word, verse_ref, inflection_type, is_plural, is_in_sandwich, 
+              sandwich_type, is_subject_transitive_past, word_position, translation_key)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            word,
+            baseWord,
+            verseRef,
+            inflectionType,
+            isPlural ? 1 : 0,
+            isInSandwich ? 1 : 0,
+            sandwichType,
+            isSubjectTransitivePast ? 1 : 0,
+            i,
+            translation
+          ).run();
+          
+          insertedCount++;
+        }
+      } catch (e: any) {
+        errors.push(`${verse.book} ${verse.chapter}:${verse.verse}: ${e.message}`);
+      }
+    }
+    
+    return jsonResponse({
+      success: true,
+      verses_analyzed: verses.length,
+      inflections_stored: insertedCount,
+      errors: errors.slice(0, 10), // Only return first 10 errors
+      errors_total: errors.length,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to populate inflection reasons: ${error.message}`, 500);
   }
 }
 
@@ -2070,6 +2428,52 @@ export default {
         return errorResponse('Missing form or base_word parameter', 400);
       }
       return getInflectionReasons(env, form || null, baseWord || null, translation);
+    }
+
+    // Analyze inflections in a verse text (real-time)
+    if (path === '/api/analyze-inflections' && request.method === 'POST') {
+      try {
+        const body = await request.json() as {
+          text: string;
+          verse_ref?: string;
+          translation?: 'afghan2023' | 'yousafzai2019';
+        };
+        
+        if (!body.text) {
+          return errorResponse('Missing text in request body', 400);
+        }
+        
+        return analyzeInflections(
+          env, 
+          body.text, 
+          body.verse_ref || null, 
+          body.translation || 'afghan2023'
+        );
+      } catch (e: any) {
+        return errorResponse(`Invalid request body: ${e.message}`, 400);
+      }
+    }
+
+    // Bulk populate inflection reasons from D1 verses
+    if (path === '/api/populate-inflection-reasons' && request.method === 'POST') {
+      try {
+        const body = await request.json() as {
+          book?: string;
+          chapter?: number;
+          limit?: number;
+          translation?: 'afghan2023' | 'yousafzai2019';
+        };
+        
+        return populateInflectionReasons(
+          env,
+          body.book || null,
+          body.chapter || null,
+          body.limit || 100,
+          body.translation || 'afghan2023'
+        );
+      } catch (e: any) {
+        return errorResponse(`Invalid request body: ${e.message}`, 400);
+      }
     }
 
     if (path === '/api/related-forms' && request.method === 'GET') {
