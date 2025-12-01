@@ -190,23 +190,30 @@ export default function VerbFilterDrawer({
               Reset filters
             </button>
           </div>
-          {lemma && (
-            <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-3 text-xs">
+            {lemma ? (
               <span className="text-gray-500 dark:text-gray-400">
                 Verb: <span className="font-medium" style={{ direction: 'rtl' }}>{lemma}</span>
               </span>
-              {facets && !isLoading && (
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">
-                  {facets.totalForms} total forms
-                </span>
-              )}
-              {isLoading && (
-                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full animate-pulse">
-                  Loading...
-                </span>
-              )}
-            </div>
-          )}
+            ) : (
+              <span className="text-red-500">No lemma provided</span>
+            )}
+            {facets && !isLoading && (
+              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">
+                {facets.totalForms} forms ({facets.person['1st'] || 0}/{facets.person['2nd'] || 0}/{facets.person['3rd'] || 0})
+              </span>
+            )}
+            {isLoading && (
+              <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full animate-pulse">
+                Loading facets...
+              </span>
+            )}
+            {!facets && !isLoading && lemma && (
+              <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full">
+                Facets not loaded
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Responsive grid layout */}
