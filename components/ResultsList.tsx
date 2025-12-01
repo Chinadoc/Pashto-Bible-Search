@@ -61,13 +61,20 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     return <HighlightText text={text} tokens={tokens} />;
   }
 
-  // Fallback to simple highlighting
+  // Fallback to simple highlighting with word boundary protection
   const cleanTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
   if (cleanTerms.length === 0) return <span>{text}</span>;
 
   try {
+    // Sort by length (longest first) to prioritize longer matches
+    cleanTerms.sort((a, b) => b.length - a.length);
     const pattern = cleanTerms.map(escapeRegExp).join('|');
-    const re = new RegExp(`(${pattern})`, 'gi');
+    
+    // Use word boundaries for Arabic/Pashto text to avoid matching substrings
+    // within larger words (e.g., don't match وه inside پوهېږئ)
+    const wordBoundaryStart = "(?<![\\p{Script=Arabic}])";
+    const wordBoundaryEnd = "(?![\\p{Script=Arabic}])";
+    const re = new RegExp(`${wordBoundaryStart}(${pattern})${wordBoundaryEnd}`, 'giu');
     const parts = text.split(re);
 
     // Ensure all parts are properly wrapped in React elements
@@ -260,7 +267,13 @@ function VerseItem({
       style={{ minHeight: '80px' }}
     >
       <div className="flex justify-between items-start mb-3" dir="ltr">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Verse Reference - prominently displayed */}
+          {verse.ref && (
+            <span className="font-semibold text-white text-sm">
+              {verse.ref}
+            </span>
+          )}
           {getTranslationBadge(verse.translation, verse.dialect)}
         </div>
         <div className="flex items-center gap-2">

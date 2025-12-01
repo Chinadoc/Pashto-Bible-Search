@@ -22,8 +22,20 @@ export function buildHighlightRegex(tokens: string[]){
     tokens.filter(Boolean).filter(t => /[\p{Script=Arabic}]/u.test(t))
   ));
   if (!pashto.length) return null;
+  
+  // Sort by length (longest first) to ensure longer matches take priority
+  pashto.sort((a, b) => b.length - a.length);
+  
   const parts = pashto.map(t => withDia(t.normalize("NFC")));
-  return new RegExp(`(${parts.join("|")})`, "giu");
+  
+  // Use word boundaries for Arabic/Pashto text:
+  // - (?<![\\p{Script=Arabic}]) = not preceded by Arabic letter
+  // - (?![\\p{Script=Arabic}]) = not followed by Arabic letter
+  // This ensures we only match complete words, not substrings within larger words
+  const wordBoundaryStart = "(?<![\\p{Script=Arabic}])";
+  const wordBoundaryEnd = "(?![\\p{Script=Arabic}])";
+  
+  return new RegExp(`${wordBoundaryStart}(${parts.join("|")})${wordBoundaryEnd}`, "giu");
 }
 
 export function renderHighlightedText(text: string, rx: RegExp): string {
