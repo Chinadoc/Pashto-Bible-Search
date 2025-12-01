@@ -1273,6 +1273,11 @@ export async function POST(request: NextRequest) {
           // Determine what was actually searched
           const actualSearchForms = searchForms || [searchQuery];
           
+          // Debug: track which path was used
+          const filteringPath = morphologicalVariants.length > 0 ? 'morphological' :
+            (variants && variants.length > 0 ? 'variants' : 
+             (relatedFormsForD1.length > 0 ? 'relatedForms' : 'fallback'));
+          
           console.log(`🔍 [D1 FAST PATH] Final search summary:`, {
             providedVariants: variants?.length || 0,
             relatedFormsForD1: relatedFormsForD1?.length || 0,
@@ -1292,6 +1297,8 @@ export async function POST(request: NextRequest) {
               searchType: 'd1',
               frequency: d1Verses.length,
               posSummary: relatedFormsData?.posSummary,
+              filteringPath, // Debug: shows which path was used
+              morphVariantsCount: morphologicalVariants.length, // Debug: morphological filter result
             },
             queryTime: queryTimeMs,
             source: 'd1-r2',
