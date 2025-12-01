@@ -37,7 +37,8 @@ export default function FilterPanel({
     : 'auto';
     
   // Determine the lemma for verb/noun facet counts
-  const lemma = relatedForms?.root || searchQuery;
+  // Use baseForm first (more reliably populated), then root, then searchQuery
+  const lemma = relatedForms?.baseForm || relatedForms?.root || searchQuery;
 
   if (!includeRelated) {
     return null;

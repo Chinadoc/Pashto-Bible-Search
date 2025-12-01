@@ -144,6 +144,7 @@ export interface RelatedFormVariant {
 
 export interface RelatedFormsData {
   root?: string;
+  baseForm?: string; // The base/dictionary form of the word
   searchedForm?: string; // The original form that was searched (for conjugated forms)
   verbs?: RelatedFormVariant[];
   nouns?: RelatedFormVariant[];

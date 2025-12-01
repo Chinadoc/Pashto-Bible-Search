@@ -12,6 +12,11 @@ import type { POSFilters, MorphologicalFilters, PartOfSpeech, POSSummary, Varian
 import type { VerbFilterAspect, VerbFilterMood, VerbFilterPerson, VerbFilterState, VerbFilterTense } from '@/types';
 import { filterVerbVariants } from '@/app/utils/verb-filters';
 
+// Cloudflare Worker URL with fallback
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 
+  process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
+  'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
 // Romanized to Pashto conversion utility
 function romanizedToPashto(romanized: string): string {
   // Basic romanized to Pashto conversion map
@@ -1062,7 +1067,7 @@ export async function POST(request: NextRequest) {
       let wordPosGuess: 'verb' | 'noun' | 'adjective' | 'other' = 'other';
       try {
         const wordInfoResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_WORKER_URL}/api/word-frequency?word=${encodeURIComponent(searchQuery)}`
+          `${WORKER_URL}/api/word-frequency?word=${encodeURIComponent(searchQuery)}`
         );
         if (wordInfoResponse.ok) {
           const wordInfo = await wordInfoResponse.json();
@@ -1206,7 +1211,7 @@ export async function POST(request: NextRequest) {
         if (wordPosGuess === 'noun') {
           try {
             const nounResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
+              `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
             );
             if (nounResponse.ok) {
               const nounData = await nounResponse.json();
@@ -1221,7 +1226,7 @@ export async function POST(request: NextRequest) {
                 
                 // Fetch all inflections for this noun
                 const inflectionsResponse = await fetch(
-                  `${process.env.NEXT_PUBLIC_WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(nounData.base_word)}`
+                  `${WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(nounData.base_word)}`
                 );
                 if (inflectionsResponse.ok) {
                   const inflData = await inflectionsResponse.json();
@@ -1265,8 +1270,13 @@ export async function POST(request: NextRequest) {
         relatedFormsForD1 = Array.from(allForms);
         relatedFormsData = {
           baseForm: searchQuery,
+          searchedForm: searchQuery,
+          root: searchQuery,
           total: verbs.length + nouns.length,
+          // Include both forms.nouns and top-level nouns for compatibility
           forms: { verbs, nouns, other: [] },
+          nouns: nouns, // Top-level for FilterPanel compatibility
+          verbs: verbs, // Top-level for FilterPanel compatibility
           posGuess: wordPosGuess,
         };
         console.log(`✅ [RELATED FORMS] Got ${relatedFormsForD1.length} forms (${nouns.length} nouns, ${verbs.length} verbs)`);

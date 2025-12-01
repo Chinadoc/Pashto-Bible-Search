@@ -12,7 +12,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * - For verbs: person, tense, aspect, mood, compound type
  */
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 
+  process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
+  'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 interface WordAnalysisResult {
   word: string;

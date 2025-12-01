@@ -147,6 +147,8 @@ async function buildCandidateKeys(
       baseNameVariants.add(`${slug}${chapter}_${verse}`);
       baseNameVariants.add(`${slug}_${chapter}_verse_${verse}`);
       baseNameVariants.add(`${slug}_${chapter}_${verse}`);
+      // Add missing format: unpadded chapter, padded verse (e.g. mark9_verse_024)
+      baseNameVariants.add(`${slug}${chapter}_verse_${versePart3}`);
 
       if (ordinal) {
         const ordinalPad = String(ordinal).padStart(3, '0');
@@ -196,8 +198,11 @@ function toStreamUrl(r2Key: string | null | undefined) {
   if (!r2Key) return null;
 
   // Encode the key without escaping path separators so nested folders are preserved
-  const safeKey = encodeURI(r2Key);
-  return `${WORKER_URL}/api/audio/stream/${safeKey}`;
+  // const safeKey = encodeURI(r2Key);
+  // return `${WORKER_URL}/api/audio/stream/${safeKey}`;
+
+  // Use public R2 URL directly to bypass worker stream issues
+  return `https://pub-03f80a5e522e408e9ff0f40c3392140f.r2.dev/${r2Key}`;
 }
 
 async function keyExists(r2Key: string | null | undefined) {
