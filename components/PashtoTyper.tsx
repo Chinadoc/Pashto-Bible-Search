@@ -195,9 +195,16 @@ const prayerData: Line[] = [
 ];
 
 // Flatten for logic
-const flatList = prayerData.flatMap(line => line.words);
+// const flatList = prayerData.flatMap(line => line.words);
 
-export default function PashtoTyper() {
+interface Props {
+    data?: Line[];
+    onComplete?: (score: number) => void;
+}
+
+export default function PashtoTyper({ data = prayerData, onComplete }: Props) {
+    const flatList = data.flatMap(line => line.words);
+
     const [stage, setStage] = useState(1); // 1: Type It, 2: Memorize It, 3: Master It
     const [index, setIndex] = useState(0);
     const [isComplete, setIsComplete] = useState(false);
@@ -411,6 +418,19 @@ export default function PashtoTyper() {
             setMistake(false);
             if (index + 1 === flatList.length) {
                 setIsComplete(true);
+                if (onComplete) {
+                    // Calculate score (0-5) based on accuracy
+                    // 5 = 100%, 4 = 90%+, 3 = 80%+, etc.
+                    const finalAccuracy = attempts > 0 ? ((attempts - errors) / attempts) : 1;
+                    let score = 0;
+                    if (finalAccuracy >= 1) score = 5;
+                    else if (finalAccuracy >= 0.9) score = 4;
+                    else if (finalAccuracy >= 0.8) score = 3;
+                    else if (finalAccuracy >= 0.6) score = 2;
+                    else score = 1;
+
+                    onComplete(score);
+                }
             } else {
                 setIndex(index + 1);
             }
@@ -628,6 +648,11 @@ export default function PashtoTyper() {
                                 <Icons.Trophy className="w-6 h-6" />
                                 stage {stage} Complete!
                             </div>
+                            {onComplete && stage === 2 && (
+                                <div className="text-center text-sm text-gray-400 mb-2">
+                                    SRS Progress Updated!
+                                </div>
+                            )}
                             <div className="flex justify-center gap-3">
                                 <button
                                     onClick={reset}

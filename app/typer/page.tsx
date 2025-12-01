@@ -1,28 +1,123 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PashtoTyper from '@/components/PashtoTyper';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+
+interface SRSItem {
+    verse_ref: string;
+    next_review: string;
+    interval: number;
+    repetitions: number;
+}
 
 export default function TyperPage() {
+    const { data: session } = useSession();
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+    const [srsItems, setSrsItems] = useState<SRSItem[]>([]);
+    const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
+    const [verseData, setVerseData] = useState<any>(null);
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Fetch SRS items
+    useEffect(() => {
+        if (session) {
+            fetch('/api/srs-progress')
+                .then(res => res.ok ? res.json() : { items: [] })
+                .then(data => {
+                    if (data.items) {
+                        // Sort by next_review date
+                        const sorted = data.items.sort((a: SRSItem, b: SRSItem) =>
+                            new Date(a.next_review).getTime() - new Date(b.next_review).getTime()
+                        );
+                        setSrsItems(sorted);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [session]);
+
+    // Load verse data when selected
+    const loadVerse = async (ref: string) => {
+        setLoadingData(true);
+        setSelectedVerse(ref);
+        try {
+            const res = await fetch(`/api/typer/verse-data?ref=${encodeURIComponent(ref)}`);
+            const data = await res.json();
+            if (data.lines) {
+                setVerseData(data.lines);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const handleComplete = async (score: number) => {
+        if (!selectedVerse || !session) return;
+
+        try {
+            await fetch('/api/srs-progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ verseRef: selectedVerse, rating: score })
+            });
+
+            // Refresh list
+            const res = await fetch('/api/srs-progress');
+            const data = await res.json();
+            if (data.items) {
+                const sorted = data.items.sort((a: SRSItem, b: SRSItem) =>
+                    new Date(a.next_review).getTime() - new Date(b.next_review).getTime()
+                );
+                setSrsItems(sorted);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     // For mobile preview, we need to show the entire page layout
     const typerPageContent = (
         <>
             {/* Compact header strip - same height as main site header */}
             <div className="bg-slate-800/90 border-b border-slate-700 px-4 py-3 flex items-center justify-between z-20 shadow-md backdrop-blur flex-shrink-0">
-                <Link
-                    href="/"
-                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span className="text-sm font-medium">Home</span>
-                </Link>
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="text-sm font-medium">Home</span>
+                    </Link>
 
-                <h1 className="font-bold text-emerald-400 text-lg">Matthew 6:9-13</h1>
+                    {/* Verse Selector Dropdown */}
+                    {session && srsItems.length > 0 && (
+                        <select
+                            value={selectedVerse || ''}
+                            onChange={(e) => loadVerse(e.target.value)}
+                            className="bg-slate-700 text-white text-sm rounded px-2 py-1 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                            <option value="" disabled>Select a verse...</option>
+                            {srsItems.map(item => {
+                                const due = new Date(item.next_review) <= new Date();
+                                return (
+                                    <option key={item.verse_ref} value={item.verse_ref}>
+                                        {due ? '🔴 ' : '🟢 '}{item.verse_ref}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    )}
+                </div>
+
+                <h1 className="font-bold text-emerald-400 text-lg hidden sm:block">
+                    {selectedVerse || "The Lord's Prayer"}
+                </h1>
 
                 {/* Only show view toggle in desktop/testing mode */}
                 {viewMode === 'desktop' && (
@@ -53,8 +148,17 @@ export default function TyperPage() {
             </div>
 
             {/* PashtoTyper component */}
-            <div className="flex-grow overflow-hidden">
-                <PashtoTyper />
+            <div className="flex-grow overflow-hidden relative">
+                {loadingData && (
+                    <div className="absolute inset-0 bg-slate-900/80 z-50 flex items-center justify-center">
+                        <div className="text-emerald-400 animate-pulse">Loading verse data...</div>
+                    </div>
+                )}
+                <PashtoTyper
+                    key={selectedVerse || 'default'}
+                    data={verseData || undefined}
+                    onComplete={handleComplete}
+                />
             </div>
         </>
     );

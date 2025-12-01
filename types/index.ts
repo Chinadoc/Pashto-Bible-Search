@@ -210,6 +210,14 @@ export interface DisambiguationResult {
   recommendedAction: string;
 }
 
+export interface RomanizedSuggestion {
+  pashto: string;
+  romanized: string;
+  pos?: string;
+  english?: string;
+  isCompound?: boolean;
+}
+
 export interface ProcessedSearchMetadata {
   original: string;
   normalized: string;
@@ -219,8 +227,12 @@ export interface ProcessedSearchMetadata {
   variantDetails?: VariantDetailMeta[];
   variantGroups?: VariantGroupMeta[];
   romanization?: string;
+  root?: string;
   language?: SearchLanguage;
   englishMatches?: EnglishMatchMeta[];
+  // Romanized query disambiguation
+  isRomanizedQuery?: boolean;
+  romanizedSuggestions?: RomanizedSuggestion[];
   disambiguation?: {
     word: string;
     likelyPos: string;

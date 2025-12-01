@@ -5,6 +5,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import * as React from "react";
 import { SearchFiltersProvider } from './contexts/SearchFiltersContext';
 import { VerseAnalysisProvider } from '@/components/InteractiveVerse';
+import { SessionProvider } from "next-auth/react";
 
 const theme = createTheme({
   palette: {
@@ -67,13 +68,15 @@ const theme = createTheme({
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SearchFiltersProvider>
-      <VerseAnalysisProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          {children}
-        </ThemeProvider>
-      </VerseAnalysisProvider>
-    </SearchFiltersProvider>
+    <SessionProvider>
+      <SearchFiltersProvider>
+        <VerseAnalysisProvider>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            {children}
+          </ThemeProvider>
+        </VerseAnalysisProvider>
+      </SearchFiltersProvider>
+    </SessionProvider>
   );
 }

@@ -904,9 +904,9 @@ export async function POST(request: NextRequest) {
       'tlal': 'تلل',
       'darkawul': 'ورکول',
       'warkawul': 'ورکول',
-      'darkol': 'ورکول',
       'warkol': 'ورکول',
-      'dawul': 'ورکول',  // alternate romanization for ورکول (to give)
+      'dawul': 'ډول',  // ډول = manner, type, fashion (NOT ورکول!)
+      'Dawul': 'ډول',
       'dul': 'دول',  // دول can mean 'type/kind' or be part of compound
       'khedal': 'کېدل',
       'kedal': 'کېدل',
@@ -961,6 +961,7 @@ export async function POST(request: NextRequest) {
     // Try transliteration if query is in English/Latin script
     let searchQuery = originalQuery;
     let romanizedDictionaryMatch: { pashto: string; romanized: string } | null = null;
+    let romanizedSuggestions: Array<{ pashto: string; romanized: string; pos?: string; english?: string; isCompound?: boolean }> = [];
     console.log(`🔍 Original query: "${originalQuery}", searchLanguage: "${searchLanguage}"`);
     const isLatinScriptQuery = searchLanguage === 'pashto' && isLatinOnly(originalQuery);
 
@@ -991,9 +992,9 @@ export async function POST(request: NextRequest) {
           }
 
           if (candidates && candidates.length > 0) {
-            let bestEntry = candidates[0] as any;
-            let bestScore = Number.NEGATIVE_INFINITY;
-
+            // Score and sort ALL candidates to build suggestions
+            const scoredCandidates: Array<{ entry: any; score: number }> = [];
+            
             for (const candidate of candidates) {
               if (!candidate?.pashto) continue;
               const candidateRoman = typeof candidate.romanized === 'string' ? normalizeRomanizedInput(candidate.romanized) : '';
@@ -1003,20 +1004,41 @@ export async function POST(request: NextRequest) {
                 .map((value: unknown) => (typeof value === 'string' ? value.toLowerCase() : ''))
                 .join(' ');
 
-              let score = freq > 0 ? Math.log10(freq + 1) * 25 : 0;
-              if (candidateRoman === normalizedRoman) score += 40;
-              if (candidateG === normalizedRoman) score += 30;
-              if (posField.includes('verb')) score += 12;
-              else if (posField.includes('noun')) score += 6;
+              let score = freq > 0 ? Math.log10(freq + 1) * 10 : 0;
+              
+              // EXACT romanization match gets MUCH higher priority
+              if (candidateRoman === normalizedRoman) score += 100;
+              else if (candidateG === normalizedRoman) score += 80;
+              // Penalize if romanization is much longer than query (e.g., "dawul" shouldn't match "warkawul")
+              else if (candidateRoman.length > normalizedRoman.length + 3) score -= 50;
+              
+              // Mild POS bonus
+              if (posField.includes('noun')) score += 5;
+              else if (posField.includes('verb')) score += 3;
+              
+              // Prefer shorter Pashto words (more likely to be base forms)
               if (typeof candidate.pashto === 'string' && candidate.pashto.length) {
                 score += Math.max(0, 8 - candidate.pashto.length);
               }
-
-              if (score > bestScore) {
-                bestScore = score;
-                bestEntry = candidate;
-              }
+              
+              scoredCandidates.push({ entry: candidate, score });
             }
+            
+            // Sort by score descending
+            scoredCandidates.sort((a, b) => b.score - a.score);
+            
+            // Build suggestions from top candidates (up to 5)
+            romanizedSuggestions = scoredCandidates.slice(0, 5).map(({ entry }) => ({
+              pashto: entry.pashto,
+              romanized: entry.romanized || entry.g || '',
+              pos: entry.pos || entry.c || '',
+              english: entry.e || entry.english || '',
+              isCompound: entry.pos?.includes('comp') || false,
+            }));
+            
+            // Best match
+            const bestEntry = scoredCandidates[0].entry;
+            const bestScore = scoredCandidates[0].score;
 
             romanizedDictionaryMatch = {
               pashto: bestEntry.pashto,
@@ -1026,6 +1048,7 @@ export async function POST(request: NextRequest) {
             console.log(
               `✅ Dictionary romanized lookup matched "${originalQuery}" → "${searchQuery}" (score=${Number.isFinite(bestScore) ? bestScore.toFixed(1) : 'n/a'})`,
             );
+            console.log(`📝 Romanized suggestions:`, romanizedSuggestions.map(s => `${s.pashto} (${s.pos})`).join(', '));
           } else {
             console.log(`⚠️ Dictionary romanized lookup had no match for "${normalizedRoman}"`);
           }
@@ -2304,6 +2327,9 @@ export async function POST(request: NextRequest) {
           variantsSearched: searchTerms,
           romanization: romanizedDictionaryMatch?.romanized,
           root: romanizedDictionaryMatch?.pashto,
+          // "Did you mean..." suggestions for romanized queries
+          romanizedSuggestions: romanizedSuggestions.length > 0 ? romanizedSuggestions : undefined,
+          isRomanizedQuery: isLatinScriptQuery,
           // Debug: why did we hit the fallback path?
           _debug: (debugInfo as any).d1Conditions || null,
         },

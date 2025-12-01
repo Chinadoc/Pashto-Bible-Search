@@ -26,6 +26,54 @@ import {
   matchesAspect,
   normalizeLabel
 } from '@/app/utils/verb-filters';
+import { useSession } from "next-auth/react";
+
+function SaveVerseButton({ verseRef }: { verseRef: string }) {
+  const { data: session } = useSession();
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Check if saved on mount (could be optimized with a bulk check)
+  useEffect(() => {
+    if (session) {
+      // TODO: Implement bulk check or local cache for saved status
+    }
+  }, [session]);
+
+  const handleSave = async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/saved-verses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verseRef }),
+      });
+      if (res.ok) {
+        setSaved(true);
+      }
+    } catch (err) {
+      console.error('Failed to save verse', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!session) return null;
+
+  return (
+    <button
+      onClick={handleSave}
+      disabled={saved || loading}
+      className={`text-xs px-3 py-1.5 border border-gray-600 rounded-lg transition-colors ${saved
+        ? 'bg-green-600/20 text-green-400 border-green-600/50'
+        : 'hover:bg-gray-700/50 text-gray-300 hover:text-white'
+        }`}
+    >
+      {loading ? 'Saving...' : saved ? 'Saved' : 'Save'}
+    </button>
+  );
+}
 
 const OT_BOOKS = new Set([
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
@@ -71,7 +119,7 @@ function highlight(text: string, terms: string[], processed?: any): ReactNode {
     // Sort by length (longest first) to prioritize longer matches
     cleanTerms.sort((a, b) => b.length - a.length);
     const pattern = cleanTerms.map(escapeRegExp).join('|');
-    
+
     // Simple regex - longer matches take priority due to sort order
     const re = new RegExp(`(${pattern})`, 'gi');
     const parts = text.split(re);
@@ -300,6 +348,8 @@ function VerseItem({
               {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
             </button>
           )}
+          {/* Save Verse Button */}
+          <SaveVerseButton verseRef={verse.ref} />
         </div>
       </div>
 
@@ -445,7 +495,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       (verbFilters.aspect !== 'all' ? 1 : 0) +
       (verbFilters.mood !== 'all' ? 1 : 0)
     ) : 0;
-    
+
     // Collect active filter labels
     const activeLabelsNoResults: string[] = [];
     if (multiVerbFilters) {
@@ -479,7 +529,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
                 </span>
                 <div className="flex gap-1 flex-wrap justify-center">
                   {activeLabelsNoResults.map((label, idx) => (
-                    <span 
+                    <span
                       key={`${label}-${idx}`}
                       className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded capitalize"
                     >
@@ -608,7 +658,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     (verbFilters.aspect !== 'all' ? 1 : 0) +
     (verbFilters.mood !== 'all' ? 1 : 0)
   ) : 0;
-  
+
   // Collect active filter labels for display
   const activeFilterLabels: string[] = [];
   if (multiVerbFilters) {
@@ -927,12 +977,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
 
     // Build map of form -> array of variants (handles ambiguous forms like وهلو which can be 1pl or 3sg_m)
     const formToVariants = new Map<string, any[]>();
-    
+
     const addVariant = (v: any) => {
       if (!v?.form) return;
       const existing = formToVariants.get(v.form) || [];
       // Only add if this person/tense combination isn't already present
-      const isDuplicate = existing.some(e => 
+      const isDuplicate = existing.some(e =>
         e.person === v.person && e.tense === v.tense && e.aspect === v.aspect && e.mood === v.mood
       );
       if (!isDuplicate) {
@@ -940,7 +990,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
         formToVariants.set(v.form, existing);
       }
     };
-    
+
     // Check processed.verbs (direct format)
     if (processed?.verbs) {
       processed.verbs.forEach(addVariant);
@@ -953,7 +1003,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     if (processed?.relatedForms?.forms?.verbs) {
       processed.relatedForms.forms.verbs.forEach(addVariant);
     }
-    
+
     // If we still have no labels, try to use activeVariantForms with default labels
     if (formToVariants.size === 0 && activeVariantForms && activeVariantForms.length > 0) {
       console.log('Warning: No verb labels found, using form text as label fallback');
@@ -967,12 +1017,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
     return results.filter(verse => {
       // If verse has no matched forms, check if the verse text contains any of the active forms
       let matchedFormsToCheck = verse.matchedForms || [];
-      
+
       // If matchedForms is empty but we have activeVariantForms, check the verse text
       if (matchedFormsToCheck.length === 0 && activeVariantForms && activeVariantForms.length > 0 && verse.text) {
         matchedFormsToCheck = activeVariantForms.filter((form: string) => verse.text.includes(form));
       }
-      
+
       if (matchedFormsToCheck.length === 0) {
         return false;
       }
@@ -982,12 +1032,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       // This prevents false positives where a 3rd person form is shown in 1st person results
       return matchedFormsToCheck.some((form: string) => {
         const variants = formToVariants.get(form);
-        
+
         // If no variant data, exclude (strict filtering)
         if (!variants || variants.length === 0) {
           return false;
         }
-        
+
         // For ambiguous forms: require ALL variants to match the person filter
         // This is conservative - only shows forms that are UNAMBIGUOUSLY the selected person
         if (multiVerbFilters) {
@@ -995,24 +1045,24 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           const tenseFilters = multiVerbFilters.tense.filter(t => t !== 'all');
           const aspectFilters = multiVerbFilters.aspect.filter(a => a !== 'all');
           const moodFilters = multiVerbFilters.mood.filter(m => m !== 'all');
-          
+
           // For person filter: ALL variants of this form must match (strict for ambiguous forms)
           const personMatch = personFilters.length === 0 || variants.every(variant => {
             const normLabel = normalizeLabel(variant.label);
             return personFilters.some(p => matchesPerson(normLabel, p, variant));
           });
-          
+
           // For tense/aspect/mood: at least ONE variant must match (standard behavior)
           const tenseMatch = tenseFilters.length === 0 || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return tenseFilters.some(t => matchesTense(normLabel, t, variant));
           });
-          
+
           const aspectMatch = aspectFilters.length === 0 || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return aspectFilters.some(a => matchesAspect(normLabel, a, variant));
           });
-          
+
           const moodMatch = moodFilters.length === 0 || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return moodFilters.some(m => matchesMood(normLabel, m, variant));
@@ -1025,23 +1075,23 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
             const normLabel = normalizeLabel(variant.label);
             return matchesPerson(normLabel, verbFilters.person, variant);
           });
-          
+
           // Other filters: at least one variant matches
           const tenseMatch = verbFilters.tense === 'all' || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return matchesTense(normLabel, verbFilters.tense, variant);
           });
-          
+
           const aspectMatch = verbFilters.aspect === 'all' || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return matchesAspect(normLabel, verbFilters.aspect, variant);
           });
-          
+
           const moodMatch = verbFilters.mood === 'all' || variants.some(variant => {
             const normLabel = normalizeLabel(variant.label);
             return matchesMood(normLabel, verbFilters.mood, variant);
           });
-          
+
           return personMatch && tenseMatch && aspectMatch && moodMatch;
         }
         return true;
@@ -1052,7 +1102,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
   // Compute verse counts per verb form (for conjugation table)
   const verseCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    
+
     // Count how many times each form appears across all results
     for (const verse of results) {
       const matchedForms = verse.matchedForms || [];
@@ -1065,12 +1115,12 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           }
         }
       }
-      
+
       for (const form of allForms) {
         counts.set(form, (counts.get(form) || 0) + 1);
       }
     }
-    
+
     return counts;
   }, [results, activeVariantForms]);
 
@@ -1188,7 +1238,7 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               </span>
               <div className="flex gap-1 flex-wrap">
                 {activeFilterLabels.map((label, idx) => (
-                  <span 
+                  <span
                     key={`${label}-${idx}`}
                     className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded capitalize"
                   >
@@ -1212,11 +1262,11 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       <div className="mb-4 flex flex-col gap-2">
         {/* Debug logging for VerbConjugationTable */}
         {(() => {
-          const hasFilters = multiVerbFilters && 
-            (multiVerbFilters.person.some(p => p !== 'all') || 
-             multiVerbFilters.tense.some(t => t !== 'all') ||
-             multiVerbFilters.aspect.some(a => a !== 'all') ||
-             multiVerbFilters.mood.some(m => m !== 'all'));
+          const hasFilters = multiVerbFilters &&
+            (multiVerbFilters.person.some(p => p !== 'all') ||
+              multiVerbFilters.tense.some(t => t !== 'all') ||
+              multiVerbFilters.aspect.some(a => a !== 'all') ||
+              multiVerbFilters.mood.some(m => m !== 'all'));
           const verbsLength = processed?.relatedForms?.forms?.verbs?.length ?? 0;
           console.log('VerbConjugationTable debug:', {
             hasFilters,
@@ -1231,99 +1281,99 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
           return null;
         })()}
         {/* Verb Conjugation Table - Show when filters are active and we have verb forms */}
-        {multiVerbFilters && 
-         (multiVerbFilters.person.some(p => p !== 'all') || 
-          multiVerbFilters.tense.some(t => t !== 'all') ||
-          multiVerbFilters.aspect.some(a => a !== 'all') ||
-          multiVerbFilters.mood.some(m => m !== 'all')) &&
-         processed?.relatedForms?.forms?.verbs?.length > 0 && (
-          <VerbConjugationTable
-            lemma={processed.normalized || processed.relatedForms?.baseForm || ''}
-            romanized={processed.romanization || processed.relatedForms?.romanized}
-            english={dictionaryData?.entries?.[0]?.english || processed.relatedForms?.english}
-            verbType={dictionaryData?.entries?.[0]?.pos || processed.relatedForms?.posGuess}
-            verbs={processed.relatedForms.forms.verbs as RelatedFormVariant[]}
-            filters={multiVerbFilters}
-            verseCounts={verseCounts}
-            totalVerses={results.length}
-          />
-        )}
-
-        {/* Fallback: Simple display when no filters or no verb forms */}
-        {!(multiVerbFilters && 
-           (multiVerbFilters.person.some(p => p !== 'all') || 
+        {multiVerbFilters &&
+          (multiVerbFilters.person.some(p => p !== 'all') ||
             multiVerbFilters.tense.some(t => t !== 'all') ||
             multiVerbFilters.aspect.some(a => a !== 'all') ||
             multiVerbFilters.mood.some(m => m !== 'all')) &&
-           processed?.relatedForms?.forms?.verbs?.length > 0) &&
-         ((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
-          <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-            <span className="font-medium">Showing results for </span>
-            {/* Show active variant forms */}
-            {activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {activeVariantForms.slice(0, 3).map((form, idx) => (
-                  <React.Fragment key={form}>
-                    <a
-                      href={`/lexicon?q=${encodeURIComponent(form)}`}
-                      className="hover:underline"
-                      title="View in dictionary"
-                    >
-                      {form}
-                    </a>
-                    {idx < Math.min(activeVariantForms.length, 3) - 1 && <span className="mx-1">, </span>}
-                  </React.Fragment>
-                ))}
-                {activeVariantForms.length > 3 && (
-                  <span className="text-gray-500 dark:text-gray-400 ml-1">
-                    {' '}and {activeVariantForms.length - 3} more
-                  </span>
-                )}
-              </span>
-            ) : dictionaryData?.entries?.[0] ? (
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                <a
-                  href={`/lexicon?q=${encodeURIComponent(dictionaryData.entries[0].pashto)}`}
-                  className="hover:underline"
-                  title="View in dictionary"
-                >
-                  {dictionaryData.entries[0].pashto}
-                </a>
-                {dictionaryData.entries[0].romanized && (
-                  <> - {dictionaryData.entries[0].romanized}</>
-                )}
-                {dictionaryData.entries[0].pos && (
-                  <span className="text-gray-600 dark:text-gray-400 ml-1">
-                    {dictionaryData.entries[0].pos}
-                  </span>
-                )}
-                {dictionaryData.entries[0].english && (
-                  <span className="text-gray-600 dark:text-gray-400 ml-1">
-                    {dictionaryData.entries[0].english}
-                  </span>
-                )}
-              </span>
-            ) : processed?.normalized ? (
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                <a
-                  href={`/lexicon?q=${encodeURIComponent(processed.normalized)}`}
-                  className="hover:underline"
-                  title="View in dictionary"
-                >
-                  {processed.normalized}
-                </a>
-                {processed.romanization && (
-                  <> - {processed.romanization}</>
-                )}
-                {processed.pos && processed.pos !== 'unknown' && (
-                  <span className="text-gray-600 dark:text-gray-400 ml-1">
-                    {processed.pos}
-                  </span>
-                )}
-              </span>
-            ) : null}
-          </div>
-        )}
+          processed?.relatedForms?.forms?.verbs?.length > 0 && (
+            <VerbConjugationTable
+              lemma={processed.normalized || processed.relatedForms?.baseForm || ''}
+              romanized={processed.romanization || processed.relatedForms?.romanized}
+              english={dictionaryData?.entries?.[0]?.english || processed.relatedForms?.english}
+              verbType={dictionaryData?.entries?.[0]?.pos || processed.relatedForms?.posGuess}
+              verbs={processed.relatedForms.forms.verbs as RelatedFormVariant[]}
+              filters={multiVerbFilters}
+              verseCounts={verseCounts}
+              totalVerses={results.length}
+            />
+          )}
+
+        {/* Fallback: Simple display when no filters or no verb forms */}
+        {!(multiVerbFilters &&
+          (multiVerbFilters.person.some(p => p !== 'all') ||
+            multiVerbFilters.tense.some(t => t !== 'all') ||
+            multiVerbFilters.aspect.some(a => a !== 'all') ||
+            multiVerbFilters.mood.some(m => m !== 'all')) &&
+          processed?.relatedForms?.forms?.verbs?.length > 0) &&
+          ((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
+            <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+              <span className="font-medium">Showing results for </span>
+              {/* Show active variant forms */}
+              {activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {activeVariantForms.slice(0, 3).map((form, idx) => (
+                    <React.Fragment key={form}>
+                      <a
+                        href={`/lexicon?q=${encodeURIComponent(form)}`}
+                        className="hover:underline"
+                        title="View in dictionary"
+                      >
+                        {form}
+                      </a>
+                      {idx < Math.min(activeVariantForms.length, 3) - 1 && <span className="mx-1">, </span>}
+                    </React.Fragment>
+                  ))}
+                  {activeVariantForms.length > 3 && (
+                    <span className="text-gray-500 dark:text-gray-400 ml-1">
+                      {' '}and {activeVariantForms.length - 3} more
+                    </span>
+                  )}
+                </span>
+              ) : dictionaryData?.entries?.[0] ? (
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  <a
+                    href={`/lexicon?q=${encodeURIComponent(dictionaryData.entries[0].pashto)}`}
+                    className="hover:underline"
+                    title="View in dictionary"
+                  >
+                    {dictionaryData.entries[0].pashto}
+                  </a>
+                  {dictionaryData.entries[0].romanized && (
+                    <> - {dictionaryData.entries[0].romanized}</>
+                  )}
+                  {dictionaryData.entries[0].pos && (
+                    <span className="text-gray-600 dark:text-gray-400 ml-1">
+                      {dictionaryData.entries[0].pos}
+                    </span>
+                  )}
+                  {dictionaryData.entries[0].english && (
+                    <span className="text-gray-600 dark:text-gray-400 ml-1">
+                      {dictionaryData.entries[0].english}
+                    </span>
+                  )}
+                </span>
+              ) : processed?.normalized ? (
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  <a
+                    href={`/lexicon?q=${encodeURIComponent(processed.normalized)}`}
+                    className="hover:underline"
+                    title="View in dictionary"
+                  >
+                    {processed.normalized}
+                  </a>
+                  {processed.romanization && (
+                    <> - {processed.romanization}</>
+                  )}
+                  {processed.pos && processed.pos !== 'unknown' && (
+                    <span className="text-gray-600 dark:text-gray-400 ml-1">
+                      {processed.pos}
+                    </span>
+                  )}
+                </span>
+              ) : null}
+            </div>
+          )}
 
         {/* Results count */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
