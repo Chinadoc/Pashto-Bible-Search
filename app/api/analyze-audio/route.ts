@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
         const audioPath = path.join(tempDir, 'audio.mp3');
 
         // Download Audio
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             ytdl(youtubeUrl, { quality: 'highestaudio', filter: 'audioonly' })
                 .pipe(fs.createWriteStream(audioPath))
-                .on('finish', resolve)
+                .on('finish', () => resolve())
                 .on('error', reject);
         });
 
