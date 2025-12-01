@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import * as React from "react";
 import { SearchFiltersProvider } from './contexts/SearchFiltersContext';
+import { VerseAnalysisProvider } from '@/components/InteractiveVerse';
 
 const theme = createTheme({
   palette: {
@@ -67,10 +68,12 @@ const theme = createTheme({
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SearchFiltersProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <VerseAnalysisProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
+      </VerseAnalysisProvider>
     </SearchFiltersProvider>
   );
 }

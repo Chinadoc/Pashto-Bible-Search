@@ -188,8 +188,8 @@ async function processChapter(book, chapter) {
             // Upload to R2
             const r2Key = `afghan2023/nt/${outputFilename}`;
             try {
-                execSync(`npx wrangler r2 object put "${R2_BUCKET}/${r2Key}" --file="${outputPath}" --remote`, { stdio: 'ignore' });
-                process.stdout.write('.');
+                const cmd = `npx wrangler r2 object put "${R2_BUCKET}/${r2Key}" --file="${outputPath}" --remote`;
+                await retryUpload(cmd);
             } catch (e) {
                 console.error(`    ❌ Failed to upload ${r2Key}`);
             }
@@ -200,6 +200,23 @@ async function processChapter(book, chapter) {
         console.error(`  ❌ Error processing chapter: ${e.message}`);
     }
 }
+
+async function retryUpload(cmd, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            execSync(cmd, { stdio: 'ignore' });
+            process.stdout.write('.');
+            return true;
+        } catch (e) {
+            if (i === retries - 1) throw e;
+            // Wait with exponential backoff
+            const delay = 1000 * Math.pow(2, i);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    return false;
+}
+
 
 async function main() {
     if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);

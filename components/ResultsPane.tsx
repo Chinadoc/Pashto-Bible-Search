@@ -9,6 +9,7 @@ import DictionaryDisambiguation from './DictionaryDisambiguation';
 import WordAlternativeUses from './WordAlternativeUses';
 import FilterPanel from './FilterPanel';
 import ResultsList from './ResultsList';
+import { VerseAnalysisToggle } from './InteractiveVerse';
 import type {
   Verse,
   RelatedFormsData,
@@ -92,6 +93,9 @@ export default function ResultsPane({
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Results ({filteredResults.length}{totalEstimatedCount && totalEstimatedCount > results.length ? ` of ~${totalEstimatedCount}` : results.length !== filteredResults.length ? ` of ${results.length}` : ''}{hasMoreResults ? '+' : ''})
           </h2>
+          
+          {/* Word Analysis Toggle */}
+          <VerseAnalysisToggle />
         </div>
 
         {/* English matches display */}

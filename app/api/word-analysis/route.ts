@@ -153,6 +153,40 @@ function mapPerson(d1Person: string | null): { person: string | null; number: st
   return { person: null, number: null };
 }
 
+// Map form_type to readable tense/mood
+function mapFormType(formType: string | null): { tense: string | null; mood: string | null; aspect: string | null } {
+  if (!formType) return { tense: null, mood: null, aspect: null };
+  
+  const lower = formType.toLowerCase();
+  
+  // Check mood first
+  if (lower.includes('imperative')) {
+    return { tense: null, mood: 'imperative', aspect: 'perfective' };
+  }
+  if (lower.includes('subjunctive')) {
+    return { tense: null, mood: 'subjunctive', aspect: 'perfective' };
+  }
+  if (lower.includes('ability') || lower.includes('potential')) {
+    return { tense: null, mood: 'ability', aspect: null };
+  }
+  
+  // Check tense
+  if (lower.includes('present')) {
+    return { tense: 'present', mood: 'indicative', aspect: 'imperfective' };
+  }
+  if (lower.includes('past') && !lower.includes('participle')) {
+    return { tense: 'past', mood: 'indicative', aspect: 'perfective' };
+  }
+  if (lower.includes('perfect') || lower.includes('participle')) {
+    return { tense: 'perfect', mood: 'indicative', aspect: 'perfective' };
+  }
+  if (lower.includes('future')) {
+    return { tense: 'future', mood: 'indicative', aspect: 'imperfective' };
+  }
+  
+  return { tense: null, mood: null, aspect: null };
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const word = url.searchParams.get('word');
@@ -238,13 +272,21 @@ export async function GET(request: NextRequest) {
           if (vfData && vfData.base_verb) {
             result.pos = 'verb';
             result.baseForm = vfData.base_verb;
-            result.tense = vfData.tense;
-            result.aspect = vfData.aspect;
-            result.mood = vfData.mood;
             
+            // Map form_type to readable tense/mood/aspect
+            const formTypeInfo = mapFormType(vfData.tense || vfData.form_type);
+            result.tense = vfData.tense || formTypeInfo.tense;
+            result.aspect = vfData.aspect || formTypeInfo.aspect;
+            result.mood = vfData.mood || formTypeInfo.mood;
+            
+            // Person/number
             const personInfo = mapPerson(vfData.person);
             result.person = personInfo.person;
             result.number = personInfo.number;
+            
+            // High confidence if we got data from verb_forms
+            result.confidence = 0.95;
+            result.source = 'verb_forms';
             
             // Check for compound verb
             if (vfData.helper || vfData.base_verb?.includes(' ')) {
