@@ -176,6 +176,88 @@ const KAWUL_CONJUGATIONS: Record<string, { person: string; number: string; tense
   'کړل': { person: '3rd', number: 'plural', tense: 'past' },
 };
 
+// Dynamic compound verbs (noun + وهل, ورکول, etc.)
+// These are different from stative compounds - the noun often inflects
+const DYNAMIC_COMPOUND_AUXILIARIES: Record<string, {
+  infinitive: string;
+  romanized: string;
+  meaning: string;
+  transitivity: 'transitive' | 'intransitive';
+  conjugations: Record<string, { person: string; number: string; tense: string }>;
+}> = {
+  // ورکول (to give)
+  'ورکول': {
+    infinitive: 'ورکول',
+    romanized: 'warkawúl',
+    meaning: 'to give',
+    transitivity: 'transitive',
+    conjugations: {
+      'ورکوم': { person: '1st', number: 'singular', tense: 'present' },
+      'ورکوې': { person: '2nd', number: 'singular', tense: 'present' },
+      'ورکوي': { person: '3rd', number: 'singular', tense: 'present' },
+      'ورکوو': { person: '1st', number: 'plural', tense: 'present' },
+      'ورکوئ': { person: '2nd', number: 'plural', tense: 'present' },
+      'ورکړم': { person: '1st', number: 'singular', tense: 'subjunctive' },
+      'ورکړې': { person: '2nd', number: 'singular', tense: 'subjunctive' },
+      'ورکړي': { person: '3rd', number: 'sing/plur', tense: 'subjunctive' },
+      'ورکړو': { person: '1st', number: 'plural', tense: 'subjunctive' },
+      'ورکړئ': { person: '2nd', number: 'plural', tense: 'subjunctive' },
+      'ورکړ': { person: '3rd', number: 'singular', tense: 'past' },
+      'ورکړل': { person: '3rd', number: 'plural', tense: 'past' },
+    }
+  },
+  // وهل (to hit) - used in many dynamic compounds
+  'وهل': {
+    infinitive: 'وهل',
+    romanized: 'wahúl',
+    meaning: 'to hit/strike',
+    transitivity: 'transitive',
+    conjugations: {
+      'وهم': { person: '1st', number: 'singular', tense: 'present' },
+      'وهې': { person: '2nd', number: 'singular', tense: 'present' },
+      'وهي': { person: '3rd', number: 'singular', tense: 'present' },
+      'وهو': { person: '1st', number: 'plural', tense: 'present' },
+      'وهئ': { person: '2nd', number: 'plural', tense: 'present' },
+      'ووهم': { person: '1st', number: 'singular', tense: 'subjunctive' },
+      'ووهې': { person: '2nd', number: 'singular', tense: 'subjunctive' },
+      'ووهي': { person: '3rd', number: 'singular', tense: 'subjunctive' },
+    }
+  },
+  // راتلل (to come)
+  'راتلل': {
+    infinitive: 'راتلل',
+    romanized: 'raatláll',
+    meaning: 'to come',
+    transitivity: 'intransitive',
+    conjugations: {
+      'راځم': { person: '1st', number: 'singular', tense: 'present' },
+      'راځې': { person: '2nd', number: 'singular', tense: 'present' },
+      'راځي': { person: '3rd', number: 'singular', tense: 'present' },
+      'راشم': { person: '1st', number: 'singular', tense: 'subjunctive' },
+      'راشې': { person: '2nd', number: 'singular', tense: 'subjunctive' },
+      'راشي': { person: '3rd', number: 'singular', tense: 'subjunctive' },
+    }
+  },
+};
+
+// Ability/Potential mood forms - کېدای شي, کولای شي
+const ABILITY_FORMS: Record<string, {
+  baseVerb: string;
+  romanized: string;
+  meaning: string;
+  mood: 'ability';
+  transitivity: 'transitive' | 'intransitive';
+}> = {
+  'کېدای': { baseVerb: 'کېدل', romanized: 'kedáay', meaning: 'can/may become (ability mood)', mood: 'ability', transitivity: 'intransitive' },
+  'کولای': { baseVerb: 'کول', romanized: 'kawláay', meaning: 'can/may do (ability mood)', mood: 'ability', transitivity: 'transitive' },
+  'تلای': { baseVerb: 'تلل', romanized: 'tláay', meaning: 'can/may go (ability mood)', mood: 'ability', transitivity: 'intransitive' },
+  'راتلای': { baseVerb: 'راتلل', romanized: 'raatláay', meaning: 'can/may come (ability mood)', mood: 'ability', transitivity: 'intransitive' },
+  'خوړلای': { baseVerb: 'خوړل', romanized: 'khoRláay', meaning: 'can/may eat (ability mood)', mood: 'ability', transitivity: 'transitive' },
+  'لیدای': { baseVerb: 'لیدل', romanized: 'leedáay', meaning: 'can/may see (ability mood)', mood: 'ability', transitivity: 'transitive' },
+  'ویلای': { baseVerb: 'ویل', romanized: 'wayláay', meaning: 'can/may say (ability mood)', mood: 'ability', transitivity: 'transitive' },
+  'اخیستلای': { baseVerb: 'اخیستل', romanized: 'akheestaláay', meaning: 'can/may take (ability mood)', mood: 'ability', transitivity: 'transitive' },
+};
+
 // Function to detect if two words form a compound verb
 function detectCompoundVerb(complement: string, nextWord: string): {
   isCompound: boolean;
@@ -483,6 +565,195 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(result);
     }
     
+    // 0.5 Check if it's an ABILITY MOOD form (کېدای, کولای, etc.)
+    if (ABILITY_FORMS[cleanWord]) {
+      const abilityForm = ABILITY_FORMS[cleanWord];
+      result.pos = 'verb';
+      result.baseForm = abilityForm.baseVerb;
+      result.romanized = abilityForm.romanized;
+      result.english = abilityForm.meaning;
+      result.mood = 'ability';
+      result.tense = null; // Ability mood doesn't have tense on its own
+      result.confidence = 0.95;
+      result.source = 'ability_forms';
+      
+      // Check if next word in context is شي/شو/شم (to complete the ability construction)
+      if (context) {
+        const words = context.split(/\s+/);
+        const wordIndex = words.findIndex(w => w.includes(cleanWord));
+        if (wordIndex >= 0 && wordIndex < words.length - 1) {
+          const nextWord = words[wordIndex + 1]?.replace(/[،.؟!]/g, '');
+          const kedulConj = KEDUL_CONJUGATIONS[nextWord];
+          if (kedulConj) {
+            result.compoundVerbInfo = {
+              fullForm: `${cleanWord} ${nextWord}`,
+              infinitive: `${abilityForm.baseVerb} (ability)`,
+              meaning: abilityForm.meaning,
+              transitivity: abilityForm.transitivity,
+              person: kedulConj.person,
+              number: kedulConj.number,
+              tense: 'ability + ' + kedulConj.tense,
+              note: `Ability construction: ${cleanWord} ${nextWord} = "${abilityForm.meaning}"`,
+            };
+          }
+        }
+      }
+      
+      return NextResponse.json(result);
+    }
+    
+    // 0.6 Check if it's a کېدل (kedul) auxiliary form
+    if (KEDUL_CONJUGATIONS[cleanWord]) {
+      const kedulForm = KEDUL_CONJUGATIONS[cleanWord];
+      result.pos = 'verb';
+      result.baseForm = 'کېدل';
+      result.romanized = 'kedúl';
+      result.english = 'to become';
+      result.person = kedulForm.person;
+      result.number = kedulForm.number;
+      result.tense = kedulForm.tense;
+      result.mood = kedulForm.tense === 'subjunctive' ? 'subjunctive' : 'indicative';
+      result.confidence = 0.9;
+      result.source = 'kedul_conjugations';
+      
+      // Note: This might be part of a compound verb - check context
+      if (context) {
+        const words = context.split(/\s+/);
+        const wordIndex = words.findIndex(w => w.replace(/[،.؟!]/g, '') === cleanWord);
+        if (wordIndex > 0) {
+          const prevWord = words[wordIndex - 1]?.replace(/[،.؟!]/g, '');
+          // Check if prev word is an ability form
+          if (ABILITY_FORMS[prevWord]) {
+            result.isCompound = true;
+            result.compoundType = 'stative';
+            const abilityInfo = ABILITY_FORMS[prevWord];
+            result.compoundVerbInfo = {
+              fullForm: `${prevWord} ${cleanWord}`,
+              infinitive: `${abilityInfo.baseVerb} (ability mood)`,
+              meaning: abilityInfo.meaning,
+              transitivity: abilityInfo.transitivity,
+              person: kedulForm.person,
+              number: kedulForm.number,
+              tense: 'ability',
+              note: `Complete ability construction: "${abilityInfo.meaning}"`,
+            };
+          }
+          // Check if prev word is a stative complement
+          else if (COMPOUND_VERB_COMPLEMENTS[prevWord]) {
+            result.isCompound = true;
+            result.compoundType = 'stative';
+            const compoundInfo = COMPOUND_VERB_COMPLEMENTS[prevWord];
+            result.compoundVerbInfo = {
+              fullForm: `${prevWord} ${cleanWord}`,
+              infinitive: compoundInfo.intransitiveInfinitive,
+              meaning: compoundInfo.meaning,
+              transitivity: 'intransitive',
+              person: kedulForm.person,
+              number: kedulForm.number,
+              tense: kedulForm.tense,
+              note: `Stative compound verb (intransitive)`,
+            };
+          }
+        }
+      }
+      
+      return NextResponse.json(result);
+    }
+    
+    // 0.7 Check if it's a کول (kawul) auxiliary form
+    if (KAWUL_CONJUGATIONS[cleanWord]) {
+      const kawulForm = KAWUL_CONJUGATIONS[cleanWord];
+      result.pos = 'verb';
+      result.baseForm = 'کول';
+      result.romanized = 'kawúl';
+      result.english = 'to do/make';
+      result.person = kawulForm.person;
+      result.number = kawulForm.number;
+      result.tense = kawulForm.tense;
+      result.mood = kawulForm.tense === 'subjunctive' ? 'subjunctive' : 'indicative';
+      result.confidence = 0.9;
+      result.source = 'kawul_conjugations';
+      
+      // Check context for compound verb
+      if (context) {
+        const words = context.split(/\s+/);
+        const wordIndex = words.findIndex(w => w.replace(/[،.؟!]/g, '') === cleanWord);
+        if (wordIndex > 0) {
+          const prevWord = words[wordIndex - 1]?.replace(/[،.؟!]/g, '');
+          if (COMPOUND_VERB_COMPLEMENTS[prevWord]) {
+            result.isCompound = true;
+            result.compoundType = 'stative';
+            const compoundInfo = COMPOUND_VERB_COMPLEMENTS[prevWord];
+            result.compoundVerbInfo = {
+              fullForm: `${prevWord} ${cleanWord}`,
+              infinitive: compoundInfo.transitiveInfinitive,
+              meaning: compoundInfo.meaning,
+              transitivity: 'transitive',
+              person: kawulForm.person,
+              number: kawulForm.number,
+              tense: kawulForm.tense,
+              note: `Stative compound verb (transitive)`,
+            };
+          }
+        }
+      }
+      
+      return NextResponse.json(result);
+    }
+    
+    // 0.8 Check for dynamic compound auxiliary forms (ورکړي, وهي, etc.)
+    for (const [verb, info] of Object.entries(DYNAMIC_COMPOUND_AUXILIARIES)) {
+      if (info.conjugations[cleanWord]) {
+        const conjInfo = info.conjugations[cleanWord];
+        result.pos = 'verb';
+        result.baseForm = verb;
+        result.romanized = info.romanized;
+        result.english = info.meaning;
+        result.person = conjInfo.person;
+        result.number = conjInfo.number;
+        result.tense = conjInfo.tense;
+        result.mood = conjInfo.tense === 'subjunctive' ? 'subjunctive' : 'indicative';
+        result.confidence = 0.95;
+        result.source = 'dynamic_compound_aux';
+        
+        // Check context for full compound verb (e.g., "دوام ورکړي" = to continue)
+        if (context) {
+          const words = context.split(/\s+/);
+          const wordIndex = words.findIndex(w => w.replace(/[،.؟!]/g, '') === cleanWord);
+          if (wordIndex > 0) {
+            const prevWord = words[wordIndex - 1]?.replace(/[،.؟!]/g, '');
+            // Common dynamic compound noun complements
+            const dynamicComplements: Record<string, string> = {
+              'دوام': 'to continue',
+              'مرسته': 'to help',
+              'قدم': 'to step',
+              'ټوپ': 'to jump',
+              'کار': 'to work',
+              'غږ': 'to call',
+              'خبرې': 'to talk',
+              'فکر': 'to think',
+            };
+            if (dynamicComplements[prevWord]) {
+              result.isCompound = true;
+              result.compoundType = 'dynamic';
+              result.compoundVerbInfo = {
+                fullForm: `${prevWord} ${cleanWord}`,
+                infinitive: `${prevWord} ${verb}`,
+                meaning: dynamicComplements[prevWord],
+                transitivity: info.transitivity,
+                person: conjInfo.person,
+                number: conjInfo.number,
+                tense: conjInfo.tense,
+                note: `Dynamic compound verb: "${prevWord} ${verb}"`,
+              };
+            }
+          }
+        }
+        
+        return NextResponse.json(result);
+      }
+    }
+    
     // 1. Check word_frequencies for basic info
     try {
       const wfResponse = await fetch(
@@ -563,7 +834,8 @@ export async function GET(request: NextRequest) {
     }
     
     // 3. Check inflections table for noun inflection info
-    if (result.pos === 'noun' || result.pos === 'other') {
+    // BUT ONLY if we didn't already identify it as a verb!
+    if ((result.pos === 'noun' || result.pos === 'other' || !result.pos) && result.source !== 'verb_forms') {
       try {
         const infResponse = await fetch(
           `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(cleanWord)}`
@@ -571,7 +843,8 @@ export async function GET(request: NextRequest) {
         
         if (infResponse.ok) {
           const infData = await infResponse.json();
-          if (infData && infData.base_word) {
+          // Only use noun data if we don't already have verb data
+          if (infData && infData.base_word && result.pos !== 'verb') {
             result.pos = 'noun';
             result.baseForm = infData.base_word;
             result.inflectionState = detectInflectionState(cleanWord, infData.base_word);
