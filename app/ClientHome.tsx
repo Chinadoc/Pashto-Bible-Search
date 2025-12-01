@@ -1702,51 +1702,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const resultsCount = results.length;
 
   const isEnglishMode = searchLanguage === 'english';
-  const isAnkiMode = searchLanguage === 'anki';
 
-  // Anki export state
-  const [isExportingAnki, setIsExportingAnki] = useState(false);
-
-  // Anki export function
-  const exportToAnki = useCallback(async () => {
-    if (!results.length || !isAnkiMode) return;
-
-    setIsExportingAnki(true);
-    try {
-      console.log(`🔄 Exporting ${results.length} results to Anki deck...`);
-
-      const response = await fetch('/api/anki-export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          results: results.slice(0, 50), // Limit to 50 cards for performance
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Generate and download Anki deck file
-      await generateAnkiDeckFile(data.deck, data.cards);
-
-      console.log(`✅ Successfully exported ${data.count} cards to Anki`);
-    } catch (error) {
-      console.error('❌ Failed to export to Anki:', error);
-      alert(`Failed to export to Anki: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsExportingAnki(false);
-    }
-  }, [results, query, isAnkiMode]);
 
   // Generate Anki deck file for download
   const generateAnkiDeckFile = async (deck: any, cards: any[]) => {
@@ -1776,7 +1732,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   };
 
   return (
-    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''} ${isAnkiMode ? 'bg-gradient-to-b from-green-50 to-transparent dark:from-green-950' : ''}`}>
+    <div className={`w-full max-w-7xl mx-auto transition-colors duration-300 ${isEnglishMode ? 'bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950' : ''}`}>
       {/* English Mode Banner */}
       {isEnglishMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg border-2 border-orange-600">
@@ -1791,30 +1747,18 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         </div>
       )}
 
-      {/* Anki Mode Banner */}
-      {isAnkiMode && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg border-2 border-green-600">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-2xl">📚</span>
-            <div className="text-center">
-              <p className="font-bold text-lg">Anki Export Mode Active</p>
-              <p className="text-sm opacity-90">Search for words and create flashcards with audio</p>
-            </div>
-            <span className="text-2xl">📚</span>
-          </div>
-        </div>
-      )}
+
 
       {/* Header */}
       <header className="text-center mb-6 relative">
         <div className="absolute right-0 top-0">
           <AuthButton />
         </div>
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : isAnkiMode ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
           Pashto Bible Search
         </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : isAnkiMode ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isAnkiMode ? 'Anki Export Mode - Create flashcards with audio' : isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
         </p>
       </header>
 
@@ -1915,33 +1859,31 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={
-                isAnkiMode
-                  ? "Enter word to export to Anki (e.g., 'body parts', 'colors', 'animals')..."
-                  : isEnglishMode
-                    ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
-                    : "Enter Pashto text to search..."
+                isEnglishMode
+                  ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
+                  : "Enter Pashto text to search..."
               }
               variant="outlined"
               fullWidth
               inputProps={{
-                dir: isEnglishMode || isAnkiMode ? 'ltr' : 'rtl',
-                style: { textAlign: isEnglishMode || isAnkiMode ? 'left' : 'right', padding: '12px 16px' }
+                dir: isEnglishMode ? 'ltr' : 'rtl',
+                style: { textAlign: isEnglishMode ? 'left' : 'right', padding: '12px 16px' }
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: isEnglishMode ? '#FFF7ED' : isAnkiMode ? '#ECFDF5' : '#374151',
-                  borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#4B5563',
+                  backgroundColor: isEnglishMode ? '#FFF7ED' : '#374151',
+                  borderColor: isEnglishMode ? '#F97316' : '#4B5563',
                   color: isEnglishMode ? '#9A3412' : '#F9FAFB',
                   '&:hover': {
-                    borderColor: isEnglishMode ? '#EA580C' : isAnkiMode ? '#059669' : '#6B7280'
+                    borderColor: isEnglishMode ? '#EA580C' : '#6B7280'
                   },
                   '&.Mui-focused': {
-                    borderColor: isEnglishMode ? '#F97316' : isAnkiMode ? '#10B981' : '#3B82F6',
-                    boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : isAnkiMode ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
+                    borderColor: isEnglishMode ? '#F97316' : '#3B82F6',
+                    boxShadow: isEnglishMode ? '0 0 0 2px rgba(249, 115, 22, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.5)'
                   }
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: isEnglishMode ? '#C2410C' : isAnkiMode ? '#065F46' : '#9CA3AF'
+                  color: isEnglishMode ? '#C2410C' : '#9CA3AF'
                 }
               }}
               InputProps={{
@@ -2069,7 +2011,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           ({processed.romanization})
                         </span>
                       )}
-                      
+
                       {/* Did you mean suggestions inline */}
                       {processed?.romanizedSuggestions && processed.romanizedSuggestions.length > 1 && (
                         <>
@@ -2093,13 +2035,12 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                                 <span className="text-xs opacity-70">({suggestion.romanized})</span>
                               )}
                               {suggestion.pos && (
-                                <span className={`text-xs px-1 rounded ${
-                                  suggestion.pos.includes('v.') || suggestion.pos.includes('verb') 
-                                    ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                    : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
-                                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                                      : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300'
-                                }`}>
+                                <span className={`text-xs px-1 rounded ${suggestion.pos.includes('v.') || suggestion.pos.includes('verb')
+                                  ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                  : suggestion.pos.includes('n.') || suggestion.pos.includes('noun')
+                                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                    : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300'
+                                  }`}>
                                   {suggestion.pos.includes('comp') ? 'compound' : suggestion.pos.split('.')[0]}
                                 </span>
                               )}
@@ -2680,31 +2621,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 )}
               </div>
 
-              {/* Anki Export Button */}
-              {isAnkiMode && results.length > 0 && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-green-800 dark:text-green-300">
-                        📚 Export to Anki
-                      </h3>
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        Create flashcards with audio for {results.length} results
-                      </p>
-                    </div>
-                    <button
-                      onClick={exportToAnki}
-                      disabled={isExportingAnki || results.length === 0}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${isExportingAnki
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                    >
-                      {isExportingAnki ? 'Exporting...' : '📥 Export Deck'}
-                    </button>
-                  </div>
-                </div>
-              )}
+
 
               {/* Dictionary Term Detection Banner */}
               <DictionaryTermDetection
