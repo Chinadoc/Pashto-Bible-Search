@@ -1017,7 +1017,14 @@ export async function POST(request: NextRequest) {
     // ============================================================================
 
     console.log(`🔍 DEBUG:`, debugInfo);
-    console.log(`🔍 CONDITIONS: env=${!!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL}, lang=${searchLanguage}, latinOnly=${isLatinOnly(searchQuery)}, query="${searchQuery}"`);
+    const d1Conditions = {
+      hasWorkerUrl: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
+      isPashto: searchLanguage === 'pashto',
+      notLatinOnly: !isLatinOnly(searchQuery),
+      hasMorphFilters: !!(morphologicalFilters && Object.keys(morphologicalFilters).length > 0),
+      morphFiltersRaw: morphologicalFilters,
+    };
+    console.log(`🔍 CONDITIONS:`, d1Conditions);
 
     if (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL && searchLanguage === 'pashto' && !isLatinOnly(searchQuery)) {
       console.log(`\n🌩️  CLOUDFLARE D1 SEARCH FIRST: "${searchQuery}" (${translation})`);
@@ -1349,8 +1356,18 @@ export async function POST(request: NextRequest) {
         }
       } catch (d1Error) {
         console.warn(`⚠️ D1 search failed:`, d1Error);
+        // Store debug info for fallback path
+        (debugInfo as any).d1Error = d1Error instanceof Error ? d1Error.message : String(d1Error);
       }
     }
+    
+    // Add d1 conditions to debug info for response
+    (debugInfo as any).d1Conditions = {
+      hasWorkerUrl: !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
+      isPashto: searchLanguage === 'pashto',
+      notLatinOnly: !isLatinOnly(searchQuery),
+      hasMorphFilters: !!(morphologicalFilters && Object.keys(morphologicalFilters).length > 0),
+    };
 
     // English search mode: find ALL Pashto words with this English term
     if (searchLanguage === 'english') {
@@ -2162,6 +2179,8 @@ export async function POST(request: NextRequest) {
           variantsSearched: searchTerms,
           romanization: romanizedDictionaryMatch?.romanized,
           root: romanizedDictionaryMatch?.pashto,
+          // Debug: why did we hit the fallback path?
+          _debug: (debugInfo as any).d1Conditions || null,
         },
         dictionary: dictionaryEntries.length > 0 ? {
           entries: dictionaryEntries,
