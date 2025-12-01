@@ -46,24 +46,25 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 1. Fetch verse text from D1 (via existing API or direct binding if possible)
-        // Since we are in an API route, we can use the binding if available, or fetch from the worker
-        // For simplicity/robustness, let's try to fetch from the worker API using the helper logic
-        // But we can't import the helper easily if it uses `fetch` with relative URLs.
-        // Let's assume we can use the binding `process.env.DB`.
-
-        const db = process.env.DB as any;
-        const verse = await db.prepare(
-            "SELECT text, book, chapter, verse FROM verses WHERE book || ' ' || chapter || ':' || verse = ?"
-        ).bind(ref).first();
-
-        if (!verse) {
+        // Fetch verse from Cloudflare Worker
+        const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+        const workerRes = await fetch(`${workerUrl}/api/verse?ref=${encodeURIComponent(ref)}`);
+        
+        if (!workerRes.ok) {
+            console.error('Worker returned error:', workerRes.status);
+            return NextResponse.json({ error: "Verse not found" }, { status: 404 });
+        }
+        
+        const data = await workerRes.json();
+        const verseData = data.verse; // The worker returns { verse: {...} }
+        
+        if (!verseData?.text) {
             return NextResponse.json({ error: "Verse not found" }, { status: 404 });
         }
 
         // 2. Tokenize and enrich
         const dictionary = getDictionary();
-        const words = verse.text.split(/\s+/);
+        const words = verseData.text.split(/\s+/);
 
         const enrichedWords = words.map((word: string) => {
             // Clean punctuation
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
         // Structure as Line[] (one line for now)
         const lines = [{ words: enrichedWords }];
 
-        return NextResponse.json({ lines, verse });
+        return NextResponse.json({ lines, verse: verseData });
     } catch (error) {
         console.error("Error generating typer data:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
