@@ -494,10 +494,22 @@ function generateCacheKey(query: string, scope: string, includeRelated: boolean,
 }
 
 // Enhanced cache key that includes more context for better hit rates
-function generateEnhancedCacheKey(query: string, scope: string, includeRelated: boolean, enableFuzzy: boolean, searchLanguage: string, translation?: string): string {
+// IMPORTANT: Include morphological filters to prevent cache collision
+function generateEnhancedCacheKey(
+  query: string, 
+  scope: string, 
+  includeRelated: boolean, 
+  enableFuzzy: boolean, 
+  searchLanguage: string, 
+  translation?: string,
+  morphologicalFilters?: any
+): string {
   const normalizedQuery = query.trim().toLowerCase();
   const translationKey = translation || 'afghan2023';
-  return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}:${translationKey}`;
+  // Add morphological filter hash to differentiate filtered searches
+  const filterKey = morphologicalFilters ? 
+    JSON.stringify(morphologicalFilters).replace(/[{}"\[\]]/g, '').slice(0, 50) : '';
+  return `${normalizedQuery}:${scope}:${includeRelated}:${enableFuzzy}:${searchLanguage}:${translationKey}:${filterKey}`;
 }
 
 // Check instant cache first (for common queries)
@@ -1796,6 +1808,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check cache after related forms processing (use enhanced cache key)
+    // Include morphological filters to differentiate filtered searches
     const searchTermsHash = searchTerms.sort().join('|');
     const cacheKey = generateEnhancedCacheKey(
       searchTermsHash,
@@ -1803,7 +1816,8 @@ export async function POST(request: NextRequest) {
       includeRelated,
       enableFuzzy,
       searchLanguage,
-      translation
+      translation,
+      morphologicalFilters
     );
 
     // Check instant cache first (for ultra-fast responses)
