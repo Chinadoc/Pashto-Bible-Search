@@ -2519,6 +2519,114 @@ export default {
       return getVerbForms(env, decodeURIComponent(lemma), cap);
     }
 
+    // Word frequency lookup for word analysis
+    if (path === '/api/word-frequency' && request.method === 'GET') {
+      const word = url.searchParams.get('word');
+      if (!word) {
+        return errorResponse('Missing word parameter', 400);
+      }
+      
+      try {
+        const result = await env.DB.prepare(
+          `SELECT pashto_word, pos, word_type, base_form, romanization, english_translation, frequency_total
+           FROM word_frequencies WHERE pashto_word = ? LIMIT 1`
+        ).bind(word).first();
+        
+        if (!result) {
+          return jsonResponse({ found: false, word });
+        }
+        
+        return jsonResponse(result);
+      } catch (error: any) {
+        return errorResponse(`Word frequency lookup failed: ${error.message}`, 500);
+      }
+    }
+
+    // Form to verb lookup (find which verb a conjugated form belongs to)
+    if (path === '/api/form-to-verb' && request.method === 'GET') {
+      const form = url.searchParams.get('form');
+      if (!form) {
+        return errorResponse('Missing form parameter', 400);
+      }
+      
+      try {
+        const result = await env.DB.prepare(
+          `SELECT base_verb, form, form_type, tense, person, aspect, mood, voice, gender, helper, confidence
+           FROM verb_forms WHERE form = ? LIMIT 1`
+        ).bind(form).first();
+        
+        if (!result) {
+          return jsonResponse({ found: false, form });
+        }
+        
+        return jsonResponse({
+          found: true,
+          form: result.form,
+          base_verb: result.base_verb,
+          tense: result.tense || result.form_type,
+          person: result.person,
+          aspect: result.aspect,
+          mood: result.mood,
+          voice: result.voice,
+          gender: result.gender,
+          helper: result.helper,
+          confidence: result.confidence || 0.8,
+        });
+      } catch (error: any) {
+        return errorResponse(`Form to verb lookup failed: ${error.message}`, 500);
+      }
+    }
+
+    // Form to base word lookup (for noun inflections)
+    if (path === '/api/form-to-base' && request.method === 'GET') {
+      const form = url.searchParams.get('form');
+      if (!form) {
+        return errorResponse('Missing form parameter', 400);
+      }
+      
+      try {
+        // Try inflections table first
+        let result = await env.DB.prepare(
+          `SELECT base_word, inflected_form, grammatical_info, frequency
+           FROM inflections WHERE inflected_form = ? LIMIT 1`
+        ).bind(form).first();
+        
+        if (!result) {
+          // Try form_to_root table
+          result = await env.DB.prepare(
+            `SELECT root_word as base_word, word_form as inflected_form, frequency
+             FROM form_to_root WHERE word_form = ? LIMIT 1`
+          ).bind(form).first();
+        }
+        
+        if (!result) {
+          return jsonResponse({ found: false, form });
+        }
+        
+        // Parse grammatical_info if it's a string
+        let grammaticalInfo = null;
+        if (result.grammatical_info) {
+          try {
+            grammaticalInfo = typeof result.grammatical_info === 'string' 
+              ? JSON.parse(result.grammatical_info) 
+              : result.grammatical_info;
+          } catch (e) {
+            grammaticalInfo = { raw: result.grammatical_info };
+          }
+        }
+        
+        return jsonResponse({
+          found: true,
+          form,
+          base_word: result.base_word,
+          grammatical_info: grammaticalInfo,
+          frequency: result.frequency || 0,
+        });
+      } catch (error: any) {
+        return errorResponse(`Form to base lookup failed: ${error.message}`, 500);
+      }
+    }
+
     if (path === '/api/form-occurrences' && request.method === 'GET') {
       const form = url.searchParams.get('form');
       const translation = url.searchParams.get('translation') as 'afghan2023' | 'yousafzai2019' | null;

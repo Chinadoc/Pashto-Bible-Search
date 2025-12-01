@@ -18,6 +18,7 @@ import VirtualizedResults from './VirtualizedResults';
 import VerbDetails from './VerbDetails';
 import VerbConjugationTable from './VerbConjugationTable';
 import InflectionExplainer from './InflectionExplainer';
+import InteractiveVerse from './InteractiveVerse';
 import {
   matchesPerson,
   matchesTense,
@@ -317,15 +318,20 @@ function VerseItem({
         </div>
       )}
 
-      {/* Verse text - use matchedForms from the verse if available to avoid false positives */}
-      <p className="text-gray-100 leading-relaxed break-words text-base" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
-        {verse.text ? highlightWithInflectionReasons(
-          cleanVerseText(verse.text),
-          verse.matchedForms || termsProp || [], // Prefer matchedForms to avoid highlighting unrelated words
-          processed,
-          verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023'
-        ) : <span className="text-gray-400 italic">No text available</span>}
-      </p>
+      {/* Verse text - interactive with word tooltips */}
+      <div className="text-gray-100 leading-relaxed break-words text-base">
+        {verse.text ? (
+          <InteractiveVerse
+            text={cleanVerseText(verse.text)}
+            verseRef={verse.ref}
+            highlightedForms={verse.matchedForms || termsProp || []}
+            showAnalysis={true}
+            className=""
+          />
+        ) : (
+          <span className="text-gray-400 italic" dir="rtl">No text available</span>
+        )}
+      </div>
 
       {/* Inflection Explainer - dynamically shows grammatical reasons for inflected words */}
       {verse.text && verse.ref && (

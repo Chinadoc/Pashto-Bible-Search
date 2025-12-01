@@ -58,7 +58,17 @@ const BOOKS_TO_RECOVER = [
 async function main() {
     let totalFiles = 0;
 
-    for (const book of BOOKS_TO_RECOVER) {
+    const targetBook = process.argv[2];
+    const booksToProcess = targetBook
+        ? BOOKS_TO_RECOVER.filter(b => b.name === targetBook)
+        : BOOKS_TO_RECOVER;
+
+    if (booksToProcess.length === 0) {
+        console.error(`Book '${targetBook}' not found in list.`);
+        return;
+    }
+
+    for (const book of booksToProcess) {
         console.log(`\n📘 Verifying Book: ${book.name}`);
         for (let chapter = 1; chapter <= book.chapters; chapter++) {
             const internalBook = book.name.replace(/-/g, '');
