@@ -460,9 +460,53 @@ async function collectNounInflections(
   return variants;
 }
 
+/**
+ * Fetch inflection reasons for a list of forms from the Cloudflare Worker API
+ * Returns a map of form -> inflection reasons
+ */
+async function fetchInflectionReasons(
+  forms: string[],
+  baseWord: string,
+): Promise<Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>> {
+  const reasonsMap = new Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>();
+  
+  if (!process.env.NEXT_PUBLIC_WORKER_URL || forms.length === 0) {
+    return reasonsMap;
+  }
+
+  try {
+    // Fetch inflection reasons for the base word (gets all related forms)
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_WORKER_URL}/api/inflection-reasons?base_word=${encodeURIComponent(baseWord)}`
+    );
+    
+    if (!response.ok) {
+      console.warn(`Inflection reasons API returned ${response.status}`);
+      return reasonsMap;
+    }
+    
+    const data = await response.json();
+    
+    // The API returns aggregated reasons per form
+    if (data.aggregated) {
+      for (const [form, info] of Object.entries(data.aggregated)) {
+        const typedInfo = info as { reasons: { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] } };
+        reasonsMap.set(form, typedInfo.reasons);
+      }
+    }
+    
+    console.log(`✅ Fetched inflection reasons for ${reasonsMap.size} forms`);
+  } catch (error) {
+    console.warn('Failed to fetch inflection reasons:', error);
+  }
+  
+  return reasonsMap;
+}
+
 function buildResponse(
   variants: Map<string, RelatedFormVariant>,
   metadata: { baseForm: string; searchedForm: string; posGuess?: string; romanized?: string; english?: string },
+  inflectionReasons?: Map<string, { plural: number; sandwich: number; transitive_past: number; sandwich_types: string[] }>,
 ): RelatedFormsData {
   const verbs: RelatedFormVariant[] = [];
   const nouns: RelatedFormVariant[] = [];
@@ -470,6 +514,11 @@ function buildResponse(
   const other: RelatedFormVariant[] = [];
 
   for (const variant of variants.values()) {
+    // Add inflection reasons if available
+    if (inflectionReasons?.has(variant.form)) {
+      variant.inflectionReasons = inflectionReasons.get(variant.form);
+    }
+    
     const bucket = variant.pos || normalisePos(variant.pos);
     if (bucket === 'verb') verbs.push(variant);
     else if (bucket === 'noun') nouns.push(variant);
@@ -685,13 +734,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fetch inflection reasons for all collected forms
+    const allForms = Array.from(variants.keys());
+    const inflectionReasons = await fetchInflectionReasons(allForms, baseForm);
+    
     const response = buildResponse(variants, {
       baseForm,
       searchedForm: form,
       posGuess,
       romanized: primary?.romanization || undefined,
       english: primary?.english_translation || undefined,
-    });
+    }, inflectionReasons);
 
     return NextResponse.json(response);
   } catch (error: any) {
