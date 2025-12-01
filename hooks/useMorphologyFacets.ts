@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { debounce } from '@/app/utils/debounce';
 import type { MultiVerbFilterState } from '@/types';
 
@@ -127,24 +127,30 @@ export function useMorphologyFacets({
     }
   }, [lemma, filters, translation, enabled, filtersToApiFormat]);
 
-  // Debounced fetch to avoid excessive API calls
-  const debouncedFetch = useCallback(
-    debounce(fetchFacets, debounceMs),
-    [fetchFacets, debounceMs]
+  // Use a ref to track the latest fetch function to avoid stale closures with debounce
+  const fetchFacetsRef = useRef(fetchFacets);
+  fetchFacetsRef.current = fetchFacets;
+
+  // Stable debounced function that uses the ref
+  const stableDebouncedFetch = useMemo(
+    () => debounce(() => fetchFacetsRef.current(), debounceMs),
+    [debounceMs]
   );
 
   // Fetch on mount and when dependencies change
   useEffect(() => {
     if (lemma && enabled) {
-      debouncedFetch();
+      // Fetch immediately on first load, then debounce subsequent changes
+      stableDebouncedFetch();
     }
 
     return () => {
+      stableDebouncedFetch.cancel?.();
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [lemma, filters, translation, enabled, debouncedFetch]);
+  }, [lemma, filters, translation, enabled, stableDebouncedFetch]);
 
   // Cleanup on unmount
   useEffect(() => {

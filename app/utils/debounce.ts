@@ -1,11 +1,16 @@
 // Debounce utility for optimizing filtering performance
+export interface DebouncedFunction<T extends (...args: any[]) => any> {
+  (...args: Parameters<T>): void;
+  cancel: () => void;
+}
+
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
-): (...args: Parameters<T>) => void {
+): DebouncedFunction<T> {
   let timeout: NodeJS.Timeout | null = null;
   
-  return (...args: Parameters<T>) => {
+  const debouncedFn = (...args: Parameters<T>) => {
     if (timeout) {
       clearTimeout(timeout);
     }
@@ -14,6 +19,15 @@ export function debounce<T extends (...args: any[]) => any>(
       func(...args);
     }, wait);
   };
+  
+  debouncedFn.cancel = () => {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+  };
+  
+  return debouncedFn;
 }
 
 // Throttle utility for high-frequency operations
