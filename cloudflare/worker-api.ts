@@ -1467,6 +1467,8 @@ async function analyzeInflections(
  * Bulk analyze verses and store inflection reasons in D1
  * POST /api/populate-inflection-reasons
  * Body: { book?: string, chapter?: number, limit?: number, translation?: string }
+ * 
+ * Uses D1 batch API to avoid 500 subrequest limit
  */
 async function populateInflectionReasons(
   env: Env,
@@ -1497,137 +1499,245 @@ async function populateInflectionReasons(
     const versesResult = await env.DB.prepare(sql).bind(...params).all();
     const verses = versesResult.results || [];
     
-    let insertedCount = 0;
-    const errors: string[] = [];
+    // Pre-fetch all base words in one query to reduce subrequests
+    const allWords = new Set<string>();
+    for (const verse of verses) {
+      const text = verse.text as string;
+      const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+      words.forEach(w => { if (w.length >= 2) allWords.add(w); });
+    }
+    
+    // Batch lookup base words (max 100 per query to stay safe)
+    const wordToBase = new Map<string, string>();
+    const wordArray = Array.from(allWords);
+    const BATCH_SIZE = 100;
+    
+    for (let i = 0; i < wordArray.length; i += BATCH_SIZE) {
+      const batch = wordArray.slice(i, i + BATCH_SIZE);
+      const placeholders = batch.map(() => '?').join(',');
+      try {
+        const baseResults = await env.DB.prepare(
+          `SELECT word_form, root_word FROM form_to_root WHERE word_form IN (${placeholders})`
+        ).bind(...batch).all();
+        
+        for (const row of (baseResults.results || [])) {
+          wordToBase.set(row.word_form as string, row.root_word as string);
+        }
+      } catch (e) {
+        // Ignore lookup errors
+      }
+    }
+    
+    // Collect all inflections to insert
+    interface InflectionRecord {
+      word: string;
+      baseWord: string;
+      verseRef: string;
+      inflectionType: string | null;
+      isPlural: boolean;
+      isInSandwich: boolean;
+      sandwichType: string | null;
+      isSubjectTransitivePast: boolean;
+      position: number;
+    }
+    
+    const inflectionsToInsert: InflectionRecord[] = [];
     
     for (const verse of verses) {
-      try {
-        const verseRef = `${verse.book} ${verse.chapter}:${verse.verse}`;
-        const text = verse.text as string;
+      const verseRef = `${verse.book} ${verse.chapter}:${verse.verse}`;
+      const text = verse.text as string;
+      const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+      
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (word.length < 2) continue;
         
-        // Analyze the verse
-        const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+        // Check for inflection
+        let isInflected = false;
+        let isPlural = false;
+        let inflectionType: string | null = null;
         
-        for (let i = 0; i < words.length; i++) {
-          const word = words[i];
-          if (word.length < 2) continue;
-          
-          // Check for inflection
-          let isInflected = false;
-          let isPlural = false;
-          let inflectionType: string | null = null;
-          
-          for (const ending of NOUN_INFLECTION_ENDINGS) {
-            if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
-              isInflected = true;
-              isPlural = ending.isPlural;
-              inflectionType = ending.type;
+        for (const ending of NOUN_INFLECTION_ENDINGS) {
+          if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
+            isInflected = true;
+            isPlural = ending.isPlural;
+            inflectionType = ending.type;
+            break;
+          }
+        }
+        
+        if (!isInflected) continue;
+        
+        // Check sandwich
+        let isInSandwich = false;
+        let sandwichType: string | null = null;
+        
+        for (const pattern of SANDWICH_PATTERNS) {
+          if (pattern.start && pattern.end) {
+            for (let j = 0; j < i; j++) {
+              if (words[j] === pattern.start) {
+                for (let k = i + 1; k < words.length && k < i + 6; k++) {
+                  if (words[k] === pattern.end) {
+                    isInSandwich = true;
+                    sandwichType = pattern.type;
+                    break;
+                  }
+                }
+              }
+              if (isInSandwich) break;
+            }
+          } else if (pattern.start && !pattern.end) {
+            if (i > 0 && words[i - 1] === pattern.start) {
+              isInSandwich = true;
+              sandwichType = pattern.type;
+            }
+          } else if (!pattern.start && pattern.end) {
+            if (i < words.length - 1 && words[i + 1] === pattern.end) {
+              isInSandwich = true;
+              sandwichType = pattern.type;
+            }
+          }
+          if (isInSandwich) break;
+        }
+        
+        // Check ergative
+        let isSubjectTransitivePast = false;
+        for (let j = i + 1; j < words.length; j++) {
+          for (const marker of PAST_TENSE_MARKERS) {
+            if (words[j].endsWith(marker) && words[j].length > marker.length + 2) {
+              isSubjectTransitivePast = true;
               break;
             }
           }
-          
-          if (!isInflected) continue;
-          
-          // Check sandwich
-          let isInSandwich = false;
-          let sandwichType: string | null = null;
-          
-          for (const pattern of SANDWICH_PATTERNS) {
-            if (pattern.start && pattern.end) {
-              for (let j = 0; j < i; j++) {
-                if (words[j] === pattern.start) {
-                  for (let k = i + 1; k < words.length && k < i + 6; k++) {
-                    if (words[k] === pattern.end) {
-                      isInSandwich = true;
-                      sandwichType = pattern.type;
-                      break;
-                    }
-                  }
-                }
-                if (isInSandwich) break;
-              }
-            } else if (pattern.start && !pattern.end) {
-              if (i > 0 && words[i - 1] === pattern.start) {
-                isInSandwich = true;
-                sandwichType = pattern.type;
-              }
-            } else if (!pattern.start && pattern.end) {
-              if (i < words.length - 1 && words[i + 1] === pattern.end) {
-                isInSandwich = true;
-                sandwichType = pattern.type;
-              }
+          if (isSubjectTransitivePast) break;
+        }
+        
+        // Get base word from pre-fetched map or strip ending
+        let baseWord = wordToBase.get(word);
+        if (!baseWord) {
+          // Strip the inflection ending to guess the base
+          for (const ending of NOUN_INFLECTION_ENDINGS) {
+            if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
+              baseWord = word.slice(0, -ending.ending.length);
+              break;
             }
-            if (isInSandwich) break;
           }
-          
-          // Check ergative
-          let isSubjectTransitivePast = false;
-          for (let j = i + 1; j < words.length; j++) {
-            for (const marker of PAST_TENSE_MARKERS) {
-              if (words[j].endsWith(marker) && words[j].length > marker.length + 2) {
-                isSubjectTransitivePast = true;
-                break;
-              }
-            }
-            if (isSubjectTransitivePast) break;
-          }
-          
-          // Try to find base word from form_to_root or by stripping ending
-          let baseWord = word;
-          try {
-            const baseResult = await env.DB.prepare(
-              `SELECT root_word FROM form_to_root WHERE word_form = ? LIMIT 1`
-            ).bind(word).first();
-            if (baseResult) {
-              baseWord = baseResult.root_word as string;
-            } else {
-              // Strip the inflection ending to guess the base
-              for (const ending of NOUN_INFLECTION_ENDINGS) {
-                if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
-                  baseWord = word.slice(0, -ending.ending.length);
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            // Use stripped form as fallback
-          }
-          
-          // Insert into D1
-          await env.DB.prepare(
+        }
+        if (!baseWord) baseWord = word;
+        
+        inflectionsToInsert.push({
+          word,
+          baseWord,
+          verseRef,
+          inflectionType,
+          isPlural,
+          isInSandwich,
+          sandwichType,
+          isSubjectTransitivePast,
+          position: i,
+        });
+      }
+    }
+    
+    // Use D1 batch API to insert all at once (max 1000 statements per batch)
+    let insertedCount = 0;
+    const errors: string[] = [];
+    const INSERT_BATCH_SIZE = 100; // D1 batch limit is lower for complex statements
+    
+    for (let i = 0; i < inflectionsToInsert.length; i += INSERT_BATCH_SIZE) {
+      const batch = inflectionsToInsert.slice(i, i + INSERT_BATCH_SIZE);
+      
+      try {
+        const statements = batch.map(inf => 
+          env.DB.prepare(
             `INSERT OR REPLACE INTO inflection_reasons 
              (pashto_form, base_word, verse_ref, inflection_type, is_plural, is_in_sandwich, 
               sandwich_type, is_subject_transitive_past, word_position, translation_key)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           ).bind(
-            word,
-            baseWord,
-            verseRef,
-            inflectionType,
-            isPlural ? 1 : 0,
-            isInSandwich ? 1 : 0,
-            sandwichType,
-            isSubjectTransitivePast ? 1 : 0,
-            i,
+            inf.word,
+            inf.baseWord,
+            inf.verseRef,
+            inf.inflectionType,
+            inf.isPlural ? 1 : 0,
+            inf.isInSandwich ? 1 : 0,
+            inf.sandwichType,
+            inf.isSubjectTransitivePast ? 1 : 0,
+            inf.position,
             translation
-          ).run();
-          
-          insertedCount++;
-        }
+          )
+        );
+        
+        await env.DB.batch(statements);
+        insertedCount += batch.length;
       } catch (e: any) {
-        errors.push(`${verse.book} ${verse.chapter}:${verse.verse}: ${e.message}`);
+        errors.push(`Batch ${Math.floor(i / INSERT_BATCH_SIZE)}: ${e.message}`);
       }
     }
     
     return jsonResponse({
       success: true,
       verses_analyzed: verses.length,
+      inflections_found: inflectionsToInsert.length,
       inflections_stored: insertedCount,
-      errors: errors.slice(0, 10), // Only return first 10 errors
+      errors: errors.slice(0, 10),
       errors_total: errors.length,
     });
   } catch (error: any) {
     return errorResponse(`Failed to populate inflection reasons: ${error.message}`, 500);
+  }
+}
+
+/**
+ * Validate that forms belong to a specific verb lemma
+ * POST /api/validate-verb-forms
+ * Body: { lemma: string, forms: string[] }
+ * 
+ * Returns which forms are actually conjugations of the given verb.
+ * This prevents false positives like پوهه (from پوهېدل) matching وهل.
+ */
+async function validateVerbForms(
+  env: Env,
+  lemma: string,
+  forms: string[]
+): Promise<Response> {
+  try {
+    if (!lemma || !forms || forms.length === 0) {
+      return jsonResponse({ valid: [], invalid: [] });
+    }
+    
+    // Get all known forms for this verb from verb_forms table
+    const knownFormsResult = await env.DB.prepare(
+      `SELECT DISTINCT form FROM verb_forms WHERE base_verb = ?`
+    ).bind(lemma).all();
+    
+    const knownForms = new Set(
+      (knownFormsResult.results || []).map((r: any) => r.form as string)
+    );
+    
+    // Also add the lemma itself
+    knownForms.add(lemma);
+    
+    // Classify forms
+    const valid: string[] = [];
+    const invalid: string[] = [];
+    
+    for (const form of forms) {
+      if (knownForms.has(form)) {
+        valid.push(form);
+      } else {
+        invalid.push(form);
+      }
+    }
+    
+    return jsonResponse({
+      lemma,
+      valid,
+      invalid,
+      known_forms_count: knownForms.size,
+    });
+  } catch (error: any) {
+    return errorResponse(`Failed to validate verb forms: ${error.message}`, 500);
   }
 }
 
@@ -2471,6 +2581,24 @@ export default {
           body.limit || 100,
           body.translation || 'afghan2023'
         );
+      } catch (e: any) {
+        return errorResponse(`Invalid request body: ${e.message}`, 400);
+      }
+    }
+
+    // Validate that forms belong to a specific verb (disambiguation)
+    if (path === '/api/validate-verb-forms' && request.method === 'POST') {
+      try {
+        const body = await request.json() as {
+          lemma: string;
+          forms: string[];
+        };
+        
+        if (!body.lemma) {
+          return errorResponse('Missing lemma in request body', 400);
+        }
+        
+        return validateVerbForms(env, body.lemma, body.forms || []);
       } catch (e: any) {
         return errorResponse(`Invalid request body: ${e.message}`, 400);
       }

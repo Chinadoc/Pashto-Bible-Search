@@ -317,11 +317,11 @@ function VerseItem({
         </div>
       )}
 
-      {/* Verse text */}
+      {/* Verse text - use matchedForms from the verse if available to avoid false positives */}
       <p className="text-gray-100 leading-relaxed break-words text-base" dir="rtl" style={{ unicodeBidi: "plaintext" }}>
         {verse.text ? highlightWithInflectionReasons(
           cleanVerseText(verse.text),
-          termsProp || [],
+          verse.matchedForms || termsProp || [], // Prefer matchedForms to avoid highlighting unrelated words
           processed,
           verse.translation === 'Yousafzai 2019' ? 'yousafzai2019' : 'afghan2023'
         ) : <span className="text-gray-400 italic">No text available</span>}

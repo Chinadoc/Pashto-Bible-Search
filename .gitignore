@@ -8,3 +8,5 @@ dist
 .supabase
 .DS_Store
 *.log
+recovered_audio/
+*.mp3

@@ -29,9 +29,29 @@ export function buildHighlightRegex(tokens: string[]){
   
   const parts = pashto.map(t => withDia(t.normalize("NFC")));
   
-  // Simple regex - rely on backend to return correct verses
-  // The sort by length ensures longer matches take priority over shorter substrings
-  return new RegExp(`(${parts.join("|")})`, "giu");
+  // Use Arabic word boundaries to prevent matching inside other words
+  // e.g., prevent "وه" from matching inside "پوهه"
+  // Arabic word boundaries: space, punctuation, or start/end of string
+  // (?<![\p{Script=Arabic}]) = not preceded by Arabic letter (negative lookbehind)
+  // (?![\p{Script=Arabic}]) = not followed by Arabic letter (negative lookahead)
+  const arabicWordBoundary = {
+    before: '(?<![\\p{Script=Arabic}])',  // Not preceded by Arabic letter
+    after: '(?![\\p{Script=Arabic}])',     // Not followed by Arabic letter
+  };
+  
+  // For longer tokens (3+ chars), we can use word boundaries
+  // For short tokens (1-2 chars), only match as standalone words
+  const partsWithBoundaries = parts.map((part, i) => {
+    const originalToken = pashto[i];
+    if (originalToken.length <= 2) {
+      // Very short tokens: must be surrounded by non-Arabic characters
+      return `${arabicWordBoundary.before}${part}${arabicWordBoundary.after}`;
+    }
+    // Longer tokens: use word boundaries
+    return `${arabicWordBoundary.before}${part}${arabicWordBoundary.after}`;
+  });
+  
+  return new RegExp(`(${partsWithBoundaries.join("|")})`, "giu");
 }
 
 export function renderHighlightedText(text: string, rx: RegExp): string {
