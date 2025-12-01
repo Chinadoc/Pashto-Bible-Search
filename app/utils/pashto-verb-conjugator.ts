@@ -53,6 +53,90 @@ const AUXILIARIES = {
 };
 
 /**
+ * Separable prefixes (split heads) in Pashto
+ * These are directional/aspectual prefixes that can be separated from the verb stem
+ * in certain grammatical contexts, especially in perfective aspect.
+ * 
+ * Reference: https://grammar.lingdocs.com/verbs/roots-and-stems/#split-and-non-split
+ * 
+ * In the perfective, the و prefix can "split" the directional prefix from the stem:
+ * - را + کوي → را و کړي (perfective: "he/she does it coming here")
+ * - در + کوي → در و کړي (perfective: "he/she does it going to you")
+ * - ور + کوي → ور و کړي (perfective: "he/she does it going away")
+ */
+export const SEPARABLE_PREFIXES: { prefix: string; meaning: string; type: 'directional' | 'aspectual' }[] = [
+    { prefix: 'را', meaning: 'hither (towards speaker)', type: 'directional' },
+    { prefix: 'در', meaning: 'thither (towards addressee)', type: 'directional' },
+    { prefix: 'ور', meaning: 'thither (away from both)', type: 'directional' },
+    { prefix: 'ور', meaning: 'thither (away from both)', type: 'directional' },
+    // Note: ننـ (inside), وتـ (outside), ختـ (up), and کوزـ (down) are also directional
+    // but typically don't separate as cleanly
+];
+
+/**
+ * Check if a verb has a separable prefix
+ */
+export function hasSeparablePrefix(verb: string): { hasPrefix: boolean; prefix?: string; stem?: string } {
+    for (const { prefix } of SEPARABLE_PREFIXES) {
+        if (verb.startsWith(prefix)) {
+            return {
+                hasPrefix: true,
+                prefix,
+                stem: verb.slice(prefix.length),
+            };
+        }
+    }
+    return { hasPrefix: false };
+}
+
+/**
+ * Generate split head forms for a verb with separable prefix
+ * E.g., راتلل (to come) → را و تلل (perfective past split)
+ */
+export function generateSplitHeadForms(infinitive: string): VerbForm[] {
+    const forms: VerbForm[] = [];
+    const { hasPrefix, prefix, stem } = hasSeparablePrefix(infinitive);
+    
+    if (!hasPrefix || !prefix || !stem) {
+        return forms;
+    }
+    
+    // Generate split perfective forms
+    // Pattern: PREFIX + و + STEM
+    const stemBase = stem.endsWith('ل') ? stem.slice(0, -1) : stem;
+    
+    // Present perfective (split) conjugations
+    PRESENT_ENDINGS.forEach(({ ending, label }) => {
+        // Split form: را و کړم (ra + w + kRam)
+        forms.push({
+            form: `${prefix} و ${stemBase}${ending}`,
+            label: `${label} perf split`,
+            aspect: 'perfective',
+            constructionType: 'simple',
+        });
+    });
+    
+    // Past perfective (split)
+    forms.push({
+        form: `${prefix} و ${stem}`,
+        label: 'infinitive split (past)',
+        aspect: 'perfective',
+        constructionType: 'simple',
+    });
+    
+    // Also add forms with به for future
+    forms.push({
+        form: `به ${prefix} و ${stemBase}ي`,
+        label: '3rd sing fut perf split',
+        tense: 'future',
+        aspect: 'perfective',
+        constructionType: 'simple',
+    });
+    
+    return forms;
+}
+
+/**
  * Generate comprehensive verb forms following LingDocs grammar rules
  */
 export function generateComprehensiveVerbForms(infinitive: string): VerbConjugation {
@@ -162,6 +246,11 @@ export function generateComprehensiveVerbForms(infinitive: string): VerbConjugat
             constructionType: 'simple',
         });
     }
+    
+    // Step 8: Generate split head forms for verbs with separable prefixes
+    // (را، در، ور، etc.)
+    const splitHeadForms = generateSplitHeadForms(infinitive);
+    allForms.push(...splitHeadForms);
 
     // Step 8: Add the infinitive itself
     allForms.push({
