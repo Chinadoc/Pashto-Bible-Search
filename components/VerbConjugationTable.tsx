@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { RelatedFormVariant, MultiVerbFilterState, VerbFilterState } from '../types';
 
 interface VerbConjugationTableProps {
@@ -11,6 +11,7 @@ interface VerbConjugationTableProps {
   verbs: RelatedFormVariant[];
   filters?: MultiVerbFilterState | VerbFilterState;
   compact?: boolean;
+  defaultExpanded?: boolean; // Start expanded or collapsed
 }
 
 // Grammatical explanations based on LingDocs grammar
@@ -105,7 +106,9 @@ export default function VerbConjugationTable({
   verbs,
   filters,
   compact = false,
+  defaultExpanded = false,
 }: VerbConjugationTableProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   // Group verbs by tense and then by person/number
   const conjugationTable = useMemo(() => {
     const table: Record<string, Record<string, RelatedFormVariant[]>> = {};
@@ -226,20 +229,24 @@ export default function VerbConjugationTable({
     );
   }
 
+  // Get active tense names for summary
+  const activeTenseLabels = activeTenses
+    .map(t => GRAMMAR_EXPLANATIONS[t]?.title || t)
+    .slice(0, 3);
+
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-      {/* Header: Lemma and definition */}
-      <div className="mb-4">
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm mb-4">
+      {/* Collapsible Header - Always visible */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-t-lg"
+      >
         <div className="flex items-center gap-3 flex-wrap">
-          <a 
-            href={`/lexicon?q=${encodeURIComponent(lemma)}`}
-            className="text-2xl font-bold text-blue-700 dark:text-blue-400 hover:underline"
-            style={{ fontFamily: 'Noto Naskh Arabic, serif' }}
-          >
+          <span className="text-lg font-semibold text-blue-700 dark:text-blue-400" style={{ fontFamily: 'Noto Naskh Arabic, serif' }}>
             {lemma}
-          </a>
+          </span>
           {romanized && (
-            <span className="text-lg text-gray-600 dark:text-gray-400 italic">
+            <span className="text-sm text-gray-500 dark:text-gray-400 italic">
               {romanized}
             </span>
           )}
@@ -248,30 +255,68 @@ export default function VerbConjugationTable({
               {verbType}
             </span>
           )}
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            — {matchingForms.length} forms
+            {activeTenseLabels.length > 0 && ` (${activeTenseLabels.join(', ')}${activeTenses.length > 3 ? '...' : ''})`}
+          </span>
         </div>
-        {english && (
-          <p className="text-gray-700 dark:text-gray-300 mt-1">
-            <span className="font-medium">Definition:</span> {english}
-          </p>
-        )}
-      </div>
-
-      {/* Grammatical explanation based on active filters */}
-      {grammaticalExplanation.length > 0 && (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 rounded-md border border-amber-200 dark:border-amber-800">
-          <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-1 text-sm">
-            📚 Grammar Note
-          </h4>
-          {grammaticalExplanation.map((note, idx) => (
-            <p key={idx} className="text-sm text-amber-700 dark:text-amber-400">
-              {note}
-            </p>
-          ))}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {isExpanded ? 'Click to collapse' : 'Click to expand conjugation table'}
+          </span>
+          <svg 
+            className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
-      )}
+      </button>
 
-      {/* Conjugation tables by tense */}
-      {activeTenses.map(tense => {
+      {/* Expandable content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-700">
+          {/* Header: Lemma and definition */}
+          <div className="py-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <a 
+                href={`/lexicon?q=${encodeURIComponent(lemma)}`}
+                className="text-xl font-bold text-blue-700 dark:text-blue-400 hover:underline"
+                style={{ fontFamily: 'Noto Naskh Arabic, serif' }}
+              >
+                {lemma}
+              </a>
+              {romanized && (
+                <span className="text-base text-gray-600 dark:text-gray-400 italic">
+                  {romanized}
+                </span>
+              )}
+            </div>
+            {english && (
+              <p className="text-gray-700 dark:text-gray-300 mt-1 text-sm">
+                <span className="font-medium">Definition:</span> {english}
+              </p>
+            )}
+          </div>
+
+          {/* Grammatical explanation based on active filters */}
+          {grammaticalExplanation.length > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 rounded-md border border-amber-200 dark:border-amber-800">
+              <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-1 text-sm">
+                📚 Grammar Note
+              </h4>
+              {grammaticalExplanation.map((note, idx) => (
+                <p key={idx} className="text-sm text-amber-700 dark:text-amber-400">
+                  {note}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Conjugation tables by tense */}
+          {activeTenses.map(tense => {
         const tenseTable = conjugationTable[tense];
         if (!tenseTable) return null;
 
@@ -400,22 +445,24 @@ export default function VerbConjugationTable({
         );
       })}
 
-      {/* Summary of forms being searched */}
-      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-        <p className="text-xs text-slate-500 dark:text-slate-500">
-          Searching with <strong>{matchingForms.length}</strong> verb form{matchingForms.length !== 1 ? 's' : ''}:
-          <span className="ml-2">
-            {matchingForms.slice(0, 6).map((f, idx) => (
-              <span key={idx} className="inline-block mx-1 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300" style={{ fontFamily: 'Noto Naskh Arabic, serif' }}>
-                {f.form}
+          {/* Summary of forms being searched */}
+          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-500">
+              Searching with <strong>{matchingForms.length}</strong> verb form{matchingForms.length !== 1 ? 's' : ''}:
+              <span className="ml-2">
+                {matchingForms.slice(0, 6).map((f, idx) => (
+                  <span key={idx} className="inline-block mx-1 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300" style={{ fontFamily: 'Noto Naskh Arabic, serif' }}>
+                    {f.form}
+                  </span>
+                ))}
+                {matchingForms.length > 6 && (
+                  <span className="text-slate-400">+{matchingForms.length - 6} more</span>
+                )}
               </span>
-            ))}
-            {matchingForms.length > 6 && (
-              <span className="text-slate-400">+{matchingForms.length - 6} more</span>
-            )}
-          </span>
-        </p>
-      </div>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
