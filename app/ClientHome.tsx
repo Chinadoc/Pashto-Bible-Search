@@ -691,21 +691,21 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   }, []);
 
   // Load persisted facet buckets from Cloudflare D1 to power morphology filters
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/morphology/facets')
-      .then(res => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data) {
-          setMorphologyFacets(data);
-        }
-      })
-      .catch((err) => console.warn('Failed to load morphology facets', err));
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   fetch('/api/morphology/facets')
+  //     .then(res => (res.ok ? res.json() : null))
+  //     .then((data) => {
+  //       if (!cancelled && data) {
+  //         setMorphologyFacets(data);
+  //       }
+  //     })
+  //     .catch((err) => console.warn('Failed to load morphology facets', err));
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, []);
 
   // Persist preferences when they change
   useEffect(() => {
@@ -2634,6 +2634,8 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 results={filteredResults}
                 audioMap={activeTranslation === 'afghan2023' ? audioMap : yousafzaiAudioMap}
                 loading={isLoading}
+                query={query}
+                terms={activeVariantForms.length > 0 ? activeVariantForms : (processed?.variants || [query])}
                 processed={processed}
                 verbFilters={verbFilters}
                 multiVerbFilters={multiVerbFilters}
