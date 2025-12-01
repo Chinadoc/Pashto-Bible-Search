@@ -2218,9 +2218,8 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                         </div>
                       )}
 
-                    {/* NOUN FILTERS */}
-                    {((relatedForms?.posGuess === 'noun' && relatedForms.nouns && relatedForms.nouns.length > 0) ||
-                      (!relatedForms?.posGuess && relatedForms?.nouns && relatedForms.nouns.length > 0) ||
+                    {/* NOUN FILTERS - Show whenever nouns exist or noun filters are active */}
+                    {((relatedForms?.nouns && relatedForms.nouns.length > 0) ||
                       (!relatedForms && !isDefaultNounFilter(nounFilters))) && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center gap-2 mb-3">
@@ -2449,9 +2448,9 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                         </div>
                       )}
 
-                    {/* ADJECTIVE FILTERS */}
-                    {((relatedForms?.posGuess === 'adjective' || relatedForms?.posGuess === 'adj') && relatedForms.other && relatedForms.other.length > 0) ||
-                      (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters)) && (
+                    {/* ADJECTIVE FILTERS - Show whenever adjectives exist or adjective filters are active */}
+                    {((relatedForms?.adjectives && relatedForms.adjectives.length > 0) ||
+                      (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters))) && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
