@@ -1048,11 +1048,19 @@ export async function POST(request: NextRequest) {
               const label = variant.label.toLowerCase();
 
               // Person filter (any of the selected values must match)
+              // Labels can be: "1sg Present", "2pl Past", "3sg_m Perfect", etc.
               if (personFilters.length > 0) {
                 const personMatched = personFilters.some(personFilter => {
-                  const personNum = personFilter === '1st' ? '1' :
-                    personFilter === '2nd' ? '2' : '3';
-                  return label.includes(` ${personNum}`) || label.includes(`${personNum}.`);
+                  if (personFilter === '1st') {
+                    return label.includes('1sg') || label.includes('1pl') || label.includes('1.') || label.includes(' 1 ');
+                  }
+                  if (personFilter === '2nd') {
+                    return label.includes('2sg') || label.includes('2pl') || label.includes('2.') || label.includes(' 2 ');
+                  }
+                  if (personFilter === '3rd') {
+                    return label.includes('3sg') || label.includes('3pl') || label.includes('3.') || label.includes(' 3 ');
+                  }
+                  return false;
                 });
                 if (!personMatched) return false;
               }
@@ -1111,9 +1119,14 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`🔍 Variants provided:`, variants && variants.length > 0 ? variants.slice(0, 10) : 'none');
+      console.log(`🔍 Morphological variants:`, morphologicalVariants.length > 0 ? morphologicalVariants.slice(0, 10) : 'none');
       
-      // Await verb forms if includeRelated (this was started in parallel earlier)
-      if (includeRelated && !variants?.length && !morphologicalVariants.length) {
+      // Check if morphological filters were requested (even if results are empty)
+      const hasMorphFilters = morphologicalFilters && Object.keys(morphologicalFilters).length > 0;
+      
+      // Await verb forms if includeRelated AND no morphological filters were applied
+      // If morphological filters ARE applied, we use only those filtered forms (even if empty = no results)
+      if (includeRelated && !variants?.length && !morphologicalVariants.length && !hasMorphFilters) {
         const verbForms = await verbFormsPromise;
         if (verbForms && verbForms.length > 0) {
           const allForms = new Set<string>([searchQuery]);
@@ -1138,6 +1151,8 @@ export async function POST(request: NextRequest) {
           };
           console.log(`✅ [RELATED FORMS] Got ${relatedFormsForD1.length} forms from parallel fetch`);
         }
+      } else if (hasMorphFilters && morphologicalVariants.length === 0) {
+        console.log(`⚠️ [MORPHOLOGICAL FILTERING] No forms match the filter criteria`);
       }
       
       console.log(`🔍 Related forms for D1:`, relatedFormsForD1.length > 0 ? relatedFormsForD1.slice(0, 10) : 'none');
