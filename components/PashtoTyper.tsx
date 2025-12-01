@@ -202,8 +202,10 @@ interface Props {
     onComplete?: (score: number) => void;
 }
 
-export default function PashtoTyper({ data = prayerData, onComplete }: Props) {
-    const flatList = data.flatMap(line => line.words);
+export default function PashtoTyper({ data, onComplete }: Props) {
+    // Use provided data or fall back to prayer data
+    const activeData = data && data.length > 0 ? data : prayerData;
+    const flatList = activeData.flatMap(line => line.words);
 
     const [stage, setStage] = useState(1); // 1: Type It, 2: Memorize It, 3: Master It
     const [index, setIndex] = useState(0);
@@ -217,6 +219,17 @@ export default function PashtoTyper({ data = prayerData, onComplete }: Props) {
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [lastCompletedVerse, setLastCompletedVerse] = useState<number | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+
+    // Reset state when data changes
+    useEffect(() => {
+        setIndex(0);
+        setIsComplete(false);
+        setMistake(false);
+        setAttempts(0);
+        setErrors(0);
+        setStage(1);
+        setHiddenIndices(new Set());
+    }, [data]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);

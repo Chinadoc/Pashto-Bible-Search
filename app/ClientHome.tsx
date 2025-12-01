@@ -431,26 +431,6 @@ function SearchControls({
         )}
 
         <div className="control-block">
-          <span className="control-label">Match Type</span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setEnableFuzzy(false)}
-              className={`control-toggle ${!enableFuzzy ? 'is-active' : ''}`}
-            >
-              Exact
-            </button>
-            <button
-              type="button"
-              onClick={() => setEnableFuzzy(true)}
-              className={`control-toggle ${enableFuzzy ? 'is-active' : ''}`}
-            >
-              Fuzzy
-            </button>
-          </div>
-        </div>
-
-        <div className="control-block">
           <span className="control-label">Language</span>
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -468,14 +448,6 @@ function SearchControls({
               title="Search in English - finds dictionary matches and searches Pashto equivalents"
             >
               🇬🇧 English
-            </button>
-            <button
-              type="button"
-              onClick={() => setSearchLanguage('anki')}
-              className={`control-toggle ${searchLanguage === 'anki' ? 'is-active' : ''}`}
-              title="Anki Export Mode - search for words and export to Anki flashcards with audio"
-            >
-              📚 Anki
             </button>
           </div>
         </div>
