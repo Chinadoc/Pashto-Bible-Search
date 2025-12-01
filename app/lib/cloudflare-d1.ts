@@ -223,46 +223,65 @@ export async function searchVersesByForms(
   const translation = options.translation || 'afghan2023';
   const limit = options.limit || 100;
 
-  // Get verse references for all forms from form_occurrences
+  // PARALLEL: Get verse references for all forms from form_occurrences
   const allVerseRefs = new Set<string>();
   const formsNotFound: string[] = [];
 
-  for (const form of forms) {
-    const occurrences = await getFormOccurrences(form, translation);
+  // Batch lookup - all forms in parallel (much faster than sequential!)
+  const occurrenceResults = await Promise.all(
+    forms.map(form => getFormOccurrences(form, translation).catch(() => null))
+  );
+
+  forms.forEach((form, idx) => {
+    const occurrences = occurrenceResults[idx];
     if (occurrences && occurrences.verse_refs && occurrences.verse_refs.length > 0) {
       for (const ref of occurrences.verse_refs) {
         allVerseRefs.add(ref);
       }
     } else {
-      // Form not found in form_occurrences - we'll search verses directly
       formsNotFound.push(form);
     }
-  }
+  });
 
-  // For forms not in form_occurrences, search verses directly
+  // For forms not indexed, search directly - but limit to avoid slowdown
   if (formsNotFound.length > 0) {
-    console.log(`⚠️ ${formsNotFound.length} forms not in form_occurrences, searching verses directly`);
-    for (const form of formsNotFound) {
-      const verses = await searchVerses(form, {
-        translation,
-        testament: options.testament,
-        limit: 1000, // CRITICAL FIX: Increased from 50 to allow full expansion
-      });
-      for (const verse of verses) {
-        allVerseRefs.add(verse.ref);
-      }
-    }
+    const formsToSearch = formsNotFound.slice(0, 8); // Limit fallback to 8 forms max
+    console.log(`⚠️ ${formsNotFound.length} forms not indexed, searching ${formsToSearch.length} directly`);
+    
+    const searchResults = await Promise.all(
+      formsToSearch.map(form => 
+        searchVerses(form, {
+          translation,
+          testament: options.testament,
+          limit: 150, // Reduced limit per form for speed
+        }).catch(() => [])
+      )
+    );
+    
+    searchResults.flat().forEach(verse => {
+      if (verse.ref) allVerseRefs.add(verse.ref);
+    });
   }
 
-  // Fetch verses by reference
-  const versePromises = Array.from(allVerseRefs).slice(0, limit).map(ref =>
-    getVerseByRef(ref, translation)
-  );
+  if (allVerseRefs.size === 0) {
+    return [];
+  }
 
-  const verses = await Promise.all(versePromises);
+  // PARALLEL: Fetch verses by reference in batches
+  const refs = Array.from(allVerseRefs).slice(0, limit);
+  const batchSize = 40;
+  let allVersesData: (Verse | null)[] = [];
+  
+  for (let i = 0; i < refs.length; i += batchSize) {
+    const batch = refs.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(ref => getVerseByRef(ref, translation).catch(() => null))
+    );
+    allVersesData = allVersesData.concat(batchResults);
+  }
 
   // Filter out nulls and apply testament filter
-  let filtered = verses.filter((v): v is Verse => v !== null);
+  let filtered = allVersesData.filter((v): v is Verse => v !== null);
 
   if (options.testament) {
     filtered = filtered.filter(v => v.testament === options.testament);
