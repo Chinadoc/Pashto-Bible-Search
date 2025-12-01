@@ -1095,6 +1095,26 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       )}
 
       <div className="mb-4 flex flex-col gap-2">
+        {/* Debug logging for VerbConjugationTable */}
+        {(() => {
+          const hasFilters = multiVerbFilters && 
+            (multiVerbFilters.person.some(p => p !== 'all') || 
+             multiVerbFilters.tense.some(t => t !== 'all') ||
+             multiVerbFilters.aspect.some(a => a !== 'all') ||
+             multiVerbFilters.mood.some(m => m !== 'all'));
+          const verbsLength = processed?.relatedForms?.forms?.verbs?.length ?? 0;
+          console.log('VerbConjugationTable debug:', {
+            hasFilters,
+            hasRelatedForms: !!processed?.relatedForms,
+            hasFormsObj: !!processed?.relatedForms?.forms,
+            verbsLength,
+            multiVerbFilters: multiVerbFilters ? {
+              person: multiVerbFilters.person,
+              tense: multiVerbFilters.tense,
+            } : null,
+          });
+          return null;
+        })()}
         {/* Verb Conjugation Table - Show when filters are active and we have verb forms */}
         {multiVerbFilters && 
          (multiVerbFilters.person.some(p => p !== 'all') || 
