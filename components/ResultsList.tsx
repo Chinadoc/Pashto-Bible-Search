@@ -8,6 +8,7 @@ import type {
   VerbFilterState,
   MultiVerbFilterState,
   DictionaryData,
+  RelatedFormVariant,
 } from '../types';
 import { audioUrlFromRef, resolveAudioUrl } from '@/app/lib/audio';
 import { parseRef, dedupByRef, buildHighlightRegex, stripLeadingVerseNumber, highlightPsText, cleanVerseText } from '../utils/highlight';
@@ -15,6 +16,7 @@ import HighlightText from './HighlightText';
 import EnhancedHighlightText from './EnhancedHighlightText';
 import VirtualizedResults from './VirtualizedResults';
 import VerbDetails from './VerbDetails';
+import VerbConjugationTable from './VerbConjugationTable';
 import {
   matchesPerson,
   matchesTense,
@@ -1093,23 +1095,35 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       )}
 
       <div className="mb-4 flex flex-col gap-2">
-        {/* Search term and dictionary info - Full format: "وهل - wahúl v. trans. to hit, strike" */}
-        {((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
+        {/* Verb Conjugation Table - Show when filters are active and we have verb forms */}
+        {multiVerbFilters && 
+         (multiVerbFilters.person.some(p => p !== 'all') || 
+          multiVerbFilters.tense.some(t => t !== 'all') ||
+          multiVerbFilters.aspect.some(a => a !== 'all') ||
+          multiVerbFilters.mood.some(m => m !== 'all')) &&
+         processed?.relatedForms?.forms?.verbs?.length > 0 && (
+          <VerbConjugationTable
+            lemma={processed.normalized || processed.relatedForms?.baseForm || ''}
+            romanized={processed.romanization || processed.relatedForms?.romanized}
+            english={dictionaryData?.entries?.[0]?.english || processed.relatedForms?.english}
+            verbType={dictionaryData?.entries?.[0]?.transitivity || processed.relatedForms?.posGuess}
+            verbs={processed.relatedForms.forms.verbs as RelatedFormVariant[]}
+            filters={multiVerbFilters}
+          />
+        )}
+
+        {/* Fallback: Simple display when no filters or no verb forms */}
+        {!(multiVerbFilters && 
+           (multiVerbFilters.person.some(p => p !== 'all') || 
+            multiVerbFilters.tense.some(t => t !== 'all') ||
+            multiVerbFilters.aspect.some(a => a !== 'all') ||
+            multiVerbFilters.mood.some(m => m !== 'all')) &&
+           processed?.relatedForms?.forms?.verbs?.length > 0) &&
+         ((dictionaryData?.entries?.length ?? 0) > 0 || processed?.normalized || processed?.romanization) && (
           <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
             <span className="font-medium">Showing results for </span>
-            {/* Show descriptive filter message when person filters are active */}
-            {multiVerbFilters && multiVerbFilters.person.some(p => p !== 'all') ? (
-              <div className="font-semibold text-blue-600 dark:text-blue-400">
-                <div>present agrees w/ subject</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-mono whitespace-pre">
-                  Pers.		Singular		Plural{'\n'}
-                  {multiVerbFilters.person.includes('1st') && '1st\tوهم wahum\tوهو wahoo\n'}
-                  {multiVerbFilters.person.includes('2nd') && '2nd\tوهې wahe\tوهئ wahey\n'}
-                  {multiVerbFilters.person.includes('3rd') && '3rd\tوهي wahee\tوهي wahee\n'}
-                </div>
-              </div>
-            ) : activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
-
+            {/* Show active variant forms */}
+            {activeVariantForms && activeVariantForms.length > 0 && activeVariantForms.length < 10 ? (
               <span className="font-semibold text-blue-600 dark:text-blue-400">
                 {activeVariantForms.slice(0, 3).map((form, idx) => (
                   <React.Fragment key={form}>
