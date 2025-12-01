@@ -1058,9 +1058,12 @@ export async function POST(request: NextRequest) {
           console.log(`🔍 [MORPHOLOGICAL FILTERING] Active filters: person=${JSON.stringify(personFilters)}, tense=${JSON.stringify(tenseFilters)}, mood=${JSON.stringify(moodFilters)}, aspect=${JSON.stringify(aspectFilters)}`);
 
           // Filter variants based on morphological criteria (supports multi-select)
-          // Log first few to verify labels
-          const sampleLabels = allVariants.slice(0, 5).map(v => `${v.form}:"${v.label}"`);
+          // Capture sample labels for debugging
+          const sampleLabels = allVariants.slice(0, 10).map(v => `${v.form}:"${v.label}"`);
           console.log(`🔍 [MORPHOLOGICAL FILTERING] Sample variant labels:`, sampleLabels);
+          
+          // Also store for response debugging
+          const debugLabels = allVariants.slice(0, 20).map(v => ({ form: v.form, label: v.label }));
           
           morphologicalVariants = allVariants
             .filter(variant => {
@@ -1173,6 +1176,10 @@ export async function POST(request: NextRequest) {
       } else if (hasMorphFilters && morphologicalVariants.length === 0) {
         console.log(`⚠️ [MORPHOLOGICAL FILTERING] No forms match the filter criteria`);
         // Return early with 0 results - user asked for forms that don't exist
+        // Include debug info to help diagnose filtering issues
+        const allVariantsForDebug = await generateVerbVariants(searchQuery, { cap: 30 }).catch(() => []);
+        const debugLabels = allVariantsForDebug.slice(0, 20).map((v: any) => ({ form: v.form, label: v.label }));
+        
         return NextResponse.json({
           results: [],
           relatedForms: null,
@@ -1185,6 +1192,8 @@ export async function POST(request: NextRequest) {
             language: searchLanguage,
             filteringPath: 'morphological-no-match',
             morphVariantsCount: 0,
+            totalVariantsBeforeFilter: allVariantsForDebug.length,
+            sampleLabels: debugLabels, // Debug: what labels were available
           },
           count: 0,
           ms: Date.now() - startedAt,
