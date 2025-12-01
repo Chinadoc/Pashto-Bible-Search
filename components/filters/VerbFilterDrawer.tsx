@@ -178,19 +178,34 @@ export default function VerbFilterDrawer({
 
       {/* Main filter panel */}
       <div className="p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Filter by verb form
-          </span>
-          {!isDefault && (
-            <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full">
-              Active
+        <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Filter by verb form {!isDefault && '(Active)'}:
             </span>
-          )}
+            <button
+              onClick={handleReset}
+              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 underline"
+            >
+              Reset filters
+            </button>
+          </div>
           {lemma && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-              Verb: <span className="font-medium" style={{ direction: 'rtl' }}>{lemma}</span>
-            </span>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-gray-500 dark:text-gray-400">
+                Verb: <span className="font-medium" style={{ direction: 'rtl' }}>{lemma}</span>
+              </span>
+              {facets && !isLoading && (
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">
+                  {facets.totalForms} total forms
+                </span>
+              )}
+              {isLoading && (
+                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full animate-pulse">
+                  Loading...
+                </span>
+              )}
+            </div>
           )}
         </div>
 

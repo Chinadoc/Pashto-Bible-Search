@@ -123,13 +123,13 @@ export default function FacetGroup({
                 <span className="capitalize">{option.label}</span>
               </div>
               <span className={`
-                text-xs tabular-nums px-1.5 py-0.5 rounded-full min-w-[2rem] text-center
+                text-xs tabular-nums px-2 py-0.5 rounded-full min-w-[2.5rem] text-center font-medium
                 ${isLoading ? 'animate-pulse bg-gray-200 dark:bg-gray-600' : ''}
                 ${isDisabled
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
+                  ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
                   : isSelected
-                    ? 'bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    ? 'bg-indigo-200 dark:bg-indigo-700 text-indigo-800 dark:text-indigo-100'
+                    : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                 }
               `}>
                 {isLoading ? '...' : option.count}
