@@ -1037,10 +1037,12 @@ export async function POST(request: NextRequest) {
       // If morphological filters are provided, generate verb forms and filter them
       let morphologicalVariants: string[] = [];
       if (morphologicalFilters && Object.keys(morphologicalFilters).length > 0) {
-        console.log(`🔍 [MORPHOLOGICAL FILTERING] STARTING for "${searchQuery}" with filters:`, morphologicalFilters);
+        console.log(`🔍 [MORPHOLOGICAL FILTERING] STARTING for "${searchQuery}" with filters:`, JSON.stringify(morphologicalFilters));
         try {
           // Generate all possible verb variants for this root
           const allVariants = await generateVerbVariants(searchQuery, { cap: 200 });
+          console.log(`🔍 [MORPHOLOGICAL FILTERING] Generated ${allVariants.length} total variants`);
+          console.log(`🔍 [MORPHOLOGICAL FILTERING] Sample labels:`, allVariants.slice(0, 5).map(v => `"${v.label}"`).join(', '));
 
           // Helper to normalize filter values to arrays
           const toArray = <T>(value: T | T[] | undefined): T[] => {
@@ -1053,6 +1055,7 @@ export async function POST(request: NextRequest) {
           const tenseFilters = toArray(morphologicalFilters.tense).filter(v => v !== 'all');
           const moodFilters = toArray(morphologicalFilters.mood).filter(v => v !== 'all');
           const aspectFilters = toArray(morphologicalFilters.aspect).filter(v => v !== 'all');
+          console.log(`🔍 [MORPHOLOGICAL FILTERING] Active filters: person=${JSON.stringify(personFilters)}, tense=${JSON.stringify(tenseFilters)}, mood=${JSON.stringify(moodFilters)}, aspect=${JSON.stringify(aspectFilters)}`);
 
           // Filter variants based on morphological criteria (supports multi-select)
           morphologicalVariants = allVariants
