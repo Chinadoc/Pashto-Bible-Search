@@ -22,10 +22,32 @@ function TyperPageContent() {
     const [verseData, setVerseData] = useState<any>(null);
     const [loadingData, setLoadingData] = useState(false);
 
+    // Load verse data - defined before useEffect
+    const loadVerse = async (ref: string) => {
+        console.log('Loading verse:', ref);
+        setLoadingData(true);
+        setSelectedVerse(ref);
+        try {
+            const res = await fetch(`/api/typer/verse-data?ref=${encodeURIComponent(ref)}`);
+            const data = await res.json();
+            console.log('Verse data response:', data);
+            if (data.lines) {
+                setVerseData(data.lines);
+            } else if (data.error) {
+                console.error('Verse data error:', data.error);
+            }
+        } catch (e) {
+            console.error('Failed to load verse:', e);
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
     // Load verse from URL parameter on mount
     useEffect(() => {
         const refFromUrl = searchParams.get('ref');
-        if (refFromUrl && refFromUrl !== selectedVerse) {
+        console.log('URL ref param:', refFromUrl);
+        if (refFromUrl) {
             loadVerse(refFromUrl);
         }
     }, [searchParams]);
@@ -47,23 +69,6 @@ function TyperPageContent() {
                 .catch(console.error);
         }
     }, [session]);
-
-    // Load verse data when selected
-    const loadVerse = async (ref: string) => {
-        setLoadingData(true);
-        setSelectedVerse(ref);
-        try {
-            const res = await fetch(`/api/typer/verse-data?ref=${encodeURIComponent(ref)}`);
-            const data = await res.json();
-            if (data.lines) {
-                setVerseData(data.lines);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoadingData(false);
-        }
-    };
 
     const handleComplete = async (score: number) => {
         if (!selectedVerse || !session) return;
