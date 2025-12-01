@@ -1058,6 +1058,10 @@ export async function POST(request: NextRequest) {
           console.log(`🔍 [MORPHOLOGICAL FILTERING] Active filters: person=${JSON.stringify(personFilters)}, tense=${JSON.stringify(tenseFilters)}, mood=${JSON.stringify(moodFilters)}, aspect=${JSON.stringify(aspectFilters)}`);
 
           // Filter variants based on morphological criteria (supports multi-select)
+          // Log first few to verify labels
+          const sampleLabels = allVariants.slice(0, 5).map(v => `${v.form}:"${v.label}"`);
+          console.log(`🔍 [MORPHOLOGICAL FILTERING] Sample variant labels:`, sampleLabels);
+          
           morphologicalVariants = allVariants
             .filter(variant => {
               const label = variant.label.toLowerCase();
@@ -1168,6 +1172,25 @@ export async function POST(request: NextRequest) {
         }
       } else if (hasMorphFilters && morphologicalVariants.length === 0) {
         console.log(`⚠️ [MORPHOLOGICAL FILTERING] No forms match the filter criteria`);
+        // Return early with 0 results - user asked for forms that don't exist
+        return NextResponse.json({
+          results: [],
+          relatedForms: null,
+          processed: {
+            original: originalQuery,
+            normalized: searchQuery,
+            variants: [],
+            variantsSearched: [],
+            searchType: 'd1',
+            language: searchLanguage,
+            filteringPath: 'morphological-no-match',
+            morphVariantsCount: 0,
+          },
+          count: 0,
+          ms: Date.now() - startedAt,
+          cached: false,
+          message: 'No verb forms match the selected filter criteria',
+        });
       }
       
       console.log(`🔍 Related forms for D1:`, relatedFormsForD1.length > 0 ? relatedFormsForD1.slice(0, 10) : 'none');
