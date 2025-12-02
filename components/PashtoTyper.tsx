@@ -569,12 +569,12 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                 </div>
             </div>
 
-            {/* Main Text Area (Scrollable) */}
+            {/* Main Text Area (Scrollable) - Extra bottom padding on mobile for keyboard + UI */}
             <div
                 className="flex-grow overflow-y-auto flex justify-center bg-[#0b1221] relative"
                 ref={scrollAreaRef}
             >
-                <div className="max-w-3xl w-full p-6 pb-96 pt-10">
+                <div className={`max-w-3xl w-full p-4 md:p-6 pt-6 md:pt-10 ${isMobile ? 'pb-[350px]' : 'pb-96'}`}>
                     <div className="flex flex-col gap-4 md:gap-6" dir="rtl">
                         {activeData.map((line, lineIdx) => (
                             <div
@@ -604,12 +604,18 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                                         <span
                                             key={globalIdx}
                                             ref={isCurrent ? currentWordRef : null}
+                                            onClick={() => {
+                                                // On mobile, tapping a word focuses the input
+                                                if (isMobile && mobileInputRef.current) {
+                                                    mobileInputRef.current.focus();
+                                                }
+                                            }}
                                             className={`
-                        relative px-3 py-1 rounded-lg text-2xl md:text-3xl transition-all duration-300 cursor-default select-none
+                        relative px-2 md:px-3 py-1 rounded-lg text-xl md:text-3xl transition-all duration-300 cursor-default select-none
                         ${isTyped ? 'text-emerald-400 opacity-100' : ''}
-                        ${isCurrent ? 'bg-slate-800 text-white shadow-lg scale-105 z-10 ring-1 ring-blue-500/50' : ''}
+                        ${isCurrent ? 'bg-slate-800 text-white shadow-lg scale-105 z-10 ring-2 ring-blue-500' : ''}
                         ${isFuture ? 'text-slate-500' : ''}
-                        ${isCurrent && mistake ? 'animate-shake text-red-400 ring-red-500' : ''}
+                        ${isCurrent && mistake ? 'animate-shake text-red-400 ring-red-500 bg-red-900/30' : ''}
                       `}
                                             style={{ fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif", lineHeight: 1.8 }}
                                         >
@@ -629,53 +635,101 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                 </div>
             </div>
 
-            {/* Bottom Interaction Bar */}
-            <div className="bg-slate-900/95 border-t border-slate-700 p-4 md:p-6 z-20 shadow-[0_-5px_30px_rgba(0,0,0,0.4)] backdrop-blur absolute bottom-0 w-full">
-                <div className="max-w-2xl mx-auto text-center">
+            {/* Bottom Interaction Bar - Fixed at bottom, with safe area for mobile keyboards */}
+            <div className={`
+                bg-slate-900/98 border-t border-slate-700 z-20 shadow-[0_-5px_30px_rgba(0,0,0,0.4)] backdrop-blur
+                ${isMobile ? 'fixed bottom-0 left-0 right-0 pb-safe' : 'absolute bottom-0 w-full'}
+            `}>
+                {/* Mobile: Compact typing area that stays above keyboard */}
+                <div className={`max-w-2xl mx-auto text-center ${isMobile ? 'p-3' : 'p-4 md:p-6'}`}>
                     {!isComplete ? (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                        <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-col md:flex-row items-center justify-center gap-4 md:gap-8'}`}>
 
-                            {/* Hint Box */}
-                            <div className="flex-1 w-full">
-                                <div className="flex items-center justify-center gap-3 bg-slate-800/80 px-6 py-2 rounded-xl border border-slate-700">
-                                    <span className="text-3xl font-bold text-blue-400 font-mono">{currentWord.t?.charAt(0)}</span>
-                                    <span className="text-slate-600 text-xl">&rarr;</span>
-                                    <div className="flex flex-col items-start text-left min-w-[120px]">
-                                        {/* Expected key indicator */}
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-slate-400 text-xs">Type:</span>
-                                            <span className={`
-                                                px-3 py-1 rounded-lg text-lg font-bold uppercase
-                                                ${stage === 3 
-                                                    ? 'bg-slate-700 text-slate-400 blur-sm' 
-                                                    : 'bg-emerald-600 text-white animate-pulse'
-                                                }
-                                            `}>
-                                                {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t.charAt(0))}
-                                            </span>
-                                        </div>
-                                        {/* Romanization */}
-                                        <span className={`font-medium text-base leading-none transition-all ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
-                                            {stage === 3 ? '???' : currentWord.t}
+                            {/* Mobile: Current word + key to type - LARGE and visible */}
+                            {isMobile && (
+                                <div className="flex items-center justify-center gap-4 bg-slate-800 rounded-xl p-3 border-2 border-emerald-500/50">
+                                    {/* Current Pashto word */}
+                                    <div 
+                                        dir="rtl" 
+                                        className="text-3xl font-bold text-white px-4"
+                                        style={{ fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}
+                                    >
+                                        {currentWord.p}
+                                    </div>
+                                    
+                                    {/* Big key to type */}
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-slate-400 text-xs mb-1">TAP</span>
+                                        <span className={`
+                                            w-14 h-14 flex items-center justify-center
+                                            rounded-xl text-2xl font-bold uppercase
+                                            ${stage === 3 
+                                                ? 'bg-slate-700 text-slate-400' 
+                                                : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 animate-pulse'
+                                            }
+                                        `}>
+                                            {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.charAt(0) || '?')}
                                         </span>
-                                        {/* English definition */}
-                                        {currentWord.e && (
-                                            <span className="text-slate-400 text-sm italic mt-0.5">{currentWord.e}</span>
-                                        )}
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* Mini Stats */}
-                            <div className="flex gap-4 text-xs text-slate-400 font-mono">
-                                <div className="flex flex-col items-center">
-                                    <span className="text-white text-lg font-bold">{progressPercent}%</span>
-                                    <span>COMPLETE</span>
+                            {/* Desktop: Original hint box */}
+                            {!isMobile && (
+                                <div className="flex-1 w-full">
+                                    <div className="flex items-center justify-center gap-3 bg-slate-800/80 px-6 py-2 rounded-xl border border-slate-700">
+                                        <span className="text-3xl font-bold text-blue-400 font-mono">{currentWord.t?.charAt(0)}</span>
+                                        <span className="text-slate-600 text-xl">&rarr;</span>
+                                        <div className="flex flex-col items-start text-left min-w-[120px]">
+                                            {/* Expected key indicator */}
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-slate-400 text-xs">Type:</span>
+                                                <span className={`
+                                                    px-3 py-1 rounded-lg text-lg font-bold uppercase
+                                                    ${stage === 3 
+                                                        ? 'bg-slate-700 text-slate-400 blur-sm' 
+                                                        : 'bg-emerald-600 text-white animate-pulse'
+                                                    }
+                                                `}>
+                                                    {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.charAt(0))}
+                                                </span>
+                                            </div>
+                                            {/* Romanization */}
+                                            <span className={`font-medium text-base leading-none transition-all ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
+                                                {stage === 3 ? '???' : currentWord.t}
+                                            </span>
+                                            {/* English definition */}
+                                            {currentWord.e && (
+                                                <span className="text-slate-400 text-sm italic mt-0.5">{currentWord.e}</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="w-px bg-slate-700 h-8"></div>
+                            )}
+
+                            {/* Mobile: Compact romanization + definition row */}
+                            {isMobile && currentWord.t && (
+                                <div className="flex items-center justify-center gap-2 text-sm">
+                                    <span className="text-slate-300 font-medium">{currentWord.t}</span>
+                                    {currentWord.e && (
+                                        <>
+                                            <span className="text-slate-600">•</span>
+                                            <span className="text-slate-400 italic">{currentWord.e}</span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Stats - Compact on mobile */}
+                            <div className={`flex gap-4 text-xs text-slate-400 font-mono ${isMobile ? 'justify-center' : ''}`}>
                                 <div className="flex flex-col items-center">
-                                    <span className={`text-lg font-bold ${accuracy < 90 ? 'text-yellow-500' : 'text-emerald-500'}`}>{accuracy}%</span>
-                                    <span>ACCURACY</span>
+                                    <span className={`font-bold ${isMobile ? 'text-base' : 'text-lg'} text-white`}>{progressPercent}%</span>
+                                    <span className="text-[10px]">DONE</span>
+                                </div>
+                                <div className="w-px bg-slate-700 h-6"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className={`font-bold ${isMobile ? 'text-base' : 'text-lg'} ${accuracy < 90 ? 'text-yellow-500' : 'text-emerald-500'}`}>{accuracy}%</span>
+                                    <span className="text-[10px]">ACC</span>
                                 </div>
                             </div>
 
@@ -722,23 +776,30 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                 </div>
             </div>
 
-            {/* Mobile typing input - uncontrolled, manually cleared after each keystroke */}
+            {/* Mobile typing input - integrated into the bottom bar, always visible */}
             {isMobile && !isComplete && (
-                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30">
-                    <input
-                        ref={mobileInputRef}
-                        type="text"
-                        inputMode="text"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        defaultValue=""
-                        onChange={handleMobileInput}
-                        onBlur={() => mobileInputRef.current?.focus()}
-                        className="w-64 px-4 py-3 text-center text-lg bg-slate-800/95 border-2 border-emerald-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 backdrop-blur shadow-lg"
-                        placeholder="Tap to type..."
-                    />
+                <div className="fixed bottom-[140px] left-4 right-4 z-30">
+                    <div className="relative">
+                        <input
+                            ref={mobileInputRef}
+                            type="text"
+                            inputMode="text"
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck="false"
+                            enterKeyHint="next"
+                            defaultValue=""
+                            onChange={handleMobileInput}
+                            onBlur={() => setTimeout(() => mobileInputRef.current?.focus(), 100)}
+                            className="w-full px-6 py-4 text-center text-xl bg-slate-800 border-2 border-blue-500 rounded-2xl text-white focus:outline-none focus:ring-4 focus:ring-blue-500/50 shadow-2xl shadow-blue-500/20"
+                            placeholder={`Type "${(currentWord.firstKey || currentWord.t?.charAt(0) || '').toUpperCase()}" to continue...`}
+                        />
+                        {/* Visual keyboard hint */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full">
+                            👆 Tap here to show keyboard
+                        </div>
+                    </div>
                 </div>
             )}
         </div >

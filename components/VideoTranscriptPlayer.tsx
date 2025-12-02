@@ -163,7 +163,7 @@ export default function VideoTranscriptPlayer({
           
           <div 
             ref={transcriptRef}
-            className="max-h-[500px] overflow-y-auto p-4 space-y-3"
+            className="max-h-[400px] lg:max-h-[500px] overflow-y-auto p-3 lg:p-4 space-y-2 lg:space-y-3"
           >
             {segments.map((segment, index) => {
               const isActive = index === activeSegmentIndex;
@@ -175,9 +175,9 @@ export default function VideoTranscriptPlayer({
                   ref={el => segmentRefs.current[index] = el}
                   onClick={() => seekTo(segment.startTime)}
                   className={`
-                    p-4 rounded-lg cursor-pointer transition-all duration-300
+                    p-3 lg:p-4 rounded-lg cursor-pointer transition-all duration-300 active:scale-[0.98]
                     ${isActive 
-                      ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 shadow-lg scale-[1.02]' 
+                      ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 shadow-lg' 
                       : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md'
                     }
                   `}
@@ -221,7 +221,7 @@ export default function VideoTranscriptPlayer({
                   <div 
                     dir="rtl" 
                     className={`
-                      text-lg leading-relaxed
+                      text-base lg:text-lg leading-relaxed
                       ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}
                     `}
                   >
