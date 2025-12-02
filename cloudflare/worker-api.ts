@@ -6,9 +6,32 @@
 export interface Env {
   DB: D1Database;
   AUDIO_BUCKET: R2Bucket;
+  ELEVENLABS_API_KEY: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
+
+// ========================================
+// Video Processing Types
+// ========================================
+
+interface TranscriptWord {
+  text: string;
+  start_time: number;
+  end_time: number;
+  confidence?: number;
+}
+
+interface TranscriptSegment {
+  segment_number: number;
+  text: string;
+  start_time: number;
+  end_time: number;
+  duration: number;
+  words: TranscriptWord[];
+  confidence: number;
+  speaker_id?: string;
+}
 
 // ========================================
 // Helper Functions
@@ -2345,6 +2368,676 @@ async function getTopicsVerses(
 }
 
 // ========================================
+// YouTube Audio Extraction (Cloudflare Worker)
+// ========================================
+
+/**
+ * Extract audio URL from YouTube video using multiple methods
+ * Cloudflare Workers have different IP ranges, better success rate
+ */
+async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
+  console.log(`🔍 [CF Worker] Extracting audio for video: ${videoId}`);
+  
+  // Method 1: iOS innertube client (most reliable)
+  try {
+    const iosResponse = await fetch(
+      'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)',
+          'X-Goog-Api-Key': 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'IOS',
+              clientVersion: '19.29.1',
+              deviceMake: 'Apple',
+              deviceModel: 'iPhone16,2',
+              hl: 'en',
+              osName: 'iPhone',
+              osVersion: '17.5.1.21F90',
+              timeZone: 'UTC',
+              utcOffsetMinutes: 0,
+            }
+          },
+          videoId: videoId,
+          playbackContext: {
+            contentPlaybackContext: {
+              signatureTimestamp: 20073
+            }
+          },
+          racyCheckOk: true,
+          contentCheckOk: true,
+        }),
+      }
+    );
+
+    if (iosResponse.ok) {
+      const data = await iosResponse.json() as any;
+      console.log(`📡 iOS innertube status: ${data.playabilityStatus?.status}`);
+      
+      const formats = data.streamingData?.adaptiveFormats || [];
+      const audioFormat = formats.find((f: any) => 
+        f.mimeType?.startsWith('audio/mp4') && f.url
+      ) || formats.find((f: any) => 
+        f.mimeType?.startsWith('audio/') && f.url
+      );
+      
+      if (audioFormat?.url) {
+        console.log(`✅ [CF Worker] Got audio via iOS client`);
+        return audioFormat.url;
+      }
+    }
+  } catch (e) {
+    console.warn('[CF Worker] iOS innertube failed:', e);
+  }
+
+  // Method 2: Android client
+  try {
+    const androidResponse = await fetch(
+      'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14)',
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'ANDROID',
+              clientVersion: '19.29.37',
+              androidSdkVersion: 34,
+              hl: 'en',
+              timeZone: 'UTC',
+            }
+          },
+          videoId: videoId,
+          racyCheckOk: true,
+          contentCheckOk: true,
+        }),
+      }
+    );
+
+    if (androidResponse.ok) {
+      const data = await androidResponse.json() as any;
+      const formats = data.streamingData?.adaptiveFormats || [];
+      const audioFormat = formats.find((f: any) => 
+        f.mimeType?.startsWith('audio/') && f.url
+      );
+      
+      if (audioFormat?.url) {
+        console.log(`✅ [CF Worker] Got audio via Android client`);
+        return audioFormat.url;
+      }
+    }
+  } catch (e) {
+    console.warn('[CF Worker] Android innertube failed:', e);
+  }
+
+  // Method 3: TV embedded client (sometimes works when others don't)
+  try {
+    const tvResponse = await fetch(
+      'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'TVHTML5_SIMPLY_EMBEDDED_PLAYER',
+              clientVersion: '2.0',
+              hl: 'en',
+              timeZone: 'UTC',
+            },
+            thirdParty: {
+              embedUrl: 'https://www.youtube.com/'
+            }
+          },
+          videoId: videoId,
+        }),
+      }
+    );
+
+    if (tvResponse.ok) {
+      const data = await tvResponse.json() as any;
+      const formats = data.streamingData?.adaptiveFormats || [];
+      const audioFormat = formats.find((f: any) => 
+        f.mimeType?.startsWith('audio/') && f.url
+      );
+      
+      if (audioFormat?.url) {
+        console.log(`✅ [CF Worker] Got audio via TV client`);
+        return audioFormat.url;
+      }
+    }
+  } catch (e) {
+    console.warn('[CF Worker] TV client failed:', e);
+  }
+
+  // Method 4: Invidious API as fallback
+  try {
+    const invidiousInstances = [
+      'https://inv.nadeko.net',
+      'https://invidious.snopyta.org', 
+      'https://yewtu.be'
+    ];
+    
+    for (const instance of invidiousInstances) {
+      try {
+        const response = await fetch(`${instance}/api/v1/videos/${videoId}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json() as any;
+          const audioFormats = data.adaptiveFormats?.filter((f: any) => 
+            f.type?.startsWith('audio/')
+          ) || [];
+          
+          if (audioFormats.length > 0) {
+            console.log(`✅ [CF Worker] Got audio via Invidious (${instance})`);
+            return audioFormats[0].url;
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch (e) {
+    console.warn('[CF Worker] Invidious failed:', e);
+  }
+
+  console.error(`❌ [CF Worker] All extraction methods failed for: ${videoId}`);
+  return null;
+}
+
+/**
+ * Extract video ID from YouTube URL
+ */
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /^([a-zA-Z0-9_-]{11})$/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/**
+ * Fetch YouTube video metadata
+ */
+async function getYouTubeMetadata(videoId: string): Promise<{ title: string; description: string; thumbnail: string } | null> {
+  try {
+    const response = await fetch(
+      'https://www.youtube.com/youtubei/v1/player',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'WEB',
+              clientVersion: '2.20231219.04.00',
+            }
+          },
+          videoId: videoId,
+        }),
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json() as any;
+      return {
+        title: data.videoDetails?.title || `Video ${videoId}`,
+        description: data.videoDetails?.shortDescription || '',
+        thumbnail: data.videoDetails?.thumbnail?.thumbnails?.[0]?.url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      };
+    }
+  } catch (e) {
+    console.warn('Failed to get YouTube metadata:', e);
+  }
+  
+  return {
+    title: `Video ${videoId}`,
+    description: '',
+    thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+  };
+}
+
+// ========================================
+// ElevenLabs Scribe v2 Transcription
+// ========================================
+
+interface ElevenLabsTranscriptionResult {
+  transcript: string;
+  words: TranscriptWord[];
+  segments: TranscriptSegment[];
+  language_code: string;
+  language_probability: number;
+}
+
+/**
+ * Transcribe audio using ElevenLabs Scribe v2
+ */
+async function transcribeWithElevenLabs(
+  audioUrl: string, 
+  apiKey: string
+): Promise<ElevenLabsTranscriptionResult | null> {
+  console.log(`🎙️ [CF Worker] Starting ElevenLabs Scribe v2 transcription`);
+  
+  try {
+    // First, download the audio to send to ElevenLabs
+    console.log(`📥 Downloading audio from URL...`);
+    const audioResponse = await fetch(audioUrl, {
+      headers: {
+        'Range': 'bytes=0-52428800' // Limit to ~50MB
+      }
+    });
+    
+    if (!audioResponse.ok) {
+      throw new Error(`Failed to download audio: ${audioResponse.status}`);
+    }
+    
+    const audioBlob = await audioResponse.blob();
+    console.log(`📥 Downloaded ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB of audio`);
+    
+    // Create form data for ElevenLabs API
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.mp4');
+    formData.append('model_id', 'scribe_v2');
+    formData.append('language_code', 'ps'); // Pashto
+    formData.append('timestamps_granularity', 'word');
+    formData.append('diarize', 'true');
+    
+    console.log(`📤 Sending to ElevenLabs Scribe v2...`);
+    const transcribeResponse = await fetch(
+      'https://api.elevenlabs.io/v1/audio/transcription',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+        },
+        body: formData,
+      }
+    );
+    
+    if (!transcribeResponse.ok) {
+      const errorText = await transcribeResponse.text();
+      throw new Error(`ElevenLabs API error: ${transcribeResponse.status} - ${errorText}`);
+    }
+    
+    const result = await transcribeResponse.json() as any;
+    console.log(`✅ [CF Worker] Transcription complete`);
+    
+    // Process the ElevenLabs response into our format
+    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
+      text: w.text || w.word,
+      start_time: w.start || w.start_time || 0,
+      end_time: w.end || w.end_time || 0,
+      confidence: w.confidence || 0.95,
+    }));
+    
+    // Create segments from the transcription
+    // ElevenLabs may return segments or we create them from words
+    const segments: TranscriptSegment[] = [];
+    
+    if (result.segments && result.segments.length > 0) {
+      result.segments.forEach((seg: any, index: number) => {
+        segments.push({
+          segment_number: index + 1,
+          text: seg.text,
+          start_time: seg.start || seg.start_time,
+          end_time: seg.end || seg.end_time,
+          duration: (seg.end || seg.end_time) - (seg.start || seg.start_time),
+          words: words.filter(w => 
+            w.start_time >= (seg.start || seg.start_time) && 
+            w.end_time <= (seg.end || seg.end_time)
+          ),
+          confidence: seg.confidence || 0.95,
+          speaker_id: seg.speaker,
+        });
+      });
+    } else if (words.length > 0) {
+      // Create segments every ~30 seconds or at natural pauses
+      let currentSegment: TranscriptWord[] = [];
+      let segmentStart = words[0].start_time;
+      
+      for (let i = 0; i < words.length; i++) {
+        currentSegment.push(words[i]);
+        
+        const segmentDuration = words[i].end_time - segmentStart;
+        const hasLongPause = i < words.length - 1 && 
+          (words[i + 1].start_time - words[i].end_time) > 1.5;
+        
+        if (segmentDuration >= 30 || hasLongPause || i === words.length - 1) {
+          segments.push({
+            segment_number: segments.length + 1,
+            text: currentSegment.map(w => w.text).join(' '),
+            start_time: segmentStart,
+            end_time: words[i].end_time,
+            duration: words[i].end_time - segmentStart,
+            words: currentSegment,
+            confidence: 0.95,
+          });
+          
+          if (i < words.length - 1) {
+            currentSegment = [];
+            segmentStart = words[i + 1].start_time;
+          }
+        }
+      }
+    }
+    
+    return {
+      transcript: result.text || words.map(w => w.text).join(' '),
+      words,
+      segments,
+      language_code: result.language_code || 'ps',
+      language_probability: result.language_probability || 0.95,
+    };
+    
+  } catch (error) {
+    console.error(`❌ [CF Worker] Transcription error:`, error);
+    return null;
+  }
+}
+
+// ========================================
+// Video Processing Handler
+// ========================================
+
+async function handleProcessVideo(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as { youtubeUrl?: string; url?: string };
+    const youtubeUrl = body.youtubeUrl || body.url;
+    
+    if (!youtubeUrl) {
+      return errorResponse('YouTube URL is required', 400);
+    }
+    
+    // Extract video ID
+    const videoId = extractYouTubeVideoId(youtubeUrl);
+    if (!videoId) {
+      return errorResponse('Invalid YouTube URL', 400);
+    }
+    
+    console.log(`🎬 [CF Worker] Processing video: ${videoId}`);
+    
+    // Check if API key is configured
+    if (!env.ELEVENLABS_API_KEY) {
+      return errorResponse('ElevenLabs API key not configured', 500);
+    }
+    
+    // Get video metadata
+    const metadata = await getYouTubeMetadata(videoId);
+    
+    // Extract audio URL
+    const audioUrl = await getYouTubeAudioUrl(videoId);
+    
+    if (!audioUrl) {
+      return jsonResponse({
+        success: false,
+        error: 'Could not extract audio from YouTube video',
+        message: 'YouTube blocks direct extraction. Try uploading an audio file directly.',
+        videoId,
+        metadata,
+      }, 400);
+    }
+    
+    console.log(`🔊 [CF Worker] Got audio URL, starting transcription...`);
+    
+    // Transcribe with ElevenLabs Scribe v2
+    const transcription = await transcribeWithElevenLabs(audioUrl, env.ELEVENLABS_API_KEY);
+    
+    if (!transcription) {
+      return jsonResponse({
+        success: false,
+        error: 'Transcription failed',
+        message: 'Could not transcribe the audio. The file may be too long or in an unsupported format.',
+        videoId,
+        metadata,
+      }, 500);
+    }
+    
+    // Store in D1 database
+    const now = new Date().toISOString();
+    
+    try {
+      // Create videos table if not exists
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS videos (
+          video_id TEXT PRIMARY KEY,
+          youtube_url TEXT,
+          title TEXT,
+          description TEXT,
+          thumbnail_url TEXT,
+          transcript_text TEXT,
+          segments_json TEXT,
+          words_json TEXT,
+          duration REAL,
+          language_code TEXT,
+          status TEXT DEFAULT 'completed',
+          created_at TEXT,
+          updated_at TEXT
+        )
+      `).run();
+      
+      // Insert or update video
+      await env.DB.prepare(`
+        INSERT OR REPLACE INTO videos 
+        (video_id, youtube_url, title, description, thumbnail_url, transcript_text, 
+         segments_json, words_json, duration, language_code, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)
+      `).bind(
+        videoId,
+        youtubeUrl,
+        metadata?.title || '',
+        metadata?.description || '',
+        metadata?.thumbnail || '',
+        transcription.transcript,
+        JSON.stringify(transcription.segments),
+        JSON.stringify(transcription.words),
+        transcription.segments.length > 0 
+          ? transcription.segments[transcription.segments.length - 1].end_time 
+          : 0,
+        transcription.language_code,
+        now,
+        now
+      ).run();
+      
+      console.log(`💾 [CF Worker] Video saved to D1`);
+      
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // Continue even if DB save fails - return the transcription
+    }
+    
+    return jsonResponse({
+      success: true,
+      videoId,
+      youtubeUrl,
+      title: metadata?.title,
+      thumbnail: metadata?.thumbnail,
+      transcript: transcription.transcript,
+      segments: transcription.segments,
+      words: transcription.words,
+      totalSegments: transcription.segments.length,
+      totalWords: transcription.words.length,
+      duration: transcription.segments.length > 0 
+        ? transcription.segments[transcription.segments.length - 1].end_time 
+        : 0,
+      languageCode: transcription.language_code,
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Process video error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to process video', 500);
+  }
+}
+
+/**
+ * Get all stored videos
+ */
+async function handleGetVideos(env: Env): Promise<Response> {
+  try {
+    // Check if table exists
+    const tableCheck = await env.DB.prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='videos'`
+    ).first();
+    
+    if (!tableCheck) {
+      return jsonResponse({ videos: [], total: 0 });
+    }
+    
+    const result = await env.DB.prepare(`
+      SELECT video_id, youtube_url, title, description, thumbnail_url, 
+             transcript_text, segments_json, duration, language_code, 
+             status, created_at, updated_at
+      FROM videos
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).all();
+    
+    const videos = (result.results || []).map((v: any) => ({
+      videoId: v.video_id,
+      youtubeUrl: v.youtube_url,
+      title: v.title,
+      description: v.description,
+      thumbnail: v.thumbnail_url,
+      transcript: v.transcript_text,
+      segments: parseJsonSafe(v.segments_json, []),
+      duration: v.duration,
+      languageCode: v.language_code,
+      status: v.status,
+      createdAt: v.created_at,
+      updatedAt: v.updated_at,
+    }));
+    
+    return jsonResponse({ videos, total: videos.length });
+    
+  } catch (error) {
+    console.error('[CF Worker] Get videos error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to get videos', 500);
+  }
+}
+
+/**
+ * Get a single video by ID
+ */
+async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(`
+      SELECT video_id, youtube_url, title, description, thumbnail_url, 
+             transcript_text, segments_json, words_json, duration, language_code, 
+             status, created_at, updated_at
+      FROM videos
+      WHERE video_id = ?
+    `).bind(videoId).first();
+    
+    if (!result) {
+      return errorResponse('Video not found', 404);
+    }
+    
+    return jsonResponse({
+      videoId: result.video_id,
+      youtubeUrl: result.youtube_url,
+      title: result.title,
+      description: result.description,
+      thumbnail: result.thumbnail_url,
+      transcript: result.transcript_text,
+      segments: parseJsonSafe(result.segments_json as string, []),
+      words: parseJsonSafe(result.words_json as string, []),
+      duration: result.duration,
+      languageCode: result.language_code,
+      status: result.status,
+      createdAt: result.created_at,
+      updatedAt: result.updated_at,
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Get video error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to get video', 500);
+  }
+}
+
+/**
+ * Transcribe uploaded audio file
+ */
+async function handleTranscribeAudio(request: Request, env: Env): Promise<Response> {
+  try {
+    if (!env.ELEVENLABS_API_KEY) {
+      return errorResponse('ElevenLabs API key not configured', 500);
+    }
+    
+    // Get the audio file from the request
+    const formData = await request.formData();
+    const audioFile = formData.get('file') as Blob | null;
+    
+    if (!audioFile) {
+      return errorResponse('No audio file provided', 400);
+    }
+    
+    console.log(`🎙️ [CF Worker] Transcribing uploaded file (${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`);
+    
+    // Create form data for ElevenLabs API
+    const elevenLabsForm = new FormData();
+    elevenLabsForm.append('file', audioFile, 'audio.mp3');
+    elevenLabsForm.append('model_id', 'scribe_v2');
+    elevenLabsForm.append('language_code', 'ps');
+    elevenLabsForm.append('timestamps_granularity', 'word');
+    elevenLabsForm.append('diarize', 'true');
+    
+    const response = await fetch(
+      'https://api.elevenlabs.io/v1/audio/transcription',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': env.ELEVENLABS_API_KEY,
+        },
+        body: elevenLabsForm,
+      }
+    );
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return errorResponse(`Transcription failed: ${errorText}`, response.status);
+    }
+    
+    const result = await response.json() as any;
+    
+    // Process words
+    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
+      text: w.text || w.word,
+      start_time: w.start || w.start_time || 0,
+      end_time: w.end || w.end_time || 0,
+      confidence: w.confidence || 0.95,
+    }));
+    
+    return jsonResponse({
+      success: true,
+      transcript: result.text || '',
+      words,
+      languageCode: result.language_code || 'ps',
+      languageProbability: result.language_probability || 0.95,
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Transcribe audio error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to transcribe audio', 500);
+  }
+}
+
+// ========================================
 // Main Request Handler
 // ========================================
 
@@ -2364,6 +3057,35 @@ export default {
       });
     }
 
+    // ========================================
+    // VIDEO PROCESSING ROUTES (Cloudflare Worker)
+    // ========================================
+    
+    // Process YouTube video - extract audio and transcribe
+    if (path === '/api/process-video' && request.method === 'POST') {
+      return handleProcessVideo(request, env);
+    }
+    
+    // Get all videos
+    if (path === '/api/videos' && request.method === 'GET') {
+      return handleGetVideos(env);
+    }
+    
+    // Get single video by ID
+    if (path.startsWith('/api/videos/') && request.method === 'GET') {
+      const videoId = path.replace('/api/videos/', '');
+      return handleGetVideo(videoId, env);
+    }
+    
+    // Transcribe uploaded audio file
+    if (path === '/api/transcribe-audio' && request.method === 'POST') {
+      return handleTranscribeAudio(request, env);
+    }
+    
+    // ========================================
+    // EXISTING ROUTES
+    // ========================================
+    
     // Route handlers
     if (path === '/api/search' && request.method === 'GET') {
       const query = url.searchParams.get('q') || '';

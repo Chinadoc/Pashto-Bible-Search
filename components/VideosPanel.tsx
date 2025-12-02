@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import InteractiveVerse, { VerseAnalysisProvider, VerseAnalysisToggle } from './InteractiveVerse';
 
+// Cloudflare Worker URL for all API calls
+const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
 interface TranscriptionAttempt {
   attempt: number;
   transcript: string;
@@ -97,9 +100,8 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would call an API endpoint
-      // For now, we'll simulate loading from local files
-      const response = await fetch('/api/videos');
+      // Fetch videos from Cloudflare Worker
+      const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`);
       const data = await response.json();
 
       if (data.success) {
@@ -300,8 +302,9 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     setElevenLabsResult(null);
 
     try {
-      console.log('Starting complete video processing...');
-      const response = await fetch('/api/process-video-complete', {
+      console.log('Starting complete video processing via Cloudflare Worker...');
+      // Use Cloudflare Worker for video processing
+      const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/process-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtubeUrl: youtubeUrl.trim() })

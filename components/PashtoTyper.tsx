@@ -200,9 +200,10 @@ const prayerData: Line[] = [
 interface Props {
     data?: Line[];
     onComplete?: (score: number) => void;
+    onExit?: () => void;
 }
 
-export default function PashtoTyper({ data, onComplete }: Props) {
+export default function PashtoTyper({ data, onComplete, onExit }: Props) {
     // Use provided data or fall back to prayer data
     const activeData = data && data.length > 0 ? data : prayerData;
     const flatList = activeData.flatMap(line => line.words);
@@ -678,13 +679,22 @@ export default function PashtoTyper({ data, onComplete }: Props) {
                                 >
                                     <Icons.RotateCcw className="w-4 h-4" /> Retry
                                 </button>
-                                {stage < 3 && (
+                                {stage < 3 ? (
                                     <button
                                         onClick={() => setStage(stage + 1)}
                                         className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform hover:-translate-y-0.5"
                                     >
                                         Next Stage &rarr;
                                     </button>
+                                ) : (
+                                    onExit && (
+                                        <button
+                                            onClick={onExit}
+                                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform hover:-translate-y-0.5"
+                                        >
+                                            Done
+                                        </button>
+                                    )
                                 )}
                             </div>
                         </div>

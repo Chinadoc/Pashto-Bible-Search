@@ -14,8 +14,15 @@ database_id = "54a972b6-897a-4ae0-ba19-ecf4a6edc3b0"
 binding = "AUDIO_BUCKET"
 bucket_name = "pashto-bible-audio"
 
+# Environment variables (non-sensitive)
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets (set via wrangler secret put ELEVENLABS_API_KEY)
+# ELEVENLABS_API_KEY - set this via: npx wrangler secret put ELEVENLABS_API_KEY
+
 # This is your workers.dev subdomain
 # After deployment, your worker will be available at:
 # https://pashtobiblesearch.YOUR_SUBDOMAIN.workers.dev
-# You can find YOUR_SUBDOMAIN in the Cloudflare dashboard (shown in screenshot)
+# You can find YOUR_SUBDOMAIN in the Cloudflare dashboard
 

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
+
+// Cloudflare Worker URL for all API calls
+const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
@@ -782,7 +785,8 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   useEffect(() => {
     if (activeMainTab === 'videos' && videos.length === 0) {
       setLoadingVideos(true);
-      fetch('/api/videos')
+      // Fetch videos from Cloudflare Worker
+      fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -881,10 +885,11 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     }
 
     setProcessingVideo(true);
-    setProcessingStatus('Starting video processing...');
+    setProcessingStatus('Starting video processing via Cloudflare Worker...');
 
     try {
-      const response = await fetch('/api/process-video', {
+      // Use Cloudflare Worker for video processing
+      const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/process-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -895,18 +900,19 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setProcessingStatus(`✅ Successfully processed video!`);
+        setProcessingStatus(`✅ Successfully processed video via Cloudflare!`);
         setProcessingStatus(prev => prev + `\nVideo ID: ${data.videoId}`);
-        setProcessingStatus(prev => prev + `\nTotal chunks: ${data.totalChunks}`);
-        setProcessingStatus(prev => prev + `\nSuccessful transcriptions: ${data.successfulTranscriptions}`);
+        setProcessingStatus(prev => prev + `\nTitle: ${data.title || 'Unknown'}`);
+        setProcessingStatus(prev => prev + `\nTotal segments: ${data.totalSegments || 0}`);
+        setProcessingStatus(prev => prev + `\nTotal words: ${data.totalWords || 0}`);
 
-        // Refresh videos list
+        // Refresh videos list from Cloudflare Worker
         setVideos([]);
         setTimeout(() => {
-          fetch('/api/videos')
+          fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
             .then(res => res.json())
             .then(data => {
-              if (data.success) {
+              if (data.videos) {
                 setVideos(data.videos || []);
               }
             })
@@ -918,8 +924,11 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         setNewVideoUrl('');
       } else {
         setProcessingStatus(`❌ Processing failed: ${data.error}`);
-        if (data.output) {
-          setProcessingStatus(prev => prev + `\n\nDetails:\n${data.output}`);
+        if (data.message) {
+          setProcessingStatus(prev => prev + `\n\n${data.message}`);
+        }
+        if (data.alternatives) {
+          setProcessingStatus(prev => prev + `\n\nAlternatives:\n${data.alternatives.join('\n')}`);
         }
       }
     } catch (error) {
