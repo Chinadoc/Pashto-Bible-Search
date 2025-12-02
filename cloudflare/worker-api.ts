@@ -2628,38 +2628,89 @@ interface ElevenLabsTranscriptionResult {
 
 /**
  * Transcribe audio using ElevenLabs Scribe v2
+ * Returns result with detailed error info if failed
  */
 async function transcribeWithElevenLabs(
   audioUrl: string, 
   apiKey: string
-): Promise<ElevenLabsTranscriptionResult | null> {
+): Promise<{ success: true; result: ElevenLabsTranscriptionResult } | { success: false; error: string }> {
   console.log(`🎙️ [CF Worker] Starting ElevenLabs Scribe v2 transcription`);
   
   try {
     // First, download the audio to send to ElevenLabs
     console.log(`📥 Downloading audio from URL...`);
+    
+    // Use streaming to handle large files more efficiently
     const audioResponse = await fetch(audioUrl, {
       headers: {
-        'Range': 'bytes=0-52428800' // Limit to ~50MB
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       }
     });
     
     if (!audioResponse.ok) {
-      throw new Error(`Failed to download audio: ${audioResponse.status}`);
+      return { success: false, error: `Failed to download audio: HTTP ${audioResponse.status}` };
     }
     
-    const audioBlob = await audioResponse.blob();
-    console.log(`📥 Downloaded ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB of audio`);
+    // Get content type and size
+    const contentType = audioResponse.headers.get('content-type') || 'audio/mp4';
+    const contentLength = audioResponse.headers.get('content-length');
+    console.log(`📥 Audio content-type: ${contentType}, size: ${contentLength || 'unknown'}`);
+    
+    // Read up to 50MB of audio
+    const maxSize = 50 * 1024 * 1024;
+    const reader = audioResponse.body?.getReader();
+    if (!reader) {
+      return { success: false, error: 'Could not read audio stream' };
+    }
+    
+    const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      if (totalSize + value.length > maxSize) {
+        // Take only what we need to reach maxSize
+        const remaining = maxSize - totalSize;
+        chunks.push(value.slice(0, remaining));
+        totalSize = maxSize;
+        console.log(`⚠️ Audio truncated at ${maxSize / 1024 / 1024}MB`);
+        break;
+      }
+      
+      chunks.push(value);
+      totalSize += value.length;
+    }
+    
+    // Combine chunks into a single buffer
+    const audioData = new Uint8Array(totalSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      audioData.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    console.log(`📥 Downloaded ${(totalSize / 1024 / 1024).toFixed(2)}MB of audio`);
+    
+    // Create blob with appropriate content type
+    const audioBlob = new Blob([audioData], { type: contentType });
+    
+    // Determine file extension from content type
+    let extension = 'mp4';
+    if (contentType.includes('audio/webm')) extension = 'webm';
+    else if (contentType.includes('audio/mpeg')) extension = 'mp3';
+    else if (contentType.includes('audio/wav')) extension = 'wav';
     
     // Create form data for ElevenLabs API
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.mp4');
+    formData.append('file', audioBlob, `audio.${extension}`);
     formData.append('model_id', 'scribe_v2');
     formData.append('language_code', 'ps'); // Pashto
     formData.append('timestamps_granularity', 'word');
     formData.append('diarize', 'true');
     
-    console.log(`📤 Sending to ElevenLabs Scribe v2...`);
+    console.log(`📤 Sending ${(totalSize / 1024 / 1024).toFixed(2)}MB to ElevenLabs Scribe v2...`);
     const transcribeResponse = await fetch(
       'https://api.elevenlabs.io/v1/audio/transcription',
       {
@@ -2673,11 +2724,15 @@ async function transcribeWithElevenLabs(
     
     if (!transcribeResponse.ok) {
       const errorText = await transcribeResponse.text();
-      throw new Error(`ElevenLabs API error: ${transcribeResponse.status} - ${errorText}`);
+      console.error(`❌ ElevenLabs API error: ${transcribeResponse.status}`, errorText);
+      return { 
+        success: false, 
+        error: `ElevenLabs API error: ${transcribeResponse.status} - ${errorText}` 
+      };
     }
     
     const result = await transcribeResponse.json() as any;
-    console.log(`✅ [CF Worker] Transcription complete`);
+    console.log(`✅ [CF Worker] Transcription complete. Text length: ${result.text?.length || 0}`);
     
     // Process the ElevenLabs response into our format
     const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
@@ -2739,16 +2794,22 @@ async function transcribeWithElevenLabs(
     }
     
     return {
-      transcript: result.text || words.map(w => w.text).join(' '),
-      words,
-      segments,
-      language_code: result.language_code || 'ps',
-      language_probability: result.language_probability || 0.95,
+      success: true,
+      result: {
+        transcript: result.text || words.map(w => w.text).join(' '),
+        words,
+        segments,
+        language_code: result.language_code || 'ps',
+        language_probability: result.language_probability || 0.95,
+      }
     };
     
   } catch (error) {
     console.error(`❌ [CF Worker] Transcription error:`, error);
-    return null;
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown transcription error' 
+    };
   }
 }
 
@@ -2797,17 +2858,19 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
     console.log(`🔊 [CF Worker] Got audio URL, starting transcription...`);
     
     // Transcribe with ElevenLabs Scribe v2
-    const transcription = await transcribeWithElevenLabs(audioUrl, env.ELEVENLABS_API_KEY);
+    const transcriptionResponse = await transcribeWithElevenLabs(audioUrl, env.ELEVENLABS_API_KEY);
     
-    if (!transcription) {
+    if (!transcriptionResponse.success) {
       return jsonResponse({
         success: false,
         error: 'Transcription failed',
-        message: 'Could not transcribe the audio. The file may be too long or in an unsupported format.',
+        message: transcriptionResponse.error,
         videoId,
         metadata,
       }, 500);
     }
+    
+    const transcription = transcriptionResponse.result;
     
     // Store in D1 database
     const now = new Date().toISOString();
