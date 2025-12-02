@@ -632,6 +632,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     inflectionCategories: [],
     inflectionCases: [],
     inflectionNumbers: [],
+    inflectionGenders: [],
     nounLexiconGenders: [],
     nounPluralTypes: [],
   });
