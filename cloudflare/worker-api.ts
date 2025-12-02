@@ -2716,7 +2716,7 @@ async function transcribeWithElevenLabs(
 
     console.log(`📤 Sending ${(totalSize / 1024 / 1024).toFixed(2)}MB to ElevenLabs Scribe v2...`);
     const transcribeResponse = await fetch(
-      'https://api.elevenlabs.io/v1/audio/transcription',
+      'https://api.elevenlabs.io/v1/speech-to-text',
       {
         method: 'POST',
         headers: {
@@ -2969,6 +2969,91 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
 }
 
 /**
+ * Save video with transcript (for local processing workflow)
+ */
+async function handleSaveVideo(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as {
+      video_id: string;
+      youtube_url?: string;
+      title?: string;
+      description?: string;
+      thumbnail_url?: string;
+      transcript_text: string;
+      segments?: any[];
+      words?: any[];
+      duration?: number;
+      language_code?: string;
+    };
+    
+    const { video_id, youtube_url, title, description, thumbnail_url, transcript_text, segments, words, duration, language_code } = body;
+    
+    if (!video_id || !transcript_text) {
+      return errorResponse('video_id and transcript_text are required', 400);
+    }
+    
+    console.log(`💾 Saving video ${video_id} to D1...`);
+    
+    const now = new Date().toISOString();
+    
+    // Create videos table if not exists
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS videos (
+        video_id TEXT PRIMARY KEY,
+        youtube_url TEXT,
+        title TEXT,
+        description TEXT,
+        thumbnail_url TEXT,
+        transcript_text TEXT,
+        segments_json TEXT,
+        words_json TEXT,
+        r2_audio_key TEXT,
+        duration REAL,
+        language_code TEXT,
+        status TEXT DEFAULT 'completed',
+        created_at TEXT,
+        updated_at TEXT
+      )
+    `).run();
+    
+    // Insert or update video
+    await env.DB.prepare(`
+      INSERT OR REPLACE INTO videos 
+      (video_id, youtube_url, title, description, thumbnail_url, transcript_text, 
+       segments_json, words_json, duration, language_code, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)
+    `).bind(
+      video_id,
+      youtube_url || '',
+      title || `Video ${video_id}`,
+      description || '',
+      thumbnail_url || `https://img.youtube.com/vi/${video_id}/maxresdefault.jpg`,
+      transcript_text,
+      JSON.stringify(segments || []),
+      JSON.stringify(words || []),
+      duration || 0,
+      language_code || 'ps',
+      now,
+      now
+    ).run();
+    
+    console.log(`✅ Video ${video_id} saved to D1`);
+    
+    return jsonResponse({
+      success: true,
+      videoId: video_id,
+      message: 'Video saved successfully',
+      totalSegments: segments?.length || 0,
+      totalWords: words?.length || 0,
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Save video error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to save video', 500);
+  }
+}
+
+/**
  * Get all stored videos
  */
 async function handleGetVideos(env: Env): Promise<Response> {
@@ -3081,7 +3166,7 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
     elevenLabsForm.append('diarize', 'true');
 
     const response = await fetch(
-      'https://api.elevenlabs.io/v1/audio/transcription',
+      'https://api.elevenlabs.io/v1/speech-to-text',
       {
         method: 'POST',
         headers: {
@@ -3090,22 +3175,22 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
         body: elevenLabsForm,
       }
     );
-
+    
     if (!response.ok) {
       const errorText = await response.text();
       return errorResponse(`Transcription failed: ${errorText}`, response.status);
     }
-
+    
     const result = await response.json() as any;
-
-    // Process words
-    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
-      text: w.text || w.word,
-      start_time: w.start || w.start_time || 0,
-      end_time: w.end || w.end_time || 0,
+    
+    // Process words - ElevenLabs returns words with start/end times
+    const words: TranscriptWord[] = (result.words || []).filter((w: any) => w.type === 'word').map((w: any) => ({
+      text: w.text,
+      start_time: w.start || 0,
+      end_time: w.end || 0,
       confidence: w.confidence || 0.95,
     }));
-
+    
     return jsonResponse({
       success: true,
       transcript: result.text || '',
@@ -3165,7 +3250,7 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
 
     console.log(`📤 Sending to ElevenLabs Scribe v2...`);
     const response = await fetch(
-      'https://api.elevenlabs.io/v1/audio/transcription',
+      'https://api.elevenlabs.io/v1/speech-to-text',
       {
         method: 'POST',
         headers: {
@@ -3324,6 +3409,11 @@ export default {
     // Get all videos
     if (path === '/api/videos' && request.method === 'GET') {
       return handleGetVideos(env);
+    }
+    
+    // Save video with transcript (for local processing)
+    if (path === '/api/videos' && request.method === 'POST') {
+      return handleSaveVideo(request, env);
     }
 
     // Get single video by ID
