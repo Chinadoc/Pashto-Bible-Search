@@ -2849,11 +2849,14 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
       return jsonResponse({
         success: false,
         error: 'Could not extract audio from YouTube video',
-        message: 'YouTube blocks direct extraction. Try uploading an audio file directly.',
+        message: 'YouTube blocks direct extraction from servers. Please upload an audio file instead.',
+        suggestion: 'Use a YouTube to MP3 converter (like y2mate.com or ytmp3.cc) to download the audio, then upload it using the File Upload tab.',
         videoId,
         metadata,
       }, 400);
     }
+    
+    console.log(`🔊 [CF Worker] Got audio URL: ${audioUrl.substring(0, 100)}...`);
     
     console.log(`🔊 [CF Worker] Got audio URL, starting transcription...`);
     
@@ -2861,6 +2864,19 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
     const transcriptionResponse = await transcribeWithElevenLabs(audioUrl, env.ELEVENLABS_API_KEY);
     
     if (!transcriptionResponse.success) {
+      // Check if the error is due to IP restrictions
+      const errorMsg = transcriptionResponse.error;
+      if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+        return jsonResponse({
+          success: false,
+          error: 'YouTube audio URL is IP-restricted',
+          message: 'YouTube restricts audio downloads to specific IP addresses. Server-side extraction is blocked.',
+          suggestion: 'Please download the audio using a YouTube to MP3 converter (y2mate.com, ytmp3.cc) and upload it using the File Upload tab.',
+          videoId,
+          metadata,
+        }, 400);
+      }
+      
       return jsonResponse({
         success: false,
         error: 'Transcription failed',
