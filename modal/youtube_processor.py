@@ -38,6 +38,7 @@ image = (
         "yt-dlp",
         "boto3",
         "requests",
+        "fastapi[standard]",
     )
 )
 
@@ -233,7 +234,7 @@ def get_video_info(youtube_url: str) -> dict:
 
 # Web endpoint for triggering from the website
 @app.function(image=image, secrets=[secrets])
-@modal.web_endpoint(method="POST")
+@modal.fastapi_endpoint(method="POST")
 def process_video_webhook(item: dict) -> dict:
     """
     Web endpoint to trigger video processing.
