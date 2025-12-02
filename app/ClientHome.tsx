@@ -57,6 +57,7 @@ import {
   matchesAspect
 } from "./utils/verb-filters";
 import { useSession, signIn, signOut } from "next-auth/react";
+import VideoTranscriptPlayer from "@/components/VideoTranscriptPlayer";
 
 function AuthButton() {
   const { data: session } = useSession();
@@ -2930,46 +2931,27 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                         </div>
 
                         {videos.map((video, index) => (
-                          <div key={video.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                            <div className="mb-4">
-                              <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                                {video.title}
-                              </h4>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                                <span>{video.totalSegments} segments</span>
-                                <span>{Math.round(video.totalDuration / 60)} minutes total</span>
-                                <a
-                                  href={video.youtubeUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                                >
-                                  View on YouTube →
-                                </a>
-                              </div>
-                            </div>
+                          <VideoTranscriptPlayer
+                            key={video.id}
+                            videoId={video.id}
+                            title={video.title || `Video ${video.id}`}
+                            segments={video.segments || []}
+                            youtubeUrl={video.youtubeUrl}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <p>No videos found. Process a YouTube video above to get started.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                            {/* YouTube Embed */}
-                            <div className="mb-6">
-                              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                                <iframe
-                                  className="absolute top-0 left-0 w-full h-full rounded-lg"
-                                  src={`https://www.youtube.com/embed/${video.id}`}
-                                  title={video.title}
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                ></iframe>
-                              </div>
-                            </div>
-
-                            {/* Video Segments with Transcripts */}
-                            <div className="space-y-4">
-                              <h5 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                Video Segments & Transcripts
-                              </h5>
-
-                              {video.segments.map((segment: any, segIndex: number) => (
+                {/* OLD VIDEO CODE - REPLACED WITH VideoTranscriptPlayer */}
+                {false && videos.map((video: any, index: number) => (
+                          <div key={video.id} className="hidden">
+                              {video.segments?.map((segment: any, segIndex: number) => (
                                 <div key={segIndex} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                   <div className="flex items-center justify-between mb-3">
                                     <h6 className="font-medium text-gray-900 dark:text-gray-100">
