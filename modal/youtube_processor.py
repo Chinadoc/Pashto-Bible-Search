@@ -91,45 +91,79 @@ def process_youtube_video(youtube_url: str) -> dict:
         audio_file = None
         download_error = None
         
-        # Method 1: Try cobalt.tools API first (less likely to be blocked)
-        print("📥 Trying cobalt.tools API...")
+        # Method 1: Try YouTube innertube API directly
+        print("📥 Trying YouTube innertube API...")
         try:
-            cobalt_response = requests.post(
-                'https://api.cobalt.tools/api/json',
+            innertube_response = requests.post(
+                'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
                 headers={
-                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'User-Agent': 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)',
+                    'X-Goog-Api-Key': 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
                 },
                 json={
-                    'url': youtube_url,
-                    'aFormat': 'mp3',
-                    'isAudioOnly': True,
-                    'filenamePattern': 'basic',
+                    'context': {
+                        'client': {
+                            'clientName': 'IOS',
+                            'clientVersion': '19.29.1',
+                            'deviceMake': 'Apple',
+                            'deviceModel': 'iPhone16,2',
+                            'hl': 'en',
+                            'osName': 'iPhone',
+                            'osVersion': '17.5.1.21F90',
+                        }
+                    },
+                    'videoId': video_id,
+                    'playbackContext': {
+                        'contentPlaybackContext': {
+                            'signatureTimestamp': 20073
+                        }
+                    },
+                    'racyCheckOk': True,
+                    'contentCheckOk': True,
                 },
                 timeout=30
             )
             
-            if cobalt_response.ok:
-                cobalt_data = cobalt_response.json()
-                if cobalt_data.get('url'):
-                    print(f"✅ Got audio URL from cobalt: {cobalt_data['url'][:80]}...")
+            if innertube_response.ok:
+                data = innertube_response.json()
+                formats = data.get('streamingData', {}).get('adaptiveFormats', [])
+                audio_format = next(
+                    (f for f in formats if f.get('mimeType', '').startswith('audio/') and f.get('url')),
+                    None
+                )
+                
+                if audio_format and audio_format.get('url'):
+                    audio_url = audio_format['url']
+                    print(f"✅ Got audio URL from innertube: {audio_url[:80]}...")
+                    
                     # Download the audio file
-                    audio_response = requests.get(cobalt_data['url'], timeout=120)
+                    audio_response = requests.get(
+                        audio_url,
+                        headers={'User-Agent': 'Mozilla/5.0'},
+                        timeout=180,
+                        stream=True
+                    )
+                    
                     if audio_response.ok:
-                        audio_file = output_path.with_suffix('.mp3')
+                        audio_file = output_path.with_suffix('.mp4')
                         with open(audio_file, 'wb') as f:
-                            f.write(audio_response.content)
-                        print(f"✅ Downloaded via cobalt: {audio_file.stat().st_size / 1024 / 1024:.2f}MB")
+                            for chunk in audio_response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                        print(f"✅ Downloaded via innertube: {audio_file.stat().st_size / 1024 / 1024:.2f}MB")
+                    else:
+                        print(f"⚠️ Audio download failed: {audio_response.status_code}")
                 else:
-                    print(f"⚠️ Cobalt didn't return URL: {cobalt_data}")
+                    status = data.get('playabilityStatus', {}).get('status', 'unknown')
+                    print(f"⚠️ Innertube no audio URL. Status: {status}")
             else:
-                print(f"⚠️ Cobalt API error: {cobalt_response.status_code}")
+                print(f"⚠️ Innertube API error: {innertube_response.status_code}")
         except Exception as e:
-            print(f"⚠️ Cobalt failed: {e}")
+            print(f"⚠️ Innertube failed: {e}")
         
-        # Method 2: Try yt-dlp if cobalt failed
+        # Method 2: Try yt-dlp with cookies workaround
         if not audio_file or not audio_file.exists():
-            print("📥 Trying yt-dlp...")
+            print("📥 Trying yt-dlp with extractor args...")
             try:
                 env = os.environ.copy()
                 env["PATH"] = "/usr/bin:/usr/local/bin:/opt/conda/bin:" + env.get("PATH", "")
@@ -142,7 +176,7 @@ def process_youtube_video(youtube_url: str) -> dict:
                     "-o", str(output_path),
                     "--no-playlist",
                     "--max-filesize", "100M",
-                    "--no-warnings",
+                    "--extractor-args", "youtube:player_client=ios,web",
                     youtube_url
                 ], capture_output=True, text=True, timeout=300, env=env)
                 
