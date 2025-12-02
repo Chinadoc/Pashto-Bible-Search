@@ -172,7 +172,7 @@ export default function VideoTranscriptPlayer({
               return (
                 <div
                   key={index}
-                  ref={el => segmentRefs.current[index] = el}
+                  ref={el => { segmentRefs.current[index] = el; }}
                   onClick={() => seekTo(segment.startTime)}
                   className={`
                     p-3 lg:p-4 rounded-lg cursor-pointer transition-all duration-300 active:scale-[0.98]
