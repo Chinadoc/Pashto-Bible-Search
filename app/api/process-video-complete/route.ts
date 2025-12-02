@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Step 3: Process segments with word-level timestamps
-        const segments: TranscriptSegment[] = transcriptionResult.segments.map((seg, index) => ({
+        const segments: TranscriptSegment[] = (transcriptionResult.segments || []).map((seg, index) => ({
             segment_number: index + 1,
             text: seg.text,
             start_time: seg.start_time,
