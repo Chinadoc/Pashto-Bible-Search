@@ -628,7 +628,13 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
-  const [morphologyFacets, setMorphologyFacets] = useState<MorphologyFacets | null>(null);
+  const [morphologyFacets, setMorphologyFacets] = useState<MorphologyFacets>({
+    inflectionCategories: [],
+    inflectionCases: [],
+    inflectionNumbers: [],
+    nounLexiconGenders: [],
+    nounPluralTypes: [],
+  });
   const [variantsOverride, setVariantsOverride] = useState<string[] | null>(null);
   const [activeVariantForms, setActiveVariantForms] = useState<string[]>([]);
   const [searchLanguage, setSearchLanguage] = useState<SearchLanguage>('pashto');
@@ -851,7 +857,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         setVideos(prevVideos =>
           prevVideos.map(video => ({
             ...video,
-            segments: video.segments.map((segment: any, index: number) =>
+            clips: (video.clips || video.segments || []).map((segment: any, index: number) =>
               index === segmentIndex
                 ? { ...segment, transcript: data.transcript }
                 : segment
