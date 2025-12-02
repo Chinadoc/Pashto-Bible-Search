@@ -27,18 +27,29 @@ import tempfile
 import subprocess
 from pathlib import Path
 
-# Create Modal app
+# Create Modal app - v2 with Node.js fix
 app = modal.App("pashto-youtube-processor")
 
 # Define the image with yt-dlp and other dependencies
+# Use micromamba image which has better package support
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.micromamba(python_version="3.11")
     .apt_install("ffmpeg")
+    .micromamba_install("nodejs=20", channels=["conda-forge"])
     .pip_install(
         "yt-dlp",
         "boto3",
         "requests",
         "fastapi[standard]",
+    )
+    .run_commands(
+        "node --version",
+        "which node",
+        # Create symlink so yt-dlp can find node
+        "ln -sf /opt/conda/bin/node /usr/local/bin/node",
+        "ln -sf /opt/conda/bin/node /usr/bin/node",
+        # Verify the symlinks work
+        "/usr/bin/node --version"
     )
 )
 
@@ -76,36 +87,82 @@ def process_youtube_video(youtube_url: str) -> dict:
     with tempfile.TemporaryDirectory() as tmpdir:
         output_path = Path(tmpdir) / f"{video_id}.mp3"
         
-        # Download audio using yt-dlp
-        print("📥 Downloading audio with yt-dlp...")
-        try:
-            result = subprocess.run([
-                "yt-dlp",
-                "-x",  # Extract audio
-                "--audio-format", "mp3",
-                "--audio-quality", "128K",
-                "-o", str(output_path),
-                "--no-playlist",
-                "--max-filesize", "100M",
-                youtube_url
-            ], capture_output=True, text=True, timeout=300)
-            
-            if result.returncode != 0:
-                print(f"yt-dlp error: {result.stderr}")
-                return {"success": False, "error": f"Download failed: {result.stderr[:200]}"}
-                
-        except subprocess.TimeoutExpired:
-            return {"success": False, "error": "Download timed out (>5 minutes)"}
-        
-        # Find the downloaded file (yt-dlp might add extension)
+        # Try multiple methods to download audio
         audio_file = None
-        for f in Path(tmpdir).glob(f"{video_id}*"):
-            if f.suffix in ['.mp3', '.m4a', '.webm', '.opus']:
-                audio_file = f
-                break
+        download_error = None
         
+        # Method 1: Try cobalt.tools API first (less likely to be blocked)
+        print("📥 Trying cobalt.tools API...")
+        try:
+            cobalt_response = requests.post(
+                'https://api.cobalt.tools/api/json',
+                headers={
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'url': youtube_url,
+                    'aFormat': 'mp3',
+                    'isAudioOnly': True,
+                    'filenamePattern': 'basic',
+                },
+                timeout=30
+            )
+            
+            if cobalt_response.ok:
+                cobalt_data = cobalt_response.json()
+                if cobalt_data.get('url'):
+                    print(f"✅ Got audio URL from cobalt: {cobalt_data['url'][:80]}...")
+                    # Download the audio file
+                    audio_response = requests.get(cobalt_data['url'], timeout=120)
+                    if audio_response.ok:
+                        audio_file = output_path.with_suffix('.mp3')
+                        with open(audio_file, 'wb') as f:
+                            f.write(audio_response.content)
+                        print(f"✅ Downloaded via cobalt: {audio_file.stat().st_size / 1024 / 1024:.2f}MB")
+                else:
+                    print(f"⚠️ Cobalt didn't return URL: {cobalt_data}")
+            else:
+                print(f"⚠️ Cobalt API error: {cobalt_response.status_code}")
+        except Exception as e:
+            print(f"⚠️ Cobalt failed: {e}")
+        
+        # Method 2: Try yt-dlp if cobalt failed
         if not audio_file or not audio_file.exists():
-            return {"success": False, "error": "Audio file not found after download"}
+            print("📥 Trying yt-dlp...")
+            try:
+                env = os.environ.copy()
+                env["PATH"] = "/usr/bin:/usr/local/bin:/opt/conda/bin:" + env.get("PATH", "")
+                
+                result = subprocess.run([
+                    "yt-dlp",
+                    "-x",
+                    "--audio-format", "mp3",
+                    "--audio-quality", "128K",
+                    "-o", str(output_path),
+                    "--no-playlist",
+                    "--max-filesize", "100M",
+                    "--no-warnings",
+                    youtube_url
+                ], capture_output=True, text=True, timeout=300, env=env)
+                
+                print(f"📋 yt-dlp return code: {result.returncode}")
+                
+                # Find downloaded file
+                for f in Path(tmpdir).glob(f"{video_id}*"):
+                    if f.suffix in ['.mp3', '.m4a', '.webm', '.opus', '.mp4']:
+                        audio_file = f
+                        break
+                
+                if not audio_file or not audio_file.exists():
+                    download_error = result.stderr[:300] if result.stderr else "Unknown error"
+                    
+            except subprocess.TimeoutExpired:
+                download_error = "Download timed out"
+        
+        # Check if we got the file
+        if not audio_file or not audio_file.exists():
+            return {"success": False, "error": f"All download methods failed. Last error: {download_error}"}
         
         file_size = audio_file.stat().st_size
         print(f"✅ Downloaded: {file_size / 1024 / 1024:.2f} MB")

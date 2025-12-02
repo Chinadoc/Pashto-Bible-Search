@@ -7,9 +7,13 @@ export interface Env {
   DB: D1Database;
   AUDIO_BUCKET: R2Bucket;
   ELEVENLABS_API_KEY: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  AUTH_SECRET: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
+import { handleGoogleCallback, handleGetSession, handleSignOut } from './auth-handlers';
 
 // ========================================
 // Video Processing Types
@@ -557,16 +561,16 @@ async function searchVersesBatch(
 
     // Convert SQLite timestamps and determine which forms matched each verse
     const verses = result.results?.map((verse: any) => {
-      const matchedForms = formsToSearch.filter(form => 
+      const matchedForms = formsToSearch.filter(form =>
         verse.text && verse.text.includes(form)
       );
-      
+
       // Generate audio_r2_key if not present in DB (same logic as getVersesByChapter)
       let audioR2Key: string | null = verse.audio_r2_key || null;
       if (!audioR2Key && verse.book && verse.chapter && verse.verse) {
         audioR2Key = generateR2AudioKey(verse.book, verse.chapter, verse.verse, translation);
       }
-      
+
       return {
         ...verse,
         audio_r2_key: audioR2Key,
@@ -579,9 +583,9 @@ async function searchVersesBatch(
 
     const queryTime = Date.now() - startTime;
 
-    return jsonResponse({ 
-      verses, 
-      count: verses.length, 
+    return jsonResponse({
+      verses,
+      count: verses.length,
       formsSearched: formsToSearch.length,
       queryTime,
     });
@@ -1124,7 +1128,7 @@ function inferAspectFromFormType(formType: string, tense: string): string {
   }
   // Past, perfect, and subjunctive are generally perfective
   if (formType === 'past' || formType === 'perfect' || formType === 'subjunctive' ||
-      tense?.includes('past') || tense?.includes('perfective') || tense?.includes('perfect')) {
+    tense?.includes('past') || tense?.includes('perfective') || tense?.includes('perfect')) {
     return 'perfective';
   }
   // Ability and imperative can be either
@@ -1351,16 +1355,16 @@ async function analyzeInflections(
   try {
     const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
     const results: InflectedWord[] = [];
-    
+
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       if (word.length < 2) continue;
-      
+
       // Check for inflection endings
       let isInflected = false;
       let isPlural = false;
       let inflectionType: string | null = null;
-      
+
       for (const ending of NOUN_INFLECTION_ENDINGS) {
         if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
           isInflected = true;
@@ -1369,13 +1373,13 @@ async function analyzeInflections(
           break;
         }
       }
-      
+
       if (!isInflected) continue;
-      
+
       // Check if word is in a sandwich construction
       let isInSandwich = false;
       let sandwichType: string | null = null;
-      
+
       for (const pattern of SANDWICH_PATTERNS) {
         if (pattern.start && pattern.end) {
           // Look for start before and end after current word
@@ -1406,7 +1410,7 @@ async function analyzeInflections(
         }
         if (isInSandwich) break;
       }
-      
+
       // Check if word is subject of transitive past tense verb
       let isSubjectTransitivePast = false;
       for (let j = i + 1; j < words.length; j++) {
@@ -1419,7 +1423,7 @@ async function analyzeInflections(
         }
         if (isSubjectTransitivePast) break;
       }
-      
+
       // Try to find base word from D1
       let baseWord: string | null = null;
       try {
@@ -1432,7 +1436,7 @@ async function analyzeInflections(
       } catch (e) {
         // Ignore lookup errors
       }
-      
+
       // Build explanation based on LingDocs 3 reasons
       const reasons: string[] = [];
       if (isPlural) {
@@ -1455,11 +1459,11 @@ async function analyzeInflections(
       if (isSubjectTransitivePast && !isPlural && !isInSandwich) {
         reasons.push('subject of transitive past verb (ergative)');
       }
-      
-      const explanation = reasons.length > 0 
+
+      const explanation = reasons.length > 0
         ? `Inflected because: ${reasons.join('; ')}`
         : 'Inflected form (reason unclear)';
-      
+
       results.push({
         word,
         position: i,
@@ -1473,7 +1477,7 @@ async function analyzeInflections(
         explanation,
       });
     }
-    
+
     return jsonResponse({
       verse_ref: verseRef,
       translation,
@@ -1502,11 +1506,11 @@ async function populateInflectionReasons(
 ): Promise<Response> {
   try {
     const table = translation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
-    
+
     // Build query based on filters
     let sql = `SELECT book, chapter, verse, text FROM ${table}`;
     const params: any[] = [];
-    
+
     if (book) {
       sql += ` WHERE book = ?`;
       params.push(book);
@@ -1515,13 +1519,13 @@ async function populateInflectionReasons(
         params.push(chapter);
       }
     }
-    
+
     sql += ` ORDER BY book, chapter, verse LIMIT ?`;
     params.push(limit);
-    
+
     const versesResult = await env.DB.prepare(sql).bind(...params).all();
     const verses = versesResult.results || [];
-    
+
     // Pre-fetch all base words in one query to reduce subrequests
     const allWords = new Set<string>();
     for (const verse of verses) {
@@ -1529,12 +1533,12 @@ async function populateInflectionReasons(
       const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
       words.forEach(w => { if (w.length >= 2) allWords.add(w); });
     }
-    
+
     // Batch lookup base words (max 100 per query to stay safe)
     const wordToBase = new Map<string, string>();
     const wordArray = Array.from(allWords);
     const BATCH_SIZE = 100;
-    
+
     for (let i = 0; i < wordArray.length; i += BATCH_SIZE) {
       const batch = wordArray.slice(i, i + BATCH_SIZE);
       const placeholders = batch.map(() => '?').join(',');
@@ -1542,7 +1546,7 @@ async function populateInflectionReasons(
         const baseResults = await env.DB.prepare(
           `SELECT word_form, root_word FROM form_to_root WHERE word_form IN (${placeholders})`
         ).bind(...batch).all();
-        
+
         for (const row of (baseResults.results || [])) {
           wordToBase.set(row.word_form as string, row.root_word as string);
         }
@@ -1550,7 +1554,7 @@ async function populateInflectionReasons(
         // Ignore lookup errors
       }
     }
-    
+
     // Collect all inflections to insert
     interface InflectionRecord {
       word: string;
@@ -1563,23 +1567,23 @@ async function populateInflectionReasons(
       isSubjectTransitivePast: boolean;
       position: number;
     }
-    
+
     const inflectionsToInsert: InflectionRecord[] = [];
-    
+
     for (const verse of verses) {
       const verseRef = `${verse.book} ${verse.chapter}:${verse.verse}`;
       const text = verse.text as string;
       const words = text.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
-      
+
       for (let i = 0; i < words.length; i++) {
         const word = words[i];
         if (word.length < 2) continue;
-        
+
         // Check for inflection
         let isInflected = false;
         let isPlural = false;
         let inflectionType: string | null = null;
-        
+
         for (const ending of NOUN_INFLECTION_ENDINGS) {
           if (word.endsWith(ending.ending) && word.length > ending.ending.length + 1) {
             isInflected = true;
@@ -1588,13 +1592,13 @@ async function populateInflectionReasons(
             break;
           }
         }
-        
+
         if (!isInflected) continue;
-        
+
         // Check sandwich
         let isInSandwich = false;
         let sandwichType: string | null = null;
-        
+
         for (const pattern of SANDWICH_PATTERNS) {
           if (pattern.start && pattern.end) {
             for (let j = 0; j < i; j++) {
@@ -1622,7 +1626,7 @@ async function populateInflectionReasons(
           }
           if (isInSandwich) break;
         }
-        
+
         // Check ergative
         let isSubjectTransitivePast = false;
         for (let j = i + 1; j < words.length; j++) {
@@ -1634,7 +1638,7 @@ async function populateInflectionReasons(
           }
           if (isSubjectTransitivePast) break;
         }
-        
+
         // Get base word from pre-fetched map or strip ending
         let baseWord = wordToBase.get(word);
         if (!baseWord) {
@@ -1647,7 +1651,7 @@ async function populateInflectionReasons(
           }
         }
         if (!baseWord) baseWord = word;
-        
+
         inflectionsToInsert.push({
           word,
           baseWord,
@@ -1661,17 +1665,17 @@ async function populateInflectionReasons(
         });
       }
     }
-    
+
     // Use D1 batch API to insert all at once (max 1000 statements per batch)
     let insertedCount = 0;
     const errors: string[] = [];
     const INSERT_BATCH_SIZE = 100; // D1 batch limit is lower for complex statements
-    
+
     for (let i = 0; i < inflectionsToInsert.length; i += INSERT_BATCH_SIZE) {
       const batch = inflectionsToInsert.slice(i, i + INSERT_BATCH_SIZE);
-      
+
       try {
-        const statements = batch.map(inf => 
+        const statements = batch.map(inf =>
           env.DB.prepare(
             `INSERT OR REPLACE INTO inflection_reasons 
              (pashto_form, base_word, verse_ref, inflection_type, is_plural, is_in_sandwich, 
@@ -1690,14 +1694,14 @@ async function populateInflectionReasons(
             translation
           )
         );
-        
+
         await env.DB.batch(statements);
         insertedCount += batch.length;
       } catch (e: any) {
         errors.push(`Batch ${Math.floor(i / INSERT_BATCH_SIZE)}: ${e.message}`);
       }
     }
-    
+
     return jsonResponse({
       success: true,
       verses_analyzed: verses.length,
@@ -1728,23 +1732,23 @@ async function validateVerbForms(
     if (!lemma || !forms || forms.length === 0) {
       return jsonResponse({ valid: [], invalid: [] });
     }
-    
+
     // Get all known forms for this verb from verb_forms table
     const knownFormsResult = await env.DB.prepare(
       `SELECT DISTINCT form FROM verb_forms WHERE base_verb = ?`
     ).bind(lemma).all();
-    
+
     const knownForms = new Set(
       (knownFormsResult.results || []).map((r: any) => r.form as string)
     );
-    
+
     // Also add the lemma itself
     knownForms.add(lemma);
-    
+
     // Classify forms
     const valid: string[] = [];
     const invalid: string[] = [];
-    
+
     for (const form of forms) {
       if (knownForms.has(form)) {
         valid.push(form);
@@ -1752,7 +1756,7 @@ async function validateVerbForms(
         invalid.push(form);
       }
     }
-    
+
     return jsonResponse({
       lemma,
       valid,
@@ -2377,14 +2381,14 @@ async function getTopicsVerses(
  */
 async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
   console.log(`🔍 [CF Worker] Extracting audio for video: ${videoId}`);
-  
+
   // Method 1: iOS innertube client (most reliable)
   try {
     const iosResponse = await fetch(
       'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
       {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)',
           'X-Goog-Api-Key': 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
@@ -2418,14 +2422,14 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
     if (iosResponse.ok) {
       const data = await iosResponse.json() as any;
       console.log(`📡 iOS innertube status: ${data.playabilityStatus?.status}`);
-      
+
       const formats = data.streamingData?.adaptiveFormats || [];
-      const audioFormat = formats.find((f: any) => 
+      const audioFormat = formats.find((f: any) =>
         f.mimeType?.startsWith('audio/mp4') && f.url
-      ) || formats.find((f: any) => 
+      ) || formats.find((f: any) =>
         f.mimeType?.startsWith('audio/') && f.url
       );
-      
+
       if (audioFormat?.url) {
         console.log(`✅ [CF Worker] Got audio via iOS client`);
         return audioFormat.url;
@@ -2441,7 +2445,7 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
       'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
       {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14)',
         },
@@ -2465,10 +2469,10 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
     if (androidResponse.ok) {
       const data = await androidResponse.json() as any;
       const formats = data.streamingData?.adaptiveFormats || [];
-      const audioFormat = formats.find((f: any) => 
+      const audioFormat = formats.find((f: any) =>
         f.mimeType?.startsWith('audio/') && f.url
       );
-      
+
       if (audioFormat?.url) {
         console.log(`✅ [CF Worker] Got audio via Android client`);
         return audioFormat.url;
@@ -2484,7 +2488,7 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
       'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
       {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -2507,10 +2511,10 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
     if (tvResponse.ok) {
       const data = await tvResponse.json() as any;
       const formats = data.streamingData?.adaptiveFormats || [];
-      const audioFormat = formats.find((f: any) => 
+      const audioFormat = formats.find((f: any) =>
         f.mimeType?.startsWith('audio/') && f.url
       );
-      
+
       if (audioFormat?.url) {
         console.log(`✅ [CF Worker] Got audio via TV client`);
         return audioFormat.url;
@@ -2524,22 +2528,22 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
   try {
     const invidiousInstances = [
       'https://inv.nadeko.net',
-      'https://invidious.snopyta.org', 
+      'https://invidious.snopyta.org',
       'https://yewtu.be'
     ];
-    
+
     for (const instance of invidiousInstances) {
       try {
         const response = await fetch(`${instance}/api/v1/videos/${videoId}`, {
           headers: { 'Accept': 'application/json' }
         });
-        
+
         if (response.ok) {
           const data = await response.json() as any;
-          const audioFormats = data.adaptiveFormats?.filter((f: any) => 
+          const audioFormats = data.adaptiveFormats?.filter((f: any) =>
             f.type?.startsWith('audio/')
           ) || [];
-          
+
           if (audioFormats.length > 0) {
             console.log(`✅ [CF Worker] Got audio via Invidious (${instance})`);
             return audioFormats[0].url;
@@ -2565,7 +2569,7 @@ function extractYouTubeVideoId(url: string): string | null {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /^([a-zA-Z0-9_-]{11})$/
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) return match[1];
@@ -2606,7 +2610,7 @@ async function getYouTubeMetadata(videoId: string): Promise<{ title: string; des
   } catch (e) {
     console.warn('Failed to get YouTube metadata:', e);
   }
-  
+
   return {
     title: `Video ${videoId}`,
     description: '',
@@ -2631,45 +2635,45 @@ interface ElevenLabsTranscriptionResult {
  * Returns result with detailed error info if failed
  */
 async function transcribeWithElevenLabs(
-  audioUrl: string, 
+  audioUrl: string,
   apiKey: string
 ): Promise<{ success: true; result: ElevenLabsTranscriptionResult } | { success: false; error: string }> {
   console.log(`🎙️ [CF Worker] Starting ElevenLabs Scribe v2 transcription`);
-  
+
   try {
     // First, download the audio to send to ElevenLabs
     console.log(`📥 Downloading audio from URL...`);
-    
+
     // Use streaming to handle large files more efficiently
     const audioResponse = await fetch(audioUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       }
     });
-    
+
     if (!audioResponse.ok) {
       return { success: false, error: `Failed to download audio: HTTP ${audioResponse.status}` };
     }
-    
+
     // Get content type and size
     const contentType = audioResponse.headers.get('content-type') || 'audio/mp4';
     const contentLength = audioResponse.headers.get('content-length');
     console.log(`📥 Audio content-type: ${contentType}, size: ${contentLength || 'unknown'}`);
-    
+
     // Read up to 50MB of audio
     const maxSize = 50 * 1024 * 1024;
     const reader = audioResponse.body?.getReader();
     if (!reader) {
       return { success: false, error: 'Could not read audio stream' };
     }
-    
+
     const chunks: Uint8Array[] = [];
     let totalSize = 0;
-    
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      
+
       if (totalSize + value.length > maxSize) {
         // Take only what we need to reach maxSize
         const remaining = maxSize - totalSize;
@@ -2678,11 +2682,11 @@ async function transcribeWithElevenLabs(
         console.log(`⚠️ Audio truncated at ${maxSize / 1024 / 1024}MB`);
         break;
       }
-      
+
       chunks.push(value);
       totalSize += value.length;
     }
-    
+
     // Combine chunks into a single buffer
     const audioData = new Uint8Array(totalSize);
     let offset = 0;
@@ -2690,18 +2694,18 @@ async function transcribeWithElevenLabs(
       audioData.set(chunk, offset);
       offset += chunk.length;
     }
-    
+
     console.log(`📥 Downloaded ${(totalSize / 1024 / 1024).toFixed(2)}MB of audio`);
-    
+
     // Create blob with appropriate content type
     const audioBlob = new Blob([audioData], { type: contentType });
-    
+
     // Determine file extension from content type
     let extension = 'mp4';
     if (contentType.includes('audio/webm')) extension = 'webm';
     else if (contentType.includes('audio/mpeg')) extension = 'mp3';
     else if (contentType.includes('audio/wav')) extension = 'wav';
-    
+
     // Create form data for ElevenLabs API
     const formData = new FormData();
     formData.append('file', audioBlob, `audio.${extension}`);
@@ -2709,7 +2713,7 @@ async function transcribeWithElevenLabs(
     formData.append('language_code', 'ps'); // Pashto
     formData.append('timestamps_granularity', 'word');
     formData.append('diarize', 'true');
-    
+
     console.log(`📤 Sending ${(totalSize / 1024 / 1024).toFixed(2)}MB to ElevenLabs Scribe v2...`);
     const transcribeResponse = await fetch(
       'https://api.elevenlabs.io/v1/audio/transcription',
@@ -2721,19 +2725,19 @@ async function transcribeWithElevenLabs(
         body: formData,
       }
     );
-    
+
     if (!transcribeResponse.ok) {
       const errorText = await transcribeResponse.text();
       console.error(`❌ ElevenLabs API error: ${transcribeResponse.status}`, errorText);
-      return { 
-        success: false, 
-        error: `ElevenLabs API error: ${transcribeResponse.status} - ${errorText}` 
+      return {
+        success: false,
+        error: `ElevenLabs API error: ${transcribeResponse.status} - ${errorText}`
       };
     }
-    
+
     const result = await transcribeResponse.json() as any;
     console.log(`✅ [CF Worker] Transcription complete. Text length: ${result.text?.length || 0}`);
-    
+
     // Process the ElevenLabs response into our format
     const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
       text: w.text || w.word,
@@ -2741,11 +2745,11 @@ async function transcribeWithElevenLabs(
       end_time: w.end || w.end_time || 0,
       confidence: w.confidence || 0.95,
     }));
-    
+
     // Create segments from the transcription
     // ElevenLabs may return segments or we create them from words
     const segments: TranscriptSegment[] = [];
-    
+
     if (result.segments && result.segments.length > 0) {
       result.segments.forEach((seg: any, index: number) => {
         segments.push({
@@ -2754,8 +2758,8 @@ async function transcribeWithElevenLabs(
           start_time: seg.start || seg.start_time,
           end_time: seg.end || seg.end_time,
           duration: (seg.end || seg.end_time) - (seg.start || seg.start_time),
-          words: words.filter(w => 
-            w.start_time >= (seg.start || seg.start_time) && 
+          words: words.filter(w =>
+            w.start_time >= (seg.start || seg.start_time) &&
             w.end_time <= (seg.end || seg.end_time)
           ),
           confidence: seg.confidence || 0.95,
@@ -2766,14 +2770,14 @@ async function transcribeWithElevenLabs(
       // Create segments every ~30 seconds or at natural pauses
       let currentSegment: TranscriptWord[] = [];
       let segmentStart = words[0].start_time;
-      
+
       for (let i = 0; i < words.length; i++) {
         currentSegment.push(words[i]);
-        
+
         const segmentDuration = words[i].end_time - segmentStart;
-        const hasLongPause = i < words.length - 1 && 
+        const hasLongPause = i < words.length - 1 &&
           (words[i + 1].start_time - words[i].end_time) > 1.5;
-        
+
         if (segmentDuration >= 30 || hasLongPause || i === words.length - 1) {
           segments.push({
             segment_number: segments.length + 1,
@@ -2784,7 +2788,7 @@ async function transcribeWithElevenLabs(
             words: currentSegment,
             confidence: 0.95,
           });
-          
+
           if (i < words.length - 1) {
             currentSegment = [];
             segmentStart = words[i + 1].start_time;
@@ -2792,7 +2796,7 @@ async function transcribeWithElevenLabs(
         }
       }
     }
-    
+
     return {
       success: true,
       result: {
@@ -2803,12 +2807,12 @@ async function transcribeWithElevenLabs(
         language_probability: result.language_probability || 0.95,
       }
     };
-    
+
   } catch (error) {
     console.error(`❌ [CF Worker] Transcription error:`, error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown transcription error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown transcription error'
     };
   }
 }
@@ -2821,30 +2825,30 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
   try {
     const body = await request.json() as { youtubeUrl?: string; url?: string };
     const youtubeUrl = body.youtubeUrl || body.url;
-    
+
     if (!youtubeUrl) {
       return errorResponse('YouTube URL is required', 400);
     }
-    
+
     // Extract video ID
     const videoId = extractYouTubeVideoId(youtubeUrl);
     if (!videoId) {
       return errorResponse('Invalid YouTube URL', 400);
     }
-    
+
     console.log(`🎬 [CF Worker] Processing video: ${videoId}`);
-    
+
     // Check if API key is configured
     if (!env.ELEVENLABS_API_KEY) {
       return errorResponse('ElevenLabs API key not configured', 500);
     }
-    
+
     // Get video metadata
     const metadata = await getYouTubeMetadata(videoId);
-    
+
     // Extract audio URL
     const audioUrl = await getYouTubeAudioUrl(videoId);
-    
+
     if (!audioUrl) {
       return jsonResponse({
         success: false,
@@ -2855,14 +2859,14 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
         metadata,
       }, 400);
     }
-    
+
     console.log(`🔊 [CF Worker] Got audio URL: ${audioUrl.substring(0, 100)}...`);
-    
+
     console.log(`🔊 [CF Worker] Got audio URL, starting transcription...`);
-    
+
     // Transcribe with ElevenLabs Scribe v2
     const transcriptionResponse = await transcribeWithElevenLabs(audioUrl, env.ELEVENLABS_API_KEY);
-    
+
     if (!transcriptionResponse.success) {
       // Check if the error is due to IP restrictions
       const errorMsg = transcriptionResponse.error;
@@ -2876,7 +2880,7 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
           metadata,
         }, 400);
       }
-      
+
       return jsonResponse({
         success: false,
         error: 'Transcription failed',
@@ -2885,12 +2889,12 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
         metadata,
       }, 500);
     }
-    
+
     const transcription = transcriptionResponse.result;
-    
+
     // Store in D1 database
     const now = new Date().toISOString();
-    
+
     try {
       // Create videos table if not exists
       await env.DB.prepare(`
@@ -2910,7 +2914,7 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
           updated_at TEXT
         )
       `).run();
-      
+
       // Insert or update video
       await env.DB.prepare(`
         INSERT OR REPLACE INTO videos 
@@ -2926,21 +2930,21 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
         transcription.transcript,
         JSON.stringify(transcription.segments),
         JSON.stringify(transcription.words),
-        transcription.segments.length > 0 
-          ? transcription.segments[transcription.segments.length - 1].end_time 
+        transcription.segments.length > 0
+          ? transcription.segments[transcription.segments.length - 1].end_time
           : 0,
         transcription.language_code,
         now,
         now
       ).run();
-      
+
       console.log(`💾 [CF Worker] Video saved to D1`);
-      
+
     } catch (dbError) {
       console.error('Database error:', dbError);
       // Continue even if DB save fails - return the transcription
     }
-    
+
     return jsonResponse({
       success: true,
       videoId,
@@ -2952,12 +2956,12 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
       words: transcription.words,
       totalSegments: transcription.segments.length,
       totalWords: transcription.words.length,
-      duration: transcription.segments.length > 0 
-        ? transcription.segments[transcription.segments.length - 1].end_time 
+      duration: transcription.segments.length > 0
+        ? transcription.segments[transcription.segments.length - 1].end_time
         : 0,
       languageCode: transcription.language_code,
     });
-    
+
   } catch (error) {
     console.error('[CF Worker] Process video error:', error);
     return errorResponse(error instanceof Error ? error.message : 'Failed to process video', 500);
@@ -2973,11 +2977,11 @@ async function handleGetVideos(env: Env): Promise<Response> {
     const tableCheck = await env.DB.prepare(
       `SELECT name FROM sqlite_master WHERE type='table' AND name='videos'`
     ).first();
-    
+
     if (!tableCheck) {
       return jsonResponse({ videos: [], total: 0 });
     }
-    
+
     const result = await env.DB.prepare(`
       SELECT video_id, youtube_url, title, description, thumbnail_url, 
              transcript_text, segments_json, duration, language_code, 
@@ -2986,7 +2990,7 @@ async function handleGetVideos(env: Env): Promise<Response> {
       ORDER BY created_at DESC
       LIMIT 50
     `).all();
-    
+
     const videos = (result.results || []).map((v: any) => ({
       videoId: v.video_id,
       youtubeUrl: v.youtube_url,
@@ -3001,9 +3005,9 @@ async function handleGetVideos(env: Env): Promise<Response> {
       createdAt: v.created_at,
       updatedAt: v.updated_at,
     }));
-    
+
     return jsonResponse({ videos, total: videos.length });
-    
+
   } catch (error) {
     console.error('[CF Worker] Get videos error:', error);
     return errorResponse(error instanceof Error ? error.message : 'Failed to get videos', 500);
@@ -3022,11 +3026,11 @@ async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
       FROM videos
       WHERE video_id = ?
     `).bind(videoId).first();
-    
+
     if (!result) {
       return errorResponse('Video not found', 404);
     }
-    
+
     return jsonResponse({
       videoId: result.video_id,
       youtubeUrl: result.youtube_url,
@@ -3042,7 +3046,7 @@ async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
       createdAt: result.created_at,
       updatedAt: result.updated_at,
     });
-    
+
   } catch (error) {
     console.error('[CF Worker] Get video error:', error);
     return errorResponse(error instanceof Error ? error.message : 'Failed to get video', 500);
@@ -3057,17 +3061,17 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
     if (!env.ELEVENLABS_API_KEY) {
       return errorResponse('ElevenLabs API key not configured', 500);
     }
-    
+
     // Get the audio file from the request
     const formData = await request.formData();
     const audioFile = formData.get('file') as Blob | null;
-    
+
     if (!audioFile) {
       return errorResponse('No audio file provided', 400);
     }
-    
+
     console.log(`🎙️ [CF Worker] Transcribing uploaded file (${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`);
-    
+
     // Create form data for ElevenLabs API
     const elevenLabsForm = new FormData();
     elevenLabsForm.append('file', audioFile, 'audio.mp3');
@@ -3075,7 +3079,7 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
     elevenLabsForm.append('language_code', 'ps');
     elevenLabsForm.append('timestamps_granularity', 'word');
     elevenLabsForm.append('diarize', 'true');
-    
+
     const response = await fetch(
       'https://api.elevenlabs.io/v1/audio/transcription',
       {
@@ -3086,14 +3090,14 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
         body: elevenLabsForm,
       }
     );
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       return errorResponse(`Transcription failed: ${errorText}`, response.status);
     }
-    
+
     const result = await response.json() as any;
-    
+
     // Process words
     const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
       text: w.text || w.word,
@@ -3101,7 +3105,7 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
       end_time: w.end || w.end_time || 0,
       confidence: w.confidence || 0.95,
     }));
-    
+
     return jsonResponse({
       success: true,
       transcript: result.text || '',
@@ -3109,7 +3113,7 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
       languageCode: result.language_code || 'ps',
       languageProbability: result.language_probability || 0.95,
     });
-    
+
   } catch (error) {
     console.error('[CF Worker] Transcribe audio error:', error);
     return errorResponse(error instanceof Error ? error.message : 'Failed to transcribe audio', 500);
@@ -3125,32 +3129,32 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
     if (!env.ELEVENLABS_API_KEY) {
       return errorResponse('ElevenLabs API key not configured', 500);
     }
-    
+
     const body = await request.json() as {
       video_id: string;
       r2_key: string;
       youtube_url?: string;
       title?: string;
     };
-    
+
     const { video_id, r2_key, youtube_url, title } = body;
-    
+
     if (!video_id || !r2_key) {
       return errorResponse('video_id and r2_key are required', 400);
     }
-    
+
     console.log(`🎙️ [CF Worker] Transcribing R2 audio: ${r2_key}`);
-    
+
     // Get audio from R2
     const audioObject = await env.AUDIO_BUCKET.get(r2_key);
-    
+
     if (!audioObject) {
       return errorResponse(`Audio not found in R2: ${r2_key}`, 404);
     }
-    
+
     const audioBlob = await audioObject.blob();
     console.log(`📦 Audio size: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB`);
-    
+
     // Create form data for ElevenLabs API
     const elevenLabsForm = new FormData();
     elevenLabsForm.append('file', audioBlob, 'audio.mp3');
@@ -3158,7 +3162,7 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
     elevenLabsForm.append('language_code', 'ps');
     elevenLabsForm.append('timestamps_granularity', 'word');
     elevenLabsForm.append('diarize', 'true');
-    
+
     console.log(`📤 Sending to ElevenLabs Scribe v2...`);
     const response = await fetch(
       'https://api.elevenlabs.io/v1/audio/transcription',
@@ -3170,16 +3174,16 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
         body: elevenLabsForm,
       }
     );
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ ElevenLabs error: ${errorText}`);
       return errorResponse(`Transcription failed: ${errorText}`, response.status);
     }
-    
+
     const result = await response.json() as any;
     console.log(`✅ Transcription complete. Text length: ${result.text?.length || 0}`);
-    
+
     // Process words
     const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
       text: w.text || w.word,
@@ -3187,19 +3191,19 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
       end_time: w.end || w.end_time || 0,
       confidence: w.confidence || 0.95,
     }));
-    
+
     // Create segments from words
     const segments: TranscriptSegment[] = [];
     let currentSegment: TranscriptWord[] = [];
     let segmentStart = words[0]?.start_time || 0;
-    
+
     for (let i = 0; i < words.length; i++) {
       currentSegment.push(words[i]);
-      
+
       const segmentDuration = words[i].end_time - segmentStart;
-      const hasLongPause = i < words.length - 1 && 
+      const hasLongPause = i < words.length - 1 &&
         (words[i + 1].start_time - words[i].end_time) > 1.5;
-      
+
       if (segmentDuration >= 30 || hasLongPause || i === words.length - 1) {
         segments.push({
           segment_number: segments.length + 1,
@@ -3210,17 +3214,17 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
           words: currentSegment,
           confidence: 0.95,
         });
-        
+
         if (i < words.length - 1) {
           currentSegment = [];
           segmentStart = words[i + 1].start_time;
         }
       }
     }
-    
+
     // Store in D1 database
     const now = new Date().toISOString();
-    
+
     try {
       // Create videos table if not exists
       await env.DB.prepare(`
@@ -3241,7 +3245,7 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
           updated_at TEXT
         )
       `).run();
-      
+
       // Insert or update video
       await env.DB.prepare(`
         INSERT OR REPLACE INTO videos 
@@ -3261,14 +3265,14 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
         now,
         now
       ).run();
-      
+
       console.log(`💾 Video saved to D1: ${video_id}`);
-      
+
     } catch (dbError) {
       console.error('Database error:', dbError);
       // Continue - return transcription even if DB save fails
     }
-    
+
     return jsonResponse({
       success: true,
       videoId: video_id,
@@ -3281,7 +3285,7 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
       languageCode: result.language_code || 'ps',
       r2Key: r2_key
     });
-    
+
   } catch (error) {
     console.error('[CF Worker] Transcribe R2 audio error:', error);
     return errorResponse(error instanceof Error ? error.message : 'Failed to transcribe R2 audio', 500);
@@ -3311,37 +3315,56 @@ export default {
     // ========================================
     // VIDEO PROCESSING ROUTES (Cloudflare Worker)
     // ========================================
-    
+
     // Process YouTube video - extract audio and transcribe
     if (path === '/api/process-video' && request.method === 'POST') {
       return handleProcessVideo(request, env);
     }
-    
+
     // Get all videos
     if (path === '/api/videos' && request.method === 'GET') {
       return handleGetVideos(env);
     }
-    
+
     // Get single video by ID
     if (path.startsWith('/api/videos/') && request.method === 'GET') {
       const videoId = path.replace('/api/videos/', '');
       return handleGetVideo(videoId, env);
     }
-    
+
     // Transcribe uploaded audio file
     if (path === '/api/transcribe-audio' && request.method === 'POST') {
       return handleTranscribeAudio(request, env);
     }
-    
+
     // Transcribe audio from R2 storage (called by Modal VM)
     if (path === '/api/transcribe-r2-audio' && request.method === 'POST') {
       return handleTranscribeR2Audio(request, env);
     }
-    
+
+    // ========================================
+    // AUTHENTICATION ROUTES
+    // ========================================
+
+    // Google OAuth callback
+    if (path === '/api/auth/callback/google' && request.method === 'POST') {
+      return handleGoogleCallback(request, env);
+    }
+
+    // Get session
+    if (path === '/api/auth/session' && request.method === 'GET') {
+      return handleGetSession(request, env);
+    }
+
+    // Sign out
+    if (path === '/api/auth/signout' && request.method === 'POST') {
+      return handleSignOut(request, env);
+    }
+
     // ========================================
     // EXISTING ROUTES
     // ========================================
-    
+
     // Route handlers
     if (path === '/api/search' && request.method === 'GET') {
       const query = url.searchParams.get('q') || '';
@@ -3361,11 +3384,11 @@ export default {
           testament?: 'OT' | 'NT';
           limit?: number;
         };
-        
+
         if (!body.forms || !Array.isArray(body.forms)) {
           return errorResponse('Missing or invalid forms array', 400);
         }
-        
+
         return searchVersesBatch(env, body.forms, {
           translation: body.translation,
           testament: body.testament,
@@ -3503,17 +3526,17 @@ export default {
       if (!word) {
         return errorResponse('Missing word parameter', 400);
       }
-      
+
       try {
         const result = await env.DB.prepare(
           `SELECT pashto_word, pos, word_type, base_form, romanization, english_translation, frequency_total
            FROM word_frequencies WHERE pashto_word = ? LIMIT 1`
         ).bind(word).first();
-        
+
         if (!result) {
           return jsonResponse({ found: false, word });
         }
-        
+
         return jsonResponse(result);
       } catch (error: any) {
         return errorResponse(`Word frequency lookup failed: ${error.message}`, 500);
@@ -3526,17 +3549,17 @@ export default {
       if (!form) {
         return errorResponse('Missing form parameter', 400);
       }
-      
+
       try {
         const result = await env.DB.prepare(
           `SELECT base_verb, form, form_type, tense, person, aspect, mood, voice, gender, helper, confidence
            FROM verb_forms WHERE form = ? LIMIT 1`
         ).bind(form).first();
-        
+
         if (!result) {
           return jsonResponse({ found: false, form });
         }
-        
+
         return jsonResponse({
           found: true,
           form: result.form,
@@ -3561,14 +3584,14 @@ export default {
       if (!form) {
         return errorResponse('Missing form parameter', 400);
       }
-      
+
       try {
         // Try inflections table first
         let result = await env.DB.prepare(
           `SELECT base_word, inflected_form, grammatical_info, frequency
            FROM inflections WHERE inflected_form = ? LIMIT 1`
         ).bind(form).first();
-        
+
         if (!result) {
           // Try form_to_root table
           result = await env.DB.prepare(
@@ -3576,23 +3599,23 @@ export default {
              FROM form_to_root WHERE word_form = ? LIMIT 1`
           ).bind(form).first();
         }
-        
+
         if (!result) {
           return jsonResponse({ found: false, form });
         }
-        
+
         // Parse grammatical_info if it's a string
         let grammaticalInfo = null;
         if (result.grammatical_info) {
           try {
-            grammaticalInfo = typeof result.grammatical_info === 'string' 
-              ? JSON.parse(result.grammatical_info) 
+            grammaticalInfo = typeof result.grammatical_info === 'string'
+              ? JSON.parse(result.grammatical_info)
               : result.grammatical_info;
           } catch (e) {
             grammaticalInfo = { raw: result.grammatical_info };
           }
         }
-        
+
         return jsonResponse({
           found: true,
           form,
@@ -3611,7 +3634,7 @@ export default {
       if (!base) {
         return errorResponse('Missing base parameter', 400);
       }
-      
+
       try {
         const results = await env.DB.prepare(
           `SELECT inflected_form as form, grammatical_info, frequency
@@ -3619,13 +3642,13 @@ export default {
            ORDER BY frequency DESC
            LIMIT 20`
         ).bind(base).all();
-        
+
         const inflections = (results.results || []).map((row: any) => {
           let label = 'inflection';
           if (row.grammatical_info) {
             try {
-              const gi = typeof row.grammatical_info === 'string' 
-                ? JSON.parse(row.grammatical_info) 
+              const gi = typeof row.grammatical_info === 'string'
+                ? JSON.parse(row.grammatical_info)
                 : row.grammatical_info;
               label = gi.label || gi.case || gi.number || 'inflection';
             } catch (e) {
@@ -3638,7 +3661,7 @@ export default {
             frequency: row.frequency || 0,
           };
         });
-        
+
         return jsonResponse({
           base,
           inflections,
@@ -3678,15 +3701,15 @@ export default {
           verse_ref?: string;
           translation?: 'afghan2023' | 'yousafzai2019';
         };
-        
+
         if (!body.text) {
           return errorResponse('Missing text in request body', 400);
         }
-        
+
         return analyzeInflections(
-          env, 
-          body.text, 
-          body.verse_ref || null, 
+          env,
+          body.text,
+          body.verse_ref || null,
           body.translation || 'afghan2023'
         );
       } catch (e: any) {
@@ -3703,7 +3726,7 @@ export default {
           limit?: number;
           translation?: 'afghan2023' | 'yousafzai2019';
         };
-        
+
         return populateInflectionReasons(
           env,
           body.book || null,
@@ -3723,11 +3746,11 @@ export default {
           lemma: string;
           forms: string[];
         };
-        
+
         if (!body.lemma) {
           return errorResponse('Missing lemma in request body', 400);
         }
-        
+
         return validateVerbForms(env, body.lemma, body.forms || []);
       } catch (e: any) {
         return errorResponse(`Invalid request body: ${e.message}`, 400);
@@ -3886,14 +3909,14 @@ export default {
     if (path === '/api/top-words' && request.method === 'GET') {
       const limit = parseInt(url.searchParams.get('limit') || '100');
       const pos = url.searchParams.get('pos') || '';
-      
+
       try {
         let query = `
           SELECT pashto_word, pos, word_type, romanization, english_translation, frequency_total
           FROM word_frequencies
         `;
         const params: any[] = [];
-        
+
         // Apply POS filter
         if (pos && pos !== 'all') {
           if (pos === 'verb') {
@@ -3904,12 +3927,12 @@ export default {
             query += ` WHERE (word_type LIKE '%adj%' OR pos LIKE '%adj%')`;
           }
         }
-        
+
         query += ` ORDER BY frequency_total DESC LIMIT ?`;
         params.push(Math.min(limit, 500)); // Max 500 to prevent abuse
-        
+
         const result = await env.DB.prepare(query).bind(...params).all();
-        
+
         return jsonResponse({
           words: result.results || [],
           total: result.results?.length || 0,
@@ -3923,18 +3946,18 @@ export default {
     if (path === '/api/dictionary/search' && request.method === 'GET') {
       const query = url.searchParams.get('q') || '';
       const limit = parseInt(url.searchParams.get('limit') || '20');
-      
+
       if (!query || query.length < 2) {
         return jsonResponse({ entries: [] });
       }
-      
+
       try {
         // Check if query is romanized (starts with ASCII letter)
         const isRomanized = /^[a-zA-Z]/.test(query);
-        
+
         let sql: string;
         let params: any[];
-        
+
         if (isRomanized) {
           // Search in romanization
           sql = `
@@ -3960,9 +3983,9 @@ export default {
           `;
           params = [`%${query}%`, query, limit];
         }
-        
+
         const result = await env.DB.prepare(sql).bind(...params).all();
-        
+
         const entries = (result.results || []).map((r: any) => ({
           id: r.pashto,
           pashto: r.pashto,
@@ -3971,7 +3994,7 @@ export default {
           pos: r.pos || r.word_type || '',
           frequency: r.frequency || 0,
         }));
-        
+
         return jsonResponse({ entries, total: entries.length });
       } catch (error: any) {
         return errorResponse(`Dictionary search failed: ${error.message}`, 500);
@@ -3984,7 +4007,7 @@ export default {
       if (!base) {
         return errorResponse('Missing base parameter', 400);
       }
-      
+
       try {
         const result = await env.DB.prepare(
           `SELECT base_word, inflected_form, inflection_type, grammatical_info, frequency
@@ -3992,7 +4015,7 @@ export default {
            WHERE base_word = ?
            ORDER BY inflection_type`
         ).bind(base).all();
-        
+
         return jsonResponse({
           base,
           inflections: result.results || [],

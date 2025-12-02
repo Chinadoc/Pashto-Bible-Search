@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signInWithGoogle, signOut as cloudflareSignOut, getSession, Session } from '@/app/lib/cloudflare-auth';
 
 export interface SRSItem {
     verse_ref: string;
@@ -17,7 +17,15 @@ interface TyperDashboardProps {
 }
 
 export default function TyperDashboard({ onSelectVerse, srsItems, loading }: TyperDashboardProps) {
-    const { data: session } = useSession();
+    const [session, setSession] = useState<Session | null>(null);
+    const [sessionLoading, setSessionLoading] = useState(true);
+
+    useEffect(() => {
+        getSession().then(session => {
+            setSession(session);
+            setSessionLoading(false);
+        });
+    }, []);
 
     // Group items by interval
     const groupedItems = srsItems.reduce((acc, item) => {
@@ -54,7 +62,7 @@ export default function TyperDashboard({ onSelectVerse, srsItems, loading }: Typ
                         Save verses, track your memorization progress, and improve your Pashto typing speed.
                     </p>
                     <button
-                        onClick={() => signIn('google')}
+                        onClick={() => signInWithGoogle(`${window.location.origin}/auth/callback`)}
                         className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -81,7 +89,10 @@ export default function TyperDashboard({ onSelectVerse, srsItems, loading }: Typ
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => signOut()}
+                        onClick={async () => {
+                            await cloudflareSignOut();
+                            setSession(null);
+                        }}
                         className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                     >
                         Sign Out
