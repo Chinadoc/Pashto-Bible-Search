@@ -10,8 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
     'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
-// In-memory storage for videos (persisted in Cloudflare D1 when available)
-const videoStore = new Map<string, ProcessedVideo>();
+// In-memory storage for videos (for session persistence)
+const videoStore = new Map<string, any>();
 
 interface TranscriptSegment {
     segment_number: number;
@@ -28,25 +28,6 @@ interface TranscriptSegment {
     speaker_id?: string;
 }
 
-interface ProcessedVideo {
-    video_id: string;
-    youtube_url: string;
-    transcript: string;
-    language_code?: string;
-    language_confidence?: number;
-    segments: TranscriptSegment[];
-    words?: Array<{
-        text: string;
-        start: number;
-        end: number;
-    }>;
-    total_segments: number;
-    total_duration: number;
-    transcription_service: string;
-    processed_at: string;
-    indexed?: boolean;
-}
-
 /**
  * GET /api/videos
  * Returns all processed videos with transcripts
@@ -56,11 +37,24 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const videoId = searchParams.get('videoId');
 
+        const videos: any[] = [];
+
         // If specific video requested
         if (videoId) {
-            // Try Cloudflare D1 first
+            // Check local store first
+            const localVideo = videoStore.get(videoId);
+            if (localVideo) {
+                return NextResponse.json({
+                    success: true,
+                    video: normalizeVideo(localVideo)
+                });
+            }
+
+            // Try Cloudflare D1
             try {
-                const d1Response = await fetch(`${WORKER_URL}/api/video?videoId=${videoId}`);
+                const d1Response = await fetch(`${WORKER_URL}/api/video?videoId=${videoId}`, {
+                    headers: { 'Accept': 'application/json' },
+                });
                 if (d1Response.ok) {
                     const data = await d1Response.json();
                     if (data.video) {
@@ -74,55 +68,51 @@ export async function GET(request: NextRequest) {
                 console.warn('D1 video fetch failed:', e);
             }
 
-            // Fall back to local store
-            const video = videoStore.get(videoId);
-            if (video) {
-                return NextResponse.json({
-                    success: true,
-                    video: normalizeVideo(video)
-                });
-            }
-
             return NextResponse.json({
                 success: false,
                 error: 'Video not found'
             }, { status: 404 });
         }
 
-        // Get all videos
-        const videos: ProcessedVideo[] = [];
+        // Get all videos from local store
+        for (const video of videoStore.values()) {
+            videos.push(normalizeVideo(video));
+        }
 
-        // Try Cloudflare D1 first
+        // Try to fetch from Cloudflare D1
         try {
-            const d1Response = await fetch(`${WORKER_URL}/api/videos`);
+            const d1Response = await fetch(`${WORKER_URL}/api/videos`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            
             if (d1Response.ok) {
                 const data = await d1Response.json();
                 if (data.videos && Array.isArray(data.videos)) {
-                    videos.push(...data.videos.map(normalizeVideo));
+                    for (const video of data.videos) {
+                        // Avoid duplicates
+                        if (!videos.find(v => v.video_id === (video.video_id || video.videoId))) {
+                            videos.push(normalizeVideo(video));
+                        }
+                    }
                 }
             }
         } catch (e) {
             console.warn('D1 videos fetch failed:', e);
         }
 
-        // Add local store videos (avoiding duplicates)
-        for (const video of videoStore.values()) {
-            if (!videos.find(v => v.video_id === video.video_id)) {
-                videos.push(normalizeVideo(video));
-            }
-        }
-
         return NextResponse.json({
             success: true,
             videos,
             total: videos.length,
-            message: videos.length === 0 ? 'No videos found. Process a YouTube video to get started.' : undefined
+            message: videos.length === 0 
+                ? 'No videos found. Enter a YouTube URL and click "Process Video" to get started.' 
+                : undefined
         });
 
     } catch (error) {
         console.error('Error fetching videos:', error);
         return NextResponse.json(
-            { success: false, error: 'Failed to fetch videos' },
+            { success: false, error: 'Failed to fetch videos', videos: [] },
             { status: 500 }
         );
     }
@@ -136,16 +126,17 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         
-        if (!body.video_id && !body.videoId) {
+        const videoId = body.video_id || body.videoId;
+        if (!videoId) {
             return NextResponse.json(
                 { success: false, error: 'video_id is required' },
                 { status: 400 }
             );
         }
 
-        const video: ProcessedVideo = {
-            video_id: body.video_id || body.videoId,
-            youtube_url: body.youtube_url || body.youtubeUrl || `https://www.youtube.com/watch?v=${body.video_id || body.videoId}`,
+        const video = {
+            video_id: videoId,
+            youtube_url: body.youtube_url || body.youtubeUrl || `https://www.youtube.com/watch?v=${videoId}`,
             transcript: body.transcript || '',
             language_code: body.language_code,
             language_confidence: body.language_confidence,
@@ -154,7 +145,7 @@ export async function POST(request: NextRequest) {
                 text: seg.text || seg.transcript_text || '',
                 start_time: seg.start_time || seg.start_time_seconds || 0,
                 end_time: seg.end_time || seg.end_time_seconds || 0,
-                duration: seg.duration || (seg.end_time - seg.start_time) || 0,
+                duration: seg.duration || ((seg.end_time || seg.end_time_seconds || 0) - (seg.start_time || seg.start_time_seconds || 0)),
                 words: seg.words,
                 confidence: seg.confidence || 0.95,
                 speaker_id: seg.speaker_id
@@ -168,6 +159,7 @@ export async function POST(request: NextRequest) {
 
         // Store locally
         videoStore.set(video.video_id, video);
+        console.log(`📹 Stored video ${video.video_id} locally (${videoStore.size} total)`);
 
         // Try to store in Cloudflare D1
         try {
@@ -182,24 +174,6 @@ export async function POST(request: NextRequest) {
             }
         } catch (e) {
             console.warn('D1 video store failed:', e);
-        }
-
-        // Auto-index transcript words
-        if (video.transcript) {
-            try {
-                await fetch(`${getBaseUrl(request)}/api/index-transcript`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        videoId: video.video_id,
-                        transcript: video.transcript,
-                        segments: video.segments
-                    }),
-                });
-                video.indexed = true;
-            } catch (e) {
-                console.warn('Transcript indexing failed:', e);
-            }
         }
 
         return NextResponse.json({
@@ -222,19 +196,20 @@ export async function POST(request: NextRequest) {
  */
 function normalizeVideo(video: any): any {
     const segments = video.segments || video.clips || [];
+    const videoId = video.video_id || video.videoId;
     
     return {
-        video_id: video.video_id || video.videoId,
-        youtube_url: video.youtube_url || video.youtubeUrl,
+        video_id: videoId,
+        youtube_url: video.youtube_url || video.youtubeUrl || `https://www.youtube.com/watch?v=${videoId}`,
         transcript: video.transcript,
         language_code: video.language_code,
         language_confidence: video.language_confidence,
         clips: segments.map((seg: any, index: number) => ({
             segment_number: seg.segment_number || index + 1,
             transcript_text: seg.text || seg.transcript_text,
-            start_time_seconds: seg.start_time || seg.start_time_seconds,
-            end_time_seconds: seg.end_time || seg.end_time_seconds,
-            duration: seg.duration || (seg.end_time - seg.start_time),
+            start_time_seconds: seg.start_time || seg.start_time_seconds || 0,
+            end_time_seconds: seg.end_time || seg.end_time_seconds || 0,
+            duration: seg.duration || ((seg.end_time || 0) - (seg.start_time || 0)),
             words: seg.words,
             confidence: seg.confidence,
             speaker_id: seg.speaker_id,
@@ -242,18 +217,8 @@ function normalizeVideo(video: any): any {
         })),
         total_clips: video.total_segments || segments.length,
         total_duration: video.total_duration || 0,
-        transcription_service: video.transcription_service,
+        transcription_service: video.transcription_service || 'elevenlabs_scribe_v2',
         updated_at: video.processed_at || video.updated_at,
-        indexed: video.indexed,
         source: 'cloudflare'
     };
-}
-
-/**
- * Get base URL from request
- */
-function getBaseUrl(request: NextRequest): string {
-    const host = request.headers.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    return `${protocol}://${host}`;
 }

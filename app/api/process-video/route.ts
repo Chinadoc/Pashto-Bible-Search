@@ -3,259 +3,395 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * POST /api/process-video
  * 
- * Processes a YouTube video entirely in the cloud:
- * 1. Downloads audio from YouTube using yt-dlp (via a cloud service)
- * 2. Transcribes using Google Cloud Speech-to-Text (Chirp 2 model supports Pashto!)
- * 3. Stores transcript in database
+ * Processes a YouTube video with ElevenLabs Scribe v2:
+ * 1. Extracts audio from YouTube (cloud-compatible)
+ * 2. Transcribes using ElevenLabs Scribe v2 (Pashto: ps)
+ * 3. Returns transcript with word-level timestamps
  * 
- * Google Cloud Speech-to-Text Pashto support:
- * - Language code: ps-AF
- * - Models: chirp, chirp_2
- * - Ref: https://cloud.google.com/speech-to-text/docs/speech-to-text-supported-languages
+ * This is the main entry point for video processing.
  */
 
 interface ProcessVideoRequest {
-  url: string;
-}
-
-interface TranscriptSegment {
-  start: number;
-  end: number;
-  text: string;
-  confidence?: number;
+    url?: string;
+    youtubeUrl?: string;
 }
 
 // Extract video ID from YouTube URL
 function extractVideoId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-    /youtube\.com\/shorts\/([^&\n?#]+)/,
-  ];
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
-
-// Option 1: Use a third-party API like RapidAPI's YouTube transcript service
-async function fetchYouTubeTranscript(videoId: string): Promise<TranscriptSegment[] | null> {
-  // Try YouTube's auto-generated captions first
-  try {
-    // This would use a service like youtube-transcript-api via a cloud function
-    // For now, we'll use a fallback approach
-    const response = await fetch(
-      `https://www.youtube.com/watch?v=${videoId}`
-    );
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/shorts\/([^&\n?#]+)/,
+    ];
     
-    if (!response.ok) return null;
-    
-    const html = await response.text();
-    
-    // Extract captions data from page
-    const captionsMatch = html.match(/"captions":\s*({[^}]+})/);
-    if (captionsMatch) {
-      // Parse and return captions
-      // This is a simplified version - real implementation would parse the timedtext
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
     }
-    
     return null;
-  } catch (error) {
-    console.error('Failed to fetch YouTube transcript:', error);
-    return null;
-  }
-}
-
-// Option 2: Use Google Cloud Speech-to-Text with Chirp 2 (supports Pashto!)
-async function transcribeWithGoogleCloud(audioUrl: string): Promise<TranscriptSegment[] | null> {
-  const apiKey = process.env.GOOGLE_CLOUD_API_KEY;
-  
-  if (!apiKey) {
-    console.log('Google Cloud API key not configured');
-    return null;
-  }
-  
-  try {
-    // Google Cloud Speech-to-Text V2 API with Chirp 2 model
-    const response = await fetch(
-      `https://speech.googleapis.com/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/global/recognizers/_:recognize?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: {
-            languageCodes: ['ps-AF'], // Pashto - Afghanistan
-            model: 'chirp_2', // Google's latest model with Pashto support
-            features: {
-              enableWordTimeOffsets: true,
-              enableAutomaticPunctuation: true,
-            },
-          },
-          content: audioUrl, // Base64 encoded audio or GCS URI
-        }),
-      }
-    );
-    
-    if (!response.ok) {
-      console.error('Google Cloud STT error:', await response.text());
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    // Parse response into segments
-    const segments: TranscriptSegment[] = [];
-    for (const result of data.results || []) {
-      for (const alternative of result.alternatives || []) {
-        segments.push({
-          start: parseFloat(result.resultEndOffset?.replace('s', '') || '0') - 5,
-          end: parseFloat(result.resultEndOffset?.replace('s', '') || '0'),
-          text: alternative.transcript,
-          confidence: alternative.confidence,
-        });
-      }
-    }
-    
-    return segments;
-  } catch (error) {
-    console.error('Google Cloud STT error:', error);
-    return null;
-  }
-}
-
-// Option 3: Use Gladia API (also supports Pashto)
-async function transcribeWithGladia(audioUrl: string): Promise<TranscriptSegment[] | null> {
-  const apiKey = process.env.GLADIA_API_KEY;
-  
-  if (!apiKey) {
-    console.log('Gladia API key not configured');
-    return null;
-  }
-  
-  try {
-    // Gladia supports Pashto: https://www.gladia.io/exclusive-languages/pashto
-    const response = await fetch('https://api.gladia.io/v2/transcription/', {
-      method: 'POST',
-      headers: {
-        'x-gladia-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        audio_url: audioUrl,
-        language: 'ps', // Pashto
-        enable_code_switching: false,
-      }),
-    });
-    
-    if (!response.ok) {
-      console.error('Gladia error:', await response.text());
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    // Parse Gladia response
-    const segments: TranscriptSegment[] = (data.transcription?.utterances || []).map((u: any) => ({
-      start: u.start,
-      end: u.end,
-      text: u.text,
-      confidence: u.confidence,
-    }));
-    
-    return segments;
-  } catch (error) {
-    console.error('Gladia error:', error);
-    return null;
-  }
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json() as ProcessVideoRequest;
-    const { url } = body;
-    
-    if (!url) {
-      return NextResponse.json(
-        { success: false, error: 'YouTube URL is required' },
-        { status: 400 }
-      );
+    try {
+        const body = await request.json() as ProcessVideoRequest;
+        // Accept both 'url' and 'youtubeUrl' for compatibility
+        const youtubeUrl = body.youtubeUrl || body.url;
+        
+        if (!youtubeUrl) {
+            return NextResponse.json(
+                { success: false, error: 'YouTube URL is required' },
+                { status: 400 }
+            );
+        }
+        
+        const videoId = extractVideoId(youtubeUrl);
+        if (!videoId) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid YouTube URL' },
+                { status: 400 }
+            );
+        }
+
+        console.log(`🎬 Processing video: ${videoId}`);
+
+        // Check for ElevenLabs API key
+        const apiKey = process.env.ELEVENLABS_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({
+                success: false,
+                error: 'ElevenLabs API key not configured',
+                message: 'Please set ELEVENLABS_API_KEY in Vercel environment variables',
+                setup: {
+                    step1: 'Go to Vercel Dashboard → Your Project → Settings → Environment Variables',
+                    step2: 'Add ELEVENLABS_API_KEY with your API key',
+                    step3: 'Redeploy the application',
+                    getKey: 'https://elevenlabs.io/app/settings/api-keys'
+                },
+                videoId,
+            });
+        }
+
+        // Step 1: Get audio URL from YouTube
+        console.log(`📥 Fetching audio for video: ${videoId}`);
+        const audioUrl = await getYouTubeAudioUrl(videoId);
+        
+        if (!audioUrl) {
+            return NextResponse.json({
+                success: false,
+                error: 'Could not extract audio from YouTube video',
+                message: 'The video may be private, age-restricted, or unavailable',
+                videoId
+            });
+        }
+
+        // Step 2: Download and transcribe with Scribe v2
+        console.log(`🎙️ Transcribing with ElevenLabs Scribe v2...`);
+        const transcription = await transcribeWithScribeV2(audioUrl, apiKey);
+
+        if (!transcription.success) {
+            return NextResponse.json({
+                success: false,
+                error: transcription.error || 'Transcription failed',
+                videoId
+            });
+        }
+
+        // Step 3: Store the video
+        const videoData = {
+            video_id: videoId,
+            youtube_url: youtubeUrl,
+            transcript: transcription.transcript,
+            language_code: transcription.language_code,
+            language_confidence: transcription.language_confidence,
+            segments: transcription.segments,
+            words: transcription.words,
+            total_segments: transcription.segments?.length || 0,
+            total_duration: transcription.segments?.length 
+                ? transcription.segments[transcription.segments.length - 1].end_time 
+                : 0,
+            transcription_service: 'elevenlabs_scribe_v2',
+            processed_at: new Date().toISOString()
+        };
+
+        // Try to store in D1 via Cloudflare Worker
+        await storeVideoInD1(videoData);
+
+        console.log(`✅ Video processed successfully:`);
+        console.log(`   Segments: ${videoData.total_segments}`);
+        console.log(`   Duration: ${videoData.total_duration.toFixed(1)}s`);
+
+        return NextResponse.json({
+            success: true,
+            ...videoData,
+            totalChunks: videoData.total_segments,
+            successfulTranscriptions: videoData.total_segments
+        });
+        
+    } catch (error) {
+        console.error('Process video error:', error);
+        return NextResponse.json(
+            { 
+                success: false, 
+                error: error instanceof Error ? error.message : 'Failed to process video' 
+            },
+            { status: 500 }
+        );
     }
-    
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid YouTube URL' },
-        { status: 400 }
-      );
-    }
-    
-    // Step 1: Try to get existing YouTube captions
-    let transcript = await fetchYouTubeTranscript(videoId);
-    
-    // Step 2: If no captions, try Google Cloud Speech-to-Text
-    if (!transcript && process.env.GOOGLE_CLOUD_API_KEY) {
-      // Note: In production, you would:
-      // 1. Download audio using yt-dlp on a cloud function
-      // 2. Upload to Google Cloud Storage
-      // 3. Use async recognition for long videos
-      console.log('Attempting Google Cloud Speech-to-Text with Chirp 2...');
-      // transcript = await transcribeWithGoogleCloud(audioUrl);
-    }
-    
-    // Step 3: If still no transcript, try Gladia
-    if (!transcript && process.env.GLADIA_API_KEY) {
-      console.log('Attempting Gladia transcription...');
-      // transcript = await transcribeWithGladia(audioUrl);
-    }
-    
-    // For now, return a helpful message about setup
-    if (!transcript) {
-      return NextResponse.json({
-        success: false,
-        error: 'Video processing requires cloud API configuration',
-        message: 'To enable automatic Pashto transcription, configure one of these services:',
-        options: [
-          {
-            name: 'Google Cloud Speech-to-Text',
-            description: 'Supports Pashto (ps-AF) with Chirp 2 model',
-            envVar: 'GOOGLE_CLOUD_API_KEY',
-            docs: 'https://cloud.google.com/speech-to-text/docs/speech-to-text-supported-languages',
-          },
-          {
-            name: 'Gladia',
-            description: 'Real-time and async Pashto transcription',
-            envVar: 'GLADIA_API_KEY',
-            docs: 'https://www.gladia.io/exclusive-languages/pashto',
-          },
-          {
-            name: 'OpenAI Whisper',
-            description: 'Multilingual speech recognition (may support Pashto)',
-            envVar: 'OPENAI_API_KEY',
-            docs: 'https://platform.openai.com/docs/guides/speech-to-text',
-          },
-        ],
-        videoId,
-      });
-    }
-    
-    // Return successful transcript
-    return NextResponse.json({
-      success: true,
-      videoId,
-      transcript,
-      segmentCount: transcript.length,
-    });
-    
-  } catch (error) {
-    console.error('Process video error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to process video' 
-      },
-      { status: 500 }
-    );
-  }
 }
 
+/**
+ * Get audio URL from YouTube video (cloud-compatible)
+ */
+async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
+    try {
+        // Method 1: Try YouTube's innertube API
+        const innertubeResponse = await fetch(
+            'https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    context: {
+                        client: {
+                            clientName: 'ANDROID',
+                            clientVersion: '17.31.35',
+                            androidSdkVersion: 30,
+                        }
+                    },
+                    videoId: videoId,
+                }),
+            }
+        );
+
+        if (innertubeResponse.ok) {
+            const data = await innertubeResponse.json();
+            const formats = data.streamingData?.adaptiveFormats || [];
+            const audioFormat = formats.find((f: any) => 
+                f.mimeType?.startsWith('audio/') && f.url
+            );
+            
+            if (audioFormat?.url) {
+                console.log(`📡 Got audio URL via innertube API`);
+                return audioFormat.url;
+            }
+        }
+
+        // Method 2: Try cobalt API
+        try {
+            const response = await fetch('https://api.cobalt.tools/api/json', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                    aFormat: 'mp3',
+                    isAudioOnly: true,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.url) {
+                    console.log(`📡 Got audio URL via cobalt API`);
+                    return data.url;
+                }
+            }
+        } catch (e) {
+            console.warn('Cobalt API failed:', e);
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error getting YouTube audio URL:', error);
+        return null;
+    }
+}
+
+/**
+ * Transcribe audio using ElevenLabs Scribe v2
+ */
+async function transcribeWithScribeV2(audioUrl: string, apiKey: string): Promise<{
+    success: boolean;
+    error?: string;
+    transcript?: string;
+    language_code?: string;
+    language_confidence?: number;
+    segments?: Array<{
+        text: string;
+        start_time: number;
+        end_time: number;
+        words: Array<{ text: string; start: number; end: number }>;
+        confidence: number;
+    }>;
+    words?: Array<{ text: string; start: number; end: number }>;
+}> {
+    try {
+        // Download audio
+        console.log(`📥 Downloading audio...`);
+        const audioResponse = await fetch(audioUrl);
+        
+        if (!audioResponse.ok) {
+            return { success: false, error: `Failed to download audio: ${audioResponse.statusText}` };
+        }
+
+        const audioBuffer = await audioResponse.arrayBuffer();
+        console.log(`📦 Audio size: ${(audioBuffer.byteLength / 1024 / 1024).toFixed(2)} MB`);
+
+        // Check size limit (100MB)
+        if (audioBuffer.byteLength > 100 * 1024 * 1024) {
+            return { success: false, error: 'Audio file too large (max 100MB)' };
+        }
+
+        // Call ElevenLabs Scribe v2
+        const formData = new FormData();
+        formData.append('file', new Blob([audioBuffer], { type: 'audio/mp3' }), 'audio.mp3');
+        formData.append('model_id', 'scribe_v2');
+        formData.append('language_code', 'ps'); // Pashto
+        formData.append('timestamps_granularity', 'word');
+
+        console.log(`🎙️ Sending to ElevenLabs Scribe v2...`);
+        
+        const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+            method: 'POST',
+            headers: { 'xi-api-key': apiKey },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Scribe v2 error:', errorText);
+            return { success: false, error: `Transcription failed: ${response.status}` };
+        }
+
+        const data = await response.json();
+        
+        console.log(`✅ Transcription complete: ${data.words?.length || 0} words`);
+
+        // Process words into segments
+        const segments = processWordsIntoSegments(data.words || [], data.text);
+
+        return {
+            success: true,
+            transcript: data.text,
+            language_code: data.language_code,
+            language_confidence: data.language_probability,
+            segments,
+            words: data.words?.filter((w: any) => w.type === 'word').map((w: any) => ({
+                text: w.text,
+                start: w.start,
+                end: w.end
+            }))
+        };
+
+    } catch (error) {
+        console.error('Transcription error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+/**
+ * Process words into segments
+ */
+function processWordsIntoSegments(
+    words: Array<{ text: string; start: number; end: number; type: string }>,
+    fullText: string
+): Array<{
+    text: string;
+    start_time: number;
+    end_time: number;
+    words: Array<{ text: string; start: number; end: number }>;
+    confidence: number;
+}> {
+    if (!words || words.length === 0) {
+        return [{
+            text: fullText || '',
+            start_time: 0,
+            end_time: 0,
+            words: [],
+            confidence: 0.9
+        }];
+    }
+
+    const segments: Array<{
+        text: string;
+        start_time: number;
+        end_time: number;
+        words: Array<{ text: string; start: number; end: number }>;
+        confidence: number;
+    }> = [];
+
+    let currentSegment: {
+        words: Array<{ text: string; start: number; end: number }>;
+        start: number;
+        end: number;
+    } = { words: [], start: 0, end: 0 };
+
+    const PAUSE_THRESHOLD = 1.0;
+    const MAX_SEGMENT_DURATION = 15;
+
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const prevWord = i > 0 ? words[i - 1] : null;
+        
+        if (word.type !== 'word') continue;
+
+        const shouldStartNewSegment = 
+            (prevWord && word.start - prevWord.end > PAUSE_THRESHOLD) ||
+            (currentSegment.words.length > 0 && word.end - currentSegment.start > MAX_SEGMENT_DURATION);
+
+        if (shouldStartNewSegment && currentSegment.words.length > 0) {
+            segments.push({
+                text: currentSegment.words.map(w => w.text).join(' '),
+                start_time: currentSegment.start,
+                end_time: currentSegment.end,
+                words: currentSegment.words,
+                confidence: 0.95
+            });
+
+            currentSegment = { words: [], start: word.start, end: word.end };
+        }
+
+        if (currentSegment.words.length === 0) {
+            currentSegment.start = word.start;
+        }
+        currentSegment.words.push({ text: word.text, start: word.start, end: word.end });
+        currentSegment.end = word.end;
+    }
+
+    if (currentSegment.words.length > 0) {
+        segments.push({
+            text: currentSegment.words.map(w => w.text).join(' '),
+            start_time: currentSegment.start,
+            end_time: currentSegment.end,
+            words: currentSegment.words,
+            confidence: 0.95
+        });
+    }
+
+    return segments;
+}
+
+/**
+ * Store video in Cloudflare D1
+ */
+async function storeVideoInD1(videoData: any): Promise<void> {
+    const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
+        'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
+    try {
+        const response = await fetch(`${workerUrl}/api/store-video`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(videoData),
+        });
+
+        if (response.ok) {
+            console.log(`✅ Video stored in Cloudflare D1`);
+        } else {
+            console.warn(`⚠️ D1 storage returned ${response.status}`);
+        }
+    } catch (e) {
+        console.warn('D1 storage failed:', e);
+    }
+}
