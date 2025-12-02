@@ -4,27 +4,19 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PashtoTyper from '@/components/PashtoTyper';
 import Link from 'next/link';
-import { getSession, Session } from '@/app/lib/cloudflare-auth';
+import { useSession } from 'next-auth/react';
 
 import TyperDashboard, { SRSItem } from '@/components/TyperDashboard';
 
 function TyperPageContent() {
-    const [session, setSession] = useState<Session | null>(null);
-    const [sessionLoading, setSessionLoading] = useState(true);
+    const { data: session, status } = useSession();
+    const sessionLoading = status === 'loading';
     const searchParams = useSearchParams();
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
     const [srsItems, setSrsItems] = useState<SRSItem[]>([]);
     const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
     const [verseData, setVerseData] = useState<any>(null);
     const [loadingData, setLoadingData] = useState(false);
-
-    // Load session
-    useEffect(() => {
-        getSession().then(session => {
-            setSession(session);
-            setSessionLoading(false);
-        });
-    }, []);
 
     // Load verse data - defined before useEffect
     const loadVerse = async (ref: string) => {
