@@ -70,18 +70,24 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        console.log(`📊 Found ${existingWords.length} existing words`);
+        console.log(`📊 Found ${existingWords.length} existing words from ${existingSegments.length} segments`);
 
-        if (existingWords.length === 0) {
+        let newSegments: any[];
+
+        if (existingWords.length > 0) {
+            // Re-segment using word-level data
+            newSegments = processWordsIntoSentenceSegments(existingWords);
+        } else if (existingSegments.length > 0 && video.transcript) {
+            // No word data - split transcript text based on existing segment boundaries
+            console.log(`📝 No word data available, splitting transcript text by punctuation`);
+            newSegments = splitTranscriptByPunctuation(video.transcript, existingSegments);
+        } else {
             return NextResponse.json({
                 success: false,
-                error: 'No word data available to re-segment',
+                error: 'No segment or transcript data available to re-segment',
                 existingSegments: existingSegments.length
             });
         }
-
-        // Re-segment using sentence-level logic
-        const newSegments = processWordsIntoSentenceSegments(existingWords);
 
         console.log(`📝 Created ${newSegments.length} new sentence-level segments (was ${existingSegments.length})`);
 
@@ -259,6 +265,102 @@ function processWordsIntoSentenceSegments(
         });
     }
 
+    return segments;
+}
+
+/**
+ * Split transcript by punctuation when word-level timestamps are not available.
+ * Uses existing segment boundaries to interpolate timestamps.
+ */
+function splitTranscriptByPunctuation(
+    transcript: string,
+    existingSegments: any[]
+): Array<{
+    text: string;
+    startTime: number;
+    endTime: number;
+    duration: number;
+    segmentNumber: number;
+}> {
+    if (!transcript || existingSegments.length === 0) {
+        return [];
+    }
+
+    // Calculate total duration from existing segments
+    const totalDuration = Math.max(
+        ...existingSegments.map(s => s.endTime || s.end_time || 0)
+    );
+    
+    // Pashto sentence-ending punctuation
+    const sentencePattern = /[.؟۔!?،؛]+\s*/g;
+    
+    // Split transcript into sentences
+    const sentences: string[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = sentencePattern.exec(transcript)) !== null) {
+        const sentence = transcript.slice(lastIndex, match.index + match[0].length).trim();
+        if (sentence.length > 0) {
+            sentences.push(sentence);
+        }
+        lastIndex = match.index + match[0].length;
+    }
+    
+    // Don't forget remaining text
+    if (lastIndex < transcript.length) {
+        const remaining = transcript.slice(lastIndex).trim();
+        if (remaining.length > 0) {
+            sentences.push(remaining);
+        }
+    }
+    
+    console.log(`📝 Split transcript into ${sentences.length} sentences`);
+    
+    // Group sentences into segments (2-3 sentences per segment)
+    const segments: Array<{
+        text: string;
+        startTime: number;
+        endTime: number;
+        duration: number;
+        segmentNumber: number;
+    }> = [];
+    
+    // Calculate words per second for timing estimation
+    const totalWords = transcript.split(/\s+/).length;
+    const wordsPerSecond = totalWords / totalDuration;
+    
+    let currentWordCount = 0;
+    let currentSentences: string[] = [];
+    
+    for (let i = 0; i < sentences.length; i++) {
+        currentSentences.push(sentences[i]);
+        const sentenceWordCount = sentences[i].split(/\s+/).length;
+        const newWordCount = currentWordCount + sentenceWordCount;
+        
+        // Create segment if: 2+ sentences, or duration would be > 8 seconds
+        const estimatedDuration = sentenceWordCount / wordsPerSecond;
+        const totalSegmentWords = currentSentences.join(' ').split(/\s+/).length;
+        const segmentDuration = totalSegmentWords / wordsPerSecond;
+        
+        if (currentSentences.length >= 2 || segmentDuration > 8 || i === sentences.length - 1) {
+            const startTime = currentWordCount / wordsPerSecond;
+            const endTime = newWordCount / wordsPerSecond;
+            
+            segments.push({
+                segmentNumber: segments.length + 1,
+                text: currentSentences.join(' '),
+                startTime: Math.round(startTime * 100) / 100,
+                endTime: Math.round(endTime * 100) / 100,
+                duration: Math.round((endTime - startTime) * 100) / 100,
+            });
+            
+            currentSentences = [];
+        }
+        
+        currentWordCount = newWordCount;
+    }
+    
     return segments;
 }
 
