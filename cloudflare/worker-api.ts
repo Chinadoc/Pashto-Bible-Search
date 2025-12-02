@@ -3079,12 +3079,29 @@ async function handleGetVideos(env: Env): Promise<Response> {
     const videos = (result.results || []).map((v: any) => {
       const segments = parseJsonSafe(v.segments_json, []);
       return {
+        // Both snake_case and camelCase for compatibility
+        id: v.video_id,
         video_id: v.video_id,
+        youtubeUrl: v.youtube_url,
         youtube_url: v.youtube_url,
-        title: v.title,
+        title: v.title || `Video ${v.video_id}`,
         description: v.description,
         thumbnail: v.thumbnail_url,
         transcript: v.transcript_text,
+        // Segments for ClientHome.tsx
+        segments: segments.map((seg: any, i: number) => ({
+          segmentNumber: seg.segment_number || i + 1,
+          segment_number: seg.segment_number || i + 1,
+          text: seg.text,
+          transcript_text: seg.text,
+          startTime: seg.start_time,
+          start_time: seg.start_time,
+          endTime: seg.end_time,
+          end_time: seg.end_time,
+          duration: seg.duration || (seg.end_time - seg.start_time),
+          type: 'segment',
+        })),
+        // Clips for VideosPanel.tsx
         clips: segments.map((seg: any, i: number) => ({
           segment_number: seg.segment_number || i + 1,
           transcript_text: seg.text,
@@ -3092,9 +3109,11 @@ async function handleGetVideos(env: Env): Promise<Response> {
           end_time: seg.end_time,
           duration: seg.duration || (seg.end_time - seg.start_time),
         })),
+        totalSegments: segments.length,
         total_clips: segments.length,
-        total_duration: v.duration,
-        duration: v.duration,
+        totalDuration: v.duration || 0,
+        total_duration: v.duration || 0,
+        duration: v.duration || 0,
         language_code: v.language_code,
         status: v.status,
         updated_at: v.updated_at,
