@@ -85,8 +85,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 success: false,
                 error: 'Could not extract audio from YouTube video',
-                message: 'The video may be private, age-restricted, or unavailable',
-                videoId
+                message: 'YouTube blocks direct extraction in serverless environments. Please try one of these alternatives:',
+                alternatives: [
+                    '1. Upload an audio file directly using the File Upload tab',
+                    '2. Use a YouTube to MP3 converter and upload the resulting file',
+                    '3. Try a different video (some videos have stricter protection)'
+                ],
+                videoId,
+                help: 'YouTube actively blocks automated extraction. For reliable processing, download the audio locally and upload it.'
             });
         }
 
