@@ -30,26 +30,21 @@ from pathlib import Path
 # Create Modal app - v2 with Node.js fix
 app = modal.App("pashto-youtube-processor")
 
-# Define the image with yt-dlp and other dependencies
-# Use micromamba image which has better package support
+# Define the image with yt-dlp, Playwright browser, and other dependencies
 image = (
-    modal.Image.micromamba(python_version="3.11")
-    .apt_install("ffmpeg")
-    .micromamba_install("nodejs=20", channels=["conda-forge"])
+    modal.Image.debian_slim(python_version="3.11")
+    .apt_install("ffmpeg", "wget", "gnupg")
     .pip_install(
         "yt-dlp",
         "boto3",
         "requests",
         "fastapi[standard]",
+        "playwright",
     )
     .run_commands(
-        "node --version",
-        "which node",
-        # Create symlink so yt-dlp can find node
-        "ln -sf /opt/conda/bin/node /usr/local/bin/node",
-        "ln -sf /opt/conda/bin/node /usr/bin/node",
-        # Verify the symlinks work
-        "/usr/bin/node --version"
+        # Install Playwright browsers (Chromium)
+        "playwright install chromium",
+        "playwright install-deps chromium",
     )
 )
 
@@ -91,83 +86,188 @@ def process_youtube_video(youtube_url: str) -> dict:
         audio_file = None
         download_error = None
         
-        # Method 1: Try YouTube innertube API directly
-        print("📥 Trying YouTube innertube API...")
+        # Method 1: Use Playwright browser to bypass bot detection
+        print("📥 Using Playwright browser to extract audio...")
+        audio_urls_captured = []
+        
         try:
-            innertube_response = requests.post(
-                'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
-                headers={
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)',
-                    'X-Goog-Api-Key': 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
-                },
-                json={
-                    'context': {
-                        'client': {
-                            'clientName': 'IOS',
-                            'clientVersion': '19.29.1',
-                            'deviceMake': 'Apple',
-                            'deviceModel': 'iPhone16,2',
-                            'hl': 'en',
-                            'osName': 'iPhone',
-                            'osVersion': '17.5.1.21F90',
-                        }
-                    },
-                    'videoId': video_id,
-                    'playbackContext': {
-                        'contentPlaybackContext': {
-                            'signatureTimestamp': 20073
-                        }
-                    },
-                    'racyCheckOk': True,
-                    'contentCheckOk': True,
-                },
-                timeout=30
-            )
+            from playwright.sync_api import sync_playwright
             
-            if innertube_response.ok:
-                data = innertube_response.json()
-                formats = data.get('streamingData', {}).get('adaptiveFormats', [])
-                audio_format = next(
-                    (f for f in formats if f.get('mimeType', '').startswith('audio/') and f.get('url')),
-                    None
+            with sync_playwright() as p:
+                # Launch browser with stealth settings
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--no-sandbox',
+                        '--disable-dev-shm-usage',
+                    ]
                 )
                 
-                if audio_format and audio_format.get('url'):
-                    audio_url = audio_format['url']
-                    print(f"✅ Got audio URL from innertube: {audio_url[:80]}...")
+                context = browser.new_context(
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    viewport={'width': 1920, 'height': 1080},
+                )
+                
+                page = context.new_page()
+                
+                # Capture network requests for audio streams
+                def handle_request(request):
+                    url = request.url
+                    if 'googlevideo.com' in url and ('audio' in url or 'mime=audio' in url):
+                        print(f"🎵 Captured audio URL: {url[:100]}...")
+                        audio_urls_captured.append(url)
+                
+                page.on('request', handle_request)
+                
+                # Navigate to YouTube video
+                print(f"🌐 Loading YouTube page for {video_id}...")
+                page.goto(f'https://www.youtube.com/watch?v={video_id}', timeout=60000)
+                
+                # Wait for video to start loading
+                page.wait_for_timeout(5000)
+                
+                # Try to click play button if video didn't autoplay
+                try:
+                    play_button = page.locator('button.ytp-large-play-button')
+                    if play_button.is_visible():
+                        print("▶️ Clicking play button...")
+                        play_button.click()
+                        page.wait_for_timeout(3000)
+                except:
+                    pass
+                
+                # Get page title to verify we loaded correctly
+                title = page.title()
+                print(f"📄 Page title: {title}")
+                
+                # Try to get video info from ytInitialPlayerResponse
+                player_response = page.evaluate('''() => {
+                    if (window.ytInitialPlayerResponse) {
+                        return window.ytInitialPlayerResponse;
+                    }
+                    return null;
+                }''')
+                
+                browser.close()
+                
+                # First try URLs captured from network requests
+                if audio_urls_captured:
+                    print(f"🎵 Found {len(audio_urls_captured)} audio URLs from network")
+                    for audio_url in audio_urls_captured:
+                        try:
+                            audio_response = requests.get(
+                                audio_url,
+                                headers={
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    'Referer': 'https://www.youtube.com/',
+                                },
+                                timeout=180,
+                                stream=True
+                            )
+                            
+                            if audio_response.ok:
+                                audio_file = output_path.with_suffix('.webm')
+                                total_size = 0
+                                with open(audio_file, 'wb') as f:
+                                    for chunk in audio_response.iter_content(chunk_size=8192):
+                                        f.write(chunk)
+                                        total_size += len(chunk)
+                                print(f"✅ Downloaded via network capture: {total_size / 1024 / 1024:.2f}MB")
+                                break
+                        except Exception as e:
+                            print(f"⚠️ Failed to download captured URL: {e}")
+                
+                # Then try player response
+                if (not audio_file or not audio_file.exists()) and player_response:
+                    print("📦 Checking player response...")
+                    playability = player_response.get('playabilityStatus', {})
+                    status = playability.get('status', 'unknown')
+                    reason = playability.get('reason', '')
+                    print(f"   Status: {status}, Reason: {reason[:100] if reason else 'none'}")
                     
-                    # Download the audio file
-                    audio_response = requests.get(
-                        audio_url,
-                        headers={'User-Agent': 'Mozilla/5.0'},
-                        timeout=180,
-                        stream=True
+                    streaming_data = player_response.get('streamingData', {})
+                    formats = streaming_data.get('adaptiveFormats', [])
+                    print(f"   Found {len(formats)} formats")
+                    
+                    # Find audio format
+                    audio_format = next(
+                        (f for f in formats if f.get('mimeType', '').startswith('audio/') and f.get('url')),
+                        None
                     )
                     
-                    if audio_response.ok:
-                        audio_file = output_path.with_suffix('.mp4')
-                        with open(audio_file, 'wb') as f:
-                            for chunk in audio_response.iter_content(chunk_size=8192):
-                                f.write(chunk)
-                        print(f"✅ Downloaded via innertube: {audio_file.stat().st_size / 1024 / 1024:.2f}MB")
+                    if audio_format and audio_format.get('url'):
+                        audio_url = audio_format['url']
+                        print(f"✅ Got audio URL from player response")
+                        
+                        audio_response = requests.get(
+                            audio_url,
+                            headers={
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                'Referer': 'https://www.youtube.com/',
+                            },
+                            timeout=180,
+                            stream=True
+                        )
+                        
+                        if audio_response.ok:
+                            audio_file = output_path.with_suffix('.mp4')
+                            total_size = 0
+                            with open(audio_file, 'wb') as f:
+                                for chunk in audio_response.iter_content(chunk_size=8192):
+                                    f.write(chunk)
+                                    total_size += len(chunk)
+                            print(f"✅ Downloaded via player response: {total_size / 1024 / 1024:.2f}MB")
+                        else:
+                            print(f"⚠️ Audio download failed: {audio_response.status_code}")
                     else:
-                        print(f"⚠️ Audio download failed: {audio_response.status_code}")
-                else:
-                    status = data.get('playabilityStatus', {}).get('status', 'unknown')
-                    print(f"⚠️ Innertube no audio URL. Status: {status}")
-            else:
-                print(f"⚠️ Innertube API error: {innertube_response.status_code}")
+                        print("⚠️ No audio URL in player response")
+                elif not player_response:
+                    print("⚠️ No player response found")
+                    
         except Exception as e:
-            print(f"⚠️ Innertube failed: {e}")
+            print(f"⚠️ Playwright method failed: {e}")
+            import traceback
+            traceback.print_exc()
         
-        # Method 2: Try yt-dlp with cookies workaround
+        # Method 2: Try yt-dlp with Playwright cookies
         if not audio_file or not audio_file.exists():
-            print("📥 Trying yt-dlp with extractor args...")
+            print("📥 Trying yt-dlp with browser cookies...")
             try:
-                env = os.environ.copy()
-                env["PATH"] = "/usr/bin:/usr/local/bin:/opt/conda/bin:" + env.get("PATH", "")
+                from playwright.sync_api import sync_playwright
                 
+                # Get cookies from a fresh browser session
+                cookies_file = Path(tmpdir) / "cookies.txt"
+                
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                    context = browser.new_context()
+                    page = context.new_page()
+                    
+                    # Visit YouTube to get cookies
+                    page.goto('https://www.youtube.com', timeout=30000)
+                    page.wait_for_timeout(2000)
+                    
+                    # Get cookies and write to Netscape format
+                    cookies = context.cookies()
+                    with open(cookies_file, 'w') as f:
+                        f.write("# Netscape HTTP Cookie File\n")
+                        for cookie in cookies:
+                            domain = cookie.get('domain', '')
+                            if not domain.startswith('.'):
+                                domain = '.' + domain
+                            secure = 'TRUE' if cookie.get('secure') else 'FALSE'
+                            http_only = 'TRUE' if cookie.get('httpOnly') else 'FALSE'
+                            expires = str(int(cookie.get('expires', 0)))
+                            name = cookie.get('name', '')
+                            value = cookie.get('value', '')
+                            f.write(f"{domain}\tTRUE\t/\t{secure}\t{expires}\t{name}\t{value}\n")
+                    
+                    browser.close()
+                
+                print(f"🍪 Saved {len(cookies)} cookies to file")
+                
+                # Now try yt-dlp with cookies
                 result = subprocess.run([
                     "yt-dlp",
                     "-x",
@@ -176,23 +276,26 @@ def process_youtube_video(youtube_url: str) -> dict:
                     "-o", str(output_path),
                     "--no-playlist",
                     "--max-filesize", "100M",
-                    "--extractor-args", "youtube:player_client=ios,web",
+                    "--cookies", str(cookies_file),
+                    "--extractor-args", "youtube:player_client=web",
                     youtube_url
-                ], capture_output=True, text=True, timeout=300, env=env)
+                ], capture_output=True, text=True, timeout=300)
                 
-                print(f"📋 yt-dlp return code: {result.returncode}")
+                print(f"📋 yt-dlp with cookies return code: {result.returncode}")
                 
                 # Find downloaded file
                 for f in Path(tmpdir).glob(f"{video_id}*"):
                     if f.suffix in ['.mp3', '.m4a', '.webm', '.opus', '.mp4']:
                         audio_file = f
+                        print(f"✅ Downloaded with cookies: {audio_file}")
                         break
                 
                 if not audio_file or not audio_file.exists():
-                    download_error = result.stderr[:300] if result.stderr else "Unknown error"
+                    download_error = result.stderr[:500] if result.stderr else "Unknown error"
                     
-            except subprocess.TimeoutExpired:
-                download_error = "Download timed out"
+            except Exception as e:
+                print(f"⚠️ yt-dlp with cookies failed: {e}")
+                download_error = str(e)
         
         # Check if we got the file
         if not audio_file or not audio_file.exists():
