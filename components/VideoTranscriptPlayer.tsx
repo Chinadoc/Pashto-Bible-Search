@@ -10,6 +10,7 @@ interface VideoSegment {
   startTime: number;
   endTime: number;
   duration: number;
+  audioUrl?: string; // R2 URL if available
 }
 
 interface VideoTranscriptPlayerProps {
@@ -28,6 +29,8 @@ export default function VideoTranscriptPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
+  const [expandedSegment, setExpandedSegment] = useState<number | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const playerRef = useRef<any>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -228,12 +231,94 @@ export default function VideoTranscriptPlayer({
                     <InteractiveVerse text={text} showAnalysis={true} />
                   </div>
                   
-                  {/* Duration indicator */}
-                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
-                    <span>Duration: {segment.duration?.toFixed(1) || (segment.endTime - segment.startTime).toFixed(1)}s</span>
-                    <span>•</span>
-                    <span>{text.split(/\s+/).length} words</span>
+                  {/* Duration indicator + Actions */}
+                  <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                      <span>Duration: {segment.duration?.toFixed(1) || (segment.endTime - segment.startTime).toFixed(1)}s</span>
+                      <span>•</span>
+                      <span>{text.split(/\s+/).length} words</span>
+                    </div>
+                    
+                    {/* Segment Actions */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Copy Text */}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(text);
+                          setCopiedIndex(index);
+                          setTimeout(() => setCopiedIndex(null), 2000);
+                        }}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          copiedIndex === index 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                        title="Copy transcript"
+                      >
+                        {copiedIndex === index ? '✓ Copied' : '📋 Copy'}
+                      </button>
+                      
+                      {/* Download Audio Clip - generates clip from YouTube at timestamp */}
+                      {segment.audioUrl ? (
+                        <a
+                          href={segment.audioUrl}
+                          download={`segment-${index + 1}.mp3`}
+                          className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
+                          title="Download audio clip"
+                        >
+                          ⬇️ Audio
+                        </a>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            // Open segment in new tab with timestamp for manual download
+                            const ytUrl = `https://www.youtube.com/watch?v=${videoId}&t=${Math.floor(segment.startTime)}s`;
+                            window.open(ytUrl, '_blank');
+                          }}
+                          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
+                          title="Open in YouTube at timestamp"
+                        >
+                          ▶️ YouTube
+                        </button>
+                      )}
+                      
+                      {/* Expand/Collapse for editing */}
+                      <button
+                        onClick={() => setExpandedSegment(expandedSegment === index ? null : index)}
+                        className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                        title={expandedSegment === index ? 'Collapse' : 'Expand for details'}
+                      >
+                        {expandedSegment === index ? '▲' : '▼'}
+                      </button>
+                    </div>
                   </div>
+                  
+                  {/* Expanded Details */}
+                  {expandedSegment === index && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <strong>Timestamps:</strong> {formatTime(segment.startTime)} - {formatTime(segment.endTime)} ({(segment.endTime - segment.startTime).toFixed(2)}s)
+                      </div>
+                      <textarea
+                        defaultValue={text}
+                        className="w-full p-2 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded resize-none"
+                        rows={3}
+                        dir="rtl"
+                        readOnly
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // Could add re-transcription here
+                            alert('Re-transcription feature coming soon!');
+                          }}
+                          className="px-3 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded hover:bg-yellow-200"
+                        >
+                          🔄 Re-transcribe
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

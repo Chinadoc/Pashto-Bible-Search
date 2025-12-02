@@ -28,59 +28,80 @@ import {
 } from '@/app/utils/verb-filters';
 import { useSession } from "next-auth/react";
 
-function SaveVerseButton({ verseRef }: { verseRef: string }) {
-  const { data: session } = useSession();
-  const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // Check if saved on mount (could be optimized with a bulk check)
-  useEffect(() => {
-    if (session) {
-      // TODO: Implement bulk check or local cache for saved status
-    }
-  }, [session]);
-
-  const handleSave = async () => {
-    if (!session) return;
-    setLoading(true);
+// Anki Card Export Button - downloads a single verse as Anki-compatible CSV
+function AnkiExportButton({ verseRef, verseText }: { verseRef: string; verseText: string }) {
+  const [exporting, setExporting] = useState(false);
+  
+  const handleExport = () => {
+    setExporting(true);
     try {
-      const res = await fetch('/api/saved-verses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verseRef }),
-      });
-      if (res.ok) {
-        setSaved(true);
-      }
+      // Create Anki-compatible CSV format
+      // Front: Verse reference | Back: Pashto text
+      const front = verseRef;
+      const back = verseText.replace(/"/g, '""'); // Escape quotes for CSV
+      const csvContent = `"${front}","${back}"`;
+      
+      // Create and download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${verseRef.replace(/[: ]/g, '_')}_anki.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to save verse', err);
+      console.error('Failed to export Anki card', err);
     } finally {
-      setLoading(false);
+      setExporting(false);
     }
   };
 
-  if (!session) {
-    return (
-      <button
-        disabled
-        className="text-xs px-3 py-1.5 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
-        title="Log in to save verses"
-      >
-        Save
-      </button>
-    );
-  }
+  return (
+    <button
+      onClick={handleExport}
+      disabled={exporting}
+      className="text-xs px-3 py-1.5 border border-amber-600/50 rounded-lg hover:bg-amber-700/30 text-amber-400 hover:text-amber-300 transition-colors"
+      title="Export as Anki card (CSV)"
+    >
+      {exporting ? '...' : '📇 Anki'}
+    </button>
+  );
+}
+
+// Practice Button - saves verse and navigates to typer
+function PracticeButton({ verseRef }: { verseRef: string }) {
+  const { data: session } = useSession();
+  const [saving, setSaving] = useState(false);
+  
+  const handlePractice = async () => {
+    // If logged in, save the verse first
+    if (session) {
+      setSaving(true);
+      try {
+        await fetch('/api/saved-verses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ verseRef }),
+        });
+      } catch (err) {
+        console.error('Failed to save verse', err);
+      }
+      setSaving(false);
+    }
+    // Navigate to typer
+    window.location.href = `/typer?ref=${encodeURIComponent(verseRef || '')}`;
+  };
 
   return (
     <button
-      onClick={handleSave}
-      disabled={saved || loading}
-      className={`text-xs px-3 py-1.5 border border-gray-600 rounded-lg transition-colors ${saved
-          ? 'bg-green-600/20 text-green-400 border-green-600/50'
-          : 'hover:bg-gray-700/50 text-gray-300 hover:text-white'
-        }`}
+      onClick={handlePractice}
+      disabled={saving}
+      className="text-xs px-3 py-1.5 border border-emerald-600/50 rounded-lg hover:bg-emerald-700/30 text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+      title={session ? "Save verse and practice typing" : "Practice typing this verse"}
     >
-      {loading ? 'Saving...' : saved ? 'Saved' : 'Save'}
+      {saving ? '...' : '⌨️ Practice'}
     </button>
   );
 }
@@ -358,17 +379,11 @@ function VerseItem({
               {downloadingMap[verse.ref] ? 'Downloading…' : 'Download'}
             </button>
           )}
-          {/* Save Verse Button */}
-          <SaveVerseButton verseRef={verse.ref} />
+          {/* Export as Anki Card */}
+          <AnkiExportButton verseRef={verse.ref} verseText={verse.text || ''} />
 
-          {/* Practice in Typer */}
-          <a
-            href={`/typer?ref=${encodeURIComponent(verse.ref || '')}`}
-            className="text-xs px-3 py-1.5 border border-gray-600 rounded-lg hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors flex items-center gap-1"
-            title="Practice typing this verse"
-          >
-            ⌨️ Practice
-          </a>
+          {/* Practice in Typer (saves verse if logged in) */}
+          <PracticeButton verseRef={verse.ref} />
         </div>
       </div>
 
@@ -439,15 +454,18 @@ function VerseItem({
               {isPlaying ? '⏸️' : '▶️'}
             </button>
 
-            {/* Compact audio element */}
+            {/* Compact audio element - mobile optimized */}
             <audio
               ref={(el) => {
                 if (el) audioRefs.current.set(verse.ref, el);
               }}
               src={audioUrl}
-              preload="metadata"
+              preload="auto"
               controls
-              className="flex-1 h-6"
+              playsInline
+              controlsList="nodownload"
+              className="flex-1 h-8 min-w-0"
+              style={{ minWidth: '120px' }}
               onTimeUpdate={(e) => {
                 // Update progress bar as audio plays
                 const audio = e.currentTarget;
@@ -461,6 +479,12 @@ function VerseItem({
               onEnded={() => setPlayingKey((k) => (k === verse.ref ? null : k))}
               onError={(e) => {
                 console.error('Audio error for', verse.ref, e);
+                // Try to reload on error (common on mobile)
+                const audio = e.currentTarget;
+                if (audio.src && audio.error) {
+                  console.log('Attempting to reload audio...');
+                  audio.load();
+                }
               }}
               onPlay={() => setPlayingKey(verse.ref)}
               onPause={() => setPlayingKey(null)}
