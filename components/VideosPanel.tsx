@@ -89,8 +89,34 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [transcribingSegments, setTranscribingSegments] = useState(false);
   const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [reprocessingVideo, setReprocessingVideo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  const reprocessVideo = async (videoId: string) => {
+    setReprocessingVideo(videoId);
+    try {
+      const response = await fetch('/api/reprocess-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ Re-processed successfully! ${result.previousSegmentCount} → ${result.newSegmentCount} segments`);
+        await loadVideos();
+      } else {
+        alert(`❌ Re-process failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error re-processing video:', error);
+      alert('Re-process failed. Please try again.');
+    } finally {
+      setReprocessingVideo(null);
+    }
+  };
 
   const extractVideoId = (url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
@@ -838,14 +864,24 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                       Video {video.video_id}
                     </h3>
-                    <a
-                      href={video.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                    >
-                      View on YouTube
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={video.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                      >
+                        View on YouTube
+                      </a>
+                      <button
+                        onClick={() => reprocessVideo(video.video_id || '')}
+                        disabled={reprocessingVideo === video.video_id}
+                        className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-800 disabled:opacity-50"
+                        title="Re-process to create more sentence-level segments"
+                      >
+                        {reprocessingVideo === video.video_id ? '⏳ Processing...' : '🔄 Re-segment'}
+                      </button>
+                    </div>
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     <div>Segments: {video.total_clips}</div>
