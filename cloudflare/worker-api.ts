@@ -3064,7 +3064,7 @@ async function handleGetVideos(env: Env): Promise<Response> {
     ).first();
 
     if (!tableCheck) {
-      return jsonResponse({ videos: [], total: 0 });
+      return jsonResponse({ success: true, videos: [], total: 0 });
     }
 
     const result = await env.DB.prepare(`
@@ -3076,22 +3076,33 @@ async function handleGetVideos(env: Env): Promise<Response> {
       LIMIT 50
     `).all();
 
-    const videos = (result.results || []).map((v: any) => ({
-      videoId: v.video_id,
-      youtubeUrl: v.youtube_url,
-      title: v.title,
-      description: v.description,
-      thumbnail: v.thumbnail_url,
-      transcript: v.transcript_text,
-      segments: parseJsonSafe(v.segments_json, []),
-      duration: v.duration,
-      languageCode: v.language_code,
-      status: v.status,
-      createdAt: v.created_at,
-      updatedAt: v.updated_at,
-    }));
+    const videos = (result.results || []).map((v: any) => {
+      const segments = parseJsonSafe(v.segments_json, []);
+      return {
+        video_id: v.video_id,
+        youtube_url: v.youtube_url,
+        title: v.title,
+        description: v.description,
+        thumbnail: v.thumbnail_url,
+        transcript: v.transcript_text,
+        clips: segments.map((seg: any, i: number) => ({
+          segment_number: seg.segment_number || i + 1,
+          transcript_text: seg.text,
+          start_time: seg.start_time,
+          end_time: seg.end_time,
+          duration: seg.duration || (seg.end_time - seg.start_time),
+        })),
+        total_clips: segments.length,
+        total_duration: v.duration,
+        duration: v.duration,
+        language_code: v.language_code,
+        status: v.status,
+        updated_at: v.updated_at,
+        source: 'cloudflare' as const,
+      };
+    });
 
-    return jsonResponse({ videos, total: videos.length });
+    return jsonResponse({ success: true, videos, total: videos.length });
 
   } catch (error) {
     console.error('[CF Worker] Get videos error:', error);

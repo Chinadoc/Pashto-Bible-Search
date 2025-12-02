@@ -887,10 +887,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                 {/* Audio Clips */}
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                    Audio Segments ({video.clips.length})
+                    Audio Segments ({(video.clips || []).length})
                   </h4>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {video.clips.map((clip, index) => {
+                    {(video.clips || []).map((clip, index) => {
                       const segmentNum = clip.segment_number || clip.sentence_number || (index + 1);
                       const text = clip.transcript_text || clip.sentence || '';
                       const startTime = clip.start_time_seconds || clip.start_time || 0;
