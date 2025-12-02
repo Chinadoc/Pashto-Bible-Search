@@ -105,7 +105,15 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       const data = await response.json();
 
       if (data.success) {
-        setVideos(data.videos || []);
+        // Normalize video data to ensure all required properties exist
+        const normalizedVideos = (data.videos || []).map((v: any) => ({
+          ...v,
+          clips: v.clips || [],
+          total_clips: v.total_clips || (v.clips?.length || 0),
+          total_duration: v.total_duration || v.duration || 0,
+          updated_at: v.updated_at || new Date().toISOString(),
+        }));
+        setVideos(normalizedVideos);
       }
     } catch (error) {
       console.error('Error loading videos:', error);
