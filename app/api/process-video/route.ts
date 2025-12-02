@@ -395,7 +395,11 @@ async function transcribeWithScribeV2(audioUrl: string, apiKey: string): Promise
 }
 
 /**
- * Process words into segments
+ * Process words into SENTENCE-LEVEL segments
+ * Creates 30+ segments for typical videos by splitting on:
+ * 1. Pashto sentence-ending punctuation (. ؟ ۔ ! ?)
+ * 2. Long pauses (> 0.8 seconds)
+ * 3. Maximum segment duration (8 seconds to create more segments)
  */
 function processWordsIntoSegments(
     words: Array<{ text: string; start: number; end: number; type: string }>,
@@ -417,6 +421,19 @@ function processWordsIntoSegments(
         }];
     }
 
+    // Filter to only actual words
+    const wordTokens = words.filter(w => w.type === 'word');
+    
+    if (wordTokens.length === 0) {
+        return [{
+            text: fullText || '',
+            start_time: 0,
+            end_time: 0,
+            words: [],
+            confidence: 0.9
+        }];
+    }
+
     const segments: Array<{
         text: string;
         start_time: number;
@@ -425,54 +442,77 @@ function processWordsIntoSegments(
         confidence: number;
     }> = [];
 
-    let currentSegment: {
-        words: Array<{ text: string; start: number; end: number }>;
-        start: number;
-        end: number;
-    } = { words: [], start: 0, end: 0 };
+    // Pashto sentence-ending punctuation
+    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?']);
+    
+    let currentSentenceWords: Array<{ text: string; start: number; end: number }> = [];
+    let sentenceCount = 0;
 
-    const PAUSE_THRESHOLD = 1.0;
-    const MAX_SEGMENT_DURATION = 15;
-
-    for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const prevWord = i > 0 ? words[i - 1] : null;
+    for (let i = 0; i < wordTokens.length; i++) {
+        const word = wordTokens[i];
+        currentSentenceWords.push({ text: word.text, start: word.start, end: word.end });
         
-        if (word.type !== 'word') continue;
-
-        const shouldStartNewSegment = 
-            (prevWord && word.start - prevWord.end > PAUSE_THRESHOLD) ||
-            (currentSegment.words.length > 0 && word.end - currentSegment.start > MAX_SEGMENT_DURATION);
-
-        if (shouldStartNewSegment && currentSegment.words.length > 0) {
-            segments.push({
-                text: currentSegment.words.map(w => w.text).join(' '),
-                start_time: currentSegment.start,
-                end_time: currentSegment.end,
-                words: currentSegment.words,
-                confidence: 0.95
-            });
-
-            currentSegment = { words: [], start: word.start, end: word.end };
+        // Check if this word ends a sentence
+        const wordText = word.text.trim();
+        const lastChar = wordText.slice(-1);
+        const endsWithPunctuation = sentenceEnders.has(lastChar);
+        
+        // Also check for pauses (> 0.8 second) as potential sentence breaks
+        const hasLongPause = i < wordTokens.length - 1 && 
+            (wordTokens[i + 1].start - word.end) > 0.8;
+        
+        if (endsWithPunctuation || hasLongPause) {
+            sentenceCount++;
+            
+            // Create a segment every 1-2 sentences OR if segment is > 8 seconds
+            const segmentDuration = currentSentenceWords[currentSentenceWords.length - 1].end - 
+                                    currentSentenceWords[0].start;
+            
+            // Create segment if: we have 2 sentences, segment is > 8 seconds, or it's the last word
+            if (sentenceCount >= 2 || segmentDuration > 8 || i === wordTokens.length - 1) {
+                if (currentSentenceWords.length > 0) {
+                    segments.push({
+                        text: currentSentenceWords.map(w => w.text).join(' '),
+                        start_time: currentSentenceWords[0].start,
+                        end_time: currentSentenceWords[currentSentenceWords.length - 1].end,
+                        words: [...currentSentenceWords],
+                        confidence: 0.95
+                    });
+                    currentSentenceWords = [];
+                    sentenceCount = 0;
+                }
+            }
         }
-
-        if (currentSegment.words.length === 0) {
-            currentSegment.start = word.start;
+        
+        // Fallback: create segment if too long (max 12 seconds without punctuation)
+        if (currentSentenceWords.length > 0) {
+            const currentDuration = word.end - currentSentenceWords[0].start;
+            if (currentDuration > 12 && i < wordTokens.length - 1) {
+                segments.push({
+                    text: currentSentenceWords.map(w => w.text).join(' '),
+                    start_time: currentSentenceWords[0].start,
+                    end_time: word.end,
+                    words: [...currentSentenceWords],
+                    confidence: 0.95
+                });
+                currentSentenceWords = [];
+                sentenceCount = 0;
+            }
         }
-        currentSegment.words.push({ text: word.text, start: word.start, end: word.end });
-        currentSegment.end = word.end;
     }
-
-    if (currentSegment.words.length > 0) {
+    
+    // Don't forget any remaining words
+    if (currentSentenceWords.length > 0) {
         segments.push({
-            text: currentSegment.words.map(w => w.text).join(' '),
-            start_time: currentSegment.start,
-            end_time: currentSegment.end,
-            words: currentSegment.words,
+            text: currentSentenceWords.map(w => w.text).join(' '),
+            start_time: currentSentenceWords[0].start,
+            end_time: currentSentenceWords[currentSentenceWords.length - 1].end,
+            words: [...currentSentenceWords],
             confidence: 0.95
         });
     }
 
+    console.log(`📝 Created ${segments.length} sentence-level segments`);
     return segments;
 }
 

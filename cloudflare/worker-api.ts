@@ -3002,6 +3002,107 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
 }
 
 /**
+ * Store/update video data in video_transcripts table (for re-processing)
+ */
+async function handleStoreVideo(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as {
+      video_id: string;
+      youtube_url?: string;
+      transcript?: string;
+      segments?: any[];
+      transcription_service?: string;
+      title?: string;
+    };
+    
+    const { video_id, youtube_url, transcript, segments, transcription_service, title } = body;
+    
+    if (!video_id) {
+      return errorResponse('video_id is required', 400);
+    }
+    
+    console.log(`💾 Storing/updating video ${video_id} in video_transcripts...`);
+    
+    const now = new Date().toISOString();
+    const segmentsJson = segments ? JSON.stringify(segments) : '[]';
+    const r2Keys = segments 
+      ? segments.map((_, index) => `videos/${video_id}/segment_${index + 1}.mp3`).join(',')
+      : '';
+    
+    // Create table if needed
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS video_transcripts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        video_id TEXT UNIQUE NOT NULL,
+        youtube_url TEXT NOT NULL,
+        transcript TEXT,
+        segments TEXT,
+        transcription_service TEXT,
+        r2_audio_key TEXT,
+        title TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      )
+    `).run();
+    
+    // Check if video exists
+    const existing = await env.DB.prepare(
+      `SELECT video_id, created_at FROM video_transcripts WHERE video_id = ?`
+    ).bind(video_id).first();
+    
+    if (existing) {
+      // Update existing video
+      await env.DB.prepare(`
+        UPDATE video_transcripts 
+        SET transcript = ?, segments = ?, transcription_service = ?, r2_audio_key = ?, 
+            title = COALESCE(?, title), updated_at = ?
+        WHERE video_id = ?
+      `).bind(
+        transcript || '',
+        segmentsJson,
+        transcription_service || 'elevenlabs_scribe_v2',
+        r2Keys,
+        title || null,
+        now,
+        video_id
+      ).run();
+      
+      console.log(`✅ Updated video ${video_id} with ${segments?.length || 0} segments`);
+    } else {
+      // Insert new video
+      await env.DB.prepare(`
+        INSERT INTO video_transcripts 
+        (video_id, youtube_url, transcript, segments, transcription_service, r2_audio_key, title, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        video_id,
+        youtube_url || '',
+        transcript || '',
+        segmentsJson,
+        transcription_service || 'elevenlabs_scribe_v2',
+        r2Keys,
+        title || null,
+        now,
+        now
+      ).run();
+      
+      console.log(`✅ Inserted video ${video_id} with ${segments?.length || 0} segments`);
+    }
+    
+    return jsonResponse({
+      success: true,
+      videoId: video_id,
+      segmentCount: segments?.length || 0,
+      message: existing ? 'Video updated' : 'Video created',
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Store video error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to store video', 500);
+  }
+}
+
+/**
  * Save video with transcript (for local processing workflow)
  */
 async function handleSaveVideo(request: Request, env: Env): Promise<Response> {
@@ -3494,6 +3595,11 @@ export default {
     // Transcribe audio from R2 storage (called by Modal VM)
     if (path === '/api/transcribe-r2-audio' && request.method === 'POST') {
       return handleTranscribeR2Audio(request, env);
+    }
+
+    // Store/update video data (for re-processing)
+    if (path === '/api/store-video' && request.method === 'POST') {
+      return handleStoreVideo(request, env);
     }
 
     // ========================================
