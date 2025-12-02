@@ -45,6 +45,7 @@ interface Word {
     p: string; // Pashto
     t: string; // Transliteration
     e: string; // English
+    firstKey?: string; // Explicit first key to type (romanized)
 }
 
 interface Line {
@@ -428,7 +429,8 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
         if (isComplete) return;
 
         const currentWord = flatList[index];
-        const targetKey = currentWord.t.charAt(0).toLowerCase();
+        // Use explicit firstKey if available, otherwise fall back to first char of transliteration
+        const targetKey = (currentWord.firstKey || currentWord.t.charAt(0)).toLowerCase();
         const pressedKey = key.toLowerCase();
 
         setAttempts(prev => prev + 1);
@@ -639,10 +641,27 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                                     <span className="text-3xl font-bold text-blue-400 font-mono">{currentWord.t?.charAt(0)}</span>
                                     <span className="text-slate-600 text-xl">&rarr;</span>
                                     <div className="flex flex-col items-start text-left min-w-[120px]">
-                                        <span className={`font-medium text-lg leading-none transition-all ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
+                                        {/* Expected key indicator */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-slate-400 text-xs">Type:</span>
+                                            <span className={`
+                                                px-3 py-1 rounded-lg text-lg font-bold uppercase
+                                                ${stage === 3 
+                                                    ? 'bg-slate-700 text-slate-400 blur-sm' 
+                                                    : 'bg-emerald-600 text-white animate-pulse'
+                                                }
+                                            `}>
+                                                {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t.charAt(0))}
+                                            </span>
+                                        </div>
+                                        {/* Romanization */}
+                                        <span className={`font-medium text-base leading-none transition-all ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
                                             {stage === 3 ? '???' : currentWord.t}
                                         </span>
-                                        <span className="text-slate-500 text-sm italic">{currentWord.e}</span>
+                                        {/* English definition */}
+                                        {currentWord.e && (
+                                            <span className="text-slate-400 text-sm italic mt-0.5">{currentWord.e}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

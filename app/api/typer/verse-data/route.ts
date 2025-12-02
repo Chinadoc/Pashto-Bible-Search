@@ -25,16 +25,40 @@ function getDictionary() {
     return {};
 }
 
-// Basic Pashto to Romanized fallback map
+// Comprehensive Pashto to Romanized fallback map
 const charMap: Record<string, string> = {
-    'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ټ': 't', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh',
-    'د': 'd', 'ډ': 'd', 'ذ': 'z', 'ر': 'r', 'ړ': 'r', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's',
+    // Basic letters
+    'ا': 'a', 'آ': 'aa', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ټ': 'T', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh',
+    'د': 'd', 'ډ': 'D', 'ذ': 'z', 'ر': 'r', 'ړ': 'R', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's',
     'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ک': 'k', 'ګ': 'g', 'ل': 'l',
-    'م': 'm', 'ن': 'n', 'ڼ': 'n', 'و': 'w', 'ه': 'h', 'ی': 'y', 'ې': 'e', 'ۍ': 'ai', 'ئ': 'ai', ' ': ' '
+    'م': 'm', 'ن': 'n', 'ڼ': 'N', 'و': 'w', 'ه': 'h', 'ی': 'y', 'ې': 'e', 'ۍ': 'ai', 'ئ': 'ai',
+    'ء': '', 'ے': 'e', 'ى': 'a',
+    // Diacritics (short vowels) - map to their sound
+    'َ': 'a', 'ُ': 'u', 'ِ': 'i', 'ْ': '', 'ً': 'an', 'ٌ': 'un', 'ٍ': 'in',
+    'ّ': '', // Shadda (gemination) - doubled consonant, ignore in simple transliteration
+    // Common combinations
+    'ؤ': 'o', 'إ': 'i', 'أ': 'a',
+    // Space and punctuation
+    ' ': ' ', '،': ',', '۔': '.', '؟': '?', '؛': ';',
+    // Numbers
+    '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
 };
 
 function transliterate(text: string): string {
-    return text.split('').map(c => charMap[c] || c).join('');
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        result += charMap[char] !== undefined ? charMap[char] : char;
+    }
+    // Clean up double spaces and trim
+    return result.replace(/\s+/g, ' ').trim();
+}
+
+// Clean a word for dictionary lookup (remove diacritics and punctuation)
+function cleanForLookup(word: string): string {
+    return word
+        .replace(/[َُِْـًٌٍّ،۔\.؟؛\-]/g, '') // Remove diacritics and punctuation
+        .trim();
 }
 
 export async function GET(req: NextRequest) {
@@ -67,14 +91,35 @@ export async function GET(req: NextRequest) {
         const words = verseData.text.split(/\s+/);
 
         const enrichedWords = words.map((word: string) => {
-            // Clean punctuation
-            const cleanWord = word.replace(/[،۔\.]/g, '');
-            const entry = dictionary?.[cleanWord];
+            // Clean for dictionary lookup (remove punctuation and diacritics)
+            const cleanWord = cleanForLookup(word);
+            
+            // Try multiple lookup strategies
+            let entry = dictionary?.[cleanWord];
+            
+            // Try without final ی/ې/ه (common endings)
+            if (!entry && cleanWord.length > 2) {
+                const withoutEnding = cleanWord.replace(/[یېه]$/, '');
+                entry = dictionary?.[withoutEnding];
+            }
+            
+            // Try base form for common prefixes
+            if (!entry && cleanWord.startsWith('و')) {
+                entry = dictionary?.[cleanWord.slice(1)];
+            }
+
+            // Get transliteration - prefer dictionary, fallback to computed
+            const romanized = entry?.romanization || transliterate(cleanWord);
+            
+            // Make sure we have a valid first character for typing
+            const firstChar = romanized.charAt(0).toLowerCase();
+            const validFirstChar = /[a-z]/.test(firstChar) ? firstChar : transliterate(cleanWord.charAt(0)).charAt(0).toLowerCase();
 
             return {
                 p: word, // Keep original with punctuation for display
-                t: entry?.romanization || transliterate(cleanWord),
-                e: entry?.english || '?'
+                t: romanized || validFirstChar, // Romanization for hint
+                e: entry?.english || '', // English definition (empty instead of '?')
+                firstKey: validFirstChar || 'a' // Explicit first key to type
             };
         });
 
