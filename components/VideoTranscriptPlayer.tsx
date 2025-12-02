@@ -64,9 +64,9 @@ export default function VideoTranscriptPlayer({
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
-    // @ts-ignore
+    // @ts-expect-error - YouTube IFrame API
     window.onYouTubeIframeAPIReady = () => {
-      // @ts-ignore
+      // @ts-expect-error - YouTube IFrame API
       playerRef.current = new YT.Player(`youtube-player-${videoId}`, {
         videoId: videoId,
         playerVars: {
@@ -76,7 +76,7 @@ export default function VideoTranscriptPlayer({
         },
         events: {
           onStateChange: (event: any) => {
-            // @ts-ignore
+            // @ts-expect-error - YouTube IFrame API
             setIsPlaying(event.data === YT.PlayerState.PLAYING);
           },
         },
@@ -84,9 +84,9 @@ export default function VideoTranscriptPlayer({
     };
 
     // If API already loaded
-    // @ts-ignore
+    // @ts-expect-error - YouTube IFrame API
     if (window.YT && window.YT.Player) {
-      // @ts-ignore
+      // @ts-expect-error - YouTube IFrame API
       window.onYouTubeIframeAPIReady();
     }
 

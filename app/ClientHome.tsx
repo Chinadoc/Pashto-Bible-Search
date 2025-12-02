@@ -2946,8 +2946,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                       </div>
                     )}
                   </div>
-                )}
-              </>
+                </>
               )}
 
               {activeVideosTab === 'frequency' && (
