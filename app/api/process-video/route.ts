@@ -147,72 +147,163 @@ export async function POST(request: NextRequest) {
 
 /**
  * Get audio URL from YouTube video (cloud-compatible)
+ * Uses multiple methods for reliability
  */
 async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
+    console.log(`🔍 Attempting to extract audio for video: ${videoId}`);
+    
+    // Method 1: Try YouTube's innertube API with iOS client (most reliable)
     try {
-        // Method 1: Try YouTube's innertube API
         const innertubeResponse = await fetch(
-            'https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+            'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)',
+                    'X-Goog-Api-Key': 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
+                },
                 body: JSON.stringify({
                     context: {
                         client: {
-                            clientName: 'ANDROID',
-                            clientVersion: '17.31.35',
-                            androidSdkVersion: 30,
+                            clientName: 'IOS',
+                            clientVersion: '19.29.1',
+                            deviceMake: 'Apple',
+                            deviceModel: 'iPhone16,2',
+                            hl: 'en',
+                            osName: 'iPhone',
+                            osVersion: '17.5.1.21F90',
+                            timeZone: 'UTC',
+                            utcOffsetMinutes: 0,
                         }
                     },
                     videoId: videoId,
+                    playbackContext: {
+                        contentPlaybackContext: {
+                            signatureTimestamp: 20073
+                        }
+                    },
+                    racyCheckOk: true,
+                    contentCheckOk: true,
                 }),
             }
         );
 
         if (innertubeResponse.ok) {
             const data = await innertubeResponse.json();
+            console.log(`📡 Innertube response status: ${data.playabilityStatus?.status}`);
+            
+            const formats = data.streamingData?.adaptiveFormats || [];
+            // Prefer mp4 audio format
+            const audioFormat = formats.find((f: any) => 
+                f.mimeType?.startsWith('audio/mp4') && f.url
+            ) || formats.find((f: any) => 
+                f.mimeType?.startsWith('audio/') && f.url
+            );
+            
+            if (audioFormat?.url) {
+                console.log(`✅ Got audio URL via iOS innertube API`);
+                return audioFormat.url;
+            } else {
+                console.log(`⚠️ No audio URL in formats. Available: ${formats.length} formats`);
+            }
+        }
+    } catch (e) {
+        console.warn('iOS innertube failed:', e);
+    }
+
+    // Method 2: Try with ANDROID client
+    try {
+        const androidResponse = await fetch(
+            'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+            {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14)',
+                },
+                body: JSON.stringify({
+                    context: {
+                        client: {
+                            clientName: 'ANDROID',
+                            clientVersion: '19.29.37',
+                            androidSdkVersion: 34,
+                            hl: 'en',
+                            timeZone: 'UTC',
+                        }
+                    },
+                    videoId: videoId,
+                    racyCheckOk: true,
+                    contentCheckOk: true,
+                }),
+            }
+        );
+
+        if (androidResponse.ok) {
+            const data = await androidResponse.json();
             const formats = data.streamingData?.adaptiveFormats || [];
             const audioFormat = formats.find((f: any) => 
                 f.mimeType?.startsWith('audio/') && f.url
             );
             
             if (audioFormat?.url) {
-                console.log(`📡 Got audio URL via innertube API`);
+                console.log(`✅ Got audio URL via Android innertube API`);
                 return audioFormat.url;
             }
         }
-
-        // Method 2: Try cobalt API
-        try {
-            const response = await fetch('https://api.cobalt.tools/api/json', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    url: `https://www.youtube.com/watch?v=${videoId}`,
-                    aFormat: 'mp3',
-                    isAudioOnly: true,
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.url) {
-                    console.log(`📡 Got audio URL via cobalt API`);
-                    return data.url;
-                }
-            }
-        } catch (e) {
-            console.warn('Cobalt API failed:', e);
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Error getting YouTube audio URL:', error);
-        return null;
+    } catch (e) {
+        console.warn('Android innertube failed:', e);
     }
+
+    // Method 3: Try cobalt.tools API
+    try {
+        const cobaltResponse = await fetch('https://api.cobalt.tools/api/json', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                url: `https://www.youtube.com/watch?v=${videoId}`,
+                vCodec: 'h264',
+                vQuality: '720',
+                aFormat: 'mp3',
+                isAudioOnly: true,
+                filenamePattern: 'basic',
+            }),
+        });
+
+        if (cobaltResponse.ok) {
+            const data = await cobaltResponse.json();
+            if (data.url) {
+                console.log(`✅ Got audio URL via Cobalt API`);
+                return data.url;
+            }
+        }
+    } catch (e) {
+        console.warn('Cobalt API failed:', e);
+    }
+
+    // Method 4: Try y2mate style API
+    try {
+        const invidious = await fetch(`https://inv.nadeko.net/api/v1/videos/${videoId}`);
+        if (invidious.ok) {
+            const data = await invidious.json();
+            const audioFormats = data.adaptiveFormats?.filter((f: any) => 
+                f.type?.startsWith('audio/')
+            ) || [];
+            
+            if (audioFormats.length > 0) {
+                console.log(`✅ Got audio URL via Invidious API`);
+                return audioFormats[0].url;
+            }
+        }
+    } catch (e) {
+        console.warn('Invidious API failed:', e);
+    }
+
+    console.error(`❌ All extraction methods failed for video: ${videoId}`);
+    return null;
 }
 
 /**
