@@ -563,7 +563,13 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
-  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems'>(initialTab);
+  const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems' | 'bible'>(initialTab);
+  
+  // Bible Browser state
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [bibleVerses, setBibleVerses] = useState<any[]>([]);
+  const [loadingBibleVerses, setLoadingBibleVerses] = useState(false);
   const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -1853,6 +1859,15 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               }`}
           >
             📝 Poems
+          </button>
+          <button
+            onClick={() => setActiveMainTab('bible')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'bible'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+          >
+            📖 Bible
           </button>
           <a
             href="/typer"
@@ -3421,6 +3436,252 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           </div>
         </div>
       )}
+
+      {/* Bible Browser */}
+      {activeMainTab === 'bible' && (
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              📖 Bible Browser
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Browse all books, chapters, and verses • {activeTranslation === 'afghan2023' ? '🇦🇫 Afghan 2023' : '🕌 Yousafzai 2019'}
+            </p>
+
+            {/* Translation Toggle */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex gap-1">
+                <button
+                  onClick={() => setActiveTranslation('afghan2023')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${activeTranslation === 'afghan2023'
+                    ? 'bg-green-600 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🇦🇫 Afghan 2023
+                </button>
+                <button
+                  onClick={() => setActiveTranslation('yousafzai2019')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${activeTranslation === 'yousafzai2019'
+                    ? 'bg-orange-500 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🕌 Yousafzai 2019
+                </button>
+              </div>
+            </div>
+
+            {/* Book Selection */}
+            {!selectedBook ? (
+              <div className="space-y-6">
+                {/* Old Testament */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-1 rounded text-sm">OT</span>
+                    Old Testament
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                    {['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'].map(book => (
+                      <button
+                        key={book}
+                        onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
+                        className="p-2 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-900 dark:text-amber-200 transition-colors truncate"
+                        title={book}
+                      >
+                        {book.length > 8 ? book.slice(0, 6) + '...' : book}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* New Testament */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">NT</span>
+                    New Testament
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                    {['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'].map(book => (
+                      <button
+                        key={book}
+                        onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
+                        className="p-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-900 dark:text-blue-200 transition-colors truncate"
+                        title={book}
+                      >
+                        {book.length > 8 ? book.slice(0, 6) + '...' : book}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : !selectedChapter ? (
+              /* Chapter Selection */
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={() => setSelectedBook(null)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                  >
+                    ← Back to Books
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedBook}</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">Select a chapter:</p>
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+                  {Array.from({ length: getChapterCount(selectedBook) }, (_, i) => i + 1).map(chapter => (
+                    <button
+                      key={chapter}
+                      onClick={async () => {
+                        setSelectedChapter(chapter);
+                        setLoadingBibleVerses(true);
+                        try {
+                          const table = activeTranslation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
+                          const res = await fetch(`https://pashtobiblesearch.jeremy-samuels17.workers.dev/api/verses?book=${encodeURIComponent(selectedBook)}&chapter=${chapter}&table=${table}`);
+                          const data = await res.json();
+                          setBibleVerses(data.verses || []);
+                        } catch (err) {
+                          console.error('Failed to fetch verses:', err);
+                          setBibleVerses([]);
+                        }
+                        setLoadingBibleVerses(false);
+                      }}
+                      className="p-3 text-center font-medium bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-blue-100 dark:hover:bg-blue-800 hover:border-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
+                    >
+                      {chapter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Verse Display */
+              <div>
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <button
+                    onClick={() => setSelectedBook(null)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                  >
+                    ← Books
+                  </button>
+                  <button
+                    onClick={() => { setSelectedChapter(null); setBibleVerses([]); }}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                  >
+                    ← Chapters
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedBook} {selectedChapter}</h3>
+                  
+                  {/* Chapter Navigation */}
+                  <div className="ml-auto flex gap-2">
+                    {selectedChapter > 1 && (
+                      <button
+                        onClick={async () => {
+                          const newChapter = selectedChapter - 1;
+                          setSelectedChapter(newChapter);
+                          setLoadingBibleVerses(true);
+                          const table = activeTranslation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
+                          const res = await fetch(`https://pashtobiblesearch.jeremy-samuels17.workers.dev/api/verses?book=${encodeURIComponent(selectedBook)}&chapter=${newChapter}&table=${table}`);
+                          const data = await res.json();
+                          setBibleVerses(data.verses || []);
+                          setLoadingBibleVerses(false);
+                        }}
+                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                      >
+                        ← Ch {selectedChapter - 1}
+                      </button>
+                    )}
+                    {selectedChapter < getChapterCount(selectedBook) && (
+                      <button
+                        onClick={async () => {
+                          const newChapter = selectedChapter + 1;
+                          setSelectedChapter(newChapter);
+                          setLoadingBibleVerses(true);
+                          const table = activeTranslation === 'yousafzai2019' ? 'verses_yousafzai' : 'verses_afghan2023';
+                          const res = await fetch(`https://pashtobiblesearch.jeremy-samuels17.workers.dev/api/verses?book=${encodeURIComponent(selectedBook)}&chapter=${newChapter}&table=${table}`);
+                          const data = await res.json();
+                          setBibleVerses(data.verses || []);
+                          setLoadingBibleVerses(false);
+                        }}
+                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                      >
+                        Ch {selectedChapter + 1} →
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {loadingBibleVerses ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">Loading verses...</p>
+                  </div>
+                ) : bibleVerses.length > 0 ? (
+                  <div className="space-y-3">
+                    {bibleVerses.map((verse: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-bold">
+                            {verse.verse}
+                          </span>
+                          <div className="flex-1">
+                            <p dir="rtl" className="text-lg leading-relaxed text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}>
+                              <InteractiveVerse text={verse.text} showAnalysis={true} />
+                            </p>
+                          </div>
+                        </div>
+                        {/* Verse Actions */}
+                        <div className="mt-3 flex gap-2 justify-end">
+                          <button
+                            onClick={() => {
+                              const ref = `${selectedBook} ${selectedChapter}:${verse.verse}`;
+                              navigator.clipboard.writeText(`${ref}\n${verse.text}`);
+                            }}
+                            className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                          >
+                            Copy
+                          </button>
+                          <a
+                            href={`/typer?ref=${encodeURIComponent(`${selectedBook} ${selectedChapter}:${verse.verse}`)}`}
+                            className="px-2 py-1 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 rounded hover:bg-emerald-200 dark:hover:bg-emerald-800"
+                          >
+                            ⌨️ Practice
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No verses found for this chapter.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper function to get chapter count for a book
+function getChapterCount(book: string): number {
+  const chapters: Record<string, number> = {
+    'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
+    'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24,
+    '1 Kings': 22, '2 Kings': 25, '1 Chronicles': 29, '2 Chronicles': 36,
+    'Ezra': 10, 'Nehemiah': 13, 'Esther': 10, 'Job': 42, 'Psalms': 150,
+    'Proverbs': 31, 'Ecclesiastes': 12, 'Song of Solomon': 8, 'Isaiah': 66,
+    'Jeremiah': 52, 'Lamentations': 5, 'Ezekiel': 48, 'Daniel': 12,
+    'Hosea': 14, 'Joel': 3, 'Amos': 9, 'Obadiah': 1, 'Jonah': 4,
+    'Micah': 7, 'Nahum': 3, 'Habakkuk': 3, 'Zephaniah': 3, 'Haggai': 2,
+    'Zechariah': 14, 'Malachi': 4,
+    'Matthew': 28, 'Mark': 16, 'Luke': 24, 'John': 21, 'Acts': 28,
+    'Romans': 16, '1 Corinthians': 16, '2 Corinthians': 13, 'Galatians': 6,
+    'Ephesians': 6, 'Philippians': 4, 'Colossians': 4, '1 Thessalonians': 5,
+    '2 Thessalonians': 3, '1 Timothy': 6, '2 Timothy': 4, 'Titus': 3,
+    'Philemon': 1, 'Hebrews': 13, 'James': 5, '1 Peter': 5, '2 Peter': 3,
+    '1 John': 5, '2 John': 1, '3 John': 1, 'Jude': 1, 'Revelation': 22
+  };
+  return chapters[book] || 1;
 }

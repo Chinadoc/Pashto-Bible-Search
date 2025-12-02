@@ -3588,24 +3588,45 @@ export default {
       return searchWordOccurrences(env, word, translation, limit);
     }
 
-    // Get all verses by testament
+    // Get verses with optional filtering by book, chapter, testament
     if (path === '/api/verses' && request.method === 'GET') {
       const translation = (url.searchParams.get('translation') as any) || 'afghan2023';
+      const table = url.searchParams.get('table'); // Allow direct table name for flexibility
+      const book = url.searchParams.get('book');
+      const chapter = url.searchParams.get('chapter');
       const testament = url.searchParams.get('testament') as 'OT' | 'NT' | undefined;
-      const limit = parseInt(url.searchParams.get('limit') || '10000'); // High default for bulk retrieval
+      const limit = parseInt(url.searchParams.get('limit') || '10000');
 
       try {
-        const tableName = `verses_${translation}`;
+        // Use table param if provided, otherwise derive from translation
+        const tableName = table || `verses_${translation}`;
         let query = `SELECT book, chapter, verse, text, testament, audio_r2_key FROM ${tableName}`;
         const params: any[] = [];
+        const conditions: string[] = [];
+
+        // Filter by book if specified
+        if (book) {
+          conditions.push(`book = ?`);
+          params.push(book);
+        }
+
+        // Filter by chapter if specified
+        if (chapter) {
+          conditions.push(`chapter = ?`);
+          params.push(parseInt(chapter));
+        }
 
         // Filter by testament if specified
         if (testament) {
-          query += ` WHERE testament = ?`;
+          conditions.push(`testament = ?`);
           params.push(testament);
         }
 
-        query += ` LIMIT ?`;
+        if (conditions.length > 0) {
+          query += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        query += ` ORDER BY verse ASC LIMIT ?`;
         params.push(limit);
 
         const result = await env.DB.prepare(query).bind(...params).all();
@@ -3613,8 +3634,10 @@ export default {
         return jsonResponse({
           verses: result.results || [],
           count: result.results?.length || 0,
+          book: book || 'all',
+          chapter: chapter ? parseInt(chapter) : 'all',
           testament: testament || 'all',
-          translation,
+          translation: table ? table.replace('verses_', '') : translation,
         });
       } catch (error: any) {
         return errorResponse(`Failed to fetch verses: ${error.message}`, 500);
