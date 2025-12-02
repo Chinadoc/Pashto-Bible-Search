@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import InteractiveVerse, { VerseAnalysisProvider, VerseAnalysisToggle } from './InteractiveVerse';
 
 interface TranscriptionAttempt {
   attempt: number;
@@ -100,7 +101,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       // For now, we'll simulate loading from local files
       const response = await fetch('/api/videos');
       const data = await response.json();
-      
+
       if (data.success) {
         setVideos(data.videos || []);
       }
@@ -119,9 +120,9 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId })
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Reload videos to get updated results
         await loadVideos();
@@ -140,15 +141,15 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
     setRetrying(videoId);
     try {
       console.log(`🔄 Retrying low-confidence clips for video: ${videoId}`);
-      
+
       const response = await fetch('/api/retry-clips-elevenlabs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId })
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         console.log(`✅ Retried ${result.retried} clips with ElevenLabs`);
         alert(`Successfully retried ${result.retried} clips with ElevenLabs for better quality!`);
@@ -226,7 +227,7 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         if (result.source === 'youtube' && result.originalSize && result.compressedSize) {
           console.log(`YouTube video compressed from ${result.originalSize} to ${result.compressedSize} bytes`);
         }
-        
+
         // Show which service was used
         console.log(`Transcription completed with ${result.service}`);
       } else {
@@ -312,11 +313,11 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
         setElevenLabsResult(result.transcript);
         console.log(`✅ Video processed: ${result.clipsCreated} clips created`);
         console.log(`📊 Saved to Cloudflare D1 with video ID: ${result.videoId}`);
-        
+
         // Reload videos to show the new one
         await new Promise(resolve => setTimeout(resolve, 1000));
         await loadVideos();
-        
+
         // Clear the form
         setYoutubeUrl('');
       } else {
@@ -488,513 +489,517 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          🎬 Processed Videos
-        </h2>
-        <button
-          onClick={loadVideos}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
-      </div>
-
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
-        View processed YouTube videos with Pashto transcription and audio clips
-      </p>
-
-      {/* ElevenLabs Transcription Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            🎤 ElevenLabs Pashto Transcription
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Upload an audio file or enter a YouTube URL to analyze audio segments and get targeted Pashto transcription using ElevenLabs AI
-          </p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          <button
-            onClick={() => {
-              setUploadMode('file');
-              setAudioAnalysis(null);
-              setSelectedSegments([]);
-              setYoutubeUrl('');
-            }}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              uploadMode === 'file'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            📁 File Upload
-          </button>
-          <button
-            onClick={() => {
-              setUploadMode('youtube');
-              if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-              }
-              setAudioAnalysis(null);
-              setSelectedSegments([]);
-            }}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              uploadMode === 'youtube'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
-            🎥 YouTube URL
-          </button>
-        </div>
-
-        {/* File Upload Tab */}
-        {uploadMode === 'file' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-center">
-              <button
-                onClick={triggerFileUpload}
-                disabled={elevenLabsLoading}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                <span>{elevenLabsLoading ? 'Transcribing...' : 'Upload Audio'}</span>
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*"
-              onChange={handleElevenLabsTranscription}
-              className="hidden"
-            />
+    <VerseAnalysisProvider>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            🎬 Processed Videos
+          </h2>
+          <div className="flex gap-2">
+            <VerseAnalysisToggle />
+            <button
+              onClick={loadVideos}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* YouTube URL Tab */}
-        {uploadMode === 'youtube' && (
-          <div className="space-y-4">
-            {/* URL Input and Analysis */}
-            {!audioAnalysis && !analyzingAudio && (
-              <div className="space-y-3">
-                <div className="flex space-x-2">
-                  <input
-                    type="url"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={analyzeYouTubeAudio}
-                    disabled={analyzingAudio || !youtubeUrl.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                    </svg>
-                    <span>{analyzingAudio ? 'Analyzing...' : 'Analyze Audio'}</span>
-                  </button>
-                </div>
-                
-                {/* Service Selector */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    🎯 Transcription Service
-                  </label>
-                  <select
-                    value={transcriptionService}
-                    onChange={(e) => setTranscriptionService(e.target.value as 'assemblyai' | 'elevenlabs')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="assemblyai">⚡ AssemblyAI (Cloud, Faster)</option>
-                    <option value="elevenlabs">🎙️ ElevenLabs (Higher Quality)</option>
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {transcriptionService === 'assemblyai'
-                      ? 'Fast cloud-based transcription, processes entirely on servers'
-                      : 'High-quality transcription, downloads locally then processes'}
-                  </p>
-                </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          View processed YouTube videos with Pashto transcription and audio clips
+        </p>
 
-                {/* Complete Video Processing Button */}
+        {/* ElevenLabs Transcription Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-800">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              🎤 ElevenLabs Pashto Transcription
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Upload an audio file or enter a YouTube URL to analyze audio segments and get targeted Pashto transcription using ElevenLabs AI
+            </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => {
+                setUploadMode('file');
+                setAudioAnalysis(null);
+                setSelectedSegments([]);
+                setYoutubeUrl('');
+              }}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'file'
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+            >
+              📁 File Upload
+            </button>
+            <button
+              onClick={() => {
+                setUploadMode('youtube');
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
+                setAudioAnalysis(null);
+                setSelectedSegments([]);
+              }}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'youtube'
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+            >
+              🎥 YouTube URL
+            </button>
+          </div>
+
+          {/* File Upload Tab */}
+          {uploadMode === 'file' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center">
                 <button
-                  onClick={processCompleteVideo}
-                  disabled={elevenLabsLoading || !youtubeUrl.trim()}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium"
+                  onClick={triggerFileUpload}
+                  disabled={elevenLabsLoading}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>
-                  <span>
-                    {elevenLabsLoading ? '⏳ Processing Video...' : '🚀 Process Complete Video'}
-                  </span>
+                  <span>{elevenLabsLoading ? 'Transcribing...' : 'Upload Audio'}</span>
                 </button>
-                
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ✨ Creates audio clips, uploads to Google Drive, syncs to Cloudflare, shows in Videos tab
-                </p>
-                
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  YouTube videos will be analyzed for speech segments before transcription
-                </p>
               </div>
-            )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                onChange={handleElevenLabsTranscription}
+                className="hidden"
+              />
+            </div>
+          )}
 
-            {/* Audio Analysis in Progress */}
-            {analyzingAudio && (
-              <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="text-blue-700 dark:text-blue-300">Analyzing audio segments...</p>
-              </div>
-            )}
-
-            {/* Audio Analysis Results and Segment Selection */}
-            {audioAnalysis && !analyzingAudio && (
-              <div className="space-y-4">
-                {/* Audio Info */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Audio Information</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div>Duration: {formatDuration(audioAnalysis.audioInfo.duration)}</div>
-                    <div>Size: {(audioAnalysis.audioInfo.size / 1024 / 1024).toFixed(1)}MB</div>
-                    <div>Bitrate: {audioAnalysis.audioInfo.bitrate}kbps</div>
-                    <div>Sample Rate: {audioAnalysis.audioInfo.sampleRate}Hz</div>
+          {/* YouTube URL Tab */}
+          {uploadMode === 'youtube' && (
+            <div className="space-y-4">
+              {/* URL Input and Analysis */}
+              {!audioAnalysis && !analyzingAudio && (
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <input
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={analyzeYouTubeAudio}
+                      disabled={analyzingAudio || !youtubeUrl.trim()}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                      <span>{analyzingAudio ? 'Analyzing...' : 'Analyze Audio'}</span>
+                    </button>
                   </div>
-                </div>
 
-                {/* Segments */}
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                    Audio Segments ({audioAnalysis.segments.length})
-                  </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {audioAnalysis.segments.map((segment, index) => (
-                      <div
-                        key={index}
-                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                          selectedSegments.includes(index)
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                        onClick={() => handleSegmentSelection(index)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedSegments.includes(index)}
-                              onChange={() => handleSegmentSelection(index)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="font-medium text-sm">Segment {index + 1}</span>
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDuration(segment.start)} - {formatDuration(segment.end)}
-                          </div>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            Duration: {formatDuration(segment.duration)}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              segment.hasSpeech
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                            }`}>
-                              {segment.hasSpeech ? 'Speech' : 'Silence'}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {Math.round(segment.confidence * 100)}% confidence
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  {/* Service Selector */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      🎯 Transcription Service
+                    </label>
+                    <select
+                      value={transcriptionService}
+                      onChange={(e) => setTranscriptionService(e.target.value as 'assemblyai' | 'elevenlabs')}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="assemblyai">⚡ AssemblyAI (Cloud, Faster)</option>
+                      <option value="elevenlabs">🎙️ ElevenLabs (Higher Quality)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {transcriptionService === 'assemblyai'
+                        ? 'Fast cloud-based transcription, processes entirely on servers'
+                        : 'High-quality transcription, downloads locally then processes'}
+                    </p>
                   </div>
-                </div>
 
-                {/* Transcribe Selected Segments */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedSegments.length} of {audioAnalysis.segments.length} segments selected
-                  </span>
+                  {/* Complete Video Processing Button */}
                   <button
-                    onClick={transcribeSelectedSegments}
-                    disabled={transcribingSegments || selectedSegments.length === 0}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+                    onClick={processCompleteVideo}
+                    disabled={elevenLabsLoading || !youtubeUrl.trim()}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>{transcribingSegments ? 'Transcribing...' : 'Transcribe Selected'}</span>
+                    <span>
+                      {elevenLabsLoading ? '⏳ Processing Video...' : '🚀 Process Complete Video'}
+                    </span>
                   </button>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    ✨ Creates audio clips, uploads to Google Drive, syncs to Cloudflare, shows in Videos tab
+                  </p>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    YouTube videos will be analyzed for speech segments before transcription
+                  </p>
+                </div>
+              )}
+
+              {/* Audio Analysis in Progress */}
+              {analyzingAudio && (
+                <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <p className="text-blue-700 dark:text-blue-300">Analyzing audio segments...</p>
+                </div>
+              )}
+
+              {/* Audio Analysis Results and Segment Selection */}
+              {audioAnalysis && !analyzingAudio && (
+                <div className="space-y-4">
+                  {/* Audio Info */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Audio Information</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div>Duration: {formatDuration(audioAnalysis.audioInfo.duration)}</div>
+                      <div>Size: {(audioAnalysis.audioInfo.size / 1024 / 1024).toFixed(1)}MB</div>
+                      <div>Bitrate: {audioAnalysis.audioInfo.bitrate}kbps</div>
+                      <div>Sample Rate: {audioAnalysis.audioInfo.sampleRate}Hz</div>
+                    </div>
+                  </div>
+
+                  {/* Segments */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      Audio Segments ({audioAnalysis.segments.length})
+                    </h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {audioAnalysis.segments.map((segment, index) => (
+                        <div
+                          key={index}
+                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${selectedSegments.includes(index)
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                          onClick={() => handleSegmentSelection(index)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedSegments.includes(index)}
+                                onChange={() => handleSegmentSelection(index)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="font-medium text-sm">Segment {index + 1}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatDuration(segment.start)} - {formatDuration(segment.end)}
+                            </div>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Duration: {formatDuration(segment.duration)}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs ${segment.hasSpeech
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                }`}>
+                                {segment.hasSpeech ? 'Speech' : 'Silence'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {Math.round(segment.confidence * 100)}% confidence
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Transcribe Selected Segments */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedSegments.length} of {audioAnalysis.segments.length} segments selected
+                    </span>
+                    <button
+                      onClick={transcribeSelectedSegments}
+                      disabled={transcribingSegments || selectedSegments.length === 0}
+                      className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                      <span>{transcribingSegments ? 'Transcribing...' : 'Transcribe Selected'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(elevenLabsLoading || transcribingSegments) && (
+            <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <p className="text-blue-700 dark:text-blue-300">
+                {transcribingSegments ? 'Transcribing selected segments...' : 'Transcribing your audio with ElevenLabs AI...'}
+              </p>
+            </div>
+          )}
+
+          {elevenLabsError && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center justify-between">
+                <p className="text-red-700 dark:text-red-300">{elevenLabsError}</p>
+                <button
+                  onClick={resetElevenLabsState}
+                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {elevenLabsResult && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-green-800 dark:text-green-200">Transcription Result</h4>
+                <button
+                  onClick={resetElevenLabsState}
+                  className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex justify-end mb-2">
+                <VerseAnalysisToggle />
+              </div>
+              <div className="text-green-800 dark:text-green-200 leading-relaxed mb-3 text-lg" dir="rtl">
+                <InteractiveVerse text={elevenLabsResult} showAnalysis={true} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    if (onSelectClip) {
+                      onSelectClip({
+                        query: elevenLabsResult,
+                        startTime: 0,
+                        endTime: 0
+                      });
+                    }
+                  }}
+                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  Search This Text
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(elevenLabsResult);
+                  }}
+                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Copy Text
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
+          </div>
+        ) : videos.length > 0 ? (
+          <div className="space-y-6">
+            {videos.map((video) => (
+              <div key={video.video_id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                {/* Video Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Video {video.video_id}
+                    </h3>
+                    <a
+                      href={video.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                    >
+                      View on YouTube
+                    </a>
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div>Segments: {video.total_clips}</div>
+                    {video.total_duration && <div>Duration: {formatDuration(video.total_duration)}</div>}
+                  </div>
+                </div>
+
+                {/* YouTube Embed */}
+                {video.youtube_url && video.video_id && (
+                  <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
+                    <div className="aspect-video w-full">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${video.video_id}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full rounded"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Transcript */}
+                {(video.transcript || video.transcription) && (
+                  <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      Transcript
+                      {video.transcription_service && (
+                        <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {video.transcription_service}
+                        </span>
+                      )}
+                    </h4>
+                    <div className="text-gray-900 dark:text-gray-100 leading-relaxed" dir="rtl">
+                      <InteractiveVerse text={video.transcript || video.transcription?.transcript || ''} showAnalysis={true} />
+                    </div>
+                    {video.transcription && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Generated: {formatTimestamp(video.transcription.timestamp)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+
+                {/* Audio Clips */}
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    Audio Segments ({video.clips.length})
+                  </h4>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {video.clips.map((clip, index) => {
+                      const segmentNum = clip.segment_number || clip.sentence_number || (index + 1);
+                      const text = clip.transcript_text || clip.sentence || '';
+                      const startTime = clip.start_time_seconds || clip.start_time || 0;
+                      const endTime = clip.end_time_seconds || clip.end_time || 0;
+                      const duration = clip.duration || (endTime - startTime);
+                      const audioKey = `${video.video_id}-${segmentNum}`;
+                      const isPlaying = playingAudio === audioKey;
+                      const audioUrl = clip.audio_url || clip.server_url;
+
+                      return (
+                        <div
+                          key={segmentNum}
+                          className="bg-white dark:bg-gray-800 rounded border p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Audio Player */}
+                            {audioUrl && (
+                              <button
+                                onClick={() => {
+                                  const audio = audioRefs.current.get(audioKey);
+                                  if (audio) {
+                                    if (isPlaying) {
+                                      audio.pause();
+                                      setPlayingAudio(null);
+                                    } else {
+                                      // Pause other audios
+                                      audioRefs.current.forEach((a, k) => {
+                                        if (k !== audioKey) a.pause();
+                                      });
+                                      audio.play();
+                                      setPlayingAudio(audioKey);
+                                    }
+                                  }
+                                }}
+                                className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors"
+                              >
+                                {isPlaying ? (
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                  </svg>
+                                )}
+                              </button>
+                            )}
+
+                            {/* Clip Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                                  Segment {segmentNum}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatDuration(startTime)} - {formatDuration(endTime)} ({formatDuration(duration)})
+                                </span>
+                              </div>
+                              <div
+                                className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed cursor-pointer"
+                                dir="rtl"
+                                onClick={() => onSelectClip?.({
+                                  query: text,
+                                  startTime: startTime,
+                                  endTime: endTime
+                                })}
+                              >
+                                <InteractiveVerse text={text} showAnalysis={true} />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Hidden Audio Element */}
+                          {audioUrl && (
+                            <audio
+                              ref={(el) => {
+                                if (el) {
+                                  audioRefs.current.set(audioKey, el);
+                                  el.onended = () => setPlayingAudio(null);
+                                  el.onpause = () => {
+                                    if (!el.ended) setPlayingAudio(null);
+                                  };
+                                }
+                              }}
+                              src={audioUrl}
+                              preload="none"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
-        )}
-
-        {(elevenLabsLoading || transcribingSegments) && (
-          <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="text-blue-700 dark:text-blue-300">
-              {transcribingSegments ? 'Transcribing selected segments...' : 'Transcribing your audio with ElevenLabs AI...'}
+        ) : (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
+            <p className="text-yellow-800 dark:text-yellow-300 mb-4">
+              No processed videos found.
             </p>
-          </div>
-        )}
-
-        {elevenLabsError && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-center justify-between">
-              <p className="text-red-700 dark:text-red-300">{elevenLabsError}</p>
-              <button
-                onClick={resetElevenLabsState}
-                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {elevenLabsResult && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-green-800 dark:text-green-200">Transcription Result</h4>
-              <button
-                onClick={resetElevenLabsState}
-                className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-green-800 dark:text-green-200 leading-relaxed mb-3">
-              {elevenLabsResult}
+            <p className="text-sm text-yellow-700 dark:text-yellow-400">
+              Run the offline video processor to process YouTube videos:
             </p>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => {
-                  if (onSelectClip) {
-                    onSelectClip({
-                      query: elevenLabsResult,
-                      startTime: 0,
-                      endTime: 0
-                    });
-                  }
-                }}
-                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                Search This Text
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(elevenLabsResult);
-                }}
-                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Copy Text
-              </button>
+            <div className="mt-4 bg-yellow-100 dark:bg-yellow-800 rounded p-3 text-left">
+              <code className="text-sm text-yellow-800 dark:text-yellow-200">
+                python3 process_video_offline.py
+              </code>
             </div>
           </div>
         )}
       </div>
-
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
-        </div>
-      ) : videos.length > 0 ? (
-        <div className="space-y-6">
-          {videos.map((video) => (
-            <div key={video.video_id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              {/* Video Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Video {video.video_id}
-                  </h3>
-                  <a
-                    href={video.youtube_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                  >
-                    View on YouTube
-                  </a>
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <div>Segments: {video.total_clips}</div>
-                  {video.total_duration && <div>Duration: {formatDuration(video.total_duration)}</div>}
-                </div>
-              </div>
-
-              {/* YouTube Embed */}
-              {video.youtube_url && video.video_id && (
-                <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
-                  <div className="aspect-video w-full">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${video.video_id}`}
-                      title="YouTube video player"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full rounded"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Transcript */}
-              {(video.transcript || video.transcription) && (
-                <div className="bg-white dark:bg-gray-800 rounded border p-4 mb-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                    Transcript
-                    {video.transcription_service && (
-                      <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {video.transcription_service}
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed" dir="rtl">
-                    {video.transcript || video.transcription?.transcript}
-                  </p>
-                  {video.transcription && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Generated: {formatTimestamp(video.transcription.timestamp)}
-                    </p>
-                  )}
-                </div>
-              )}
-
-
-              {/* Audio Clips */}
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                  Audio Segments ({video.clips.length})
-                </h4>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {video.clips.map((clip, index) => {
-                    const segmentNum = clip.segment_number || clip.sentence_number || (index + 1);
-                    const text = clip.transcript_text || clip.sentence || '';
-                    const startTime = clip.start_time_seconds || clip.start_time || 0;
-                    const endTime = clip.end_time_seconds || clip.end_time || 0;
-                    const duration = clip.duration || (endTime - startTime);
-                    const audioKey = `${video.video_id}-${segmentNum}`;
-                    const isPlaying = playingAudio === audioKey;
-                    const audioUrl = clip.audio_url || clip.server_url;
-
-                    return (
-                      <div
-                        key={segmentNum}
-                        className="bg-white dark:bg-gray-800 rounded border p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Audio Player */}
-                          {audioUrl && (
-                            <button
-                              onClick={() => {
-                                const audio = audioRefs.current.get(audioKey);
-                                if (audio) {
-                                  if (isPlaying) {
-                                    audio.pause();
-                                    setPlayingAudio(null);
-                                  } else {
-                                    // Pause other audios
-                                    audioRefs.current.forEach((a, k) => {
-                                      if (k !== audioKey) a.pause();
-                                    });
-                                    audio.play();
-                                    setPlayingAudio(audioKey);
-                                  }
-                                }
-                              }}
-                              className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors"
-                            >
-                              {isPlaying ? (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                </svg>
-                              )}
-                            </button>
-                          )}
-                          
-                          {/* Clip Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
-                                Segment {segmentNum}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatDuration(startTime)} - {formatDuration(endTime)} ({formatDuration(duration)})
-                              </span>
-                            </div>
-                            <p 
-                              className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed cursor-pointer"
-                              dir="rtl"
-                              onClick={() => onSelectClip?.({
-                                query: text,
-                                startTime: startTime,
-                                endTime: endTime
-                              })}
-                            >
-                              {text}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Hidden Audio Element */}
-                        {audioUrl && (
-                          <audio
-                            ref={(el) => {
-                              if (el) {
-                                audioRefs.current.set(audioKey, el);
-                                el.onended = () => setPlayingAudio(null);
-                                el.onpause = () => {
-                                  if (!el.ended) setPlayingAudio(null);
-                                };
-                              }
-                            }}
-                            src={audioUrl}
-                            preload="none"
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 dark:text-yellow-300 mb-4">
-            No processed videos found.
-          </p>
-          <p className="text-sm text-yellow-700 dark:text-yellow-400">
-            Run the offline video processor to process YouTube videos:
-          </p>
-          <div className="mt-4 bg-yellow-100 dark:bg-yellow-800 rounded p-3 text-left">
-            <code className="text-sm text-yellow-800 dark:text-yellow-200">
-              python3 process_video_offline.py
-            </code>
-          </div>
-        </div>
-      )}
-    </div>
+    </VerseAnalysisProvider>
   );
 }
