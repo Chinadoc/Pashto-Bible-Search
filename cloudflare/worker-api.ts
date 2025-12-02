@@ -3116,6 +3116,178 @@ async function handleTranscribeAudio(request: Request, env: Env): Promise<Respon
   }
 }
 
+/**
+ * Transcribe audio from R2 storage (triggered by Modal VM)
+ * This endpoint receives audio that was uploaded to R2 by the Modal worker
+ */
+async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Response> {
+  try {
+    if (!env.ELEVENLABS_API_KEY) {
+      return errorResponse('ElevenLabs API key not configured', 500);
+    }
+    
+    const body = await request.json() as {
+      video_id: string;
+      r2_key: string;
+      youtube_url?: string;
+      title?: string;
+    };
+    
+    const { video_id, r2_key, youtube_url, title } = body;
+    
+    if (!video_id || !r2_key) {
+      return errorResponse('video_id and r2_key are required', 400);
+    }
+    
+    console.log(`🎙️ [CF Worker] Transcribing R2 audio: ${r2_key}`);
+    
+    // Get audio from R2
+    const audioObject = await env.AUDIO_BUCKET.get(r2_key);
+    
+    if (!audioObject) {
+      return errorResponse(`Audio not found in R2: ${r2_key}`, 404);
+    }
+    
+    const audioBlob = await audioObject.blob();
+    console.log(`📦 Audio size: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB`);
+    
+    // Create form data for ElevenLabs API
+    const elevenLabsForm = new FormData();
+    elevenLabsForm.append('file', audioBlob, 'audio.mp3');
+    elevenLabsForm.append('model_id', 'scribe_v2');
+    elevenLabsForm.append('language_code', 'ps');
+    elevenLabsForm.append('timestamps_granularity', 'word');
+    elevenLabsForm.append('diarize', 'true');
+    
+    console.log(`📤 Sending to ElevenLabs Scribe v2...`);
+    const response = await fetch(
+      'https://api.elevenlabs.io/v1/audio/transcription',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': env.ELEVENLABS_API_KEY,
+        },
+        body: elevenLabsForm,
+      }
+    );
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ ElevenLabs error: ${errorText}`);
+      return errorResponse(`Transcription failed: ${errorText}`, response.status);
+    }
+    
+    const result = await response.json() as any;
+    console.log(`✅ Transcription complete. Text length: ${result.text?.length || 0}`);
+    
+    // Process words
+    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
+      text: w.text || w.word,
+      start_time: w.start || w.start_time || 0,
+      end_time: w.end || w.end_time || 0,
+      confidence: w.confidence || 0.95,
+    }));
+    
+    // Create segments from words
+    const segments: TranscriptSegment[] = [];
+    let currentSegment: TranscriptWord[] = [];
+    let segmentStart = words[0]?.start_time || 0;
+    
+    for (let i = 0; i < words.length; i++) {
+      currentSegment.push(words[i]);
+      
+      const segmentDuration = words[i].end_time - segmentStart;
+      const hasLongPause = i < words.length - 1 && 
+        (words[i + 1].start_time - words[i].end_time) > 1.5;
+      
+      if (segmentDuration >= 30 || hasLongPause || i === words.length - 1) {
+        segments.push({
+          segment_number: segments.length + 1,
+          text: currentSegment.map(w => w.text).join(' '),
+          start_time: segmentStart,
+          end_time: words[i].end_time,
+          duration: words[i].end_time - segmentStart,
+          words: currentSegment,
+          confidence: 0.95,
+        });
+        
+        if (i < words.length - 1) {
+          currentSegment = [];
+          segmentStart = words[i + 1].start_time;
+        }
+      }
+    }
+    
+    // Store in D1 database
+    const now = new Date().toISOString();
+    
+    try {
+      // Create videos table if not exists
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS videos (
+          video_id TEXT PRIMARY KEY,
+          youtube_url TEXT,
+          title TEXT,
+          description TEXT,
+          thumbnail_url TEXT,
+          transcript_text TEXT,
+          segments_json TEXT,
+          words_json TEXT,
+          r2_audio_key TEXT,
+          duration REAL,
+          language_code TEXT,
+          status TEXT DEFAULT 'completed',
+          created_at TEXT,
+          updated_at TEXT
+        )
+      `).run();
+      
+      // Insert or update video
+      await env.DB.prepare(`
+        INSERT OR REPLACE INTO videos 
+        (video_id, youtube_url, title, transcript_text, segments_json, words_json, 
+         r2_audio_key, duration, language_code, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)
+      `).bind(
+        video_id,
+        youtube_url || '',
+        title || `Video ${video_id}`,
+        result.text || '',
+        JSON.stringify(segments),
+        JSON.stringify(words),
+        r2_key,
+        segments.length > 0 ? segments[segments.length - 1].end_time : 0,
+        result.language_code || 'ps',
+        now,
+        now
+      ).run();
+      
+      console.log(`💾 Video saved to D1: ${video_id}`);
+      
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // Continue - return transcription even if DB save fails
+    }
+    
+    return jsonResponse({
+      success: true,
+      videoId: video_id,
+      transcript: result.text || '',
+      words,
+      segments,
+      totalWords: words.length,
+      totalSegments: segments.length,
+      duration: segments.length > 0 ? segments[segments.length - 1].end_time : 0,
+      languageCode: result.language_code || 'ps',
+      r2Key: r2_key
+    });
+    
+  } catch (error) {
+    console.error('[CF Worker] Transcribe R2 audio error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to transcribe R2 audio', 500);
+  }
+}
+
 // ========================================
 // Main Request Handler
 // ========================================
@@ -3159,6 +3331,11 @@ export default {
     // Transcribe uploaded audio file
     if (path === '/api/transcribe-audio' && request.method === 'POST') {
       return handleTranscribeAudio(request, env);
+    }
+    
+    // Transcribe audio from R2 storage (called by Modal VM)
+    if (path === '/api/transcribe-r2-audio' && request.method === 'POST') {
+      return handleTranscribeR2Audio(request, env);
     }
     
     // ========================================

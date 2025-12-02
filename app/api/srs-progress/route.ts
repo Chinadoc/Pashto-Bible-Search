@@ -2,6 +2,8 @@ import { auth } from "@/app/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { calculateNextReview, SRSProgress } from "@/app/lib/srs";
 
+export const runtime = "edge";
+
 export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
