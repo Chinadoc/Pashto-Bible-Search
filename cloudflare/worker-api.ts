@@ -3093,6 +3093,7 @@ async function handleGetVideos(env: Env): Promise<Response> {
           segmentNumber: seg.segment_number || i + 1,
           segment_number: seg.segment_number || i + 1,
           text: seg.text,
+          transcript: seg.text,
           transcript_text: seg.text,
           startTime: seg.start_time,
           start_time: seg.start_time,
