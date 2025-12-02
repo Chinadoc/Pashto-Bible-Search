@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * POST /api/process-video
  * 
- * Processes a YouTube video with ElevenLabs Scribe v2:
+ * Processes a YouTube video with ElevenLabs Scribe v2.
+ * Accepts both 'url' and 'youtubeUrl' for compatibility.
  * 1. Extracts audio from YouTube (cloud-compatible)
  * 2. Transcribes using ElevenLabs Scribe v2 (Pashto: ps)
  * 3. Returns transcript with word-level timestamps
@@ -33,12 +34,18 @@ function extractVideoId(url: string): string | null {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json() as ProcessVideoRequest;
+        
+        console.log('📨 Received request body:', JSON.stringify(body));
+        
         // Accept both 'url' and 'youtubeUrl' for compatibility
         const youtubeUrl = body.youtubeUrl || body.url;
         
+        console.log('🔗 Extracted YouTube URL:', youtubeUrl);
+        
         if (!youtubeUrl) {
+            console.error('❌ No YouTube URL found in request body');
             return NextResponse.json(
-                { success: false, error: 'YouTube URL is required' },
+                { success: false, error: 'YouTube URL is required', receivedBody: body },
                 { status: 400 }
             );
         }
