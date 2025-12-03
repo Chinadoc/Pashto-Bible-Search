@@ -4016,39 +4016,40 @@ export default {
           return errorResponse('Missing or empty verses array', 400);
         }
 
-        // Create table if not exists
-        await env.DB.prepare(`
-          CREATE TABLE IF NOT EXISTS verses_yousafzai (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            book TEXT NOT NULL,
-            chapter INTEGER NOT NULL,
-            verse INTEGER NOT NULL,
-            text TEXT NOT NULL,
-            testament TEXT DEFAULT 'OT',
-            audio_r2_key TEXT,
-            UNIQUE(book, chapter, verse)
-          )
-        `).run();
-
-        // Insert or replace verses
+        // Insert or replace verses using batch for better performance
+        // The existing table has: ref, book, chapter, verse, text, testament, audio_r2_key
         let inserted = 0;
-        for (const v of body.verses) {
+        const errors: string[] = [];
+        
+        // Use D1 batch API for better performance
+        const statements = body.verses.map(v => {
+          // Generate ref in format "Book Chapter:Verse"
+          const ref = `${v.book} ${v.chapter}:${v.verse}`;
+          return env.DB.prepare(`
+            INSERT OR REPLACE INTO verses_yousafzai (ref, book, chapter, verse, text, testament, audio_r2_key)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).bind(ref, v.book, v.chapter, v.verse, v.text, v.testament || 'OT', v.audio_r2_key || null);
+        });
+        
+        // Execute in batches of 100 to avoid hitting limits
+        const batchSize = 100;
+        for (let i = 0; i < statements.length; i += batchSize) {
+          const batch = statements.slice(i, i + batchSize);
           try {
-            await env.DB.prepare(`
-              INSERT OR REPLACE INTO verses_yousafzai (book, chapter, verse, text, testament, audio_r2_key)
-              VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(v.book, v.chapter, v.verse, v.text, v.testament, v.audio_r2_key || null).run();
-            inserted++;
+            const results = await env.DB.batch(batch);
+            inserted += results.length;
           } catch (e: any) {
-            console.error(`Failed to insert verse ${v.book} ${v.chapter}:${v.verse}:`, e.message);
+            errors.push(`Batch ${i}-${i + batchSize}: ${e.message}`);
+            console.error(`Batch insert failed:`, e);
           }
         }
 
         return jsonResponse({
-          success: true,
+          success: errors.length === 0,
           inserted,
           total: body.verses.length,
-          message: `Imported ${inserted} of ${body.verses.length} Yousafzai verses`
+          message: `Imported ${inserted} of ${body.verses.length} Yousafzai verses`,
+          errors: errors.length > 0 ? errors : undefined
         });
       } catch (error: any) {
         return errorResponse(`Failed to import verses: ${error.message}`, 500);

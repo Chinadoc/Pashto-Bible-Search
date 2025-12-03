@@ -37,7 +37,7 @@ interface Props {
   coverage: CoverageItem[];
   onPickBook?: (b: string) => void;
   compact?: boolean;
-  scope?: "all" | "nt" | "ot";
+  scope?: "all" | "nt" | "ot" | "videos" | "poems" | "everything"; // Extended to match Scope type
   title?: string;
   subtitle?: string;
   complexityLevel?: ComplexityLevel;
@@ -158,7 +158,7 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {(scope === 'all' || scope === 'ot') && (
+        {(scope === 'all' || scope === 'ot' || scope === 'everything') && (
           <div>
             {complexityLevel >= ComplexityLevel.Basic && !compact && <div className="text-xs text-gray-500 mb-1">Old Testament</div>}
             <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
@@ -166,7 +166,7 @@ export default function CoverageGrid({ coverage, onPickBook, compact, scope = "a
             </div>
           </div>
         )}
-        {(scope === 'all' || scope === 'nt') && (
+        {(scope === 'all' || scope === 'nt' || scope === 'everything') && (
           <div>
             {complexityLevel >= ComplexityLevel.Basic && !compact && <div className="text-xs text-gray-500 mb-1">New Testament</div>}
             <div className={compact ? 'grid grid-cols-3 gap-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'}>
