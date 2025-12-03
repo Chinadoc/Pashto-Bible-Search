@@ -47,6 +47,8 @@ const REASON_ICONS: Record<string, { icon: string; label: string; labelPs: strin
   plural: { icon: '👥', label: 'Plural', labelPs: 'جمع', tip: 'Indicates more than one' },
   sandwich: { icon: '🥪', label: 'Sandwich', labelPs: 'په ... کې', tip: 'Inside an adpositional phrase' },
   ergative: { icon: '⚡', label: 'Ergative', labelPs: 'ارګېتیف', tip: 'Subject of transitive past tense verb' },
+  vocative: { icon: '📢', label: 'Vocative', labelPs: 'ندایي', tip: 'Direct address - calling someone' },
+  ablative: { icon: '🧈', label: 'Ablative', labelPs: 'له/تر/بې', tip: 'After له, تر, بې, پرته - always 2nd inflection' },
 };
 
 // Sandwich type labels with Pashto first

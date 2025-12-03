@@ -33,6 +33,10 @@ export interface WordAnalysis {
     isInSandwich: boolean;
     sandwichType: string | null;
     isErgative: boolean; // Subject of transitive past
+    ergativeVerb?: string | null; // The verb that triggered ergative
+    isVocative?: boolean; // Direct address form
+    isAblative?: boolean; // After له, تر, بې, پرته
+    ablativeTrigger?: string | null; // Which word triggered ablative
   } | null;
   
   // Verb-specific
@@ -96,6 +100,8 @@ const REASON_ICONS = {
   plural: '👥',
   sandwich: '🥪',
   ergative: '⚡',
+  vocative: '📢',
+  ablative: '🧈', // Mayo = ablative
 };
 
 // LingDocs-style inflection state labels with tooltips
@@ -106,8 +112,17 @@ const INFLECTION_STATE_INFO: Record<string, { label: string; description: string
 };
 
 // Helper to determine inflection level based on reasons
-function getInflectionLevelFromReasons(reason: WordAnalysis['inflectionReason']): '1st' | '2nd' | null {
+// Vocative is special (not combined with others)
+// Ablative triggers 2nd inflection by itself
+function getInflectionLevelFromReasons(reason: WordAnalysis['inflectionReason']): '1st' | '2nd' | 'vocative' | null {
   if (!reason) return null;
+  
+  // Vocative is special - it's its own category
+  if (reason.isVocative) return 'vocative';
+  
+  // Ablative (mayo) always causes 2nd inflection by itself
+  if (reason.isAblative) return '2nd';
+  
   let count = 0;
   if (reason.isPlural) count++;
   if (reason.isInSandwich) count++;
@@ -418,11 +433,39 @@ export default function WordTooltip({
                   </div>
                   
                   {/* Inflection reasons - ALWAYS show all reasons */}
-                  {analysis.inflectionReason && (analysis.inflectionReason.isPlural || analysis.inflectionReason.isInSandwich || analysis.inflectionReason.isErgative) && (
+                  {analysis.inflectionReason && (
+                    analysis.inflectionReason.isPlural || 
+                    analysis.inflectionReason.isInSandwich || 
+                    analysis.inflectionReason.isErgative ||
+                    analysis.inflectionReason.isVocative ||
+                    analysis.inflectionReason.isAblative
+                  ) && (
                     <div dir="ltr" className="text-xs">
                       <span className="text-gray-400">Why: </span>
                       <span className="inline-flex flex-wrap gap-1 items-center">
-                        {analysis.inflectionReason.isInSandwich && (
+                        {/* Vocative - special form for direct address */}
+                        {analysis.inflectionReason.isVocative && (
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 rounded cursor-help"
+                            title="Vocative: used when directly addressing someone"
+                          >
+                            {REASON_ICONS.vocative} vocative
+                          </span>
+                        )}
+                        {/* Ablative/Mayonnaise - after له, تر, بې, پرته */}
+                        {analysis.inflectionReason.isAblative && (
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded cursor-help"
+                            title={`Ablative (mayonnaise): after ${analysis.inflectionReason.ablativeTrigger || 'له/تر/بې/پرته'} - always 2nd inflection`}
+                          >
+                            {REASON_ICONS.ablative}
+                            <span className="font-medium" dir="rtl">
+                              {analysis.inflectionReason.ablativeTrigger || 'ablative'}
+                            </span>
+                          </span>
+                        )}
+                        {/* Regular sandwich (not ablative) */}
+                        {analysis.inflectionReason.isInSandwich && !analysis.inflectionReason.isAblative && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded cursor-help"
                             title={`Sandwich: ${SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.english || 'adposition'} - word is inside an adpositional phrase`}
@@ -444,7 +487,7 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isErgative && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded cursor-help"
-                            title="Ergative: subject of transitive past tense verb"
+                            title={`Ergative: subject of past tense transitive verb${analysis.inflectionReason.ergativeVerb ? ` (${analysis.inflectionReason.ergativeVerb})` : ''}`}
                           >
                             {REASON_ICONS.ergative} ergative
                           </span>

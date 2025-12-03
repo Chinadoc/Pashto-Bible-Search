@@ -403,28 +403,122 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
   return { isInSandwich: false, sandwichType: null };
 }
 
-// Detect ergative (subject of past transitive)
-function detectErgative(word: string, context: string): boolean {
-  if (!context) return false;
+// Common past tense transitive verb endings
+// Based on https://grammar.lingdocs.com/verbs/
+const PAST_TRANSITIVE_ENDINGS = [
+  // Simple past (3rd person)
+  'وکړ', 'وکړه', 'کړ', 'کړه', 'کړل', 'کړله', 'کړلو', 'کړلې',
+  // Common transitive verbs in past
+  'وخوړ', 'وخوړه', 'ولید', 'ولیده', 'ولیدل', 'ولیدله',
+  'وویل', 'وویله', 'وویلو', 'وویلې',
+  'واخیست', 'واخیسته', 'واخیستل',
+  'وکړ', 'وکړه', 'وکړل', 'کړي', 'کړې',
+  // Past tense person endings
+  'لم', 'لې', 'ل', 'له', 'لو', 'لئ',
+];
+
+// Common transitive verb roots (without prefix)
+const TRANSITIVE_ROOTS = [
+  'کول', 'کړ', 'خوړ', 'لید', 'ویل', 'اخیست', 'ورکړ', 'راوړ', 'بوت', 'ایښود',
+  'لیک', 'وژ', 'پېژن', 'خرڅ', 'پلور', 'اور', 'لوست', 'زده کړ',
+];
+
+// Detect ergative (subject of past transitive) - Enhanced version
+// Based on https://grammar.lingdocs.com/inflection/inflection-intro/
+function detectErgative(word: string, context: string): { isErgative: boolean; verb: string | null } {
+  if (!context) return { isErgative: false, verb: null };
   
   const words = context.split(/\s+/);
-  const wordIndex = words.findIndex(w => w.includes(word));
+  const wordIndex = words.findIndex(w => w.includes(word) || w === word);
   
-  if (wordIndex === -1) return false;
+  if (wordIndex === -1) return { isErgative: false, verb: null };
   
-  // Look for past tense verb markers after this word
-  const PAST_MARKERS = ['ل', 'لو', 'له', 'لې', 'لم', 'لئ'];
-  
-  for (let i = wordIndex + 1; i < words.length; i++) {
-    const potentialVerb = words[i];
-    for (const marker of PAST_MARKERS) {
-      if (potentialVerb.endsWith(marker) && potentialVerb.length > marker.length + 2) {
-        return true;
+  // Look for past tense transitive verb after this word
+  for (let i = wordIndex + 1; i < Math.min(wordIndex + 8, words.length); i++) {
+    const potentialVerb = words[i].replace(/[،.؟!؛:«»\-]/g, '');
+    
+    // Check for specific past transitive patterns
+    for (const ending of PAST_TRANSITIVE_ENDINGS) {
+      if (potentialVerb.endsWith(ending) && potentialVerb.length >= ending.length + 1) {
+        return { isErgative: true, verb: potentialVerb };
+      }
+    }
+    
+    // Check for transitive roots with past markers
+    for (const root of TRANSITIVE_ROOTS) {
+      if (potentialVerb.includes(root)) {
+        // Check if it looks like past tense (has و prefix or past endings)
+        if (potentialVerb.startsWith('و') || 
+            potentialVerb.endsWith('ل') || 
+            potentialVerb.endsWith('له') ||
+            potentialVerb.endsWith('لو')) {
+          return { isErgative: true, verb: potentialVerb };
+        }
       }
     }
   }
   
+  return { isErgative: false, verb: null };
+}
+
+// Detect vocative (direct address)
+// Based on https://grammar.lingdocs.com/inflection/vocative/
+const VOCATIVE_PARTICLES = ['ای', 'او', 'یا'];
+
+function detectVocative(word: string, context: string): boolean {
+  if (!context) return false;
+  
+  const words = context.split(/\s+/);
+  const wordIndex = words.findIndex(w => w.includes(word) || w === word);
+  
+  if (wordIndex === -1) return false;
+  
+  // Check if preceded by vocative particle
+  if (wordIndex > 0) {
+    const prevWord = words[wordIndex - 1].replace(/[،.؟!؛:«»\-]/g, '');
+    if (VOCATIVE_PARTICLES.includes(prevWord)) {
+      return true;
+    }
+  }
+  
+  // Check for vocative at start of direct speech (after ! or at start)
+  if (wordIndex === 0 && context.includes('!')) {
+    return true;
+  }
+  
   return false;
+}
+
+// Detect mayonnaise/ablative (special 2nd inflection)
+// Based on https://grammar.lingdocs.com/inflection/mayonnaise/
+// Words that trigger ablative: له (from), تر (than/until), بې (without), پرته (except)
+const ABLATIVE_TRIGGERS = ['له', 'تر', 'بې', 'پرته'];
+
+function detectAblative(word: string, context: string): { isAblative: boolean; trigger: string | null } {
+  if (!context) return { isAblative: false, trigger: null };
+  
+  const words = context.split(/\s+/);
+  const wordIndex = words.findIndex(w => w.includes(word) || w === word);
+  
+  if (wordIndex === -1) return { isAblative: false, trigger: null };
+  
+  // Check if preceded by ablative trigger
+  if (wordIndex > 0) {
+    const prevWord = words[wordIndex - 1].replace(/[،.؟!؛:«»\-]/g, '');
+    if (ABLATIVE_TRIGGERS.includes(prevWord)) {
+      return { isAblative: true, trigger: prevWord };
+    }
+  }
+  
+  // Also check 2 words back (for "له X نه" pattern)
+  if (wordIndex > 1) {
+    const prevPrevWord = words[wordIndex - 2].replace(/[،.؟!؛:«»\-]/g, '');
+    if (ABLATIVE_TRIGGERS.includes(prevPrevWord)) {
+      return { isAblative: true, trigger: prevPrevWord };
+    }
+  }
+  
+  return { isAblative: false, trigger: null };
 }
 
 // Map D1 person values to display format
@@ -939,7 +1033,9 @@ export async function GET(request: NextRequest) {
     // 5. If no inflection reason found, try to detect from context
     if (context && result.pos === 'noun' && !result.inflectionReason) {
       const sandwichInfo = detectSandwich(cleanWord, context);
-      const isErgative = detectErgative(cleanWord, context);
+      const ergativeInfo = detectErgative(cleanWord, context);
+      const vocativeDetected = detectVocative(cleanWord, context);
+      const ablativeInfo = detectAblative(cleanWord, context);
       
       // Better plural detection:
       // - Direct plural: ان (animate), ونه (inanimate), یان (animate with ی)
@@ -955,13 +1051,22 @@ export async function GET(request: NextRequest) {
         isPlural = true; // Highly likely plural in 2nd inflection
       }
       
-      if (sandwichInfo.isInSandwich || isErgative || isPlural) {
+      // Determine if word is in a sandwich (including ablative triggers)
+      const isInSandwich = sandwichInfo.isInSandwich || ablativeInfo.isAblative;
+      const sandwichType = sandwichInfo.sandwichType || (ablativeInfo.isAblative ? `ablative_${ablativeInfo.trigger}` : null);
+      
+      if (isInSandwich || ergativeInfo.isErgative || isPlural || vocativeDetected) {
         result.inflectionReason = {
           isPlural,
-          isInSandwich: sandwichInfo.isInSandwich,
-          sandwichType: sandwichInfo.sandwichType,
-          isErgative,
-        };
+          isInSandwich,
+          sandwichType,
+          isErgative: ergativeInfo.isErgative,
+          // Extended info for display
+          ergativeVerb: ergativeInfo.verb,
+          isVocative: vocativeDetected,
+          isAblative: ablativeInfo.isAblative,
+          ablativeTrigger: ablativeInfo.trigger,
+        } as any; // Extended type
         result.confidence = Math.min(result.confidence, 0.6);
       }
     }
