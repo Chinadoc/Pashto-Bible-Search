@@ -404,7 +404,8 @@ function SearchControls({
             onChange={(e) => setScope(e.target.value as Scope)}
             className="control-select"
           >
-            <option value="all">All Bible</option>
+            <option value="everything">🌐 All (Bible + Videos + Poems)</option>
+            <option value="all">📖 Bible Only</option>
             <option value="ot">Old Testament</option>
             <option value="nt">New Testament</option>
             <option value="videos">🎬 Videos Only</option>
@@ -1384,19 +1385,23 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       // Handle different scope types
       const isVideosOnlyScope = scope === 'videos';
       const isPoemsOnlyScope = scope === 'poems';
+      const isEverythingScope = scope === 'everything';
+      const includeBible = !isVideosOnlyScope && !isPoemsOnlyScope;
+      const includeVideos = isVideosOnlyScope || isEverythingScope || scope === 'all' || scope === 'ot' || scope === 'nt';
+      const includePoems = isPoemsOnlyScope || isEverythingScope;
       
-      // Only set Bible results if not filtering to videos/poems only
-      if (!isVideosOnlyScope && !isPoemsOnlyScope) {
+      // Set Bible results if included
+      if (includeBible) {
         setResults(searchData.results || []);
       } else {
         setResults([]);
       }
       
-      // Search videos (always for videos scope, or as supplemental for other scopes)
-      if (isVideosOnlyScope || scope === 'all' || scope === 'ot' || scope === 'nt') {
+      // Search videos if included
+      if (includeVideos) {
         try {
           const videoResponse = await fetch(
-            `${CLOUDFLARE_WORKER_URL}/api/search-videos?q=${encodeURIComponent(normalizedQuery)}&limit=${isVideosOnlyScope ? 50 : 10}`
+            `${CLOUDFLARE_WORKER_URL}/api/search-videos?q=${encodeURIComponent(normalizedQuery)}&limit=${isVideosOnlyScope ? 50 : 20}`
           );
           if (videoResponse.ok) {
             const videoData = await videoResponse.json();
@@ -1411,11 +1416,10 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         setVideoResults([]);
       }
       
-      // Search poems if poems scope or all scope
-      if (isPoemsOnlyScope) {
-        // For poems-only scope, we'll search through the loaded poems data
-        // This is handled in the UI since poems are already loaded in state
-        console.log('DEBUG: Poems-only scope - filtering from loaded poems');
+      // Note: Poems are handled in UI since they're pre-loaded in state
+      // The poems panel will filter based on the search query when scope includes poems
+      if (includePoems) {
+        console.log('DEBUG: Scope includes poems - poems panel will filter');
       }
       
       setRelatedForms(searchData.relatedForms ? {

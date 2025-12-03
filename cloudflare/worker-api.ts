@@ -4000,6 +4000,61 @@ export default {
       }
     }
 
+    // Import Yousafzai verses from scraper
+    if (path === '/api/import-yousafzai-verses' && request.method === 'POST') {
+      try {
+        const body = await request.json() as { verses: Array<{
+          book: string;
+          chapter: number;
+          verse: number;
+          text: string;
+          testament: 'OT' | 'NT';
+          audio_r2_key?: string;
+        }> };
+
+        if (!body.verses || !Array.isArray(body.verses) || body.verses.length === 0) {
+          return errorResponse('Missing or empty verses array', 400);
+        }
+
+        // Create table if not exists
+        await env.DB.prepare(`
+          CREATE TABLE IF NOT EXISTS verses_yousafzai (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book TEXT NOT NULL,
+            chapter INTEGER NOT NULL,
+            verse INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            testament TEXT DEFAULT 'OT',
+            audio_r2_key TEXT,
+            UNIQUE(book, chapter, verse)
+          )
+        `).run();
+
+        // Insert or replace verses
+        let inserted = 0;
+        for (const v of body.verses) {
+          try {
+            await env.DB.prepare(`
+              INSERT OR REPLACE INTO verses_yousafzai (book, chapter, verse, text, testament, audio_r2_key)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `).bind(v.book, v.chapter, v.verse, v.text, v.testament, v.audio_r2_key || null).run();
+            inserted++;
+          } catch (e: any) {
+            console.error(`Failed to insert verse ${v.book} ${v.chapter}:${v.verse}:`, e.message);
+          }
+        }
+
+        return jsonResponse({
+          success: true,
+          inserted,
+          total: body.verses.length,
+          message: `Imported ${inserted} of ${body.verses.length} Yousafzai verses`
+        });
+      } catch (error: any) {
+        return errorResponse(`Failed to import verses: ${error.message}`, 500);
+      }
+    }
+
     if (path.startsWith('/api/audio/url/') && request.method === 'GET') {
       const r2Key = path.replace('/api/audio/url/', '');
       return getAudioUrl(env, decodeURIComponent(r2Key));
