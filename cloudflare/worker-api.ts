@@ -1301,16 +1301,33 @@ async function getInflectionReasons(
 }
 
 // Common Pashto sandwich patterns for inflection detection
+// Based on https://grammar.lingdocs.com/sandwiches/sandwiches/
 const SANDWICH_PATTERNS = [
-  { start: 'په', end: 'کې', type: 'locative_in' },
-  { start: 'په', end: 'باندې', type: 'locative_on' },
-  { start: 'په', end: 'سره', type: 'comitative' },
-  { start: 'د', end: null, type: 'genitive' },
-  { start: 'له', end: 'سره', type: 'comitative_from' },
-  { start: 'له', end: 'نه', type: 'ablative' },
-  { start: 'له', end: 'څخه', type: 'ablative_from' },
-  { start: null, end: 'ته', type: 'dative' },
-  { start: 'تر', end: 'پورې', type: 'terminative' },
+  // په sandwiches
+  { start: 'په', end: 'کې', type: 'په...کې' },
+  { start: 'په', end: 'کی', type: 'په...کی' },
+  { start: 'په', end: 'باندې', type: 'په...باندې' },
+  { start: 'په', end: 'سره', type: 'په...سره' },
+  { start: 'په', end: 'هکله', type: 'په...هکله' },
+  { start: 'په', end: 'وخت', type: 'په...وخت' },
+  { start: 'په', end: 'ځای', type: 'په...ځای' },
+  // له sandwiches
+  { start: 'له', end: 'سره', type: 'له...سره' },
+  { start: 'له', end: 'نه', type: 'له...نه' },
+  { start: 'له', end: 'څخه', type: 'له...څخه' },
+  { start: 'له', end: 'پرته', type: 'له...پرته' },
+  { start: 'له', end: 'وروسته', type: 'له...وروسته' },
+  { start: 'له', end: 'مخکې', type: 'له...مخکې' },
+  // تر sandwiches
+  { start: 'تر', end: 'پورې', type: 'تر...پورې' },
+  { start: 'تر', end: null, type: 'تر' },
+  // One-sided sandwiches
+  { start: 'د', end: null, type: 'د' },
+  { start: null, end: 'ته', type: 'ته' },
+  { start: null, end: 'باندې', type: 'باندې' },
+  // Ablative triggers (always 2nd inflection)
+  { start: 'بې', end: null, type: 'بې' },
+  { start: 'پرته', end: null, type: 'پرته' },
 ];
 
 // Plural/oblique noun endings
@@ -1377,38 +1394,73 @@ async function analyzeInflections(
       if (!isInflected) continue;
 
       // Check if word is in a sandwich construction
+      // Note: Pashto sandwiches can have words between the marker and the noun!
+      // e.g., "د هغو مالي مرستو" = "of those financial helps" (د is 3 words before مرستو)
       let isInSandwich = false;
       let sandwichType: string | null = null;
 
+      // First, check for TWO-SIDED sandwiches (higher priority - more specific)
       for (const pattern of SANDWICH_PATTERNS) {
         if (pattern.start && pattern.end) {
-          // Look for start before and end after current word
-          for (let j = 0; j < i; j++) {
+          // Look for start up to 5 words before and end up to 5 words after
+          let foundStart = false;
+          for (let j = Math.max(0, i - 5); j < i; j++) {
             if (words[j] === pattern.start) {
-              for (let k = i + 1; k < words.length && k < i + 6; k++) {
-                if (words[k] === pattern.end) {
-                  isInSandwich = true;
-                  sandwichType = pattern.type;
-                  break;
-                }
+              foundStart = true;
+              break;
+            }
+          }
+          if (foundStart) {
+            for (let k = i + 1; k < Math.min(words.length, i + 6); k++) {
+              if (words[k] === pattern.end) {
+                isInSandwich = true;
+                sandwichType = pattern.type;
+                break;
               }
             }
-            if (isInSandwich) break;
-          }
-        } else if (pattern.start && !pattern.end) {
-          // Word follows pattern start (e.g., "د X")
-          if (i > 0 && words[i - 1] === pattern.start) {
-            isInSandwich = true;
-            sandwichType = pattern.type;
-          }
-        } else if (!pattern.start && pattern.end) {
-          // Word precedes pattern end (e.g., "X ته")
-          if (i < words.length - 1 && words[i + 1] === pattern.end) {
-            isInSandwich = true;
-            sandwichType = pattern.type;
           }
         }
         if (isInSandwich) break;
+      }
+
+      // Then check for ONE-SIDED sandwiches if no two-sided found
+      if (!isInSandwich) {
+        for (const pattern of SANDWICH_PATTERNS) {
+          if (pattern.start && !pattern.end) {
+            // Word follows pattern start (e.g., "د X" or "د ... X")
+            // Check up to 5 words before for the start marker
+            for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+              if (words[j] === pattern.start) {
+                isInSandwich = true;
+                sandwichType = pattern.type;
+                break;
+              }
+              // Stop if we hit another sandwich starter (nested sandwiches)
+              if (SANDWICH_PATTERNS.some(p => p.start === words[j] && p.start !== pattern.start)) {
+                break;
+              }
+            }
+          } else if (!pattern.start && pattern.end) {
+            // Word precedes pattern end (e.g., "X ته")
+            // Check a few words after
+            for (let k = i + 1; k < Math.min(words.length, i + 4); k++) {
+              if (words[k] === pattern.end) {
+                isInSandwich = true;
+                sandwichType = pattern.type;
+                break;
+              }
+            }
+          }
+          if (isInSandwich) break;
+        }
+      }
+
+      // Additional plural detection: if word ends in و/ي and is in a sandwich,
+      // it's likely a 2nd inflection plural (e.g., مرستو, مرستي)
+      if (isInSandwich && !isPlural) {
+        if (word.endsWith('و') || word.endsWith('ي')) {
+          isPlural = true;
+        }
       }
 
       // Check if word is subject of transitive past tense verb
@@ -1443,18 +1495,8 @@ async function analyzeInflections(
         reasons.push('plural (جمع)');
       }
       if (isInSandwich) {
-        const sandwichNames: Record<string, string> = {
-          'locative_in': 'په...کې (in)',
-          'locative_on': 'په...باندې (on)',
-          'comitative': 'په...سره (with)',
-          'genitive': 'د (of)',
-          'comitative_from': 'له...سره (with)',
-          'ablative': 'له...نه (from)',
-          'ablative_from': 'له...څخه (from)',
-          'dative': 'ته (to)',
-          'terminative': 'تر...پورې (until)',
-        };
-        reasons.push(`in sandwich: ${sandwichNames[sandwichType || ''] || sandwichType}`);
+        // sandwichType is now the Pashto pattern itself (e.g., 'د', 'په...کې')
+        reasons.push(`in sandwich: ${sandwichType || 'unknown'}`);
       }
       if (isSubjectTransitivePast && !isPlural && !isInSandwich) {
         reasons.push('subject of transitive past verb (ergative)');
@@ -1595,36 +1637,63 @@ async function populateInflectionReasons(
 
         if (!isInflected) continue;
 
-        // Check sandwich
+        // Check sandwich (look up to 5 words back for sandwich start)
         let isInSandwich = false;
         let sandwichType: string | null = null;
 
+        // First check two-sided sandwiches
         for (const pattern of SANDWICH_PATTERNS) {
           if (pattern.start && pattern.end) {
-            for (let j = 0; j < i; j++) {
+            let foundStart = false;
+            for (let j = Math.max(0, i - 5); j < i; j++) {
               if (words[j] === pattern.start) {
-                for (let k = i + 1; k < words.length && k < i + 6; k++) {
-                  if (words[k] === pattern.end) {
-                    isInSandwich = true;
-                    sandwichType = pattern.type;
-                    break;
-                  }
+                foundStart = true;
+                break;
+              }
+            }
+            if (foundStart) {
+              for (let k = i + 1; k < Math.min(words.length, i + 6); k++) {
+                if (words[k] === pattern.end) {
+                  isInSandwich = true;
+                  sandwichType = pattern.type;
+                  break;
                 }
               }
-              if (isInSandwich) break;
-            }
-          } else if (pattern.start && !pattern.end) {
-            if (i > 0 && words[i - 1] === pattern.start) {
-              isInSandwich = true;
-              sandwichType = pattern.type;
-            }
-          } else if (!pattern.start && pattern.end) {
-            if (i < words.length - 1 && words[i + 1] === pattern.end) {
-              isInSandwich = true;
-              sandwichType = pattern.type;
             }
           }
           if (isInSandwich) break;
+        }
+
+        // Then check one-sided sandwiches
+        if (!isInSandwich) {
+          for (const pattern of SANDWICH_PATTERNS) {
+            if (pattern.start && !pattern.end) {
+              // Check up to 5 words before
+              for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+                if (words[j] === pattern.start) {
+                  isInSandwich = true;
+                  sandwichType = pattern.type;
+                  break;
+                }
+              }
+            } else if (!pattern.start && pattern.end) {
+              for (let k = i + 1; k < Math.min(words.length, i + 4); k++) {
+                if (words[k] === pattern.end) {
+                  isInSandwich = true;
+                  sandwichType = pattern.type;
+                  break;
+                }
+              }
+            }
+            if (isInSandwich) break;
+          }
+        }
+
+        // Additional plural detection: if word ends in و/ي and is in a sandwich
+        if (isInSandwich && !isPlural) {
+          if (word.endsWith('و') || word.endsWith('ي')) {
+            isPlural = true;
+          }
         }
 
         // Check ergative
