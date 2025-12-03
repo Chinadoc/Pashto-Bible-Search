@@ -1932,39 +1932,47 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       {/* Main Content */}
       {activeMainTab === 'search' && (
         <>
-          {/* Translation Tabs */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
-              <button
-                onClick={() => setActiveTranslation('afghan2023')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'afghan2023'
-                  ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-              >
-                🇦🇫 Afghan 2023
-              </button>
-              <button
-                onClick={() => setActiveTranslation('yousafzai2019')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'yousafzai2019'
-                  ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-              >
-                🕌 Yousafzai 2019
-              </button>
+          {/* Translation Tabs - Only show when Bible is in scope */}
+          {(scope === 'everything' || scope === 'all' || scope === 'ot' || scope === 'nt') && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
+                <button
+                  onClick={() => setActiveTranslation('afghan2023')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'afghan2023'
+                    ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                >
+                  🇦🇫 Afghan 2023
+                </button>
+                <button
+                  onClick={() => setActiveTranslation('yousafzai2019')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'yousafzai2019'
+                    ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                >
+                  🕌 Yousafzai 2019
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Translation Indicator */}
+          {/* Scope Indicator */}
           <div className="mb-4 text-center">
-            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${activeTranslation === 'afghan2023'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+              scope === 'videos' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+              scope === 'poems' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300' :
+              scope === 'everything' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+              activeTranslation === 'afghan2023' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+              'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
               }`}>
-              {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+              {scope === 'videos' ? '🎬' : scope === 'poems' ? '📜' : scope === 'everything' ? '🌐' : activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
               <span className="ml-2">
-                {activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
+                {scope === 'videos' ? 'Searching Videos Only' : 
+                 scope === 'poems' ? 'Searching Poems Only' :
+                 scope === 'everything' ? 'Searching All (Bible + Videos + Poems)' :
+                 activeTranslation === 'afghan2023' ? 'Afghan 2023 Translation' : 'Yousafzai 2019 Translation'}
               </span>
             </div>
           </div>
@@ -2072,17 +2080,29 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Results with Inline Filtering */}
             <div className="lg:col-span-3">
-              {/* Translation Indicator in Results */}
-              <div className="mb-3">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${activeTranslation === 'afghan2023'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-                  }`}>
-                  {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
-                  <span className="ml-2">
-                    {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+              {/* Scope/Translation Indicator in Results */}
+              <div className="mb-3 flex flex-wrap gap-2 items-center">
+                {(scope === 'videos' || scope === 'everything') && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                    🎬 Videos
                   </span>
-                </div>
+                )}
+                {(scope === 'poems' || scope === 'everything') && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
+                    📜 Poems
+                  </span>
+                )}
+                {(scope === 'everything' || scope === 'all' || scope === 'ot' || scope === 'nt') && (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${activeTranslation === 'afghan2023'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                    }`}>
+                    {activeTranslation === 'afghan2023' ? '🇦🇫' : '🕌'}
+                    <span className="ml-2">
+                      {activeTranslation === 'afghan2023' ? 'Afghan 2023' : 'Yousafzai 2019'}
+                    </span>
+                  </span>
+                )}
               </div>
 
               {/* Results Header */}
