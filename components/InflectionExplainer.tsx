@@ -90,8 +90,13 @@ const SANDWICH_LABELS: Record<string, { ps: string; en: string }> = {
 };
 
 // Helper to determine inflection level based on reasons
-// 1st inflection = ONE reason (plural OR sandwich OR ergative)
-// 2nd inflection = TWO+ reasons (e.g., plural AND sandwich)
+// Three possible reasons for inflection:
+// 1. Plural (جمع)
+// 2. Sandwich (adpositional phrase)
+// 3. Subject of transitive past tense verb (ergative)
+// 
+// 1st inflection = 1/3 reasons
+// 2nd inflection = 2/3 or 3/3 reasons
 function getInflectionLevel(inf: InflectedWord): { level: '1st' | '2nd'; reasonCount: number } {
   let reasonCount = 0;
   if (inf.isPlural) reasonCount++;
@@ -260,19 +265,20 @@ export default function InflectionExplainer({
                   )}
                 </div>
 
-                {/* Inflection level - determined by number of reasons */}
+                {/* Inflection level - determined by number of reasons (1/3, 2/3, or 3/3) */}
                 {hasReasons && (
                   <span 
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${
                       level === '2nd' 
                         ? 'bg-indigo-200 dark:bg-indigo-800/70 text-indigo-800 dark:text-indigo-200' 
                         : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
                     }`}
                     title={level === '2nd' 
-                      ? 'Double inflection: 2 reasons combine (button pressed all the way down)' 
-                      : 'Single inflection: 1 reason (button pressed halfway)'}
+                      ? `Double inflection: ${reasonCount}/3 reasons combine` 
+                      : `Single inflection: ${reasonCount}/3 reason`}
                   >
                     {level} inflection
+                    <span className="opacity-70">({reasonCount}/3)</span>
                   </span>
                 )}
 
@@ -282,7 +288,7 @@ export default function InflectionExplainer({
                     {inf.isInSandwich && (
                       <span 
                         className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded text-xs cursor-help"
-                        title={`Sandwich: ${SANDWICH_LABELS[inf.sandwichType || '']?.en || 'adposition'} - word is inside an adpositional phrase`}
+                        title="Sandwich: word is inside an adpositional phrase"
                       >
                         {REASON_ICONS.sandwich.icon}
                         <span dir="rtl" className="font-medium">
@@ -291,12 +297,6 @@ export default function InflectionExplainer({
                             ? inf.sandwichType
                             : (SANDWICH_LABELS[inf.sandwichType || '']?.ps || inf.sandwichType || 'sandwich')}
                         </span>
-                        {/* Show English meaning */}
-                        {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]?.en && (
-                          <span className="text-amber-600 dark:text-amber-400">
-                            ({SANDWICH_LABELS[inf.sandwichType].en})
-                          </span>
-                        )}
                       </span>
                     )}
 

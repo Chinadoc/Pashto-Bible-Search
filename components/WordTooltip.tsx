@@ -113,23 +113,34 @@ const INFLECTION_STATE_INFO: Record<string, { label: string; description: string
 };
 
 // Helper to determine inflection level based on reasons
+// Three possible reasons for inflection:
+// 1. Plural (جمع)
+// 2. Sandwich (adpositional phrase)
+// 3. Subject of transitive past tense verb (ergative)
+//
+// 1st inflection = 1/3 reasons
+// 2nd inflection = 2/3 or 3/3 reasons
 // Vocative is special (not combined with others)
-// Ablative triggers 2nd inflection by itself
-function getInflectionLevelFromReasons(reason: WordAnalysis['inflectionReason']): '1st' | '2nd' | 'vocative' | null {
-  if (!reason) return null;
+// Ablative triggers 2nd inflection by itself (counts as 2)
+function getInflectionLevelFromReasons(reason: WordAnalysis['inflectionReason']): { level: '1st' | '2nd' | 'vocative' | null; count: number } {
+  if (!reason) return { level: null, count: 0 };
   
   // Vocative is special - it's its own category
-  if (reason.isVocative) return 'vocative';
-  
-  // Ablative (mayo) always causes 2nd inflection by itself
-  if (reason.isAblative) return '2nd';
+  if (reason.isVocative) return { level: 'vocative', count: 1 };
   
   let count = 0;
   if (reason.isPlural) count++;
   if (reason.isInSandwich) count++;
   if (reason.isErgative) count++;
-  if (count === 0) return null;
-  return count >= 2 ? '2nd' : '1st';
+  
+  // Ablative (mayo) always causes 2nd inflection - counts as 2 reasons
+  if (reason.isAblative) {
+    count = Math.max(count, 2);
+  }
+  
+  if (count === 0) return { level: null, count: 0 };
+  if (count >= 2) return { level: '2nd', count };
+  return { level: '1st', count };
 }
 
 // LingDocs sandwich names
@@ -405,18 +416,19 @@ export default function WordTooltip({
                   <div className="flex flex-wrap gap-1.5 items-center" dir="ltr">
                     {/* Determine inflection level from reasons (more accurate than inflectionState) */}
                     {(() => {
-                      const level = getInflectionLevelFromReasons(analysis.inflectionReason);
+                      const { level, count } = getInflectionLevelFromReasons(analysis.inflectionReason);
                       if (level) {
                         return (
                           <span 
-                            className={`px-2 py-0.5 rounded text-xs font-medium cursor-help ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-help ${
                               level === '2nd'
                                 ? 'bg-indigo-200 dark:bg-indigo-800/70 text-indigo-800 dark:text-indigo-200'
                                 : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
                             }`}
-                            title={INFLECTION_STATE_INFO[level]?.description || ''}
+                            title={`${level} inflection: ${count}/3 reason${count !== 1 ? 's' : ''}`}
                           >
                             {level} inflection
+                            <span className="opacity-70">({count}/3)</span>
                           </span>
                         );
                       }
@@ -469,17 +481,12 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isInSandwich && !analysis.inflectionReason.isAblative && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded cursor-help"
-                            title={`Sandwich: ${analysis.inflectionReason.sandwichMeaning || 'adposition'} - word is inside an adpositional phrase`}
+                            title="Sandwich: word is inside an adpositional phrase"
                           >
                             {REASON_ICONS.sandwich}
                             <span className="font-medium" dir="rtl">
                               {analysis.inflectionReason.sandwichType || 'sandwich'}
                             </span>
-                            {analysis.inflectionReason.sandwichMeaning && (
-                              <span className="text-amber-600 dark:text-amber-400 text-xs">
-                                ({analysis.inflectionReason.sandwichMeaning})
-                              </span>
-                            )}
                           </span>
                         )}
                         {analysis.inflectionReason.isPlural && (
