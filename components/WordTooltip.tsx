@@ -101,9 +101,20 @@ const REASON_ICONS = {
 // LingDocs-style inflection state labels with tooltips
 const INFLECTION_STATE_INFO: Record<string, { label: string; description: string }> = {
   'plain': { label: 'Plain', description: 'Base/dictionary form - no inflection applied' },
-  '1st': { label: '1st Inflection', description: 'First level: feminine singular oblique OR masculine plural nominative' },
-  '2nd': { label: '2nd Inflection', description: 'Second level: used with sandwiches (adpositions) OR plural oblique' },
+  '1st': { label: '1st Inflection', description: 'One reason: plural OR sandwich OR ergative (button half-pressed)' },
+  '2nd': { label: '2nd Inflection', description: 'Two reasons: e.g. plural + sandwich (button fully pressed)' },
 };
+
+// Helper to determine inflection level based on reasons
+function getInflectionLevelFromReasons(reason: WordAnalysis['inflectionReason']): '1st' | '2nd' | null {
+  if (!reason) return null;
+  let count = 0;
+  if (reason.isPlural) count++;
+  if (reason.isInSandwich) count++;
+  if (reason.isErgative) count++;
+  if (count === 0) return null;
+  return count >= 2 ? '2nd' : '1st';
+}
 
 // LingDocs sandwich names
 const SANDWICH_DISPLAY: Record<string, { pashto: string; english: string; short: string }> = {
@@ -374,28 +385,39 @@ export default function WordTooltip({
               {/* Noun-specific info - Compact LingDocs style */}
               {analysis.pos === 'noun' && (
                 <div className="pt-1 space-y-1.5">
-                  {/* Inflection state badge with tooltip */}
+                  {/* Inflection level + gender badges */}
                   <div className="flex flex-wrap gap-1.5 items-center" dir="ltr">
-                    {analysis.inflectionState && analysis.inflectionState !== 'plain' && (
-                      <span 
-                        className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs font-medium cursor-help"
-                        title={INFLECTION_STATE_INFO[analysis.inflectionState]?.description || ''}
-                      >
-                        {INFLECTION_STATE_INFO[analysis.inflectionState]?.label || `${analysis.inflectionState} inflection`}
-                      </span>
-                    )}
+                    {/* Determine inflection level from reasons (more accurate than inflectionState) */}
+                    {(() => {
+                      const level = getInflectionLevelFromReasons(analysis.inflectionReason);
+                      if (level) {
+                        return (
+                          <span 
+                            className={`px-2 py-0.5 rounded text-xs font-medium cursor-help ${
+                              level === '2nd'
+                                ? 'bg-indigo-200 dark:bg-indigo-800/70 text-indigo-800 dark:text-indigo-200'
+                                : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                            }`}
+                            title={INFLECTION_STATE_INFO[level]?.description || ''}
+                          >
+                            {level} inflection
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                     {analysis.gender && (
                       <span className={`px-1.5 py-0.5 rounded text-xs ${
                         analysis.gender === 'feminine' 
                           ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
                           : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}>
-                        {analysis.gender === 'feminine' ? '♀' : '♂'}
+                        {analysis.gender === 'feminine' ? '♀ fem' : '♂ masc'}
                       </span>
                     )}
                   </div>
                   
-                  {/* Inflection reasons - LingDocs style */}
+                  {/* Inflection reasons - ALWAYS show all reasons */}
                   {analysis.inflectionReason && (analysis.inflectionReason.isPlural || analysis.inflectionReason.isInSandwich || analysis.inflectionReason.isErgative) && (
                     <div dir="ltr" className="text-xs">
                       <span className="text-gray-400">Why: </span>
@@ -403,7 +425,7 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isInSandwich && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded cursor-help"
-                            title={`In a sandwich adposition: ${SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.english || 'adpositional phrase'}`}
+                            title={`Sandwich: ${SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.english || 'adposition'} - word is inside an adpositional phrase`}
                           >
                             {REASON_ICONS.sandwich}
                             <span className="font-medium" dir="rtl">
@@ -414,7 +436,7 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isPlural && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded cursor-help"
-                            title="Plural form - more than one"
+                            title="Plural: more than one"
                           >
                             {REASON_ICONS.plural} plural
                           </span>
@@ -422,7 +444,7 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isErgative && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded cursor-help"
-                            title="Ergative case: subject of a transitive verb in past tense"
+                            title="Ergative: subject of transitive past tense verb"
                           >
                             {REASON_ICONS.ergative} ergative
                           </span>

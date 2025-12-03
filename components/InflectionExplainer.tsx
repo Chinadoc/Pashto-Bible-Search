@@ -62,18 +62,21 @@ const SANDWICH_LABELS: Record<string, { ps: string; en: string }> = {
   'terminative': { ps: 'تر...پورې', en: 'until' },
 };
 
-// LingDocs inflection type names
-const INFLECTION_TYPE_LABELS: Record<string, string> = {
-  'oblique': '2nd inflection',
-  'oblique_singular': '2nd inflection (sing.)',
-  'oblique_plural': '2nd inflection (pl.)',
-  'oblique_plural_animate': '2nd inflection (pl. anim.)',
-  'oblique_plural_inanimate': '2nd inflection (pl. inanim.)',
-  'oblique_or_plural_feminine': '1st/2nd inflection (fem.)',
-  'direct_plural_animate': '1st inflection (pl. anim.)',
-  'direct_plural_inanimate': '1st inflection (pl. inanim.)',
-  'direct_plural': '1st inflection (pl.)',
-};
+// Helper to determine inflection level based on reasons
+// 1st inflection = ONE reason (plural OR sandwich OR ergative)
+// 2nd inflection = TWO+ reasons (e.g., plural AND sandwich)
+function getInflectionLevel(inf: InflectedWord): { level: '1st' | '2nd'; reasonCount: number } {
+  let reasonCount = 0;
+  if (inf.isPlural) reasonCount++;
+  if (inf.isInSandwich) reasonCount++;
+  if (inf.isSubjectTransitivePast) reasonCount++;
+  
+  // 2nd inflection requires 2+ reasons, otherwise 1st
+  return {
+    level: reasonCount >= 2 ? '2nd' : '1st',
+    reasonCount,
+  };
+}
 
 export default function InflectionExplainer({
   verseRef,
@@ -206,69 +209,85 @@ export default function InflectionExplainer({
             </p>
           )}
 
-          {relevantInflections.map((inf, idx) => (
-            <div
-              key={`${inf.word}-${inf.position}-${idx}`}
-              className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-sm"
-            >
-              {/* Word with base form */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span
-                  className="text-base font-semibold text-indigo-700 dark:text-indigo-300"
-                  style={{ direction: 'rtl' }}
-                >
-                  {inf.word}
-                </span>
-                {inf.baseWord && inf.baseWord !== inf.word && (
-                  <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                    ← <span style={{ direction: 'rtl' }} className="font-medium">{inf.baseWord}</span>
-                  </span>
-                )}
-              </div>
-
-              {/* Inflection type - LingDocs style */}
-              {inf.inflectionType && (
-                <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium">
-                  {INFLECTION_TYPE_LABELS[inf.inflectionType] || inf.inflectionType.replace(/_/g, ' ')}
-                </span>
-              )}
-
-              {/* Reasons - can have multiple */}
-              <div className="flex flex-wrap gap-1 items-center">
-                {inf.isInSandwich && (
-                  <span 
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded text-xs cursor-help"
-                    title={REASON_ICONS.sandwich.tip}
+          {relevantInflections.map((inf, idx) => {
+            const { level, reasonCount } = getInflectionLevel(inf);
+            const hasReasons = inf.isPlural || inf.isInSandwich || inf.isSubjectTransitivePast;
+            
+            return (
+              <div
+                key={`${inf.word}-${inf.position}-${idx}`}
+                className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-sm"
+              >
+                {/* Word with base form */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className="text-base font-semibold text-indigo-700 dark:text-indigo-300"
+                    style={{ direction: 'rtl' }}
                   >
-                    {REASON_ICONS.sandwich.icon}
-                    <span dir="rtl" className="font-medium">
-                      {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]
-                        ? SANDWICH_LABELS[inf.sandwichType].ps
-                        : 'sandwich'}
+                    {inf.word}
+                  </span>
+                  {inf.baseWord && inf.baseWord !== inf.word && (
+                    <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                      ← <span style={{ direction: 'rtl' }} className="font-medium">{inf.baseWord}</span>
                     </span>
+                  )}
+                </div>
+
+                {/* Inflection level - determined by number of reasons */}
+                {hasReasons && (
+                  <span 
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                      level === '2nd' 
+                        ? 'bg-indigo-200 dark:bg-indigo-800/70 text-indigo-800 dark:text-indigo-200' 
+                        : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                    }`}
+                    title={level === '2nd' 
+                      ? 'Double inflection: 2 reasons combine (button pressed all the way down)' 
+                      : 'Single inflection: 1 reason (button pressed halfway)'}
+                  >
+                    {level} inflection
                   </span>
                 )}
 
-                {inf.isPlural && (
-                  <span 
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs cursor-help"
-                    title={REASON_ICONS.plural.tip}
-                  >
-                    {REASON_ICONS.plural.icon} plural
-                  </span>
-                )}
+                {/* Reasons - ALWAYS show all that apply */}
+                {hasReasons && (
+                  <div className="flex flex-wrap gap-1 items-center">
+                    {inf.isInSandwich && (
+                      <span 
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded text-xs cursor-help"
+                        title={`Sandwich: ${SANDWICH_LABELS[inf.sandwichType || '']?.en || 'adposition'} - word is inside an adpositional phrase`}
+                      >
+                        {REASON_ICONS.sandwich.icon}
+                        <span dir="rtl" className="font-medium">
+                          {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]
+                            ? SANDWICH_LABELS[inf.sandwichType].ps
+                            : 'sandwich'}
+                        </span>
+                      </span>
+                    )}
 
-                {inf.isSubjectTransitivePast && (
-                  <span 
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs cursor-help"
-                    title={REASON_ICONS.ergative.tip}
-                  >
-                    {REASON_ICONS.ergative.icon} ergative
-                  </span>
+                    {inf.isPlural && (
+                      <span 
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs cursor-help"
+                        title="Plural: indicates more than one"
+                      >
+                        {REASON_ICONS.plural.icon} plural
+                      </span>
+                    )}
+
+                    {inf.isSubjectTransitivePast && (
+                      <span 
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs cursor-help"
+                        title="Ergative: subject of a transitive past tense verb"
+                      >
+                        {REASON_ICONS.ergative.icon} ergative
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Reference link */}
           <a

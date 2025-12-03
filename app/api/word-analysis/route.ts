@@ -940,7 +940,20 @@ export async function GET(request: NextRequest) {
     if (context && result.pos === 'noun' && !result.inflectionReason) {
       const sandwichInfo = detectSandwich(cleanWord, context);
       const isErgative = detectErgative(cleanWord, context);
-      const isPlural = cleanWord.endsWith('ان') || cleanWord.endsWith('ونه') || cleanWord.endsWith('یان');
+      
+      // Better plural detection:
+      // - Direct plural: ان (animate), ونه (inanimate), یان (animate with ی)
+      // - Oblique plural (2nd inflection): انو, ونو, یانو, و (fem plural)
+      const directPluralEndings = ['ان', 'ونه', 'یان', 'ې']; // ې can be fem plural or 1st infl
+      const obliquePluralEndings = ['انو', 'ونو', 'یانو', 'و']; // و is fem 2nd inflection plural
+      
+      let isPlural = directPluralEndings.some(e => cleanWord.endsWith(e)) ||
+                     obliquePluralEndings.some(e => cleanWord.endsWith(e));
+      
+      // Additional check: if word ends in و and is in a sandwich, likely 2nd inflection plural
+      if (cleanWord.endsWith('و') && sandwichInfo.isInSandwich) {
+        isPlural = true; // Highly likely plural in 2nd inflection
+      }
       
       if (sandwichInfo.isInSandwich || isErgative || isPlural) {
         result.inflectionReason = {
