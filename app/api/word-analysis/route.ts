@@ -403,28 +403,36 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
   return { isInSandwich: false, sandwichType: null };
 }
 
-// Common past tense transitive verb endings
-// Based on https://grammar.lingdocs.com/verbs/
-const PAST_TRANSITIVE_ENDINGS = [
-  // Simple past (3rd person)
-  'وکړ', 'وکړه', 'کړ', 'کړه', 'کړل', 'کړله', 'کړلو', 'کړلې',
-  // Common transitive verbs in past
-  'وخوړ', 'وخوړه', 'ولید', 'ولیده', 'ولیدل', 'ولیدله',
-  'وویل', 'وویله', 'وویلو', 'وویلې',
-  'واخیست', 'واخیسته', 'واخیستل',
-  'وکړ', 'وکړه', 'وکړل', 'کړي', 'کړې',
-  // Past tense person endings
-  'لم', 'لې', 'ل', 'له', 'لو', 'لئ',
+// Verbal nouns (infinitives) - these are NOT past tense verbs!
+// They look like "Xل" or "Xلو" but are gerunds/infinitives
+const VERBAL_NOUN_PATTERNS = [
+  'کولو', 'کول', 'لیدلو', 'لیدل', 'خوړلو', 'خوړل', 'ویلو', 'ویل',
+  'اخیستلو', 'اخیستل', 'راوړلو', 'راوړل', 'لیکلو', 'لیکل',
+  'وژلو', 'وژل', 'پېژندلو', 'پېژندل', 'ورکولو', 'ورکول',
 ];
 
-// Common transitive verb roots (without prefix)
-const TRANSITIVE_ROOTS = [
-  'کول', 'کړ', 'خوړ', 'لید', 'ویل', 'اخیست', 'ورکړ', 'راوړ', 'بوت', 'ایښود',
-  'لیک', 'وژ', 'پېژن', 'خرڅ', 'پلور', 'اور', 'لوست', 'زده کړ',
+// Past tense transitive verbs with و prefix (perfective)
+// These are actual past verbs, not verbal nouns
+const PAST_TRANSITIVE_VERBS = [
+  // کول conjugations (did/made)
+  'وکړ', 'وکړه', 'وکړم', 'وکړې', 'وکړو', 'وکړل', 'وکړله', 'وکړلو', 'وکړلې',
+  // خوړل conjugations (ate)
+  'وخوړ', 'وخوړه', 'وخوړم', 'وخوړې', 'وخوړو', 'وخوړل', 'وخوړله',
+  // لیدل conjugations (saw)
+  'ولید', 'ولیده', 'ولیدم', 'ولیدې', 'ولیدو', 'ولیدل', 'ولیدله',
+  // ویل conjugations (said)
+  'وویل', 'وویله', 'وویلم', 'وویلې', 'وویلو', 'وویلل',
+  // اخیستل conjugations (took)
+  'واخیست', 'واخیسته', 'واخیستم', 'واخیستل',
+  // لیکل (wrote)
+  'ولیکه', 'ولیکل', 'ولیکله',
+  // راوړل (brought)
+  'راوړ', 'راوړه', 'راوړل', 'راوړله',
 ];
 
-// Detect ergative (subject of past transitive) - Enhanced version
+// Detect ergative (subject of past transitive) - Fixed version
 // Based on https://grammar.lingdocs.com/inflection/inflection-intro/
+// IMPORTANT: Verbal nouns like کولو are NOT past tense verbs!
 function detectErgative(word: string, context: string): { isErgative: boolean; verb: string | null } {
   if (!context) return { isErgative: false, verb: null };
   
@@ -437,23 +445,15 @@ function detectErgative(word: string, context: string): { isErgative: boolean; v
   for (let i = wordIndex + 1; i < Math.min(wordIndex + 8, words.length); i++) {
     const potentialVerb = words[i].replace(/[،.؟!؛:«»\-]/g, '');
     
-    // Check for specific past transitive patterns
-    for (const ending of PAST_TRANSITIVE_ENDINGS) {
-      if (potentialVerb.endsWith(ending) && potentialVerb.length >= ending.length + 1) {
-        return { isErgative: true, verb: potentialVerb };
-      }
+    // Skip if this is a verbal noun (infinitive/gerund)
+    if (VERBAL_NOUN_PATTERNS.some(vn => potentialVerb === vn || potentialVerb.endsWith(vn))) {
+      continue;
     }
     
-    // Check for transitive roots with past markers
-    for (const root of TRANSITIVE_ROOTS) {
-      if (potentialVerb.includes(root)) {
-        // Check if it looks like past tense (has و prefix or past endings)
-        if (potentialVerb.startsWith('و') || 
-            potentialVerb.endsWith('ل') || 
-            potentialVerb.endsWith('له') ||
-            potentialVerb.endsWith('لو')) {
-          return { isErgative: true, verb: potentialVerb };
-        }
+    // Check for actual past transitive verbs (with و prefix)
+    for (const pastVerb of PAST_TRANSITIVE_VERBS) {
+      if (potentialVerb === pastVerb || potentialVerb.startsWith(pastVerb)) {
+        return { isErgative: true, verb: potentialVerb };
       }
     }
   }
