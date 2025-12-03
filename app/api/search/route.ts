@@ -1228,6 +1228,7 @@ export async function POST(request: NextRequest) {
 
       // Also fetch word info to get correct POS (noun vs verb)
       let wordPosGuess: 'verb' | 'noun' | 'adjective' | 'other' = 'other';
+      let baseWordFromInflection: string | null = null;
       try {
         const wordInfoResponse = await fetch(
           `${WORKER_URL}/api/word-frequency?word=${encodeURIComponent(searchQuery)}`
@@ -1246,6 +1247,30 @@ export async function POST(request: NextRequest) {
             else if (typeLower.includes('adj')) wordPosGuess = 'adjective';
           }
           console.log(`📚 Word POS for "${searchQuery}": ${wordPosGuess} (from: ${wordInfo?.pos || wordInfo?.word_type})`);
+        }
+        
+        // If not found, check if it's an inflected form using form-to-base
+        if (wordPosGuess === 'other' && includeRelated) {
+          const formToBaseResponse = await fetch(
+            `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
+          );
+          if (formToBaseResponse.ok) {
+            const formToBase = await formToBaseResponse.json();
+            if (formToBase?.found && formToBase?.base_word) {
+              baseWordFromInflection = formToBase.base_word;
+              // Get POS from the grammatical_info
+              const pos = formToBase.grammatical_info?.pos || '';
+              const posLower = pos.toLowerCase();
+              if (posLower.includes('n.') || posLower.includes('noun')) {
+                wordPosGuess = 'noun';
+              } else if (posLower.includes('v.') || posLower.includes('verb')) {
+                wordPosGuess = 'verb';
+              } else if (posLower.includes('adj')) {
+                wordPosGuess = 'adjective';
+              }
+              console.log(`📚 Word POS for "${searchQuery}" (via inflection): ${wordPosGuess}, base: ${baseWordFromInflection}`);
+            }
+          }
         }
       } catch (e) {
         console.warn('Failed to fetch word POS:', e);
@@ -1371,37 +1396,51 @@ export async function POST(request: NextRequest) {
         const nouns: any[] = [];
 
         // For nouns, fetch noun inflections from D1
-        if (wordPosGuess === 'noun') {
+        if (wordPosGuess === 'noun' || wordPosGuess === 'adjective') {
           try {
-            const nounResponse = await fetch(
-              `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
-            );
-            if (nounResponse.ok) {
-              const nounData = await nounResponse.json();
-              if (nounData?.found) {
-                // Add the base form
-                allForms.add(nounData.base_word);
-                nouns.push({
-                  form: searchQuery,
-                  label: 'noun form',
-                  pos: 'noun',
-                });
+            // Use baseWordFromInflection if we already have it, otherwise look it up
+            let baseWord = baseWordFromInflection;
+            
+            if (!baseWord) {
+              const nounResponse = await fetch(
+                `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(searchQuery)}`
+              );
+              if (nounResponse.ok) {
+                const nounData = await nounResponse.json();
+                if (nounData?.found) {
+                  baseWord = nounData.base_word;
+                } else if (nounData?.grammatical_info?.is_base) {
+                  // This IS the base form
+                  baseWord = searchQuery;
+                }
+              }
+            }
+            
+            if (baseWord) {
+              // Add the base form
+              allForms.add(baseWord);
+              nouns.push({
+                form: searchQuery,
+                label: searchQuery === baseWord ? 'base' : 'noun form',
+                pos: 'noun',
+              });
 
-                // Fetch all inflections for this noun
-                const inflectionsResponse = await fetch(
-                  `${WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(nounData.base_word)}`
-                );
-                if (inflectionsResponse.ok) {
-                  const inflData = await inflectionsResponse.json();
-                  if (inflData?.inflections) {
-                    for (const inf of inflData.inflections) {
-                      allForms.add(inf.form);
-                      nouns.push({
-                        form: inf.form,
-                        label: inf.label || 'inflection',
-                        pos: 'noun',
-                      });
-                    }
+              // Fetch all inflections for this noun
+              const inflectionsResponse = await fetch(
+                `${WORKER_URL}/api/noun-inflections?base=${encodeURIComponent(baseWord)}`
+              );
+              if (inflectionsResponse.ok) {
+                const inflData = await inflectionsResponse.json();
+                console.log(`📚 Noun inflections for "${baseWord}":`, inflData?.inflections?.length || 0, 'forms');
+                if (inflData?.inflections) {
+                  for (const inf of inflData.inflections) {
+                    allForms.add(inf.form);
+                    nouns.push({
+                      form: inf.form,
+                      label: inf.label || 'inflection',
+                      pos: 'noun',
+                      phonetics: inf.phonetics,
+                    });
                   }
                 }
               }
