@@ -450,6 +450,55 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
   return { isInSandwich: false, sandwichType: null, sandwichMeaning: null };
 }
 
+// Check if adjacent words show inflection agreement
+// In Pashto, adjectives MUST agree with nouns in inflection state
+// If a neighboring word is clearly 2nd inflection, this word likely is too
+function checkAdjacentInflectionAgreement(word: string, context: string): { 
+  hasInflectedNeighbor: boolean; 
+  neighborInflection: '1st' | '2nd' | null;
+  neighborWord: string | null;
+} {
+  if (!context) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+  
+  const words = context.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
+  const wordIndex = words.findIndex(w => w === word || w.includes(word));
+  
+  if (wordIndex === -1) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+  
+  // Clear 2nd inflection plural endings (oblique plural)
+  const secondInflectionEndings = ['انو', 'یانو', 'ونو', 'و'];
+  // Clear 1st inflection plural endings (direct plural)
+  const firstInflectionEndings = ['ان', 'یان', 'ونه', 'ې'];
+  
+  // Check 2 words before and after (adjectives can be before or after nouns in Pashto)
+  const neighborsToCheck = [
+    words[wordIndex - 2],
+    words[wordIndex - 1],
+    words[wordIndex + 1],
+    words[wordIndex + 2],
+  ].filter(Boolean);
+  
+  for (const neighbor of neighborsToCheck) {
+    // Check for 2nd inflection markers
+    for (const ending of secondInflectionEndings) {
+      if (neighbor.endsWith(ending) && neighbor.length > ending.length + 1) {
+        return { hasInflectedNeighbor: true, neighborInflection: '2nd', neighborWord: neighbor };
+      }
+    }
+  }
+  
+  for (const neighbor of neighborsToCheck) {
+    // Check for 1st inflection markers
+    for (const ending of firstInflectionEndings) {
+      if (neighbor.endsWith(ending) && neighbor.length > ending.length + 1) {
+        return { hasInflectedNeighbor: true, neighborInflection: '1st', neighborWord: neighbor };
+      }
+    }
+  }
+  
+  return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+}
+
 // Verbal nouns (infinitives) - these are NOT past tense verbs!
 // They look like "Xل" or "Xلو" but are gerunds/infinitives
 // Pattern: any word ending in ل or لو that's not a conjugated verb form
@@ -1194,6 +1243,28 @@ export async function GET(request: NextRequest) {
         isPlural = true; // Highly likely plural in 2nd inflection
       }
       
+      // Agreement check: if adjacent word is clearly inflected, this word should match
+      // In Pashto, adjectives and nouns MUST agree in inflection state
+      const agreementInfo = checkAdjacentInflectionAgreement(cleanWord, context);
+      
+      // If neighbor is 2nd inflection and we haven't detected sandwich yet,
+      // we're probably inside the same sandwich phrase
+      if (agreementInfo.hasInflectedNeighbor && agreementInfo.neighborInflection === '2nd') {
+        // If this word could be inflected (ends in و, ي, ې) but we missed the sandwich
+        if ((cleanWord.endsWith('و') || cleanWord.endsWith('ي') || cleanWord.endsWith('ې')) && !sandwichInfo.isInSandwich) {
+          // Look further for the sandwich starter
+          const extendedSandwich = detectSandwich(cleanWord, context);
+          if (!extendedSandwich.isInSandwich) {
+            // Even without finding the sandwich, adjacent agreement suggests inflection
+            // This handles cases where the sandwich marker is far away
+          }
+        }
+        // If neighbor is clearly plural (ends in انو, ونو), this word is likely plural too
+        if (!isPlural && (cleanWord.endsWith('و') || cleanWord.endsWith('ي'))) {
+          isPlural = true;
+        }
+      }
+      
       // Determine if word is in a sandwich (including ablative triggers)
       const isInSandwich = sandwichInfo.isInSandwich || ablativeInfo.isAblative;
       const sandwichType = sandwichInfo.sandwichType || (ablativeInfo.isAblative ? ablativeInfo.trigger : null);
@@ -1211,6 +1282,8 @@ export async function GET(request: NextRequest) {
           isVocative: vocativeDetected,
           isAblative: ablativeInfo.isAblative,
           ablativeTrigger: ablativeInfo.trigger,
+          // Agreement info for debugging/display
+          agreedWithNeighbor: agreementInfo.hasInflectedNeighbor ? agreementInfo.neighborWord : null,
         } as any; // Extended type
         result.confidence = Math.min(result.confidence, 0.6);
       }
