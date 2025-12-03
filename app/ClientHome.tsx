@@ -560,6 +560,7 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
 export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'search' | 'lexicon' | 'videos' | 'poems' }) {
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
+  const [videoResults, setVideoResults] = useState<any[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
@@ -1312,6 +1313,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     setError('');
     if (!preserveResults) {
       setResults([]);
+      setVideoResults([]);
       setCoverage([]);
       setRelatedForms(null);
 
@@ -1373,6 +1375,22 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       });
 
       setResults(searchData.results || []);
+      
+      // Also search videos for the same query
+      try {
+        const videoResponse = await fetch(
+          `${CLOUDFLARE_WORKER_URL}/api/search-videos?q=${encodeURIComponent(normalizedQuery)}&limit=10`
+        );
+        if (videoResponse.ok) {
+          const videoData = await videoResponse.json();
+          setVideoResults(videoData.results || []);
+          console.log(`DEBUG: Video search found ${videoData.totalMatches || 0} matches`);
+        }
+      } catch (videoErr) {
+        console.error('Video search error:', videoErr);
+        setVideoResults([]);
+      }
+      
       setRelatedForms(searchData.relatedForms ? {
         ...searchData.relatedForms,
         searchedForm: searchData.searchedForm,
@@ -1403,6 +1421,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       setError(err instanceof Error ? err.message : 'Search failed');
       if (!preserveResults) {
         setResults([]);
+        setVideoResults([]);
         setCoverage([]);
         setRelatedForms(null);
       }
@@ -2718,6 +2737,67 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   setAdjectiveFilters({ ...DEFAULT_ADJECTIVE_FILTER });
                 }}
               />
+              
+              {/* Video Results Section */}
+              {videoResults.length > 0 && (
+                <div className="mt-6 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200 mb-3 flex items-center gap-2">
+                    🎬 Video Matches ({videoResults.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {videoResults.slice(0, 5).map((result, index) => (
+                      <div 
+                        key={index} 
+                        className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-100 dark:border-purple-700 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+                              {result.title} • Segment {result.segmentNumber}
+                            </div>
+                            <div className="text-gray-800 dark:text-gray-200" dir="rtl">
+                              <InteractiveVerse text={result.text} showAnalysis={true} />
+                            </div>
+                            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                              <span>⏱️ {Math.floor(result.startTime / 60)}:{String(Math.floor(result.startTime % 60)).padStart(2, '0')}</span>
+                              {result.audioUrl && (
+                                <button
+                                  onClick={() => {
+                                    const audio = new Audio(`${CLOUDFLARE_WORKER_URL}/api/audio/stream/${encodeURIComponent(result.audioUrl)}`);
+                                    audio.play();
+                                  }}
+                                  className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200"
+                                >
+                                  🔊 Play clip
+                                </button>
+                              )}
+                              <a
+                                href={`${result.youtubeUrl}&t=${Math.floor(result.startTime)}s`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                              >
+                                ▶️ YouTube
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {videoResults.length > 5 && (
+                      <div className="text-center text-sm text-purple-600 dark:text-purple-400">
+                        +{videoResults.length - 5} more video matches • 
+                        <button 
+                          onClick={() => setActiveMainTab('videos')}
+                          className="ml-1 underline hover:no-underline"
+                        >
+                          View all in Videos tab
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sidebar - Shows filtered coverage when filters are active */}
