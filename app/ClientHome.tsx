@@ -3161,19 +3161,19 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                                     </div>
 
                                     <div className="space-y-2 max-h-32 overflow-y-auto">
-                                      {(items as any[]).slice(0, 3).map((item: any, index: number) => (
-                                        <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60">
-                                          <div className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                                            {item.verseReference}
+                                      {(items as any[]).slice(0, 5).map((item: any, index: number) => (
+                                        <div key={index} className="text-xs bg-white/50 dark:bg-slate-800/50 rounded-lg p-2 border border-white/60 dark:border-slate-700/60 flex justify-between items-center">
+                                          <div className="font-medium text-slate-700 dark:text-slate-300 truncate" dir="rtl">
+                                            {item.word || item.verseReference || 'Unknown'}
                                           </div>
-                                          <div className="text-slate-600 dark:text-slate-400 truncate mt-1">
-                                            {item.transcript.substring(0, 40)}...
+                                          <div className="text-slate-600 dark:text-slate-400 text-right ml-2">
+                                            {item.frequency ? `${item.frequency}×` : (item.transcript ? item.transcript.substring(0, 20) + '...' : '')}
                                           </div>
                                         </div>
                                       ))}
-                                      {(items as any[]).length > 3 && (
+                                      {(items as any[]).length > 5 && (
                                         <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-2">
-                                          +{(items as any[]).length - 3} more...
+                                          +{(items as any[]).length - 5} more...
                                         </div>
                                       )}
                                     </div>
