@@ -42,24 +42,37 @@ interface InflectionExplainerProps {
   compact?: boolean; // Compact mode for inline display
 }
 
-// Reason icons and labels
-const REASON_ICONS: Record<string, { icon: string; label: string; labelPs: string }> = {
-  plural: { icon: '👥', label: 'Plural', labelPs: 'جمع' },
-  sandwich: { icon: '🥪', label: 'In sandwich', labelPs: 'په ... کې' },
-  ergative: { icon: '⚡', label: 'Ergative (past tense subject)', labelPs: 'ارګېتیف' },
+// Reason icons and labels - using LingDocs terminology
+const REASON_ICONS: Record<string, { icon: string; label: string; labelPs: string; tip: string }> = {
+  plural: { icon: '👥', label: 'Plural', labelPs: 'جمع', tip: 'Indicates more than one' },
+  sandwich: { icon: '🥪', label: 'Sandwich', labelPs: 'په ... کې', tip: 'Inside an adpositional phrase' },
+  ergative: { icon: '⚡', label: 'Ergative', labelPs: 'ارګېتیف', tip: 'Subject of transitive past tense verb' },
 };
 
-// Sandwich type labels
-const SANDWICH_LABELS: Record<string, string> = {
-  'locative_in': 'په...کې (in)',
-  'locative_on': 'په...باندې (on)',
-  'comitative': 'په...سره (with)',
-  'genitive': 'د (of)',
-  'comitative_from': 'له...سره (with)',
-  'ablative': 'له...نه (from)',
-  'ablative_from': 'له...څخه (from)',
-  'dative': 'ته (to)',
-  'terminative': 'تر...پورې (until)',
+// Sandwich type labels with Pashto first
+const SANDWICH_LABELS: Record<string, { ps: string; en: string }> = {
+  'locative_in': { ps: 'په...کې', en: 'in' },
+  'locative_on': { ps: 'په...باندې', en: 'on' },
+  'comitative': { ps: 'په...سره', en: 'with' },
+  'genitive': { ps: 'د', en: 'of' },
+  'comitative_from': { ps: 'له...سره', en: 'with' },
+  'ablative': { ps: 'له...نه', en: 'from' },
+  'ablative_from': { ps: 'له...څخه', en: 'from' },
+  'dative': { ps: 'ته', en: 'to' },
+  'terminative': { ps: 'تر...پورې', en: 'until' },
+};
+
+// LingDocs inflection type names
+const INFLECTION_TYPE_LABELS: Record<string, string> = {
+  'oblique': '2nd inflection',
+  'oblique_singular': '2nd inflection (sing.)',
+  'oblique_plural': '2nd inflection (pl.)',
+  'oblique_plural_animate': '2nd inflection (pl. anim.)',
+  'oblique_plural_inanimate': '2nd inflection (pl. inanim.)',
+  'oblique_or_plural_feminine': '1st/2nd inflection (fem.)',
+  'direct_plural_animate': '1st inflection (pl. anim.)',
+  'direct_plural_inanimate': '1st inflection (pl. inanim.)',
+  'direct_plural': '1st inflection (pl.)',
 };
 
 export default function InflectionExplainer({
@@ -196,51 +209,61 @@ export default function InflectionExplainer({
           {relevantInflections.map((inf, idx) => (
             <div
               key={`${inf.word}-${inf.position}-${idx}`}
-              className="flex flex-wrap items-start gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+              className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-sm"
             >
-              {/* Word */}
-              <div className="flex items-center gap-1">
+              {/* Word with base form */}
+              <div className="flex items-center gap-1.5 min-w-0">
                 <span
-                  className="text-lg font-semibold text-indigo-700 dark:text-indigo-300"
+                  className="text-base font-semibold text-indigo-700 dark:text-indigo-300"
                   style={{ direction: 'rtl' }}
                 >
                   {inf.word}
                 </span>
                 {inf.baseWord && inf.baseWord !== inf.word && (
-                  <span className="text-xs text-gray-500">
-                    ← <span style={{ direction: 'rtl' }}>{inf.baseWord}</span>
+                  <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                    ← <span style={{ direction: 'rtl' }} className="font-medium">{inf.baseWord}</span>
                   </span>
                 )}
               </div>
 
-              {/* Reasons */}
-              <div className="flex flex-wrap gap-1">
-                {inf.isPlural && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs">
-                    {REASON_ICONS.plural.icon} {REASON_ICONS.plural.label}
-                    <span className="text-purple-500">({REASON_ICONS.plural.labelPs})</span>
-                  </span>
-                )}
+              {/* Inflection type - LingDocs style */}
+              {inf.inflectionType && (
+                <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium">
+                  {INFLECTION_TYPE_LABELS[inf.inflectionType] || inf.inflectionType.replace(/_/g, ' ')}
+                </span>
+              )}
 
+              {/* Reasons - can have multiple */}
+              <div className="flex flex-wrap gap-1 items-center">
                 {inf.isInSandwich && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full text-xs">
+                  <span 
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded text-xs cursor-help"
+                    title={REASON_ICONS.sandwich.tip}
+                  >
                     {REASON_ICONS.sandwich.icon}
-                    {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]
-                      ? SANDWICH_LABELS[inf.sandwichType]
-                      : REASON_ICONS.sandwich.label}
+                    <span dir="rtl" className="font-medium">
+                      {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]
+                        ? SANDWICH_LABELS[inf.sandwichType].ps
+                        : 'sandwich'}
+                    </span>
                   </span>
                 )}
 
-                {inf.isSubjectTransitivePast && !inf.isPlural && !inf.isInSandwich && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-full text-xs">
-                    {REASON_ICONS.ergative.icon} {REASON_ICONS.ergative.label}
+                {inf.isPlural && (
+                  <span 
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs cursor-help"
+                    title={REASON_ICONS.plural.tip}
+                  >
+                    {REASON_ICONS.plural.icon} plural
                   </span>
                 )}
 
-                {/* Inflection type badge */}
-                {inf.inflectionType && (
-                  <span className="inline-flex items-center px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                    {inf.inflectionType.replace(/_/g, ' ')}
+                {inf.isSubjectTransitivePast && (
+                  <span 
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs cursor-help"
+                    title={REASON_ICONS.ergative.tip}
+                  >
+                    {REASON_ICONS.ergative.icon} ergative
                   </span>
                 )}
               </div>

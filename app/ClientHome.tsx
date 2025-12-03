@@ -646,6 +646,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [multiVerbFilters, setMultiVerbFilters] = useState<MultiVerbFilterState>({ ...DEFAULT_MULTI_VERB_FILTER });
   const [nounFilters, setNounFilters] = useState<NounFilterState>({ ...DEFAULT_NOUN_FILTER });
   const [adjectiveFilters, setAdjectiveFilters] = useState<AdjectiveFilterState>({ ...DEFAULT_ADJECTIVE_FILTER });
+  const [isFilterPanelExpanded, setIsFilterPanelExpanded] = useState<boolean>(false);
   const [morphologyFacets, setMorphologyFacets] = useState<MorphologyFacets>({
     inflectionCategories: [],
     inflectionCases: [],
@@ -2385,375 +2386,252 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                         </div>
                       )}
 
-                    {/* NOUN FILTERS - Show whenever nouns exist or noun filters are active */}
+                    {/* NOUN FILTERS - Collapsible, mobile-friendly */}
                     {((relatedForms?.nouns && relatedForms.nouns.length > 0) ||
                       (!relatedForms && !isDefaultNounFilter(nounFilters))) && (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Filter by noun inflection {!isDefaultNounFilter(nounFilters) && '(Active)'}:
+                        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                          {/* Compact header - always visible */}
+                          <button
+                            onClick={() => setIsFilterPanelExpanded(!isFilterPanelExpanded)}
+                            className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                🔧 Filter by noun inflection
+                              </span>
+                              {/* Active filter badges */}
+                              {!isDefaultNounFilter(nounFilters) && (
+                                <span className="px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded">
+                                  Active
+                                </span>
+                              )}
+                              {activeVariantForms.length > 0 && (
+                                <span className="px-1.5 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded">
+                                  {activeVariantForms.length} forms
+                                </span>
+                              )}
+                            </div>
+                            <span className={`text-gray-500 transition-transform ${isFilterPanelExpanded ? 'rotate-180' : ''}`}>
+                              ▼
                             </span>
-                            <button
-                              onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              Reset filters
-                            </button>
-                          </div>
+                          </button>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Inflection Type Filter */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                Inflection Type:
-                              </label>
-                              <div className="space-y-1">
+                          {/* Expandable content */}
+                          {isFilterPanelExpanded && (
+                            <div className="px-3 pb-3 space-y-3">
+                              {/* Quick filters row - compact inline on mobile */}
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs text-gray-500">Type:</span>
                                 {NOUN_INFLECTION_VALUES.map((inflType) => (
-                                  <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                                    <input
-                                      type="radio"
-                                      name="noun-inflection"
-                                      checked={nounFilters.inflectionType === inflType}
-                                      onChange={() => {
-                                        if (nounFilters.inflectionType !== inflType) {
-                                          applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
-                                        }
-                                      }}
-                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <span className="capitalize">{inflType}</span>
-                                  </label>
+                                  <button
+                                    key={inflType}
+                                    onClick={() => {
+                                      if (nounFilters.inflectionType !== inflType) {
+                                        applyNounFiltersAndSearch({ ...nounFilters, inflectionType: inflType });
+                                      }
+                                    }}
+                                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                                      nounFilters.inflectionType === inflType
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                    }`}
+                                  >
+                                    {inflType}
+                                  </button>
                                 ))}
                               </div>
-                            </div>
 
-                            {/* Gender Filter */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                Gender:
-                              </label>
-                              <div className="space-y-1">
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs text-gray-500">Gender:</span>
                                 {GENDER_VALUES.map((gender) => (
-                                  <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                                    <input
-                                      type="radio"
-                                      name="noun-gender"
-                                      checked={nounFilters.gender === gender}
-                                      onChange={() => {
-                                        if (nounFilters.gender !== gender) {
-                                          applyNounFiltersAndSearch({ ...nounFilters, gender });
-                                        }
-                                      }}
-                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <span className="capitalize">{gender}</span>
-                                  </label>
+                                  <button
+                                    key={gender}
+                                    onClick={() => {
+                                      if (nounFilters.gender !== gender) {
+                                        applyNounFiltersAndSearch({ ...nounFilters, gender });
+                                      }
+                                    }}
+                                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                                      nounFilters.gender === gender
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                    }`}
+                                  >
+                                    {gender === 'All' ? 'All' : gender === 'Masculine' ? '♂ M' : '♀ F'}
+                                  </button>
                                 ))}
                               </div>
-                            </div>
-                          </div>
 
-                          {morphologyFacets && (
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Inflection Category:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.category || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              {/* Reset button */}
+                              {!isDefaultNounFilter(nounFilters) && (
+                                <button
+                                  onClick={() => applyNounFiltersAndSearch({ ...DEFAULT_NOUN_FILTER })}
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                                 >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCategories.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                                  ↺ Reset all filters
+                                </button>
+                              )}
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Grammatical Case/State:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.grammaticalCase || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCases.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                              {/* Advanced filters - compact selects */}
+                              {morphologyFacets && (
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                  <details className="group">
+                                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                                      <span className="group-open:rotate-90 transition-transform">▶</span>
+                                      Advanced filters
+                                    </summary>
+                                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      <select
+                                        value={nounFilters.category || 'all'}
+                                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, category: e.target.value })}
+                                        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        title="Inflection Category"
+                                      >
+                                        <option value="all">Category: All</option>
+                                        {morphologyFacets.inflectionCategories.map((bucket) => (
+                                          <option key={bucket.value} value={bucket.value}>
+                                            {bucket.value} ({bucket.count})
+                                          </option>
+                                        ))}
+                                      </select>
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Number:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.number || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          )}
+                                      <select
+                                        value={nounFilters.grammaticalCase || 'all'}
+                                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, grammaticalCase: e.target.value })}
+                                        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        title="Grammatical Case"
+                                      >
+                                        <option value="all">Case: All</option>
+                                        {morphologyFacets.inflectionCases.map((bucket) => (
+                                          <option key={bucket.value} value={bucket.value}>
+                                            {bucket.value} ({bucket.count})
+                                          </option>
+                                        ))}
+                                      </select>
 
-                          {morphologyFacets && (
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Lexicon Gender (noun metadata):
-                                </label>
-                                <select
-                                  value={nounFilters.lexicalGender || 'all'}
-                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, lexicalGender: e.target.value as any })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.nounLexiconGenders.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                                      <select
+                                        value={nounFilters.number || 'all'}
+                                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, number: e.target.value })}
+                                        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        title="Number"
+                                      >
+                                        <option value="all">Number: All</option>
+                                        {morphologyFacets.inflectionNumbers.map((bucket) => (
+                                          <option key={bucket.value} value={bucket.value}>
+                                            {bucket.value} ({bucket.count})
+                                          </option>
+                                        ))}
+                                      </select>
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Plural Type:
-                                </label>
-                                <select
-                                  value={nounFilters.pluralType || 'all'}
-                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, pluralType: e.target.value as any })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.nounPluralTypes.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                                      <select
+                                        value={nounFilters.lexicalGender || 'all'}
+                                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, lexicalGender: e.target.value as any })}
+                                        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        title="Lexical Gender"
+                                      >
+                                        <option value="all">Lex. Gender: All</option>
+                                        {morphologyFacets.nounLexiconGenders.map((bucket) => (
+                                          <option key={bucket.value} value={bucket.value}>
+                                            {bucket.value} ({bucket.count})
+                                          </option>
+                                        ))}
+                                      </select>
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Inflection Category:
-                                </label>
-                                <select
-                                  value={nounFilters.category || 'all'}
-                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, category: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCategories.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                                      <select
+                                        value={nounFilters.pluralType || 'all'}
+                                        onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, pluralType: e.target.value as any })}
+                                        className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        title="Plural Type"
+                                      >
+                                        <option value="all">Plural: All</option>
+                                        {morphologyFacets.nounPluralTypes.map((bucket) => (
+                                          <option key={bucket.value} value={bucket.value}>
+                                            {bucket.value} ({bucket.count})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </details>
+                                </div>
+                              )}
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Grammatical Case/State:
-                                </label>
-                                <select
-                                  value={nounFilters.grammaticalCase || 'all'}
-                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, grammaticalCase: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCases.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Number:
-                                </label>
-                                <select
-                                  value={nounFilters.number || 'all'}
-                                  onChange={(e) => applyNounFiltersAndSearch({ ...nounFilters, number: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeVariantForms.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                Searching with {activeVariantForms.length} noun forms
-                              </p>
+                              {activeVariantForms.length > 0 && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  ✓ Searching {activeVariantForms.length} noun forms
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       )}
 
-                    {/* ADJECTIVE FILTERS - Show whenever adjectives exist or adjective filters are active */}
+                    {/* ADJECTIVE FILTERS - Compact collapsible */}
                     {((relatedForms?.adjectives && relatedForms.adjectives.length > 0) ||
                       (!relatedForms && !isDefaultAdjectiveFilter(adjectiveFilters))) && (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center gap-2 mb-3">
+                        <details className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                          <summary className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Filter by adjective inflection {!isDefaultAdjectiveFilter(adjectiveFilters) && '(Active)'}:
+                              🔧 Filter adjectives
+                              {!isDefaultAdjectiveFilter(adjectiveFilters) && (
+                                <span className="ml-2 px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded">
+                                  Active
+                                </span>
+                              )}
                             </span>
-                            <button
-                              onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              Reset filters
-                            </button>
+                          </summary>
+                          <div className="px-3 pb-3 space-y-2">
+                            {/* Compact type and gender buttons */}
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <span className="text-xs text-gray-500">Type:</span>
+                              {NOUN_INFLECTION_VALUES.map((inflType) => (
+                                <button
+                                  key={inflType}
+                                  onClick={() => {
+                                    if (adjectiveFilters.inflectionType !== inflType) {
+                                      applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
+                                    }
+                                  }}
+                                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                                    adjectiveFilters.inflectionType === inflType
+                                      ? 'bg-purple-600 text-white'
+                                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                  }`}
+                                >
+                                  {inflType}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <span className="text-xs text-gray-500">Gender:</span>
+                              {GENDER_VALUES.map((gender) => (
+                                <button
+                                  key={gender}
+                                  onClick={() => {
+                                    if (adjectiveFilters.gender !== gender) {
+                                      applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
+                                    }
+                                  }}
+                                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                                    adjectiveFilters.gender === gender
+                                      ? 'bg-purple-600 text-white'
+                                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                  }`}
+                                >
+                                  {gender === 'All' ? 'All' : gender === 'Masculine' ? '♂ M' : '♀ F'}
+                                </button>
+                              ))}
+                              {!isDefaultAdjectiveFilter(adjectiveFilters) && (
+                                <button
+                                  onClick={() => applyAdjectiveFiltersAndSearch({ ...DEFAULT_ADJECTIVE_FILTER })}
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-2"
+                                >
+                                  ↺ Reset
+                                </button>
+                              )}
+                            </div>
                           </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Inflection Type Filter */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                Inflection Type:
-                              </label>
-                              <div className="space-y-1">
-                                {NOUN_INFLECTION_VALUES.map((inflType) => (
-                                  <label key={inflType} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                                    <input
-                                      type="radio"
-                                      name="adj-inflection"
-                                      checked={adjectiveFilters.inflectionType === inflType}
-                                      onChange={() => {
-                                        if (adjectiveFilters.inflectionType !== inflType) {
-                                          applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, inflectionType: inflType });
-                                        }
-                                      }}
-                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <span className="capitalize">{inflType}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Gender Filter */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                Gender:
-                              </label>
-                              <div className="space-y-1">
-                                {GENDER_VALUES.map((gender) => (
-                                  <label key={gender} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded">
-                                    <input
-                                      type="radio"
-                                      name="adj-gender"
-                                      checked={adjectiveFilters.gender === gender}
-                                      onChange={() => {
-                                        if (adjectiveFilters.gender !== gender) {
-                                          applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, gender });
-                                        }
-                                      }}
-                                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <span className="capitalize">{gender}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Inflection Category */}
-                            {morphologyFacets && (
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Inflection Category:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.category || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, category: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCategories.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-
-                            {/* Grammatical Case */}
-                            {morphologyFacets && (
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Grammatical Case/State:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.grammaticalCase || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, grammaticalCase: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionCases.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-
-                            {/* Number */}
-                            {morphologyFacets && (
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                  Number:
-                                </label>
-                                <select
-                                  value={adjectiveFilters.number || 'all'}
-                                  onChange={(e) => applyAdjectiveFiltersAndSearch({ ...adjectiveFilters, number: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="all">All</option>
-                                  {morphologyFacets.inflectionNumbers.map((bucket) => (
-                                    <option key={bucket.value} value={bucket.value}>
-                                      {bucket.value} ({bucket.count})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-                          </div>
-
-                          {activeVariantForms.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                Searching with {activeVariantForms.length} adjective forms
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                        </details>
                       )}
                   </>
                 )}

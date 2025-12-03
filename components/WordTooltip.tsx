@@ -91,11 +91,31 @@ const POS_COLORS: Record<string, { bg: string; text: string; border: string }> =
   other: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300', border: 'border-gray-300 dark:border-gray-600' },
 };
 
-// Inflection reason icons
+// Inflection reason icons and LingDocs terminology
 const REASON_ICONS = {
   plural: '👥',
   sandwich: '🥪',
   ergative: '⚡',
+};
+
+// LingDocs-style inflection state labels with tooltips
+const INFLECTION_STATE_INFO: Record<string, { label: string; description: string }> = {
+  'plain': { label: 'Plain', description: 'Base/dictionary form - no inflection applied' },
+  '1st': { label: '1st Inflection', description: 'First level: feminine singular oblique OR masculine plural nominative' },
+  '2nd': { label: '2nd Inflection', description: 'Second level: used with sandwiches (adpositions) OR plural oblique' },
+};
+
+// LingDocs sandwich names
+const SANDWICH_DISPLAY: Record<string, { pashto: string; english: string; short: string }> = {
+  'locative_in': { pashto: 'په...کې', english: 'in', short: 'په...کې (in)' },
+  'locative_on': { pashto: 'په...باندې', english: 'on', short: 'په...باندې (on)' },
+  'comitative': { pashto: 'په...سره', english: 'with', short: 'په...سره (with)' },
+  'genitive': { pashto: 'د', english: 'of/possessive', short: 'د (of)' },
+  'comitative_from': { pashto: 'له...سره', english: 'with (from)', short: 'له...سره (with)' },
+  'ablative': { pashto: 'له...نه', english: 'from', short: 'له...نه (from)' },
+  'ablative_from': { pashto: 'له...څخه', english: 'from', short: 'له...څخه (from)' },
+  'dative': { pashto: 'ته', english: 'to/toward', short: 'ته (to)' },
+  'terminative': { pashto: 'تر...پورې', english: 'until', short: 'تر...پورې (until)' },
 };
 
 // Format person/number for display
@@ -351,48 +371,63 @@ export default function WordTooltip({
                 </div>
               )}
               
-              {/* Noun-specific info */}
+              {/* Noun-specific info - Compact LingDocs style */}
               {analysis.pos === 'noun' && (
-                <div className="pt-1 space-y-2">
-                  {/* Gender + Pattern badges */}
-                  <div className="flex flex-wrap gap-1.5" dir="ltr">
-                    {analysis.gender && (
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        analysis.gender === 'feminine' 
-                          ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300'
-                          : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                      }`}>
-                        {analysis.gender}
+                <div className="pt-1 space-y-1.5">
+                  {/* Inflection state badge with tooltip */}
+                  <div className="flex flex-wrap gap-1.5 items-center" dir="ltr">
+                    {analysis.inflectionState && analysis.inflectionState !== 'plain' && (
+                      <span 
+                        className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs font-medium cursor-help"
+                        title={INFLECTION_STATE_INFO[analysis.inflectionState]?.description || ''}
+                      >
+                        {INFLECTION_STATE_INFO[analysis.inflectionState]?.label || `${analysis.inflectionState} inflection`}
                       </span>
                     )}
-                    {analysis.inflectionState && analysis.inflectionState !== 'plain' && (
-                      <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
-                        {analysis.inflectionState} inflection
+                    {analysis.gender && (
+                      <span className={`px-1.5 py-0.5 rounded text-xs ${
+                        analysis.gender === 'feminine' 
+                          ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                          : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      }`}>
+                        {analysis.gender === 'feminine' ? '♀' : '♂'}
                       </span>
                     )}
                   </div>
                   
-                  {/* Inflection reasons */}
-                  {analysis.inflectionReason && (
-                    <div dir="ltr">
-                      <div className="text-xs text-gray-500 mb-1">Why inflected:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {analysis.inflectionReason.isPlural && (
-                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded text-xs">
-                            {REASON_ICONS.plural} Plural
+                  {/* Inflection reasons - LingDocs style */}
+                  {analysis.inflectionReason && (analysis.inflectionReason.isPlural || analysis.inflectionReason.isInSandwich || analysis.inflectionReason.isErgative) && (
+                    <div dir="ltr" className="text-xs">
+                      <span className="text-gray-400">Why: </span>
+                      <span className="inline-flex flex-wrap gap-1 items-center">
+                        {analysis.inflectionReason.isInSandwich && (
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded cursor-help"
+                            title={`In a sandwich adposition: ${SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.english || 'adpositional phrase'}`}
+                          >
+                            {REASON_ICONS.sandwich}
+                            <span className="font-medium" dir="rtl">
+                              {SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.pashto || 'sandwich'}
+                            </span>
                           </span>
                         )}
-                        {analysis.inflectionReason.isInSandwich && (
-                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded text-xs">
-                            {REASON_ICONS.sandwich} {analysis.inflectionReason.sandwichType || 'Sandwich'}
+                        {analysis.inflectionReason.isPlural && (
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded cursor-help"
+                            title="Plural form - more than one"
+                          >
+                            {REASON_ICONS.plural} plural
                           </span>
                         )}
                         {analysis.inflectionReason.isErgative && (
-                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs">
-                            {REASON_ICONS.ergative} Ergative
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded cursor-help"
+                            title="Ergative case: subject of a transitive verb in past tense"
+                          >
+                            {REASON_ICONS.ergative} ergative
                           </span>
                         )}
-                      </div>
+                      </span>
                     </div>
                   )}
                 </div>
