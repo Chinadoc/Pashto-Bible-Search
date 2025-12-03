@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@auth/d1-adapter": "^1.11.1",
-    "@aws-sdk/client-s3": "^3.940.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -29,6 +28,7 @@
     "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.943.0",
     "@eslint/eslintrc": "^3.3.1",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^20.12.7",
