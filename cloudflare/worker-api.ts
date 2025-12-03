@@ -4202,7 +4202,7 @@ export default {
         // First, try lingdocs_forms table with all spelling variants
         for (const variant of formVariants) {
           const lingdocsForm = await env.DB.prepare(
-            `SELECT lf.form, lf.base_ts, lf.form_type, lf.phonetics, ld.pashto as base_word, ld.e as english, ld.c as pos
+            `SELECT lf.form, lf.base_ts, lf.form_type, lf.phonetics, ld.pashto as base_word, ld.english, ld.pos
              FROM lingdocs_forms lf 
              JOIN lingdocs_dictionary ld ON lf.base_ts = ld.ts
              WHERE lf.form = ? LIMIT 1`
@@ -4254,7 +4254,7 @@ export default {
         if (!result) {
           // Check if this form IS a base form in lingdocs_dictionary
           const baseCheck = await env.DB.prepare(
-            `SELECT pashto as base_word, e as english, c as pos FROM lingdocs_dictionary WHERE pashto = ? LIMIT 1`
+            `SELECT pashto as base_word, english, pos FROM lingdocs_dictionary WHERE pashto = ? LIMIT 1`
           ).bind(form).first() as { base_word: string; english?: string; pos?: string } | null;
           
           if (baseCheck) {
