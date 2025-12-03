@@ -114,12 +114,14 @@ export async function POST(request: NextRequest) {
 
         // Trigger audio clip splitting via Modal.com
         let audioClipsResult = null;
-        if (MODAL_WEBHOOK_URL) {
+        // Modal split audio endpoint (separate webhook)
+        const MODAL_SPLIT_AUDIO_URL = process.env.NEXT_PUBLIC_MODAL_SPLIT_AUDIO_URL || 
+            'https://chinadoc--pashto-youtube-processor-split-audio-webhook.modal.run';
+        
+        if (MODAL_SPLIT_AUDIO_URL) {
             console.log(`✂️ Triggering audio clip splitting for ${newSegments.length} segments...`);
             try {
-                // Get the Modal split audio endpoint (same base URL, different path)
-                const modalBaseUrl = MODAL_WEBHOOK_URL.replace('/process_video_webhook', '');
-                const splitAudioUrl = `${modalBaseUrl}/split_audio_webhook`;
+                const splitAudioUrl = MODAL_SPLIT_AUDIO_URL;
                 
                 const clipResponse = await fetch(splitAudioUrl, {
                     method: 'POST',
