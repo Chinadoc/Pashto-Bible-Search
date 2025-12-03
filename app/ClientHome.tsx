@@ -3734,16 +3734,29 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                             </div>
                           )}
 
-                          {/* Action */}
-                          <button
-                            onClick={() => {
-                              setQuery(proverb.p1.split(' ')[0]);
-                              setActiveMainTab('search');
-                            }}
-                            className="mt-3 px-3 py-1 text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-800/50 transition-colors"
-                          >
-                            🔍 Search words
-                          </button>
+                          {/* Actions */}
+                          <div className="flex gap-2 mt-3 flex-wrap">
+                            {proverb.audioUrl && (
+                              <button
+                                onClick={() => {
+                                  const audio = new Audio(proverb.audioUrl);
+                                  audio.play().catch(e => console.error('Audio playback failed:', e));
+                                }}
+                                className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                              >
+                                🔊 Listen
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setQuery(proverb.p1.split(' ')[0]);
+                                setActiveMainTab('search');
+                              }}
+                              className="px-3 py-1 text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-800/50 transition-colors"
+                            >
+                              🔍 Search words
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

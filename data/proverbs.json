@@ -6,7 +6,8 @@
     "e2": "",
     "theme": "Advice",
     "interp": "A proverb used to express the futility of trying to influence someone who is not willing to listen to advice.",
-    "num": 1
+    "num": 1,
+    "audioUrl": "https://proverbs.speakingpashto.com/01.mp3"
   },
   {
     "p1": "ډېرې خولې ډېرې خبرې",
@@ -15,7 +16,8 @@
     "e2": "",
     "theme": "Advice",
     "interp": "Frustration when everyone has their own opinions.",
-    "num": 2
+    "num": 2,
+    "audioUrl": "https://proverbs.speakingpashto.com/02.mp3"
   },
   {
     "p1": "یوه سترګه به دې ژاړی بله به دې خاندی",
@@ -24,7 +26,8 @@
     "e2": "",
     "theme": "Advice",
     "interp": "A stern warning to someone that they must do as I say.",
-    "num": 3
+    "num": 3,
+    "audioUrl": "https://proverbs.speakingpashto.com/03.mp3"
   },
   {
     "p1": "د ازاره چا بازار موندلے نۀ دے",
@@ -33,7 +36,8 @@
     "e2": "",
     "theme": "Agression",
     "interp": "The bazaar here is a metaphor for success. In the end, someone who is ruthless will not succeed.",
-    "num": 4
+    "num": 4,
+    "audioUrl": "https://proverbs.speakingpashto.com/04.mp3"
   },
   {
     "p1": "سم د مرچکو په څټه ناست یې",
@@ -42,7 +46,8 @@
     "e2": "",
     "theme": "Anger",
     "interp": "Used to describe someone with a hot temper.",
-    "num": 5
+    "num": 5,
+    "audioUrl": "https://proverbs.speakingpashto.com/05.mp3"
   },
   {
     "p1": "په دومره منت خو به",
@@ -51,7 +56,8 @@
     "e2": "Hindu would have become a Muslim.",
     "theme": "Appeal",
     "interp": "A cynical comment to someone you tried hard to convince of something, but who still remains obdurate.",
-    "num": 6
+    "num": 6,
+    "audioUrl": "https://proverbs.speakingpashto.com/06.mp3"
   },
   {
     "p1": "خر هغه دے خو کته یې بدله ده",
@@ -60,7 +66,8 @@
     "e2": "",
     "theme": "Apperance",
     "interp": "Even though the appearance has changed, the fundamental system remains the same. Like the futility of changing politicians.",
-    "num": 7
+    "num": 7,
+    "audioUrl": "https://proverbs.speakingpashto.com/07.mp3"
   },
   {
     "p1": "ائینه دروغ نهٔ وائی",
@@ -69,7 +76,8 @@
     "e2": "",
     "theme": "Appearance",
     "interp": "The tested thing is true. This proverb is also used about the reliable measurement of length and weight.",
-    "num": 8
+    "num": 8,
+    "audioUrl": "https://proverbs.speakingpashto.com/08.mp3"
   },
   {
     "p1": "مسلمانی په ږیره کښې نهٔ ده",
@@ -78,7 +86,8 @@
     "e2": "",
     "theme": "Appearance",
     "interp": "Appearance alone does not qualify for true faith.",
-    "num": 9
+    "num": 9,
+    "audioUrl": "https://proverbs.speakingpashto.com/09.mp3"
   },
   {
     "p1": "رنګ یې مۀ ګوره خوند یې ګوره",
@@ -87,7 +96,8 @@
     "e2": "",
     "theme": "Appearance",
     "interp": "Don’t be fooled by appearances.",
-    "num": 10
+    "num": 10,
+    "audioUrl": "https://proverbs.speakingpashto.com/10.mp3"
   },
   {
     "p1": "شرع ظاهر ګوری",
@@ -96,7 +106,8 @@
     "e2": "",
     "theme": "Apperance",
     "interp": "People judge by appearance.",
-    "num": 11
+    "num": 11,
+    "audioUrl": "https://proverbs.speakingpashto.com/11.mp3"
   },
   {
     "p1": "چې پړ شی نو مړ شی",
@@ -105,7 +116,8 @@
     "e2": "",
     "theme": "Argument",
     "interp": "The adversary is left speechless by reasoned arguments. پړ here means to be overcome, or conquer.",
-    "num": 12
+    "num": 12,
+    "audioUrl": "https://proverbs.speakingpashto.com/12.mp3"
   },
   {
     "p1": "د کلی اوځه د نرخه یې مۀ اوځه",
@@ -114,7 +126,8 @@
     "e2": "",
     "theme": "Bargaining",
     "interp": "An encouragement to a shopkeeper not to over-charge.",
-    "num": 13
+    "num": 13,
+    "audioUrl": "https://proverbs.speakingpashto.com/13.mp3"
   },
   {
     "p1": "خپل عمل د لارې  مل دے",
@@ -123,7 +136,8 @@
     "e2": "",
     "theme": "Behaviour",
     "interp": "Good behaviour should be your guide.",
-    "num": 14
+    "num": 14,
+    "audioUrl": "https://proverbs.speakingpashto.com/14.mp3"
   },
   {
     "p1": "ښهٔ دې هم د ځان",
@@ -132,7 +146,8 @@
     "e2": "and bad is also your own.",
     "theme": "Behaviour",
     "interp": "You eat the results of your own behaviour.",
-    "num": 15
+    "num": 15,
+    "audioUrl": "https://proverbs.speakingpashto.com/15.mp3"
   },
   {
     "p1": "سړے وړوکے دے",
@@ -141,7 +156,8 @@
     "e2": "",
     "theme": "Behaviour",
     "interp": "A description of the unexpected success of the hard-working.",
-    "num": 16
+    "num": 16,
+    "audioUrl": "https://proverbs.speakingpashto.com/16.mp3"
   },
   {
     "p1": "خبرې اسانې دی",
@@ -150,7 +166,8 @@
     "e2": "",
     "theme": "Behaviour",
     "interp": "Easier said than done.",
-    "num": 17
+    "num": 17,
+    "audioUrl": "https://proverbs.speakingpashto.com/17.mp3"
   },
   {
     "p1": "هم لور د کوره",
@@ -159,7 +176,8 @@
     "e2": "and my son-in-law too.",
     "theme": "Benefits",
     "interp": "Used to express surprise double benefits.  Even though you’ve lost a daughter, there can be benefit from the son-in-law too.",
-    "num": 18
+    "num": 18,
+    "audioUrl": "https://proverbs.speakingpashto.com/18.mp3"
   },
   {
     "p1": "د وچو سره لامدۀ سوزی",
@@ -168,7 +186,8 @@
     "e2": "",
     "theme": "Blame",
     "interp": "Onlookers are caught up in the crimes they overlook.",
-    "num": 19
+    "num": 19,
+    "audioUrl": "https://proverbs.speakingpashto.com/19.mp3"
   },
   {
     "p1": "څۀ ژرنده ورانه",
@@ -177,7 +196,8 @@
     "e2": "partly the grain is damp.",
     "theme": "Blame",
     "interp": "Mutual fault: six of one, half a dozen of another.",
-    "num": 20
+    "num": 20,
+    "audioUrl": "https://proverbs.speakingpashto.com/20.mp3"
   },
   {
     "p1": "په سپینه جامه داغ زر لګی",
@@ -186,7 +206,8 @@
     "e2": "",
     "theme": "Blame",
     "interp": "The pious are easy to blame. A proverb used as an encouragement for priests and teachers to have good behaviour.",
-    "num": 21
+    "num": 21,
+    "audioUrl": "https://proverbs.speakingpashto.com/21.mp3"
   },
   {
     "p1": "چې اوږه نهٔ خوری",
@@ -195,7 +216,8 @@
     "e2": "you won’t smell of it.",
     "theme": "Blame",
     "interp": "The blame against you is correct.",
-    "num": 22
+    "num": 22,
+    "audioUrl": "https://proverbs.speakingpashto.com/22.mp3"
   },
   {
     "p1": "بلا وه برکت یې نه وو",
@@ -204,7 +226,8 @@
     "e2": "",
     "theme": "Blessing",
     "interp": "An expression used when you had a near miss. For example, when you are unscathed in a car accident.",
-    "num": 23
+    "num": 23,
+    "audioUrl": "https://proverbs.speakingpashto.com/23.mp3"
   },
   {
     "p1": "خدائ وائی تۀ حرکت کوه",
@@ -213,7 +236,8 @@
     "e2": "then I will add blessing.”",
     "theme": "Blessing",
     "interp": "An encouragement for a lazy person to start work.",
-    "num": 24
+    "num": 24,
+    "audioUrl": "https://proverbs.speakingpashto.com/24.mp3"
   },
   {
     "p1": "خدائ پاک هغه کار کوی",
@@ -222,7 +246,8 @@
     "e2": "which benefit a person.",
     "theme": "Blessing",
     "interp": "God can save you from a seemingly bad outcome. Only later you may realize the benefit of what first seemed like a disaster.",
-    "num": 25
+    "num": 25,
+    "audioUrl": "https://proverbs.speakingpashto.com/25.mp3"
   },
   {
     "p1": "خدائ به وی باران به نهٔ وی؟",
@@ -231,7 +256,8 @@
     "e2": "",
     "theme": "Blessing",
     "interp": "An optimistic statement – that surely God will provide His blessing.",
-    "num": 26
+    "num": 26,
+    "audioUrl": "https://proverbs.speakingpashto.com/26.mp3"
   },
   {
     "p1": "په پردو غولو ټیزونه اچوی",
@@ -240,7 +266,8 @@
     "e2": "",
     "theme": "Boasting",
     "interp": "Don’t take credit for someone else’s hard work, or boast about nasty things others did.",
-    "num": 27
+    "num": 27,
+    "audioUrl": "https://proverbs.speakingpashto.com/27.mp3"
   },
   {
     "p1": "وړه خوله لوئې خبرې",
@@ -249,7 +276,8 @@
     "e2": "",
     "theme": "Boasting",
     "interp": "The boasting of an incapable person.",
-    "num": 28
+    "num": 28,
+    "audioUrl": "https://proverbs.speakingpashto.com/28.mp3"
   },
   {
     "p1": "چېندخه په لوټه سوره شوه",
@@ -258,7 +286,8 @@
     "e2": "and saw Kashmir.",
     "theme": "Boasting",
     "interp": "A ridiculous boaster. Kashmir is seen as a much sought-after Shangri La, way out of sight for a frog. لوټه is a small clod or lump of soil.",
-    "num": 29
+    "num": 29,
+    "audioUrl": "https://proverbs.speakingpashto.com/29.mp3"
   },
   {
     "p1": "په خپل کور کښې خو سپے هم نر وی",
@@ -267,7 +296,8 @@
     "e2": "",
     "theme": "Bravery",
     "interp": "In your own house you will have more courage to face an enemy.",
-    "num": 30
+    "num": 30,
+    "audioUrl": "https://proverbs.speakingpashto.com/30.mp3"
   },
   {
     "p1": "آخرت د ټیزونو ځائ نۀ دے",
@@ -276,7 +306,8 @@
     "e2": "",
     "theme": "Bravery",
     "interp": "The need to be brave to the end. Farting is thought to be caused by fear, so the proverb encourages someone to face the music.",
-    "num": 31
+    "num": 31,
+    "audioUrl": "https://proverbs.speakingpashto.com/31.mp3"
   },
   {
     "p1": "ګټه په تاوان کیږی",
@@ -285,7 +316,8 @@
     "e2": "",
     "theme": "Business",
     "interp": "The inherent risk needed to make a success in business.",
-    "num": 32
+    "num": 32,
+    "audioUrl": "https://proverbs.speakingpashto.com/32.mp3"
   },
   {
     "p1": "وروری خوری به کوو خو",
@@ -294,7 +326,8 @@
     "e2": "But keep accounts between us.",
     "theme": "Business",
     "interp": "Don’t think that just because we’re kin, fair business won’t occur.",
-    "num": 33
+    "num": 33,
+    "audioUrl": "https://proverbs.speakingpashto.com/33.mp3"
   },
   {
     "p1": "چې د کومې بلا نه نۀ خلاصېږې",
@@ -303,7 +336,8 @@
     "e2": "then embrace it warmly.",
     "theme": "Calamity",
     "interp": "Make peace with impending trouble. بلا means misfortune, disaster or a monster.",
-    "num": 34
+    "num": 34,
+    "audioUrl": "https://proverbs.speakingpashto.com/34.mp3"
   },
   {
     "p1": "د هغې بلا نه مۀ یرېږه",
@@ -312,7 +346,8 @@
     "e2": "Don’t worry about the problem.",
     "theme": "Calamity",
     "interp": "Don’t panic, there’s still time for the problem to be solved.",
-    "num": 35
+    "num": 35,
+    "audioUrl": "https://proverbs.speakingpashto.com/35.mp3"
   },
   {
     "p1": "بنده په خپل وس پړ دے",
@@ -321,7 +356,8 @@
     "e2": "",
     "theme": "Capacity",
     "interp": "A person only has a certain natural capacity. Don’t expect more from me. That’s my limit.",
-    "num": 36
+    "num": 36,
+    "audioUrl": "https://proverbs.speakingpashto.com/36.mp3"
   },
   {
     "p1": "د پیشو اووۀ ساهګانې وی",
@@ -330,7 +366,8 @@
     "e2": "",
     "theme": "Cat",
     "interp": "Lucky people, like a cat, are unaffected by danger.",
-    "num": 37
+    "num": 37,
+    "audioUrl": "https://proverbs.speakingpashto.com/37.mp3"
   },
   {
     "p1": "زمانه هغه ده خلق بدل دی",
@@ -339,7 +376,8 @@
     "e2": "",
     "theme": "Change",
     "interp": "Although times are different, nature hasn’t changed through the ages.",
-    "num": 38
+    "num": 38,
+    "audioUrl": "https://proverbs.speakingpashto.com/38.mp3"
   },
   {
     "p1": "د سحر په بانګ کښې",
@@ -348,7 +386,8 @@
     "e2": "I heard a different verse.",
     "theme": "Change",
     "interp": "News that comes unexpectedly or is novel. بانګ is the call to prayer.",
-    "num": 39
+    "num": 39,
+    "audioUrl": "https://proverbs.speakingpashto.com/39.mp3"
   },
   {
     "p1": "خر په طواف نۀ حاجی کیږی",
@@ -357,7 +396,8 @@
     "e2": "",
     "theme": "Character",
     "interp": "A worthless person can’t be improved by following religious practices.",
-    "num": 40
+    "num": 40,
+    "audioUrl": "https://proverbs.speakingpashto.com/40.mp3"
   },
   {
     "p1": "چې په اخور دې لوئ شی",
@@ -366,7 +406,8 @@
     "e2": "don’t inspect his teeth.",
     "theme": "Character",
     "interp": "Since you know everything about someone you grew up with, there’s no need to assess their character.",
-    "num": 41
+    "num": 41,
+    "audioUrl": "https://proverbs.speakingpashto.com/41.mp3"
   },
   {
     "p1": "د خرۀ مینه لتې ورکول وی",
@@ -375,7 +416,8 @@
     "e2": "",
     "theme": "Character",
     "interp": "It’s the nature of a lowly person to act poorly, even if you have helped them, they will behave badly with you.",
-    "num": 42
+    "num": 42,
+    "audioUrl": "https://proverbs.speakingpashto.com/42.mp3"
   },
   {
     "p1": "د سپی لکۍ ده چې یې پریږدی بیا کږه وی",
@@ -384,7 +426,8 @@
     "e2": "",
     "theme": "Character",
     "interp": "People revert to their natural tendencies when accountability is lifted.",
-    "num": 43
+    "num": 43,
+    "audioUrl": "https://proverbs.speakingpashto.com/43.mp3"
   },
   {
     "p1": "که سل خویونه نور کړی",
@@ -393,7 +436,8 @@
     "e2": "one will be her mother’s.",
     "theme": "Character",
     "interp": "It’s the nature of a lowly person to act poorly, even if you have helped them, they will behave badly with you.",
-    "num": 44
+    "num": 44,
+    "audioUrl": "https://proverbs.speakingpashto.com/44.mp3"
   },
   {
     "p1": "زما پېدا په ما لګیا",
@@ -402,7 +446,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "People revert to their natural tendencies when accountability is lifted.",
-    "num": 45
+    "num": 45,
+    "audioUrl": "https://proverbs.speakingpashto.com/45.mp3"
   },
   {
     "p1": "بچی مور ته راغونډ وی",
@@ -411,7 +456,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "The mother is the natural focal-point of family life.",
-    "num": 46
+    "num": 46,
+    "audioUrl": "https://proverbs.speakingpashto.com/46.mp3"
   },
   {
     "p1": "د ماشوم په ژبه خپله مور پوهېږی",
@@ -420,7 +466,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "A mother can comfort a child like no one else.",
-    "num": 47
+    "num": 47,
+    "audioUrl": "https://proverbs.speakingpashto.com/47.mp3"
   },
   {
     "p1": "د بدعمله اولاد نه نهٔ اولاد ښهٔ دے",
@@ -429,7 +476,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "The shame and embarrassment that comes from disobedient children.",
-    "num": 48
+    "num": 48,
+    "audioUrl": "https://proverbs.speakingpashto.com/48.mp3"
   },
   {
     "p1": "اولاد چې نیازبین شی",
@@ -438,7 +486,8 @@
     "e2": "they’re not useful for heaven or earth.",
     "theme": "Children",
     "interp": "Spoilt children are good for nothing.",
-    "num": 49
+    "num": 49,
+    "audioUrl": "https://proverbs.speakingpashto.com/49.mp3"
   },
   {
     "p1": "د وړو نه شېطان امان غوښتے دے",
@@ -447,7 +496,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "Children are so mischievous, even Satan wants to escape from them.",
-    "num": 50
+    "num": 50,
+    "audioUrl": "https://proverbs.speakingpashto.com/50.mp3"
   },
   {
     "p1": "هر چا ته خپل زوئ ښکلے ښکاری",
@@ -456,7 +506,8 @@
     "e2": "",
     "theme": "Children",
     "interp": "People favour and think more highly of their own children.",
-    "num": 51
+    "num": 51,
+    "audioUrl": "https://proverbs.speakingpashto.com/51.mp3"
   },
   {
     "p1": "زۀ څۀ وایم او ډولکے مې څۀ وائی؟",
@@ -465,7 +516,8 @@
     "e2": "",
     "theme": "Clarification",
     "interp": "Used to express someone’s misunderstanding, and frustration when someone is not listening to what you are saying.",
-    "num": 52
+    "num": 52,
+    "audioUrl": "https://proverbs.speakingpashto.com/52.mp3"
   },
   {
     "p1": "په زور کلی نه کیږی",
@@ -474,7 +526,8 @@
     "e2": "",
     "theme": "Community",
     "interp": "You can’t force anyone to do something. Response requires mutual consent.",
-    "num": 53
+    "num": 53,
+    "audioUrl": "https://proverbs.speakingpashto.com/53.mp3"
   },
   {
     "p1": "لاس نیوه او ومبارکی نهٔ زړېږی",
@@ -483,7 +536,8 @@
     "e2": "",
     "theme": "Community",
     "interp": "This proverb is about going to funerals and weddings and is either used as an excuse for being late, or to indicate the long-term benefits from attending these events. لاس نيول (lifting the hand) implies saying prayers for someone who has died.",
-    "num": 54
+    "num": 54,
+    "audioUrl": "https://proverbs.speakingpashto.com/54.mp3"
   },
   {
     "p1": "هندو د یار د پاره غټه غوښه خوړلې ده",
@@ -492,7 +546,8 @@
     "e2": "",
     "theme": "Compromise",
     "interp": "Real friendship involves sacrifice.",
-    "num": 55
+    "num": 55,
+    "audioUrl": "https://proverbs.speakingpashto.com/55.mp3"
   },
   {
     "p1": "مجبوری سړی ته هره لاره ښائی",
@@ -501,7 +556,8 @@
     "e2": "",
     "theme": "Compulsion",
     "interp": "In difficult circumstances people will try lots of different ways to survive.",
-    "num": 56
+    "num": 56,
+    "audioUrl": "https://proverbs.speakingpashto.com/56.mp3"
   },
   {
     "p1": "غر که لوئ دے",
@@ -510,7 +566,8 @@
     "e2": "there’s a way to the top.",
     "theme": "Confidence",
     "interp": "An optimistic proverb encouraging someone not to give up, however hard things seem.",
-    "num": 57
+    "num": 57,
+    "audioUrl": "https://proverbs.speakingpashto.com/57.mp3"
   },
   {
     "p1": "پړق د یو لاسه نهٔ خېژی",
@@ -519,7 +576,8 @@
     "e2": "",
     "theme": "Conflict",
     "interp": "It takes two to quarrel.",
-    "num": 58
+    "num": 58,
+    "audioUrl": "https://proverbs.speakingpashto.com/58.mp3"
   },
   {
     "p1": "په جنګ کښې مړی کېږی",
@@ -528,7 +586,8 @@
     "e2": "",
     "theme": "Conflict",
     "interp": "Loss is the natural consequence of conflict.",
-    "num": 59
+    "num": 59,
+    "audioUrl": "https://proverbs.speakingpashto.com/59.mp3"
   },
   {
     "p1": "چې تنګ شی نو په جنګ شی",
@@ -537,7 +596,8 @@
     "e2": "",
     "theme": "Conflict",
     "interp": "When someone is cornered, they will lash out.",
-    "num": 60
+    "num": 60,
+    "audioUrl": "https://proverbs.speakingpashto.com/60.mp3"
   },
   {
     "p1": "چې غل نهٔ تښتی نو مل دې وتښتی",
@@ -546,7 +606,8 @@
     "e2": "",
     "theme": "Conflict",
     "interp": "The proverb is a warning during a conflict that one of the two parties must leave.",
-    "num": 61
+    "num": 61,
+    "audioUrl": "https://proverbs.speakingpashto.com/61.mp3"
   },
   {
     "p1": "دوه لوښی په کور کښې جنګېږی",
@@ -555,7 +616,8 @@
     "e2": "",
     "theme": "Conflict",
     "interp": "It’s natural for family members to have conflict.",
-    "num": 62
+    "num": 62,
+    "audioUrl": "https://proverbs.speakingpashto.com/62.mp3"
   },
   {
     "p1": "چې امرثې خوری",
@@ -564,7 +626,8 @@
     "e2": "",
     "theme": "Consequences",
     "interp": "امرثې is a kind of sweet doughnut. The proverb is used to warn someone who likes to indulge in pleasant things, that they will have to pay the price. Literally, they will get fucked.",
-    "num": 63
+    "num": 63,
+    "audioUrl": "https://proverbs.speakingpashto.com/63.mp3"
   },
   {
     "p1": "چې بد یې وی خویونه",
@@ -573,7 +636,8 @@
     "e2": "you’ll have bad dreams.",
     "theme": "Consequences",
     "interp": "Doing evil will affect you.",
-    "num": 64
+    "num": 64,
+    "audioUrl": "https://proverbs.speakingpashto.com/64.mp3"
   },
   {
     "p1": "انګار جاڼے",
@@ -582,7 +646,8 @@
     "e2": "the blacksmith knows his job.",
     "theme": "Consequences",
     "interp": "A humorous proverb implying that someone should face the music for what they have done.",
-    "num": 65
+    "num": 65,
+    "audioUrl": "https://proverbs.speakingpashto.com/65.mp3"
   },
   {
     "p1": "د بد کار بد انجام وی",
@@ -591,7 +656,8 @@
     "e2": "",
     "theme": "Consequences",
     "interp": "Cause and effect.",
-    "num": 66
+    "num": 66,
+    "audioUrl": "https://proverbs.speakingpashto.com/66.mp3"
   },
   {
     "p1": "چې ښهٔ کوې ښهٔ به مومې",
@@ -600,7 +666,8 @@
     "e2": "if you do wrong you will find evil.",
     "theme": "Consequences",
     "interp": "The natural consequences of good and bad behaviour.",
-    "num": 67
+    "num": 67,
+    "audioUrl": "https://proverbs.speakingpashto.com/67.mp3"
   },
   {
     "p1": "چې څهٔ کرې هغه به رېبې",
@@ -609,7 +676,8 @@
     "e2": "",
     "theme": "Consequences",
     "interp": "A proverb taken from a line by the poet Rahman Baba.",
-    "num": 68
+    "num": 68,
+    "audioUrl": "https://proverbs.speakingpashto.com/68.mp3"
   },
   {
     "p1": "اور له راغله",
@@ -618,7 +686,8 @@
     "e2": "and became owner of the house.",
     "theme": "Control",
     "interp": "The thin end of the wedge: someone who takes over after a small excuse.",
-    "num": 69
+    "num": 69,
+    "audioUrl": "https://proverbs.speakingpashto.com/69.mp3"
   },
   {
     "p1": "بې زما نه دې شل نۀ کړه",
@@ -627,7 +696,8 @@
     "e2": "",
     "theme": "Cooperation",
     "interp": "A taunting proverb spoken to someone who cannot do anything by themselves.",
-    "num": 70
+    "num": 70,
+    "audioUrl": "https://proverbs.speakingpashto.com/70.mp3"
   },
   {
     "p1": "غر په غر نهٔ ورځی",
@@ -636,7 +706,8 @@
     "e2": "but people can move to one another.",
     "theme": "Cooperation",
     "interp": "Encouragement to exchange mutual help and not be stand-offish.",
-    "num": 71
+    "num": 71,
+    "audioUrl": "https://proverbs.speakingpashto.com/71.mp3"
   },
   {
     "p1": "د انسانیت سره مینه",
@@ -645,7 +716,8 @@
     "e2": "",
     "theme": "Compassion",
     "interp": "Helping others pleases God.",
-    "num": 72
+    "num": 72,
+    "audioUrl": "https://proverbs.speakingpashto.com/72.mp3"
   },
   {
     "p1": "د هاتیانو سره ټانټې مۀ ژویه",
@@ -654,7 +726,8 @@
     "e2": "",
     "theme": "Competition",
     "interp": "A warning not to compete with the powerful.",
-    "num": 73
+    "num": 73,
+    "audioUrl": "https://proverbs.speakingpashto.com/73.mp3"
   },
   {
     "p1": "دا ګز او دا میدان",
@@ -663,7 +736,8 @@
     "e2": "",
     "theme": "Competition",
     "interp": "A reply given to someone who boasts; to prove themselves.",
-    "num": 74
+    "num": 74,
+    "audioUrl": "https://proverbs.speakingpashto.com/74.mp3"
   },
   {
     "p1": "خدائ دې داسې حریان کړه",
@@ -672,7 +746,8 @@
     "e2": "As you confused me.",
     "theme": "Confusion",
     "interp": "A humorous reply to a confusing question or situation.",
-    "num": 75
+    "num": 75,
+    "audioUrl": "https://proverbs.speakingpashto.com/75.mp3"
   },
   {
     "p1": "کارغهٔ غول خوری",
@@ -681,7 +756,8 @@
     "e2": "",
     "theme": "Cover Up",
     "interp": "A bad person conceals his misdeeds by claiming to be innocent.",
-    "num": 76
+    "num": 76,
+    "audioUrl": "https://proverbs.speakingpashto.com/76.mp3"
   },
   {
     "p1": "د اوښانو غلا په ټیټه ملا نهٔ کېږي",
@@ -690,7 +766,8 @@
     "e2": "",
     "theme": "Cover Up",
     "interp": "You can’t hide something that is obvious, even if you try to. This is used, for example, to tease someone who is being bashful about getting a big job.",
-    "num": 77
+    "num": 77,
+    "audioUrl": "https://proverbs.speakingpashto.com/77.mp3"
   },
   {
     "p1": "خوار خو خدائ کړې",
@@ -699,7 +776,8 @@
     "e2": "but who made you a coward?",
     "theme": "Coward",
     "interp": "A taunt blaming someone for being timid.",
-    "num": 78
+    "num": 78,
+    "audioUrl": "https://proverbs.speakingpashto.com/78.mp3"
   },
   {
     "p1": "ګیدړ د خپل سیوری نه یریږی",
@@ -708,7 +786,8 @@
     "e2": "",
     "theme": "Coward",
     "interp": "The jackal is the epitome of cowardice in Pashtun thought.",
-    "num": 79
+    "num": 79,
+    "audioUrl": "https://proverbs.speakingpashto.com/79.mp3"
   },
   {
     "p1": "په زړهٔ کښې یې ګیدړ ناست دے",
@@ -717,7 +796,8 @@
     "e2": "",
     "theme": "Craftiness",
     "interp": "A description of a devious, sneaky person.",
-    "num": 80
+    "num": 80,
+    "audioUrl": "https://proverbs.speakingpashto.com/80.mp3"
   },
   {
     "p1": "په پرهر مې مالګې مۀ دوړوه",
@@ -726,7 +806,8 @@
     "e2": "",
     "theme": "Cruelty",
     "interp": "A plea not to exacerbate a problem, or a past issue.",
-    "num": 81
+    "num": 81,
+    "audioUrl": "https://proverbs.speakingpashto.com/81.mp3"
   },
   {
     "p1": "زړۀ دې خالص د اوسپنې دے",
@@ -735,7 +816,8 @@
     "e2": "It pities no one.",
     "theme": "Cruelty",
     "interp": "A description of a hard-hearted cruel person.",
-    "num": 82
+    "num": 82,
+    "audioUrl": "https://proverbs.speakingpashto.com/82.mp3"
   },
   {
     "p1": "ظلم دومره کوه",
@@ -744,7 +826,8 @@
     "e2": "as you yourself can bear.",
     "theme": "Cruelty",
     "interp": "A warning not to be excessive, since your number will come.",
-    "num": 83
+    "num": 83,
+    "audioUrl": "https://proverbs.speakingpashto.com/83.mp3"
   },
   {
     "p1": "چې نۀ سیخ وسوځی او نۀ کباب",
@@ -753,7 +836,8 @@
     "e2": "",
     "theme": "Damage",
     "interp": "An exhortation not to cause damage in any way.",
-    "num": 84
+    "num": 84,
+    "audioUrl": "https://proverbs.speakingpashto.com/84.mp3"
   },
   {
     "p1": "مرګ حق دے",
@@ -762,7 +846,8 @@
     "e2": "the shroud is doubtful.",
     "theme": "Death",
     "interp": "There’s no guarantee we’ll die with honour - wrapped in a shroud. Those who go missing, or die in accidents won’t be given a proper burial.",
-    "num": 85
+    "num": 85,
+    "audioUrl": "https://proverbs.speakingpashto.com/85.mp3"
   },
   {
     "p1": "مړ به شې خو موړ به نۀ شې",
@@ -771,7 +856,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "A taunt aimed at a greedy person.",
-    "num": 86
+    "num": 86,
+    "audioUrl": "https://proverbs.speakingpashto.com/86.mp3"
   },
   {
     "p1": "مرګ د ډېرو پړده ده",
@@ -780,7 +866,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Death can sometimes hide the shame that may have been revealed by dishonourable events, or a shameful sickness.",
-    "num": 87
+    "num": 87,
+    "audioUrl": "https://proverbs.speakingpashto.com/87.mp3"
   },
   {
     "p1": "چې اجل راشی نو څهٔ بهانه شی",
@@ -789,7 +876,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "An admonition to stop risky behaviour that can kill you - like guns or motorbikes. اجل means the time of death.",
-    "num": 88
+    "num": 88,
+    "audioUrl": "https://proverbs.speakingpashto.com/88.mp3"
   },
   {
     "p1": "چې مرګ ووینی نو تبې ته راضا شی",
@@ -798,7 +886,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Minor things are put in perspective after a near-death experience.",
-    "num": 89
+    "num": 89,
+    "audioUrl": "https://proverbs.speakingpashto.com/89.mp3"
   },
   {
     "p1": "د اجل نه مخکښې مۀ مره",
@@ -807,7 +896,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Admonition not to worry ahead of time.",
-    "num": 90
+    "num": 90,
+    "audioUrl": "https://proverbs.speakingpashto.com/90.mp3"
   },
   {
     "p1": "د خاورو پېدا یو او خاورو له به ځو",
@@ -816,7 +906,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Words of comfort for the bereaved.",
-    "num": 91
+    "num": 91,
+    "audioUrl": "https://proverbs.speakingpashto.com/91.mp3"
   },
   {
     "p1": "د خپله مرګه څوک نۀ وی خبر",
@@ -825,7 +916,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Encouragement to trust in God concerning your death.",
-    "num": 92
+    "num": 92,
+    "audioUrl": "https://proverbs.speakingpashto.com/92.mp3"
   },
   {
     "p1": "د ګور شپه نۀ په کور کېږی",
@@ -834,7 +926,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Again, a reminder and a comfort that the time of death is pre-ordained. It can’t be delayed by staying home.",
-    "num": 93
+    "num": 93,
+    "audioUrl": "https://proverbs.speakingpashto.com/93.mp3"
   },
   {
     "p1": "د مرګ علاج",
@@ -843,7 +936,8 @@
     "e2": "wasn’t even with Doctor Luqman.",
     "theme": "Death",
     "interp": "Death is a certainty, despite all attempts of man to prevent it. Hakim Luqman was a wise man mentioned in Sura 31.",
-    "num": 94
+    "num": 94,
+    "audioUrl": "https://proverbs.speakingpashto.com/94.mp3"
   },
   {
     "p1": "مرګ ته لوئ او واړۀ یو شے دے",
@@ -852,7 +946,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Young people die as well as the elderly.",
-    "num": 95
+    "num": 95,
+    "audioUrl": "https://proverbs.speakingpashto.com/95.mp3"
   },
   {
     "p1": "مرګ شته خلاصون ترې نشته",
@@ -861,7 +956,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Words of comfort to the bereaved.",
-    "num": 96
+    "num": 96,
+    "audioUrl": "https://proverbs.speakingpashto.com/96.mp3"
   },
   {
     "p1": "د هر مرض دارو شته خو د مرګ نه",
@@ -870,7 +966,8 @@
     "e2": "",
     "theme": "Death",
     "interp": "Death is inevitable and no amount of medical intervention can stop it.",
-    "num": 97
+    "num": 97,
+    "audioUrl": "https://proverbs.speakingpashto.com/97.mp3"
   },
   {
     "p1": "مرګ له ایمان سره",
@@ -879,7 +976,8 @@
     "e2": "Life with a lover.",
     "theme": "Death",
     "interp": "An ironic tension between orthodoxy and romance.",
-    "num": 98
+    "num": 98,
+    "audioUrl": "https://proverbs.speakingpashto.com/98.mp3"
   },
   {
     "p1": "سل په لالی پورې",
@@ -888,7 +986,8 @@
     "e2": "let there be one more for bangles.",
     "theme": "Debt",
     "interp": "When heavily in debt, what is another small amount? In the famous Arabic love story, Layla is the beloved of Mujnoon.",
-    "num": 99
+    "num": 99,
+    "audioUrl": "https://proverbs.speakingpashto.com/99.mp3"
   },
   {
     "p1": "اوښ په ببوزی نهٔ درنیږی",
@@ -897,7 +996,8 @@
     "e2": "",
     "theme": "Debt",
     "interp": "A little extra won’t make any difference. Especially related to debt. ببوزى is a small hand fan that is light and so barely noticed when added to the camel’s load.",
-    "num": 100
+    "num": 100,
+    "audioUrl": "https://proverbs.speakingpashto.com/100.mp3"
   },
   {
     "p1": "پۀ خوله یوه او پۀ زړۀ بله",
@@ -906,7 +1006,8 @@
     "e2": "",
     "theme": "Deception",
     "interp": "Deception.",
-    "num": 101
+    "num": 101,
+    "audioUrl": "https://proverbs.speakingpashto.com/101.mp3"
   },
   {
     "p1": "سړے سیند ته تږے",
@@ -915,7 +1016,8 @@
     "e2": "and brings him back thirsty.",
     "theme": "Deception",
     "interp": "Descriptive of crafty individuals, who trick people.",
-    "num": 102
+    "num": 102,
+    "audioUrl": "https://proverbs.speakingpashto.com/102.mp3"
   },
   {
     "p1": "د ویښې مور نه زوئ پټوی",
@@ -924,7 +1026,8 @@
     "e2": "",
     "theme": "Deception",
     "interp": "As with 102, a clever beguiling person.",
-    "num": 103
+    "num": 103,
+    "audioUrl": "https://proverbs.speakingpashto.com/103.mp3"
   },
   {
     "p1": "فلانے خو د بوسو لاندې اوبۀ بوځی",
@@ -933,7 +1036,8 @@
     "e2": "",
     "theme": "Deception",
     "interp": "To spread water under the straw is an idiom meaning to do something without being detected.",
-    "num": 104
+    "num": 104,
+    "audioUrl": "https://proverbs.speakingpashto.com/104.mp3"
   },
   {
     "p1": "خبرې ډېرې او سر یې یو",
@@ -942,7 +1046,8 @@
     "e2": "",
     "theme": "Decisions",
     "interp": "Used when everyone is talking, but the conclusion is clear. Everything boils down to this point.",
-    "num": 105
+    "num": 105,
+    "audioUrl": "https://proverbs.speakingpashto.com/105.mp3"
   },
   {
     "p1": "یا به هۍ شی",
@@ -951,7 +1056,8 @@
     "e2": "",
     "theme": "Decisions",
     "interp": "An encouragement to go ahead and make a decision, whether it works out well or not. Hai is the expression for remorse, Wai for pleasant surprise. It will be one of the other, so just go for it.",
-    "num": 106
+    "num": 106,
+    "audioUrl": "https://proverbs.speakingpashto.com/106.mp3"
   },
   {
     "p1": "د بیا سره به بیا کتے شی",
@@ -960,7 +1066,8 @@
     "e2": "",
     "theme": "Decisions",
     "interp": "An encouragement to do something right away: take a risk. Only later will anyone know the outcome.",
-    "num": 107
+    "num": 107,
+    "audioUrl": "https://proverbs.speakingpashto.com/107.mp3"
   },
   {
     "p1": "د نن سره به نن کوو",
@@ -969,7 +1076,8 @@
     "e2": "and tomorrow’s tomorrow.",
     "theme": "Decisions",
     "interp": "A plea to focus on the issue at hand and not overthink the future.",
-    "num": 108
+    "num": 108,
+    "audioUrl": "https://proverbs.speakingpashto.com/108.mp3"
   },
   {
     "p1": "هم یې زړهٔ کېږی او هم یې ساړهٔ کېږی",
@@ -978,7 +1086,8 @@
     "e2": "",
     "theme": "Decisions",
     "interp": "Description of a hesitant person who can’t make a decision.",
-    "num": 109
+    "num": 109,
+    "audioUrl": "https://proverbs.speakingpashto.com/109.mp3"
   },
   {
     "p1": "پردے کټ د نیمې شپې وی",
@@ -987,7 +1096,8 @@
     "e2": "",
     "theme": "Dependency",
     "interp": "You can’t depend on the generosity of outsiders for long. پردے means someone belonging outside the family.",
-    "num": 110
+    "num": 110,
+    "audioUrl": "https://proverbs.speakingpashto.com/110.mp3"
   },
   {
     "p1": "محتاجی د پلار هم ښۀ نهٔ ده",
@@ -996,7 +1106,8 @@
     "e2": "",
     "theme": "Dependency",
     "interp": "An admonition against relying on others.",
-    "num": 111
+    "num": 111,
+    "audioUrl": "https://proverbs.speakingpashto.com/111.mp3"
   },
   {
     "p1": "یو یې ګټی او سل یې څټې",
@@ -1005,7 +1116,8 @@
     "e2": "",
     "theme": "Dependency",
     "interp": "One bread-winner for a large extended family. The proverb implies the others are lazy.",
-    "num": 112
+    "num": 112,
+    "audioUrl": "https://proverbs.speakingpashto.com/112.mp3"
   },
   {
     "p1": "خدائ پاک دې یو لاس",
@@ -1014,7 +1126,8 @@
     "e2": "",
     "theme": "Dependency",
     "interp": "A prayer not to be dependent on anyone.",
-    "num": 113
+    "num": 113,
+    "audioUrl": "https://proverbs.speakingpashto.com/113.mp3"
   },
   {
     "p1": "پښې هلته ځی چرته چې زړۀ ورځی",
@@ -1023,7 +1136,8 @@
     "e2": "",
     "theme": "Desire",
     "interp": "You meet with those who you have mutual affection for.",
-    "num": 114
+    "num": 114,
+    "audioUrl": "https://proverbs.speakingpashto.com/114.mp3"
   },
   {
     "p1": "ړوند د خدایه څۀ غواړی؟ دوه سترګې",
@@ -1032,7 +1146,8 @@
     "e2": "",
     "theme": "Desire",
     "interp": "People crave for what they lack.",
-    "num": 115
+    "num": 115,
+    "audioUrl": "https://proverbs.speakingpashto.com/115.mp3"
   },
   {
     "p1": "خبره په خبرو خلاصېږی",
@@ -1041,7 +1156,8 @@
     "e2": "",
     "theme": "Dialogue",
     "interp": "Conflict is solved by discussion rather than violence.",
-    "num": 116
+    "num": 116,
+    "audioUrl": "https://proverbs.speakingpashto.com/116.mp3"
   },
   {
     "p1": "اول وخوره د ځان غوښې",
@@ -1050,7 +1166,8 @@
     "e2": "then eat the meat of the hunt.",
     "theme": "Diligence",
     "interp": "You get the benefit of your effort only after hard work.",
-    "num": 117
+    "num": 117,
+    "audioUrl": "https://proverbs.speakingpashto.com/117.mp3"
   },
   {
     "p1": "د نن کار سبا ته مهٔ پرېږده",
@@ -1059,7 +1176,8 @@
     "e2": "",
     "theme": "Diligence",
     "interp": "Appeal for timely action.",
-    "num": 118
+    "num": 118,
+    "audioUrl": "https://proverbs.speakingpashto.com/118.mp3"
   },
   {
     "p1": "د بارانه تښتېدمه",
@@ -1068,7 +1186,8 @@
     "e2": "but spent the night under the spout.",
     "theme": "Disaster",
     "interp": "Escaping one calamity after another.",
-    "num": 119
+    "num": 119,
+    "audioUrl": "https://proverbs.speakingpashto.com/119.mp3"
   },
   {
     "p1": "چې یو خوا ګورم ډانګ دے",
@@ -1077,7 +1196,8 @@
     "e2": "When I look to the other, there’s a leopard.",
     "theme": "Disaster",
     "interp": "Said when facing trouble on many sides.",
-    "num": 120
+    "num": 120,
+    "audioUrl": "https://proverbs.speakingpashto.com/120.mp3"
   },
   {
     "p1": "چرته چې ډب وی هلته ادب وی",
@@ -1086,7 +1206,8 @@
     "e2": "",
     "theme": "Discipline",
     "interp": "Obedience is taught by strict punishment. ادب means courtesy, good manners, or politeness.",
-    "num": 121
+    "num": 121,
+    "audioUrl": "https://proverbs.speakingpashto.com/121.mp3"
   },
   {
     "p1": "کږه خوله په سوک سمېږی",
@@ -1095,7 +1216,8 @@
     "e2": "",
     "theme": "Discipline",
     "interp": "For those who speak angry, or unfriendly words the only way to correct them is with rough treatment.",
-    "num": 122
+    "num": 122,
+    "audioUrl": "https://proverbs.speakingpashto.com/122.mp3"
   },
   {
     "p1": "زهٔ په څهٔ یم او تهٔ په څهٔ یې",
@@ -1104,7 +1226,8 @@
     "e2": "",
     "theme": "Disconnect",
     "interp": "When two people are oblivious of each other’s concerns and problems, and just focused on your own issues.",
-    "num": 123
+    "num": 123,
+    "audioUrl": "https://proverbs.speakingpashto.com/123.mp3"
   },
   {
     "p1": "نهٔ دې په تلو پوهه شوم او نهٔ دې په راتلو",
@@ -1113,7 +1236,8 @@
     "e2": "",
     "theme": "Disconnect",
     "interp": "When two people are oblivious of each other and find no positive effect or benefit in their connection with each other.",
-    "num": 124
+    "num": 124,
+    "audioUrl": "https://proverbs.speakingpashto.com/124.mp3"
   },
   {
     "p1": "که منګے مات شو او که نه",
@@ -1122,7 +1246,8 @@
     "e2": "its sound has been broadcast.",
     "theme": "Disgrace",
     "interp": "Whether the facts are true or not, once lost, a reputation is irreparable. منګے is a clay pot used to hold liquid and also doubles up as a drum.",
-    "num": 125
+    "num": 125,
+    "audioUrl": "https://proverbs.speakingpashto.com/125.mp3"
   },
   {
     "p1": "زرګر د مور نه هم غلا کوی",
@@ -1131,7 +1256,8 @@
     "e2": "",
     "theme": "Dishonesty",
     "interp": "There is no limit to the bad behaviour of goldsmiths; they are seen as the epitome of dishonesty.",
-    "num": 126
+    "num": 126,
+    "audioUrl": "https://proverbs.speakingpashto.com/126.mp3"
   },
   {
     "p1": "دروغژن همیشه مختورن وی",
@@ -1140,7 +1266,8 @@
     "e2": "",
     "theme": "Dishonesty",
     "interp": "The dishonest will end up being shamed. مختور (black-face) refers to someone who is blamed, or caught in shameful behaviour.",
-    "num": 127
+    "num": 127,
+    "audioUrl": "https://proverbs.speakingpashto.com/127.mp3"
   },
   {
     "p1": "اور او اوبهٔ نهٔ یو ځای کېږی",
@@ -1149,7 +1276,8 @@
     "e2": "",
     "theme": "Disunity",
     "interp": "Opposites cannot be reconciled. Truth and lies don’t mix.",
-    "num": 128
+    "num": 128,
+    "audioUrl": "https://proverbs.speakingpashto.com/128.mp3"
   },
   {
     "p1": "ګمان د ایمان زیان دے",
@@ -1158,7 +1286,8 @@
     "e2": "",
     "theme": "Doubt",
     "interp": "Faith (in others and God) is damaged by doubt and lack of trust.",
-    "num": 129
+    "num": 129,
+    "audioUrl": "https://proverbs.speakingpashto.com/129.mp3"
   },
   {
     "p1": "په دوؤ بېړو پښې مۀ ږده",
@@ -1167,7 +1296,8 @@
     "e2": "",
     "theme": "Duplicity",
     "interp": "The danger of trying to do two things at once, or to serve two masters.",
-    "num": 130
+    "num": 130,
+    "audioUrl": "https://proverbs.speakingpashto.com/130.mp3"
   },
   {
     "p1": "چې ګوړه زیاتوې شربت خوږېږی",
@@ -1176,7 +1306,8 @@
     "e2": "",
     "theme": "Effort",
     "interp": "Do more work, or pay more money to get a better result. ګوړه is the sugar boiled down from sugar cane; also known as jaggery.",
-    "num": 131
+    "num": 131,
+    "audioUrl": "https://proverbs.speakingpashto.com/131.mp3"
   },
   {
     "p1": "ګوړه ګوړه وایه خوله به دې خوږه ویø",
@@ -1185,7 +1316,8 @@
     "e2": "",
     "theme": "Effort",
     "interp": "A sarcastic comment to express how just saying something won’t work; you have to get practical.",
-    "num": 132
+    "num": 132,
+    "audioUrl": "https://proverbs.speakingpashto.com/132.mp3"
   },
   {
     "p1": "د قبر خاوره په قبر لګی",
@@ -1194,7 +1326,8 @@
     "e2": "",
     "theme": "Effort",
     "interp": "You get a result according to your effort: exactly what is dug up falls on the ground.",
-    "num": 133
+    "num": 133,
+    "audioUrl": "https://proverbs.speakingpashto.com/133.mp3"
   },
   {
     "p1": "غم او ښادی ورور او خور دی",
@@ -1203,7 +1336,8 @@
     "e2": "",
     "theme": "Emotions",
     "interp": "Happy and sad times go side-by-side.",
-    "num": 134
+    "num": 134,
+    "audioUrl": "https://proverbs.speakingpashto.com/134.mp3"
   },
   {
     "p1": "راواچوه چې شل شی",
@@ -1212,7 +1346,8 @@
     "e2": "",
     "theme": "Emotions",
     "interp": "Close to the American expression ‘Give me five!’ In this case both hands (twenty fingers) give a moment of excitement.",
-    "num": 135
+    "num": 135,
+    "audioUrl": "https://proverbs.speakingpashto.com/135.mp3"
   },
   {
     "p1": "آخره زمانه شوه",
@@ -1221,7 +1356,8 @@
     "e2": "",
     "theme": "End Times",
     "interp": "When friendships are debased by exploitation and bribery, it must be the end times.",
-    "num": 136
+    "num": 136,
+    "audioUrl": "https://proverbs.speakingpashto.com/136.mp3"
   },
   {
     "p1": "نن دے که صبا دے",
@@ -1230,7 +1366,8 @@
     "e2": "",
     "theme": "End Times",
     "interp": "Zarghon Shah is a euphemism for God (the one who created life), so the proverb implies that the world will finish and revert to God again.",
-    "num": 137
+    "num": 137,
+    "audioUrl": "https://proverbs.speakingpashto.com/137.mp3"
   },
   {
     "p1": "یو د لوږې مری",
@@ -1239,7 +1376,8 @@
     "e2": "the other looks for parathas under his head.",
     "theme": "Equality",
     "interp": "The irony of a rich man asking a starving man for help. پراټه is a fried flatbread eaten for breakfast.",
-    "num": 138
+    "num": 138,
+    "audioUrl": "https://proverbs.speakingpashto.com/138.mp3"
   },
   {
     "p1": "د لیدو او د اورېدو ډېر فرق وی",
@@ -1248,7 +1386,8 @@
     "e2": "",
     "theme": "Evidence",
     "interp": "Truth relies on first-hand evidence, not hearsay.",
-    "num": 139
+    "num": 139,
+    "audioUrl": "https://proverbs.speakingpashto.com/139.mp3"
   },
   {
     "p1": "د دۀ سترګې خو کاڼی چوی",
@@ -1257,7 +1396,8 @@
     "e2": "",
     "theme": "Evil Eye",
     "interp": "The person has such a powerful evil eye it can shatter rocks.",
-    "num": 140
+    "num": 140,
+    "audioUrl": "https://proverbs.speakingpashto.com/140.mp3"
   },
   {
     "p1": "چې ماما ځان وګروی",
@@ -1266,7 +1406,8 @@
     "e2": "his nephew gets expectant.",
     "theme": "Expectations",
     "interp": "The maternal uncle is much-loved by his sister’s children, and they are waiting for him to give them a treat. Every little thing he does raises their expectation.",
-    "num": 141
+    "num": 141,
+    "audioUrl": "https://proverbs.speakingpashto.com/141.mp3"
   },
   {
     "p1": "ګیله د خپلو کېږی",
@@ -1275,7 +1416,8 @@
     "e2": "",
     "theme": "Expectations",
     "interp": "There is less hesitation to express grievances among family members.",
-    "num": 142
+    "num": 142,
+    "audioUrl": "https://proverbs.speakingpashto.com/142.mp3"
   },
   {
     "p1": "زمونږ خو پکښې وېښتۀ سپین شو",
@@ -1284,7 +1426,8 @@
     "e2": "",
     "theme": "Experience",
     "interp": "Descriptive of someone who has a deep expertise and skill",
-    "num": 143
+    "num": 143,
+    "audioUrl": "https://proverbs.speakingpashto.com/143.mp3"
   },
   {
     "p1": "هر سړے په خپل کار ښهٔ پوهېږی",
@@ -1293,7 +1436,8 @@
     "e2": "",
     "theme": "Experience",
     "interp": "People are masters of their own business.",
-    "num": 144
+    "num": 144,
+    "audioUrl": "https://proverbs.speakingpashto.com/144.mp3"
   },
   {
     "p1": "د روژې هر ماښام اختر وی",
@@ -1302,7 +1446,8 @@
     "e2": "",
     "theme": "Fasting",
     "interp": "Breaking the fast during Ramazan is a celebration every evening.",
-    "num": 145
+    "num": 145,
+    "audioUrl": "https://proverbs.speakingpashto.com/145.mp3"
   },
   {
     "p1": "په خپل نصیب صبر پکار دے",
@@ -1311,7 +1456,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "A call for contentment with your own lot in life. نصيب means fate, fortune or destiny.",
-    "num": 146
+    "num": 146,
+    "audioUrl": "https://proverbs.speakingpashto.com/146.mp3"
   },
   {
     "p1": "د خرۀ په تندی کښې محراب نۀ وی",
@@ -1320,7 +1466,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "An unfortunate person who is never lucky. محراب refers to the niche in the wall of a mosque. The implication is that a donkey is without the blessing that comes from God’s favour.",
-    "num": 147
+    "num": 147,
+    "audioUrl": "https://proverbs.speakingpashto.com/147.mp3"
   },
   {
     "p1": "بنده یو څۀ کوی او خدائ بل څۀ",
@@ -1329,7 +1476,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "Man proposes, God disposes.",
-    "num": 148
+    "num": 148,
+    "audioUrl": "https://proverbs.speakingpashto.com/148.mp3"
   },
   {
     "p1": "په وخت او بخت بدلېدو کښې",
@@ -1338,7 +1486,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "Life can change very suddenly.",
-    "num": 149
+    "num": 149,
+    "audioUrl": "https://proverbs.speakingpashto.com/149.mp3"
   },
   {
     "p1": "قسمت کته کړے خر دے",
@@ -1347,7 +1496,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "Don’t blame things on fate when you’re not making any effort.",
-    "num": 150
+    "num": 150,
+    "audioUrl": "https://proverbs.speakingpashto.com/150.mp3"
   },
   {
     "p1": "د مرګ او ګاک",
@@ -1356,7 +1506,8 @@
     "e2": "",
     "theme": "Fate",
     "interp": "We can’t predict events.",
-    "num": 151
+    "num": 151,
+    "audioUrl": "https://proverbs.speakingpashto.com/151.mp3"
   },
   {
     "p1": "د خان نه مۀ ویرېږه",
@@ -1365,7 +1516,8 @@
     "e2": "",
     "theme": "Fear",
     "interp": "The Khan’s helpers are less magnanimous than the Khan himself.",
-    "num": 152
+    "num": 152,
+    "audioUrl": "https://proverbs.speakingpashto.com/152.mp3"
   },
   {
     "p1": "مار خوړلے د پړی نه ویریږی",
@@ -1374,7 +1526,8 @@
     "e2": "",
     "theme": "Fear",
     "interp": "Once bitten, twice shy.",
-    "num": 153
+    "num": 153,
+    "audioUrl": "https://proverbs.speakingpashto.com/153.mp3"
   },
   {
     "p1": "د یرې نه پکښې غول وچ شول",
@@ -1383,7 +1536,8 @@
     "e2": "",
     "theme": "Fear",
     "interp": "An expression of extreme fear.",
-    "num": 154
+    "num": 154,
+    "audioUrl": "https://proverbs.speakingpashto.com/154.mp3"
   },
   {
     "p1": "خر پلار کړه",
@@ -1392,7 +1546,8 @@
     "e2": "then load what you want on it.",
     "theme": "Flattery",
     "interp": "Flattery will get you what you want, even if you have to be nice to a donkey.",
-    "num": 155
+    "num": 155,
+    "audioUrl": "https://proverbs.speakingpashto.com/155.mp3"
   },
   {
     "p1": "روزی د خدای په لاس کښې ده",
@@ -1401,7 +1556,8 @@
     "e2": "",
     "theme": "Food",
     "interp": "God’s provision is sure.",
-    "num": 156
+    "num": 156,
+    "audioUrl": "https://proverbs.speakingpashto.com/156.mp3"
   },
   {
     "p1": "چې څهٔ تیار وی هغه د یار وی",
@@ -1410,7 +1566,8 @@
     "e2": "",
     "theme": "Food",
     "interp": "Formal hospitality and specially prepared food is not needed among close friends.",
-    "num": 157
+    "num": 157,
+    "audioUrl": "https://proverbs.speakingpashto.com/157.mp3"
   },
   {
     "p1": "چینجی له خدائ په کاڼی کښې رزق ورکوی",
@@ -1419,7 +1576,8 @@
     "e2": "",
     "theme": "Food",
     "interp": "God’s provision is far-reaching. The proverb could also be used to encourage a destitute person.",
-    "num": 158
+    "num": 158,
+    "audioUrl": "https://proverbs.speakingpashto.com/158.mp3"
   },
   {
     "p1": "خر غیرت وکړو ټرک ووهل",
@@ -1428,7 +1586,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Stupid people attempt foolish things beyond their ability.",
-    "num": 159
+    "num": 159,
+    "audioUrl": "https://proverbs.speakingpashto.com/159.mp3"
   },
   {
     "p1": "د دنګ سړی عقل په پوندو کښې وی",
@@ -1437,7 +1596,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Tall people are thought to be stupid.",
-    "num": 160
+    "num": 160,
+    "audioUrl": "https://proverbs.speakingpashto.com/160.mp3"
   },
   {
     "p1": "خر د خید په خوراک څۀ پوهیږی؟",
@@ -1446,7 +1606,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "خید is fancy fodder not normally given to a donkey. The proverb refers to the foolishness of treating a poor or uneducated person with fine things.",
-    "num": 161
+    "num": 161,
+    "audioUrl": "https://proverbs.speakingpashto.com/161.mp3"
   },
   {
     "p1": "چې په کوم ښاخ ناست دے",
@@ -1455,7 +1616,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Like shooting yourself in the foot.",
-    "num": 162
+    "num": 162,
+    "audioUrl": "https://proverbs.speakingpashto.com/162.mp3"
   },
   {
     "p1": "د ایلۍ بچی ته لامبو ښائی",
@@ -1464,7 +1626,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Someone who is already an expert needs no advice.",
-    "num": 163
+    "num": 163,
+    "audioUrl": "https://proverbs.speakingpashto.com/163.mp3"
   },
   {
     "p1": "هوښیار له اشاره ته او کم عقل ته کوتکه",
@@ -1473,7 +1636,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Foolish people need more instruction, the wise less.",
-    "num": 164
+    "num": 164,
+    "audioUrl": "https://proverbs.speakingpashto.com/164.mp3"
   },
   {
     "p1": "د کم عقل دوست نه",
@@ -1482,7 +1646,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "Foolishness is to be avoided above all else.",
-    "num": 165
+    "num": 165,
+    "audioUrl": "https://proverbs.speakingpashto.com/165.mp3"
   },
   {
     "p1": "ابۍ مې لېونۍ شوه",
@@ -1491,7 +1656,8 @@
     "e2": "she wants aubergine in the depths of winter.",
     "theme": "Foolishness",
     "interp": "Having impossible desires for something you can’t expect to get.",
-    "num": 166
+    "num": 166,
+    "audioUrl": "https://proverbs.speakingpashto.com/166.mp3"
   },
   {
     "p1": "چې تېر شی هغه هېر شی",
@@ -1500,7 +1666,8 @@
     "e2": "",
     "theme": "Forgiveness",
     "interp": "A plea for past hurts to be forgiven.",
-    "num": 167
+    "num": 167,
+    "audioUrl": "https://proverbs.speakingpashto.com/167.mp3"
   },
   {
     "p1": "زاړهٔ مړی څوک نهٔ راژوندی کوی",
@@ -1509,7 +1676,8 @@
     "e2": "",
     "theme": "Foolishness",
     "interp": "A plea not to bring up the past.",
-    "num": 168
+    "num": 168,
+    "audioUrl": "https://proverbs.speakingpashto.com/168.mp3"
   },
   {
     "p1": "په تش جېب یارانه نۀ کېږی",
@@ -1518,7 +1686,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "It costs money to maintain friendships.",
-    "num": 169
+    "num": 169,
+    "audioUrl": "https://proverbs.speakingpashto.com/169.mp3"
   },
   {
     "p1": "چې یارانه په شلتالو شوه نو پاتې ده",
@@ -1527,7 +1696,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Peaches are synonymous with greed. Selfish greed won’t foster friendship.",
-    "num": 170
+    "num": 170,
+    "audioUrl": "https://proverbs.speakingpashto.com/170.mp3"
   },
   {
     "p1": "دوست هغه دے",
@@ -1536,7 +1706,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "A friend in need is a friend in deed.",
-    "num": 171
+    "num": 171,
+    "audioUrl": "https://proverbs.speakingpashto.com/171.mp3"
   },
   {
     "p1": "که د چا پلار یې خو زما یار یې",
@@ -1545,7 +1716,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Used to give the impression of having access or relationship with someone you don’t. It is also used to get help from someone who is not a blood relative.",
-    "num": 172
+    "num": 172,
+    "audioUrl": "https://proverbs.speakingpashto.com/172.mp3"
   },
   {
     "p1": "ډمې ته چا وې چې یار دې مړ شو",
@@ -1554,7 +1726,8 @@
     "e2": "and they ask “In which street?”",
     "theme": "Friendship",
     "interp": "A rebuke against someone having many shallow friendships. Exclusive friendship is ideal. ډم refers to someone considered to be low caste, such as barbers, dancers and musicians.",
-    "num": 173
+    "num": 173,
+    "audioUrl": "https://proverbs.speakingpashto.com/173.mp3"
   },
   {
     "p1": "هر سړے دوست دشمن لری",
@@ -1563,7 +1736,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Accept the fact that you will always please some and upset others.  دشمن refers to someone who is pitted against you in a feud.",
-    "num": 174
+    "num": 174,
+    "audioUrl": "https://proverbs.speakingpashto.com/174.mp3"
   },
   {
     "p1": "یو خو خدائ ښهٔ دے",
@@ -1572,7 +1746,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Advice to not undertake a journey alone. Unlike God, man needs a companion.",
-    "num": 175
+    "num": 175,
+    "audioUrl": "https://proverbs.speakingpashto.com/175.mp3"
   },
   {
     "p1": "په دیدن مړېدل نشته",
@@ -1581,7 +1756,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Friendly relationships are ongoing. Said, for example, as a guest leaves the house, and used to imply the desire they come again soon.",
-    "num": 176
+    "num": 176,
+    "audioUrl": "https://proverbs.speakingpashto.com/176.mp3"
   },
   {
     "p1": "د مېښې یار سنډا وی",
@@ -1590,7 +1766,8 @@
     "e2": "",
     "theme": "Friendship",
     "interp": "Similar people connect.",
-    "num": 177
+    "num": 177,
+    "audioUrl": "https://proverbs.speakingpashto.com/177.mp3"
   },
   {
     "p1": "چې ځان خفه نۀ کړې",
@@ -1599,7 +1776,8 @@
     "e2": "you won’t make others happy.",
     "theme": "Friendship",
     "interp": "True friendship involves sacrifice.",
-    "num": 178
+    "num": 178,
+    "audioUrl": "https://proverbs.speakingpashto.com/178.mp3"
   },
   {
     "p1": "چې زړهٔ تنګ نهٔ وی ځائ نهٔ تنګېږی",
@@ -1608,7 +1786,8 @@
     "e2": "",
     "theme": "Generosity",
     "interp": "Every kind of help can be given by someone with a generous heart.",
-    "num": 179
+    "num": 179,
+    "audioUrl": "https://proverbs.speakingpashto.com/179.mp3"
   },
   {
     "p1": "حساب کتاب به یې په لوئ لاهور کوو",
@@ -1617,7 +1796,8 @@
     "e2": "",
     "theme": "Generosity",
     "interp": "An encouragement to not worry about expenses now, but to live generously.",
-    "num": 180
+    "num": 180,
+    "audioUrl": "https://proverbs.speakingpashto.com/180.mp3"
   },
   {
     "p1": "چې خدائ یې نهٔ کوی",
@@ -1626,7 +1806,8 @@
     "e2": "what can Pir Baba do about it?",
     "theme": "God",
     "interp": "Pir Baba was a famous Sufi saint from the Buner district. This proverb debunks the idea that the Pir’s power will operate through prayer.",
-    "num": 181
+    "num": 181,
+    "audioUrl": "https://proverbs.speakingpashto.com/181.mp3"
   },
   {
     "p1": "چې خدائ یې ورکوی",
@@ -1635,7 +1816,8 @@
     "e2": "then He will find a pretext to do it.",
     "theme": "God",
     "interp": "God has the ability to use any surprise method to make something happen. Like the lottery.",
-    "num": 182
+    "num": 182,
+    "audioUrl": "https://proverbs.speakingpashto.com/182.mp3"
   },
   {
     "p1": "څهٔ چې خدائ ته منظوره وی هغه کیږی",
@@ -1644,7 +1826,8 @@
     "e2": "",
     "theme": "God",
     "interp": "However much you try to avoid something; you cannot prevent the outcome God designs.",
-    "num": 183
+    "num": 183,
+    "audioUrl": "https://proverbs.speakingpashto.com/183.mp3"
   },
   {
     "p1": "د خدائ په کارونو او د",
@@ -1653,7 +1836,8 @@
     "e2": "or touch an electric wire.",
     "theme": "God",
     "interp": "A warning not to play with dangerous things; like electricity and God’s authority. Don’t ask hard questions about faith.",
-    "num": 184
+    "num": 184,
+    "audioUrl": "https://proverbs.speakingpashto.com/184.mp3"
   },
   {
     "p1": "که کور پردے  وو",
@@ -1662,7 +1846,8 @@
     "e2": "your stomach is your own.",
     "theme": "Greed",
     "interp": "Gluttony and excess are of your own doing.",
-    "num": 185
+    "num": 185,
+    "audioUrl": "https://proverbs.speakingpashto.com/185.mp3"
   },
   {
     "p1": "میم زر ما ټوله زما",
@@ -1671,7 +1856,8 @@
     "e2": "",
     "theme": "Greed",
     "interp": "Adding a small diacritic mark to the letter ‘m’ turns it meaning to ‘mine’. Criticism of someone always taking the lion’s share.",
-    "num": 186
+    "num": 186,
+    "audioUrl": "https://proverbs.speakingpashto.com/186.mp3"
   },
   {
     "p1": "پینځۀ واړه ګوتې څوک",
@@ -1680,7 +1866,8 @@
     "e2": "in their mouth at the same time.",
     "theme": "Greed",
     "interp": "This proverb is an admonition not to squander all your resources at once.",
-    "num": 187
+    "num": 187,
+    "audioUrl": "https://proverbs.speakingpashto.com/187.mp3"
   },
   {
     "p1": "ما درله ږیره په لاس کښې درکړه",
@@ -1689,7 +1876,8 @@
     "e2": "and you uprooted it completely.",
     "theme": "Greed",
     "interp": "I gave you a choice but you took what was mine. You should have at least saved something.",
-    "num": 188
+    "num": 188,
+    "audioUrl": "https://proverbs.speakingpashto.com/188.mp3"
   },
   {
     "p1": "ګېډه لاندې ده باندې نهٔ ده",
@@ -1698,7 +1886,8 @@
     "e2": "",
     "theme": "Greed",
     "interp": "Don’t be ruled by your appetites.",
-    "num": 189
+    "num": 189,
+    "audioUrl": "https://proverbs.speakingpashto.com/189.mp3"
   },
   {
     "p1": "دا دنیا که د یو کس شی",
@@ -1707,7 +1896,8 @@
     "e2": "they wouldn’t be satisfied with it.",
     "theme": "Greed",
     "interp": "Our greed can never be satisfied.",
-    "num": 190
+    "num": 190,
+    "audioUrl": "https://proverbs.speakingpashto.com/190.mp3"
   },
   {
     "p1": "د خیراتی نه خیرات غواړی",
@@ -1716,7 +1906,8 @@
     "e2": "",
     "theme": "Greed",
     "interp": "A description of a greedy or miserly person.",
-    "num": 191
+    "num": 191,
+    "audioUrl": "https://proverbs.speakingpashto.com/191.mp3"
   },
   {
     "p1": "په سخته پسې راحته وی",
@@ -1725,7 +1916,8 @@
     "e2": "",
     "theme": "Hardship",
     "interp": "Encouragement to work hard for a reward. راحت means comfort, rest or relief.",
-    "num": 192
+    "num": 192,
+    "audioUrl": "https://proverbs.speakingpashto.com/192.mp3"
   },
   {
     "p1": "خپل پردے په سخته کښې معلومېږی",
@@ -1734,7 +1926,8 @@
     "e2": "",
     "theme": "Hardship",
     "interp": "True friendships are proven in times of hardship.",
-    "num": 193
+    "num": 193,
+    "audioUrl": "https://proverbs.speakingpashto.com/193.mp3"
   },
   {
     "p1": "خپل په تنګسیا کښې پکارېږی",
@@ -1743,7 +1936,8 @@
     "e2": "",
     "theme": "Hardship",
     "interp": "You can find out who is a true friend (relative) when trouble strikes.",
-    "num": 194
+    "num": 194,
+    "audioUrl": "https://proverbs.speakingpashto.com/194.mp3"
   },
   {
     "p1": "په تلی کښې شړشم نهٔ زرغونېږی",
@@ -1752,7 +1946,8 @@
     "e2": "",
     "theme": "Haste",
     "interp": "Results won’t happen fast.",
-    "num": 195
+    "num": 195,
+    "audioUrl": "https://proverbs.speakingpashto.com/195.mp3"
   },
   {
     "p1": "په ښهٔ کار کښې تلوار پکار دے",
@@ -1761,7 +1956,8 @@
     "e2": "",
     "theme": "Haste",
     "interp": "Virtuous deeds should be done promptly.",
-    "num": 196
+    "num": 196,
+    "audioUrl": "https://proverbs.speakingpashto.com/196.mp3"
   },
   {
     "p1": "تادې شیطان کړی ده",
@@ -1770,7 +1966,8 @@
     "e2": "",
     "theme": "Haste",
     "interp": "Don’t be in too much of a hurry.",
-    "num": 197
+    "num": 197,
+    "audioUrl": "https://proverbs.speakingpashto.com/197.mp3"
   },
   {
     "p1": "روغ صورت اختر دے",
@@ -1779,7 +1976,8 @@
     "e2": "",
     "theme": "Health",
     "interp": "Good health is a blessing. اختر is the Pashto word for the Eid festivals: synonymous with happiness.",
-    "num": 198
+    "num": 198,
+    "audioUrl": "https://proverbs.speakingpashto.com/198.mp3"
   },
   {
     "p1": "هر چا ته خپل وطن کشمیر دے",
@@ -1788,7 +1986,8 @@
     "e2": "",
     "theme": "Homeland",
     "interp": "There is no place as good as your own country.",
-    "num": 199
+    "num": 199,
+    "audioUrl": "https://proverbs.speakingpashto.com/199.mp3"
   },
   {
     "p1": "چې ځې ځې نو ابازو له به راځې",
@@ -1797,7 +1996,8 @@
     "e2": "",
     "theme": "Homeland",
     "interp": "We will eventually return to our place of origin. Abazai is a town in the Charsadda district of Khyber Pakhtunkhwa.",
-    "num": 200
+    "num": 200,
+    "audioUrl": "https://proverbs.speakingpashto.com/200.mp3"
   },
   {
     "p1": "پښتون په یوه پوهېږی",
@@ -1806,7 +2006,8 @@
     "e2": "",
     "theme": "Honesty",
     "interp": "Pukhtuns remain true to their word.",
-    "num": 201
+    "num": 201,
+    "audioUrl": "https://proverbs.speakingpashto.com/201.mp3"
   },
   {
     "p1": "خپل عزت په خپل لاس کښې دے",
@@ -1815,7 +2016,8 @@
     "e2": "",
     "theme": "Honour",
     "interp": "Your respect is determined by your own behaviour.",
-    "num": 202
+    "num": 202,
+    "audioUrl": "https://proverbs.speakingpashto.com/202.mp3"
   },
   {
     "p1": "ګټه چې په ځائ پرته وی نو درنه وی",
@@ -1824,7 +2026,8 @@
     "e2": "",
     "theme": "Honour",
     "interp": "Status and respect grow with consistency.",
-    "num": 203
+    "num": 203,
+    "audioUrl": "https://proverbs.speakingpashto.com/203.mp3"
   },
   {
     "p1": "تلے مال بیا راځی",
@@ -1833,7 +2036,8 @@
     "e2": "but lost honour won’t return.",
     "theme": "Honour",
     "interp": "Respect once lost is hard to regain.",
-    "num": 204
+    "num": 204,
+    "audioUrl": "https://proverbs.speakingpashto.com/204.mp3"
   },
   {
     "p1": "د خوراک نه یې طمع ښۀ ده",
@@ -1842,7 +2046,8 @@
     "e2": "",
     "theme": "Hope",
     "interp": "Enjoy the anticipation of things to come, as the reality won’t be as good as you imagined.",
-    "num": 205
+    "num": 205,
+    "audioUrl": "https://proverbs.speakingpashto.com/205.mp3"
   },
   {
     "p1": "فقیر ته که یو در بند شی",
@@ -1851,7 +2056,8 @@
     "e2": "a hundred more open to him.",
     "theme": "Hope",
     "interp": "An optimistic response to adversity.  فقير is a wandering holy man.",
-    "num": 206
+    "num": 206,
+    "audioUrl": "https://proverbs.speakingpashto.com/206.mp3"
   },
   {
     "p1": "دنیا په امید خوړے شی",
@@ -1860,7 +2066,8 @@
     "e2": "",
     "theme": "Hope",
     "interp": "Encouragement for someone to persist in what they are doing and not give up.",
-    "num": 207
+    "num": 207,
+    "audioUrl": "https://proverbs.speakingpashto.com/207.mp3"
   },
   {
     "p1": "د بل په کور سل مېلمانۀ څۀ دی؟",
@@ -1869,7 +2076,8 @@
     "e2": "",
     "theme": "Hospitality",
     "interp": "Someone else’s burden is their own problem.",
-    "num": 208
+    "num": 208,
+    "audioUrl": "https://proverbs.speakingpashto.com/208.mp3"
   },
   {
     "p1": "مېلمه چې د درې ورځو نه زیات شی",
@@ -1878,7 +2086,8 @@
     "e2": "becomes a pain.",
     "theme": "Hospitality",
     "interp": "Formal hospitality lasts for a few days, then the guest will be considered as family. عذاب means torment, pain or torture.",
-    "num": 209
+    "num": 209,
+    "audioUrl": "https://proverbs.speakingpashto.com/209.mp3"
   },
   {
     "p1": "کوربه په ست ښهٔ ښکاری",
@@ -1887,7 +2096,8 @@
     "e2": "And the guest by refusing food.",
     "theme": "Hospitality",
     "interp": "The polite rules of hospitality include the guest graciously refusing and the host insisting.",
-    "num": 210
+    "num": 210,
+    "audioUrl": "https://proverbs.speakingpashto.com/210.mp3"
   },
   {
     "p1": "مېلمه خپل نصیب خوری",
@@ -1896,7 +2106,8 @@
     "e2": "",
     "theme": "Hospitality",
     "interp": "An encouragement not to be upset that a guest ate the food; the food you gave them was already destined for them. Don’t be miserly.",
-    "num": 211
+    "num": 211,
+    "audioUrl": "https://proverbs.speakingpashto.com/211.mp3"
   },
   {
     "p1": "څوک د چا نصیب نهٔ شی خوړے",
@@ -1905,7 +2116,8 @@
     "e2": "",
     "theme": "Hospitality",
     "interp": "Things unexpectedly change. The food we were about to eat suddenly becomes a meal for the guest.",
-    "num": 212
+    "num": 212,
+    "audioUrl": "https://proverbs.speakingpashto.com/212.mp3"
   },
   {
     "p1": "سل بللی ځایږی",
@@ -1914,7 +2126,8 @@
     "e2": "but none for a single uninvited person.",
     "theme": "Hospitality",
     "interp": "A reprimand against uninvited guests.",
-    "num": 213
+    "num": 213,
+    "audioUrl": "https://proverbs.speakingpashto.com/213.mp3"
   },
   {
     "p1": "پوره یو خدائ دے",
@@ -1923,7 +2136,8 @@
     "e2": "",
     "theme": "Human Nature",
     "interp": "Humans are all deficient, only God is perfect.",
-    "num": 214
+    "num": 214,
+    "audioUrl": "https://proverbs.speakingpashto.com/214.mp3"
   },
   {
     "p1": "د سلو کالو موړ به په سل کاله کښې وږے",
@@ -1932,7 +2146,8 @@
     "e2": "and those hungry for a century won’t be full after a hundred years.",
     "theme": "Human Nature",
     "interp": "People’s mentality won’t change. The poor will still feel destitute even if they get rich, and the rich will feel wealthy even if they become poor.",
-    "num": 215
+    "num": 215,
+    "audioUrl": "https://proverbs.speakingpashto.com/215.mp3"
   },
   {
     "p1": "غلبېل کوزې ته وائی",
@@ -1941,7 +2156,8 @@
     "e2": "",
     "theme": "Hypocrisy",
     "interp": "A way to poke fun at a hypocrite. The pot calling the kettle black.",
-    "num": 216
+    "num": 216,
+    "audioUrl": "https://proverbs.speakingpashto.com/216.mp3"
   },
   {
     "p1": "مُلا بل ته مسئلې کوی",
@@ -1950,7 +2166,8 @@
     "e2": "but neglects them himself.",
     "theme": "Hypocrisy",
     "interp": "Religious leaders don’t walk the talk.",
-    "num": 217
+    "num": 217,
+    "audioUrl": "https://proverbs.speakingpashto.com/217.mp3"
   },
   {
     "p1": "چې یوه ګوته بل ته نیسی",
@@ -1959,7 +2176,8 @@
     "e2": "four fingers point to you.",
     "theme": "Hypocrisy",
     "interp": "Being critical of others highlights your own faults.",
-    "num": 218
+    "num": 218,
+    "audioUrl": "https://proverbs.speakingpashto.com/218.mp3"
   },
   {
     "p1": "د چمیار خپلې څپلۍ شلېدلې وی",
@@ -1968,7 +2186,8 @@
     "e2": "",
     "theme": "Hypocrisy",
     "interp": "Describes someone able to help others but not able to solve their own problems.",
-    "num": 219
+    "num": 219,
+    "audioUrl": "https://proverbs.speakingpashto.com/219.mp3"
   },
   {
     "p1": "د کم اصلو نه یا لرې یا غلے",
@@ -1977,7 +2196,8 @@
     "e2": "",
     "theme": "Inferiority",
     "interp": "Don’t have dealings with worthless people, they will create trouble and bring you into disrepute.",
-    "num": 220
+    "num": 220,
+    "audioUrl": "https://proverbs.speakingpashto.com/220.mp3"
   },
   {
     "p1": "د ضُلېخې قیصه مې درته تیره کړه",
@@ -1986,7 +2206,8 @@
     "e2": "then you asked if she was a woman or a man.",
     "theme": "Ignorance",
     "interp": "Said of someone who is not paying attention in their studies. زلېخه  was the name of Potiphar’s wife who famously tried to tempt Joseph during the time of the Pharaohs. See the book of Genesis chapter 39: 5-20.",
-    "num": 221
+    "num": 221,
+    "audioUrl": "https://proverbs.speakingpashto.com/221.mp3"
   },
   {
     "p1": "ژرنده که د پلار ده",
@@ -1995,7 +2216,8 @@
     "e2": "it still comes by turns.",
     "theme": "Impartiality",
     "interp": "A encouragement to fair play when it comes to taking your turn.",
-    "num": 222
+    "num": 222,
+    "audioUrl": "https://proverbs.speakingpashto.com/222.mp3"
   },
   {
     "p1": "ګولۍ خپل پردے نهٔ پېژنی",
@@ -2004,7 +2226,8 @@
     "e2": "",
     "theme": "Impartiality",
     "interp": "Bullets are impartial. They might kill anyone, whether guilty or innocent.",
-    "num": 223
+    "num": 223,
+    "audioUrl": "https://proverbs.speakingpashto.com/223.mp3"
   },
   {
     "p1": "چې زما پرې وار راغے",
@@ -2013,7 +2236,8 @@
     "e2": "",
     "theme": "Impartiality",
     "interp": "Frustration for when my turn is not fulfilled.",
-    "num": 224
+    "num": 224,
+    "audioUrl": "https://proverbs.speakingpashto.com/224.mp3"
   },
   {
     "p1": "کوږ لرګے په بار کښې نهٔ تړل کېږی",
@@ -2022,7 +2246,8 @@
     "e2": "",
     "theme": "Incompatibility",
     "interp": "The bent person is the self-opinionated bigot who does not fit in with others.",
-    "num": 225
+    "num": 225,
+    "audioUrl": "https://proverbs.speakingpashto.com/225.mp3"
   },
   {
     "p1": "تیاره شانګواټۍ ده",
@@ -2031,7 +2256,8 @@
     "e2": "but the roof still needs to be put on.",
     "theme": "Incompatibility",
     "interp": "The hard work is done; just a little more effort is needed to finish the job.",
-    "num": 226
+    "num": 226,
+    "audioUrl": "https://proverbs.speakingpashto.com/226.mp3"
   },
   {
     "p1": "اَوره د هر چا کوه خپله",
@@ -2040,7 +2266,8 @@
     "e2": "",
     "theme": "Independence",
     "interp": "Listen to other people’s opinions, but make your own decision.",
-    "num": 227
+    "num": 227,
+    "audioUrl": "https://proverbs.speakingpashto.com/227.mp3"
   },
   {
     "p1": "هر سړے د خپلې مرضۍ خاوند دے",
@@ -2049,7 +2276,8 @@
     "e2": "",
     "theme": "Independence",
     "interp": "People are independent.",
-    "num": 228
+    "num": 228,
+    "audioUrl": "https://proverbs.speakingpashto.com/228.mp3"
   },
   {
     "p1": "خپله لاسه ګله لاسه",
@@ -2058,7 +2286,8 @@
     "e2": "",
     "theme": "Independence",
     "interp": "Do your own business.",
-    "num": 229
+    "num": 229,
+    "audioUrl": "https://proverbs.speakingpashto.com/229.mp3"
   },
   {
     "p1": "لورې تا ته یې وایم",
@@ -2067,7 +2296,8 @@
     "e2": "is heard by my daughter-in-law.",
     "theme": "Indirect Communication",
     "interp": "It would be impolite to say something directly to your daughter-in-law, so it must be spoken to your daughter. A form of indirect speech.",
-    "num": 230
+    "num": 230,
+    "audioUrl": "https://proverbs.speakingpashto.com/230.mp3"
   },
   {
     "p1": "انصاف د قاضی په کور کښې هم نشته",
@@ -2076,7 +2306,8 @@
     "e2": "",
     "theme": "Injustice",
     "interp": "Someone who doesn’t treat their own family the way they announce in public.",
-    "num": 231
+    "num": 231,
+    "audioUrl": "https://proverbs.speakingpashto.com/231.mp3"
   },
   {
     "p1": "د خرهٔ په ځائ کولال داغې",
@@ -2085,7 +2316,8 @@
     "e2": "",
     "theme": "Injustice",
     "interp": "Blaming the wrong person.",
-    "num": 232
+    "num": 232,
+    "audioUrl": "https://proverbs.speakingpashto.com/232.mp3"
   },
   {
     "p1": "چې نهٔ کار په هغې کښې څهٔ کار؟",
@@ -2094,7 +2326,8 @@
     "e2": "",
     "theme": "Interference",
     "interp": "Don’t interfere in someone else’s affairs.",
-    "num": 233
+    "num": 233,
+    "audioUrl": "https://proverbs.speakingpashto.com/233.mp3"
   },
   {
     "p1": "چې کوم ځائ دې نهٔ خارښتېږی",
@@ -2103,7 +2336,8 @@
     "e2": "",
     "theme": "Interference",
     "interp": "Don’t create problems for yourself by getting involved in other’s difficulties.",
-    "num": 234
+    "num": 234,
+    "audioUrl": "https://proverbs.speakingpashto.com/234.mp3"
   },
   {
     "p1": "په غولو کښې چې څومره چخچی وهې",
@@ -2112,7 +2346,8 @@
     "e2": "",
     "theme": "Interference",
     "interp": "A caution to stop investigating illicit affairs.",
-    "num": 235
+    "num": 235,
+    "audioUrl": "https://proverbs.speakingpashto.com/235.mp3"
   },
   {
     "p1": "په هر څه کښې رادانګی",
@@ -2121,7 +2356,8 @@
     "e2": "",
     "theme": "Interference",
     "interp": "Descriptive of someone who is always in other people’s business.",
-    "num": 236
+    "num": 236,
+    "audioUrl": "https://proverbs.speakingpashto.com/236.mp3"
   },
   {
     "p1": "کارغهٔ د خارو تلل  زده کول",
@@ -2130,7 +2366,8 @@
     "e2": "",
     "theme": "Imitation",
     "interp": "A pretentious person who over-reaches their own station in life. The myna is a common bird in Pakistan the size of a starling.",
-    "num": 237
+    "num": 237,
+    "audioUrl": "https://proverbs.speakingpashto.com/237.mp3"
   },
   {
     "p1": "په پوښتنه پوښتنه سړے کابل ته رسی",
@@ -2139,7 +2376,8 @@
     "e2": "",
     "theme": "Inquiry",
     "interp": "An encouragement to ask for help when you need it.",
-    "num": 238
+    "num": 238,
+    "audioUrl": "https://proverbs.speakingpashto.com/238.mp3"
   },
   {
     "p1": "اوس اوبۀ دَ ورخه تېرې دی",
@@ -2148,7 +2386,8 @@
     "e2": "",
     "theme": "Irreversible Outcome",
     "interp": "Time has passed, the decision has been made and the outcome will inevitably happen.",
-    "num": 239
+    "num": 239,
+    "audioUrl": "https://proverbs.speakingpashto.com/239.mp3"
   },
   {
     "p1": "توکلې لاړې بېرته نۀ راګرزی",
@@ -2157,7 +2396,8 @@
     "e2": "",
     "theme": "Irreversible Outcome",
     "interp": "You can’t correct your action after the event.",
-    "num": 240
+    "num": 240,
+    "audioUrl": "https://proverbs.speakingpashto.com/240.mp3"
   },
   {
     "p1": "د یو فقیر بل فقیر بدی شی",
@@ -2166,7 +2406,8 @@
     "e2": "",
     "theme": "Jealousy",
     "interp": "People despise their competitors.",
-    "num": 241
+    "num": 241,
+    "audioUrl": "https://proverbs.speakingpashto.com/241.mp3"
   },
   {
     "p1": "خدائ دې حق حقدار ته ورسوی",
@@ -2175,7 +2416,8 @@
     "e2": "",
     "theme": "Justice",
     "interp": "A prayer for justice that people get their rights.",
-    "num": 242
+    "num": 242,
+    "audioUrl": "https://proverbs.speakingpashto.com/242.mp3"
   },
   {
     "p1": "هندو ستړے خدائ ناراضه",
@@ -2184,7 +2426,8 @@
     "e2": "",
     "theme": "Hindu",
     "interp": "Despite his efforts, a person’s behaviour is not authorized and so not acceptable.",
-    "num": 243
+    "num": 243,
+    "audioUrl": "https://proverbs.speakingpashto.com/243.mp3"
   },
   {
     "p1": "د هندوانو مال دے بامبړانو وخوړ",
@@ -2193,7 +2436,8 @@
     "e2": "",
     "theme": "Hindu",
     "interp": "Another’s hard-earned wealth is wasted by religious leaders.",
-    "num": 244
+    "num": 244,
+    "audioUrl": "https://proverbs.speakingpashto.com/244.mp3"
   },
   {
     "p1": "خرې ته چې بلبله ووائې",
@@ -2202,7 +2446,8 @@
     "e2": "",
     "theme": "Kindness",
     "interp": "If you treat someone kindly, they will get haughty. In the same way, a donkey will want something better than grass if spoil it. The Bulbul is a common wild bird in Pakistan; a name used as a term of endearment.",
-    "num": 245
+    "num": 245,
+    "audioUrl": "https://proverbs.speakingpashto.com/245.mp3"
   },
   {
     "p1": "نېکی ور سره په شګو کښې",
@@ -2211,7 +2456,8 @@
     "e2": "",
     "theme": "Kindness",
     "interp": "The favour I did for someone had no effect; instead, it was scorned.",
-    "num": 246
+    "num": 246,
+    "audioUrl": "https://proverbs.speakingpashto.com/246.mp3"
   },
   {
     "p1": "پردي راوړی نهٔ خپلېږی",
@@ -2220,7 +2466,8 @@
     "e2": "",
     "theme": "Kinship",
     "interp": "Nothing can make an outsider a real member of the clan.",
-    "num": 247
+    "num": 247,
+    "audioUrl": "https://proverbs.speakingpashto.com/247.mp3"
   },
   {
     "p1": "خپله وینه بیا هم خپله وی",
@@ -2229,7 +2476,8 @@
     "e2": "",
     "theme": "Kinship",
     "interp": "Blood is thicker than water.",
-    "num": 248
+    "num": 248,
+    "audioUrl": "https://proverbs.speakingpashto.com/248.mp3"
   },
   {
     "p1": "سترګې په بڼو نهٔ درنېږی",
@@ -2238,7 +2486,8 @@
     "e2": "",
     "theme": "Kinship",
     "interp": "There is no burden involved in taking care of your own.",
-    "num": 249
+    "num": 249,
+    "audioUrl": "https://proverbs.speakingpashto.com/249.mp3"
   },
   {
     "p1": "نۀ یې کار شته او نۀ وزګار دے",
@@ -2247,7 +2496,8 @@
     "e2": "",
     "theme": "Laziness",
     "interp": "Criticism of a lazy person who is unwilling to work.",
-    "num": 250
+    "num": 250,
+    "audioUrl": "https://proverbs.speakingpashto.com/250.mp3"
   },
   {
     "p1": "اوبۀ چې په ځائ ودرېږی نو سخا شی",
@@ -2256,7 +2506,8 @@
     "e2": "",
     "theme": "Laziness",
     "interp": "A person who isn’t active will become stale. An encouragement to get out of the house.",
-    "num": 251
+    "num": 251,
+    "audioUrl": "https://proverbs.speakingpashto.com/251.mp3"
   },
   {
     "p1": "د سر د پاسه سر وی",
@@ -2265,7 +2516,8 @@
     "e2": "",
     "theme": "Leadership",
     "interp": "There’s always someone more senior. The proverb can be used to threaten a junior clerk.",
-    "num": 252
+    "num": 252,
+    "audioUrl": "https://proverbs.speakingpashto.com/252.mp3"
   },
   {
     "p1": "قرض دارے چا وژلے دے؟",
@@ -2274,7 +2526,8 @@
     "e2": "",
     "theme": "Lending",
     "interp": "Encouragement to relax - a tough problem will eventually go away.",
-    "num": 253
+    "num": 253,
+    "audioUrl": "https://proverbs.speakingpashto.com/253.mp3"
   },
   {
     "p1": "قرض په ورکړه خلاصېږی",
@@ -2283,7 +2536,8 @@
     "e2": "",
     "theme": "Lending",
     "interp": "Encouragement to keep giving instalments on a loan.",
-    "num": 254
+    "num": 254,
+    "audioUrl": "https://proverbs.speakingpashto.com/254.mp3"
   },
   {
     "p1": "د دروغو مزے لنډ وی",
@@ -2292,7 +2546,8 @@
     "e2": "",
     "theme": "Lies",
     "interp": "The truth will soon be discovered. Another version of this proverb uses the word مزل (journey, distance travelled) instead of مزے .",
-    "num": 255
+    "num": 255,
+    "audioUrl": "https://proverbs.speakingpashto.com/255.mp3"
   },
   {
     "p1": "چې رښتیا راځی راځی",
@@ -2301,7 +2556,8 @@
     "e2": "lies will have ruined the villages.",
     "theme": "Lies",
     "interp": "People believe and act on rumours.",
-    "num": 256
+    "num": 256,
+    "audioUrl": "https://proverbs.speakingpashto.com/256.mp3"
   },
   {
     "p1": "هغه دروغ مۀ وایه چې سبا ریښتیا کېږی",
@@ -2310,7 +2566,8 @@
     "e2": "",
     "theme": "Lies",
     "interp": "An encouragement to avoid telling lies, as they will be uncovered soon enough.",
-    "num": 257
+    "num": 257,
+    "audioUrl": "https://proverbs.speakingpashto.com/257.mp3"
   },
   {
     "p1": "عمر د ژمی مازیګر دے",
@@ -2319,7 +2576,8 @@
     "e2": "that will pass in the blink of an eye.",
     "theme": "Life",
     "interp": "Our time on earth is very brief.",
-    "num": 258
+    "num": 258,
+    "audioUrl": "https://proverbs.speakingpashto.com/258.mp3"
   },
   {
     "p1": "دُنیا د ارټ منګوټے دے",
@@ -2328,7 +2586,8 @@
     "e2": "sometimes coming up full, and sometimes empty.",
     "theme": "Life",
     "interp": "Sometimes in life we will be prosperous, sometimes destitute.",
-    "num": 259
+    "num": 259,
+    "audioUrl": "https://proverbs.speakingpashto.com/259.mp3"
   },
   {
     "p1": "په یو غوږ یې اوری او په بل غوږ یې اوباسی",
@@ -2337,7 +2596,8 @@
     "e2": "",
     "theme": "Listening",
     "interp": "Descriptive of someone not taking advice.",
-    "num": 260
+    "num": 260,
+    "audioUrl": "https://proverbs.speakingpashto.com/260.mp3"
   },
   {
     "p1": "دېوالونه هم غوږونه لری",
@@ -2346,7 +2606,8 @@
     "e2": "",
     "theme": "Listening",
     "interp": "Hidden secrets will be found out.",
-    "num": 261
+    "num": 261,
+    "audioUrl": "https://proverbs.speakingpashto.com/261.mp3"
   },
   {
     "p1": "د زړهٔ نه زړهٔ ته لار وی",
@@ -2355,7 +2616,8 @@
     "e2": "",
     "theme": "Love",
     "interp": "When two people like one other, feelings are mutual.",
-    "num": 262
+    "num": 262,
+    "audioUrl": "https://proverbs.speakingpashto.com/262.mp3"
   },
   {
     "p1": "مینه په تلو راتلو زیاتېږی",
@@ -2364,7 +2626,8 @@
     "e2": "",
     "theme": "Love",
     "interp": "Visiting and hosting people builds relationship.",
-    "num": 263
+    "num": 263,
+    "audioUrl": "https://proverbs.speakingpashto.com/263.mp3"
   },
   {
     "p1": "وږې خېټه مړېږی",
@@ -2373,7 +2636,8 @@
     "e2": "but hungry eyes won’t be satisfied.",
     "theme": "Lust",
     "interp": "Unlike hunger, the lust and greed of the heart can never be filled.",
-    "num": 264
+    "num": 264,
+    "audioUrl": "https://proverbs.speakingpashto.com/264.mp3"
   },
   {
     "p1": "لېونی د کوره په صحرا خوشحاله وی",
@@ -2382,7 +2646,8 @@
     "e2": "",
     "theme": "Mad",
     "interp": "In the same way the mentally deranged are often wandering around, this proverb can be used as a rebuke against someone always away from home.",
-    "num": 265
+    "num": 265,
+    "audioUrl": "https://proverbs.speakingpashto.com/265.mp3"
   },
   {
     "p1": "په ډېرو لېونی خوشحالېږی",
@@ -2391,7 +2656,8 @@
     "e2": "",
     "theme": "Mad",
     "interp": "The mad in this proverb is a metaphor for acquisitive people.",
-    "num": 266
+    "num": 266,
+    "audioUrl": "https://proverbs.speakingpashto.com/266.mp3"
   },
   {
     "p1": "لیونی ته ځان روغ ښکاری",
@@ -2400,7 +2666,8 @@
     "e2": "",
     "theme": "Mad",
     "interp": "The deranged have no perspective on their own state.",
-    "num": 267
+    "num": 267,
+    "audioUrl": "https://proverbs.speakingpashto.com/267.mp3"
   },
   {
     "p1": "لیونی ته روغ لیونی ښکاری",
@@ -2409,7 +2676,8 @@
     "e2": "",
     "theme": "Mad",
     "interp": "The warped perspective of the mad.",
-    "num": 268
+    "num": 268,
+    "audioUrl": "https://proverbs.speakingpashto.com/268.mp3"
   },
   {
     "p1": "بنګ به لرګے نهٔ شی",
@@ -2418,7 +2686,8 @@
     "e2": "nor a Khattak become a man.",
     "theme": "Manliness",
     "interp": "A proverb ridiculing the Khattak tribe. The cannabis plant is a common annual herb that grows about six feet tall.",
-    "num": 269
+    "num": 269,
+    "audioUrl": "https://proverbs.speakingpashto.com/269.mp3"
   },
   {
     "p1": "تل به خواروزار وی دَ دوؤ ښځو خاوند",
@@ -2427,7 +2696,8 @@
     "e2": "",
     "theme": "Marriage",
     "interp": "A warning about the downside of bigamy.",
-    "num": 270
+    "num": 270,
+    "audioUrl": "https://proverbs.speakingpashto.com/270.mp3"
   },
   {
     "p1": "سړی چا زاړهٔ کړی دی؟",
@@ -2436,7 +2706,8 @@
     "e2": "",
     "theme": "Marriage",
     "interp": "Implies that men can get married at any age.",
-    "num": 271
+    "num": 271,
+    "audioUrl": "https://proverbs.speakingpashto.com/271.mp3"
   },
   {
     "p1": "په هېره روژه نهٔ ماتېږی",
@@ -2445,7 +2716,8 @@
     "e2": "",
     "theme": "Mistakes",
     "interp": "We shouldn’t be penalized for unintentional behaviour.",
-    "num": 272
+    "num": 272,
+    "audioUrl": "https://proverbs.speakingpashto.com/272.mp3"
   },
   {
     "p1": "جامې اوبو یوړې",
@@ -2454,7 +2726,8 @@
     "e2": "I let the beating stick get away as well.",
     "theme": "Mistakes",
     "interp": "Some trouble was accidental, some I made myself. سوباړے is the wooden paddle traditionally used to wash clothes.",
-    "num": 273
+    "num": 273,
+    "audioUrl": "https://proverbs.speakingpashto.com/273.mp3"
   },
   {
     "p1": "خپل څادر سره ښپې غځوه",
@@ -2463,7 +2736,8 @@
     "e2": "",
     "theme": "Moderation",
     "interp": "Live according to your means.",
-    "num": 274
+    "num": 274,
+    "audioUrl": "https://proverbs.speakingpashto.com/274.mp3"
   },
   {
     "p1": "لږ خوره تل خوره",
@@ -2472,7 +2746,8 @@
     "e2": "",
     "theme": "Moderation",
     "interp": "A little profit will keep business going. Used to encourage a shopkeeper to lower his asking price.",
-    "num": 275
+    "num": 275,
+    "audioUrl": "https://proverbs.speakingpashto.com/275.mp3"
   },
   {
     "p1": "د پېښې نه تېښته نهٔ کېږی",
@@ -2481,7 +2756,8 @@
     "e2": "",
     "theme": "Motivation",
     "interp": "You have no option but to get involved.",
-    "num": 276
+    "num": 276,
+    "audioUrl": "https://proverbs.speakingpashto.com/276.mp3"
   },
   {
     "p1": "پیشو د خدائ دپاره منږک نهٔ نیسی",
@@ -2490,7 +2766,8 @@
     "e2": "",
     "theme": "Motive",
     "interp": "Whatever people may say otherwise, everyone works for their own benefit.",
-    "num": 277
+    "num": 277,
+    "audioUrl": "https://proverbs.speakingpashto.com/277.mp3"
   },
   {
     "p1": "هر سړے د خپل مطلبه پورې یار دے",
@@ -2499,7 +2776,8 @@
     "e2": "but I never met a friend with Godly intentions.",
     "theme": "Motive",
     "interp": "A selfish motive underlies behaviour.",
-    "num": 278
+    "num": 278,
+    "audioUrl": "https://proverbs.speakingpashto.com/278.mp3"
   },
   {
     "p1": "هر سړے ترخځ ځان ته وهی",
@@ -2508,7 +2786,8 @@
     "e2": "",
     "theme": "Motive",
     "interp": "In the same way the adze is curved towards the user, people operate in ways that are to their own benefit.",
-    "num": 279
+    "num": 279,
+    "audioUrl": "https://proverbs.speakingpashto.com/279.mp3"
   },
   {
     "p1": "سیالی د سیال سړی پکار ده",
@@ -2517,7 +2796,8 @@
     "e2": "",
     "theme": "Negotiation",
     "interp": "Dealings are best between two people of the same prestige.",
-    "num": 280
+    "num": 280,
+    "audioUrl": "https://proverbs.speakingpashto.com/280.mp3"
   },
   {
     "p1": "وسپنه په وسپنه ماتېږی",
@@ -2526,7 +2806,8 @@
     "e2": "",
     "theme": "Negotiation",
     "interp": "It requires a strong person to match another heavy weight.",
-    "num": 281
+    "num": 281,
+    "audioUrl": "https://proverbs.speakingpashto.com/281.mp3"
   },
   {
     "p1": "زاړهٔ خو مور او پلار ښۀ وی",
@@ -2535,7 +2816,8 @@
     "e2": "",
     "theme": "Old Age",
     "interp": "Encouragement to buy new things, since the only good things are old parents.",
-    "num": 282
+    "num": 282,
+    "audioUrl": "https://proverbs.speakingpashto.com/282.mp3"
   },
   {
     "p1": "زوړ شوې خو سوړ نهٔ شوې",
@@ -2544,7 +2826,8 @@
     "e2": "",
     "theme": "Old Age",
     "interp": "Though old, the person is still feisty and active.",
-    "num": 283
+    "num": 283,
+    "audioUrl": "https://proverbs.speakingpashto.com/283.mp3"
   },
   {
     "p1": "چې اختر تېر شی",
@@ -2553,7 +2836,8 @@
     "e2": "then henna is plastered on the wall.",
     "theme": "Opportunity",
     "interp": "In the same way henna is of no use after a wedding, so there is a moment when it is too late to help with a need. The proverb is used as a plea for timely help.",
-    "num": 284
+    "num": 284,
+    "audioUrl": "https://proverbs.speakingpashto.com/284.mp3"
   },
   {
     "p1": "الوتې مرغۍ بیا په لاس نۀ راځی",
@@ -2562,7 +2846,8 @@
     "e2": "",
     "theme": "Opportunity",
     "interp": "A decision that can’t be reversed, or an opportunity that won’t come again.",
-    "num": 285
+    "num": 285,
+    "audioUrl": "https://proverbs.speakingpashto.com/285.mp3"
   },
   {
     "p1": "چې سر حیات یې نو ټوپۍ ډېرې",
@@ -2571,7 +2856,8 @@
     "e2": "",
     "theme": "Opportunity",
     "interp": "Be thankful you escaped unscathed from disaster. There are still lots of other avenues left to you. This proverb is also used to encourage someone who has been refused an engagement request.",
-    "num": 286
+    "num": 286,
+    "audioUrl": "https://proverbs.speakingpashto.com/286.mp3"
   },
   {
     "p1": "تماشګیر د نخښې منځ ولی",
@@ -2580,7 +2866,8 @@
     "e2": "",
     "theme": "Outsider",
     "interp": "To the outsider a task looks easy, but they don’t know how hard it is to do.",
-    "num": 287
+    "num": 287,
+    "audioUrl": "https://proverbs.speakingpashto.com/287.mp3"
   },
   {
     "p1": "خپلو نه پردې ښهٔ وی",
@@ -2589,7 +2876,8 @@
     "e2": "and Afridis are better than outsiders.",
     "theme": "Outsider",
     "interp": "More distant relationships are better. Here ‘Afridi’ is symbolic of any distant person from another tribe.",
-    "num": 288
+    "num": 288,
+    "audioUrl": "https://proverbs.speakingpashto.com/288.mp3"
   },
   {
     "p1": "د صبر مېوه خوږه وی",
@@ -2598,7 +2886,8 @@
     "e2": "",
     "theme": "Patience",
     "interp": "Encouragement to be patient and to enjoy the benefits of not being in such a hurry.",
-    "num": 289
+    "num": 289,
+    "audioUrl": "https://proverbs.speakingpashto.com/289.mp3"
   },
   {
     "p1": "دا ساعت به هم تېر شی",
@@ -2607,7 +2896,8 @@
     "e2": "",
     "theme": "Patience",
     "interp": "The famous reply of the minister when the king asked how he could overcome sad and happy moments in his life.",
-    "num": 290
+    "num": 290,
+    "audioUrl": "https://proverbs.speakingpashto.com/290.mp3"
   },
   {
     "p1": "لاس چې مات شی غاړې له ځی",
@@ -2616,7 +2906,8 @@
     "e2": "",
     "theme": "Patronage",
     "interp": "When in trouble people come to the leader for help.",
-    "num": 291
+    "num": 291,
+    "audioUrl": "https://proverbs.speakingpashto.com/291.mp3"
   },
   {
     "p1": "زما پیشو او ماته میو",
@@ -2625,7 +2916,8 @@
     "e2": "",
     "theme": "Patronage",
     "interp": "A complaint. Those dependent on me are grumbling, even though they should be beholden to me.",
-    "num": 292
+    "num": 292,
+    "audioUrl": "https://proverbs.speakingpashto.com/292.mp3"
   },
   {
     "p1": "چې زمونږ سره ګرځې",
@@ -2634,7 +2926,8 @@
     "e2": "",
     "theme": "Patronage",
     "interp": "Promises of benefit from patronage.",
-    "num": 293
+    "num": 293,
+    "audioUrl": "https://proverbs.speakingpashto.com/293.mp3"
   },
   {
     "p1": "په تش جېب خانی نهٔ کېږی",
@@ -2643,7 +2936,8 @@
     "e2": "",
     "theme": "Patronage",
     "interp": "Patronage requires output of money.",
-    "num": 294
+    "num": 294,
+    "audioUrl": "https://proverbs.speakingpashto.com/294.mp3"
   },
   {
     "p1": "څاڅکی څاڅکی نه دریاب جوړېږی",
@@ -2652,7 +2946,8 @@
     "e2": "",
     "theme": "Persistence",
     "interp": "Persistent, steady effort will give success.",
-    "num": 295
+    "num": 295,
+    "audioUrl": "https://proverbs.speakingpashto.com/295.mp3"
   },
   {
     "p1": "اول سلام او بیا کلام",
@@ -2661,7 +2956,8 @@
     "e2": "",
     "theme": "Politeness",
     "interp": "It’s polite to properly greet people before getting down to business.",
-    "num": 296
+    "num": 296,
+    "audioUrl": "https://proverbs.speakingpashto.com/296.mp3"
   },
   {
     "p1": "چې په ګوړه مری",
@@ -2670,7 +2966,8 @@
     "e2": "What need is there of poison?",
     "theme": "Politeness",
     "interp": "Speak gently to get things done more easily.",
-    "num": 297
+    "num": 297,
+    "audioUrl": "https://proverbs.speakingpashto.com/297.mp3"
   },
   {
     "p1": "د غریب سړی له مخه څوک هم نهٔ شرمېږی",
@@ -2679,7 +2976,8 @@
     "e2": "",
     "theme": "Poverty",
     "interp": "Poor people are not respected by the rich.",
-    "num": 298
+    "num": 298,
+    "audioUrl": "https://proverbs.speakingpashto.com/298.mp3"
   },
   {
     "p1": "خوار دلته خوار په هندوستان",
@@ -2688,7 +2986,8 @@
     "e2": "",
     "theme": "Poverty",
     "interp": "People who are poor remain so, wherever they are and even if their situation changes.",
-    "num": 299
+    "num": 299,
+    "audioUrl": "https://proverbs.speakingpashto.com/299.mp3"
   },
   {
     "p1": "دومره ګټو چې یې څټو",
@@ -2697,7 +2996,8 @@
     "e2": "",
     "theme": "Poverty",
     "interp": "Living hand-to-mouth there is no chance to accrue savings.",
-    "num": 300
+    "num": 300,
+    "audioUrl": "https://proverbs.speakingpashto.com/300.mp3"
   },
   {
     "p1": "مار خو نهٔ یې چې په خاورو پائی",
@@ -2706,7 +3006,8 @@
     "e2": "",
     "theme": "Poverty",
     "interp": "A proverb used as a complaint about lack of support. Pashtun thought is that snakes eat dirt, and that a poor person, unlike a snake which can eat dirt, needs resources to survive.",
-    "num": 301
+    "num": 301,
+    "audioUrl": "https://proverbs.speakingpashto.com/301.mp3"
   },
   {
     "p1": "اوبه په کمزورې ورخ ماتېږی",
@@ -2715,7 +3016,8 @@
     "e2": "",
     "theme": "Power",
     "interp": "Weak people are likely to be exploited by the powerful.",
-    "num": 302
+    "num": 302,
+    "audioUrl": "https://proverbs.speakingpashto.com/302.mp3"
   },
   {
     "p1": "د قانون لاسونه ډېر اوږدۀ دی",
@@ -2724,7 +3026,8 @@
     "e2": "",
     "theme": "Power",
     "interp": "Eventually the rule of law will catch up with criminals.",
-    "num": 303
+    "num": 303,
+    "audioUrl": "https://proverbs.speakingpashto.com/303.mp3"
   },
   {
     "p1": "د خویشکو نسوار دی په ورستو زور کوی",
@@ -2733,7 +3036,8 @@
     "e2": "",
     "theme": "Power",
     "interp": "A bragging warning that you have more power than someone and will make them cave in, or that a pleasure now comes with a later drawback. Kheshgi is a village near Nowshera in Khyber Pakhtunkhwa.  نسوار is chewing tobacco.",
-    "num": 304
+    "num": 304,
+    "audioUrl": "https://proverbs.speakingpashto.com/304.mp3"
   },
   {
     "p1": "د فقیر چې چرته ښۀ وی هلته یې شپه وی",
@@ -2742,7 +3046,8 @@
     "e2": "",
     "theme": "Power",
     "interp": "This proverb can be used to mollify a person upset with less than they expected. It is a bit demeaning; implying they are underprivileged, and therefore should not complain.",
-    "num": 305
+    "num": 305,
+    "audioUrl": "https://proverbs.speakingpashto.com/305.mp3"
   },
   {
     "p1": "که مړ نۀ وم نو زۀ به درته ووائم",
@@ -2751,7 +3056,8 @@
     "e2": "",
     "theme": "Prediction",
     "interp": "A proverb spoken by someone who has just made a prediction. You’ll see I’m right - if I’m alive to see it.",
-    "num": 306
+    "num": 306,
+    "audioUrl": "https://proverbs.speakingpashto.com/306.mp3"
   },
   {
     "p1": "په جنګ کښې اسونه نهٔ څربېږی",
@@ -2760,7 +3066,8 @@
     "e2": "",
     "theme": "Preparation",
     "interp": "Preparation has to be done ahead of time.",
-    "num": 307
+    "num": 307,
+    "audioUrl": "https://proverbs.speakingpashto.com/307.mp3"
   },
   {
     "p1": "مېږی ته چې خدائ په قهر شی",
@@ -2769,7 +3076,8 @@
     "e2": "then He gives them wings.",
     "theme": "Pride",
     "interp": "There will be bad consequences for an impoverished or prideful person. God gives him enough rope to hang himself.",
-    "num": 308
+    "num": 308,
+    "audioUrl": "https://proverbs.speakingpashto.com/308.mp3"
   },
   {
     "p1": "کبرژن د خدائ دشمن",
@@ -2778,7 +3086,8 @@
     "e2": "",
     "theme": "Pride",
     "interp": "God does not like the arrogant.",
-    "num": 309
+    "num": 309,
+    "audioUrl": "https://proverbs.speakingpashto.com/309.mp3"
   },
   {
     "p1": "لوئی د یو خدائ سره ښایی",
@@ -2787,7 +3096,8 @@
     "e2": "",
     "theme": "Pride",
     "interp": "Only God is powerful and important.",
-    "num": 310
+    "num": 310,
+    "audioUrl": "https://proverbs.speakingpashto.com/310.mp3"
   },
   {
     "p1": "چتی آسمان ته پښې نیولې وې",
@@ -2796,7 +3106,8 @@
     "e2": "and said “I’ve held up the world.”",
     "theme": "Pride",
     "interp": "The ridiculous boasting of an unqualified person is like the misguided arrogance of a small bird – who thinks he is holding up the sky. چتى is the diminutive Indian White-eye bird, about 8cm long.",
-    "num": 311
+    "num": 311,
+    "audioUrl": "https://proverbs.speakingpashto.com/311.mp3"
   },
   {
     "p1": "لږه یې خوړه نه او ډېره یې مونده نه",
@@ -2805,7 +3116,8 @@
     "e2": "",
     "theme": "Pride",
     "interp": "An admonition to someone who is too proud to take a small job, and in so doing is left jobless.",
-    "num": 312
+    "num": 312,
+    "audioUrl": "https://proverbs.speakingpashto.com/312.mp3"
   },
   {
     "p1": "د نن دې وشی سبا بیا خدائ شته",
@@ -2814,7 +3126,8 @@
     "e2": "",
     "theme": "Provision",
     "interp": "God will consistently provide – so have faith for tomorrow’s provision.",
-    "num": 313
+    "num": 313,
+    "audioUrl": "https://proverbs.speakingpashto.com/313.mp3"
   },
   {
     "p1": "بنده اریان او خدائ مهربان",
@@ -2823,7 +3136,8 @@
     "e2": "",
     "theme": "Provision",
     "interp": "Said when God provides a miraculous help in time of trouble.",
-    "num": 314
+    "num": 314,
+    "audioUrl": "https://proverbs.speakingpashto.com/314.mp3"
   },
   {
     "p1": "یاد به دې زهٔ کړم",
@@ -2832,7 +3146,8 @@
     "e2": "",
     "theme": "Provision",
     "interp": "Here, the word  ياد means to give a gift or favour. So the proverb can be used as an excuse for giving less of something, or even nothing at all. God will provide the missing portion.",
-    "num": 315
+    "num": 315,
+    "audioUrl": "https://proverbs.speakingpashto.com/315.mp3"
   },
   {
     "p1": "د نر کونه په بدل ده",
@@ -2841,7 +3156,8 @@
     "e2": "",
     "theme": "Reciprocation",
     "interp": "Return a favour. The reciprocal nature of relationships.",
-    "num": 316
+    "num": 316,
+    "audioUrl": "https://proverbs.speakingpashto.com/316.mp3"
   },
   {
     "p1": "چې زهٔ او تهٔ راضی",
@@ -2850,7 +3166,8 @@
     "e2": "what need will there be of a judge?",
     "theme": "Reconciliation",
     "interp": "Friendship and understanding can circumvent legal issues.",
-    "num": 317
+    "num": 317,
+    "audioUrl": "https://proverbs.speakingpashto.com/317.mp3"
   },
   {
     "p1": "د چاړا په ژبه چاړا پوهېږی",
@@ -2859,7 +3176,8 @@
     "e2": "",
     "theme": "Relationship",
     "interp": "Kinship and understanding are found among people who share the same weaknesses.",
-    "num": 318
+    "num": 318,
+    "audioUrl": "https://proverbs.speakingpashto.com/318.mp3"
   },
   {
     "p1": "په دین کښې شرم نشته",
@@ -2868,7 +3186,8 @@
     "e2": "",
     "theme": "Religion",
     "interp": "It is acceptable to ask questions about faith.",
-    "num": 319
+    "num": 319,
+    "audioUrl": "https://proverbs.speakingpashto.com/319.mp3"
   },
   {
     "p1": "د بنده مخ د خدائ د نوره دے",
@@ -2877,7 +3196,8 @@
     "e2": "",
     "theme": "Respect",
     "interp": "A proverb encouraging respect of others and not to say or do anything that would dishonour them.",
-    "num": 320
+    "num": 320,
+    "audioUrl": "https://proverbs.speakingpashto.com/320.mp3"
   },
   {
     "p1": "تهٔ پوهه شه او کار دې پوهه شه",
@@ -2886,7 +3206,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "You bear the responsibility for what you’re about to do.",
-    "num": 321
+    "num": 321,
+    "audioUrl": "https://proverbs.speakingpashto.com/321.mp3"
   },
   {
     "p1": "په ګڼو قصابانو کښې څاروے مرداریږی",
@@ -2895,7 +3216,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "No one takes responsibility to follow through with tasks, or they interfere with one another.",
-    "num": 322
+    "num": 322,
+    "audioUrl": "https://proverbs.speakingpashto.com/322.mp3"
   },
   {
     "p1": "زهٔ ستا په قبر کښې نهٔ څملم",
@@ -2904,7 +3226,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "A call for fairness and honesty: each of us will answer for our own behaviour and words.",
-    "num": 323
+    "num": 323,
+    "audioUrl": "https://proverbs.speakingpashto.com/323.mp3"
   },
   {
     "p1": "چې څوک یې کوی نو هغه به یې پاکوی",
@@ -2913,7 +3236,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "The responsibility lies with the person who made the mistake.",
-    "num": 324
+    "num": 324,
+    "audioUrl": "https://proverbs.speakingpashto.com/324.mp3"
   },
   {
     "p1": "په امانت کښې خیانت نۀ دے پکار",
@@ -2922,7 +3246,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "Leave something you have borrowed exactly like it was.",
-    "num": 325
+    "num": 325,
+    "audioUrl": "https://proverbs.speakingpashto.com/325.mp3"
   },
   {
     "p1": "چې اوښان ساتې نو دروازې به دنګې جوړوې",
@@ -2931,7 +3256,8 @@
     "e2": "",
     "theme": "Responsibility",
     "interp": "If you want to something big you have to adjust things to make it happen.",
-    "num": 326
+    "num": 326,
+    "audioUrl": "https://proverbs.speakingpashto.com/326.mp3"
   },
   {
     "p1": "د ستړو ځائ شهباز ګړهه ده",
@@ -2940,7 +3266,8 @@
     "e2": "",
     "theme": "Rest",
     "interp": "People flock to the place they can get rest. Shahbaz Garhi is a village near Mardan, that may once have been a half-way place used by those who were travelling.",
-    "num": 327
+    "num": 327,
+    "audioUrl": "https://proverbs.speakingpashto.com/327.mp3"
   },
   {
     "p1": "ښهٔ پوهېږم خو نهٔ پوهېږم",
@@ -2949,7 +3276,8 @@
     "e2": "",
     "theme": "Restraomt",
     "interp": "Used when you are unable to openly say what you know so well; to avoid shaming someone, or when being open will create problems.",
-    "num": 328
+    "num": 328,
+    "audioUrl": "https://proverbs.speakingpashto.com/328.mp3"
   },
   {
     "p1": "اول حق د ګاونډی دے",
@@ -2958,7 +3286,8 @@
     "e2": "",
     "theme": "Rights",
     "interp": "Neighbours should be the first recipients of charity and help.",
-    "num": 329
+    "num": 329,
+    "audioUrl": "https://proverbs.speakingpashto.com/329.mp3"
   },
   {
     "p1": "د خزانې په خوا کښې مار وی",
@@ -2967,7 +3296,8 @@
     "e2": "",
     "theme": "Risk",
     "interp": "Beware the risks associated with success.",
-    "num": 330
+    "num": 330,
+    "audioUrl": "https://proverbs.speakingpashto.com/330.mp3"
   },
   {
     "p1": "د ګل سره ازغی وی",
@@ -2976,7 +3306,8 @@
     "e2": "",
     "theme": "Risk",
     "interp": "The pessimistic view that every good thing has a flaw.",
-    "num": 331
+    "num": 331,
+    "audioUrl": "https://proverbs.speakingpashto.com/331.mp3"
   },
   {
     "p1": "د چا چا خوله به ټپوې؟",
@@ -2985,7 +3316,8 @@
     "e2": "",
     "theme": "Rumour",
     "interp": "It’s impossible to prevent rumours.",
-    "num": 332
+    "num": 332,
+    "audioUrl": "https://proverbs.speakingpashto.com/332.mp3"
   },
   {
     "p1": "چې ښے لاس دې",
@@ -2994,7 +3326,8 @@
     "e2": "",
     "theme": "Secrets",
     "interp": "To do something secretly; especially in relation to giving charity.",
-    "num": 333
+    "num": 333,
+    "audioUrl": "https://proverbs.speakingpashto.com/333.mp3"
   },
   {
     "p1": "د زړهٔ خبرې په زړهٔ کښې ساته",
@@ -3003,7 +3336,8 @@
     "e2": "",
     "theme": "Secrets",
     "interp": "A warning to keep secrets.",
-    "num": 334
+    "num": 334,
+    "audioUrl": "https://proverbs.speakingpashto.com/334.mp3"
   },
   {
     "p1": "کۀ چاړۀ د سرو ده",
@@ -3012,7 +3346,8 @@
     "e2": "It’s not for stabbing yourself in the stomach.",
     "theme": "Self-Protection",
     "interp": "However good something is, don’t do it if it destroys you.",
-    "num": 335
+    "num": 335,
+    "audioUrl": "https://proverbs.speakingpashto.com/335.mp3"
   },
   {
     "p1": "سپے هم چې کېنی",
@@ -3021,7 +3356,8 @@
     "e2": "it cleans a place for itself.",
     "theme": "Self Interest",
     "interp": "Everyone takes care of their own interests.",
-    "num": 336
+    "num": 336,
+    "audioUrl": "https://proverbs.speakingpashto.com/336.mp3"
   },
   {
     "p1": "اول ځان دے بیا جهان دے",
@@ -3030,7 +3366,8 @@
     "e2": "",
     "theme": "Self Interest",
     "interp": "Take care of yourself before others.",
-    "num": 337
+    "num": 337,
+    "audioUrl": "https://proverbs.speakingpashto.com/337.mp3"
   },
   {
     "p1": "چې د کلال د کوره اوځی،",
@@ -3039,7 +3376,8 @@
     "e2": "It’s completely finished.",
     "theme": "Self Interest",
     "interp": "On the one hand this proverb is used as a reminder that there is no guarantee once something is sold. It is also widely used as cynical complaint made to someone who has used you for their own benefit and then discarded you once their need has passed.",
-    "num": 338
+    "num": 338,
+    "audioUrl": "https://proverbs.speakingpashto.com/338.mp3"
   },
   {
     "p1": "د وېشه یې په تالان خوشحاله دے",
@@ -3048,7 +3386,8 @@
     "e2": "",
     "theme": "Self Interest",
     "interp": "Selfish tendencies of the miserly.",
-    "num": 339
+    "num": 339,
+    "audioUrl": "https://proverbs.speakingpashto.com/339.mp3"
   },
   {
     "p1": "هر سړے خپل غم ژاړی",
@@ -3057,7 +3396,8 @@
     "e2": "",
     "theme": "Self Interest",
     "interp": "People tend to focus on their own concerns.",
-    "num": 340
+    "num": 340,
+    "audioUrl": "https://proverbs.speakingpashto.com/340.mp3"
   },
   {
     "p1": "د شرم ټېز د کوناټی په سر وی",
@@ -3066,7 +3406,8 @@
     "e2": "",
     "theme": "Shame",
     "interp": "When humiliation comes, it comes big time. Also used when shameful or hidden things are suddenly revealed.",
-    "num": 341
+    "num": 341,
+    "audioUrl": "https://proverbs.speakingpashto.com/341.mp3"
   },
   {
     "p1": "شرم ګډورے نهٔ دے",
@@ -3075,7 +3416,8 @@
     "e2": "that bleats to others.",
     "theme": "Shame",
     "interp": "Used to reprimand someone who could care less about their shameful behaviour and keeps talking openly about it.",
-    "num": 342
+    "num": 342,
+    "audioUrl": "https://proverbs.speakingpashto.com/342.mp3"
   },
   {
     "p1": "شرم په سترګو کښې وی",
@@ -3084,7 +3426,8 @@
     "e2": "",
     "theme": "Shame",
     "interp": "When someone has done something shameful, they are too embarrassed to look the person in the eye.",
-    "num": 343
+    "num": 343,
+    "audioUrl": "https://proverbs.speakingpashto.com/343.mp3"
   },
   {
     "p1": "سترګې د سترګو نه شرمېږی",
@@ -3093,7 +3436,8 @@
     "e2": "",
     "theme": "Shame",
     "interp": "When someone has done something shameful, they are too embarrassed to look the person in the eye.",
-    "num": 344
+    "num": 344,
+    "audioUrl": "https://proverbs.speakingpashto.com/344.mp3"
   },
   {
     "p1": "حال د وئیلو نهٔ دے",
@@ -3102,7 +3446,8 @@
     "e2": "and the place can’t be shown.",
     "theme": "Shame",
     "interp": "Something too embarrassing to talk about.",
-    "num": 345
+    "num": 345,
+    "audioUrl": "https://proverbs.speakingpashto.com/345.mp3"
   },
   {
     "p1": "یو ځان شرموی بل قام",
@@ -3111,7 +3456,8 @@
     "e2": "",
     "theme": "Shame",
     "interp": "The biggest shame is doing something against the tribe.",
-    "num": 346
+    "num": 346,
+    "audioUrl": "https://proverbs.speakingpashto.com/346.mp3"
   },
   {
     "p1": "چې نۀ پوهېږې ګران اخله",
@@ -3120,7 +3466,8 @@
     "e2": "",
     "theme": "Shopping",
     "interp": "Advice for shopping when you have no familiarity with the item you want to buy.",
-    "num": 347
+    "num": 347,
+    "audioUrl": "https://proverbs.speakingpashto.com/347.mp3"
   },
   {
     "p1": "هنر چا د مور په خېټه کښې",
@@ -3129,7 +3476,8 @@
     "e2": "",
     "theme": "Skill",
     "interp": "It takes time and effort to learn a skill.",
-    "num": 348
+    "num": 348,
+    "audioUrl": "https://proverbs.speakingpashto.com/348.mp3"
   },
   {
     "p1": "چې د چا په لاس کښې کار وی",
@@ -3138,7 +3486,8 @@
     "e2": "they are in charge.",
     "theme": "Skill",
     "interp": "Praise of being skilled in some area.",
-    "num": 349
+    "num": 349,
+    "audioUrl": "https://proverbs.speakingpashto.com/349.mp3"
   },
   {
     "p1": "خپله درنه وائی او د بل سپکه",
@@ -3147,7 +3496,8 @@
     "e2": "",
     "theme": "Slander",
     "interp": "Description of an idle gossip.",
-    "num": 350
+    "num": 350,
+    "audioUrl": "https://proverbs.speakingpashto.com/350.mp3"
   },
   {
     "p1": "د خولې برغولے یې نشته",
@@ -3156,7 +3506,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "No filter on a person’s tongue.",
-    "num": 351
+    "num": 351,
+    "audioUrl": "https://proverbs.speakingpashto.com/351.mp3"
   },
   {
     "p1": "اول یې تله بیا یې وایه",
@@ -3165,7 +3516,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "Think carefully about the possible consequences of what you say before you say it.",
-    "num": 352
+    "num": 352,
+    "audioUrl": "https://proverbs.speakingpashto.com/352.mp3"
   },
   {
     "p1": "خپله خوله هم قلا ده هم بلا ده",
@@ -3174,7 +3526,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "Careful talk protects you, foolish talk ruins you.",
-    "num": 353
+    "num": 353,
+    "audioUrl": "https://proverbs.speakingpashto.com/353.mp3"
   },
   {
     "p1": "خوله دې په واک کښې کړه",
@@ -3183,7 +3536,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "A plea to speak carefully.",
-    "num": 354
+    "num": 354,
+    "audioUrl": "https://proverbs.speakingpashto.com/354.mp3"
   },
   {
     "p1": "چې څۀ په زړۀ وی هغه په خوله وی",
@@ -3192,7 +3546,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "People who speak straightforwardly, without guile.",
-    "num": 355
+    "num": 355,
+    "audioUrl": "https://proverbs.speakingpashto.com/355.mp3"
   },
   {
     "p1": "د خولې وتلې خبره نهٔ واپس کېږی",
@@ -3201,7 +3556,8 @@
     "e2": "",
     "theme": "Speech",
     "interp": "An appeal to use discreet speech.",
-    "num": 356
+    "num": 356,
+    "audioUrl": "https://proverbs.speakingpashto.com/356.mp3"
   },
   {
     "p1": "ما په آسمان غوښتې",
@@ -3210,7 +3566,8 @@
     "e2": "God gifted you to me on the earth.",
     "theme": "Surprise",
     "interp": "An unexpected blessing, or arrival. The thing though hard made easy.",
-    "num": 357
+    "num": 357,
+    "audioUrl": "https://proverbs.speakingpashto.com/357.mp3"
   },
   {
     "p1": "د مفتو شراب قاضی هم څښلی",
@@ -3219,7 +3576,8 @@
     "e2": "",
     "theme": "Temptation",
     "interp": "Even the pious succumb to temptation.",
-    "num": 358
+    "num": 358,
+    "audioUrl": "https://proverbs.speakingpashto.com/358.mp3"
   },
   {
     "p1": "پټ غل باچا د‌ے",
@@ -3228,7 +3586,8 @@
     "e2": "",
     "theme": "Thief",
     "interp": "Undetected criminals are happy.",
-    "num": 359
+    "num": 359,
+    "audioUrl": "https://proverbs.speakingpashto.com/359.mp3"
   },
   {
     "p1": "لاس لاس پېژنی",
@@ -3237,7 +3596,8 @@
     "e2": "",
     "theme": "Trust",
     "interp": "Trust given to a like-minded person.",
-    "num": 360
+    "num": 360,
+    "audioUrl": "https://proverbs.speakingpashto.com/360.mp3"
   },
   {
     "p1": "رښتیا وئیل تراخه وی",
@@ -3246,7 +3606,8 @@
     "e2": "",
     "theme": "Truth",
     "interp": "Frank talk is painful.",
-    "num": 361
+    "num": 361,
+    "audioUrl": "https://proverbs.speakingpashto.com/361.mp3"
   },
   {
     "p1": "لال په اېرو کښې نهٔ پټېږی",
@@ -3255,7 +3616,8 @@
     "e2": "",
     "theme": "Truth",
     "interp": "Truth, beauty and value can’t be concealed.",
-    "num": 362
+    "num": 362,
+    "audioUrl": "https://proverbs.speakingpashto.com/362.mp3"
   },
   {
     "p1": "د ډېوې د کونې لاندې تیارهٔ وی",
@@ -3264,7 +3626,8 @@
     "e2": "",
     "theme": "Unaware",
     "interp": "Oblivious of your own weaknesses, you can’t see what lies in your own back yard.",
-    "num": 363
+    "num": 363,
+    "audioUrl": "https://proverbs.speakingpashto.com/363.mp3"
   },
   {
     "p1": "زوړ امام زړې تراویح",
@@ -3273,7 +3636,8 @@
     "e2": "",
     "theme": "Unchangeable",
     "interp": "People don’t change, but stick to their habits; like the traditional style of recitation used by an old mullah. تراويح are the prayers and long recitations of the Quran read at night during Ramadan.",
-    "num": 364
+    "num": 364,
+    "audioUrl": "https://proverbs.speakingpashto.com/364.mp3"
   },
   {
     "p1": "نه مری او نه رغېږی",
@@ -3282,7 +3646,8 @@
     "e2": "",
     "theme": "Unchangeable",
     "interp": "Said of someone lingering in a critical condition. Sometimes the proverb is also used as a curse.",
-    "num": 365
+    "num": 365,
+    "audioUrl": "https://proverbs.speakingpashto.com/365.mp3"
   },
   {
     "p1": "هله به خبر شی",
@@ -3291,7 +3656,8 @@
     "e2": "his tongue gets stuck to his palate.",
     "theme": "Understanding",
     "interp": "Only when someone is dead will they understand. In other words, they will never understand until too late. This proverb is often re-worded in modern use. The obscure phrase تالو يې ژبې is replaced by the name of a village, Taru Jabba, near Peshawar.",
-    "num": 366
+    "num": 366,
+    "audioUrl": "https://proverbs.speakingpashto.com/366.mp3"
   },
   {
     "p1": "هله به دې زده شی",
@@ -3300,7 +3666,8 @@
     "e2": "you’ve spent the night in the wilderness.",
     "theme": "Understanding",
     "interp": "Only those who have experienced something know about it.",
-    "num": 367
+    "num": 367,
+    "audioUrl": "https://proverbs.speakingpashto.com/367.mp3"
   },
   {
     "p1": "پته به ورته ولګی چې د سېره څو پخېږی",
@@ -3309,7 +3676,8 @@
     "e2": "",
     "theme": "Understanding",
     "interp": "To find out later how much the cost is – knowledge that only comes with experience. A seer is the old British colonial measure of weight - equivalent to 1.25kg, or 2lbs - still in use in some parts of India, Pakistan, Afghanistan and India.",
-    "num": 368
+    "num": 368,
+    "audioUrl": "https://proverbs.speakingpashto.com/368.mp3"
   },
   {
     "p1": "زۀ په طمع او تۀ بې غمه",
@@ -3318,7 +3686,8 @@
     "e2": "",
     "theme": "Unfaithful",
     "interp": "Description of someone who doesn’t follow through with promises",
-    "num": 369
+    "num": 369,
+    "audioUrl": "https://proverbs.speakingpashto.com/369.mp3"
   },
   {
     "p1": "اوبۀ پۀ ډانګونو نۀ بېلېږی",
@@ -3327,7 +3696,8 @@
     "e2": "",
     "theme": "Unity",
     "interp": "Strong relationships – of family and tribe – are not easily broken.",
-    "num": 370
+    "num": 370,
+    "audioUrl": "https://proverbs.speakingpashto.com/370.mp3"
   },
   {
     "p1": "ما مه شمېره در ګډ یمه",
@@ -3336,7 +3706,8 @@
     "e2": "",
     "theme": "Unity",
     "interp": "Said by someone who turns up uninvited.",
-    "num": 371
+    "num": 371,
+    "audioUrl": "https://proverbs.speakingpashto.com/371.mp3"
   },
   {
     "p1": "حرامه په حرامه ځی",
@@ -3345,7 +3716,8 @@
     "e2": "",
     "theme": "Unlawful",
     "interp": "Unlawful gain is quickly lost on useless things. Some thing, or behaviour that is حرام is religiously outlawed; like pork, alcohol and adultery.",
-    "num": 372
+    "num": 372,
+    "audioUrl": "https://proverbs.speakingpashto.com/372.mp3"
   },
   {
     "p1": "حرام مال د چا نهٔ هضمېږی",
@@ -3354,7 +3726,8 @@
     "e2": "",
     "theme": "Unlawful",
     "interp": "Unlawful money creates trouble, and can’t be used.",
-    "num": 373
+    "num": 373,
+    "audioUrl": "https://proverbs.speakingpashto.com/373.mp3"
   },
   {
     "p1": "نیم حکیم خطره جان",
@@ -3363,7 +3736,8 @@
     "e2": "half a Mullah is risky to faith.",
     "theme": "Unqualified",
     "interp": "A common proverb critical of those with partial knowledge.",
-    "num": 374
+    "num": 374,
+    "audioUrl": "https://proverbs.speakingpashto.com/374.mp3"
   },
   {
     "p1": "ښهٔ مه کوه بد نشته",
@@ -3372,7 +3746,8 @@
     "e2": "",
     "theme": "Virtue",
     "interp": "This proverb reflects the gloomy feeling Pukhtuns have that if you do good, people will take advantage of you. Their solution is not to do good at all.",
-    "num": 375
+    "num": 375,
+    "audioUrl": "https://proverbs.speakingpashto.com/375.mp3"
   },
   {
     "p1": "چې ښهٔ نهٔ شې کولے نو بد مهٔ کوه",
@@ -3381,7 +3756,8 @@
     "e2": "",
     "theme": "Virtue",
     "interp": "A plea to behave in a kindly way to others.",
-    "num": 376
+    "num": 376,
+    "audioUrl": "https://proverbs.speakingpashto.com/376.mp3"
   },
   {
     "p1": "کهٔ شېر دے خو ګېر دے",
@@ -3390,7 +3766,8 @@
     "e2": "",
     "theme": "Weakness",
     "interp": "A strong person stuck in some issue.",
-    "num": 377
+    "num": 377,
+    "audioUrl": "https://proverbs.speakingpashto.com/377.mp3"
   },
   {
     "p1": "کاڼے د یتیم په سر پرېوځی",
@@ -3399,7 +3776,8 @@
     "e2": "",
     "theme": "Weakness",
     "interp": "Suffering and blame falls on the weak.",
-    "num": 378
+    "num": 378,
+    "audioUrl": "https://proverbs.speakingpashto.com/378.mp3"
   },
   {
     "p1": "خر چې د خر نه کم شی",
@@ -3408,7 +3786,8 @@
     "e2": "its ear should be cut off.",
     "theme": "Weakness",
     "interp": "When a weakling shows his weakness, he is pounced on by the more powerful.",
-    "num": 379
+    "num": 379,
+    "audioUrl": "https://proverbs.speakingpashto.com/379.mp3"
   },
   {
     "p1": "پیسو له پیسې راځی",
@@ -3417,7 +3796,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "It takes money to make money.",
-    "num": 380
+    "num": 380,
+    "audioUrl": "https://proverbs.speakingpashto.com/380.mp3"
   },
   {
     "p1": "پیسې په غر کښې لار اوباسی",
@@ -3426,7 +3806,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "The power of money gets things done.",
-    "num": 381
+    "num": 381,
+    "audioUrl": "https://proverbs.speakingpashto.com/381.mp3"
   },
   {
     "p1": "دولت د لاس خیرے دے",
@@ -3435,7 +3816,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "Wealth comes and goes the way hands are sometimes clean, sometimes dirty.",
-    "num": 382
+    "num": 382,
+    "audioUrl": "https://proverbs.speakingpashto.com/382.mp3"
   },
   {
     "p1": "چې ډېر یې مال وی بد یې حال وی",
@@ -3444,7 +3826,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "The tension and burden that comes with wealth.",
-    "num": 383
+    "num": 383,
+    "audioUrl": "https://proverbs.speakingpashto.com/383.mp3"
   },
   {
     "p1": "دا د مړې خېټې خبرې دی",
@@ -3453,7 +3836,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "An expression of frustration when someone talks about doing something beyond their means.",
-    "num": 384
+    "num": 384,
+    "audioUrl": "https://proverbs.speakingpashto.com/384.mp3"
   },
   {
     "p1": "پېزار که د سرو وي خو د پښو وي",
@@ -3462,7 +3846,8 @@
     "e2": "",
     "theme": "Wealth",
     "interp": "Advice to a wealthy person not to put much stock in their great wealth.",
-    "num": 385
+    "num": 385,
+    "audioUrl": "https://proverbs.speakingpashto.com/385.mp3"
   },
   {
     "p1": "باران وئیل چې زهٔ نن نه ورېږم",
@@ -3471,7 +3856,8 @@
     "e2": "then when will I rain?”",
     "theme": "Weather",
     "interp": "Advice to a wealthy person not to put much stock in their great wealth.",
-    "num": 386
+    "num": 386,
+    "audioUrl": "https://proverbs.speakingpashto.com/386.mp3"
   },
   {
     "p1": "عقل په بیعه نهٔ خرڅېږی",
@@ -3480,7 +3866,8 @@
     "e2": "",
     "theme": "Wisdom",
     "interp": "Wisdom is a natural aptitude that can’t be acquired by money.",
-    "num": 387
+    "num": 387,
+    "audioUrl": "https://proverbs.speakingpashto.com/387.mp3"
   },
   {
     "p1": "که روزی په عقل وے",
@@ -3489,7 +3876,8 @@
     "e2": "then stupid folk would have died of hunger.",
     "theme": "Wisdom",
     "interp": "A sarcastic proverb about foolish people.",
-    "num": 388
+    "num": 388,
+    "audioUrl": "https://proverbs.speakingpashto.com/388.mp3"
   },
   {
     "p1": "د هوښیارانو خبرې د کاڼی کرښې وی",
@@ -3498,7 +3886,8 @@
     "e2": "",
     "theme": "Wisdom",
     "interp": "کرښې means to be authentic, trustworthy.",
-    "num": 389
+    "num": 389,
+    "audioUrl": "https://proverbs.speakingpashto.com/389.mp3"
   },
   {
     "p1": "د نقل دپاره عقل په کار دے",
@@ -3507,7 +3896,8 @@
     "e2": "",
     "theme": "Wisdom",
     "interp": "It takes skill to defraud people. Also a justification to cheat in exams.",
-    "num": 390
+    "num": 390,
+    "audioUrl": "https://proverbs.speakingpashto.com/390.mp3"
   },
   {
     "p1": "عقل چې وېشلے کېدهٔ",
@@ -3516,7 +3906,8 @@
     "e2": "Where were you?",
     "theme": "Wisdom",
     "interp": "A sarcastic remark about a stupid person.",
-    "num": 391
+    "num": 391,
+    "audioUrl": "https://proverbs.speakingpashto.com/391.mp3"
   },
   {
     "p1": "کوم کار چې په عقل کېږی",
@@ -3525,7 +3916,8 @@
     "e2": "",
     "theme": "Wisdom",
     "interp": "Complex problems are not solved by coercion.",
-    "num": 392
+    "num": 392,
+    "audioUrl": "https://proverbs.speakingpashto.com/392.mp3"
   },
   {
     "p1": "ځاے ګوره ډنګ وهه",
@@ -3534,7 +3926,8 @@
     "e2": "",
     "theme": "Wisdom",
     "interp": "Farting is considered taboo, so the proverb advises people to break wind only after checking no one is nearby.",
-    "num": 393
+    "num": 393,
+    "audioUrl": "https://proverbs.speakingpashto.com/393.mp3"
   },
   {
     "p1": "سړے یا په ښځه مری او یا په مال",
@@ -3543,7 +3936,8 @@
     "e2": "",
     "theme": "Women",
     "interp": "Two things that a man will fight, and perhaps die for.",
-    "num": 394
+    "num": 394,
+    "audioUrl": "https://proverbs.speakingpashto.com/394.mp3"
   },
   {
     "p1": "د ښځې نه د عمر تپوس مهٔ کوه",
@@ -3552,7 +3946,8 @@
     "e2": "or a man his salary.",
     "theme": "Women",
     "interp": "Taboo topics to avoid.",
-    "num": 395
+    "num": 395,
+    "audioUrl": "https://proverbs.speakingpashto.com/395.mp3"
   },
   {
     "p1": "په مزدورۍ کښې شرم نشته",
@@ -3561,7 +3956,8 @@
     "e2": "",
     "theme": "Work",
     "interp": "There is no disgrace in lowly work.",
-    "num": 396
+    "num": 396,
+    "audioUrl": "https://proverbs.speakingpashto.com/396.mp3"
   },
   {
     "p1": "پردے مزدور سحر وختی پاڅی",
@@ -3570,7 +3966,8 @@
     "e2": "",
     "theme": "Work",
     "interp": "A servant will always be at his master’s beck and call.",
-    "num": 397
+    "num": 397,
+    "audioUrl": "https://proverbs.speakingpashto.com/397.mp3"
   },
   {
     "p1": "د هسې ناستې نه",
@@ -3579,7 +3976,8 @@
     "e2": "is better than sitting idly around.",
     "theme": "Work",
     "interp": "Doing unwanted work for someone else is better than doing nothing.",
-    "num": 398
+    "num": 398,
+    "audioUrl": "https://proverbs.speakingpashto.com/398.mp3"
   },
   {
     "p1": "دنیا د اخرت پټے دے",
@@ -3588,7 +3986,8 @@
     "e2": "",
     "theme": "World",
     "interp": "Our deeds are a preparation for the world to come.",
-    "num": 399
+    "num": 399,
+    "audioUrl": "https://proverbs.speakingpashto.com/399.mp3"
   },
   {
     "p1": "دنیا نولس ده",
@@ -3597,6 +3996,7 @@
     "e2": "no one has reached twenty.",
     "theme": "World",
     "interp": "No one has reached perfection.",
-    "num": 400
+    "num": 400,
+    "audioUrl": "https://proverbs.speakingpashto.com/400.mp3"
   }
 ]

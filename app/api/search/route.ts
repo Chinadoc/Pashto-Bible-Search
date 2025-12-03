@@ -1395,8 +1395,9 @@ export async function POST(request: NextRequest) {
         const verbs: any[] = [];
         const nouns: any[] = [];
 
-        // For nouns, fetch noun inflections from D1
-        if (wordPosGuess === 'noun' || wordPosGuess === 'adjective') {
+        // For nouns/adjectives, fetch noun inflections from D1
+        // Also try for 'other' in case POS detection failed
+        if (wordPosGuess === 'noun' || wordPosGuess === 'adjective' || wordPosGuess === 'other') {
           try {
             // Use baseWordFromInflection if we already have it, otherwise look it up
             let baseWord = baseWordFromInflection;
