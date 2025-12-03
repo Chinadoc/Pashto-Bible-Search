@@ -3159,9 +3159,16 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                                         </div>
                                       </td>
                                       <td className="px-6 py-4">
-                                        <span className={`font-mono text-sm ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>
+                                        <button
+                                          onClick={() => {
+                                            setQuery(item.word);
+                                            setActiveMainTab('search');
+                                          }}
+                                          className={`font-mono text-sm cursor-pointer hover:underline ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}
+                                          title={`Search for "${item.word}" in Bible`}
+                                        >
                                           {item.word}
-                                        </span>
+                                        </button>
                                       </td>
                                       <td className="px-6 py-4">
                                         <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>

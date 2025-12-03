@@ -788,6 +788,46 @@ export async function GET(request: NextRequest) {
       console.warn('word_frequencies lookup failed:', e);
     }
     
+    // 1.5 If no result yet, try dictionary search for expanded lookups
+    if (!result.english && !result.baseForm) {
+      try {
+        const dictResponse = await fetch(
+          `${WORKER_URL}/api/dictionary/search?q=${encodeURIComponent(cleanWord)}&limit=5`
+        );
+        
+        if (dictResponse.ok) {
+          const dictData = await dictResponse.json();
+          if (dictData.entries && dictData.entries.length > 0) {
+            // Find exact match or closest match
+            const exactMatch = dictData.entries.find((e: any) => e.pashto === cleanWord);
+            const entry = exactMatch || dictData.entries[0];
+            
+            if (entry) {
+              result.baseForm = entry.pashto;
+              result.romanized = entry.romanization;
+              result.english = entry.english;
+              result.pos = entry.pos?.toLowerCase().includes('verb') ? 'verb' :
+                           entry.pos?.toLowerCase().includes('n.') || entry.pos?.toLowerCase().includes('noun') ? 'noun' :
+                           entry.pos?.toLowerCase().includes('adj') ? 'adjective' :
+                           entry.pos?.toLowerCase().includes('adv') ? 'adverb' :
+                           'other';
+              result.confidence = exactMatch ? 0.95 : 0.7;
+              result.source = 'dictionary';
+              
+              // Check gender from pos
+              if (entry.pos?.includes('f.') || entry.pos?.includes('fem')) {
+                result.gender = 'feminine';
+              } else if (entry.pos?.includes('m.') || entry.pos?.includes('masc')) {
+                result.gender = 'masculine';
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('dictionary search failed:', e);
+      }
+    }
+    
     // 2. Check verb_forms for verb conjugation info
     if (!result.pos || result.pos === 'verb' || result.pos === 'other') {
       try {
