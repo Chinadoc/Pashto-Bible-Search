@@ -1,0 +1,978 @@
+[
+  {
+    "num": 1,
+    "p1": "که مې څوک په فقيرۍ شميري فقير يم",
+    "p2": "که مې څوک په اميرۍ شميري امير يم",
+    "e1": "If you consider me a fakir, then I’m a fakir;",
+    "e2": "If you consider me rich, then I’m rich.",
+    "theme": "All Things to All Men"
+  },
+  {
+    "num": 2,
+    "p1": "خوب خندا په بې غمۍ کېږي رحمانه",
+    "p2": "هر چې تا غوندې غمژن وي څه به خوب کا",
+    "e1": "Sleep and laughter come from light-heartedness Rahman;",
+    "e2": "How can anyone sleep when as melancholy as you?",
+    "theme": "Anguish"
+  },
+  {
+    "num": 3,
+    "p1": "چې په سترګو کښې ئې خار وي څه په خوب کا",
+    "p2": "چې په زړه  ئې غم د يار وي څه به خوب کا",
+    "e1": "Who can sleep with a thorn in their eye,",
+    "e2": "Or with longing for the beloved in their heart?",
+    "theme": "Anguish"
+  },
+  {
+    "num": 4,
+    "p1": "په ظاهر لباس غلط د سړي مه شه",
+    "p2": "مينځ ئې ګوره له چغزۍ او له مټاکه",
+    "e1": "Don’t be fooled by a person’s outer clothing.",
+    "e2": "Look at the core; whether soft or hard.",
+    "theme": "Appearance"
+  },
+  {
+    "num": 5,
+    "p1": "د تصوير له ګلو طمعه د بوے مه کړه",
+    "p2": "له منقوشو مرغو نه خيژي اواز",
+    "e1": "Don’t expect scent from a picture of flowers;",
+    "e2": "Neither do painted birds make song.",
+    "theme": "Authenticity"
+  },
+  {
+    "num": 6,
+    "p1": "په مطلب د مهرويانو سرګردان دے زما روح",
+    "p2": "لکه باد دګل په بوے پسې پريشان دے زما روح",
+    "e1": "My soul is restless in search of the warm-hearted,",
+    "e2": "As the breeze yearns for the flower’s scent.",
+    "theme": "Beauty"
+  },
+  {
+    "num": 7,
+    "p1": "مخ د يار شمس و قمر درې واړه يو دي",
+    "p2": "قد و سرو صنوبر درې واړه يو دي",
+    "e1": "The lover’s face, sun and moon - all three are the same;",
+    "e2": "Her height, the cypress and the fir - all three are the same.",
+    "theme": "Beauty"
+  },
+  {
+    "num": 8,
+    "p1": "زه رحمان په زړه نرے کړم هغو جونو",
+    "p2": "چې ئي ملا وي د ويښته په دود نرۍ",
+    "e1": "I am Rahman, whose heart is softened by the girls",
+    "e2": "Whose waists are as thin as a hair.",
+    "theme": "Beauty"
+  },
+  {
+    "num": 9,
+    "p1": "د مات لوښي آواز کله ثابت خيژي",
+    "p2": "د هر چا عمل څرګند په خپل ګفتار شي",
+    "e1": "When does the sound of a broken pot ring true?",
+    "e2": "Everyone’s behaviour is revealed by their speech.",
+    "theme": "Behaviour"
+  },
+  {
+    "num": 10,
+    "p1": "چې له غرونو پرېوتلے وې بيا پاڅې",
+    "p2": "پاڅيدے نه شې د وړونو پرېوتلي",
+    "e1": "If you fall from a mountain you can get up again.",
+    "e2": "Those felled by their beloved will never get up.",
+    "theme": "Broken Heart"
+  },
+  {
+    "num": 11,
+    "p1": "قناعت مې تر خرقې لاندې اطلس دے",
+    "p2": "پټ د درست جهان بادشه ظاهر ګدا يم",
+    "e1": "Contentment is the satin cloth under my cloak.",
+    "e2": "I appear a beggar, but secretly am king of the whole world.",
+    "theme": "Contentment"
+  },
+  {
+    "num": 12,
+    "p1": "زرداران که اوبه څښي په جام د زرو",
+    "p2": "زما خوښ دا خپل د خاورو کنډولے دے",
+    "e1": "Though the rich drink water from a golden cup,",
+    "e2": "I prefer this earthen bowl of mine.",
+    "theme": "Contentment"
+  },
+  {
+    "num": 13,
+    "p1": "ستا په غم کښې چې ما وينې عالم ژاړي",
+    "p2": "ژړوې را سره نور عالم په څه",
+    "e1": "People cry when they see my anguish for you.",
+    "e2": "Why do you make more of them cry along with me?",
+    "theme": "Cruelty"
+  },
+  {
+    "num": 14,
+    "p1": "څر بوې مې قربانۍ لره پوهېږم",
+    "p2": "دا چې کړے دې په ما باندې زړه سوے دے",
+    "e1": "I know you fatten me for slaughter,",
+    "e2": "That’s why you show me such kindness.",
+    "theme": "Cruelty"
+  },
+  {
+    "num": 15,
+    "p1": "هسې تله کاندې وګور ته ياران زر زر",
+    "p2": "لکه تله کاندې خپل کور ته کاروان زر زر",
+    "e1": "Friends are speeding to the grave,",
+    "e2": "As hurriedly as the caravan heads for home.",
+    "theme": "Death"
+  },
+  {
+    "num": 16,
+    "p1": "زه له دې دنيا نه تلونکے په شتاب يم",
+    "p2": "لکه پاڼه د خزان پښه په رکاب يم",
+    "e1": "I am soon to depart this world;",
+    "e2": "Like an autumn leaf, my foot is in the stirrup.",
+    "theme": "Death"
+  },
+  {
+    "num": 17,
+    "p1": "علميت د بې عملو عالمانو",
+    "p2": "لکه ګنج د کتابونو په خره بار شي",
+    "e1": "The learning of disobedient scholars",
+    "e2": "Is like treasured books loaded on a donkey.",
+    "theme": "Disobedience"
+  },
+  {
+    "num": 18,
+    "p1": "دا جهان دے خداے له عشقه پيدا کړے",
+    "p2": "د جمله ؤ مخلوقاتو پلار دے دا",
+    "e1": "God has created this world out of love.",
+    "e2": "He is the Father of all creatures.",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 19,
+    "p1": "دا زما د يار جلوه ده چې ليده شي",
+    "p2": "لکه نمر په صومعه و سومنات",
+    "e1": "This is the appearance of my beloved;",
+    "e2": "Who appears like radiant light in monastery and temple?",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 20,
+    "p1": "زه چې يار لره ورځم په هغې لارې",
+    "p2": "مهتر خضر مهتر الياس مې رهبران کړه",
+    "e1": "On the path which I travel to see my beloved,",
+    "e2": "Make Holy Khizer and Ilyas my guides.",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 21,
+    "p1": "و آسمان ته لاس د عقل نه رسېږي",
+    "p2": "دا خو عشق دے چې په عرش کرسۍ قدم ږدي",
+    "e1": "The hand of the intellect can’t reach the sky,",
+    "e2": "Only love can step up to God’s throne.",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 22,
+    "p1": "چې بې خدايه محبت کا هغه خلق",
+    "p2": "نارينه ئي واړه خره او ښځې خرې دي",
+    "e1": "Those people who don’t love God",
+    "e2": "Are male and female donkeys.",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 23,
+    "p1": "بې وفا دي  د دې دهر ياران واړه",
+    "p2": "چې دې پس له مرګه يار شي هغه يار کړه",
+    "e1": "The friends of this world are all fickle;",
+    "e2": "Become friends with the one who is a friend after death.",
+    "theme": "Divine Love"
+  },
+  {
+    "num": 24,
+    "p1": "زه رحمان د بيلتانه سيلاب يم وړے",
+    "p2": "که لاس راکاڼي د خداے په محبت څوک",
+    "e1": "I Rahman am carried away by separation’s flood.",
+    "e2": "Can someone offer me his hand for the love of God?",
+    "theme": "Estrangement"
+  },
+  {
+    "num": 25,
+    "p1": "که مقصود لرې تلوار کړه وخت کوتاه دے",
+    "p2": "غرمه شه د دې عمر په بقا",
+    "e1": "If you have a purpose, hurry up!  Time is short.",
+    "e2": "Don’t smugly trust in the permanence of life.",
+    "theme": "Eternal Perspective"
+  },
+  {
+    "num": 26,
+    "p1": "بيا د مخ دې جار وتلے څه بلا شوه",
+    "p2": "دا بلا له  کومه لوري را پيدا شوه",
+    "e1": "Your face is turned away again. What calamity has happened?",
+    "e2": "From which side did this calamity come?",
+    "theme": "Exclusion"
+  },
+  {
+    "num": 27,
+    "p1": "که ته نه کړې په بل چا باندې غرض",
+    "p2": "بل به نه کاندي په تا باندې غرض",
+    "e1": "If you don’t interfere with others,",
+    "e2": "No one will meddle with you.",
+    "theme": "Expectations"
+  },
+  {
+    "num": 28,
+    "p1": "چې تصديق ئي په خپل زړه کښې محکم نه وي",
+    "p2": "دا په خوله ظاهر اقرار خو اقرار نه دے",
+    "e1": "If the confirmation in your own heart is not firm,",
+    "e2": "The outward confession of faith is no confession at all.",
+    "theme": "Faith"
+  },
+  {
+    "num": 29,
+    "p1": "د ازل په ورځ د بخرو جواري وه",
+    "p2": "اے رحمانه چا بائلو دي چا ګټلے",
+    "e1": "There was gambling for fate on the day of creation.",
+    "e2": "Some lost, Rahman, and some won.",
+    "theme": "Fate"
+  },
+  {
+    "num": 30,
+    "p1": "کار همه واړه د خداے موقوف دے",
+    "p2": "هيڅ موقوف نه دے د چا په انتظار",
+    "e1": "Everything is dependent of God’s prohibitions;",
+    "e2": "Don’t be restricted by the expectations of others.",
+    "theme": "Fate"
+  },
+  {
+    "num": 31,
+    "p1": "که بل بد کاندي ته ښه ورسره وکړه",
+    "p2": "هر يو نخل چې مېوه لري سنګسار شي",
+    "e1": "If someone does you harm - do him good.",
+    "e2": "For every date tree that bears fruit is stoned.",
+    "theme": "Forgiveness"
+  },
+  {
+    "num": 32,
+    "p1": "چې مولىا ورسره مل نه وي رحمانه",
+    "p2": "که لښکر ورسره وي يک تنها دے",
+    "e1": "If the Lord is not your companion, Rahman,",
+    "e2": "You’ll be standing all alone even with a battalion.",
+    "theme": "Friend of God"
+  },
+  {
+    "num": 33,
+    "p1": "که د ستا وصال دريار وي",
+    "p2": "زه ماهي يم  دريا ئې",
+    "e1": "If your companionship is a river;",
+    "e2": "I’m a fish in that river.",
+    "theme": "Friendship"
+  },
+  {
+    "num": 34,
+    "p1": "هغه يار چې بې وفا دے څه يار نه دے",
+    "p2": "هغه کار چې بې بقا دے څه کار نه دے",
+    "e1": "The friend who is unfaithful is no friend at all;",
+    "e2": "The endeavour that’s short-lived is no pursuit at all.",
+    "theme": "Friendship"
+  },
+  {
+    "num": 35,
+    "p1": "که يو څاڅکے اوبه تږي لره ورکړې",
+    "p2": "د دوزخ او ستا تر مېنځ به شي دريا",
+    "e1": "If you give a drop of water to the thirsty,",
+    "e2": "It will become a river between you and hell.",
+    "theme": "Generosity"
+  },
+  {
+    "num": 36,
+    "p1": "خزانه په سخاوت سره زياتېږي",
+    "p2": "د کوهي اوبه چې وکارې بسيار شي",
+    "e1": "Treasure is increased by generosity;",
+    "e2": "The well that’s unblocked overflows.",
+    "theme": "Generosity"
+  },
+  {
+    "num": 37,
+    "p1": "ګوره هسې کردګار دے رب زما",
+    "p2": "چې صاحب دکل اختيار دے رب زما",
+    "e1": "Look! My Lord is such a creator,",
+    "e2": "That my Lord is chief of all inventions.",
+    "theme": "God"
+  },
+  {
+    "num": 38,
+    "p1": "څه حاجت دے چې  و بل خوا ته ئي غواړم",
+    "p2": "په خپل کور کښې همکار دے رب زما",
+    "e1": "What need is there to look elsewhere?",
+    "e2": "My Lord is alongside me in my home.",
+    "theme": "God"
+  },
+  {
+    "num": 39,
+    "p1": "څوک د نمر په مخ  حجاب شي غوړولے",
+    "p2": "ده پټ کړے نمر په ابر کښې پنهان دے",
+    "e1": "Who can spread a veil over the face of the sun?",
+    "e2": "God has hidden the sun in the clouds.",
+    "theme": "God"
+  },
+  {
+    "num": 40,
+    "p1": "د همه واړه ملکونو څښتن خداے",
+    "p2": "که دوزخ دے که جنت دے که اعراف",
+    "e1": "God is the Lord of all countries,",
+    "e2": "Whether hell, or heaven or araf.",
+    "theme": "God Universal"
+  },
+  {
+    "num": 41,
+    "p1": "هر ژوندے چې د مرده په قبر ورشي",
+    "p2": "بس دے هومره نصيحت په دا دنيا",
+    "e1": "Any living person who visits a dead man’s grave",
+    "e2": "Has enough guidance for this world.",
+    "theme": "Guidance"
+  },
+  {
+    "num": 42,
+    "p1": "رحمان خود پخپله ګرم يم چې مين شوم",
+    "p2": "ولې نور عالم مې بولي ګرم په څه",
+    "e1": "I Rahman, alone, declare my guilt for being in love;",
+    "e2": "So why do others say I’m guilty, and of what?",
+    "theme": "Guilt"
+  },
+  {
+    "num": 43,
+    "p1": "کوهے مه کنه د بل سړي په لار کښې",
+    "p2": "چرې ستا به د کوهي په غاړه لار شې",
+    "e1": "Don’t dig a well in another’s path,",
+    "e2": "In case you come to the well’s edge yourself.",
+    "theme": "Harm"
+  },
+  {
+    "num": 44,
+    "p1": "زه عاشق يم سر کار مې دے له عشقه",
+    "p2": "نه خليل نه داؤدزے يم نه مهمند",
+    "e1": "I am a lover, and I deal in love;",
+    "e2": "I am neither Khaleel, Daudzai nor Mohmand.",
+    "theme": "Humanity Shared"
+  },
+  {
+    "num": 45,
+    "p1": "په نظر د بې  بصر",
+    "p2": "لکه شام هسې سهر",
+    "e1": "In the eyes of the blind,",
+    "e2": "Evening seems like morning.",
+    "theme": "Human Nature"
+  },
+  {
+    "num": 46,
+    "p1": "بادشاهي د ګدايانو په دُعا شي",
+    "p2": "زه رحمان ځکه بادشاه شوم چې ګدا شوم",
+    "e1": "Kingship is founded on the prayers of beggars;",
+    "e2": "I Rahman am king, because I am a beggar.",
+    "theme": "Humility"
+  },
+  {
+    "num": 47,
+    "p1": "هسې مه وايه چې زه يم په جهان کښې",
+    "p2": "پيدا کړے خداے د سر د پاسه سر دے",
+    "e1": "Don’t say, ‘I’m the special one,’ in this world,",
+    "e2": "For God has created a chief over every chief.",
+    "theme": "Humility"
+  },
+  {
+    "num": 48,
+    "p1": "د ريا خرقه ئي خداے مه کړه په غاړه",
+    "p2": "رحمان کوږ دستار تړلے قلندر دے",
+    "e1": "God forbid he don the cloak of hypocrisy;",
+    "e2": "For Rahman is the tramp of crooked turban.",
+    "theme": "Humility"
+  },
+  {
+    "num": 49,
+    "p1": "ژوندے ځان په ځمکه ښخ کړه لکه تخم",
+    "p2": "که لوئي غواړې د خاورو په مقام شه",
+    "e1": "Bury yourself alive in the ground like a seed.",
+    "e2": "If you want greatness, take the place of the soil.",
+    "theme": "Humility"
+  },
+  {
+    "num": 50,
+    "p1": "سړے کله خو يا جوړ کله نا جوړ وي",
+    "p2": "خداے خو نه يې چې تل تر تله جوړ يې",
+    "e1": "A man is sometimes healthy, sometimes sick;",
+    "e2": "You’re not God that you can be well forever.",
+    "theme": "Humility"
+  },
+  {
+    "num": 51,
+    "p1": "ياد وي  په خوله مکه او مدينه",
+    "p2": "نسکور پروت يې د عورتې په سينه",
+    "e1": "You frequently blab on about Mecca and Medina,",
+    "e2": "Yet you lie bedraggled on women’s breasts.",
+    "theme": "Hypocrisy"
+  },
+  {
+    "num": 52,
+    "p1": "چې مدام د بل وعيب نظر کړې",
+    "p2": "خداے د خپله عيبه ولې نا خبر کړې",
+    "e1": "If you’re always looking at the faults of others,",
+    "e2": "For God’s sake why are you so unaware of your own?",
+    "theme": "Hypocrisy"
+  },
+  {
+    "num": 53,
+    "p1": "څوک له زمکې واسمان ته شي ختلے",
+    "p2": "دۀ عيسىا لره ورکړے دا مکان دے",
+    "e1": "Who is able to ascend to heaven from the earth?",
+    "e2": "He has given this honour to Jesus.",
+    "theme": "Jesus"
+  },
+  {
+    "num": 54,
+    "p1": "که څوک تله د انصاف درته په لاس کا",
+    "p2": "خپل ټټو او د بل آس په برابر کړې",
+    "e1": "If the scales of justice were in your hand,",
+    "e2": "You would count your own nag equal to another’s thoroughbred.",
+    "theme": "Justice"
+  },
+  {
+    "num": 55,
+    "p1": "کر د ګلو کړه چې سيمه دې ګلزار شي",
+    "p2": "اغزي مه کره په پښو کښې به دې خار شي",
+    "e1": "Sow flowers so your community becomes a rose garden;",
+    "e2": "Don’t sow briars – you’ll get thorns in your feet.",
+    "theme": "Kindness"
+  },
+  {
+    "num": 56,
+    "p1": "آدميت څه په دولت نه دے رحمانه",
+    "p2": "بت که جوړ شه د سرو زرو انسان نه شي",
+    "e1": "Kind-heartedness is not found in wealth Rahman;",
+    "e2": "Even if a statue’s made of gold, it won’t be human.",
+    "theme": "Kindness"
+  },
+  {
+    "num": 57,
+    "p1": "چې دے نه په کښې يو يار نه دې آشنا وي",
+    "p2": "هغه ښهر و بحر و بر درې واړه يو دي",
+    "e1": "A place where you have no beloved or friend;",
+    "e2": "That city, the sea and the desert are all one and the same.",
+    "theme": "Loneliness"
+  },
+  {
+    "num": 58,
+    "p1": "زه چې زلفې د يار وينم په خوب کښې",
+    "p2": "په شپه مښک را باندې ووري تر صباح",
+    "e1": "When I dream of my beloved’s tresses,",
+    "e2": "The night time scent lingers on me till morning.",
+    "theme": "Love"
+  },
+  {
+    "num": 59,
+    "p1": "ستا د مينې ګوهر نشته په هر آب کښې",
+    "p2": "مګر بيا موندے شي د اوښکو په درياب کښې",
+    "e1": "The pearl of your love is not in every water;",
+    "e2": "But can be found in the river of tears.",
+    "theme": "Love"
+  },
+  {
+    "num": 60,
+    "p1": "چې مجنون غوندې په مينه کښې صادق وي",
+    "p2": "رحمان وايم په هغه باندې سلام",
+    "e1": "To the one who is true in love like Majnoon:",
+    "e2": "I, Rahman, say, ‘Peace be on him!’",
+    "theme": "Love"
+  },
+  {
+    "num": 61,
+    "p1": "ته چې مانع کوې د يار له لوري",
+    "p2": "کاشکې باد د سحر منع په بوستان کړې",
+    "e1": "You who restrain me from being near my beloved.",
+    "e2": "If only you could stop the morning breeze blowing in the garden!",
+    "theme": "Love"
+  },
+  {
+    "num": 62,
+    "p1": "که چا لار د عاشقۍ ده ورکه کړې",
+    "p2": "زه رحمان د ګمراهانو رهنما يم",
+    "e1": "If anyone has lost the path of love;",
+    "e2": "I, Rahman, am the guide of the wayward.",
+    "theme": "Love"
+  },
+  {
+    "num": 63,
+    "p1": "همدمې د دوه همدمو هسې بويه",
+    "p2": "چې د دواړو همدمې په يوه دم وي",
+    "e1": "The partnership of two lovers should",
+    "e2": "Be as if their partnership is but one breath.",
+    "theme": "Love"
+  },
+  {
+    "num": 64,
+    "p1": "تمام عمر د دنيا په طلب ګرزې",
+    "p2": "بيا د خداے په طالبانو ځان حساب کړې",
+    "e1": "For your whole life you pursued the world,",
+    "e2": "And now consider yourself a seeker after God?",
+    "theme": "Materialism"
+  },
+  {
+    "num": 65,
+    "p1": "ذخيره د دنيا مه کوه رحمانه",
+    "p2": "دا همه واړه د خاورو ذخيرې دي",
+    "e1": "Don’t amass earthly things Rahman;",
+    "e2": "They’re just a pile of dust.",
+    "theme": "Materialism"
+  },
+  {
+    "num": 66,
+    "p1": "پاس به باغ وي د ليئيم په ټټر باندې",
+    "p2": "هر درم و هر دينار د دې دنيا",
+    "e1": "They will be a stain on the miser’s chest;",
+    "e2": "Every gold and silver coin of this world.",
+    "theme": "Miser"
+  },
+  {
+    "num": 67,
+    "p1": "هر مطرب چې غوږ تاو کا د رباب",
+    "p2": "په دا تاؤ کښې زما  زړه کاندې کباب",
+    "e1": "Every musician who adjusts the pegs of the rebab;",
+    "e2": "His tuning roasts my heart like a kebab.",
+    "theme": "Music"
+  },
+  {
+    "num": 68,
+    "p1": "ما هاله له پارساي نه وو لاس وللي",
+    "p2": "چې په لاس کړه مطربانو ربابون",
+    "e1": "I washed my hands of piety,",
+    "e2": "When the musicians picked up their rebabs.",
+    "theme": "Music"
+  },
+  {
+    "num": 69,
+    "p1": "محمد د ګمراهانو رهنما دے",
+    "p2": "محمد دے د ړندو د لاس عصا",
+    "e1": "Muhammad is the guide of the lost.",
+    "e2": "May Muhammad be the walking stick of the blind.",
+    "theme": "Muhammad"
+  },
+  {
+    "num": 70,
+    "p1": "زه رحمان د محمد د در خاکروب يم",
+    "p2": "که مې خداے نه کا له دې دره جدا",
+    "e1": "I Rahman, am the sweeper at Muhammad’s gate,",
+    "e2": "Unless, God forbid, I’m separated from his door.",
+    "theme": "Muhammad"
+  },
+  {
+    "num": 71,
+    "p1": "که صورت د محمد نه وے پيدا",
+    "p2": "پيدا کړې به خداے نه وه دا دنيا",
+    "e1": "If the body of Muhammad had not been born",
+    "e2": "God would not have created this world.",
+    "theme": "Muhammad"
+  },
+  {
+    "num": 72,
+    "p1": "هر بېګاه وائې صبا له به خوله درکړم",
+    "p2": "دا بېګاه به په رحمان کله صبا کړې",
+    "e1": "Every evening you pledge to kiss me tomorrow.",
+    "e2": "When will you turn the evening into morning for Rahman?",
+    "theme": "Passion"
+  },
+  {
+    "num": 73,
+    "p1": "چې محظوظ وي په تش بوے د مهرويانو",
+    "p2": "هخه  فکر د بوسې د پيغام نه کا",
+    "e1": "Those overjoyed by the merest scent of the beloved",
+    "e2": "Don’t even consider the talk of a kiss.",
+    "theme": "Passion"
+  },
+  {
+    "num": 74,
+    "p1": "که يو ځل مې ستا زلفې په لاس کښېوځي",
+    "p2": "يو ويښته به دې په درست جهان ورنه کړم",
+    "e1": "If I were but once to hold your braids,",
+    "e2": "I wouldn’t give up a single hair for the whole world.",
+    "theme": "Passion"
+  },
+  {
+    "num": 75,
+    "p1": "که د غرونو په سر ګرځي سر ئي ټيټ وي",
+    "p2": "هر چې زړه ئي د خوبانو په يرغمل شي",
+    "e1": "Even if they walk on mountain peaks, their head droops.",
+    "e2": "All are held hostage to the beloved.",
+    "theme": "Passion"
+  },
+  {
+    "num": 76,
+    "p1": "زه طوطي شکر پرست يم",
+    "p2": "د ستا شونډې ميټائي",
+    "e1": "I am a sugar-loving parrot",
+    "e2": "Your lips are sweets.",
+    "theme": "Passion"
+  },
+  {
+    "num": 77,
+    "p1": "چرته د يار شونډې چرته غم د دل وجان",
+    "p2": "چرته کوتي لال او چرته لعل د بدخشان",
+    "e1": "Where are the beloved’s lips? Where the lover’s anguish?",
+    "e2": "Where are red berries? Where the ruby of Badakhshan?",
+    "theme": "Passion"
+  },
+  {
+    "num": 78,
+    "p1": "راحت بې زحمته نه دے چا موندلے",
+    "p2": "غم ښادي دي د دې دهر خور او  ورور",
+    "e1": "None has found comfort without discomfort;",
+    "e2": "For sadness and joy are sister and brother.",
+    "theme": "Patience"
+  },
+  {
+    "num": 79,
+    "p1": "په سبب د ظالمانو حاکمانو",
+    "p2": "ګور و اور و پښاور درې واړه يو دي",
+    "e1": "Because of cruel rulers,",
+    "e2": "The grave, fire and Peshawar are all one and the same.",
+    "theme": "Peshawar"
+  },
+  {
+    "num": 80,
+    "p1": "چې کشور د افغانانو معطر شي",
+    "p2": "د هر بيت مصراع مې زلفې د خوبان کړې",
+    "e1": "So that the land of the Afghans may be sweet-smelling,",
+    "e2": "Make every line of verse tresses of the beloved.",
+    "theme": "Poetry"
+  },
+  {
+    "num": 81,
+    "p1": "چې منکر په اعتراض کولے نه شي",
+    "p2": "دا دې شعر دے رحمان که اعجاز",
+    "e1": "When even a non-believer cannot object to it;",
+    "e2": "Is this your verse, Rahman, or a miracle?",
+    "theme": "Poetry"
+  },
+  {
+    "num": 82,
+    "p1": "خوشخالا و دولتا مې غلامان دي",
+    "p2": "زه رحمان په پښتو ژبه عالم ګير يم",
+    "e1": "Khushal and Daulat are my slaves;",
+    "e2": "I, Rahman, am made universal by the Pukhto language.",
+    "theme": "Poetry"
+  },
+  {
+    "num": 83,
+    "p1": "که بادشاه د ولايت وي",
+    "p2": "کنډولي په لاس کنګال شي",
+    "e1": "Though a king holds an empire;",
+    "e2": "With pot in hand, he stands alone.",
+    "theme": "Poverty"
+  },
+  {
+    "num": 84,
+    "p1": "که د وسپنو حصار تر ځان چاپېر کړې",
+    "p2": "ښيښه وګڼه حصار د دې دنيا",
+    "e1": "Though you surround yourself with a fence of steel;",
+    "e2": "Consider the fence of this world as glass.",
+    "theme": "Protection"
+  },
+  {
+    "num": 85,
+    "p1": "رحمان هسې بې وقوف سوداګر نه دے",
+    "p2": "چې د دين متاع بدله په دينار که",
+    "e1": "Rahman is not such a stupid a merchant",
+    "e2": "As to trade religion’s wealth for money.",
+    "theme": "Religion"
+  },
+  {
+    "num": 86,
+    "p1": "اے رحمانه که څه کار دې خو د دين دے",
+    "p2": "نور کارونه بې وفا دي بې اساس",
+    "e1": "If there is any work at all Rahman; it is religion.",
+    "e2": "All other pursuits are fickle and baseless.",
+    "theme": "Religion"
+  },
+  {
+    "num": 87,
+    "p1": "د مکې په بزرګۍ کښې هېڅ شک نشته",
+    "p2": "ولې خر به حاجي نه شي په طواف",
+    "e1": "There’s no doubt in the sanctity of Mecca,",
+    "e2": "But a donkey won’t become a Haji by tawaaf.",
+    "theme": "Religious Performance"
+  },
+  {
+    "num": 88,
+    "p1": "له لوئۍ له سرکشۍ زما توبه ده",
+    "p2": "خداے څوک مه کړه د آسمان هسې نسکور",
+    "e1": "I repent of lofty arrogance and rebellion;",
+    "e2": "May God not bring anyone tumbling down like the sky.",
+    "theme": "Repentance"
+  },
+  {
+    "num": 89,
+    "p1": "لکه ونه مستقيم په خپل مکان يم",
+    "p2": "که خزان را باندې راشي که بهار",
+    "e1": "I am like a tree that’s upright in its own place;",
+    "e2": "Whether autumn comes on me, or spring.",
+    "theme": "Resilience"
+  },
+  {
+    "num": 90,
+    "p1": "د خليل تر کعبې دا کعبه ده لويه",
+    "p2": "که آباد کا څوک ويران حرم  د زړه",
+    "e1": "This kaaba  is more sacred than Abraham’s",
+    "e2": "If one rebuilds the destroyed home of the heart.",
+    "theme": "Restoration"
+  },
+  {
+    "num": 91,
+    "p1": "په يو قدم تر عرشه پورې رسي",
+    "p2": "ما ليدلے دے رفتار د درويشانو",
+    "e1": "They reach God’s throne in a single stride:",
+    "e2": "I have witnessed the ways of the dervishes.",
+    "theme": "Saints"
+  },
+  {
+    "num": 92,
+    "p1": "که دوزخ لره د يار په مينه درومي",
+    "p2": "دوزخ هم ورته جلوه کا د جنت",
+    "e1": "Were they to go to hell for the love of his friend",
+    "e2": "Even hell would shine like heaven for them.",
+    "theme": "Sacrifice"
+  },
+  {
+    "num": 93,
+    "p1": "دست په دست که د خپل کار په درستول يې",
+    "p2": "لا پخوا تر ځان وړمبے د بل په کار شه",
+    "e1": "If you are to improve your work at once,",
+    "e2": "Do another’s work, long before your own.",
+    "theme": "Selflessness"
+  },
+  {
+    "num": 94,
+    "p1": "واړه د خپل ځان په نظر ګوره که دانا يې",
+    "p2": "اے عبدالرحمانه درست جهان عبدالرحمان دے",
+    "e1": "If you are wise, treat everyone like you do yourself.",
+    "e2": "O Abdul Rahman, the whole world is Abdul Rahman.",
+    "theme": "Selflessness"
+  },
+  {
+    "num": 95,
+    "p1": "هغه زړه به له طوفانه په امان وي",
+    "p2": "چې کشتۍ غوندې د خلقو باربردار شي",
+    "e1": "That heart will be safe in the storm",
+    "e2": "Which carries people’s burdens like a boat.",
+    "theme": "Selflessness"
+  },
+  {
+    "num": 96,
+    "p1": "هسې ډوب يم د ګناه په دريابونو",
+    "p2": "چې په سترګو مې ونه ليده ساحل",
+    "e1": "I’m so drowned in rivers of sin",
+    "e2": "That my eyes can’t see the shore.",
+    "theme": "Sin"
+  },
+  {
+    "num": 97,
+    "p1": "درست صورت ديوه نوک په درد دردمند شي",
+    "p2": "وران شي ښهر د يوه سړي په تور",
+    "e1": "The whole body is hurt by the pain of one nail,",
+    "e2": "The whole city destroyed by the sin of one man.",
+    "theme": "Sin"
+  },
+  {
+    "num": 98,
+    "p1": "لږ ئې مه ګڼه که هر څو ګناه لږ وي",
+    "p2": "چې لږ لږ و بله جمع کړې بسيار شي",
+    "e1": "However slight a sin may be, don’t consider it small;",
+    "e2": "For when the small are put together they become a lot.",
+    "theme": "Sin"
+  },
+  {
+    "num": 99,
+    "p1": "سر د خداے و عبادت ته اېښوے نه شم",
+    "p2": "مدام ډوب د ګناهونو په درياب يم",
+    "e1": "I can’t bow my head to God in worship;",
+    "e2": "I’m forever drowned in the ocean of sin.",
+    "theme": "Sin"
+  },
+  {
+    "num": 100,
+    "p1": "که په سل درياب غسل د ځان وکا",
+    "p2": "ګمان مه کړه چې به سپے شي پاک او صاف",
+    "e1": "Even if it were to bathe in a hundred oceans,",
+    "e2": "Don’t imagine a dog will become clean and pure.",
+    "theme": "Sin Nature"
+  },
+  {
+    "num": 101,
+    "p1": "ګوره څه بلند مقام دے د اخلاص",
+    "p2": "چې جهان واړه غلام دے د اخلاص",
+    "e1": "See what an exalted place sincerity holds,",
+    "e2": "That the whole world is its slave",
+    "theme": "Sincerity"
+  },
+  {
+    "num": 102,
+    "p1": "که مجنون غوندې په عشق کښې څوک صادق شي",
+    "p2": "د ليلې په دروازه کښې دربان نشته",
+    "e1": "If someone is sincere in love like Majnoon,",
+    "e2": "There is no gatekeeper at Leyla’s door.",
+    "theme": "Sincerity"
+  },
+  {
+    "num": 103,
+    "p1": "هسې نه چې سړي واړه سره يو دي",
+    "p2": "څوک اعلي دي څوک اوسط وڅوک ادنا",
+    "e1": "Not all men are equal, for some are great;",
+    "e2": "Some middling and some inferior.",
+    "theme": "Status"
+  },
+  {
+    "num": 104,
+    "p1": "څوک له خاورو ايرو پاڅوې تخت ورکړې",
+    "p2": "څوک له تخته د ايرو په ډيران ولې",
+    "e1": "You raise some from dust and ashes to the throne,",
+    "e2": "Others you throw from the throne like ashes on the dung heap.",
+    "theme": "Status"
+  },
+  {
+    "num": 105,
+    "p1": "نه شي د خانانو ملنګو سره کلے",
+    "p2": "چرته عزيزخان چرته ملنګ عبدالرحمان",
+    "e1": "Khans can’t live together with tramps,",
+    "e2": "Where is Aziz Khan, where the tramp Abdul Rahman?",
+    "theme": "Status"
+  },
+  {
+    "num": 106,
+    "p1": "که څوک خپل دست و پاے وباسي له ميان",
+    "p2": "خداے پخپله د بې دستو دست و پاے دے",
+    "e1": "If someone dedicates their hands and feet to God,",
+    "e2": "God himself becomes their hands and feet.",
+    "theme": "Surrender"
+  },
+  {
+    "num": 107,
+    "p1": "که غموار غواړې په غم وپه اندوه کښې",
+    "p2": "ښيښه ډکه د شرابو اختيار کړه",
+    "e1": "If you desire a sympathizer in grief and pain:",
+    "e2": "Help yourself to a full glass of wine.",
+    "theme": "Sympathy"
+  },
+  {
+    "num": 108,
+    "p1": "اعتبار په اوبو مه کړه",
+    "p2": "چې استاد ي په غربال شي",
+    "e1": "Have no trust in water",
+    "e2": "That stays in the sieve.",
+    "theme": "Trust"
+  },
+  {
+    "num": 109,
+    "p1": "څو دې حق موندلے نه دے مه جاروزره",
+    "p2": "په دا مړ شه دا جهان واړه لت پت کړم",
+    "e1": "I’ve you haven’t found the truth, don’t give up:",
+    "e2": "Die for it, until you make the world blood-stained.",
+    "theme": "Truth"
+  },
+  {
+    "num": 110,
+    "p1": "نېک عمل د عاملانو نېک فرزند دے",
+    "p2": "خداے څوک مه کړه شراب خور و قمار باز",
+    "e1": "Good deeds are the noble offspring of the virtuous,",
+    "e2": "May God not make anyone a drunkard or a gambler.",
+    "theme": "Virtue"
+  },
+  {
+    "num": 111,
+    "p1": "دوباره دې راتله نشته په دنيا",
+    "p2": "نن دې وار دے که دروغ کړې که رښتيا",
+    "e1": "You can’t enter the world again.",
+    "e2": "Today’s your chance to tell lies or the truth.",
+    "theme": "Virtue"
+  },
+  {
+    "num": 112,
+    "p1": "چې په زور ورسره نه يې برابر",
+    "p2": "د هغو په څنګ مه کښېنه زړه ور",
+    "e1": "If you cannot match their strength,",
+    "e2": "Do not sit beside the powerful.",
+    "theme": "Wisdom"
+  },
+  {
+    "num": 113,
+    "p1": "ښه ده ښه ده دا دنيا",
+    "p2": "چې توښه ده د عقبا",
+    "e1": "It’s good this world, it’s good;",
+    "e2": "It’s provision for the world to come.",
+    "theme": "World"
+  },
+  {
+    "num": 114,
+    "p1": "چې د مے و د طرب په خوند خبر شه",
+    "p2": "فراموش کړه صوفي نفل د اشراق",
+    "e1": "When he experienced the taste of wine and merriment,",
+    "e2": "The Sufi forgot his morning prayers.",
+    "theme": "Worldly Pleasure"
+  },
+  {
+    "num": 115,
+    "p1": "يو نفس د خداے په يادو اولى تر دے",
+    "p2": "نه  د درست جهان دولت په دا دنيا",
+    "e1": "A single breath remembering God is better",
+    "e2": "Than all the earthly riches of this world.",
+    "theme": "Worship"
+  },
+  {
+    "num": 116,
+    "p1": "هره ونه په قيام ورته ولاړه",
+    "p2": "هر ګياه ئې په تسبح سره زبان دے",
+    "e1": "Every tree is standing in prayer before him;",
+    "e2": "Every grass extols his greatness.",
+    "theme": "Worship"
+  },
+  {
+    "num": 117,
+    "p1": "مراد له زهده معرفت دے",
+    "p2": "نه تش ځان وژل اقربه",
+    "e1": "The purpose of worship is communion with God,",
+    "e2": "Not just killing yourself, O poverty-stricken one!",
+    "theme": "Worship"
+  },
+  {
+    "num": 118,
+    "p1": "خداے هاله د سړي ياد شي چې درد مند شي",
+    "p2": "کمه نه ده دردمندي تر عبادته",
+    "e1": "A man only remembers God when in pain;",
+    "e2": "His distress is no less than worship.",
+    "theme": "Worship"
+  },
+  {
+    "num": 119,
+    "p1": "هغه خلق به همه واړه ليوني کا",
+    "p2": "چې په کلي کښې يو سپے شي ليونے",
+    "e1": "It will make everyone go mad",
+    "e2": "If one dog in the village goes mad",
+    "theme": "Wrong Doing"
+  },
+  {
+    "num": 120,
+    "p1": "ورځ دې تېره په شومۍ کړه شپه له خوب",
+    "p2": "خداے به کله ياد وي خانه خرابه",
+    "e1": "You spent the day in drinking, the night in sleep;",
+    "e2": "When will you remember God, O degenerate Khan?",
+    "theme": "Wrong Doing"
+  },
+  {
+    "num": 121,
+    "p1": "په ورځ ناست يې بې مطلبه",
+    "p2": "په شپه خوب کړې بې ادبه",
+    "e1": "You sit around aimlessly during the day,",
+    "e2": "And sleep at night – you ill-mannered one.",
+    "theme": "Wrong Doing"
+  },
+  {
+    "num": 122,
+    "p1": "مار چې سوړي لره ورشي ګوره سم شي",
+    "p2": "ته د ګور په غاړه راغلې نه شوې سم",
+    "e1": "Look! When a snake nears its hole, it gets straight!",
+    "e2": "You’ve come to the edge of the grave, and you’re not straight.",
+    "theme": "Wrong Doing"
+  }
+]

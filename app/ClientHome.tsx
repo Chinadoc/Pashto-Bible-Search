@@ -574,6 +574,12 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [loadingBibleVerses, setLoadingBibleVerses] = useState(false);
   const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
+  const [rahmanbabaPoems, setRahmanbabaPoems] = useState<any[]>([]);
+  const [proverbs, setProverbs] = useState<any[]>([]);
+  const [poemsData, setPoemsData] = useState<any>(null);
+  const [activePoetryTab, setActivePoetryTab] = useState<'rahmanbaba' | 'proverbs'>('rahmanbaba');
+  const [poemSearchQuery, setPoemSearchQuery] = useState('');
+  const [selectedPoemTheme, setSelectedPoemTheme] = useState('');
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [transcriptSearchQuery, setTranscriptSearchQuery] = useState('');
   const [transcriptResults, setTranscriptResults] = useState<any[]>([]);
@@ -776,7 +782,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
 
   // Fetch poems when poems tab is active
   useEffect(() => {
-    if (activeMainTab === 'poems' && poems.length === 0) {
+    if (activeMainTab === 'poems' && !poemsData) {
       setLoadingPoems(true);
       fetch('/api/poems')
         .then(res => {
@@ -784,21 +790,20 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           return res.json();
         })
         .then(data => {
-          if (data && data.success && Array.isArray(data.poems)) {
-            setPoems(data.poems);
-          } else {
-            setPoems([]);
+          if (data && data.success) {
+            setPoemsData(data);
+            setRahmanbabaPoems(data.rahmanbaba?.poems || []);
+            setProverbs(data.proverbs?.items || []);
           }
         })
         .catch(err => {
           console.error('Error fetching poems:', err);
-          setPoems([]);
         })
         .finally(() => {
           setLoadingPoems(false);
         });
     }
-  }, [activeMainTab, poems.length]);
+  }, [activeMainTab, poemsData]);
 
   // Fetch videos when videos tab is active
   useEffect(() => {
@@ -3459,61 +3464,248 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
         </div>
       )}
 
-      {/* Poems Tab */}
+      {/* Poems Tab - Rahman Baba & Proverbs */}
       {activeMainTab === 'poems' && (
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              📝 Poems
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Transcribed Pashto text from audio clips
-            </p>
+        <div className="max-w-5xl mx-auto">
+          <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-gray-900 dark:via-amber-900/20 dark:to-rose-900/10 rounded-3xl shadow-2xl border border-amber-200/60 dark:border-amber-800/40 p-8 overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-gradient-to-tr from-rose-400/20 to-pink-500/20 rounded-full blur-3xl"></div>
 
-            {loadingPoems ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading poems...</p>
-              </div>
-            ) : poems.length > 0 ? (
-              <div className="space-y-4">
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <p className="text-green-800 dark:text-green-300">
-                    Found {poems.length} poems
-                  </p>
-                </div>
-
-                {poems.map((poem, index) => (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                      {poem.name}
-                    </h3>
-                    <div className="bg-white dark:bg-gray-800 rounded border p-4 max-h-64 overflow-y-auto">
-                      <pre className="whitespace-pre-wrap text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
-                        {poem.content}
-                      </pre>
-                    </div>
-                    <div className="mt-3 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                      <span>{poem.length} characters</span>
-                      <span>Created: {new Date(poem.created).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                <p className="text-green-800 dark:text-green-300">
-                  No poems found. Please transcribe audio clips first.
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300 bg-clip-text text-transparent mb-3">
+                  📜 Pashto Poetry & Proverbs
+                </h2>
+                <p className="text-amber-800 dark:text-amber-200 text-lg max-w-2xl mx-auto leading-relaxed">
+                  Explore classical Pashto poetry by Rahman Baba and traditional proverbs with audio, translations, and word analysis
                 </p>
-                <div className="mt-4 text-sm text-green-600 dark:text-green-400">
-                  <p>To create poems:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Install dependencies: <code className="bg-green-100 dark:bg-green-800 px-1 rounded">./setup_audio_processing.sh</code></li>
-                    <li>Run processor: <code className="bg-green-100 dark:bg-green-800 px-1 rounded">python3 youtube_audio_processor.py --elevenlabs-key YOUR_API_KEY</code></li>
-                  </ol>
-                </div>
               </div>
-            )}
+
+              {/* Sub-tabs */}
+              <div className="flex flex-wrap justify-center gap-2 mb-6">
+                <button
+                  onClick={() => setActivePoetryTab('rahmanbaba')}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${activePoetryTab === 'rahmanbaba'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg scale-105'
+                    : 'bg-white/60 dark:bg-gray-800/60 text-amber-700 dark:text-amber-300 hover:bg-white dark:hover:bg-gray-700'
+                    }`}
+                >
+                  🎭 Rahman Baba ({poemsData?.rahmanbaba?.total || 0})
+                </button>
+                <button
+                  onClick={() => setActivePoetryTab('proverbs')}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${activePoetryTab === 'proverbs'
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg scale-105'
+                    : 'bg-white/60 dark:bg-gray-800/60 text-rose-700 dark:text-rose-300 hover:bg-white dark:hover:bg-gray-700'
+                    }`}
+                >
+                  💬 Proverbs ({poemsData?.proverbs?.total || 0})
+                </button>
+              </div>
+
+              {/* Search and Filter */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <input
+                  type="text"
+                  placeholder="Search poems or proverbs..."
+                  value={poemSearchQuery}
+                  onChange={(e) => setPoemSearchQuery(e.target.value)}
+                  className="flex-1 min-w-[200px] px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500"
+                />
+                <select
+                  value={selectedPoemTheme}
+                  onChange={(e) => setSelectedPoemTheme(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="">All Themes</option>
+                  {(activePoetryTab === 'rahmanbaba' ? poemsData?.rahmanbaba?.themes : poemsData?.proverbs?.themes)?.map((theme: string) => (
+                    <option key={theme} value={theme}>{theme}</option>
+                  ))}
+                </select>
+              </div>
+
+              {loadingPoems ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent mx-auto"></div>
+                  <p className="mt-4 text-amber-700 dark:text-amber-300">Loading poetry collection...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Attribution */}
+                  <div className="mb-6 p-4 bg-white/40 dark:bg-gray-800/40 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      <strong>Source:</strong>{' '}
+                      {activePoetryTab === 'rahmanbaba' ? (
+                        <a href="https://rahmanbaba.speakingpashto.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 dark:text-amber-400 hover:underline">
+                          {poemsData?.rahmanbaba?.attribution}
+                        </a>
+                      ) : (
+                        <a href="https://proverbs.speakingpashto.com" target="_blank" rel="noopener noreferrer" className="text-rose-600 dark:text-rose-400 hover:underline">
+                          {poemsData?.proverbs?.attribution}
+                        </a>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Rahman Baba Poems */}
+                  {activePoetryTab === 'rahmanbaba' && (
+                    <div className="space-y-6">
+                      {rahmanbabaPoems
+                        .filter(poem => {
+                          const matchesSearch = !poemSearchQuery || 
+                            poem.p1.includes(poemSearchQuery) || 
+                            poem.p2.includes(poemSearchQuery) || 
+                            poem.e1.toLowerCase().includes(poemSearchQuery.toLowerCase()) || 
+                            poem.e2.toLowerCase().includes(poemSearchQuery.toLowerCase());
+                          const matchesTheme = !selectedPoemTheme || poem.theme === selectedPoemTheme;
+                          return matchesSearch && matchesTheme;
+                        })
+                        .map((poem, index) => (
+                        <div key={poem.num} className="group bg-white/70 dark:bg-gray-800/70 rounded-2xl p-6 border border-amber-200/50 dark:border-amber-700/50 hover:shadow-xl transition-all duration-300 hover:border-amber-400/80">
+                          {/* Header */}
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <span className="inline-block px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full mb-2">
+                                #{poem.num}
+                              </span>
+                              <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
+                                {poem.theme}
+                              </h3>
+                            </div>
+                            {/* Audio Player */}
+                            <div className="flex items-center gap-2">
+                              <audio
+                                controls
+                                src={poem.audioUrl}
+                                className="h-10 w-48"
+                                preload="none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Pashto Text */}
+                          <div className="mb-4 p-4 bg-amber-50/80 dark:bg-amber-900/20 rounded-xl" dir="rtl">
+                            <p className="text-2xl text-amber-900 dark:text-amber-100 leading-loose font-medium mb-2">
+                              <InteractiveVerse text={poem.p1} showAnalysis={true} />
+                            </p>
+                            {poem.p2 && (
+                              <p className="text-2xl text-amber-900 dark:text-amber-100 leading-loose font-medium">
+                                <InteractiveVerse text={poem.p2} showAnalysis={true} />
+                              </p>
+                            )}
+                          </div>
+
+                          {/* English Translation */}
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                            <p className="text-gray-700 dark:text-gray-200 italic">
+                              {poem.e1}
+                            </p>
+                            {poem.e2 && (
+                              <p className="text-gray-700 dark:text-gray-200 italic mt-1">
+                                {poem.e2}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              onClick={() => {
+                                setQuery(poem.p1.split(' ')[0]);
+                                setActiveMainTab('search');
+                              }}
+                              className="px-3 py-1 text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+                            >
+                              🔍 Search words
+                            </button>
+                            <a
+                              href={poem.audioUrl}
+                              download
+                              className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                            >
+                              ⬇️ Download audio
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Proverbs */}
+                  {activePoetryTab === 'proverbs' && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {proverbs
+                        .filter(proverb => {
+                          const matchesSearch = !poemSearchQuery || 
+                            proverb.p1.includes(poemSearchQuery) || 
+                            (proverb.p2 && proverb.p2.includes(poemSearchQuery)) || 
+                            proverb.e1.toLowerCase().includes(poemSearchQuery.toLowerCase()) ||
+                            (proverb.interp && proverb.interp.toLowerCase().includes(poemSearchQuery.toLowerCase()));
+                          const matchesTheme = !selectedPoemTheme || proverb.theme === selectedPoemTheme;
+                          return matchesSearch && matchesTheme;
+                        })
+                        .map((proverb, index) => (
+                        <div key={proverb.num} className="group bg-white/70 dark:bg-gray-800/70 rounded-xl p-5 border border-rose-200/50 dark:border-rose-700/50 hover:shadow-lg transition-all duration-300 hover:border-rose-400/80">
+                          {/* Theme badge */}
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="inline-block px-2 py-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full">
+                              {proverb.theme}
+                            </span>
+                            <span className="text-xs text-gray-400">#{proverb.num}</span>
+                          </div>
+
+                          {/* Pashto Text */}
+                          <div className="mb-3 p-3 bg-rose-50/80 dark:bg-rose-900/20 rounded-lg" dir="rtl">
+                            <p className="text-xl text-rose-900 dark:text-rose-100 leading-relaxed font-medium">
+                              <InteractiveVerse text={proverb.p1} showAnalysis={true} />
+                            </p>
+                            {proverb.p2 && (
+                              <p className="text-lg text-rose-800 dark:text-rose-200 leading-relaxed mt-1">
+                                <InteractiveVerse text={proverb.p2} showAnalysis={true} />
+                              </p>
+                            )}
+                          </div>
+
+                          {/* English Translation */}
+                          <p className="text-gray-700 dark:text-gray-200 italic text-sm mb-2">
+                            {proverb.e1}
+                            {proverb.e2 && <span className="block mt-1">{proverb.e2}</span>}
+                          </p>
+
+                          {/* Interpretation */}
+                          {proverb.interp && (
+                            <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-300">
+                              <strong>Meaning:</strong> {proverb.interp}
+                            </div>
+                          )}
+
+                          {/* Action */}
+                          <button
+                            onClick={() => {
+                              setQuery(proverb.p1.split(' ')[0]);
+                              setActiveMainTab('search');
+                            }}
+                            className="mt-3 px-3 py-1 text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-800/50 transition-colors"
+                          >
+                            🔍 Search words
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No results message */}
+                  {((activePoetryTab === 'rahmanbaba' && rahmanbabaPoems.length === 0) || 
+                    (activePoetryTab === 'proverbs' && proverbs.length === 0)) && (
+                    <div className="text-center py-12">
+                      <p className="text-amber-700 dark:text-amber-300">No poems found matching your criteria.</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

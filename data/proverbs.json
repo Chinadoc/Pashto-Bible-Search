@@ -1,0 +1,3602 @@
+[
+  {
+    "p1": "سنډا ته بیم غږول دی",
+    "p2": "",
+    "e1": "Playing the flute to a buffalo.",
+    "e2": "",
+    "theme": "Advice",
+    "interp": "A proverb used to express the futility of trying to influence someone who is not willing to listen to advice.",
+    "num": 1
+  },
+  {
+    "p1": "ډېرې خولې ډېرې خبرې",
+    "p2": "",
+    "e1": "Many mouths, many opinions.",
+    "e2": "",
+    "theme": "Advice",
+    "interp": "Frustration when everyone has their own opinions.",
+    "num": 2
+  },
+  {
+    "p1": "یوه سترګه به دې ژاړی بله به دې خاندی",
+    "p2": "",
+    "e1": "One of your eyes will be made to cry, the other to laugh.",
+    "e2": "",
+    "theme": "Advice",
+    "interp": "A stern warning to someone that they must do as I say.",
+    "num": 3
+  },
+  {
+    "p1": "د ازاره چا بازار موندلے نۀ دے",
+    "p2": "",
+    "e1": "No one has found the bazaar by hurting others.",
+    "e2": "",
+    "theme": "Agression",
+    "interp": "The bazaar here is a metaphor for success. In the end, someone who is ruthless will not succeed.",
+    "num": 4
+  },
+  {
+    "p1": "سم د مرچکو په څټه ناست یې",
+    "p2": "",
+    "e1": "You’re sitting right on a sack of pepper.",
+    "e2": "",
+    "theme": "Anger",
+    "interp": "Used to describe someone with a hot temper.",
+    "num": 5
+  },
+  {
+    "p1": "په دومره منت خو به",
+    "p2": "هندو مسلمان شوے وو",
+    "e1": "With so much pleading even a",
+    "e2": "Hindu would have become a Muslim.",
+    "theme": "Appeal",
+    "interp": "A cynical comment to someone you tried hard to convince of something, but who still remains obdurate.",
+    "num": 6
+  },
+  {
+    "p1": "خر هغه دے خو کته یې بدله ده",
+    "p2": "",
+    "e1": "The donkey is the same, only its saddle cloth is different.",
+    "e2": "",
+    "theme": "Apperance",
+    "interp": "Even though the appearance has changed, the fundamental system remains the same. Like the futility of changing politicians.",
+    "num": 7
+  },
+  {
+    "p1": "ائینه دروغ نهٔ وائی",
+    "p2": "",
+    "e1": "A mirror tells no lies.",
+    "e2": "",
+    "theme": "Appearance",
+    "interp": "The tested thing is true. This proverb is also used about the reliable measurement of length and weight.",
+    "num": 8
+  },
+  {
+    "p1": "مسلمانی په ږیره کښې نهٔ ده",
+    "p2": "",
+    "e1": "Muslim character is not defined by a beard.",
+    "e2": "",
+    "theme": "Appearance",
+    "interp": "Appearance alone does not qualify for true faith.",
+    "num": 9
+  },
+  {
+    "p1": "رنګ یې مۀ ګوره خوند یې ګوره",
+    "p2": "",
+    "e1": "Don’t look at the colour; check the taste.",
+    "e2": "",
+    "theme": "Appearance",
+    "interp": "Don’t be fooled by appearances.",
+    "num": 10
+  },
+  {
+    "p1": "شرع ظاهر ګوری",
+    "p2": "",
+    "e1": "Sharia law judges by appearances.",
+    "e2": "",
+    "theme": "Apperance",
+    "interp": "People judge by appearance.",
+    "num": 11
+  },
+  {
+    "p1": "چې پړ شی نو مړ شی",
+    "p2": "",
+    "e1": "When convinced, the argument is finished.",
+    "e2": "",
+    "theme": "Argument",
+    "interp": "The adversary is left speechless by reasoned arguments. پړ here means to be overcome, or conquer.",
+    "num": 12
+  },
+  {
+    "p1": "د کلی اوځه د نرخه یې مۀ اوځه",
+    "p2": "",
+    "e1": "Quit the village, but don’t mess with the price.",
+    "e2": "",
+    "theme": "Bargaining",
+    "interp": "An encouragement to a shopkeeper not to over-charge.",
+    "num": 13
+  },
+  {
+    "p1": "خپل عمل د لارې  مل دے",
+    "p2": "",
+    "e1": "Your own behaviour is your companion on the path.",
+    "e2": "",
+    "theme": "Behaviour",
+    "interp": "Good behaviour should be your guide.",
+    "num": 14
+  },
+  {
+    "p1": "ښهٔ دې هم د ځان",
+    "p2": "او بد دې هم د ځان",
+    "e1": "Good behaviour is your own",
+    "e2": "and bad is also your own.",
+    "theme": "Behaviour",
+    "interp": "You eat the results of your own behaviour.",
+    "num": 15
+  },
+  {
+    "p1": "سړے وړوکے دے",
+    "p2": "خو د عمل پنډوکے دے",
+    "e1": "The man is small but what he’s done is impressive.",
+    "e2": "",
+    "theme": "Behaviour",
+    "interp": "A description of the unexpected success of the hard-working.",
+    "num": 16
+  },
+  {
+    "p1": "خبرې اسانې دی",
+    "p2": "خو کول یې ګران دی",
+    "e1": "Talk is easy, the doing of it is hard.",
+    "e2": "",
+    "theme": "Behaviour",
+    "interp": "Easier said than done.",
+    "num": 17
+  },
+  {
+    "p1": "هم لور د کوره",
+    "p2": "هم زوم د کوره",
+    "e1": "My daughter was given away",
+    "e2": "and my son-in-law too.",
+    "theme": "Benefits",
+    "interp": "Used to express surprise double benefits.  Even though you’ve lost a daughter, there can be benefit from the son-in-law too.",
+    "num": 18
+  },
+  {
+    "p1": "د وچو سره لامدۀ سوزی",
+    "p2": "",
+    "e1": "The wet are burned together with the dry.",
+    "e2": "",
+    "theme": "Blame",
+    "interp": "Onlookers are caught up in the crimes they overlook.",
+    "num": 19
+  },
+  {
+    "p1": "څۀ ژرنده ورانه",
+    "p2": "او څۀ دانې لمدې",
+    "e1": "Partly the mill is dull,",
+    "e2": "partly the grain is damp.",
+    "theme": "Blame",
+    "interp": "Mutual fault: six of one, half a dozen of another.",
+    "num": 20
+  },
+  {
+    "p1": "په سپینه جامه داغ زر لګی",
+    "p2": "",
+    "e1": "White clothes are easily stained.",
+    "e2": "",
+    "theme": "Blame",
+    "interp": "The pious are easy to blame. A proverb used as an encouragement for priests and teachers to have good behaviour.",
+    "num": 21
+  },
+  {
+    "p1": "چې اوږه نهٔ خوری",
+    "p2": "بوی ترې نهٔ ځی",
+    "e1": "If you don’t eat garlic,",
+    "e2": "you won’t smell of it.",
+    "theme": "Blame",
+    "interp": "The blame against you is correct.",
+    "num": 22
+  },
+  {
+    "p1": "بلا وه برکت یې نه وو",
+    "p2": "",
+    "e1": "It was a disaster, but did no harm.",
+    "e2": "",
+    "theme": "Blessing",
+    "interp": "An expression used when you had a near miss. For example, when you are unscathed in a car accident.",
+    "num": 23
+  },
+  {
+    "p1": "خدائ وائی تۀ حرکت کوه",
+    "p2": "برکت به پکښې زۀ اچووم",
+    "e1": "God says, “Make an effort,",
+    "e2": "then I will add blessing.”",
+    "theme": "Blessing",
+    "interp": "An encouragement for a lazy person to start work.",
+    "num": 24
+  },
+  {
+    "p1": "خدائ پاک هغه کار کوی",
+    "p2": "چې د انسان پکښې خیر وی",
+    "e1": "God does the things",
+    "e2": "which benefit a person.",
+    "theme": "Blessing",
+    "interp": "God can save you from a seemingly bad outcome. Only later you may realize the benefit of what first seemed like a disaster.",
+    "num": 25
+  },
+  {
+    "p1": "خدائ به وی باران به نهٔ وی؟",
+    "p2": "",
+    "e1": "God will be there, yet there will be no rain?",
+    "e2": "",
+    "theme": "Blessing",
+    "interp": "An optimistic statement – that surely God will provide His blessing.",
+    "num": 26
+  },
+  {
+    "p1": "په پردو غولو ټیزونه اچوی",
+    "p2": "",
+    "e1": "Farting on someone else’s excrement.",
+    "e2": "",
+    "theme": "Boasting",
+    "interp": "Don’t take credit for someone else’s hard work, or boast about nasty things others did.",
+    "num": 27
+  },
+  {
+    "p1": "وړه خوله لوئې خبرې",
+    "p2": "",
+    "e1": "A small mouth makes big talk.",
+    "e2": "",
+    "theme": "Boasting",
+    "interp": "The boasting of an incapable person.",
+    "num": 28
+  },
+  {
+    "p1": "چېندخه په لوټه سوره شوه",
+    "p2": "کشمیر یې ولید",
+    "e1": "A frog climbed on a clod of earth",
+    "e2": "and saw Kashmir.",
+    "theme": "Boasting",
+    "interp": "A ridiculous boaster. Kashmir is seen as a much sought-after Shangri La, way out of sight for a frog. لوټه is a small clod or lump of soil.",
+    "num": 29
+  },
+  {
+    "p1": "په خپل کور کښې خو سپے هم نر وی",
+    "p2": "",
+    "e1": "In his own home, even a dog is brave.",
+    "e2": "",
+    "theme": "Bravery",
+    "interp": "In your own house you will have more courage to face an enemy.",
+    "num": 30
+  },
+  {
+    "p1": "آخرت د ټیزونو ځائ نۀ دے",
+    "p2": "",
+    "e1": "The hereafter is not the place of farts.",
+    "e2": "",
+    "theme": "Bravery",
+    "interp": "The need to be brave to the end. Farting is thought to be caused by fear, so the proverb encourages someone to face the music.",
+    "num": 31
+  },
+  {
+    "p1": "ګټه په تاوان کیږی",
+    "p2": "",
+    "e1": "Profit comes with a cost.",
+    "e2": "",
+    "theme": "Business",
+    "interp": "The inherent risk needed to make a success in business.",
+    "num": 32
+  },
+  {
+    "p1": "وروری خوری به کوو خو",
+    "p2": "حساب کتاب تر مینځه",
+    "e1": "We’ll behave as brother and sister,",
+    "e2": "But keep accounts between us.",
+    "theme": "Business",
+    "interp": "Don’t think that just because we’re kin, fair business won’t occur.",
+    "num": 33
+  },
+  {
+    "p1": "چې د کومې بلا نه نۀ خلاصېږې",
+    "p2": "نو هغې له غاړه غړۍ ورځه",
+    "e1": "When you can’t escape a calamity,",
+    "e2": "then embrace it warmly.",
+    "theme": "Calamity",
+    "interp": "Make peace with impending trouble. بلا means misfortune, disaster or a monster.",
+    "num": 34
+  },
+  {
+    "p1": "د هغې بلا نه مۀ یرېږه",
+    "p2": "چې شپه یې تر مینځه وی",
+    "e1": "If there’s still a night to go,",
+    "e2": "Don’t worry about the problem.",
+    "theme": "Calamity",
+    "interp": "Don’t panic, there’s still time for the problem to be solved.",
+    "num": 35
+  },
+  {
+    "p1": "بنده په خپل وس پړ دے",
+    "p2": "",
+    "e1": "A person does as much as he can.",
+    "e2": "",
+    "theme": "Capacity",
+    "interp": "A person only has a certain natural capacity. Don’t expect more from me. That’s my limit.",
+    "num": 36
+  },
+  {
+    "p1": "د پیشو اووۀ ساهګانې وی",
+    "p2": "",
+    "e1": "A cat has seven lives.",
+    "e2": "",
+    "theme": "Cat",
+    "interp": "Lucky people, like a cat, are unaffected by danger.",
+    "num": 37
+  },
+  {
+    "p1": "زمانه هغه ده خلق بدل دی",
+    "p2": "",
+    "e1": "The era is the same, people have changed.",
+    "e2": "",
+    "theme": "Change",
+    "interp": "Although times are different, nature hasn’t changed through the ages.",
+    "num": 38
+  },
+  {
+    "p1": "د سحر په بانګ کښې",
+    "p2": "مې لا بله ټپه واورېده",
+    "e1": "During the morning call to prayer",
+    "e2": "I heard a different verse.",
+    "theme": "Change",
+    "interp": "News that comes unexpectedly or is novel. بانګ is the call to prayer.",
+    "num": 39
+  },
+  {
+    "p1": "خر په طواف نۀ حاجی کیږی",
+    "p2": "",
+    "e1": "A donkey can’t become a Haji by circling the Kaaba.",
+    "e2": "",
+    "theme": "Character",
+    "interp": "A worthless person can’t be improved by following religious practices.",
+    "num": 40
+  },
+  {
+    "p1": "چې په اخور دې لوئ شی",
+    "p2": "غاښ یې مۀ ګوره",
+    "e1": "If he grows up in your manger,",
+    "e2": "don’t inspect his teeth.",
+    "theme": "Character",
+    "interp": "Since you know everything about someone you grew up with, there’s no need to assess their character.",
+    "num": 41
+  },
+  {
+    "p1": "د خرۀ مینه لتې ورکول وی",
+    "p2": "",
+    "e1": "The donkey’s love is to give a kick.",
+    "e2": "",
+    "theme": "Character",
+    "interp": "It’s the nature of a lowly person to act poorly, even if you have helped them, they will behave badly with you.",
+    "num": 42
+  },
+  {
+    "p1": "د سپی لکۍ ده چې یې پریږدی بیا کږه وی",
+    "p2": "",
+    "e1": "The dog’s tail bends back again when you let it go.",
+    "e2": "",
+    "theme": "Character",
+    "interp": "People revert to their natural tendencies when accountability is lifted.",
+    "num": 43
+  },
+  {
+    "p1": "که سل خویونه نور کړی",
+    "p2": "یو به د خپل مور کړی",
+    "e1": "Though she has a hundred of her own traits,",
+    "e2": "one will be her mother’s.",
+    "theme": "Character",
+    "interp": "It’s the nature of a lowly person to act poorly, even if you have helped them, they will behave badly with you.",
+    "num": 44
+  },
+  {
+    "p1": "زما پېدا په ما لګیا",
+    "p2": "",
+    "e1": "My offspring are bothering me.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "People revert to their natural tendencies when accountability is lifted.",
+    "num": 45
+  },
+  {
+    "p1": "بچی مور ته راغونډ وی",
+    "p2": "",
+    "e1": "Children gather around their mother.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "The mother is the natural focal-point of family life.",
+    "num": 46
+  },
+  {
+    "p1": "د ماشوم په ژبه خپله مور پوهېږی",
+    "p2": "",
+    "e1": "The child’s talk is understood by their own mother.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "A mother can comfort a child like no one else.",
+    "num": 47
+  },
+  {
+    "p1": "د بدعمله اولاد نه نهٔ اولاد ښهٔ دے",
+    "p2": "",
+    "e1": "Better to have no children than to have misbehaved ones.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "The shame and embarrassment that comes from disobedient children.",
+    "num": 48
+  },
+  {
+    "p1": "اولاد چې نیازبین شی",
+    "p2": "نۀ د دین نۀ د سادین شی",
+    "e1": "When children are pampered,",
+    "e2": "they’re not useful for heaven or earth.",
+    "theme": "Children",
+    "interp": "Spoilt children are good for nothing.",
+    "num": 49
+  },
+  {
+    "p1": "د وړو نه شېطان امان غوښتے دے",
+    "p2": "",
+    "e1": "Satan has sought peace from children.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "Children are so mischievous, even Satan wants to escape from them.",
+    "num": 50
+  },
+  {
+    "p1": "هر چا ته خپل زوئ ښکلے ښکاری",
+    "p2": "",
+    "e1": "Everyone thinks their own son is handsome.",
+    "e2": "",
+    "theme": "Children",
+    "interp": "People favour and think more highly of their own children.",
+    "num": 51
+  },
+  {
+    "p1": "زۀ څۀ وایم او ډولکے مې څۀ وائی؟",
+    "p2": "",
+    "e1": "What do I say and what does my drum say?",
+    "e2": "",
+    "theme": "Clarification",
+    "interp": "Used to express someone’s misunderstanding, and frustration when someone is not listening to what you are saying.",
+    "num": 52
+  },
+  {
+    "p1": "په زور کلی نه کیږی",
+    "p2": "",
+    "e1": "Villages are not controlled by force.",
+    "e2": "",
+    "theme": "Community",
+    "interp": "You can’t force anyone to do something. Response requires mutual consent.",
+    "num": 53
+  },
+  {
+    "p1": "لاس نیوه او ومبارکی نهٔ زړېږی",
+    "p2": "",
+    "e1": "Commiseration and congratulation never get old.",
+    "e2": "",
+    "theme": "Community",
+    "interp": "This proverb is about going to funerals and weddings and is either used as an excuse for being late, or to indicate the long-term benefits from attending these events. لاس نيول (lifting the hand) implies saying prayers for someone who has died.",
+    "num": 54
+  },
+  {
+    "p1": "هندو د یار د پاره غټه غوښه خوړلې ده",
+    "p2": "",
+    "e1": "A Hindu has eaten beef for his friend.",
+    "e2": "",
+    "theme": "Compromise",
+    "interp": "Real friendship involves sacrifice.",
+    "num": 55
+  },
+  {
+    "p1": "مجبوری سړی ته هره لاره ښائی",
+    "p2": "",
+    "e1": "Under duress a man tries every path.",
+    "e2": "",
+    "theme": "Compulsion",
+    "interp": "In difficult circumstances people will try lots of different ways to survive.",
+    "num": 56
+  },
+  {
+    "p1": "غر که لوئ دے",
+    "p2": "خو په سر یې لار ده",
+    "e1": "Though the mountain is high,",
+    "e2": "there’s a way to the top.",
+    "theme": "Confidence",
+    "interp": "An optimistic proverb encouraging someone not to give up, however hard things seem.",
+    "num": 57
+  },
+  {
+    "p1": "پړق د یو لاسه نهٔ خېژی",
+    "p2": "",
+    "e1": "A clap can’t be made with one hand.",
+    "e2": "",
+    "theme": "Conflict",
+    "interp": "It takes two to quarrel.",
+    "num": 58
+  },
+  {
+    "p1": "په جنګ کښې مړی کېږی",
+    "p2": "",
+    "e1": "In war people get killed.",
+    "e2": "",
+    "theme": "Conflict",
+    "interp": "Loss is the natural consequence of conflict.",
+    "num": 59
+  },
+  {
+    "p1": "چې تنګ شی نو په جنګ شی",
+    "p2": "",
+    "e1": "When someone’s tormented; they’ll fight.",
+    "e2": "",
+    "theme": "Conflict",
+    "interp": "When someone is cornered, they will lash out.",
+    "num": 60
+  },
+  {
+    "p1": "چې غل نهٔ تښتی نو مل دې وتښتی",
+    "p2": "",
+    "e1": "If the thief doesn’t escape, his partner should leave.",
+    "e2": "",
+    "theme": "Conflict",
+    "interp": "The proverb is a warning during a conflict that one of the two parties must leave.",
+    "num": 61
+  },
+  {
+    "p1": "دوه لوښی په کور کښې جنګېږی",
+    "p2": "",
+    "e1": "Two pots clash in the home.",
+    "e2": "",
+    "theme": "Conflict",
+    "interp": "It’s natural for family members to have conflict.",
+    "num": 62
+  },
+  {
+    "p1": "چې امرثې خوری",
+    "p2": "نو ګسې به خوری",
+    "e1": "If you eat amrusay, you’ll get shoved.",
+    "e2": "",
+    "theme": "Consequences",
+    "interp": "امرثې is a kind of sweet doughnut. The proverb is used to warn someone who likes to indulge in pleasant things, that they will have to pay the price. Literally, they will get fucked.",
+    "num": 63
+  },
+  {
+    "p1": "چې بد یې وی خویونه",
+    "p2": "هغه بد وینی خوبونه",
+    "e1": "If your temperament is bad,",
+    "e2": "you’ll have bad dreams.",
+    "theme": "Consequences",
+    "interp": "Doing evil will affect you.",
+    "num": 64
+  },
+  {
+    "p1": "انګار جاڼے",
+    "p2": "لوهار جاڼے",
+    "e1": "He knows the furnace;",
+    "e2": "the blacksmith knows his job.",
+    "theme": "Consequences",
+    "interp": "A humorous proverb implying that someone should face the music for what they have done.",
+    "num": 65
+  },
+  {
+    "p1": "د بد کار بد انجام وی",
+    "p2": "",
+    "e1": "Wicked deeds have bad outcomes.",
+    "e2": "",
+    "theme": "Consequences",
+    "interp": "Cause and effect.",
+    "num": 66
+  },
+  {
+    "p1": "چې ښهٔ کوې ښهٔ به مومې",
+    "p2": "چې بد کوې نو بد به مومې",
+    "e1": "If you do right you will find blessing,",
+    "e2": "if you do wrong you will find evil.",
+    "theme": "Consequences",
+    "interp": "The natural consequences of good and bad behaviour.",
+    "num": 67
+  },
+  {
+    "p1": "چې څهٔ کرې هغه به رېبې",
+    "p2": "",
+    "e1": "As you sow, so will you reap.",
+    "e2": "",
+    "theme": "Consequences",
+    "interp": "A proverb taken from a line by the poet Rahman Baba.",
+    "num": 68
+  },
+  {
+    "p1": "اور له راغله",
+    "p2": "او د کور مېرمن شوه",
+    "e1": "She came for a match",
+    "e2": "and became owner of the house.",
+    "theme": "Control",
+    "interp": "The thin end of the wedge: someone who takes over after a small excuse.",
+    "num": 69
+  },
+  {
+    "p1": "بې زما نه دې شل نۀ کړه",
+    "p2": "",
+    "e1": "Without me you won’t reach twenty.",
+    "e2": "",
+    "theme": "Cooperation",
+    "interp": "A taunting proverb spoken to someone who cannot do anything by themselves.",
+    "num": 70
+  },
+  {
+    "p1": "غر په غر نهٔ ورځی",
+    "p2": "خو انسان په انسان ورځی",
+    "e1": "One mountain can’t cross to another mountain,",
+    "e2": "but people can move to one another.",
+    "theme": "Cooperation",
+    "interp": "Encouragement to exchange mutual help and not be stand-offish.",
+    "num": 71
+  },
+  {
+    "p1": "د انسانیت سره مینه",
+    "p2": "د خدائ سره مینه ده",
+    "e1": "Love with mankind is love with God.",
+    "e2": "",
+    "theme": "Compassion",
+    "interp": "Helping others pleases God.",
+    "num": 72
+  },
+  {
+    "p1": "د هاتیانو سره ټانټې مۀ ژویه",
+    "p2": "",
+    "e1": "Don’t chew corn stems with the elephants.",
+    "e2": "",
+    "theme": "Competition",
+    "interp": "A warning not to compete with the powerful.",
+    "num": 73
+  },
+  {
+    "p1": "دا ګز او دا میدان",
+    "p2": "",
+    "e1": "This is the yard-stick and this the arena.",
+    "e2": "",
+    "theme": "Competition",
+    "interp": "A reply given to someone who boasts; to prove themselves.",
+    "num": 74
+  },
+  {
+    "p1": "خدائ دې داسې حریان کړه",
+    "p2": "لکه زهٔ چې دې حریان کړم",
+    "e1": "May God make you as flabbergasted",
+    "e2": "As you confused me.",
+    "theme": "Confusion",
+    "interp": "A humorous reply to a confusing question or situation.",
+    "num": 75
+  },
+  {
+    "p1": "کارغهٔ غول خوری",
+    "p2": "او مښوکه څنډی",
+    "e1": "The crow eats shit and wipes its beak.",
+    "e2": "",
+    "theme": "Cover Up",
+    "interp": "A bad person conceals his misdeeds by claiming to be innocent.",
+    "num": 76
+  },
+  {
+    "p1": "د اوښانو غلا په ټیټه ملا نهٔ کېږي",
+    "p2": "",
+    "e1": "Camel theft can’t be done with a bent back.",
+    "e2": "",
+    "theme": "Cover Up",
+    "interp": "You can’t hide something that is obvious, even if you try to. This is used, for example, to tease someone who is being bashful about getting a big job.",
+    "num": 77
+  },
+  {
+    "p1": "خوار خو خدائ کړې",
+    "p2": "نو بې غیرته چا کړې؟",
+    "e1": "God made you poor,",
+    "e2": "but who made you a coward?",
+    "theme": "Coward",
+    "interp": "A taunt blaming someone for being timid.",
+    "num": 78
+  },
+  {
+    "p1": "ګیدړ د خپل سیوری نه یریږی",
+    "p2": "",
+    "e1": "The jackal is afraid of its own shadow.",
+    "e2": "",
+    "theme": "Coward",
+    "interp": "The jackal is the epitome of cowardice in Pashtun thought.",
+    "num": 79
+  },
+  {
+    "p1": "په زړهٔ کښې یې ګیدړ ناست دے",
+    "p2": "",
+    "e1": "There’s a jackal sitting in his heart.",
+    "e2": "",
+    "theme": "Craftiness",
+    "interp": "A description of a devious, sneaky person.",
+    "num": 80
+  },
+  {
+    "p1": "په پرهر مې مالګې مۀ دوړوه",
+    "p2": "",
+    "e1": "Don’t sprinkle salt on my wounds.",
+    "e2": "",
+    "theme": "Cruelty",
+    "interp": "A plea not to exacerbate a problem, or a past issue.",
+    "num": 81
+  },
+  {
+    "p1": "زړۀ دې خالص د اوسپنې دے",
+    "p2": "په چا خوږېږی نه",
+    "e1": "Your heart is made entirely of steel",
+    "e2": "It pities no one.",
+    "theme": "Cruelty",
+    "interp": "A description of a hard-hearted cruel person.",
+    "num": 82
+  },
+  {
+    "p1": "ظلم دومره کوه",
+    "p2": "چې څومره یې پخپله زغملے شې",
+    "e1": "Do as much cruelty",
+    "e2": "as you yourself can bear.",
+    "theme": "Cruelty",
+    "interp": "A warning not to be excessive, since your number will come.",
+    "num": 83
+  },
+  {
+    "p1": "چې نۀ سیخ وسوځی او نۀ کباب",
+    "p2": "",
+    "e1": "Let neither skewer nor kebab be charred.",
+    "e2": "",
+    "theme": "Damage",
+    "interp": "An exhortation not to cause damage in any way.",
+    "num": 84
+  },
+  {
+    "p1": "مرګ حق دے",
+    "p2": "کفن کښې شک دے",
+    "e1": "Death is inevitable,",
+    "e2": "the shroud is doubtful.",
+    "theme": "Death",
+    "interp": "There’s no guarantee we’ll die with honour - wrapped in a shroud. Those who go missing, or die in accidents won’t be given a proper burial.",
+    "num": 85
+  },
+  {
+    "p1": "مړ به شې خو موړ به نۀ شې",
+    "p2": "",
+    "e1": "You’ll die, but you won’t be full.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "A taunt aimed at a greedy person.",
+    "num": 86
+  },
+  {
+    "p1": "مرګ د ډېرو پړده ده",
+    "p2": "",
+    "e1": "Death is a covering for many.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Death can sometimes hide the shame that may have been revealed by dishonourable events, or a shameful sickness.",
+    "num": 87
+  },
+  {
+    "p1": "چې اجل راشی نو څهٔ بهانه شی",
+    "p2": "",
+    "e1": "When death comes, there will be a reason.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "An admonition to stop risky behaviour that can kill you - like guns or motorbikes. اجل means the time of death.",
+    "num": 88
+  },
+  {
+    "p1": "چې مرګ ووینی نو تبې ته راضا شی",
+    "p2": "",
+    "e1": "When someone sees death, they’ll put up with a fever.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Minor things are put in perspective after a near-death experience.",
+    "num": 89
+  },
+  {
+    "p1": "د اجل نه مخکښې مۀ مره",
+    "p2": "",
+    "e1": "Don’t die before your time is up.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Admonition not to worry ahead of time.",
+    "num": 90
+  },
+  {
+    "p1": "د خاورو پېدا یو او خاورو له به ځو",
+    "p2": "",
+    "e1": "We’re created from the earth; to the earth we will return.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Words of comfort for the bereaved.",
+    "num": 91
+  },
+  {
+    "p1": "د خپله مرګه څوک نۀ وی خبر",
+    "p2": "",
+    "e1": "No one knows the time of their death.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Encouragement to trust in God concerning your death.",
+    "num": 92
+  },
+  {
+    "p1": "د ګور شپه نۀ په کور کېږی",
+    "p2": "",
+    "e1": "The night in the grave can’t happen at home.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Again, a reminder and a comfort that the time of death is pre-ordained. It can’t be delayed by staying home.",
+    "num": 93
+  },
+  {
+    "p1": "د مرګ علاج",
+    "p2": "د لقمانِ حکیم سره هم نۀ وو",
+    "e1": "The remedy for death",
+    "e2": "wasn’t even with Doctor Luqman.",
+    "theme": "Death",
+    "interp": "Death is a certainty, despite all attempts of man to prevent it. Hakim Luqman was a wise man mentioned in Sura 31.",
+    "num": 94
+  },
+  {
+    "p1": "مرګ ته لوئ او واړۀ یو شے دے",
+    "p2": "",
+    "e1": "Death is the same for old and young alike.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Young people die as well as the elderly.",
+    "num": 95
+  },
+  {
+    "p1": "مرګ شته خلاصون ترې نشته",
+    "p2": "",
+    "e1": "Death happens, there’s no escaping it.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Words of comfort to the bereaved.",
+    "num": 96
+  },
+  {
+    "p1": "د هر مرض دارو شته خو د مرګ نه",
+    "p2": "",
+    "e1": "There’s medicine for every sickness, but not for death.",
+    "e2": "",
+    "theme": "Death",
+    "interp": "Death is inevitable and no amount of medical intervention can stop it.",
+    "num": 97
+  },
+  {
+    "p1": "مرګ له ایمان سره",
+    "p2": "ژوند له جانان سره",
+    "e1": "Death with faith;",
+    "e2": "Life with a lover.",
+    "theme": "Death",
+    "interp": "An ironic tension between orthodoxy and romance.",
+    "num": 98
+  },
+  {
+    "p1": "سل په لالی پورې",
+    "p2": "دا یوه پرې دَ بنګړو",
+    "e1": "Layla’s lover is in debt for a hundred,",
+    "e2": "let there be one more for bangles.",
+    "theme": "Debt",
+    "interp": "When heavily in debt, what is another small amount? In the famous Arabic love story, Layla is the beloved of Mujnoon.",
+    "num": 99
+  },
+  {
+    "p1": "اوښ په ببوزی نهٔ درنیږی",
+    "p2": "",
+    "e1": "A camel can’t be overloaded by a hand fan.",
+    "e2": "",
+    "theme": "Debt",
+    "interp": "A little extra won’t make any difference. Especially related to debt. ببوزى is a small hand fan that is light and so barely noticed when added to the camel’s load.",
+    "num": 100
+  },
+  {
+    "p1": "پۀ خوله یوه او پۀ زړۀ بله",
+    "p2": "",
+    "e1": "The mouth says one thing, the heart another.",
+    "e2": "",
+    "theme": "Deception",
+    "interp": "Deception.",
+    "num": 101
+  },
+  {
+    "p1": "سړے سیند ته تږے",
+    "p2": "بیایی او تږے یې راولی",
+    "e1": "He takes a thirsty man to the river",
+    "e2": "and brings him back thirsty.",
+    "theme": "Deception",
+    "interp": "Descriptive of crafty individuals, who trick people.",
+    "num": 102
+  },
+  {
+    "p1": "د ویښې مور نه زوئ پټوی",
+    "p2": "",
+    "e1": "He steals a son from a mother while she’s awake.",
+    "e2": "",
+    "theme": "Deception",
+    "interp": "As with 102, a clever beguiling person.",
+    "num": 103
+  },
+  {
+    "p1": "فلانے خو د بوسو لاندې اوبۀ بوځی",
+    "p2": "",
+    "e1": "He’s the one who floods water under the straw.",
+    "e2": "",
+    "theme": "Deception",
+    "interp": "To spread water under the straw is an idiom meaning to do something without being detected.",
+    "num": 104
+  },
+  {
+    "p1": "خبرې ډېرې او سر یې یو",
+    "p2": "",
+    "e1": "There are many opinions but one conclusion.",
+    "e2": "",
+    "theme": "Decisions",
+    "interp": "Used when everyone is talking, but the conclusion is clear. Everything boils down to this point.",
+    "num": 105
+  },
+  {
+    "p1": "یا به هۍ شی",
+    "p2": "یا به وۍ شی",
+    "e1": "It will either be “Hai” or “Wai”.",
+    "e2": "",
+    "theme": "Decisions",
+    "interp": "An encouragement to go ahead and make a decision, whether it works out well or not. Hai is the expression for remorse, Wai for pleasant surprise. It will be one of the other, so just go for it.",
+    "num": 106
+  },
+  {
+    "p1": "د بیا سره به بیا کتے شی",
+    "p2": "",
+    "e1": "The future can be seen in the future.",
+    "e2": "",
+    "theme": "Decisions",
+    "interp": "An encouragement to do something right away: take a risk. Only later will anyone know the outcome.",
+    "num": 107
+  },
+  {
+    "p1": "د نن سره به نن کوو",
+    "p2": "صبا به د صبا سره",
+    "e1": "Let’s deal with today’s issues today",
+    "e2": "and tomorrow’s tomorrow.",
+    "theme": "Decisions",
+    "interp": "A plea to focus on the issue at hand and not overthink the future.",
+    "num": 108
+  },
+  {
+    "p1": "هم یې زړهٔ کېږی او هم یې ساړهٔ کېږی",
+    "p2": "",
+    "e1": "He yearns for it and yet at the same time doesn’t want it.",
+    "e2": "",
+    "theme": "Decisions",
+    "interp": "Description of a hesitant person who can’t make a decision.",
+    "num": 109
+  },
+  {
+    "p1": "پردے کټ د نیمې شپې وی",
+    "p2": "",
+    "e1": "Another’s bed is only till midnight.",
+    "e2": "",
+    "theme": "Dependency",
+    "interp": "You can’t depend on the generosity of outsiders for long. پردے means someone belonging outside the family.",
+    "num": 110
+  },
+  {
+    "p1": "محتاجی د پلار هم ښۀ نهٔ ده",
+    "p2": "",
+    "e1": "Even dependency on your father is not good.",
+    "e2": "",
+    "theme": "Dependency",
+    "interp": "An admonition against relying on others.",
+    "num": 111
+  },
+  {
+    "p1": "یو یې ګټی او سل یې څټې",
+    "p2": "",
+    "e1": "One earns and a hundred lick him.",
+    "e2": "",
+    "theme": "Dependency",
+    "interp": "One bread-winner for a large extended family. The proverb implies the others are lazy.",
+    "num": 112
+  },
+  {
+    "p1": "خدائ پاک دې یو لاس",
+    "p2": "بل ته محتاجه نهٔ کړی",
+    "e1": "God doesn’t make one hand reliant on other.",
+    "e2": "",
+    "theme": "Dependency",
+    "interp": "A prayer not to be dependent on anyone.",
+    "num": 113
+  },
+  {
+    "p1": "پښې هلته ځی چرته چې زړۀ ورځی",
+    "p2": "",
+    "e1": "Feet go to where the heart goes.",
+    "e2": "",
+    "theme": "Desire",
+    "interp": "You meet with those who you have mutual affection for.",
+    "num": 114
+  },
+  {
+    "p1": "ړوند د خدایه څۀ غواړی؟ دوه سترګې",
+    "p2": "",
+    "e1": "What do the blind want from God? Two eyes.",
+    "e2": "",
+    "theme": "Desire",
+    "interp": "People crave for what they lack.",
+    "num": 115
+  },
+  {
+    "p1": "خبره په خبرو خلاصېږی",
+    "p2": "",
+    "e1": "Disputes are resolved by dialogue.",
+    "e2": "",
+    "theme": "Dialogue",
+    "interp": "Conflict is solved by discussion rather than violence.",
+    "num": 116
+  },
+  {
+    "p1": "اول وخوره د ځان غوښې",
+    "p2": "بیا اوخوره د ښکار غوښې",
+    "e1": "First eat your own flesh,",
+    "e2": "then eat the meat of the hunt.",
+    "theme": "Diligence",
+    "interp": "You get the benefit of your effort only after hard work.",
+    "num": 117
+  },
+  {
+    "p1": "د نن کار سبا ته مهٔ پرېږده",
+    "p2": "",
+    "e1": "Don’t leave today’s work till tomorrow.",
+    "e2": "",
+    "theme": "Diligence",
+    "interp": "Appeal for timely action.",
+    "num": 118
+  },
+  {
+    "p1": "د بارانه تښتېدمه",
+    "p2": "د ناوې لاندې مې شپه شوه",
+    "e1": "I fled from the rain",
+    "e2": "but spent the night under the spout.",
+    "theme": "Disaster",
+    "interp": "Escaping one calamity after another.",
+    "num": 119
+  },
+  {
+    "p1": "چې یو خوا ګورم ډانګ دے",
+    "p2": "چې بل خوا ګورم پړانګ دے",
+    "e1": "When I look to one side, there’s a cudgel",
+    "e2": "When I look to the other, there’s a leopard.",
+    "theme": "Disaster",
+    "interp": "Said when facing trouble on many sides.",
+    "num": 120
+  },
+  {
+    "p1": "چرته چې ډب وی هلته ادب وی",
+    "p2": "",
+    "e1": "Where there is a slap, there’s respect.",
+    "e2": "",
+    "theme": "Discipline",
+    "interp": "Obedience is taught by strict punishment. ادب means courtesy, good manners, or politeness.",
+    "num": 121
+  },
+  {
+    "p1": "کږه خوله په سوک سمېږی",
+    "p2": "",
+    "e1": "A crooked mouth is straightened by a punch.",
+    "e2": "",
+    "theme": "Discipline",
+    "interp": "For those who speak angry, or unfriendly words the only way to correct them is with rough treatment.",
+    "num": 122
+  },
+  {
+    "p1": "زهٔ په څهٔ یم او تهٔ په څهٔ یې",
+    "p2": "",
+    "e1": "I’m concerned by one thing, you by another.",
+    "e2": "",
+    "theme": "Disconnect",
+    "interp": "When two people are oblivious of each other’s concerns and problems, and just focused on your own issues.",
+    "num": 123
+  },
+  {
+    "p1": "نهٔ دې په تلو پوهه شوم او نهٔ دې په راتلو",
+    "p2": "",
+    "e1": "I wasn’t aware of your going, nor of your coming.",
+    "e2": "",
+    "theme": "Disconnect",
+    "interp": "When two people are oblivious of each other and find no positive effect or benefit in their connection with each other.",
+    "num": 124
+  },
+  {
+    "p1": "که منګے مات شو او که نه",
+    "p2": "خو آواز یې لاړو",
+    "e1": "Whether the pot is broken or not,",
+    "e2": "its sound has been broadcast.",
+    "theme": "Disgrace",
+    "interp": "Whether the facts are true or not, once lost, a reputation is irreparable. منګے is a clay pot used to hold liquid and also doubles up as a drum.",
+    "num": 125
+  },
+  {
+    "p1": "زرګر د مور نه هم غلا کوی",
+    "p2": "",
+    "e1": "The goldsmith even steals from his mother.",
+    "e2": "",
+    "theme": "Dishonesty",
+    "interp": "There is no limit to the bad behaviour of goldsmiths; they are seen as the epitome of dishonesty.",
+    "num": 126
+  },
+  {
+    "p1": "دروغژن همیشه مختورن وی",
+    "p2": "",
+    "e1": "A liar will always be disgraced.",
+    "e2": "",
+    "theme": "Dishonesty",
+    "interp": "The dishonest will end up being shamed. مختور (black-face) refers to someone who is blamed, or caught in shameful behaviour.",
+    "num": 127
+  },
+  {
+    "p1": "اور او اوبهٔ نهٔ یو ځای کېږی",
+    "p2": "",
+    "e1": "Fire and water can’t be united.",
+    "e2": "",
+    "theme": "Disunity",
+    "interp": "Opposites cannot be reconciled. Truth and lies don’t mix.",
+    "num": 128
+  },
+  {
+    "p1": "ګمان د ایمان زیان دے",
+    "p2": "",
+    "e1": "Doubt damages faith.",
+    "e2": "",
+    "theme": "Doubt",
+    "interp": "Faith (in others and God) is damaged by doubt and lack of trust.",
+    "num": 129
+  },
+  {
+    "p1": "په دوؤ بېړو پښې مۀ ږده",
+    "p2": "",
+    "e1": "Don’t put your feet on two boats.",
+    "e2": "",
+    "theme": "Duplicity",
+    "interp": "The danger of trying to do two things at once, or to serve two masters.",
+    "num": 130
+  },
+  {
+    "p1": "چې ګوړه زیاتوې شربت خوږېږی",
+    "p2": "",
+    "e1": "When you add more cane sugar; the sherbet will be sweeter.",
+    "e2": "",
+    "theme": "Effort",
+    "interp": "Do more work, or pay more money to get a better result. ګوړه is the sugar boiled down from sugar cane; also known as jaggery.",
+    "num": 131
+  },
+  {
+    "p1": "ګوړه ګوړه وایه خوله به دې خوږه ویø",
+    "p2": "Keep saying “Cane sugar”, “Cane sugar”",
+    "e1": "and your mouth will become sweet.",
+    "e2": "",
+    "theme": "Effort",
+    "interp": "A sarcastic comment to express how just saying something won’t work; you have to get practical.",
+    "num": 132
+  },
+  {
+    "p1": "د قبر خاوره په قبر لګی",
+    "p2": "",
+    "e1": "The soil of the grave lands in the grave.",
+    "e2": "",
+    "theme": "Effort",
+    "interp": "You get a result according to your effort: exactly what is dug up falls on the ground.",
+    "num": 133
+  },
+  {
+    "p1": "غم او ښادی ورور او خور دی",
+    "p2": "",
+    "e1": "Sadness and joy are brother and sister.",
+    "e2": "",
+    "theme": "Emotions",
+    "interp": "Happy and sad times go side-by-side.",
+    "num": 134
+  },
+  {
+    "p1": "راواچوه چې شل شی",
+    "p2": "",
+    "e1": "Put it against mine so it’s twenty!",
+    "e2": "",
+    "theme": "Emotions",
+    "interp": "Close to the American expression ‘Give me five!’ In this case both hands (twenty fingers) give a moment of excitement.",
+    "num": 135
+  },
+  {
+    "p1": "آخره زمانه شوه",
+    "p2": "په چرګانو یارانه شوه",
+    "e1": "It’s the end times; friendship is based on chickens.",
+    "e2": "",
+    "theme": "End Times",
+    "interp": "When friendships are debased by exploitation and bribery, it must be the end times.",
+    "num": 136
+  },
+  {
+    "p1": "نن دے که صبا دے",
+    "p2": "دا مال د زرغون شاه دے",
+    "e1": "Sooner or later this wealth will be Zarghon Shah’s.",
+    "e2": "",
+    "theme": "End Times",
+    "interp": "Zarghon Shah is a euphemism for God (the one who created life), so the proverb implies that the world will finish and revert to God again.",
+    "num": 137
+  },
+  {
+    "p1": "یو د لوږې مری",
+    "p2": "او بل یې سر ته پراټې ګوری",
+    "e1": "One is dying of hunger,",
+    "e2": "the other looks for parathas under his head.",
+    "theme": "Equality",
+    "interp": "The irony of a rich man asking a starving man for help. پراټه is a fried flatbread eaten for breakfast.",
+    "num": 138
+  },
+  {
+    "p1": "د لیدو او د اورېدو ډېر فرق وی",
+    "p2": "",
+    "e1": "There’s a big difference between seeing and hearing.",
+    "e2": "",
+    "theme": "Evidence",
+    "interp": "Truth relies on first-hand evidence, not hearsay.",
+    "num": 139
+  },
+  {
+    "p1": "د دۀ سترګې خو کاڼی چوی",
+    "p2": "",
+    "e1": "His eyes break rocks.",
+    "e2": "",
+    "theme": "Evil Eye",
+    "interp": "The person has such a powerful evil eye it can shatter rocks.",
+    "num": 140
+  },
+  {
+    "p1": "چې ماما ځان وګروی",
+    "p2": "د خورئی طمع پیدا شی",
+    "e1": "When the uncle scratches himself,",
+    "e2": "his nephew gets expectant.",
+    "theme": "Expectations",
+    "interp": "The maternal uncle is much-loved by his sister’s children, and they are waiting for him to give them a treat. Every little thing he does raises their expectation.",
+    "num": 141
+  },
+  {
+    "p1": "ګیله د خپلو کېږی",
+    "p2": "",
+    "e1": "Complaints are made to relatives.",
+    "e2": "",
+    "theme": "Expectations",
+    "interp": "There is less hesitation to express grievances among family members.",
+    "num": 142
+  },
+  {
+    "p1": "زمونږ خو پکښې وېښتۀ سپین شو",
+    "p2": "",
+    "e1": "In this matter our hair turned white.",
+    "e2": "",
+    "theme": "Experience",
+    "interp": "Descriptive of someone who has a deep expertise and skill",
+    "num": 143
+  },
+  {
+    "p1": "هر سړے په خپل کار ښهٔ پوهېږی",
+    "p2": "",
+    "e1": "Everyone knows their own business well.",
+    "e2": "",
+    "theme": "Experience",
+    "interp": "People are masters of their own business.",
+    "num": 144
+  },
+  {
+    "p1": "د روژې هر ماښام اختر وی",
+    "p2": "",
+    "e1": "During Ramadan every evening is Eid.",
+    "e2": "",
+    "theme": "Fasting",
+    "interp": "Breaking the fast during Ramazan is a celebration every evening.",
+    "num": 145
+  },
+  {
+    "p1": "په خپل نصیب صبر پکار دے",
+    "p2": "",
+    "e1": "You should be patient with your own destiny.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "A call for contentment with your own lot in life. نصيب means fate, fortune or destiny.",
+    "num": 146
+  },
+  {
+    "p1": "د خرۀ په تندی کښې محراب نۀ وی",
+    "p2": "",
+    "e1": "The donkey has no mehrab on his forehead.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "An unfortunate person who is never lucky. محراب refers to the niche in the wall of a mosque. The implication is that a donkey is without the blessing that comes from God’s favour.",
+    "num": 147
+  },
+  {
+    "p1": "بنده یو څۀ کوی او خدائ بل څۀ",
+    "p2": "",
+    "e1": "A person does one thing, God another.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "Man proposes, God disposes.",
+    "num": 148
+  },
+  {
+    "p1": "په وخت او بخت بدلېدو کښې",
+    "p2": "څۀ وخت نۀ لګی",
+    "e1": "It doesn’t take but a moment to alter time and fate.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "Life can change very suddenly.",
+    "num": 149
+  },
+  {
+    "p1": "قسمت کته کړے خر دے",
+    "p2": "",
+    "e1": "Fate is a harnessed donkey.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "Don’t blame things on fate when you’re not making any effort.",
+    "num": 150
+  },
+  {
+    "p1": "د مرګ او ګاک",
+    "p2": "څه پته نهٔ لګی چې څهٔ وخت راځی",
+    "e1": "No one knows when death or a customer will show up.",
+    "e2": "",
+    "theme": "Fate",
+    "interp": "We can’t predict events.",
+    "num": 151
+  },
+  {
+    "p1": "د خان نه مۀ ویرېږه",
+    "p2": "د خان د سپو نه وېریږه",
+    "e1": "Don’t fear the Khan, fear his dogs.",
+    "e2": "",
+    "theme": "Fear",
+    "interp": "The Khan’s helpers are less magnanimous than the Khan himself.",
+    "num": 152
+  },
+  {
+    "p1": "مار خوړلے د پړی نه ویریږی",
+    "p2": "",
+    "e1": "Bitten by a snake, scared of a rope.",
+    "e2": "",
+    "theme": "Fear",
+    "interp": "Once bitten, twice shy.",
+    "num": 153
+  },
+  {
+    "p1": "د یرې نه پکښې غول وچ شول",
+    "p2": "",
+    "e1": "Fear made his shit dry up inside him.",
+    "e2": "",
+    "theme": "Fear",
+    "interp": "An expression of extreme fear.",
+    "num": 154
+  },
+  {
+    "p1": "خر پلار کړه",
+    "p2": "مطلب پرې بار کړه",
+    "e1": "Make a donkey your father,",
+    "e2": "then load what you want on it.",
+    "theme": "Flattery",
+    "interp": "Flattery will get you what you want, even if you have to be nice to a donkey.",
+    "num": 155
+  },
+  {
+    "p1": "روزی د خدای په لاس کښې ده",
+    "p2": "",
+    "e1": "Daily food is in God’s hand.",
+    "e2": "",
+    "theme": "Food",
+    "interp": "God’s provision is sure.",
+    "num": 156
+  },
+  {
+    "p1": "چې څهٔ تیار وی هغه د یار وی",
+    "p2": "",
+    "e1": "Whatever is prepared is for a friend.",
+    "e2": "",
+    "theme": "Food",
+    "interp": "Formal hospitality and specially prepared food is not needed among close friends.",
+    "num": 157
+  },
+  {
+    "p1": "چینجی له خدائ په کاڼی کښې رزق ورکوی",
+    "p2": "",
+    "e1": "God provides food for a worm inside a stone.",
+    "e2": "",
+    "theme": "Food",
+    "interp": "God’s provision is far-reaching. The proverb could also be used to encourage a destitute person.",
+    "num": 158
+  },
+  {
+    "p1": "خر غیرت وکړو ټرک ووهل",
+    "p2": "",
+    "e1": "The donkey got brave and was hit by a truck.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Stupid people attempt foolish things beyond their ability.",
+    "num": 159
+  },
+  {
+    "p1": "د دنګ سړی عقل په پوندو کښې وی",
+    "p2": "",
+    "e1": "A tall man’s wits are in his heels.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Tall people are thought to be stupid.",
+    "num": 160
+  },
+  {
+    "p1": "خر د خید په خوراک څۀ پوهیږی؟",
+    "p2": "",
+    "e1": "What does a donkey know about eating kheed?",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "خید is fancy fodder not normally given to a donkey. The proverb refers to the foolishness of treating a poor or uneducated person with fine things.",
+    "num": 161
+  },
+  {
+    "p1": "چې په کوم ښاخ ناست دے",
+    "p2": "نو هغه پرې کوی",
+    "e1": "He’s sawing the branch he’s sitting on.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Like shooting yourself in the foot.",
+    "num": 162
+  },
+  {
+    "p1": "د ایلۍ بچی ته لامبو ښائی",
+    "p2": "",
+    "e1": "He’s teaching a duckling to swim.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Someone who is already an expert needs no advice.",
+    "num": 163
+  },
+  {
+    "p1": "هوښیار له اشاره ته او کم عقل ته کوتکه",
+    "p2": "",
+    "e1": "To the wise a gesture, and to the foolish a stick.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Foolish people need more instruction, the wise less.",
+    "num": 164
+  },
+  {
+    "p1": "د کم عقل دوست نه",
+    "p2": "هوښیار دُشمن ښۀ دے",
+    "e1": "A wise enemy is better than a foolish friend.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "Foolishness is to be avoided above all else.",
+    "num": 165
+  },
+  {
+    "p1": "ابۍ مې لېونۍ شوه",
+    "p2": "په تور ژمی باتینګڼ غواړی",
+    "e1": "My mother’s gone crazy;",
+    "e2": "she wants aubergine in the depths of winter.",
+    "theme": "Foolishness",
+    "interp": "Having impossible desires for something you can’t expect to get.",
+    "num": 166
+  },
+  {
+    "p1": "چې تېر شی هغه هېر شی",
+    "p2": "",
+    "e1": "What’s past is forgotten.",
+    "e2": "",
+    "theme": "Forgiveness",
+    "interp": "A plea for past hurts to be forgiven.",
+    "num": 167
+  },
+  {
+    "p1": "زاړهٔ مړی څوک نهٔ راژوندی کوی",
+    "p2": "",
+    "e1": "No one revives old corpses.",
+    "e2": "",
+    "theme": "Foolishness",
+    "interp": "A plea not to bring up the past.",
+    "num": 168
+  },
+  {
+    "p1": "په تش جېب یارانه نۀ کېږی",
+    "p2": "",
+    "e1": "An empty pocket won’t create friendship.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "It costs money to maintain friendships.",
+    "num": 169
+  },
+  {
+    "p1": "چې یارانه په شلتالو شوه نو پاتې ده",
+    "p2": "",
+    "e1": "If friendship is reliant on peaches it will fail.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Peaches are synonymous with greed. Selfish greed won’t foster friendship.",
+    "num": 170
+  },
+  {
+    "p1": "دوست هغه دے",
+    "p2": "چې په سخته کښې په کار راشی",
+    "e1": "A friend is the one who is available in hard times.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "A friend in need is a friend in deed.",
+    "num": 171
+  },
+  {
+    "p1": "که د چا پلار یې خو زما یار یې",
+    "p2": "",
+    "e1": "Whoever’s father you are, you are my friend.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Used to give the impression of having access or relationship with someone you don’t. It is also used to get help from someone who is not a blood relative.",
+    "num": 172
+  },
+  {
+    "p1": "ډمې ته چا وې چې یار دې مړ شو",
+    "p2": "وئیل د کومې کوڅی؟",
+    "e1": "The low life are those whose friend dies",
+    "e2": "and they ask “In which street?”",
+    "theme": "Friendship",
+    "interp": "A rebuke against someone having many shallow friendships. Exclusive friendship is ideal. ډم refers to someone considered to be low caste, such as barbers, dancers and musicians.",
+    "num": 173
+  },
+  {
+    "p1": "هر سړے دوست دشمن لری",
+    "p2": "",
+    "e1": "Everyone has friends and enemies.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Accept the fact that you will always please some and upset others.  دشمن refers to someone who is pitted against you in a feud.",
+    "num": 174
+  },
+  {
+    "p1": "یو خو خدائ ښهٔ دے",
+    "p2": "",
+    "e1": "Only God is good.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Advice to not undertake a journey alone. Unlike God, man needs a companion.",
+    "num": 175
+  },
+  {
+    "p1": "په دیدن مړېدل نشته",
+    "p2": "",
+    "e1": "You can never get enough of seeing someone.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Friendly relationships are ongoing. Said, for example, as a guest leaves the house, and used to imply the desire they come again soon.",
+    "num": 176
+  },
+  {
+    "p1": "د مېښې یار سنډا وی",
+    "p2": "",
+    "e1": "The she buffalo’s friend is the male buffalo.",
+    "e2": "",
+    "theme": "Friendship",
+    "interp": "Similar people connect.",
+    "num": 177
+  },
+  {
+    "p1": "چې ځان خفه نۀ کړې",
+    "p2": "بل به خوشحاله نۀ کړې",
+    "e1": "If you don’t trouble yourself,",
+    "e2": "you won’t make others happy.",
+    "theme": "Friendship",
+    "interp": "True friendship involves sacrifice.",
+    "num": 178
+  },
+  {
+    "p1": "چې زړهٔ تنګ نهٔ وی ځائ نهٔ تنګېږی",
+    "p2": "",
+    "e1": "If the heart is not constricted, there’s plenty of room.",
+    "e2": "",
+    "theme": "Generosity",
+    "interp": "Every kind of help can be given by someone with a generous heart.",
+    "num": 179
+  },
+  {
+    "p1": "حساب کتاب به یې په لوئ لاهور کوو",
+    "p2": "",
+    "e1": "Bookkeeping will be done when we reach Lahore.",
+    "e2": "",
+    "theme": "Generosity",
+    "interp": "An encouragement to not worry about expenses now, but to live generously.",
+    "num": 180
+  },
+  {
+    "p1": "چې خدائ یې نهٔ کوی",
+    "p2": "نو پیر بابا به یې څهٔ وکړی؟",
+    "e1": "If God doesn’t make it happen,",
+    "e2": "what can Pir Baba do about it?",
+    "theme": "God",
+    "interp": "Pir Baba was a famous Sufi saint from the Buner district. This proverb debunks the idea that the Pir’s power will operate through prayer.",
+    "num": 181
+  },
+  {
+    "p1": "چې خدائ یې ورکوی",
+    "p2": "نو څهٔ ورله بانه کړی",
+    "e1": "When God provides something,",
+    "e2": "then He will find a pretext to do it.",
+    "theme": "God",
+    "interp": "God has the ability to use any surprise method to make something happen. Like the lottery.",
+    "num": 182
+  },
+  {
+    "p1": "څهٔ چې خدائ ته منظوره وی هغه کیږی",
+    "p2": "",
+    "e1": "The things God approves will happen.",
+    "e2": "",
+    "theme": "God",
+    "interp": "However much you try to avoid something; you cannot prevent the outcome God designs.",
+    "num": 183
+  },
+  {
+    "p1": "د خدائ په کارونو او د",
+    "p2": "بجلۍ په تارونو کښې ګوتې مهٔ وهه",
+    "e1": "Don’t put your finger in God’s work",
+    "e2": "or touch an electric wire.",
+    "theme": "God",
+    "interp": "A warning not to play with dangerous things; like electricity and God’s authority. Don’t ask hard questions about faith.",
+    "num": 184
+  },
+  {
+    "p1": "که کور پردے  وو",
+    "p2": "نو خېټه خو دې خپله ده",
+    "e1": "Even in someone else’s house,",
+    "e2": "your stomach is your own.",
+    "theme": "Greed",
+    "interp": "Gluttony and excess are of your own doing.",
+    "num": 185
+  },
+  {
+    "p1": "میم زر ما ټوله زما",
+    "p2": "",
+    "e1": "“Meem” is changed to “ma”, all is mine.",
+    "e2": "",
+    "theme": "Greed",
+    "interp": "Adding a small diacritic mark to the letter ‘m’ turns it meaning to ‘mine’. Criticism of someone always taking the lion’s share.",
+    "num": 186
+  },
+  {
+    "p1": "پینځۀ واړه ګوتې څوک",
+    "p2": "یو ځائ په خوله نهٔ منډی",
+    "e1": "No one can put all five fingers",
+    "e2": "in their mouth at the same time.",
+    "theme": "Greed",
+    "interp": "This proverb is an admonition not to squander all your resources at once.",
+    "num": 187
+  },
+  {
+    "p1": "ما درله ږیره په لاس کښې درکړه",
+    "p2": "تا د وېخه وویستله",
+    "e1": "I gave you my beard in your hand,",
+    "e2": "and you uprooted it completely.",
+    "theme": "Greed",
+    "interp": "I gave you a choice but you took what was mine. You should have at least saved something.",
+    "num": 188
+  },
+  {
+    "p1": "ګېډه لاندې ده باندې نهٔ ده",
+    "p2": "",
+    "e1": "Your stomach is under you, not over you.",
+    "e2": "",
+    "theme": "Greed",
+    "interp": "Don’t be ruled by your appetites.",
+    "num": 189
+  },
+  {
+    "p1": "دا دنیا که د یو کس شی",
+    "p2": "خو موړ به پرې نهٔ شی",
+    "e1": "Even if one person owned the world,",
+    "e2": "they wouldn’t be satisfied with it.",
+    "theme": "Greed",
+    "interp": "Our greed can never be satisfied.",
+    "num": 190
+  },
+  {
+    "p1": "د خیراتی نه خیرات غواړی",
+    "p2": "",
+    "e1": "He’s begging for alms from the poor.",
+    "e2": "",
+    "theme": "Greed",
+    "interp": "A description of a greedy or miserly person.",
+    "num": 191
+  },
+  {
+    "p1": "په سخته پسې راحته وی",
+    "p2": "",
+    "e1": "After hardship there is comfort.",
+    "e2": "",
+    "theme": "Hardship",
+    "interp": "Encouragement to work hard for a reward. راحت means comfort, rest or relief.",
+    "num": 192
+  },
+  {
+    "p1": "خپل پردے په سخته کښې معلومېږی",
+    "p2": "",
+    "e1": "Friends and relatives are tested during hardship.",
+    "e2": "",
+    "theme": "Hardship",
+    "interp": "True friendships are proven in times of hardship.",
+    "num": 193
+  },
+  {
+    "p1": "خپل په تنګسیا کښې پکارېږی",
+    "p2": "",
+    "e1": "Relatives are needed in hard times.",
+    "e2": "",
+    "theme": "Hardship",
+    "interp": "You can find out who is a true friend (relative) when trouble strikes.",
+    "num": 194
+  },
+  {
+    "p1": "په تلی کښې شړشم نهٔ زرغونېږی",
+    "p2": "",
+    "e1": "Mustard seeds won’t sprout in the palm.",
+    "e2": "",
+    "theme": "Haste",
+    "interp": "Results won’t happen fast.",
+    "num": 195
+  },
+  {
+    "p1": "په ښهٔ کار کښې تلوار پکار دے",
+    "p2": "",
+    "e1": "Something good should be done quickly.",
+    "e2": "",
+    "theme": "Haste",
+    "interp": "Virtuous deeds should be done promptly.",
+    "num": 196
+  },
+  {
+    "p1": "تادې شیطان کړی ده",
+    "p2": "",
+    "e1": "Haste was done by Satan.",
+    "e2": "",
+    "theme": "Haste",
+    "interp": "Don’t be in too much of a hurry.",
+    "num": 197
+  },
+  {
+    "p1": "روغ صورت اختر دے",
+    "p2": "",
+    "e1": "A healthy body is Eid.",
+    "e2": "",
+    "theme": "Health",
+    "interp": "Good health is a blessing. اختر is the Pashto word for the Eid festivals: synonymous with happiness.",
+    "num": 198
+  },
+  {
+    "p1": "هر چا ته خپل وطن کشمیر دے",
+    "p2": "",
+    "e1": "Everyone’s own country is Kashmir.",
+    "e2": "",
+    "theme": "Homeland",
+    "interp": "There is no place as good as your own country.",
+    "num": 199
+  },
+  {
+    "p1": "چې ځې ځې نو ابازو له به راځې",
+    "p2": "",
+    "e1": "After going here and there, you’ll return to Abazai.",
+    "e2": "",
+    "theme": "Homeland",
+    "interp": "We will eventually return to our place of origin. Abazai is a town in the Charsadda district of Khyber Pakhtunkhwa.",
+    "num": 200
+  },
+  {
+    "p1": "پښتون په یوه پوهېږی",
+    "p2": "",
+    "e1": "Pukhtuns know one thing.",
+    "e2": "",
+    "theme": "Honesty",
+    "interp": "Pukhtuns remain true to their word.",
+    "num": 201
+  },
+  {
+    "p1": "خپل عزت په خپل لاس کښې دے",
+    "p2": "",
+    "e1": "Your honour is in your own hand.",
+    "e2": "",
+    "theme": "Honour",
+    "interp": "Your respect is determined by your own behaviour.",
+    "num": 202
+  },
+  {
+    "p1": "ګټه چې په ځائ پرته وی نو درنه وی",
+    "p2": "",
+    "e1": "A stone that stays in one place is heavy.",
+    "e2": "",
+    "theme": "Honour",
+    "interp": "Status and respect grow with consistency.",
+    "num": 203
+  },
+  {
+    "p1": "تلے مال بیا راځی",
+    "p2": "خو تلے عزت بیا نهٔ راځی",
+    "e1": "Lost wealth can be replaced,",
+    "e2": "but lost honour won’t return.",
+    "theme": "Honour",
+    "interp": "Respect once lost is hard to regain.",
+    "num": 204
+  },
+  {
+    "p1": "د خوراک نه یې طمع ښۀ ده",
+    "p2": "",
+    "e1": "The thought of food is better than the eating of it.",
+    "e2": "",
+    "theme": "Hope",
+    "interp": "Enjoy the anticipation of things to come, as the reality won’t be as good as you imagined.",
+    "num": 205
+  },
+  {
+    "p1": "فقیر ته که یو در بند شی",
+    "p2": "نو سل ورته خلاص وی",
+    "e1": "If one door closes to a beggar,",
+    "e2": "a hundred more open to him.",
+    "theme": "Hope",
+    "interp": "An optimistic response to adversity.  فقير is a wandering holy man.",
+    "num": 206
+  },
+  {
+    "p1": "دنیا په امید خوړے شی",
+    "p2": "",
+    "e1": "The world is sustained by hope.",
+    "e2": "",
+    "theme": "Hope",
+    "interp": "Encouragement for someone to persist in what they are doing and not give up.",
+    "num": 207
+  },
+  {
+    "p1": "د بل په کور سل مېلمانۀ څۀ دی؟",
+    "p2": "",
+    "e1": "What are a hundred guests in someone else’s house?",
+    "e2": "",
+    "theme": "Hospitality",
+    "interp": "Someone else’s burden is their own problem.",
+    "num": 208
+  },
+  {
+    "p1": "مېلمه چې د درې ورځو نه زیات شی",
+    "p2": "نو عذاب شی",
+    "e1": "A guest who stays more than three days",
+    "e2": "becomes a pain.",
+    "theme": "Hospitality",
+    "interp": "Formal hospitality lasts for a few days, then the guest will be considered as family. عذاب means torment, pain or torture.",
+    "num": 209
+  },
+  {
+    "p1": "کوربه په ست ښهٔ ښکاری",
+    "p2": "او مېلمه په نهٔ خوراک",
+    "e1": "The host is admired for insisting,",
+    "e2": "And the guest by refusing food.",
+    "theme": "Hospitality",
+    "interp": "The polite rules of hospitality include the guest graciously refusing and the host insisting.",
+    "num": 210
+  },
+  {
+    "p1": "مېلمه خپل نصیب خوری",
+    "p2": "",
+    "e1": "Guests eat their own fortune.",
+    "e2": "",
+    "theme": "Hospitality",
+    "interp": "An encouragement not to be upset that a guest ate the food; the food you gave them was already destined for them. Don’t be miserly.",
+    "num": 211
+  },
+  {
+    "p1": "څوک د چا نصیب نهٔ شی خوړے",
+    "p2": "",
+    "e1": "No one can eat what is destined for others.",
+    "e2": "",
+    "theme": "Hospitality",
+    "interp": "Things unexpectedly change. The food we were about to eat suddenly becomes a meal for the guest.",
+    "num": 212
+  },
+  {
+    "p1": "سل بللی ځایږی",
+    "p2": "خو یو نابللی نهٔ ځایېږی",
+    "e1": "There’s room for a hundred invited guests",
+    "e2": "but none for a single uninvited person.",
+    "theme": "Hospitality",
+    "interp": "A reprimand against uninvited guests.",
+    "num": 213
+  },
+  {
+    "p1": "پوره یو خدائ دے",
+    "p2": "",
+    "e1": "Only the one God is complete.",
+    "e2": "",
+    "theme": "Human Nature",
+    "interp": "Humans are all deficient, only God is perfect.",
+    "num": 214
+  },
+  {
+    "p1": "د سلو کالو موړ به په سل کاله کښې وږے",
+    "p2": "نهٔ شی او د سلو کالو وږے به په سل کاله کښې موړ نهٔ شی",
+    "e1": "Those full for a hundred years won’t be hungry after a century,",
+    "e2": "and those hungry for a century won’t be full after a hundred years.",
+    "theme": "Human Nature",
+    "interp": "People’s mentality won’t change. The poor will still feel destitute even if they get rich, and the rich will feel wealthy even if they become poor.",
+    "num": 215
+  },
+  {
+    "p1": "غلبېل کوزې ته وائی",
+    "p2": "په تا کښې دوه سوری دی",
+    "e1": "The sieve told the water pot “You’ve got two holes”.",
+    "e2": "",
+    "theme": "Hypocrisy",
+    "interp": "A way to poke fun at a hypocrite. The pot calling the kettle black.",
+    "num": 216
+  },
+  {
+    "p1": "مُلا بل ته مسئلې کوی",
+    "p2": "پخپله پرې حملې کوی",
+    "e1": "The Mullah gives sermons to others",
+    "e2": "but neglects them himself.",
+    "theme": "Hypocrisy",
+    "interp": "Religious leaders don’t walk the talk.",
+    "num": 217
+  },
+  {
+    "p1": "چې یوه ګوته بل ته نیسی",
+    "p2": "نو څلور ځان ته راځی",
+    "e1": "When you point one finger at someone else,",
+    "e2": "four fingers point to you.",
+    "theme": "Hypocrisy",
+    "interp": "Being critical of others highlights your own faults.",
+    "num": 218
+  },
+  {
+    "p1": "د چمیار خپلې څپلۍ شلېدلې وی",
+    "p2": "",
+    "e1": "The cobbler’s own shoes are split.",
+    "e2": "",
+    "theme": "Hypocrisy",
+    "interp": "Describes someone able to help others but not able to solve their own problems.",
+    "num": 219
+  },
+  {
+    "p1": "د کم اصلو نه یا لرې یا غلے",
+    "p2": "",
+    "e1": "Either keep away from, or keep quiet among the lowborn.",
+    "e2": "",
+    "theme": "Inferiority",
+    "interp": "Don’t have dealings with worthless people, they will create trouble and bring you into disrepute.",
+    "num": 220
+  },
+  {
+    "p1": "د ضُلېخې قیصه مې درته تیره کړه",
+    "p2": "اؤ تۀ بیا وائې چې ښځه وه کۀ سړے وو",
+    "e1": "I told you the story of Zuleika,",
+    "e2": "then you asked if she was a woman or a man.",
+    "theme": "Ignorance",
+    "interp": "Said of someone who is not paying attention in their studies. زلېخه  was the name of Potiphar’s wife who famously tried to tempt Joseph during the time of the Pharaohs. See the book of Genesis chapter 39: 5-20.",
+    "num": 221
+  },
+  {
+    "p1": "ژرنده که د پلار ده",
+    "p2": "خو په وار ده",
+    "e1": "Even if the mill is your father’s,",
+    "e2": "it still comes by turns.",
+    "theme": "Impartiality",
+    "interp": "A encouragement to fair play when it comes to taking your turn.",
+    "num": 222
+  },
+  {
+    "p1": "ګولۍ خپل پردے نهٔ پېژنی",
+    "p2": "",
+    "e1": "A bullet can’t distinguish friend from foe.",
+    "e2": "",
+    "theme": "Impartiality",
+    "interp": "Bullets are impartial. They might kill anyone, whether guilty or innocent.",
+    "num": 223
+  },
+  {
+    "p1": "چې زما پرې وار راغے",
+    "p2": "نو د پاسه یې پلار راغے",
+    "e1": "When it was my turn for her, her father came first.",
+    "e2": "",
+    "theme": "Impartiality",
+    "interp": "Frustration for when my turn is not fulfilled.",
+    "num": 224
+  },
+  {
+    "p1": "کوږ لرګے په بار کښې نهٔ تړل کېږی",
+    "p2": "",
+    "e1": "A bent stick can’t be tied for loading.",
+    "e2": "",
+    "theme": "Incompatibility",
+    "interp": "The bent person is the self-opinionated bigot who does not fit in with others.",
+    "num": 225
+  },
+  {
+    "p1": "تیاره شانګواټۍ ده",
+    "p2": "خو برګې پرې سورول غواړی",
+    "e1": "It’s almost ready,",
+    "e2": "but the roof still needs to be put on.",
+    "theme": "Incompatibility",
+    "interp": "The hard work is done; just a little more effort is needed to finish the job.",
+    "num": 226
+  },
+  {
+    "p1": "اَوره د هر چا کوه خپله",
+    "p2": "",
+    "e1": "Listen to everyone, but follow your own advice.",
+    "e2": "",
+    "theme": "Independence",
+    "interp": "Listen to other people’s opinions, but make your own decision.",
+    "num": 227
+  },
+  {
+    "p1": "هر سړے د خپلې مرضۍ خاوند دے",
+    "p2": "",
+    "e1": "Everyone is owner of his own will.",
+    "e2": "",
+    "theme": "Independence",
+    "interp": "People are independent.",
+    "num": 228
+  },
+  {
+    "p1": "خپله لاسه ګله لاسه",
+    "p2": "",
+    "e1": "My own hand is the hand that flourishes.",
+    "e2": "",
+    "theme": "Independence",
+    "interp": "Do your own business.",
+    "num": 229
+  },
+  {
+    "p1": "لورې تا ته یې وایم",
+    "p2": "انږورې تۀ یې واوره",
+    "e1": "What I’m saying to you, my daughter,",
+    "e2": "is heard by my daughter-in-law.",
+    "theme": "Indirect Communication",
+    "interp": "It would be impolite to say something directly to your daughter-in-law, so it must be spoken to your daughter. A form of indirect speech.",
+    "num": 230
+  },
+  {
+    "p1": "انصاف د قاضی په کور کښې هم نشته",
+    "p2": "",
+    "e1": "The is no justice, even in the judge’s home.",
+    "e2": "",
+    "theme": "Injustice",
+    "interp": "Someone who doesn’t treat their own family the way they announce in public.",
+    "num": 231
+  },
+  {
+    "p1": "د خرهٔ په ځائ کولال داغې",
+    "p2": "",
+    "e1": "The potter is branded in place of the donkey.",
+    "e2": "",
+    "theme": "Injustice",
+    "interp": "Blaming the wrong person.",
+    "num": 232
+  },
+  {
+    "p1": "چې نهٔ کار په هغې کښې څهٔ کار؟",
+    "p2": "",
+    "e1": "If it is not your business; what concern is it of yours?",
+    "e2": "",
+    "theme": "Interference",
+    "interp": "Don’t interfere in someone else’s affairs.",
+    "num": 233
+  },
+  {
+    "p1": "چې کوم ځائ دې نهٔ خارښتېږی",
+    "p2": "هغه مهٔ ګروه",
+    "e1": "Don’t scratch where you don’t have an itch.",
+    "e2": "",
+    "theme": "Interference",
+    "interp": "Don’t create problems for yourself by getting involved in other’s difficulties.",
+    "num": 234
+  },
+  {
+    "p1": "په غولو کښې چې څومره چخچی وهې",
+    "p2": "هغه هومره بین کوی",
+    "e1": "The more you poke a stick in shit, the more it stinks.",
+    "e2": "",
+    "theme": "Interference",
+    "interp": "A caution to stop investigating illicit affairs.",
+    "num": 235
+  },
+  {
+    "p1": "په هر څه کښې رادانګی",
+    "p2": "مثال یې د مچ دے",
+    "e1": "He jumps in everything, just like a fly.",
+    "e2": "",
+    "theme": "Interference",
+    "interp": "Descriptive of someone who is always in other people’s business.",
+    "num": 236
+  },
+  {
+    "p1": "کارغهٔ د خارو تلل  زده کول",
+    "p2": "خپل هم ترې هېر شو",
+    "e1": "The crow tried to walked like a myna and forgot its own gait.",
+    "e2": "",
+    "theme": "Imitation",
+    "interp": "A pretentious person who over-reaches their own station in life. The myna is a common bird in Pakistan the size of a starling.",
+    "num": 237
+  },
+  {
+    "p1": "په پوښتنه پوښتنه سړے کابل ته رسی",
+    "p2": "",
+    "e1": "By asking and asking a man can reach Kabul.",
+    "e2": "",
+    "theme": "Inquiry",
+    "interp": "An encouragement to ask for help when you need it.",
+    "num": 238
+  },
+  {
+    "p1": "اوس اوبۀ دَ ورخه تېرې دی",
+    "p2": "",
+    "e1": "Now the water has overflown the bank.",
+    "e2": "",
+    "theme": "Irreversible Outcome",
+    "interp": "Time has passed, the decision has been made and the outcome will inevitably happen.",
+    "num": 239
+  },
+  {
+    "p1": "توکلې لاړې بېرته نۀ راګرزی",
+    "p2": "",
+    "e1": "Hawked-up spit won’t come back again.",
+    "e2": "",
+    "theme": "Irreversible Outcome",
+    "interp": "You can’t correct your action after the event.",
+    "num": 240
+  },
+  {
+    "p1": "د یو فقیر بل فقیر بدی شی",
+    "p2": "",
+    "e1": "One faqir despises another faqir.",
+    "e2": "",
+    "theme": "Jealousy",
+    "interp": "People despise their competitors.",
+    "num": 241
+  },
+  {
+    "p1": "خدائ دې حق حقدار ته ورسوی",
+    "p2": "",
+    "e1": "May God grant legitimate rights to the rightful owner.",
+    "e2": "",
+    "theme": "Justice",
+    "interp": "A prayer for justice that people get their rights.",
+    "num": 242
+  },
+  {
+    "p1": "هندو ستړے خدائ ناراضه",
+    "p2": "",
+    "e1": "The Hindu is worn out, yet not reconciled to God.",
+    "e2": "",
+    "theme": "Hindu",
+    "interp": "Despite his efforts, a person’s behaviour is not authorized and so not acceptable.",
+    "num": 243
+  },
+  {
+    "p1": "د هندوانو مال دے بامبړانو وخوړ",
+    "p2": "",
+    "e1": "The Hindus’ wealth has been eaten by Swamis.",
+    "e2": "",
+    "theme": "Hindu",
+    "interp": "Another’s hard-earned wealth is wasted by religious leaders.",
+    "num": 244
+  },
+  {
+    "p1": "خرې ته چې بلبله ووائې",
+    "p2": "نو بیا کبل نۀ خوری",
+    "e1": "If you call a donkey “Bulbula” then she won’t eat grass.",
+    "e2": "",
+    "theme": "Kindness",
+    "interp": "If you treat someone kindly, they will get haughty. In the same way, a donkey will want something better than grass if spoil it. The Bulbul is a common wild bird in Pakistan; a name used as a term of endearment.",
+    "num": 245
+  },
+  {
+    "p1": "نېکی ور سره په شګو کښې",
+    "p2": "متیازی کول دی",
+    "e1": "Doing him a favour is like peeing on sand.",
+    "e2": "",
+    "theme": "Kindness",
+    "interp": "The favour I did for someone had no effect; instead, it was scorned.",
+    "num": 246
+  },
+  {
+    "p1": "پردي راوړی نهٔ خپلېږی",
+    "p2": "",
+    "e1": "Adopting an outsider doesn’t make them kin.",
+    "e2": "",
+    "theme": "Kinship",
+    "interp": "Nothing can make an outsider a real member of the clan.",
+    "num": 247
+  },
+  {
+    "p1": "خپله وینه بیا هم خپله وی",
+    "p2": "",
+    "e1": "Your own blood is your own, after all.",
+    "e2": "",
+    "theme": "Kinship",
+    "interp": "Blood is thicker than water.",
+    "num": 248
+  },
+  {
+    "p1": "سترګې په بڼو نهٔ درنېږی",
+    "p2": "",
+    "e1": "Eyelashes don’t make the eyes heavy.",
+    "e2": "",
+    "theme": "Kinship",
+    "interp": "There is no burden involved in taking care of your own.",
+    "num": 249
+  },
+  {
+    "p1": "نۀ یې کار شته او نۀ وزګار دے",
+    "p2": "",
+    "e1": "He has no work, nor is he free.",
+    "e2": "",
+    "theme": "Laziness",
+    "interp": "Criticism of a lazy person who is unwilling to work.",
+    "num": 250
+  },
+  {
+    "p1": "اوبۀ چې په ځائ ودرېږی نو سخا شی",
+    "p2": "",
+    "e1": "Water that stays stationary turns foul.",
+    "e2": "",
+    "theme": "Laziness",
+    "interp": "A person who isn’t active will become stale. An encouragement to get out of the house.",
+    "num": 251
+  },
+  {
+    "p1": "د سر د پاسه سر وی",
+    "p2": "",
+    "e1": "There’s a head above every head.",
+    "e2": "",
+    "theme": "Leadership",
+    "interp": "There’s always someone more senior. The proverb can be used to threaten a junior clerk.",
+    "num": 252
+  },
+  {
+    "p1": "قرض دارے چا وژلے دے؟",
+    "p2": "",
+    "e1": "Did anyone kill a borrower?",
+    "e2": "",
+    "theme": "Lending",
+    "interp": "Encouragement to relax - a tough problem will eventually go away.",
+    "num": 253
+  },
+  {
+    "p1": "قرض په ورکړه خلاصېږی",
+    "p2": "",
+    "e1": "A loan is finished by giving.",
+    "e2": "",
+    "theme": "Lending",
+    "interp": "Encouragement to keep giving instalments on a loan.",
+    "num": 254
+  },
+  {
+    "p1": "د دروغو مزے لنډ وی",
+    "p2": "",
+    "e1": "The rope of untruth is short.",
+    "e2": "",
+    "theme": "Lies",
+    "interp": "The truth will soon be discovered. Another version of this proverb uses the word مزل (journey, distance travelled) instead of مزے .",
+    "num": 255
+  },
+  {
+    "p1": "چې رښتیا راځی راځی",
+    "p2": "نو دروغو کلی به وران کړی وی",
+    "e1": "By the time truth arrives,",
+    "e2": "lies will have ruined the villages.",
+    "theme": "Lies",
+    "interp": "People believe and act on rumours.",
+    "num": 256
+  },
+  {
+    "p1": "هغه دروغ مۀ وایه چې سبا ریښتیا کېږی",
+    "p2": "",
+    "e1": "Don’t lie about something that will be proven true tomorrow.",
+    "e2": "",
+    "theme": "Lies",
+    "interp": "An encouragement to avoid telling lies, as they will be uncovered soon enough.",
+    "num": 257
+  },
+  {
+    "p1": "عمر د ژمی مازیګر دے",
+    "p2": "د سترګې په رپ کښې تېر شی",
+    "e1": "Life is a winter evening,",
+    "e2": "that will pass in the blink of an eye.",
+    "theme": "Life",
+    "interp": "Our time on earth is very brief.",
+    "num": 258
+  },
+  {
+    "p1": "دُنیا د ارټ منګوټے دے",
+    "p2": "کله ډک راخېژی او کله تش",
+    "e1": "The world is like the pots on a water wheel;",
+    "e2": "sometimes coming up full, and sometimes empty.",
+    "theme": "Life",
+    "interp": "Sometimes in life we will be prosperous, sometimes destitute.",
+    "num": 259
+  },
+  {
+    "p1": "په یو غوږ یې اوری او په بل غوږ یې اوباسی",
+    "p2": "",
+    "e1": "He listens with one ear and empties it out the other.",
+    "e2": "",
+    "theme": "Listening",
+    "interp": "Descriptive of someone not taking advice.",
+    "num": 260
+  },
+  {
+    "p1": "دېوالونه هم غوږونه لری",
+    "p2": "",
+    "e1": "Even walls have ears.",
+    "e2": "",
+    "theme": "Listening",
+    "interp": "Hidden secrets will be found out.",
+    "num": 261
+  },
+  {
+    "p1": "د زړهٔ نه زړهٔ ته لار وی",
+    "p2": "",
+    "e1": "There is a path from heart to heart.",
+    "e2": "",
+    "theme": "Love",
+    "interp": "When two people like one other, feelings are mutual.",
+    "num": 262
+  },
+  {
+    "p1": "مینه په تلو راتلو زیاتېږی",
+    "p2": "",
+    "e1": "Love is increased by coming and going.",
+    "e2": "",
+    "theme": "Love",
+    "interp": "Visiting and hosting people builds relationship.",
+    "num": 263
+  },
+  {
+    "p1": "وږې خېټه مړېږی",
+    "p2": "خو وږې سترګې نۀ مړېږی",
+    "e1": "The hungry stomach will be filled,",
+    "e2": "but hungry eyes won’t be satisfied.",
+    "theme": "Lust",
+    "interp": "Unlike hunger, the lust and greed of the heart can never be filled.",
+    "num": 264
+  },
+  {
+    "p1": "لېونی د کوره په صحرا خوشحاله وی",
+    "p2": "",
+    "e1": "Crazy folk are happier in the wilderness than a house.",
+    "e2": "",
+    "theme": "Mad",
+    "interp": "In the same way the mentally deranged are often wandering around, this proverb can be used as a rebuke against someone always away from home.",
+    "num": 265
+  },
+  {
+    "p1": "په ډېرو لېونی خوشحالېږی",
+    "p2": "",
+    "e1": "The mad are happy with more.",
+    "e2": "",
+    "theme": "Mad",
+    "interp": "The mad in this proverb is a metaphor for acquisitive people.",
+    "num": 266
+  },
+  {
+    "p1": "لیونی ته ځان روغ ښکاری",
+    "p2": "",
+    "e1": "The insane seem sane to themselves.",
+    "e2": "",
+    "theme": "Mad",
+    "interp": "The deranged have no perspective on their own state.",
+    "num": 267
+  },
+  {
+    "p1": "لیونی ته روغ لیونی ښکاری",
+    "p2": "",
+    "e1": "To a madman, normal people seem crazy.",
+    "e2": "",
+    "theme": "Mad",
+    "interp": "The warped perspective of the mad.",
+    "num": 268
+  },
+  {
+    "p1": "بنګ به لرګے نهٔ شی",
+    "p2": "خټک به سړے نهٔ شی",
+    "e1": "The cannabis plant won’t become a tree,",
+    "e2": "nor a Khattak become a man.",
+    "theme": "Manliness",
+    "interp": "A proverb ridiculing the Khattak tribe. The cannabis plant is a common annual herb that grows about six feet tall.",
+    "num": 269
+  },
+  {
+    "p1": "تل به خواروزار وی دَ دوؤ ښځو خاوند",
+    "p2": "",
+    "e1": "A man with two wives will be forever poor and miserable.",
+    "e2": "",
+    "theme": "Marriage",
+    "interp": "A warning about the downside of bigamy.",
+    "num": 270
+  },
+  {
+    "p1": "سړی چا زاړهٔ کړی دی؟",
+    "p2": "",
+    "e1": "Who made men get old?",
+    "e2": "",
+    "theme": "Marriage",
+    "interp": "Implies that men can get married at any age.",
+    "num": 271
+  },
+  {
+    "p1": "په هېره روژه نهٔ ماتېږی",
+    "p2": "",
+    "e1": "Absent-mindedness doesn’t break the fast.",
+    "e2": "",
+    "theme": "Mistakes",
+    "interp": "We shouldn’t be penalized for unintentional behaviour.",
+    "num": 272
+  },
+  {
+    "p1": "جامې اوبو یوړې",
+    "p2": "سوباړے ما ورپسې پرېښود",
+    "e1": "The water washed away the clothes,",
+    "e2": "I let the beating stick get away as well.",
+    "theme": "Mistakes",
+    "interp": "Some trouble was accidental, some I made myself. سوباړے is the wooden paddle traditionally used to wash clothes.",
+    "num": 273
+  },
+  {
+    "p1": "خپل څادر سره ښپې غځوه",
+    "p2": "",
+    "e1": "Spread your sheet according to your feet.",
+    "e2": "",
+    "theme": "Moderation",
+    "interp": "Live according to your means.",
+    "num": 274
+  },
+  {
+    "p1": "لږ خوره تل خوره",
+    "p2": "ډېر خوره ګنډېر خوره",
+    "e1": "Eat a little, eat forever; eat a lot, eat oleander.",
+    "e2": "",
+    "theme": "Moderation",
+    "interp": "A little profit will keep business going. Used to encourage a shopkeeper to lower his asking price.",
+    "num": 275
+  },
+  {
+    "p1": "د پېښې نه تېښته نهٔ کېږی",
+    "p2": "",
+    "e1": "There’s no escaping what’s going to happen.",
+    "e2": "",
+    "theme": "Motivation",
+    "interp": "You have no option but to get involved.",
+    "num": 276
+  },
+  {
+    "p1": "پیشو د خدائ دپاره منږک نهٔ نیسی",
+    "p2": "",
+    "e1": "A cat doesn’t catch a mouse for the sake of God.",
+    "e2": "",
+    "theme": "Motive",
+    "interp": "Whatever people may say otherwise, everyone works for their own benefit.",
+    "num": 277
+  },
+  {
+    "p1": "هر سړے د خپل مطلبه پورې یار دے",
+    "p2": "ما د خدای دپاره یار لیدلے نه دے",
+    "e1": "Everyone is a friend of their own purpose,",
+    "e2": "but I never met a friend with Godly intentions.",
+    "theme": "Motive",
+    "interp": "A selfish motive underlies behaviour.",
+    "num": 278
+  },
+  {
+    "p1": "هر سړے ترخځ ځان ته وهی",
+    "p2": "",
+    "e1": "Everyone strikes the adze toward himself.",
+    "e2": "",
+    "theme": "Motive",
+    "interp": "In the same way the adze is curved towards the user, people operate in ways that are to their own benefit.",
+    "num": 279
+  },
+  {
+    "p1": "سیالی د سیال سړی پکار ده",
+    "p2": "",
+    "e1": "A prominent person is needed to match one like him.",
+    "e2": "",
+    "theme": "Negotiation",
+    "interp": "Dealings are best between two people of the same prestige.",
+    "num": 280
+  },
+  {
+    "p1": "وسپنه په وسپنه ماتېږی",
+    "p2": "",
+    "e1": "Iron is broken by iron.",
+    "e2": "",
+    "theme": "Negotiation",
+    "interp": "It requires a strong person to match another heavy weight.",
+    "num": 281
+  },
+  {
+    "p1": "زاړهٔ خو مور او پلار ښۀ وی",
+    "p2": "",
+    "e1": "Among old things, parents are good.",
+    "e2": "",
+    "theme": "Old Age",
+    "interp": "Encouragement to buy new things, since the only good things are old parents.",
+    "num": 282
+  },
+  {
+    "p1": "زوړ شوې خو سوړ نهٔ شوې",
+    "p2": "",
+    "e1": "You turned old, but not cold.",
+    "e2": "",
+    "theme": "Old Age",
+    "interp": "Though old, the person is still feisty and active.",
+    "num": 283
+  },
+  {
+    "p1": "چې اختر تېر شی",
+    "p2": "نو نکریزی په دېوال وتپه",
+    "e1": "When Eid is over,",
+    "e2": "then henna is plastered on the wall.",
+    "theme": "Opportunity",
+    "interp": "In the same way henna is of no use after a wedding, so there is a moment when it is too late to help with a need. The proverb is used as a plea for timely help.",
+    "num": 284
+  },
+  {
+    "p1": "الوتې مرغۍ بیا په لاس نۀ راځی",
+    "p2": "",
+    "e1": "Once flown, a bird won’t come to the hand again.",
+    "e2": "",
+    "theme": "Opportunity",
+    "interp": "A decision that can’t be reversed, or an opportunity that won’t come again.",
+    "num": 285
+  },
+  {
+    "p1": "چې سر حیات یې نو ټوپۍ ډېرې",
+    "p2": "",
+    "e1": "If you are alive, there are still many hats.",
+    "e2": "",
+    "theme": "Opportunity",
+    "interp": "Be thankful you escaped unscathed from disaster. There are still lots of other avenues left to you. This proverb is also used to encourage someone who has been refused an engagement request.",
+    "num": 286
+  },
+  {
+    "p1": "تماشګیر د نخښې منځ ولی",
+    "p2": "",
+    "e1": "The onlooker hits the bullseye.",
+    "e2": "",
+    "theme": "Outsider",
+    "interp": "To the outsider a task looks easy, but they don’t know how hard it is to do.",
+    "num": 287
+  },
+  {
+    "p1": "خپلو نه پردې ښهٔ وی",
+    "p2": "او پردو نه افریدی",
+    "e1": "Outsiders are better than family,",
+    "e2": "and Afridis are better than outsiders.",
+    "theme": "Outsider",
+    "interp": "More distant relationships are better. Here ‘Afridi’ is symbolic of any distant person from another tribe.",
+    "num": 288
+  },
+  {
+    "p1": "د صبر مېوه خوږه وی",
+    "p2": "",
+    "e1": "The fruit of patience is sweet.",
+    "e2": "",
+    "theme": "Patience",
+    "interp": "Encouragement to be patient and to enjoy the benefits of not being in such a hurry.",
+    "num": 289
+  },
+  {
+    "p1": "دا ساعت به هم تېر شی",
+    "p2": "",
+    "e1": "This moment will also pass.",
+    "e2": "",
+    "theme": "Patience",
+    "interp": "The famous reply of the minister when the king asked how he could overcome sad and happy moments in his life.",
+    "num": 290
+  },
+  {
+    "p1": "لاس چې مات شی غاړې له ځی",
+    "p2": "",
+    "e1": "When the hand is broken, it gets tied to the neck.",
+    "e2": "",
+    "theme": "Patronage",
+    "interp": "When in trouble people come to the leader for help.",
+    "num": 291
+  },
+  {
+    "p1": "زما پیشو او ماته میو",
+    "p2": "",
+    "e1": "My cat, and it meows for me.",
+    "e2": "",
+    "theme": "Patronage",
+    "interp": "A complaint. Those dependent on me are grumbling, even though they should be beholden to me.",
+    "num": 292
+  },
+  {
+    "p1": "چې زمونږ سره ګرځې",
+    "p2": "نو دا مزې به کوې",
+    "e1": "If you walk with us, there will be this enjoyment.",
+    "e2": "",
+    "theme": "Patronage",
+    "interp": "Promises of benefit from patronage.",
+    "num": 293
+  },
+  {
+    "p1": "په تش جېب خانی نهٔ کېږی",
+    "p2": "",
+    "e1": "Khanship is not possible with an empty pocket.",
+    "e2": "",
+    "theme": "Patronage",
+    "interp": "Patronage requires output of money.",
+    "num": 294
+  },
+  {
+    "p1": "څاڅکی څاڅکی نه دریاب جوړېږی",
+    "p2": "",
+    "e1": "Drop by drop a river is made.",
+    "e2": "",
+    "theme": "Persistence",
+    "interp": "Persistent, steady effort will give success.",
+    "num": 295
+  },
+  {
+    "p1": "اول سلام او بیا کلام",
+    "p2": "",
+    "e1": "First greet, and then speak.",
+    "e2": "",
+    "theme": "Politeness",
+    "interp": "It’s polite to properly greet people before getting down to business.",
+    "num": 296
+  },
+  {
+    "p1": "چې په ګوړه مری",
+    "p2": "زهرو ته یې څهٔ حاجت دے؟",
+    "e1": "If they can be killed by cane sugar,",
+    "e2": "What need is there of poison?",
+    "theme": "Politeness",
+    "interp": "Speak gently to get things done more easily.",
+    "num": 297
+  },
+  {
+    "p1": "د غریب سړی له مخه څوک هم نهٔ شرمېږی",
+    "p2": "",
+    "e1": "In front of a poor man no one feels shy.",
+    "e2": "",
+    "theme": "Poverty",
+    "interp": "Poor people are not respected by the rich.",
+    "num": 298
+  },
+  {
+    "p1": "خوار دلته خوار په هندوستان",
+    "p2": "",
+    "e1": "Poor here, poor in India.",
+    "e2": "",
+    "theme": "Poverty",
+    "interp": "People who are poor remain so, wherever they are and even if their situation changes.",
+    "num": 299
+  },
+  {
+    "p1": "دومره ګټو چې یې څټو",
+    "p2": "",
+    "e1": "We earn as much as we lick.",
+    "e2": "",
+    "theme": "Poverty",
+    "interp": "Living hand-to-mouth there is no chance to accrue savings.",
+    "num": 300
+  },
+  {
+    "p1": "مار خو نهٔ یې چې په خاورو پائی",
+    "p2": "",
+    "e1": "You’re not a snake that feeds on dirt.",
+    "e2": "",
+    "theme": "Poverty",
+    "interp": "A proverb used as a complaint about lack of support. Pashtun thought is that snakes eat dirt, and that a poor person, unlike a snake which can eat dirt, needs resources to survive.",
+    "num": 301
+  },
+  {
+    "p1": "اوبه په کمزورې ورخ ماتېږی",
+    "p2": "",
+    "e1": "Water breaches the weak embankment.",
+    "e2": "",
+    "theme": "Power",
+    "interp": "Weak people are likely to be exploited by the powerful.",
+    "num": 302
+  },
+  {
+    "p1": "د قانون لاسونه ډېر اوږدۀ دی",
+    "p2": "",
+    "e1": "The arms of the law are very long.",
+    "e2": "",
+    "theme": "Power",
+    "interp": "Eventually the rule of law will catch up with criminals.",
+    "num": 303
+  },
+  {
+    "p1": "د خویشکو نسوار دی په ورستو زور کوی",
+    "p2": "",
+    "e1": "Kheshgi’s naswaar is powerful later on.",
+    "e2": "",
+    "theme": "Power",
+    "interp": "A bragging warning that you have more power than someone and will make them cave in, or that a pleasure now comes with a later drawback. Kheshgi is a village near Nowshera in Khyber Pakhtunkhwa.  نسوار is chewing tobacco.",
+    "num": 304
+  },
+  {
+    "p1": "د فقیر چې چرته ښۀ وی هلته یې شپه وی",
+    "p2": "",
+    "e1": "The faqir spends the night where it suits him.",
+    "e2": "",
+    "theme": "Power",
+    "interp": "This proverb can be used to mollify a person upset with less than they expected. It is a bit demeaning; implying they are underprivileged, and therefore should not complain.",
+    "num": 305
+  },
+  {
+    "p1": "که مړ نۀ وم نو زۀ به درته ووائم",
+    "p2": "",
+    "e1": "If I’m not dead, then I’ll tell you.",
+    "e2": "",
+    "theme": "Prediction",
+    "interp": "A proverb spoken by someone who has just made a prediction. You’ll see I’m right - if I’m alive to see it.",
+    "num": 306
+  },
+  {
+    "p1": "په جنګ کښې اسونه نهٔ څربېږی",
+    "p2": "",
+    "e1": "Horses don’t get fattened during battle.",
+    "e2": "",
+    "theme": "Preparation",
+    "interp": "Preparation has to be done ahead of time.",
+    "num": 307
+  },
+  {
+    "p1": "مېږی ته چې خدائ په قهر شی",
+    "p2": "نو وزری ورکړی",
+    "e1": "When God gets annoyed with the ants,",
+    "e2": "then He gives them wings.",
+    "theme": "Pride",
+    "interp": "There will be bad consequences for an impoverished or prideful person. God gives him enough rope to hang himself.",
+    "num": 308
+  },
+  {
+    "p1": "کبرژن د خدائ دشمن",
+    "p2": "",
+    "e1": "The arrogant are enemies of God.",
+    "e2": "",
+    "theme": "Pride",
+    "interp": "God does not like the arrogant.",
+    "num": 309
+  },
+  {
+    "p1": "لوئی د یو خدائ سره ښایی",
+    "p2": "",
+    "e1": "Pride is only due to the one God.",
+    "e2": "",
+    "theme": "Pride",
+    "interp": "Only God is powerful and important.",
+    "num": 310
+  },
+  {
+    "p1": "چتی آسمان ته پښې نیولې وې",
+    "p2": "وائی آسمان ما ټینګ کړے دے",
+    "e1": "A tiny bird held up his feet to the sky",
+    "e2": "and said “I’ve held up the world.”",
+    "theme": "Pride",
+    "interp": "The ridiculous boasting of an unqualified person is like the misguided arrogance of a small bird – who thinks he is holding up the sky. چتى is the diminutive Indian White-eye bird, about 8cm long.",
+    "num": 311
+  },
+  {
+    "p1": "لږه یې خوړه نه او ډېره یې مونده نه",
+    "p2": "",
+    "e1": "He wouldn’t eat a little and wouldn’t find more.",
+    "e2": "",
+    "theme": "Pride",
+    "interp": "An admonition to someone who is too proud to take a small job, and in so doing is left jobless.",
+    "num": 312
+  },
+  {
+    "p1": "د نن دې وشی سبا بیا خدائ شته",
+    "p2": "",
+    "e1": "Let’s have it today; God will provide again tomorrow.",
+    "e2": "",
+    "theme": "Provision",
+    "interp": "God will consistently provide – so have faith for tomorrow’s provision.",
+    "num": 313
+  },
+  {
+    "p1": "بنده اریان او خدائ مهربان",
+    "p2": "",
+    "e1": "When a person is in need, God is merciful.",
+    "e2": "",
+    "theme": "Provision",
+    "interp": "Said when God provides a miraculous help in time of trouble.",
+    "num": 314
+  },
+  {
+    "p1": "یاد به دې زهٔ کړم",
+    "p2": "موړ به دې خدائ کړی",
+    "e1": "I’ll remember you; God will feed you.",
+    "e2": "",
+    "theme": "Provision",
+    "interp": "Here, the word  ياد means to give a gift or favour. So the proverb can be used as an excuse for giving less of something, or even nothing at all. God will provide the missing portion.",
+    "num": 315
+  },
+  {
+    "p1": "د نر کونه په بدل ده",
+    "p2": "",
+    "e1": "The manly one’s favours have to be returned.",
+    "e2": "",
+    "theme": "Reciprocation",
+    "interp": "Return a favour. The reciprocal nature of relationships.",
+    "num": 316
+  },
+  {
+    "p1": "چې زهٔ او تهٔ راضی",
+    "p2": "څهٔ به وکړی قاضی؟",
+    "e1": "If you and me are reconciled,",
+    "e2": "what need will there be of a judge?",
+    "theme": "Reconciliation",
+    "interp": "Friendship and understanding can circumvent legal issues.",
+    "num": 317
+  },
+  {
+    "p1": "د چاړا په ژبه چاړا پوهېږی",
+    "p2": "",
+    "e1": "A deaf person understands a deaf person’s speech.",
+    "e2": "",
+    "theme": "Relationship",
+    "interp": "Kinship and understanding are found among people who share the same weaknesses.",
+    "num": 318
+  },
+  {
+    "p1": "په دین کښې شرم نشته",
+    "p2": "",
+    "e1": "There’s no shame in religion.",
+    "e2": "",
+    "theme": "Religion",
+    "interp": "It is acceptable to ask questions about faith.",
+    "num": 319
+  },
+  {
+    "p1": "د بنده مخ د خدائ د نوره دے",
+    "p2": "",
+    "e1": "The human face is the light of God.",
+    "e2": "",
+    "theme": "Respect",
+    "interp": "A proverb encouraging respect of others and not to say or do anything that would dishonour them.",
+    "num": 320
+  },
+  {
+    "p1": "تهٔ پوهه شه او کار دې پوهه شه",
+    "p2": "",
+    "e1": "You know it and you know the job.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "You bear the responsibility for what you’re about to do.",
+    "num": 321
+  },
+  {
+    "p1": "په ګڼو قصابانو کښې څاروے مرداریږی",
+    "p2": "",
+    "e1": "With many butchers the livestock goes rotten.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "No one takes responsibility to follow through with tasks, or they interfere with one another.",
+    "num": 322
+  },
+  {
+    "p1": "زهٔ ستا په قبر کښې نهٔ څملم",
+    "p2": "او تهٔ زما په قبر کښې نهٔ څملې",
+    "e1": "I won’t lie in your grave and you won’t lie in mine.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "A call for fairness and honesty: each of us will answer for our own behaviour and words.",
+    "num": 323
+  },
+  {
+    "p1": "چې څوک یې کوی نو هغه به یې پاکوی",
+    "p2": "",
+    "e1": "Whoever does it will have to clean it.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "The responsibility lies with the person who made the mistake.",
+    "num": 324
+  },
+  {
+    "p1": "په امانت کښې خیانت نۀ دے پکار",
+    "p2": "",
+    "e1": "You shouldn’t give away something entrusted to you.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "Leave something you have borrowed exactly like it was.",
+    "num": 325
+  },
+  {
+    "p1": "چې اوښان ساتې نو دروازې به دنګې جوړوې",
+    "p2": "",
+    "e1": "If you keep camels, make your doors high.",
+    "e2": "",
+    "theme": "Responsibility",
+    "interp": "If you want to something big you have to adjust things to make it happen.",
+    "num": 326
+  },
+  {
+    "p1": "د ستړو ځائ شهباز ګړهه ده",
+    "p2": "",
+    "e1": "Shahbaz Garhi is the place for the tired.",
+    "e2": "",
+    "theme": "Rest",
+    "interp": "People flock to the place they can get rest. Shahbaz Garhi is a village near Mardan, that may once have been a half-way place used by those who were travelling.",
+    "num": 327
+  },
+  {
+    "p1": "ښهٔ پوهېږم خو نهٔ پوهېږم",
+    "p2": "",
+    "e1": "I know very well, yet I don’t know.",
+    "e2": "",
+    "theme": "Restraomt",
+    "interp": "Used when you are unable to openly say what you know so well; to avoid shaming someone, or when being open will create problems.",
+    "num": 328
+  },
+  {
+    "p1": "اول حق د ګاونډی دے",
+    "p2": "",
+    "e1": "Your neighbour has first rights.",
+    "e2": "",
+    "theme": "Rights",
+    "interp": "Neighbours should be the first recipients of charity and help.",
+    "num": 329
+  },
+  {
+    "p1": "د خزانې په خوا کښې مار وی",
+    "p2": "",
+    "e1": "Beside the treasury there’s a snake.",
+    "e2": "",
+    "theme": "Risk",
+    "interp": "Beware the risks associated with success.",
+    "num": 330
+  },
+  {
+    "p1": "د ګل سره ازغی وی",
+    "p2": "",
+    "e1": "With a flower come thorns.",
+    "e2": "",
+    "theme": "Risk",
+    "interp": "The pessimistic view that every good thing has a flaw.",
+    "num": 331
+  },
+  {
+    "p1": "د چا چا خوله به ټپوې؟",
+    "p2": "",
+    "e1": "Whose mouth will you shut up?",
+    "e2": "",
+    "theme": "Rumour",
+    "interp": "It’s impossible to prevent rumours.",
+    "num": 332
+  },
+  {
+    "p1": "چې ښے لاس دې",
+    "p2": "هم د ګڅه  لاس نه خبر نهٔ شی",
+    "e1": "So your right hand is not aware of your left.",
+    "e2": "",
+    "theme": "Secrets",
+    "interp": "To do something secretly; especially in relation to giving charity.",
+    "num": 333
+  },
+  {
+    "p1": "د زړهٔ خبرې په زړهٔ کښې ساته",
+    "p2": "",
+    "e1": "Keep the heart talk in the heart.",
+    "e2": "",
+    "theme": "Secrets",
+    "interp": "A warning to keep secrets.",
+    "num": 334
+  },
+  {
+    "p1": "کۀ چاړۀ د سرو ده",
+    "p2": "خو په خېټه د منډلو نۀ ده",
+    "e1": "Even if the knife is gold,",
+    "e2": "It’s not for stabbing yourself in the stomach.",
+    "theme": "Self-Protection",
+    "interp": "However good something is, don’t do it if it destroys you.",
+    "num": 335
+  },
+  {
+    "p1": "سپے هم چې کېنی",
+    "p2": "نو ځان ته ځائ صفا کوی",
+    "e1": "Even when a dog sits down,",
+    "e2": "it cleans a place for itself.",
+    "theme": "Self Interest",
+    "interp": "Everyone takes care of their own interests.",
+    "num": 336
+  },
+  {
+    "p1": "اول ځان دے بیا جهان دے",
+    "p2": "",
+    "e1": "First myself, then the world.",
+    "e2": "",
+    "theme": "Self Interest",
+    "interp": "Take care of yourself before others.",
+    "num": 337
+  },
+  {
+    "p1": "چې د کلال د کوره اوځی،",
+    "p2": "وېخ دې یې اوځی",
+    "e1": "When (the pot) leaves the pottery,",
+    "e2": "It’s completely finished.",
+    "theme": "Self Interest",
+    "interp": "On the one hand this proverb is used as a reminder that there is no guarantee once something is sold. It is also widely used as cynical complaint made to someone who has used you for their own benefit and then discarded you once their need has passed.",
+    "num": 338
+  },
+  {
+    "p1": "د وېشه یې په تالان خوشحاله دے",
+    "p2": "",
+    "e1": "He’s happier with looting than with distribution.",
+    "e2": "",
+    "theme": "Self Interest",
+    "interp": "Selfish tendencies of the miserly.",
+    "num": 339
+  },
+  {
+    "p1": "هر سړے خپل غم ژاړی",
+    "p2": "",
+    "e1": "Everyone cries over their own issues.",
+    "e2": "",
+    "theme": "Self Interest",
+    "interp": "People tend to focus on their own concerns.",
+    "num": 340
+  },
+  {
+    "p1": "د شرم ټېز د کوناټی په سر وی",
+    "p2": "",
+    "e1": "The fart of shame is on the buttock’s cheek.",
+    "e2": "",
+    "theme": "Shame",
+    "interp": "When humiliation comes, it comes big time. Also used when shameful or hidden things are suddenly revealed.",
+    "num": 341
+  },
+  {
+    "p1": "شرم ګډورے نهٔ دے",
+    "p2": "چې په چا پسې بے وکړی",
+    "e1": "Shame is not a lamb",
+    "e2": "that bleats to others.",
+    "theme": "Shame",
+    "interp": "Used to reprimand someone who could care less about their shameful behaviour and keeps talking openly about it.",
+    "num": 342
+  },
+  {
+    "p1": "شرم په سترګو کښې وی",
+    "p2": "",
+    "e1": "Shame is in the eyes.",
+    "e2": "",
+    "theme": "Shame",
+    "interp": "When someone has done something shameful, they are too embarrassed to look the person in the eye.",
+    "num": 343
+  },
+  {
+    "p1": "سترګې د سترګو نه شرمېږی",
+    "p2": "",
+    "e1": "Eyes are ashamed of eyes.",
+    "e2": "",
+    "theme": "Shame",
+    "interp": "When someone has done something shameful, they are too embarrassed to look the person in the eye.",
+    "num": 344
+  },
+  {
+    "p1": "حال د وئیلو نهٔ دے",
+    "p2": "ځائ د ښئیلو نهٔ دے",
+    "e1": "‌Its condition can’t be spoken of,",
+    "e2": "and the place can’t be shown.",
+    "theme": "Shame",
+    "interp": "Something too embarrassing to talk about.",
+    "num": 345
+  },
+  {
+    "p1": "یو ځان شرموی بل قام",
+    "p2": "",
+    "e1": "One shames himself, another his tribe.",
+    "e2": "",
+    "theme": "Shame",
+    "interp": "The biggest shame is doing something against the tribe.",
+    "num": 346
+  },
+  {
+    "p1": "چې نۀ پوهېږې ګران اخله",
+    "p2": "",
+    "e1": "If you have no knowledge, buy the expensive one.",
+    "e2": "",
+    "theme": "Shopping",
+    "interp": "Advice for shopping when you have no familiarity with the item you want to buy.",
+    "num": 347
+  },
+  {
+    "p1": "هنر چا د مور په خېټه کښې",
+    "p2": "نۀ دے زده کړے",
+    "e1": "No one has learnt a skill in his mother’s belly.",
+    "e2": "",
+    "theme": "Skill",
+    "interp": "It takes time and effort to learn a skill.",
+    "num": 348
+  },
+  {
+    "p1": "چې د چا په لاس کښې کار وی",
+    "p2": "هغه سرکار وی",
+    "e1": "Those who are doing the job;",
+    "e2": "they are in charge.",
+    "theme": "Skill",
+    "interp": "Praise of being skilled in some area.",
+    "num": 349
+  },
+  {
+    "p1": "خپله درنه وائی او د بل سپکه",
+    "p2": "",
+    "e1": "He speaks well about himself and insults others.",
+    "e2": "",
+    "theme": "Slander",
+    "interp": "Description of an idle gossip.",
+    "num": 350
+  },
+  {
+    "p1": "د خولې برغولے یې نشته",
+    "p2": "",
+    "e1": "He has no lid for his mouth.",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "No filter on a person’s tongue.",
+    "num": 351
+  },
+  {
+    "p1": "اول یې تله بیا یې وایه",
+    "p2": "",
+    "e1": "First weigh it, then say it.",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "Think carefully about the possible consequences of what you say before you say it.",
+    "num": 352
+  },
+  {
+    "p1": "خپله خوله هم قلا ده هم بلا ده",
+    "p2": "",
+    "e1": "Your mouth is both fort and monster.",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "Careful talk protects you, foolish talk ruins you.",
+    "num": 353
+  },
+  {
+    "p1": "خوله دې په واک کښې کړه",
+    "p2": "",
+    "e1": "Put your mouth under control!",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "A plea to speak carefully.",
+    "num": 354
+  },
+  {
+    "p1": "چې څۀ په زړۀ وی هغه په خوله وی",
+    "p2": "",
+    "e1": "What is in the heart, is in the mouth.",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "People who speak straightforwardly, without guile.",
+    "num": 355
+  },
+  {
+    "p1": "د خولې وتلې خبره نهٔ واپس کېږی",
+    "p2": "",
+    "e1": "The talk from your mouth can’t be returned.",
+    "e2": "",
+    "theme": "Speech",
+    "interp": "An appeal to use discreet speech.",
+    "num": 356
+  },
+  {
+    "p1": "ما په آسمان غوښتې",
+    "p2": "خدائ په زمکه راکړې",
+    "e1": "I longed for you in the sky,",
+    "e2": "God gifted you to me on the earth.",
+    "theme": "Surprise",
+    "interp": "An unexpected blessing, or arrival. The thing though hard made easy.",
+    "num": 357
+  },
+  {
+    "p1": "د مفتو شراب قاضی هم څښلی",
+    "p2": "",
+    "e1": "Even the judge has drunk free wine.",
+    "e2": "",
+    "theme": "Temptation",
+    "interp": "Even the pious succumb to temptation.",
+    "num": 358
+  },
+  {
+    "p1": "پټ غل باچا د‌ے",
+    "p2": "",
+    "e1": "The undetected thief is king.",
+    "e2": "",
+    "theme": "Thief",
+    "interp": "Undetected criminals are happy.",
+    "num": 359
+  },
+  {
+    "p1": "لاس لاس پېژنی",
+    "p2": "",
+    "e1": "One hand knows another.",
+    "e2": "",
+    "theme": "Trust",
+    "interp": "Trust given to a like-minded person.",
+    "num": 360
+  },
+  {
+    "p1": "رښتیا وئیل تراخه وی",
+    "p2": "",
+    "e1": "Telling the truth is bitter.",
+    "e2": "",
+    "theme": "Truth",
+    "interp": "Frank talk is painful.",
+    "num": 361
+  },
+  {
+    "p1": "لال په اېرو کښې نهٔ پټېږی",
+    "p2": "",
+    "e1": "A ruby can’t be hidden in ashes.",
+    "e2": "",
+    "theme": "Truth",
+    "interp": "Truth, beauty and value can’t be concealed.",
+    "num": 362
+  },
+  {
+    "p1": "د ډېوې د کونې لاندې تیارهٔ وی",
+    "p2": "",
+    "e1": "It’s dark under the backside of the lamp.",
+    "e2": "",
+    "theme": "Unaware",
+    "interp": "Oblivious of your own weaknesses, you can’t see what lies in your own back yard.",
+    "num": 363
+  },
+  {
+    "p1": "زوړ امام زړې تراویح",
+    "p2": "",
+    "e1": "Old Imam - old tarawe.",
+    "e2": "",
+    "theme": "Unchangeable",
+    "interp": "People don’t change, but stick to their habits; like the traditional style of recitation used by an old mullah. تراويح are the prayers and long recitations of the Quran read at night during Ramadan.",
+    "num": 364
+  },
+  {
+    "p1": "نه مری او نه رغېږی",
+    "p2": "",
+    "e1": "He doesn’t die or get well.",
+    "e2": "",
+    "theme": "Unchangeable",
+    "interp": "Said of someone lingering in a critical condition. Sometimes the proverb is also used as a curse.",
+    "num": 365
+  },
+  {
+    "p1": "هله به خبر شی",
+    "p2": "چې تالو ژبې له یې ورشی",
+    "e1": "He’ll understand when",
+    "e2": "his tongue gets stuck to his palate.",
+    "theme": "Understanding",
+    "interp": "Only when someone is dead will they understand. In other words, they will never understand until too late. This proverb is often re-worded in modern use. The obscure phrase تالو يې ژبې is replaced by the name of a village, Taru Jabba, near Peshawar.",
+    "num": 366
+  },
+  {
+    "p1": "هله به دې زده شی",
+    "p2": "چې شپه دې په مېره شی",
+    "e1": "You’ll understand when",
+    "e2": "you’ve spent the night in the wilderness.",
+    "theme": "Understanding",
+    "interp": "Only those who have experienced something know about it.",
+    "num": 367
+  },
+  {
+    "p1": "پته به ورته ولګی چې د سېره څو پخېږی",
+    "p2": "",
+    "e1": "He will find out how many can be baked from a seer.",
+    "e2": "",
+    "theme": "Understanding",
+    "interp": "To find out later how much the cost is – knowledge that only comes with experience. A seer is the old British colonial measure of weight - equivalent to 1.25kg, or 2lbs - still in use in some parts of India, Pakistan, Afghanistan and India.",
+    "num": 368
+  },
+  {
+    "p1": "زۀ په طمع او تۀ بې غمه",
+    "p2": "",
+    "e1": "I’m waiting and you’re nonchalant.",
+    "e2": "",
+    "theme": "Unfaithful",
+    "interp": "Description of someone who doesn’t follow through with promises",
+    "num": 369
+  },
+  {
+    "p1": "اوبۀ پۀ ډانګونو نۀ بېلېږی",
+    "p2": "",
+    "e1": "Water can’t be divided by sticks.",
+    "e2": "",
+    "theme": "Unity",
+    "interp": "Strong relationships – of family and tribe – are not easily broken.",
+    "num": 370
+  },
+  {
+    "p1": "ما مه شمېره در ګډ یمه",
+    "p2": "",
+    "e1": "Don’t count me; I’m in.",
+    "e2": "",
+    "theme": "Unity",
+    "interp": "Said by someone who turns up uninvited.",
+    "num": 371
+  },
+  {
+    "p1": "حرامه په حرامه ځی",
+    "p2": "",
+    "e1": "Unlawful (earning) will be spent unlawfully.",
+    "e2": "",
+    "theme": "Unlawful",
+    "interp": "Unlawful gain is quickly lost on useless things. Some thing, or behaviour that is حرام is religiously outlawed; like pork, alcohol and adultery.",
+    "num": 372
+  },
+  {
+    "p1": "حرام مال د چا نهٔ هضمېږی",
+    "p2": "",
+    "e1": "Someone’s unlawful wealth can’t be digested.",
+    "e2": "",
+    "theme": "Unlawful",
+    "interp": "Unlawful money creates trouble, and can’t be used.",
+    "num": 373
+  },
+  {
+    "p1": "نیم حکیم خطره جان",
+    "p2": "نیم ملا خطره ایمان",
+    "e1": "Half a doctor is risky to health;",
+    "e2": "half a Mullah is risky to faith.",
+    "theme": "Unqualified",
+    "interp": "A common proverb critical of those with partial knowledge.",
+    "num": 374
+  },
+  {
+    "p1": "ښهٔ مه کوه بد نشته",
+    "p2": "",
+    "e1": "Don’t do good, then there will be no bad.",
+    "e2": "",
+    "theme": "Virtue",
+    "interp": "This proverb reflects the gloomy feeling Pukhtuns have that if you do good, people will take advantage of you. Their solution is not to do good at all.",
+    "num": 375
+  },
+  {
+    "p1": "چې ښهٔ نهٔ شې کولے نو بد مهٔ کوه",
+    "p2": "",
+    "e1": "If you can’t do good, at least don’t do evil.",
+    "e2": "",
+    "theme": "Virtue",
+    "interp": "A plea to behave in a kindly way to others.",
+    "num": 376
+  },
+  {
+    "p1": "کهٔ شېر دے خو ګېر دے",
+    "p2": "",
+    "e1": "Though he’s a lion, yet he’s trapped.",
+    "e2": "",
+    "theme": "Weakness",
+    "interp": "A strong person stuck in some issue.",
+    "num": 377
+  },
+  {
+    "p1": "کاڼے د یتیم په سر پرېوځی",
+    "p2": "",
+    "e1": "The stone falls on the orphan’s head.",
+    "e2": "",
+    "theme": "Weakness",
+    "interp": "Suffering and blame falls on the weak.",
+    "num": 378
+  },
+  {
+    "p1": "خر چې د خر نه کم شی",
+    "p2": "نو غوږ یې د پرې کولو وی",
+    "e1": "When a donkey is less than a donkey,",
+    "e2": "its ear should be cut off.",
+    "theme": "Weakness",
+    "interp": "When a weakling shows his weakness, he is pounced on by the more powerful.",
+    "num": 379
+  },
+  {
+    "p1": "پیسو له پیسې راځی",
+    "p2": "",
+    "e1": "Money comes to money.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "It takes money to make money.",
+    "num": 380
+  },
+  {
+    "p1": "پیسې په غر کښې لار اوباسی",
+    "p2": "",
+    "e1": "Money makes a way in the mountain.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "The power of money gets things done.",
+    "num": 381
+  },
+  {
+    "p1": "دولت د لاس خیرے دے",
+    "p2": "",
+    "e1": "Wealth is the dirt on your hands.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "Wealth comes and goes the way hands are sometimes clean, sometimes dirty.",
+    "num": 382
+  },
+  {
+    "p1": "چې ډېر یې مال وی بد یې حال وی",
+    "p2": "",
+    "e1": "With much wealth comes much trouble.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "The tension and burden that comes with wealth.",
+    "num": 383
+  },
+  {
+    "p1": "دا د مړې خېټې خبرې دی",
+    "p2": "",
+    "e1": "That’s the talk of a full stomach.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "An expression of frustration when someone talks about doing something beyond their means.",
+    "num": 384
+  },
+  {
+    "p1": "پېزار که د سرو وي خو د پښو وي",
+    "p2": "",
+    "e1": "Even if your shoes are golden, they’re still for the feet.",
+    "e2": "",
+    "theme": "Wealth",
+    "interp": "Advice to a wealthy person not to put much stock in their great wealth.",
+    "num": 385
+  },
+  {
+    "p1": "باران وئیل چې زهٔ نن نه ورېږم",
+    "p2": "نو بیا به کله ورېږم؟",
+    "e1": "The rain said, “If I don’t rain today,",
+    "e2": "then when will I rain?”",
+    "theme": "Weather",
+    "interp": "Advice to a wealthy person not to put much stock in their great wealth.",
+    "num": 386
+  },
+  {
+    "p1": "عقل په بیعه نهٔ خرڅېږی",
+    "p2": "",
+    "e1": "Intelligence can’t be sold with a price.",
+    "e2": "",
+    "theme": "Wisdom",
+    "interp": "Wisdom is a natural aptitude that can’t be acquired by money.",
+    "num": 387
+  },
+  {
+    "p1": "که روزی په عقل وے",
+    "p2": "نو کم عقل به دَ لوږې مړۀ وو",
+    "e1": "If daily food was portioned by intelligence,",
+    "e2": "then stupid folk would have died of hunger.",
+    "theme": "Wisdom",
+    "interp": "A sarcastic proverb about foolish people.",
+    "num": 388
+  },
+  {
+    "p1": "د هوښیارانو خبرې د کاڼی کرښې وی",
+    "p2": "",
+    "e1": "The sayings of the wise are lines on the rocks.",
+    "e2": "",
+    "theme": "Wisdom",
+    "interp": "کرښې means to be authentic, trustworthy.",
+    "num": 389
+  },
+  {
+    "p1": "د نقل دپاره عقل په کار دے",
+    "p2": "",
+    "e1": "It takes brains to copy.",
+    "e2": "",
+    "theme": "Wisdom",
+    "interp": "It takes skill to defraud people. Also a justification to cheat in exams.",
+    "num": 390
+  },
+  {
+    "p1": "عقل چې وېشلے کېدهٔ",
+    "p2": "نو تهٔ چرته وې؟",
+    "e1": "When intelligence was being handed out,",
+    "e2": "Where were you?",
+    "theme": "Wisdom",
+    "interp": "A sarcastic remark about a stupid person.",
+    "num": 391
+  },
+  {
+    "p1": "کوم کار چې په عقل کېږی",
+    "p2": "په زور نهٔ کېږی",
+    "e1": "A task done by wisdom can’t be done by force.",
+    "e2": "",
+    "theme": "Wisdom",
+    "interp": "Complex problems are not solved by coercion.",
+    "num": 392
+  },
+  {
+    "p1": "ځاے ګوره ډنګ وهه",
+    "p2": "",
+    "e1": "Check around, then let go a fart.",
+    "e2": "",
+    "theme": "Wisdom",
+    "interp": "Farting is considered taboo, so the proverb advises people to break wind only after checking no one is nearby.",
+    "num": 393
+  },
+  {
+    "p1": "سړے یا په ښځه مری او یا په مال",
+    "p2": "",
+    "e1": "A man either dies from his wife or his wealth.",
+    "e2": "",
+    "theme": "Women",
+    "interp": "Two things that a man will fight, and perhaps die for.",
+    "num": 394
+  },
+  {
+    "p1": "د ښځې نه د عمر تپوس مهٔ کوه",
+    "p2": "او د سړی نه د تنخوا",
+    "e1": "Don’t ask a woman her age",
+    "e2": "or a man his salary.",
+    "theme": "Women",
+    "interp": "Taboo topics to avoid.",
+    "num": 395
+  },
+  {
+    "p1": "په مزدورۍ کښې شرم نشته",
+    "p2": "",
+    "e1": "There is no shame in manual labour.",
+    "e2": "",
+    "theme": "Work",
+    "interp": "There is no disgrace in lowly work.",
+    "num": 396
+  },
+  {
+    "p1": "پردے مزدور سحر وختی پاڅی",
+    "p2": "",
+    "e1": "The hired labourer gets up early.",
+    "e2": "",
+    "theme": "Work",
+    "interp": "A servant will always be at his master’s beck and call.",
+    "num": 397
+  },
+  {
+    "p1": "د هسې ناستې نه",
+    "p2": "د خان بیګار ښۀ دے",
+    "e1": "Doing extra work for the Khan",
+    "e2": "is better than sitting idly around.",
+    "theme": "Work",
+    "interp": "Doing unwanted work for someone else is better than doing nothing.",
+    "num": 398
+  },
+  {
+    "p1": "دنیا د اخرت پټے دے",
+    "p2": "",
+    "e1": "The world is a field for the life to come.",
+    "e2": "",
+    "theme": "World",
+    "interp": "Our deeds are a preparation for the world to come.",
+    "num": 399
+  },
+  {
+    "p1": "دنیا نولس ده",
+    "p2": "چا شل کړې نهٔ ده",
+    "e1": "The world is nineteen;",
+    "e2": "no one has reached twenty.",
+    "theme": "World",
+    "interp": "No one has reached perfection.",
+    "num": 400
+  }
+]
