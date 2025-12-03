@@ -5,7 +5,8 @@
     "p2": "که مې څوک په اميرۍ شميري امير يم",
     "e1": "If you consider me a fakir, then I’m a fakir;",
     "e2": "If you consider me rich, then I’m rich.",
-    "theme": "All Things to All Men"
+    "theme": "All Things to All Men",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/1.mp3"
   },
   {
     "num": 2,
@@ -13,7 +14,8 @@
     "p2": "هر چې تا غوندې غمژن وي څه به خوب کا",
     "e1": "Sleep and laughter come from light-heartedness Rahman;",
     "e2": "How can anyone sleep when as melancholy as you?",
-    "theme": "Anguish"
+    "theme": "Anguish",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/2.mp3"
   },
   {
     "num": 3,
@@ -21,7 +23,8 @@
     "p2": "چې په زړه  ئې غم د يار وي څه به خوب کا",
     "e1": "Who can sleep with a thorn in their eye,",
     "e2": "Or with longing for the beloved in their heart?",
-    "theme": "Anguish"
+    "theme": "Anguish",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/3.mp3"
   },
   {
     "num": 4,
@@ -29,7 +32,8 @@
     "p2": "مينځ ئې ګوره له چغزۍ او له مټاکه",
     "e1": "Don’t be fooled by a person’s outer clothing.",
     "e2": "Look at the core; whether soft or hard.",
-    "theme": "Appearance"
+    "theme": "Appearance",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/4.mp3"
   },
   {
     "num": 5,
@@ -37,7 +41,8 @@
     "p2": "له منقوشو مرغو نه خيژي اواز",
     "e1": "Don’t expect scent from a picture of flowers;",
     "e2": "Neither do painted birds make song.",
-    "theme": "Authenticity"
+    "theme": "Authenticity",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/5.mp3"
   },
   {
     "num": 6,
@@ -45,7 +50,8 @@
     "p2": "لکه باد دګل په بوے پسې پريشان دے زما روح",
     "e1": "My soul is restless in search of the warm-hearted,",
     "e2": "As the breeze yearns for the flower’s scent.",
-    "theme": "Beauty"
+    "theme": "Beauty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/6.mp3"
   },
   {
     "num": 7,
@@ -53,7 +59,8 @@
     "p2": "قد و سرو صنوبر درې واړه يو دي",
     "e1": "The lover’s face, sun and moon - all three are the same;",
     "e2": "Her height, the cypress and the fir - all three are the same.",
-    "theme": "Beauty"
+    "theme": "Beauty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/7.mp3"
   },
   {
     "num": 8,
@@ -61,7 +68,8 @@
     "p2": "چې ئي ملا وي د ويښته په دود نرۍ",
     "e1": "I am Rahman, whose heart is softened by the girls",
     "e2": "Whose waists are as thin as a hair.",
-    "theme": "Beauty"
+    "theme": "Beauty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/8.mp3"
   },
   {
     "num": 9,
@@ -69,7 +77,8 @@
     "p2": "د هر چا عمل څرګند په خپل ګفتار شي",
     "e1": "When does the sound of a broken pot ring true?",
     "e2": "Everyone’s behaviour is revealed by their speech.",
-    "theme": "Behaviour"
+    "theme": "Behaviour",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/9.mp3"
   },
   {
     "num": 10,
@@ -77,7 +86,8 @@
     "p2": "پاڅيدے نه شې د وړونو پرېوتلي",
     "e1": "If you fall from a mountain you can get up again.",
     "e2": "Those felled by their beloved will never get up.",
-    "theme": "Broken Heart"
+    "theme": "Broken Heart",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/10.mp3"
   },
   {
     "num": 11,
@@ -85,7 +95,8 @@
     "p2": "پټ د درست جهان بادشه ظاهر ګدا يم",
     "e1": "Contentment is the satin cloth under my cloak.",
     "e2": "I appear a beggar, but secretly am king of the whole world.",
-    "theme": "Contentment"
+    "theme": "Contentment",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/11.mp3"
   },
   {
     "num": 12,
@@ -93,7 +104,8 @@
     "p2": "زما خوښ دا خپل د خاورو کنډولے دے",
     "e1": "Though the rich drink water from a golden cup,",
     "e2": "I prefer this earthen bowl of mine.",
-    "theme": "Contentment"
+    "theme": "Contentment",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/12.mp3"
   },
   {
     "num": 13,
@@ -101,7 +113,8 @@
     "p2": "ژړوې را سره نور عالم په څه",
     "e1": "People cry when they see my anguish for you.",
     "e2": "Why do you make more of them cry along with me?",
-    "theme": "Cruelty"
+    "theme": "Cruelty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/13.mp3"
   },
   {
     "num": 14,
@@ -109,7 +122,8 @@
     "p2": "دا چې کړے دې په ما باندې زړه سوے دے",
     "e1": "I know you fatten me for slaughter,",
     "e2": "That’s why you show me such kindness.",
-    "theme": "Cruelty"
+    "theme": "Cruelty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/14.mp3"
   },
   {
     "num": 15,
@@ -117,7 +131,8 @@
     "p2": "لکه تله کاندې خپل کور ته کاروان زر زر",
     "e1": "Friends are speeding to the grave,",
     "e2": "As hurriedly as the caravan heads for home.",
-    "theme": "Death"
+    "theme": "Death",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/15.mp3"
   },
   {
     "num": 16,
@@ -125,7 +140,8 @@
     "p2": "لکه پاڼه د خزان پښه په رکاب يم",
     "e1": "I am soon to depart this world;",
     "e2": "Like an autumn leaf, my foot is in the stirrup.",
-    "theme": "Death"
+    "theme": "Death",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/16.mp3"
   },
   {
     "num": 17,
@@ -133,7 +149,8 @@
     "p2": "لکه ګنج د کتابونو په خره بار شي",
     "e1": "The learning of disobedient scholars",
     "e2": "Is like treasured books loaded on a donkey.",
-    "theme": "Disobedience"
+    "theme": "Disobedience",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/17.mp3"
   },
   {
     "num": 18,
@@ -141,7 +158,8 @@
     "p2": "د جمله ؤ مخلوقاتو پلار دے دا",
     "e1": "God has created this world out of love.",
     "e2": "He is the Father of all creatures.",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/18.mp3"
   },
   {
     "num": 19,
@@ -149,7 +167,8 @@
     "p2": "لکه نمر په صومعه و سومنات",
     "e1": "This is the appearance of my beloved;",
     "e2": "Who appears like radiant light in monastery and temple?",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/19.mp3"
   },
   {
     "num": 20,
@@ -157,7 +176,8 @@
     "p2": "مهتر خضر مهتر الياس مې رهبران کړه",
     "e1": "On the path which I travel to see my beloved,",
     "e2": "Make Holy Khizer and Ilyas my guides.",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/20.mp3"
   },
   {
     "num": 21,
@@ -165,7 +185,8 @@
     "p2": "دا خو عشق دے چې په عرش کرسۍ قدم ږدي",
     "e1": "The hand of the intellect can’t reach the sky,",
     "e2": "Only love can step up to God’s throne.",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/21.mp3"
   },
   {
     "num": 22,
@@ -173,7 +194,8 @@
     "p2": "نارينه ئي واړه خره او ښځې خرې دي",
     "e1": "Those people who don’t love God",
     "e2": "Are male and female donkeys.",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/22.mp3"
   },
   {
     "num": 23,
@@ -181,7 +203,8 @@
     "p2": "چې دې پس له مرګه يار شي هغه يار کړه",
     "e1": "The friends of this world are all fickle;",
     "e2": "Become friends with the one who is a friend after death.",
-    "theme": "Divine Love"
+    "theme": "Divine Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/23.mp3"
   },
   {
     "num": 24,
@@ -189,7 +212,8 @@
     "p2": "که لاس راکاڼي د خداے په محبت څوک",
     "e1": "I Rahman am carried away by separation’s flood.",
     "e2": "Can someone offer me his hand for the love of God?",
-    "theme": "Estrangement"
+    "theme": "Estrangement",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/24.mp3"
   },
   {
     "num": 25,
@@ -197,7 +221,8 @@
     "p2": "غرمه شه د دې عمر په بقا",
     "e1": "If you have a purpose, hurry up!  Time is short.",
     "e2": "Don’t smugly trust in the permanence of life.",
-    "theme": "Eternal Perspective"
+    "theme": "Eternal Perspective",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/25.mp3"
   },
   {
     "num": 26,
@@ -205,7 +230,8 @@
     "p2": "دا بلا له  کومه لوري را پيدا شوه",
     "e1": "Your face is turned away again. What calamity has happened?",
     "e2": "From which side did this calamity come?",
-    "theme": "Exclusion"
+    "theme": "Exclusion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/26.mp3"
   },
   {
     "num": 27,
@@ -213,7 +239,8 @@
     "p2": "بل به نه کاندي په تا باندې غرض",
     "e1": "If you don’t interfere with others,",
     "e2": "No one will meddle with you.",
-    "theme": "Expectations"
+    "theme": "Expectations",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/27.mp3"
   },
   {
     "num": 28,
@@ -221,7 +248,8 @@
     "p2": "دا په خوله ظاهر اقرار خو اقرار نه دے",
     "e1": "If the confirmation in your own heart is not firm,",
     "e2": "The outward confession of faith is no confession at all.",
-    "theme": "Faith"
+    "theme": "Faith",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/28.mp3"
   },
   {
     "num": 29,
@@ -229,7 +257,8 @@
     "p2": "اے رحمانه چا بائلو دي چا ګټلے",
     "e1": "There was gambling for fate on the day of creation.",
     "e2": "Some lost, Rahman, and some won.",
-    "theme": "Fate"
+    "theme": "Fate",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/29.mp3"
   },
   {
     "num": 30,
@@ -237,7 +266,8 @@
     "p2": "هيڅ موقوف نه دے د چا په انتظار",
     "e1": "Everything is dependent of God’s prohibitions;",
     "e2": "Don’t be restricted by the expectations of others.",
-    "theme": "Fate"
+    "theme": "Fate",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/30.mp3"
   },
   {
     "num": 31,
@@ -245,7 +275,8 @@
     "p2": "هر يو نخل چې مېوه لري سنګسار شي",
     "e1": "If someone does you harm - do him good.",
     "e2": "For every date tree that bears fruit is stoned.",
-    "theme": "Forgiveness"
+    "theme": "Forgiveness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/31.mp3"
   },
   {
     "num": 32,
@@ -253,7 +284,8 @@
     "p2": "که لښکر ورسره وي يک تنها دے",
     "e1": "If the Lord is not your companion, Rahman,",
     "e2": "You’ll be standing all alone even with a battalion.",
-    "theme": "Friend of God"
+    "theme": "Friend of God",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/32.mp3"
   },
   {
     "num": 33,
@@ -261,7 +293,8 @@
     "p2": "زه ماهي يم  دريا ئې",
     "e1": "If your companionship is a river;",
     "e2": "I’m a fish in that river.",
-    "theme": "Friendship"
+    "theme": "Friendship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/33.mp3"
   },
   {
     "num": 34,
@@ -269,7 +302,8 @@
     "p2": "هغه کار چې بې بقا دے څه کار نه دے",
     "e1": "The friend who is unfaithful is no friend at all;",
     "e2": "The endeavour that’s short-lived is no pursuit at all.",
-    "theme": "Friendship"
+    "theme": "Friendship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/34.mp3"
   },
   {
     "num": 35,
@@ -277,7 +311,8 @@
     "p2": "د دوزخ او ستا تر مېنځ به شي دريا",
     "e1": "If you give a drop of water to the thirsty,",
     "e2": "It will become a river between you and hell.",
-    "theme": "Generosity"
+    "theme": "Generosity",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/35.mp3"
   },
   {
     "num": 36,
@@ -285,7 +320,8 @@
     "p2": "د کوهي اوبه چې وکارې بسيار شي",
     "e1": "Treasure is increased by generosity;",
     "e2": "The well that’s unblocked overflows.",
-    "theme": "Generosity"
+    "theme": "Generosity",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/36.mp3"
   },
   {
     "num": 37,
@@ -293,7 +329,8 @@
     "p2": "چې صاحب دکل اختيار دے رب زما",
     "e1": "Look! My Lord is such a creator,",
     "e2": "That my Lord is chief of all inventions.",
-    "theme": "God"
+    "theme": "God",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/37.mp3"
   },
   {
     "num": 38,
@@ -301,7 +338,8 @@
     "p2": "په خپل کور کښې همکار دے رب زما",
     "e1": "What need is there to look elsewhere?",
     "e2": "My Lord is alongside me in my home.",
-    "theme": "God"
+    "theme": "God",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/38.mp3"
   },
   {
     "num": 39,
@@ -309,7 +347,8 @@
     "p2": "ده پټ کړے نمر په ابر کښې پنهان دے",
     "e1": "Who can spread a veil over the face of the sun?",
     "e2": "God has hidden the sun in the clouds.",
-    "theme": "God"
+    "theme": "God",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/39.mp3"
   },
   {
     "num": 40,
@@ -317,7 +356,8 @@
     "p2": "که دوزخ دے که جنت دے که اعراف",
     "e1": "God is the Lord of all countries,",
     "e2": "Whether hell, or heaven or araf.",
-    "theme": "God Universal"
+    "theme": "God Universal",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/40.mp3"
   },
   {
     "num": 41,
@@ -325,7 +365,8 @@
     "p2": "بس دے هومره نصيحت په دا دنيا",
     "e1": "Any living person who visits a dead man’s grave",
     "e2": "Has enough guidance for this world.",
-    "theme": "Guidance"
+    "theme": "Guidance",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/41.mp3"
   },
   {
     "num": 42,
@@ -333,7 +374,8 @@
     "p2": "ولې نور عالم مې بولي ګرم په څه",
     "e1": "I Rahman, alone, declare my guilt for being in love;",
     "e2": "So why do others say I’m guilty, and of what?",
-    "theme": "Guilt"
+    "theme": "Guilt",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/42.mp3"
   },
   {
     "num": 43,
@@ -341,7 +383,8 @@
     "p2": "چرې ستا به د کوهي په غاړه لار شې",
     "e1": "Don’t dig a well in another’s path,",
     "e2": "In case you come to the well’s edge yourself.",
-    "theme": "Harm"
+    "theme": "Harm",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/43.mp3"
   },
   {
     "num": 44,
@@ -349,7 +392,8 @@
     "p2": "نه خليل نه داؤدزے يم نه مهمند",
     "e1": "I am a lover, and I deal in love;",
     "e2": "I am neither Khaleel, Daudzai nor Mohmand.",
-    "theme": "Humanity Shared"
+    "theme": "Humanity Shared",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/44.mp3"
   },
   {
     "num": 45,
@@ -357,7 +401,8 @@
     "p2": "لکه شام هسې سهر",
     "e1": "In the eyes of the blind,",
     "e2": "Evening seems like morning.",
-    "theme": "Human Nature"
+    "theme": "Human Nature",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/45.mp3"
   },
   {
     "num": 46,
@@ -365,7 +410,8 @@
     "p2": "زه رحمان ځکه بادشاه شوم چې ګدا شوم",
     "e1": "Kingship is founded on the prayers of beggars;",
     "e2": "I Rahman am king, because I am a beggar.",
-    "theme": "Humility"
+    "theme": "Humility",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/46.mp3"
   },
   {
     "num": 47,
@@ -373,7 +419,8 @@
     "p2": "پيدا کړے خداے د سر د پاسه سر دے",
     "e1": "Don’t say, ‘I’m the special one,’ in this world,",
     "e2": "For God has created a chief over every chief.",
-    "theme": "Humility"
+    "theme": "Humility",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/47.mp3"
   },
   {
     "num": 48,
@@ -381,7 +428,8 @@
     "p2": "رحمان کوږ دستار تړلے قلندر دے",
     "e1": "God forbid he don the cloak of hypocrisy;",
     "e2": "For Rahman is the tramp of crooked turban.",
-    "theme": "Humility"
+    "theme": "Humility",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/48.mp3"
   },
   {
     "num": 49,
@@ -389,7 +437,8 @@
     "p2": "که لوئي غواړې د خاورو په مقام شه",
     "e1": "Bury yourself alive in the ground like a seed.",
     "e2": "If you want greatness, take the place of the soil.",
-    "theme": "Humility"
+    "theme": "Humility",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/49.mp3"
   },
   {
     "num": 50,
@@ -397,7 +446,8 @@
     "p2": "خداے خو نه يې چې تل تر تله جوړ يې",
     "e1": "A man is sometimes healthy, sometimes sick;",
     "e2": "You’re not God that you can be well forever.",
-    "theme": "Humility"
+    "theme": "Humility",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/50.mp3"
   },
   {
     "num": 51,
@@ -405,7 +455,8 @@
     "p2": "نسکور پروت يې د عورتې په سينه",
     "e1": "You frequently blab on about Mecca and Medina,",
     "e2": "Yet you lie bedraggled on women’s breasts.",
-    "theme": "Hypocrisy"
+    "theme": "Hypocrisy",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/51.mp3"
   },
   {
     "num": 52,
@@ -413,7 +464,8 @@
     "p2": "خداے د خپله عيبه ولې نا خبر کړې",
     "e1": "If you’re always looking at the faults of others,",
     "e2": "For God’s sake why are you so unaware of your own?",
-    "theme": "Hypocrisy"
+    "theme": "Hypocrisy",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/52.mp3"
   },
   {
     "num": 53,
@@ -421,7 +473,8 @@
     "p2": "دۀ عيسىا لره ورکړے دا مکان دے",
     "e1": "Who is able to ascend to heaven from the earth?",
     "e2": "He has given this honour to Jesus.",
-    "theme": "Jesus"
+    "theme": "Jesus",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/53.mp3"
   },
   {
     "num": 54,
@@ -429,7 +482,8 @@
     "p2": "خپل ټټو او د بل آس په برابر کړې",
     "e1": "If the scales of justice were in your hand,",
     "e2": "You would count your own nag equal to another’s thoroughbred.",
-    "theme": "Justice"
+    "theme": "Justice",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/54.mp3"
   },
   {
     "num": 55,
@@ -437,7 +491,8 @@
     "p2": "اغزي مه کره په پښو کښې به دې خار شي",
     "e1": "Sow flowers so your community becomes a rose garden;",
     "e2": "Don’t sow briars – you’ll get thorns in your feet.",
-    "theme": "Kindness"
+    "theme": "Kindness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/55.mp3"
   },
   {
     "num": 56,
@@ -445,7 +500,8 @@
     "p2": "بت که جوړ شه د سرو زرو انسان نه شي",
     "e1": "Kind-heartedness is not found in wealth Rahman;",
     "e2": "Even if a statue’s made of gold, it won’t be human.",
-    "theme": "Kindness"
+    "theme": "Kindness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/56.mp3"
   },
   {
     "num": 57,
@@ -453,7 +509,8 @@
     "p2": "هغه ښهر و بحر و بر درې واړه يو دي",
     "e1": "A place where you have no beloved or friend;",
     "e2": "That city, the sea and the desert are all one and the same.",
-    "theme": "Loneliness"
+    "theme": "Loneliness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/57.mp3"
   },
   {
     "num": 58,
@@ -461,7 +518,8 @@
     "p2": "په شپه مښک را باندې ووري تر صباح",
     "e1": "When I dream of my beloved’s tresses,",
     "e2": "The night time scent lingers on me till morning.",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/58.mp3"
   },
   {
     "num": 59,
@@ -469,7 +527,8 @@
     "p2": "مګر بيا موندے شي د اوښکو په درياب کښې",
     "e1": "The pearl of your love is not in every water;",
     "e2": "But can be found in the river of tears.",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/59.mp3"
   },
   {
     "num": 60,
@@ -477,7 +536,8 @@
     "p2": "رحمان وايم په هغه باندې سلام",
     "e1": "To the one who is true in love like Majnoon:",
     "e2": "I, Rahman, say, ‘Peace be on him!’",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/60.mp3"
   },
   {
     "num": 61,
@@ -485,7 +545,8 @@
     "p2": "کاشکې باد د سحر منع په بوستان کړې",
     "e1": "You who restrain me from being near my beloved.",
     "e2": "If only you could stop the morning breeze blowing in the garden!",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/61.mp3"
   },
   {
     "num": 62,
@@ -493,7 +554,8 @@
     "p2": "زه رحمان د ګمراهانو رهنما يم",
     "e1": "If anyone has lost the path of love;",
     "e2": "I, Rahman, am the guide of the wayward.",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/62.mp3"
   },
   {
     "num": 63,
@@ -501,7 +563,8 @@
     "p2": "چې د دواړو همدمې په يوه دم وي",
     "e1": "The partnership of two lovers should",
     "e2": "Be as if their partnership is but one breath.",
-    "theme": "Love"
+    "theme": "Love",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/63.mp3"
   },
   {
     "num": 64,
@@ -509,7 +572,8 @@
     "p2": "بيا د خداے په طالبانو ځان حساب کړې",
     "e1": "For your whole life you pursued the world,",
     "e2": "And now consider yourself a seeker after God?",
-    "theme": "Materialism"
+    "theme": "Materialism",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/64.mp3"
   },
   {
     "num": 65,
@@ -517,7 +581,8 @@
     "p2": "دا همه واړه د خاورو ذخيرې دي",
     "e1": "Don’t amass earthly things Rahman;",
     "e2": "They’re just a pile of dust.",
-    "theme": "Materialism"
+    "theme": "Materialism",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/65.mp3"
   },
   {
     "num": 66,
@@ -525,7 +590,8 @@
     "p2": "هر درم و هر دينار د دې دنيا",
     "e1": "They will be a stain on the miser’s chest;",
     "e2": "Every gold and silver coin of this world.",
-    "theme": "Miser"
+    "theme": "Miser",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/66.mp3"
   },
   {
     "num": 67,
@@ -533,7 +599,8 @@
     "p2": "په دا تاؤ کښې زما  زړه کاندې کباب",
     "e1": "Every musician who adjusts the pegs of the rebab;",
     "e2": "His tuning roasts my heart like a kebab.",
-    "theme": "Music"
+    "theme": "Music",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/67.mp3"
   },
   {
     "num": 68,
@@ -541,7 +608,8 @@
     "p2": "چې په لاس کړه مطربانو ربابون",
     "e1": "I washed my hands of piety,",
     "e2": "When the musicians picked up their rebabs.",
-    "theme": "Music"
+    "theme": "Music",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/68.mp3"
   },
   {
     "num": 69,
@@ -549,7 +617,8 @@
     "p2": "محمد دے د ړندو د لاس عصا",
     "e1": "Muhammad is the guide of the lost.",
     "e2": "May Muhammad be the walking stick of the blind.",
-    "theme": "Muhammad"
+    "theme": "Muhammad",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/69.mp3"
   },
   {
     "num": 70,
@@ -557,7 +626,8 @@
     "p2": "که مې خداے نه کا له دې دره جدا",
     "e1": "I Rahman, am the sweeper at Muhammad’s gate,",
     "e2": "Unless, God forbid, I’m separated from his door.",
-    "theme": "Muhammad"
+    "theme": "Muhammad",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/70.mp3"
   },
   {
     "num": 71,
@@ -565,7 +635,8 @@
     "p2": "پيدا کړې به خداے نه وه دا دنيا",
     "e1": "If the body of Muhammad had not been born",
     "e2": "God would not have created this world.",
-    "theme": "Muhammad"
+    "theme": "Muhammad",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/71.mp3"
   },
   {
     "num": 72,
@@ -573,7 +644,8 @@
     "p2": "دا بېګاه به په رحمان کله صبا کړې",
     "e1": "Every evening you pledge to kiss me tomorrow.",
     "e2": "When will you turn the evening into morning for Rahman?",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/72.mp3"
   },
   {
     "num": 73,
@@ -581,7 +653,8 @@
     "p2": "هخه  فکر د بوسې د پيغام نه کا",
     "e1": "Those overjoyed by the merest scent of the beloved",
     "e2": "Don’t even consider the talk of a kiss.",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/73.mp3"
   },
   {
     "num": 74,
@@ -589,7 +662,8 @@
     "p2": "يو ويښته به دې په درست جهان ورنه کړم",
     "e1": "If I were but once to hold your braids,",
     "e2": "I wouldn’t give up a single hair for the whole world.",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/74.mp3"
   },
   {
     "num": 75,
@@ -597,7 +671,8 @@
     "p2": "هر چې زړه ئي د خوبانو په يرغمل شي",
     "e1": "Even if they walk on mountain peaks, their head droops.",
     "e2": "All are held hostage to the beloved.",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/75.mp3"
   },
   {
     "num": 76,
@@ -605,7 +680,8 @@
     "p2": "د ستا شونډې ميټائي",
     "e1": "I am a sugar-loving parrot",
     "e2": "Your lips are sweets.",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/76.mp3"
   },
   {
     "num": 77,
@@ -613,7 +689,8 @@
     "p2": "چرته کوتي لال او چرته لعل د بدخشان",
     "e1": "Where are the beloved’s lips? Where the lover’s anguish?",
     "e2": "Where are red berries? Where the ruby of Badakhshan?",
-    "theme": "Passion"
+    "theme": "Passion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/77.mp3"
   },
   {
     "num": 78,
@@ -621,7 +698,8 @@
     "p2": "غم ښادي دي د دې دهر خور او  ورور",
     "e1": "None has found comfort without discomfort;",
     "e2": "For sadness and joy are sister and brother.",
-    "theme": "Patience"
+    "theme": "Patience",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/78.mp3"
   },
   {
     "num": 79,
@@ -629,7 +707,8 @@
     "p2": "ګور و اور و پښاور درې واړه يو دي",
     "e1": "Because of cruel rulers,",
     "e2": "The grave, fire and Peshawar are all one and the same.",
-    "theme": "Peshawar"
+    "theme": "Peshawar",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/79.mp3"
   },
   {
     "num": 80,
@@ -637,7 +716,8 @@
     "p2": "د هر بيت مصراع مې زلفې د خوبان کړې",
     "e1": "So that the land of the Afghans may be sweet-smelling,",
     "e2": "Make every line of verse tresses of the beloved.",
-    "theme": "Poetry"
+    "theme": "Poetry",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/80.mp3"
   },
   {
     "num": 81,
@@ -645,7 +725,8 @@
     "p2": "دا دې شعر دے رحمان که اعجاز",
     "e1": "When even a non-believer cannot object to it;",
     "e2": "Is this your verse, Rahman, or a miracle?",
-    "theme": "Poetry"
+    "theme": "Poetry",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/81.mp3"
   },
   {
     "num": 82,
@@ -653,7 +734,8 @@
     "p2": "زه رحمان په پښتو ژبه عالم ګير يم",
     "e1": "Khushal and Daulat are my slaves;",
     "e2": "I, Rahman, am made universal by the Pukhto language.",
-    "theme": "Poetry"
+    "theme": "Poetry",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/82.mp3"
   },
   {
     "num": 83,
@@ -661,7 +743,8 @@
     "p2": "کنډولي په لاس کنګال شي",
     "e1": "Though a king holds an empire;",
     "e2": "With pot in hand, he stands alone.",
-    "theme": "Poverty"
+    "theme": "Poverty",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/83.mp3"
   },
   {
     "num": 84,
@@ -669,7 +752,8 @@
     "p2": "ښيښه وګڼه حصار د دې دنيا",
     "e1": "Though you surround yourself with a fence of steel;",
     "e2": "Consider the fence of this world as glass.",
-    "theme": "Protection"
+    "theme": "Protection",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/84.mp3"
   },
   {
     "num": 85,
@@ -677,7 +761,8 @@
     "p2": "چې د دين متاع بدله په دينار که",
     "e1": "Rahman is not such a stupid a merchant",
     "e2": "As to trade religion’s wealth for money.",
-    "theme": "Religion"
+    "theme": "Religion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/85.mp3"
   },
   {
     "num": 86,
@@ -685,7 +770,8 @@
     "p2": "نور کارونه بې وفا دي بې اساس",
     "e1": "If there is any work at all Rahman; it is religion.",
     "e2": "All other pursuits are fickle and baseless.",
-    "theme": "Religion"
+    "theme": "Religion",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/86.mp3"
   },
   {
     "num": 87,
@@ -693,7 +779,8 @@
     "p2": "ولې خر به حاجي نه شي په طواف",
     "e1": "There’s no doubt in the sanctity of Mecca,",
     "e2": "But a donkey won’t become a Haji by tawaaf.",
-    "theme": "Religious Performance"
+    "theme": "Religious Performance",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/87.mp3"
   },
   {
     "num": 88,
@@ -701,7 +788,8 @@
     "p2": "خداے څوک مه کړه د آسمان هسې نسکور",
     "e1": "I repent of lofty arrogance and rebellion;",
     "e2": "May God not bring anyone tumbling down like the sky.",
-    "theme": "Repentance"
+    "theme": "Repentance",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/88.mp3"
   },
   {
     "num": 89,
@@ -709,7 +797,8 @@
     "p2": "که خزان را باندې راشي که بهار",
     "e1": "I am like a tree that’s upright in its own place;",
     "e2": "Whether autumn comes on me, or spring.",
-    "theme": "Resilience"
+    "theme": "Resilience",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/89.mp3"
   },
   {
     "num": 90,
@@ -717,7 +806,8 @@
     "p2": "که آباد کا څوک ويران حرم  د زړه",
     "e1": "This kaaba  is more sacred than Abraham’s",
     "e2": "If one rebuilds the destroyed home of the heart.",
-    "theme": "Restoration"
+    "theme": "Restoration",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/90.mp3"
   },
   {
     "num": 91,
@@ -725,7 +815,8 @@
     "p2": "ما ليدلے دے رفتار د درويشانو",
     "e1": "They reach God’s throne in a single stride:",
     "e2": "I have witnessed the ways of the dervishes.",
-    "theme": "Saints"
+    "theme": "Saints",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/91.mp3"
   },
   {
     "num": 92,
@@ -733,7 +824,8 @@
     "p2": "دوزخ هم ورته جلوه کا د جنت",
     "e1": "Were they to go to hell for the love of his friend",
     "e2": "Even hell would shine like heaven for them.",
-    "theme": "Sacrifice"
+    "theme": "Sacrifice",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/92.mp3"
   },
   {
     "num": 93,
@@ -741,7 +833,8 @@
     "p2": "لا پخوا تر ځان وړمبے د بل په کار شه",
     "e1": "If you are to improve your work at once,",
     "e2": "Do another’s work, long before your own.",
-    "theme": "Selflessness"
+    "theme": "Selflessness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/93.mp3"
   },
   {
     "num": 94,
@@ -749,7 +842,8 @@
     "p2": "اے عبدالرحمانه درست جهان عبدالرحمان دے",
     "e1": "If you are wise, treat everyone like you do yourself.",
     "e2": "O Abdul Rahman, the whole world is Abdul Rahman.",
-    "theme": "Selflessness"
+    "theme": "Selflessness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/94.mp3"
   },
   {
     "num": 95,
@@ -757,7 +851,8 @@
     "p2": "چې کشتۍ غوندې د خلقو باربردار شي",
     "e1": "That heart will be safe in the storm",
     "e2": "Which carries people’s burdens like a boat.",
-    "theme": "Selflessness"
+    "theme": "Selflessness",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/95.mp3"
   },
   {
     "num": 96,
@@ -765,7 +860,8 @@
     "p2": "چې په سترګو مې ونه ليده ساحل",
     "e1": "I’m so drowned in rivers of sin",
     "e2": "That my eyes can’t see the shore.",
-    "theme": "Sin"
+    "theme": "Sin",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/96.mp3"
   },
   {
     "num": 97,
@@ -773,7 +869,8 @@
     "p2": "وران شي ښهر د يوه سړي په تور",
     "e1": "The whole body is hurt by the pain of one nail,",
     "e2": "The whole city destroyed by the sin of one man.",
-    "theme": "Sin"
+    "theme": "Sin",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/97.mp3"
   },
   {
     "num": 98,
@@ -781,7 +878,8 @@
     "p2": "چې لږ لږ و بله جمع کړې بسيار شي",
     "e1": "However slight a sin may be, don’t consider it small;",
     "e2": "For when the small are put together they become a lot.",
-    "theme": "Sin"
+    "theme": "Sin",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/98.mp3"
   },
   {
     "num": 99,
@@ -789,7 +887,8 @@
     "p2": "مدام ډوب د ګناهونو په درياب يم",
     "e1": "I can’t bow my head to God in worship;",
     "e2": "I’m forever drowned in the ocean of sin.",
-    "theme": "Sin"
+    "theme": "Sin",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/99.mp3"
   },
   {
     "num": 100,
@@ -797,7 +896,8 @@
     "p2": "ګمان مه کړه چې به سپے شي پاک او صاف",
     "e1": "Even if it were to bathe in a hundred oceans,",
     "e2": "Don’t imagine a dog will become clean and pure.",
-    "theme": "Sin Nature"
+    "theme": "Sin Nature",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/100.mp3"
   },
   {
     "num": 101,
@@ -805,7 +905,8 @@
     "p2": "چې جهان واړه غلام دے د اخلاص",
     "e1": "See what an exalted place sincerity holds,",
     "e2": "That the whole world is its slave",
-    "theme": "Sincerity"
+    "theme": "Sincerity",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/101.mp3"
   },
   {
     "num": 102,
@@ -813,7 +914,8 @@
     "p2": "د ليلې په دروازه کښې دربان نشته",
     "e1": "If someone is sincere in love like Majnoon,",
     "e2": "There is no gatekeeper at Leyla’s door.",
-    "theme": "Sincerity"
+    "theme": "Sincerity",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/102.mp3"
   },
   {
     "num": 103,
@@ -821,7 +923,8 @@
     "p2": "څوک اعلي دي څوک اوسط وڅوک ادنا",
     "e1": "Not all men are equal, for some are great;",
     "e2": "Some middling and some inferior.",
-    "theme": "Status"
+    "theme": "Status",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/103.mp3"
   },
   {
     "num": 104,
@@ -829,7 +932,8 @@
     "p2": "څوک له تخته د ايرو په ډيران ولې",
     "e1": "You raise some from dust and ashes to the throne,",
     "e2": "Others you throw from the throne like ashes on the dung heap.",
-    "theme": "Status"
+    "theme": "Status",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/104.mp3"
   },
   {
     "num": 105,
@@ -837,7 +941,8 @@
     "p2": "چرته عزيزخان چرته ملنګ عبدالرحمان",
     "e1": "Khans can’t live together with tramps,",
     "e2": "Where is Aziz Khan, where the tramp Abdul Rahman?",
-    "theme": "Status"
+    "theme": "Status",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/105.mp3"
   },
   {
     "num": 106,
@@ -845,7 +950,8 @@
     "p2": "خداے پخپله د بې دستو دست و پاے دے",
     "e1": "If someone dedicates their hands and feet to God,",
     "e2": "God himself becomes their hands and feet.",
-    "theme": "Surrender"
+    "theme": "Surrender",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/106.mp3"
   },
   {
     "num": 107,
@@ -853,7 +959,8 @@
     "p2": "ښيښه ډکه د شرابو اختيار کړه",
     "e1": "If you desire a sympathizer in grief and pain:",
     "e2": "Help yourself to a full glass of wine.",
-    "theme": "Sympathy"
+    "theme": "Sympathy",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/107.mp3"
   },
   {
     "num": 108,
@@ -861,7 +968,8 @@
     "p2": "چې استاد ي په غربال شي",
     "e1": "Have no trust in water",
     "e2": "That stays in the sieve.",
-    "theme": "Trust"
+    "theme": "Trust",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/108.mp3"
   },
   {
     "num": 109,
@@ -869,7 +977,8 @@
     "p2": "په دا مړ شه دا جهان واړه لت پت کړم",
     "e1": "I’ve you haven’t found the truth, don’t give up:",
     "e2": "Die for it, until you make the world blood-stained.",
-    "theme": "Truth"
+    "theme": "Truth",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/109.mp3"
   },
   {
     "num": 110,
@@ -877,7 +986,8 @@
     "p2": "خداے څوک مه کړه شراب خور و قمار باز",
     "e1": "Good deeds are the noble offspring of the virtuous,",
     "e2": "May God not make anyone a drunkard or a gambler.",
-    "theme": "Virtue"
+    "theme": "Virtue",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/110.mp3"
   },
   {
     "num": 111,
@@ -885,7 +995,8 @@
     "p2": "نن دې وار دے که دروغ کړې که رښتيا",
     "e1": "You can’t enter the world again.",
     "e2": "Today’s your chance to tell lies or the truth.",
-    "theme": "Virtue"
+    "theme": "Virtue",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/111.mp3"
   },
   {
     "num": 112,
@@ -893,7 +1004,8 @@
     "p2": "د هغو په څنګ مه کښېنه زړه ور",
     "e1": "If you cannot match their strength,",
     "e2": "Do not sit beside the powerful.",
-    "theme": "Wisdom"
+    "theme": "Wisdom",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/112.mp3"
   },
   {
     "num": 113,
@@ -901,7 +1013,8 @@
     "p2": "چې توښه ده د عقبا",
     "e1": "It’s good this world, it’s good;",
     "e2": "It’s provision for the world to come.",
-    "theme": "World"
+    "theme": "World",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/113.mp3"
   },
   {
     "num": 114,
@@ -909,7 +1022,8 @@
     "p2": "فراموش کړه صوفي نفل د اشراق",
     "e1": "When he experienced the taste of wine and merriment,",
     "e2": "The Sufi forgot his morning prayers.",
-    "theme": "Worldly Pleasure"
+    "theme": "Worldly Pleasure",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/114.mp3"
   },
   {
     "num": 115,
@@ -917,7 +1031,8 @@
     "p2": "نه  د درست جهان دولت په دا دنيا",
     "e1": "A single breath remembering God is better",
     "e2": "Than all the earthly riches of this world.",
-    "theme": "Worship"
+    "theme": "Worship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/115.mp3"
   },
   {
     "num": 116,
@@ -925,7 +1040,8 @@
     "p2": "هر ګياه ئې په تسبح سره زبان دے",
     "e1": "Every tree is standing in prayer before him;",
     "e2": "Every grass extols his greatness.",
-    "theme": "Worship"
+    "theme": "Worship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/116.mp3"
   },
   {
     "num": 117,
@@ -933,7 +1049,8 @@
     "p2": "نه تش ځان وژل اقربه",
     "e1": "The purpose of worship is communion with God,",
     "e2": "Not just killing yourself, O poverty-stricken one!",
-    "theme": "Worship"
+    "theme": "Worship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/117.mp3"
   },
   {
     "num": 118,
@@ -941,7 +1058,8 @@
     "p2": "کمه نه ده دردمندي تر عبادته",
     "e1": "A man only remembers God when in pain;",
     "e2": "His distress is no less than worship.",
-    "theme": "Worship"
+    "theme": "Worship",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/118.mp3"
   },
   {
     "num": 119,
@@ -949,7 +1067,8 @@
     "p2": "چې په کلي کښې يو سپے شي ليونے",
     "e1": "It will make everyone go mad",
     "e2": "If one dog in the village goes mad",
-    "theme": "Wrong Doing"
+    "theme": "Wrong Doing",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/119.mp3"
   },
   {
     "num": 120,
@@ -957,7 +1076,8 @@
     "p2": "خداے به کله ياد وي خانه خرابه",
     "e1": "You spent the day in drinking, the night in sleep;",
     "e2": "When will you remember God, O degenerate Khan?",
-    "theme": "Wrong Doing"
+    "theme": "Wrong Doing",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/120.mp3"
   },
   {
     "num": 121,
@@ -965,7 +1085,8 @@
     "p2": "په شپه خوب کړې بې ادبه",
     "e1": "You sit around aimlessly during the day,",
     "e2": "And sleep at night – you ill-mannered one.",
-    "theme": "Wrong Doing"
+    "theme": "Wrong Doing",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/121.mp3"
   },
   {
     "num": 122,
@@ -973,6 +1094,7 @@
     "p2": "ته د ګور په غاړه راغلې نه شوې سم",
     "e1": "Look! When a snake nears its hole, it gets straight!",
     "e2": "You’ve come to the edge of the grave, and you’re not straight.",
-    "theme": "Wrong Doing"
+    "theme": "Wrong Doing",
+    "audioUrl": "https://rahmanbaba.speakingpashto.com/audio/122.mp3"
   }
 ]

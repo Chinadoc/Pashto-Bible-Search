@@ -3663,7 +3663,18 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           </div>
 
                           {/* Actions */}
-                          <div className="mt-4 flex gap-2">
+                          <div className="mt-4 flex gap-2 flex-wrap">
+                            {poem.audioUrl && (
+                              <button
+                                onClick={() => {
+                                  const audio = new Audio(poem.audioUrl);
+                                  audio.play().catch(e => console.error('Audio playback failed:', e));
+                                }}
+                                className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                              >
+                                🔊 Listen
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setQuery(poem.p1.split(' ')[0]);
@@ -3673,13 +3684,15 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                             >
                               🔍 Search words
                             </button>
-                            <a
-                              href={poem.audioUrl}
-                              download
-                              className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
-                            >
-                              ⬇️ Download audio
-                            </a>
+                            {poem.audioUrl && (
+                              <a
+                                href={poem.audioUrl}
+                                download
+                                className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                              >
+                                ⬇️ Download
+                              </a>
+                            )}
                           </div>
                         </div>
                       ))}
