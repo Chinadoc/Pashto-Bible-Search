@@ -4475,7 +4475,7 @@ export default {
       }
     }
 
-    // Dictionary search
+    // Dictionary search - searches both word_frequencies AND lingdocs_dictionary
     if (path === '/api/dictionary/search' && request.method === 'GET') {
       const query = url.searchParams.get('q') || '';
       const limit = parseInt(url.searchParams.get('limit') || '20');
@@ -4487,13 +4487,63 @@ export default {
       try {
         // Check if query is romanized (starts with ASCII letter)
         const isRomanized = /^[a-zA-Z]/.test(query);
+        const allEntries: any[] = [];
 
-        let sql: string;
-        let params: any[];
+        // First, search the LingDocs dictionary (18,690 entries with full data)
+        try {
+          let lingdocsSql: string;
+          let lingdocsParams: any[];
+
+          if (isRomanized) {
+            lingdocsSql = `
+              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality
+              FROM lingdocs_dictionary 
+              WHERE phonetics LIKE ? OR simplified_phonetics LIKE ? OR english LIKE ?
+              ORDER BY 
+                CASE WHEN phonetics = ? THEN 0 WHEN phonetics LIKE ? THEN 1 ELSE 2 END,
+                commonality DESC
+              LIMIT ?
+            `;
+            lingdocsParams = [`%${query}%`, `%${query}%`, `%${query}%`, query, `${query}%`, limit];
+          } else {
+            lingdocsSql = `
+              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality
+              FROM lingdocs_dictionary 
+              WHERE pashto LIKE ?
+              ORDER BY 
+                CASE WHEN pashto = ? THEN 0 WHEN pashto LIKE ? THEN 1 ELSE 2 END,
+                commonality DESC
+              LIMIT ?
+            `;
+            lingdocsParams = [`%${query}%`, query, `${query}%`, limit];
+          }
+
+          const lingdocsResult = await env.DB.prepare(lingdocsSql).bind(...lingdocsParams).all();
+          
+          for (const r of (lingdocsResult.results || [])) {
+            allEntries.push({
+              id: r.pashto,
+              pashto: r.pashto,
+              romanization: r.romanization || '',
+              english: r.english || '',
+              pos: r.pos || '',
+              frequency: r.commonality || 0,
+              lingdocs_id: r.lingdocs_id,
+              lingdocs_url: `https://dictionary.lingdocs.com/word?id=${r.lingdocs_id}`,
+              source: 'lingdocs'
+            });
+          }
+        } catch (e) {
+          // lingdocs_dictionary table might not exist yet
+          console.log('LingDocs dictionary search failed (table may not exist):', e);
+        }
+
+        // Also search word_frequencies for Bible-specific vocabulary
+        let wfSql: string;
+        let wfParams: any[];
 
         if (isRomanized) {
-          // Search in romanization
-          sql = `
+          wfSql = `
             SELECT pashto_word as pashto, romanization, english_translation as english, 
                    pos, word_type, frequency_total as frequency
             FROM word_frequencies 
@@ -4501,10 +4551,9 @@ export default {
             ORDER BY frequency_total DESC
             LIMIT ?
           `;
-          params = [`%${query}%`, `%${query}%`, limit];
+          wfParams = [`%${query}%`, `%${query}%`, limit];
         } else {
-          // Search in Pashto
-          sql = `
+          wfSql = `
             SELECT pashto_word as pashto, romanization, english_translation as english, 
                    pos, word_type, frequency_total as frequency
             FROM word_frequencies 
@@ -4514,21 +4563,38 @@ export default {
               frequency_total DESC
             LIMIT ?
           `;
-          params = [`%${query}%`, query, limit];
+          wfParams = [`%${query}%`, query, limit];
         }
 
-        const result = await env.DB.prepare(sql).bind(...params).all();
+        const wfResult = await env.DB.prepare(wfSql).bind(...wfParams).all();
 
-        const entries = (result.results || []).map((r: any) => ({
-          id: r.pashto,
-          pashto: r.pashto,
-          romanization: r.romanization || '',
-          english: r.english || '',
-          pos: r.pos || r.word_type || '',
-          frequency: r.frequency || 0,
-        }));
+        for (const r of (wfResult.results || [])) {
+          // Don't add duplicates
+          if (!allEntries.find(e => e.pashto === r.pashto)) {
+            allEntries.push({
+              id: r.pashto,
+              pashto: r.pashto,
+              romanization: r.romanization || '',
+              english: r.english || '',
+              pos: r.pos || r.word_type || '',
+              frequency: r.frequency || 0,
+              source: 'bible_frequency'
+            });
+          }
+        }
 
-        return jsonResponse({ entries, total: entries.length });
+        // Sort by exact match first, then by frequency/commonality
+        allEntries.sort((a, b) => {
+          if (a.pashto === query && b.pashto !== query) return -1;
+          if (b.pashto === query && a.pashto !== query) return 1;
+          return (b.frequency || 0) - (a.frequency || 0);
+        });
+
+        return jsonResponse({ 
+          entries: allEntries.slice(0, limit), 
+          total: allEntries.length,
+          sources: ['lingdocs', 'bible_frequency']
+        });
       } catch (error: any) {
         return errorResponse(`Dictionary search failed: ${error.message}`, 500);
       }
