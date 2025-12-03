@@ -405,10 +405,25 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
 
 // Verbal nouns (infinitives) - these are NOT past tense verbs!
 // They look like "Xل" or "Xلو" but are gerunds/infinitives
+// Pattern: any word ending in ل or لو that's not a conjugated verb form
+const VERBAL_NOUN_ENDINGS = ['ولو', 'ول', 'دلو', 'دل', 'تلو', 'تل', 'ستلو', 'ستل'];
 const VERBAL_NOUN_PATTERNS = [
+  // Common infinitives/gerunds
   'کولو', 'کول', 'لیدلو', 'لیدل', 'خوړلو', 'خوړل', 'ویلو', 'ویل',
   'اخیستلو', 'اخیستل', 'راوړلو', 'راوړل', 'لیکلو', 'لیکل',
   'وژلو', 'وژل', 'پېژندلو', 'پېژندل', 'ورکولو', 'ورکول',
+  'بڼودلو', 'بڼودل', // showing
+  'اورېدلو', 'اورېدل', // hearing
+  'کېدلو', 'کېدل', // becoming
+  'تللو', 'تلل', // going
+  'راتللو', 'راتلل', // coming
+  'وړلو', 'وړل', // taking
+  'اخیستلو', 'اخیستل', // taking
+  'پرېښودلو', 'پرېښودل', // leaving
+  'ساتلو', 'ساتل', // keeping
+  'غوښتلو', 'غوښتل', // wanting
+  'منلو', 'منل', // accepting
+  'لوستلو', 'لوستل', // reading
 ];
 
 // Past tense transitive verbs with و prefix (perfective)
@@ -446,7 +461,12 @@ function detectErgative(word: string, context: string): { isErgative: boolean; v
     const potentialVerb = words[i].replace(/[،.؟!؛:«»\-]/g, '');
     
     // Skip if this is a verbal noun (infinitive/gerund)
-    if (VERBAL_NOUN_PATTERNS.some(vn => potentialVerb === vn || potentialVerb.endsWith(vn))) {
+    // Verbal nouns end in ل or لو without the perfective و prefix
+    const isVerbalNoun = 
+      VERBAL_NOUN_PATTERNS.some(vn => potentialVerb === vn) ||
+      VERBAL_NOUN_ENDINGS.some(end => potentialVerb.endsWith(end) && !potentialVerb.startsWith('و'));
+    
+    if (isVerbalNoun) {
       continue;
     }
     
