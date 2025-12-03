@@ -2196,12 +2196,11 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 )}
 
                 {/* Form Filters (shown when Related Forms Mode is active OR filters are applied) */}
-                {/* Conditionally show VERB, NOUN, or ADJECTIVE filters based on posGuess */}
+                {/* Show BOTH VERB and NOUN filters when both types exist (e.g. مرسته is both a noun AND part of compound verb) */}
                 {includeRelated && (relatedForms || !isDefaultVerbFilter(verbFilters) || !isDefaultNounFilter(nounFilters) || !isDefaultAdjectiveFilter(adjectiveFilters)) && (
                   <>
-                    {/* VERB FILTERS */}
-                    {(relatedForms?.posGuess === 'verb' ||
-                      (!relatedForms?.posGuess && relatedForms?.verbs && relatedForms.verbs.length > 0) ||
+                    {/* VERB FILTERS - Show if verbs exist (regardless of posGuess, since a word can be both noun AND verb) */}
+                    {((relatedForms?.verbs && relatedForms.verbs.length > 0) ||
                       (!relatedForms && !isDefaultVerbFilter(verbFilters))) && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center gap-2 mb-3">
