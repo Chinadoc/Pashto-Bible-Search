@@ -28,18 +28,125 @@ import {
 } from '@/app/utils/verb-filters';
 import { useSession } from "next-auth/react";
 
-// Anki Card Export Button - downloads a single verse as Anki-compatible CSV
-function AnkiExportButton({ verseRef, verseText }: { verseRef: string; verseText: string }) {
+// Anki Card Export Button - downloads a single verse as Anki-compatible CSV for "Basic+++" note type
+interface AnkiExportProps {
+  verseRef: string;
+  verseText: string;
+  searchWord?: string;
+  dictionaryData?: DictionaryData | null;
+  matchedForms?: string[];
+  audioUrl?: string | null;
+}
+
+function AnkiExportButton({ verseRef, verseText, searchWord, dictionaryData, matchedForms, audioUrl: initialAudioUrl }: AnkiExportProps) {
   const [exporting, setExporting] = useState(false);
   
-  const handleExport = () => {
+  const handleExport = async () => {
     setExporting(true);
     try {
-      // Create Anki-compatible CSV format
-      // Front: Verse reference | Back: Pashto text
-      const front = verseRef;
-      const back = verseText.replace(/"/g, '""'); // Escape quotes for CSV
-      const csvContent = `"${front}","${back}"`;
+      // Try to get audio URL if not already available
+      let audioUrl = initialAudioUrl;
+      if (!audioUrl && verseRef) {
+        try {
+          const audioRes = await fetch(`/api/audio?ref=${encodeURIComponent(verseRef)}`);
+          if (audioRes.ok) {
+            const audioData = await audioRes.json();
+            audioUrl = audioData.url || null;
+          }
+        } catch (e) {
+          console.log('Could not fetch audio URL for Anki card');
+        }
+      }
+      
+      // Get dictionary info for the searched word
+      let translation = '';
+      let helpfulWord = searchWord || '';
+      
+      // Build "Helpful Word" with inflection info
+      if (dictionaryData?.entries?.length) {
+        const entry = dictionaryData.entries[0];
+        // Format: فقیر - faqéer (adj. / n. m. anim.) - poor, beggar; dervish
+        const parts: string[] = [];
+        if (entry.pashto) parts.push(entry.pashto);
+        if (entry.romanized) parts.push(` - ${entry.romanized}`);
+        if (entry.pos) parts.push(` (${entry.pos})`);
+        helpfulWord = parts.join('');
+        
+        // Get English definition for Translation field
+        if (entry.english) {
+          translation = entry.english;
+        }
+        
+        // If searched form is different from base, show inflection info
+        if (matchedForms?.length && matchedForms[0] !== entry.pashto) {
+          helpfulWord = `${matchedForms[0]} ← ${helpfulWord}`;
+        }
+      } else if (matchedForms?.length) {
+        // If no dictionary data, try to fetch inflection info for the matched form
+        try {
+          const res = await fetch(`/api/word-analysis?word=${encodeURIComponent(matchedForms[0])}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.dictionary) {
+              helpfulWord = `${matchedForms[0]} - ${data.dictionary.romanization || ''} (${data.dictionary.pos || ''})`;
+              translation = data.dictionary.english || '';
+              if (data.dictionary.baseWord && data.dictionary.baseWord !== matchedForms[0]) {
+                helpfulWord += ` ← ${data.dictionary.baseWord}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Could not fetch word analysis for Anki export');
+        }
+      }
+      
+      // Parse book name from verse ref for tags
+      const bookMatch = verseRef.match(/^(\d?\s*[A-Za-z]+)/);
+      const bookName = bookMatch ? bookMatch[1].replace(/\s+/g, '') : '';
+      
+      // Add audio sound reference if available (for Anki)
+      // Format: [sound:Psalms_109_16.mp3] - user needs to have file in media folder
+      const audioFileName = audioUrl ? `${verseRef.replace(/[: ]/g, '_')}.mp3` : '';
+      const soundTag = audioUrl ? `[sound:${audioFileName}]` : '';
+      
+      // CSV fields for Basic+++ note type:
+      // Word, Translation, Pashto Sentence, Helpful Word, Sentence Translation, Special tags, Tags
+      const escapeCSV = (s: string) => `"${(s || '').replace(/"/g, '""')}"`;
+      
+      // Include sound tag in Helpful Word field
+      const helpfulWordWithAudio = soundTag ? `${helpfulWord} ${soundTag}` : helpfulWord;
+      
+      const csvFields = [
+        escapeCSV(verseRef),                    // Word (verse reference)
+        escapeCSV(translation),                  // Translation (English definition)
+        escapeCSV(verseText),                    // Pashto Sentence
+        escapeCSV(helpfulWordWithAudio),         // Helpful Word (searched term + inflection + audio)
+        escapeCSV(''),                           // Sentence Translation (left empty per user request)
+        escapeCSV(bookName),                     // Special tags (book name)
+        escapeCSV(searchWord || matchedForms?.[0] || '')  // Tags (search term)
+      ];
+      
+      const csvContent = csvFields.join(',');
+      
+      // Also download the audio file if available, so user can import it to Anki
+      if (audioUrl && audioFileName) {
+        try {
+          const audioResponse = await fetch(audioUrl);
+          if (audioResponse.ok) {
+            const audioBlob = await audioResponse.blob();
+            const audioUrlObj = URL.createObjectURL(audioBlob);
+            const audioLink = document.createElement('a');
+            audioLink.href = audioUrlObj;
+            audioLink.download = audioFileName;
+            document.body.appendChild(audioLink);
+            audioLink.click();
+            document.body.removeChild(audioLink);
+            URL.revokeObjectURL(audioUrlObj);
+          }
+        } catch (e) {
+          console.log('Could not download audio for Anki card');
+        }
+      }
       
       // Create and download CSV
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -63,7 +170,7 @@ function AnkiExportButton({ verseRef, verseText }: { verseRef: string; verseText
       onClick={handleExport}
       disabled={exporting}
       className="text-xs px-3 py-1.5 border border-amber-600/50 rounded-lg hover:bg-amber-700/30 text-amber-400 hover:text-amber-300 transition-colors"
-      title="Export as Anki card (CSV)"
+      title="Export as Anki card (CSV) - maps to Basic+++ fields"
     >
       {exporting ? '...' : '📇 Anki'}
     </button>
@@ -282,7 +389,9 @@ function VerseItem({
   handleDownload,
   handlePlay,
   handlePause,
-  filteredResultsLength
+  filteredResultsLength,
+  searchWord,
+  dictionaryData
 }: {
   verse: Verse;
   index: number;
@@ -307,6 +416,8 @@ function VerseItem({
   handlePlay?: () => void;
   handlePause?: () => void;
   filteredResultsLength?: number;
+  searchWord?: string;
+  dictionaryData?: DictionaryData | null;
 }) {
   // Parse verse number from ref only (never from text)
   const refParts = verse.ref?.startsWith('video:') ? null : parseRef(verse.ref);
@@ -380,7 +491,14 @@ function VerseItem({
             </button>
           )}
           {/* Export as Anki Card */}
-          <AnkiExportButton verseRef={verse.ref} verseText={verse.text || ''} />
+          <AnkiExportButton 
+            verseRef={verse.ref} 
+            verseText={verse.text || ''} 
+            searchWord={searchWord}
+            dictionaryData={dictionaryData}
+            matchedForms={verse.matchedForms}
+            audioUrl={audioUrl}
+          />
 
           {/* Practice in Typer (saves verse if logged in) */}
           <PracticeButton verseRef={verse.ref} />
@@ -1265,7 +1383,9 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
       handleDownload={() => handleVerseDownload(verse)}
       handlePlay={() => handleVersePlay(verse)}
       handlePause={() => handleVersePause(verse)}
-      filteredResultsLength={filteredResults.length} // Pass the length
+      filteredResultsLength={filteredResults.length}
+      searchWord={query}
+      dictionaryData={dictionaryData}
     />
   );
 
@@ -1484,6 +1604,8 @@ export default function ResultsList({ results, audioMap, loading, query, terms: 
               handlePlay={() => handleVersePlay(verse)}
               handlePause={() => handleVersePause(verse)}
               filteredResultsLength={filteredResults.length}
+              searchWord={query}
+              dictionaryData={dictionaryData}
             />
           ))}
 
