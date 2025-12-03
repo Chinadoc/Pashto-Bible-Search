@@ -2979,9 +2979,60 @@ async function handleProcessVideo(request: Request, env: Env): Promise<Response>
 }
 
 /**
- * Store/update video data in video_transcripts table (for re-processing)
+ * Store/update video data in videos table (for re-processing)
  */
 async function handleStoreVideo(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as {
+      video_id: string;
+      youtube_url?: string;
+      transcript?: string;
+      segments?: any[];
+      transcription_service?: string;
+      title?: string;
+    };
+    
+    const { video_id, youtube_url, transcript, segments, title } = body;
+    
+    if (!video_id) {
+      return errorResponse('video_id is required', 400);
+    }
+    
+    console.log(`💾 Updating video ${video_id} segments in videos table...`);
+    
+    const now = new Date().toISOString();
+    const segmentsJson = segments ? JSON.stringify(segments) : null;
+    
+    // Update the videos table (same table used by handleGetVideo)
+    const result = await env.DB.prepare(`
+      UPDATE videos 
+      SET segments_json = ?, updated_at = ?
+      WHERE video_id = ?
+    `).bind(segmentsJson, now, video_id).run();
+    
+    if (result.meta.changes === 0) {
+      return errorResponse(`Video ${video_id} not found in videos table`, 404);
+    }
+    
+    console.log(`✅ Updated ${video_id} with ${segments?.length || 0} segments`);
+    
+    return jsonResponse({
+      success: true,
+      video_id,
+      segments_updated: segments?.length || 0,
+      message: `Updated video with ${segments?.length || 0} segments`
+    });
+
+  } catch (error) {
+    console.error('[CF Worker] Store video error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to store video', 500);
+  }
+}
+
+/**
+ * LEGACY: Store video data in video_transcripts table (kept for backwards compatibility)
+ */
+async function handleStoreVideoLegacy(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as {
       video_id: string;
@@ -2998,7 +3049,7 @@ async function handleStoreVideo(request: Request, env: Env): Promise<Response> {
       return errorResponse('video_id is required', 400);
     }
     
-    console.log(`💾 Storing/updating video ${video_id} in video_transcripts...`);
+    console.log(`💾 Storing/updating video ${video_id} in video_transcripts (legacy)...`);
     
     const now = new Date().toISOString();
     const segmentsJson = segments ? JSON.stringify(segments) : '[]';
