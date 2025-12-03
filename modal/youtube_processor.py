@@ -445,6 +445,167 @@ def process_video_webhook(item: dict) -> dict:
     return result
 
 
+@app.function(
+    image=image,
+    secrets=[secrets],
+    timeout=900,  # 15 minutes for large videos with many segments
+)
+def split_audio_into_clips(video_id: str, segments: list) -> dict:
+    """
+    Split audio from R2 into individual clips based on segment timestamps.
+    
+    Args:
+        video_id: Video ID (used for R2 path)
+        segments: List of segments with startTime/start_time and endTime/end_time
+        
+    Returns:
+        dict with clip_urls mapping segment_number to R2 URL
+    """
+    import boto3
+    
+    print(f"✂️ Splitting audio for video: {video_id}")
+    print(f"📊 Processing {len(segments)} segments")
+    
+    # Initialize S3 client for R2
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=f"https://{os.environ['CLOUDFLARE_ACCOUNT_ID']}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ['CLOUDFLARE_R2_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['CLOUDFLARE_R2_SECRET_ACCESS_KEY'],
+        region_name='auto'
+    )
+    
+    bucket_name = 'pashto-bible-audio'
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Download full audio from R2
+        full_audio_key = f"videos/{video_id}/audio.mp3"
+        full_audio_path = tmpdir / "full_audio.mp3"
+        
+        try:
+            print(f"📥 Downloading full audio from R2: {full_audio_key}")
+            s3_client.download_file(bucket_name, full_audio_key, str(full_audio_path))
+            print(f"✅ Downloaded: {full_audio_path.stat().st_size / 1024 / 1024:.2f} MB")
+        except Exception as e:
+            # Try alternative paths
+            alt_keys = [
+                f"videos/{video_id}/audio.m4a",
+                f"videos/{video_id}/audio.webm",
+                f"video-audio/{video_id}.mp3",
+            ]
+            downloaded = False
+            for alt_key in alt_keys:
+                try:
+                    s3_client.download_file(bucket_name, alt_key, str(full_audio_path))
+                    print(f"✅ Downloaded from alternative path: {alt_key}")
+                    downloaded = True
+                    break
+                except:
+                    continue
+            
+            if not downloaded:
+                return {"success": False, "error": f"Could not download audio: {str(e)}"}
+        
+        # Split into clips using FFmpeg
+        clip_urls = {}
+        clips_created = 0
+        
+        for segment in segments:
+            # Handle different naming conventions
+            seg_num = segment.get('segment_number') or segment.get('segmentNumber') or segment.get('index', 0) + 1
+            start_time = segment.get('start_time') or segment.get('startTime') or 0
+            end_time = segment.get('end_time') or segment.get('endTime') or 0
+            
+            if end_time <= start_time:
+                print(f"⚠️ Skipping segment {seg_num}: invalid times ({start_time} -> {end_time})")
+                continue
+            
+            duration = end_time - start_time
+            clip_filename = f"clip_{seg_num:03d}.mp3"
+            clip_path = tmpdir / clip_filename
+            
+            try:
+                # Use FFmpeg to extract the clip
+                # Add small padding (0.1s) to avoid cutting words
+                padded_start = max(0, start_time - 0.1)
+                padded_duration = duration + 0.2
+                
+                result = subprocess.run([
+                    "ffmpeg",
+                    "-i", str(full_audio_path),
+                    "-ss", str(padded_start),
+                    "-t", str(padded_duration),
+                    "-acodec", "libmp3lame",
+                    "-ab", "128k",
+                    "-ac", "1",  # Mono for smaller files
+                    "-ar", "44100",
+                    "-y",  # Overwrite
+                    str(clip_path)
+                ], capture_output=True, text=True, timeout=60)
+                
+                if result.returncode != 0:
+                    print(f"⚠️ FFmpeg error for segment {seg_num}: {result.stderr[:200]}")
+                    continue
+                
+                # Upload clip to R2
+                clip_key = f"videos/{video_id}/clips/{clip_filename}"
+                
+                with open(clip_path, 'rb') as f:
+                    s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key=clip_key,
+                        Body=f,
+                        ContentType='audio/mpeg'
+                    )
+                
+                clip_urls[seg_num] = clip_key
+                clips_created += 1
+                
+                if clips_created % 10 == 0:
+                    print(f"✂️ Created {clips_created}/{len(segments)} clips...")
+                    
+            except Exception as e:
+                print(f"⚠️ Failed to create clip {seg_num}: {e}")
+                continue
+        
+        print(f"✅ Created {clips_created} audio clips")
+        
+        return {
+            "success": True,
+            "video_id": video_id,
+            "clips_created": clips_created,
+            "total_segments": len(segments),
+            "clip_urls": clip_urls
+        }
+
+
+@app.function(image=image, secrets=[secrets], timeout=900)
+@modal.fastapi_endpoint(method="POST")
+def split_audio_webhook(item: dict) -> dict:
+    """
+    Web endpoint to split video audio into clips.
+    
+    POST body: {
+        "video_id": "XB8_H29rb4k",
+        "segments": [{"segmentNumber": 1, "startTime": 0, "endTime": 2.4}, ...]
+    }
+    """
+    video_id = item.get('video_id') or item.get('videoId')
+    segments = item.get('segments', [])
+    
+    if not video_id:
+        return {"success": False, "error": "video_id is required"}
+    
+    if not segments:
+        return {"success": False, "error": "segments array is required"}
+    
+    # Process synchronously
+    result = split_audio_into_clips.remote(video_id, segments)
+    return result
+
+
 # Local testing
 if __name__ == "__main__":
     # Test with a sample video

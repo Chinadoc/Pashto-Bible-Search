@@ -5,10 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
  * 
  * Re-processes an existing video's transcript to create more sentence-level segments.
  * Uses the existing transcript and words but re-segments them.
+ * Also triggers audio clip splitting via Modal.com.
  */
 
 const WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
     'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
+const MODAL_WEBHOOK_URL = process.env.NEXT_PUBLIC_MODAL_WEBHOOK_URL || '';
 
 export async function POST(request: NextRequest) {
     try {
@@ -109,12 +112,70 @@ export async function POST(request: NextRequest) {
             console.warn(`⚠️ D1 update returned ${updateResponse.status}`);
         }
 
+        // Trigger audio clip splitting via Modal.com
+        let audioClipsResult = null;
+        if (MODAL_WEBHOOK_URL) {
+            console.log(`✂️ Triggering audio clip splitting for ${newSegments.length} segments...`);
+            try {
+                // Get the Modal split audio endpoint (same base URL, different path)
+                const modalBaseUrl = MODAL_WEBHOOK_URL.replace('/process_video_webhook', '');
+                const splitAudioUrl = `${modalBaseUrl}/split_audio_webhook`;
+                
+                const clipResponse = await fetch(splitAudioUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video_id: videoId,
+                        segments: newSegments.map(s => ({
+                            segmentNumber: s.segmentNumber,
+                            startTime: s.startTime,
+                            endTime: s.endTime,
+                        })),
+                    }),
+                });
+                
+                if (clipResponse.ok) {
+                    audioClipsResult = await clipResponse.json();
+                    console.log(`✅ Audio clips created: ${audioClipsResult.clips_created || 0}`);
+                    
+                    // Update segments with clip URLs if available
+                    if (audioClipsResult.clip_urls) {
+                        for (const segment of newSegments) {
+                            const clipKey = audioClipsResult.clip_urls[segment.segmentNumber];
+                            if (clipKey) {
+                                segment.audioUrl = clipKey;
+                            }
+                        }
+                        
+                        // Update D1 again with audio URLs
+                        await fetch(`${WORKER_URL}/api/store-video`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                video_id: videoId,
+                                youtube_url: video.youtube_url,
+                                transcript: video.transcript,
+                                segments: newSegments,
+                                transcription_service: video.transcription_service || 'elevenlabs_scribe_v2',
+                                title: video.title,
+                            }),
+                        });
+                    }
+                } else {
+                    console.warn(`⚠️ Audio clip splitting failed: ${clipResponse.status}`);
+                }
+            } catch (clipError) {
+                console.warn(`⚠️ Audio clip splitting error:`, clipError);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             videoId,
             previousSegmentCount: existingSegments.length,
             newSegmentCount: newSegments.length,
             segments: newSegments,
+            audioClipsCreated: audioClipsResult?.clips_created || 0,
             message: `Re-segmented from ${existingSegments.length} to ${newSegments.length} segments`
         });
         
@@ -131,11 +192,11 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Process words into SENTENCE-LEVEL segments
- * Creates more segments by splitting on:
- * 1. Pashto sentence-ending punctuation (. ؟ ۔ ! ?)
- * 2. Long pauses (> 0.8 seconds)
- * 3. Maximum segment duration (8 seconds)
+ * Process words into SINGLE-SENTENCE segments
+ * Creates one segment per sentence for Anki-friendly clips:
+ * 1. Pashto sentence-ending punctuation (. ؟ ۔ ! ? ، etc)
+ * 2. Pauses (> 0.5 seconds)
+ * 3. Maximum segment duration (6 seconds)
  */
 function processWordsIntoSentenceSegments(
     words: Array<{ text: string; start: number; end: number }>
@@ -160,11 +221,10 @@ function processWordsIntoSentenceSegments(
         segmentNumber: number;
     }> = [];
 
-    // Pashto sentence-ending punctuation
-    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?', '،', '؛']);
+    // Pashto sentence-ending punctuation (comprehensive)
+    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?', '،', '؛', ':', '»']);
     
     let currentSentenceWords: Array<{ text: string; start: number; end: number }> = [];
-    let sentenceCount = 0;
 
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
@@ -175,78 +235,31 @@ function processWordsIntoSentenceSegments(
         const lastChar = wordText.slice(-1);
         const endsWithPunctuation = sentenceEnders.has(lastChar);
         
-        // Also check for pauses (> 0.8 second) as potential sentence breaks
+        // Check for pauses (> 0.5 seconds) as sentence breaks
         const hasLongPause = i < words.length - 1 && 
-            (words[i + 1].start - word.end) > 0.8;
+            (words[i + 1].start - word.end) > 0.5;
         
-        // Check for commas as potential breaks (for longer phrases)
-        const endsWithComma = lastChar === '،' || lastChar === ',';
+        // Calculate current segment duration
+        const segmentDuration = currentSentenceWords.length > 0 
+            ? word.end - currentSentenceWords[0].start 
+            : 0;
         
-        if (endsWithPunctuation || hasLongPause) {
-            sentenceCount++;
+        // Create segment immediately when: sentence ends, pause, or max 6 seconds
+        const shouldCreateSegment = endsWithPunctuation || hasLongPause || segmentDuration > 6;
+        
+        if (shouldCreateSegment && currentSentenceWords.length > 0) {
+            const startTime = currentSentenceWords[0].start;
+            const endTime = word.end;
             
-            // Create a segment every 1-2 sentences OR if segment is > 8 seconds
-            const segmentDuration = currentSentenceWords[currentSentenceWords.length - 1].end - 
-                                    currentSentenceWords[0].start;
-            
-            // Create segment if: we have 1+ sentences, segment is > 5 seconds, or it's the last word
-            // More aggressive segmentation for more clips
-            if (sentenceCount >= 1 || segmentDuration > 5 || i === words.length - 1) {
-                if (currentSentenceWords.length > 0) {
-                    const startTime = currentSentenceWords[0].start;
-                    const endTime = currentSentenceWords[currentSentenceWords.length - 1].end;
-                    
-                    segments.push({
-                        segmentNumber: segments.length + 1,
-                        text: currentSentenceWords.map(w => w.text).join(' '),
-                        startTime,
-                        endTime,
-                        duration: endTime - startTime,
-                        words: [...currentSentenceWords],
-                    });
-                    currentSentenceWords = [];
-                    sentenceCount = 0;
-                }
-            }
-        } else if (endsWithComma && currentSentenceWords.length > 5) {
-            // Break at commas if we have enough words
-            const segmentDuration = currentSentenceWords[currentSentenceWords.length - 1].end - 
-                                    currentSentenceWords[0].start;
-            if (segmentDuration > 4) {
-                const startTime = currentSentenceWords[0].start;
-                const endTime = currentSentenceWords[currentSentenceWords.length - 1].end;
-                
-                segments.push({
-                    segmentNumber: segments.length + 1,
-                    text: currentSentenceWords.map(w => w.text).join(' '),
-                    startTime,
-                    endTime,
-                    duration: endTime - startTime,
-                    words: [...currentSentenceWords],
-                });
-                currentSentenceWords = [];
-                sentenceCount = 0;
-            }
-        }
-        
-        // Fallback: create segment if too long (max 10 seconds without punctuation)
-        if (currentSentenceWords.length > 0) {
-            const currentDuration = word.end - currentSentenceWords[0].start;
-            if (currentDuration > 10 && i < words.length - 1) {
-                const startTime = currentSentenceWords[0].start;
-                const endTime = word.end;
-                
-                segments.push({
-                    segmentNumber: segments.length + 1,
-                    text: currentSentenceWords.map(w => w.text).join(' '),
-                    startTime,
-                    endTime,
-                    duration: endTime - startTime,
-                    words: [...currentSentenceWords],
-                });
-                currentSentenceWords = [];
-                sentenceCount = 0;
-            }
+            segments.push({
+                segmentNumber: segments.length + 1,
+                text: currentSentenceWords.map(w => w.text).join(' '),
+                startTime,
+                endTime,
+                duration: endTime - startTime,
+                words: [...currentSentenceWords],
+            });
+            currentSentenceWords = [];
         }
     }
     

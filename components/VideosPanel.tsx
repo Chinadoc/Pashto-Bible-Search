@@ -105,7 +105,10 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
       const result = await response.json();
 
       if (result.success) {
-        alert(`✅ Re-processed successfully! ${result.previousSegmentCount} → ${result.newSegmentCount} segments`);
+        const audioMsg = result.audioClipsCreated 
+          ? `\n✂️ Created ${result.audioClipsCreated} audio clips!`
+          : '\n⚠️ Audio clips not created (full audio may not be in R2)';
+        alert(`✅ Re-processed successfully!\n📝 ${result.previousSegmentCount} → ${result.newSegmentCount} segments${audioMsg}`);
         await loadVideos();
       } else {
         alert(`❌ Re-process failed: ${result.error}`);

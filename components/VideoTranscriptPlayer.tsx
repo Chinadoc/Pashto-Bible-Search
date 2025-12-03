@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import InteractiveVerse from './InteractiveVerse';
 
+const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 
+  'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+
 interface VideoSegment {
   segmentNumber: number;
   text: string;
@@ -10,7 +13,7 @@ interface VideoSegment {
   startTime: number;
   endTime: number;
   duration: number;
-  audioUrl?: string; // R2 URL if available
+  audioUrl?: string; // R2 key if available
 }
 
 interface VideoTranscriptPlayerProps {
@@ -31,9 +34,57 @@ export default function VideoTranscriptPlayer({
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
   const [expandedSegment, setExpandedSegment] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [playingAudioIndex, setPlayingAudioIndex] = useState<number | null>(null);
   const playerRef = useRef<any>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Convert R2 key to streaming URL
+  const getAudioStreamUrl = (r2Key: string) => {
+    if (r2Key.startsWith('http')) return r2Key;
+    return `${CLOUDFLARE_WORKER_URL}/api/audio/stream/${encodeURIComponent(r2Key)}`;
+  };
+
+  // Play individual audio clip
+  const playSegmentAudio = useCallback((segmentIndex: number, r2Key: string) => {
+    // Stop current audio if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    if (playingAudioIndex === segmentIndex) {
+      setPlayingAudioIndex(null);
+      return;
+    }
+    
+    const audio = new Audio(getAudioStreamUrl(r2Key));
+    audio.preload = 'auto';
+    audioRef.current = audio;
+    
+    audio.onplay = () => setPlayingAudioIndex(segmentIndex);
+    audio.onended = () => setPlayingAudioIndex(null);
+    audio.onerror = () => {
+      console.error('Audio playback error');
+      setPlayingAudioIndex(null);
+    };
+    
+    audio.play().catch(err => {
+      console.error('Failed to play audio:', err);
+      setPlayingAudioIndex(null);
+    });
+  }, [playingAudioIndex]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -241,6 +292,43 @@ export default function VideoTranscriptPlayer({
                     
                     {/* Segment Actions */}
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Play/Pause Audio Clip */}
+                      {segment.audioUrl ? (
+                        <>
+                          <button
+                            onClick={() => playSegmentAudio(index, segment.audioUrl!)}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              playingAudioIndex === index 
+                                ? 'bg-green-500 text-white animate-pulse' 
+                                : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800'
+                            }`}
+                            title={playingAudioIndex === index ? 'Stop audio' : 'Play audio clip'}
+                          >
+                            {playingAudioIndex === index ? '⏹️ Stop' : '🔊 Play'}
+                          </button>
+                          <a
+                            href={getAudioStreamUrl(segment.audioUrl)}
+                            download={`segment-${index + 1}.mp3`}
+                            className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
+                            title="Download audio clip"
+                          >
+                            ⬇️
+                          </a>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            // Open segment in new tab with timestamp for manual download
+                            const ytUrl = `https://www.youtube.com/watch?v=${videoId}&t=${Math.floor(segment.startTime)}s`;
+                            window.open(ytUrl, '_blank');
+                          }}
+                          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
+                          title="Open in YouTube at timestamp"
+                        >
+                          ▶️ YouTube
+                        </button>
+                      )}
+                      
                       {/* Copy Text */}
                       <button
                         onClick={() => {
@@ -255,32 +343,8 @@ export default function VideoTranscriptPlayer({
                         }`}
                         title="Copy transcript"
                       >
-                        {copiedIndex === index ? '✓ Copied' : '📋 Copy'}
+                        {copiedIndex === index ? '✓' : '📋'}
                       </button>
-                      
-                      {/* Download Audio Clip - generates clip from YouTube at timestamp */}
-                      {segment.audioUrl ? (
-                        <a
-                          href={segment.audioUrl}
-                          download={`segment-${index + 1}.mp3`}
-                          className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
-                          title="Download audio clip"
-                        >
-                          ⬇️ Audio
-                        </a>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            // Open segment in new tab with timestamp for manual download
-                            const ytUrl = `https://www.youtube.com/watch?v=${videoId}&t=${Math.floor(segment.startTime)}s`;
-                            window.open(ytUrl, '_blank');
-                          }}
-                          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
-                          title="Open in YouTube at timestamp"
-                        >
-                          ▶️ YouTube
-                        </button>
-                      )}
                       
                       {/* Expand/Collapse for editing */}
                       <button

@@ -2746,70 +2746,47 @@ async function transcribeWithElevenLabs(
       confidence: w.confidence || 0.95,
     }));
 
-    // Create SENTENCE-LEVEL segments from the transcription
-    // Each segment = 1-2 sentences based on Pashto punctuation (. ؟ ۔ ! ?)
+    // Create SINGLE-SENTENCE segments from the transcription
+    // Each segment = 1 sentence (max ~6 seconds) for Anki-friendly clips
     const segments: TranscriptSegment[] = [];
     
-    // Pashto sentence-ending punctuation
-    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?', '۔']);
+    // Pashto sentence-ending punctuation (comprehensive)
+    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?', '،', '؛', ':', '»']);
     
     if (words.length > 0) {
       let currentSentenceWords: TranscriptWord[] = [];
-      let sentenceCount = 0;
       
       for (let i = 0; i < words.length; i++) {
         currentSentenceWords.push(words[i]);
         
         // Check if this word ends a sentence
         const wordText = words[i].text.trim();
-        const endsWithPunctuation = sentenceEnders.has(wordText.slice(-1)) || 
-                                     wordText.endsWith('؟') || 
-                                     wordText.endsWith('۔');
+        const lastChar = wordText.slice(-1);
+        const endsWithPunctuation = sentenceEnders.has(lastChar);
         
-        // Also check for long pauses (> 1 second) as potential sentence breaks
+        // Check for pauses (> 0.5 seconds) as sentence breaks
         const hasLongPause = i < words.length - 1 && 
-          (words[i + 1].start_time - words[i].end_time) > 1.0;
+          (words[i + 1].start_time - words[i].end_time) > 0.5;
         
-        if (endsWithPunctuation || hasLongPause) {
-          sentenceCount++;
-          
-          // Create a segment every 1-2 sentences OR if we have enough content
-          const segmentDuration = currentSentenceWords[currentSentenceWords.length - 1].end_time - 
-                                  currentSentenceWords[0].start_time;
-          
-          // Create segment if: we have 2 sentences, segment is > 5 seconds, or it's the last word
-          if (sentenceCount >= 2 || segmentDuration > 8 || i === words.length - 1) {
-            segments.push({
-              segment_number: segments.length + 1,
-              text: currentSentenceWords.map(w => w.text).join(' '),
-              start_time: currentSentenceWords[0].start_time,
-              end_time: currentSentenceWords[currentSentenceWords.length - 1].end_time,
-              duration: currentSentenceWords[currentSentenceWords.length - 1].end_time - 
-                       currentSentenceWords[0].start_time,
-              words: [...currentSentenceWords],
-              confidence: 0.95,
-            });
-            currentSentenceWords = [];
-            sentenceCount = 0;
-          }
-        }
+        // Calculate current segment duration
+        const segmentDuration = currentSentenceWords.length > 0 
+          ? words[i].end_time - currentSentenceWords[0].start_time 
+          : 0;
         
-        // Fallback: create segment if too long (max 15 seconds without punctuation)
-        if (currentSentenceWords.length > 0) {
-          const currentDuration = words[i].end_time - currentSentenceWords[0].start_time;
-          if (currentDuration > 15 && i < words.length - 1) {
-            segments.push({
-              segment_number: segments.length + 1,
-              text: currentSentenceWords.map(w => w.text).join(' '),
-              start_time: currentSentenceWords[0].start_time,
-              end_time: words[i].end_time,
-              duration: words[i].end_time - currentSentenceWords[0].start_time,
-              words: [...currentSentenceWords],
-              confidence: 0.95,
-            });
-            currentSentenceWords = [];
-            sentenceCount = 0;
-          }
+        // Create segment immediately when: sentence ends, long pause, or max 6 seconds
+        const shouldCreateSegment = endsWithPunctuation || hasLongPause || segmentDuration > 6;
+        
+        if (shouldCreateSegment && currentSentenceWords.length > 0) {
+          segments.push({
+            segment_number: segments.length + 1,
+            text: currentSentenceWords.map(w => w.text).join(' '),
+            start_time: currentSentenceWords[0].start_time,
+            end_time: words[i].end_time,
+            duration: words[i].end_time - currentSentenceWords[0].start_time,
+            words: [...currentSentenceWords],
+            confidence: 0.95,
+          });
+          currentSentenceWords = [];
         }
       }
       
@@ -2828,7 +2805,7 @@ async function transcribeWithElevenLabs(
       }
     }
     
-    console.log(`📝 Created ${segments.length} sentence-level segments from transcription`);
+    console.log(`📝 Created ${segments.length} single-sentence segments from transcription`);
 
     return {
       success: true,
