@@ -51,8 +51,33 @@ const REASON_ICONS: Record<string, { icon: string; label: string; labelPs: strin
   ablative: { icon: '🧈', label: 'Ablative', labelPs: 'له/تر/بې', tip: 'After له, تر, بې, پرته - always 2nd inflection' },
 };
 
-// Sandwich type labels with Pashto first
+// Sandwich type labels - now API returns full patterns like "په...کې"
+// Keep legacy mappings but also handle direct patterns
 const SANDWICH_LABELS: Record<string, { ps: string; en: string }> = {
+  // New direct pattern format
+  'په...کې': { ps: 'په...کې', en: 'in' },
+  'په...کی': { ps: 'په...کی', en: 'in' },
+  'په...باندې': { ps: 'په...باندې', en: 'on' },
+  'په...سره': { ps: 'په...سره', en: 'with' },
+  'په...هکله': { ps: 'په...هکله', en: 'about' },
+  'په...وخت': { ps: 'په...وخت', en: 'at the time of' },
+  'په...ځای': { ps: 'په...ځای', en: 'instead of' },
+  'په...لاس': { ps: 'په...لاس', en: 'by/through' },
+  'د': { ps: 'د', en: 'of' },
+  'له...سره': { ps: 'له...سره', en: 'with' },
+  'له...نه': { ps: 'له...نه', en: 'from' },
+  'له...څخه': { ps: 'له...څخه', en: 'from' },
+  'له...پرته': { ps: 'له...پرته', en: 'without' },
+  'له...وروسته': { ps: 'له...وروسته', en: 'after' },
+  'له...مخکې': { ps: 'له...مخکې', en: 'before' },
+  'له...پورې': { ps: 'له...پورې', en: 'up to' },
+  'تر...پورې': { ps: 'تر...پورې', en: 'until' },
+  'تر': { ps: 'تر', en: 'than/until' },
+  'ته': { ps: 'ته', en: 'to' },
+  'باندې': { ps: 'باندې', en: 'on' },
+  'بې': { ps: 'بې', en: 'without' },
+  'پرته': { ps: 'پرته', en: 'without' },
+  // Legacy format (for old cached data)
   'locative_in': { ps: 'په...کې', en: 'in' },
   'locative_on': { ps: 'په...باندې', en: 'on' },
   'comitative': { ps: 'په...سره', en: 'with' },
@@ -261,10 +286,17 @@ export default function InflectionExplainer({
                       >
                         {REASON_ICONS.sandwich.icon}
                         <span dir="rtl" className="font-medium">
-                          {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]
-                            ? SANDWICH_LABELS[inf.sandwichType].ps
-                            : 'sandwich'}
+                          {/* Display the sandwich pattern directly if it looks like Pashto, otherwise use mapping */}
+                          {inf.sandwichType && /[\u0600-\u06FF]/.test(inf.sandwichType)
+                            ? inf.sandwichType
+                            : (SANDWICH_LABELS[inf.sandwichType || '']?.ps || inf.sandwichType || 'sandwich')}
                         </span>
+                        {/* Show English meaning */}
+                        {inf.sandwichType && SANDWICH_LABELS[inf.sandwichType]?.en && (
+                          <span className="text-amber-600 dark:text-amber-400">
+                            ({SANDWICH_LABELS[inf.sandwichType].en})
+                          </span>
+                        )}
                       </span>
                     )}
 

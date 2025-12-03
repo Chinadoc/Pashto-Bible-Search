@@ -31,7 +31,8 @@ export interface WordAnalysis {
   inflectionReason?: {
     isPlural: boolean;
     isInSandwich: boolean;
-    sandwichType: string | null;
+    sandwichType: string | null; // e.g., "په...کې", "د", "له...سره"
+    sandwichMeaning?: string | null; // e.g., "in", "of", "with"
     isErgative: boolean; // Subject of transitive past
     ergativeVerb?: string | null; // The verb that triggered ergative
     isVocative?: boolean; // Direct address form
@@ -468,12 +469,17 @@ export default function WordTooltip({
                         {analysis.inflectionReason.isInSandwich && !analysis.inflectionReason.isAblative && (
                           <span 
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded cursor-help"
-                            title={`Sandwich: ${SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.english || 'adposition'} - word is inside an adpositional phrase`}
+                            title={`Sandwich: ${analysis.inflectionReason.sandwichMeaning || 'adposition'} - word is inside an adpositional phrase`}
                           >
                             {REASON_ICONS.sandwich}
                             <span className="font-medium" dir="rtl">
-                              {SANDWICH_DISPLAY[analysis.inflectionReason.sandwichType || '']?.pashto || 'sandwich'}
+                              {analysis.inflectionReason.sandwichType || 'sandwich'}
                             </span>
+                            {analysis.inflectionReason.sandwichMeaning && (
+                              <span className="text-amber-600 dark:text-amber-400 text-xs">
+                                ({analysis.inflectionReason.sandwichMeaning})
+                              </span>
+                            )}
                           </span>
                         )}
                         {analysis.inflectionReason.isPlural && (

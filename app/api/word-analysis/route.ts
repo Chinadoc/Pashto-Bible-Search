@@ -61,16 +61,39 @@ interface WordAnalysisResult {
 }
 
 // Sandwich patterns for context analysis
+// Based on https://grammar.lingdocs.com/sandwiches/sandwiches/
 const SANDWICH_PATTERNS = [
-  { start: 'په', end: 'کې', type: 'په...کې (in)' },
-  { start: 'په', end: 'باندې', type: 'په...باندې (on)' },
-  { start: 'په', end: 'سره', type: 'په...سره (with)' },
-  { start: 'د', end: null, type: 'د (of)' },
-  { start: 'له', end: 'سره', type: 'له...سره (with)' },
-  { start: 'له', end: 'نه', type: 'له...نه (from)' },
-  { start: 'له', end: 'څخه', type: 'له...څخه (from)' },
-  { start: null, end: 'ته', type: 'ته (to)' },
-  { start: 'تر', end: 'پورې', type: 'تر...پورې (until)' },
+  // په sandwiches
+  { start: 'په', end: 'کې', type: 'په...کې', meaning: 'in' },
+  { start: 'په', end: 'کی', type: 'په...کی', meaning: 'in' }, // Variant spelling
+  { start: 'په', end: 'باندې', type: 'په...باندې', meaning: 'on' },
+  { start: 'په', end: 'سره', type: 'په...سره', meaning: 'with' },
+  { start: 'په', end: 'هکله', type: 'په...هکله', meaning: 'about/concerning' },
+  { start: 'په', end: 'وخت', type: 'په...وخت', meaning: 'at the time of' },
+  { start: 'په', end: 'ځای', type: 'په...ځای', meaning: 'instead of' },
+  { start: 'په', end: 'لاس', type: 'په...لاس', meaning: 'by hand/through' },
+  
+  // له sandwiches
+  { start: 'له', end: 'سره', type: 'له...سره', meaning: 'with' },
+  { start: 'له', end: 'نه', type: 'له...نه', meaning: 'from' },
+  { start: 'له', end: 'څخه', type: 'له...څخه', meaning: 'from' },
+  { start: 'له', end: 'پرته', type: 'له...پرته', meaning: 'without/except' },
+  { start: 'له', end: 'وروسته', type: 'له...وروسته', meaning: 'after' },
+  { start: 'له', end: 'مخکې', type: 'له...مخکې', meaning: 'before' },
+  { start: 'له', end: 'پورې', type: 'له...پورې', meaning: 'up to/until' },
+  
+  // تر sandwiches
+  { start: 'تر', end: 'پورې', type: 'تر...پورې', meaning: 'until/up to' },
+  { start: 'تر', end: null, type: 'تر', meaning: 'than/until' },
+  
+  // One-sided sandwiches
+  { start: 'د', end: null, type: 'د', meaning: 'of/possessive' },
+  { start: null, end: 'ته', type: 'ته', meaning: 'to/toward' },
+  { start: null, end: 'باندې', type: 'باندې', meaning: 'on' },
+  
+  // بې/پرته (without) - triggers 2nd inflection (mayonnaise)
+  { start: 'بې', end: null, type: 'بې', meaning: 'without' },
+  { start: 'پرته', end: null, type: 'پرته', meaning: 'without/except' },
 ];
 
 // Inflection patterns based on LingDocs
@@ -372,30 +395,40 @@ function detectInflectionState(word: string, baseForm: string | null): string | 
 // Detect if word is in a sandwich based on context
 // Note: Pashto sandwiches can have words between the marker and the noun!
 // e.g., "د هغو مالي مرستو" = "of those financial helps" (د is 3 words before مرستو)
-function detectSandwich(word: string, context: string): { isInSandwich: boolean; sandwichType: string | null } {
-  if (!context) return { isInSandwich: false, sandwichType: null };
+// Returns the FULL sandwich pattern (e.g., "په...کې") not just the start
+function detectSandwich(word: string, context: string): { isInSandwich: boolean; sandwichType: string | null; sandwichMeaning: string | null } {
+  if (!context) return { isInSandwich: false, sandwichType: null, sandwichMeaning: null };
   
   const words = context.split(/\s+/);
   const wordIndex = words.findIndex(w => w.includes(word) || w === word);
   
-  if (wordIndex === -1) return { isInSandwich: false, sandwichType: null };
+  if (wordIndex === -1) return { isInSandwich: false, sandwichType: null, sandwichMeaning: null };
   
+  // First, check for TWO-SIDED sandwiches (higher priority - more specific)
   for (const pattern of SANDWICH_PATTERNS) {
     if (pattern.start && pattern.end) {
       // Look for start before (up to 5 words back) and end after
       const beforeWords = words.slice(Math.max(0, wordIndex - 5), wordIndex);
       const afterWords = words.slice(wordIndex + 1, wordIndex + 6);
       
-      if (beforeWords.some(w => w === pattern.start) && afterWords.some(w => w === pattern.end)) {
-        return { isInSandwich: true, sandwichType: pattern.type };
+      const hasStart = beforeWords.some(w => w.replace(/[،.؟!؛:«»\-]/g, '') === pattern.start);
+      const hasEnd = afterWords.some(w => w.replace(/[،.؟!؛:«»\-]/g, '') === pattern.end);
+      
+      if (hasStart && hasEnd) {
+        return { isInSandwich: true, sandwichType: pattern.type, sandwichMeaning: pattern.meaning };
       }
-    } else if (pattern.start && !pattern.end) {
+    }
+  }
+  
+  // Then check for ONE-SIDED sandwiches
+  for (const pattern of SANDWICH_PATTERNS) {
+    if (pattern.start && !pattern.end) {
       // Word follows pattern.start (e.g., "د X" or "د ... X")
       // Check up to 5 words before for the start marker
       for (let i = wordIndex - 1; i >= Math.max(0, wordIndex - 5); i--) {
         const prevWord = words[i].replace(/[،.؟!؛:«»\-]/g, '');
         if (prevWord === pattern.start) {
-          return { isInSandwich: true, sandwichType: pattern.type };
+          return { isInSandwich: true, sandwichType: pattern.type, sandwichMeaning: pattern.meaning };
         }
         // Stop if we hit another sandwich starter (nested sandwiches)
         if (SANDWICH_PATTERNS.some(p => p.start === prevWord && p.start !== pattern.start)) {
@@ -408,13 +441,13 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
       for (let i = wordIndex + 1; i < Math.min(words.length, wordIndex + 4); i++) {
         const nextWord = words[i].replace(/[،.؟!؛:«»\-]/g, '');
         if (nextWord === pattern.end) {
-          return { isInSandwich: true, sandwichType: pattern.type };
+          return { isInSandwich: true, sandwichType: pattern.type, sandwichMeaning: pattern.meaning };
         }
       }
     }
   }
   
-  return { isInSandwich: false, sandwichType: null };
+  return { isInSandwich: false, sandwichType: null, sandwichMeaning: null };
 }
 
 // Verbal nouns (infinitives) - these are NOT past tense verbs!
@@ -1163,13 +1196,15 @@ export async function GET(request: NextRequest) {
       
       // Determine if word is in a sandwich (including ablative triggers)
       const isInSandwich = sandwichInfo.isInSandwich || ablativeInfo.isAblative;
-      const sandwichType = sandwichInfo.sandwichType || (ablativeInfo.isAblative ? `ablative_${ablativeInfo.trigger}` : null);
+      const sandwichType = sandwichInfo.sandwichType || (ablativeInfo.isAblative ? ablativeInfo.trigger : null);
+      const sandwichMeaning = sandwichInfo.sandwichMeaning || (ablativeInfo.isAblative ? 'without' : null);
       
       if (isInSandwich || ergativeInfo.isErgative || isPlural || vocativeDetected) {
         result.inflectionReason = {
           isPlural,
           isInSandwich,
           sandwichType,
+          sandwichMeaning, // e.g., "in", "of", "about"
           isErgative: ergativeInfo.isErgative,
           // Extended info for display
           ergativeVerb: ergativeInfo.verb,
