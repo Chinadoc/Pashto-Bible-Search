@@ -90,8 +90,39 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
   const [transcriptionService, setTranscriptionService] = useState<'assemblyai' | 'elevenlabs'>('elevenlabs');
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [reprocessingVideo, setReprocessingVideo] = useState<string | null>(null);
+  const [downloadingAudio, setDownloadingAudio] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  const downloadAndSplitAudio = async (videoId: string, youtubeUrl: string) => {
+    setDownloadingAudio(videoId);
+    try {
+      // Step 1: Download audio via Modal
+      const downloadResponse = await fetch('/api/download-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtubeUrl, videoId })
+      });
+
+      const downloadResult = await downloadResponse.json();
+
+      if (!downloadResult.success) {
+        alert(`❌ Download failed: ${downloadResult.error}`);
+        return;
+      }
+
+      alert(`✅ Audio downloaded! R2 Key: ${downloadResult.r2Key}\nNow re-segmenting and creating clips...`);
+
+      // Step 2: Re-segment and create clips
+      await reprocessVideo(videoId);
+      
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+      alert('Download failed. Please try again.');
+    } finally {
+      setDownloadingAudio(null);
+    }
+  };
 
   const reprocessVideo = async (videoId: string) => {
     setReprocessingVideo(videoId);
@@ -884,6 +915,16 @@ export default function VideosPanel({ onSelectClip }: VideosPanelProps) {
                       >
                         {reprocessingVideo === video.video_id ? '⏳ Processing...' : '🔄 Re-segment'}
                       </button>
+                      {video.youtube_url && (
+                        <button
+                          onClick={() => downloadAndSplitAudio(video.video_id || '', video.youtube_url || '')}
+                          disabled={downloadingAudio === video.video_id}
+                          className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800 disabled:opacity-50"
+                          title="Download audio from YouTube, split into clips, and upload to R2"
+                        >
+                          {downloadingAudio === video.video_id ? '⏳ Downloading...' : '🔊 Create Audio Clips'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
