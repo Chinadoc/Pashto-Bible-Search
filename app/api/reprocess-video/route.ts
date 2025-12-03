@@ -39,14 +39,15 @@ export async function POST(request: NextRequest) {
 
         const videoData = await response.json();
         
-        if (!videoData.video) {
+        // Handle both {video: {...}} and direct {...} response formats
+        const video = videoData.video || videoData;
+        
+        if (!video || (!video.segments && !video.transcript)) {
             return NextResponse.json(
-                { success: false, error: 'Video data not found' },
+                { success: false, error: 'Video data not found or has no segments' },
                 { status: 404 }
             );
         }
-
-        const video = videoData.video;
         
         // Parse existing segments/words
         let existingWords: Array<{ text: string; start: number; end: number }> = [];
@@ -94,16 +95,19 @@ export async function POST(request: NextRequest) {
 
         console.log(`📝 Created ${newSegments.length} new sentence-level segments (was ${existingSegments.length})`);
 
-        // Update video in D1
+        // Update video in D1 (handle both camelCase and snake_case property names)
+        const youtubeUrl = video.youtube_url || video.youtubeUrl;
+        const transcriptionService = video.transcription_service || video.transcriptionService || 'elevenlabs_scribe_v2';
+        
         const updateResponse = await fetch(`${WORKER_URL}/api/store-video`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 video_id: videoId,
-                youtube_url: video.youtube_url,
+                youtube_url: youtubeUrl,
                 transcript: video.transcript,
                 segments: newSegments,
-                transcription_service: video.transcription_service || 'elevenlabs_scribe_v2',
+                transcription_service: transcriptionService,
                 title: video.title,
             }),
         });
@@ -155,10 +159,10 @@ export async function POST(request: NextRequest) {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 video_id: videoId,
-                                youtube_url: video.youtube_url,
+                                youtube_url: youtubeUrl,
                                 transcript: video.transcript,
                                 segments: newSegments,
-                                transcription_service: video.transcription_service || 'elevenlabs_scribe_v2',
+                                transcription_service: transcriptionService,
                                 title: video.title,
                             }),
                         });
