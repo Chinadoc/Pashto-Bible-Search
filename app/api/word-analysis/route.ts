@@ -451,52 +451,84 @@ function detectSandwich(word: string, context: string): { isInSandwich: boolean;
 }
 
 // Check if adjacent words show inflection agreement
-// In Pashto, adjectives MUST agree with nouns in inflection state
-// If a neighboring word is clearly 2nd inflection, this word likely is too
+// In Pashto, adjectives MUST agree with nouns in:
+// - Inflection state (plain/1st/2nd)
+// - Number (singular/plural)
+// - Gender (masculine/feminine)
+// If a neighboring word is clearly inflected/plural, this word likely is too
 function checkAdjacentInflectionAgreement(word: string, context: string): { 
   hasInflectedNeighbor: boolean; 
   neighborInflection: '1st' | '2nd' | null;
   neighborWord: string | null;
+  neighborIsPlural: boolean;
 } {
-  if (!context) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+  if (!context) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null, neighborIsPlural: false };
   
   const words = context.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, ''));
   const wordIndex = words.findIndex(w => w === word || w.includes(word));
   
-  if (wordIndex === -1) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+  if (wordIndex === -1) return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null, neighborIsPlural: false };
   
   // Clear 2nd inflection plural endings (oblique plural)
-  const secondInflectionEndings = ['انو', 'یانو', 'ونو', 'و'];
-  // Clear 1st inflection plural endings (direct plural)
-  const firstInflectionEndings = ['ان', 'یان', 'ونه', 'ې'];
+  const secondInflectionPluralEndings = ['انو', 'یانو', 'ونو'];
+  // Clear 1st inflection plural endings (direct plural)  
+  const firstInflectionPluralEndings = ['ان', 'یان', 'ونه'];
+  // Singular 2nd inflection endings
+  const secondInflectionSingularEndings = ['و', 'ي'];
+  // Feminine plural (can be 1st or 2nd)
+  const femininePluralEndings = ['ې', 'و'];
+  
+  // Common plural demonstratives/adjectives that indicate plural context
+  const pluralIndicatorWords = [
+    'هغو', 'دغو', 'کومو', 'ټولو', 'نورو', 'ځینو', 'څو', 'ډېرو', 'کمو', 'زیاتو',
+    'هغه', // Can be plural in oblique
+    'دا', 'دې', // These (plural forms)
+  ];
   
   // Check 2 words before and after (adjectives can be before or after nouns in Pashto)
   const neighborsToCheck = [
-    words[wordIndex - 2],
-    words[wordIndex - 1],
-    words[wordIndex + 1],
-    words[wordIndex + 2],
-  ].filter(Boolean);
+    { word: words[wordIndex - 2], distance: 2 },
+    { word: words[wordIndex - 1], distance: 1 },
+    { word: words[wordIndex + 1], distance: 1 },
+    { word: words[wordIndex + 2], distance: 2 },
+  ].filter(n => n.word);
   
-  for (const neighbor of neighborsToCheck) {
-    // Check for 2nd inflection markers
-    for (const ending of secondInflectionEndings) {
+  // First check for plural indicator words (most reliable)
+  for (const { word: neighbor } of neighborsToCheck) {
+    if (pluralIndicatorWords.includes(neighbor)) {
+      return { hasInflectedNeighbor: true, neighborInflection: '2nd', neighborWord: neighbor, neighborIsPlural: true };
+    }
+  }
+  
+  // Then check for clear plural endings
+  for (const { word: neighbor } of neighborsToCheck) {
+    // 2nd inflection plural (most specific)
+    for (const ending of secondInflectionPluralEndings) {
       if (neighbor.endsWith(ending) && neighbor.length > ending.length + 1) {
-        return { hasInflectedNeighbor: true, neighborInflection: '2nd', neighborWord: neighbor };
+        return { hasInflectedNeighbor: true, neighborInflection: '2nd', neighborWord: neighbor, neighborIsPlural: true };
       }
     }
   }
   
-  for (const neighbor of neighborsToCheck) {
-    // Check for 1st inflection markers
-    for (const ending of firstInflectionEndings) {
+  for (const { word: neighbor } of neighborsToCheck) {
+    // 1st inflection plural
+    for (const ending of firstInflectionPluralEndings) {
       if (neighbor.endsWith(ending) && neighbor.length > ending.length + 1) {
-        return { hasInflectedNeighbor: true, neighborInflection: '1st', neighborWord: neighbor };
+        return { hasInflectedNeighbor: true, neighborInflection: '1st', neighborWord: neighbor, neighborIsPlural: true };
       }
     }
   }
   
-  return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null };
+  // Check for singular 2nd inflection
+  for (const { word: neighbor } of neighborsToCheck) {
+    for (const ending of secondInflectionSingularEndings) {
+      if (neighbor.endsWith(ending) && neighbor.length > ending.length + 1) {
+        return { hasInflectedNeighbor: true, neighborInflection: '2nd', neighborWord: neighbor, neighborIsPlural: false };
+      }
+    }
+  }
+  
+  return { hasInflectedNeighbor: false, neighborInflection: null, neighborWord: null, neighborIsPlural: false };
 }
 
 // Verbal nouns (infinitives) - these are NOT past tense verbs!
@@ -1243,25 +1275,25 @@ export async function GET(request: NextRequest) {
         isPlural = true; // Highly likely plural in 2nd inflection
       }
       
-      // Agreement check: if adjacent word is clearly inflected, this word should match
-      // In Pashto, adjectives and nouns MUST agree in inflection state
+      // Agreement check: if adjacent word is clearly inflected/plural, this word should match
+      // In Pashto, adjectives and nouns MUST agree in inflection state AND number
       const agreementInfo = checkAdjacentInflectionAgreement(cleanWord, context);
       
-      // If neighbor is 2nd inflection and we haven't detected sandwich yet,
-      // we're probably inside the same sandwich phrase
-      if (agreementInfo.hasInflectedNeighbor && agreementInfo.neighborInflection === '2nd') {
-        // If this word could be inflected (ends in و, ي, ې) but we missed the sandwich
-        if ((cleanWord.endsWith('و') || cleanWord.endsWith('ي') || cleanWord.endsWith('ې')) && !sandwichInfo.isInSandwich) {
-          // Look further for the sandwich starter
-          const extendedSandwich = detectSandwich(cleanWord, context);
-          if (!extendedSandwich.isInSandwich) {
-            // Even without finding the sandwich, adjacent agreement suggests inflection
-            // This handles cases where the sandwich marker is far away
-          }
-        }
-        // If neighbor is clearly plural (ends in انو, ونو), this word is likely plural too
-        if (!isPlural && (cleanWord.endsWith('و') || cleanWord.endsWith('ي'))) {
+      // If neighbor is plural, this word should also be plural
+      // This is critical for words like "مالي" next to "هغو" (those) or "مرستو" (helps)
+      if (agreementInfo.neighborIsPlural && !isPlural) {
+        // Word ends in potential plural/oblique endings
+        if (cleanWord.endsWith('و') || cleanWord.endsWith('ي') || cleanWord.endsWith('ې')) {
           isPlural = true;
+        }
+      }
+      
+      // If neighbor is 2nd inflection, this word should also be in sandwich context
+      if (agreementInfo.hasInflectedNeighbor && agreementInfo.neighborInflection === '2nd') {
+        // If this word could be inflected but we missed the sandwich
+        if ((cleanWord.endsWith('و') || cleanWord.endsWith('ي') || cleanWord.endsWith('ې')) && !sandwichInfo.isInSandwich) {
+          // Even without finding the sandwich, adjacent agreement suggests inflection
+          // The sandwich marker might be far away but affects this whole phrase
         }
       }
       
