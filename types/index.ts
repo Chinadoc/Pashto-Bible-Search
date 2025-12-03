@@ -1,4 +1,4 @@
-export type Scope = "all" | "ot" | "nt";
+export type Scope = "all" | "ot" | "nt" | "videos" | "poems";
 export type Mode = "phrase" | "grammar";
 export type SearchLanguage = "pashto" | "english" | "anki";
 
