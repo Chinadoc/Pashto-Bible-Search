@@ -922,6 +922,71 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // 1.7 Check lingdocs_forms for REVERSE LOOKUP (inflected form → base)
+    // This is crucial for nouns like مرستې → مرسته
+    if (!result.baseForm || result.baseForm === cleanWord) {
+      try {
+        const formToBaseResponse = await fetch(
+          `${WORKER_URL}/api/form-to-base?form=${encodeURIComponent(cleanWord)}`
+        );
+        
+        if (formToBaseResponse.ok) {
+          const formData = await formToBaseResponse.json();
+          if (formData?.found && formData.base_word) {
+            // We found this is an inflected form!
+            result.baseForm = formData.base_word;
+            
+            // Get inflection details
+            const gramInfo = formData.grammatical_info;
+            if (gramInfo) {
+              // Set POS from dictionary
+              if (gramInfo.pos) {
+                result.pos = gramInfo.pos.includes('n.') ? 'noun' :
+                            gramInfo.pos.includes('adj') ? 'adjective' :
+                            gramInfo.pos.includes('v.') ? 'verb' :
+                            result.pos || 'other';
+              }
+              
+              // Get English definition
+              if (gramInfo.english) {
+                result.english = gramInfo.english;
+              }
+              
+              // Get romanization
+              if (gramInfo.phonetics || formData.phonetics) {
+                result.romanized = gramInfo.phonetics || formData.phonetics;
+              }
+              
+              // Determine inflection state from form_type
+              const formType = gramInfo.form_type || '';
+              if (formType.includes('2nd') || formType.includes('oblique')) {
+                result.inflectionState = '2nd';
+              } else if (formType.includes('1st') || formType.includes('plural')) {
+                result.inflectionState = '1st';
+              } else if (formType.includes('vocative')) {
+                result.inflectionState = '1st'; // Vocative uses 1st inflection form
+              }
+              
+              // Determine gender
+              if (formType.includes('_f') || formType.includes('fem') || gramInfo.pos?.includes('f.')) {
+                result.gender = 'feminine';
+              } else if (formType.includes('_m') || formType.includes('masc') || gramInfo.pos?.includes('m.')) {
+                result.gender = 'masculine';
+              }
+              
+              // Store the form type for display
+              result.inflectionPattern = formType;
+            }
+            
+            result.confidence = 0.95;
+            result.source = 'lingdocs_forms';
+          }
+        }
+      } catch (e) {
+        console.warn('form-to-base lookup failed:', e);
+      }
+    }
+    
     // 2. Check verb_forms for verb conjugation info
     if (!result.pos || result.pos === 'verb' || result.pos === 'other') {
       try {
