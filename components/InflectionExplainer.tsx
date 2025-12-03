@@ -127,6 +127,7 @@ export default function InflectionExplainer({
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Fetch analysis when verse changes
+  // Uses the SAME /api/word-analysis endpoint as the Tooltip for consistency
   useEffect(() => {
     if (!verseText || verseText.length < 5) return;
 
@@ -135,29 +136,66 @@ export default function InflectionExplainer({
       setError(null);
 
       try {
-        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
-        const response = await fetch(
-          `${workerUrl}/api/analyze-inflections`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: verseText,
-              verse_ref: verseRef,
-              translation: 'afghan2023',
-            }),
-          }
+        // Extract words from verse
+        const words = verseText.split(/\s+/).map(w => w.replace(/[،.؟!؛:«»\-]/g, '')).filter(w => w.length >= 2);
+        
+        // Analyze each word using the SAME API as the Tooltip
+        const results: InflectedWord[] = [];
+        
+        // Batch analyze words (limit to first 20 for performance)
+        const wordsToAnalyze = words.slice(0, 20);
+        
+        const analyses = await Promise.all(
+          wordsToAnalyze.map(async (word, index) => {
+            try {
+              const response = await fetch(
+                `/api/word-analysis?word=${encodeURIComponent(word)}&context=${encodeURIComponent(verseText)}`
+              );
+              if (response.ok) {
+                const data = await response.json();
+                return { word, index, data };
+              }
+            } catch (e) {
+              // Ignore individual word errors
+            }
+            return null;
+          })
         );
-
-        if (!response.ok) {
-          throw new Error('Failed to analyze inflections');
+        
+        // Convert to InflectedWord format
+        for (const result of analyses) {
+          if (!result || !result.data) continue;
+          
+          const { word, index, data } = result;
+          const reason = data.inflectionReason;
+          
+          // Only include words that have inflection reasons
+          if (!reason || (!reason.isPlural && !reason.isInSandwich && !reason.isErgative && !reason.isVocative && !reason.isAblative)) {
+            continue;
+          }
+          
+          results.push({
+            word,
+            position: index,
+            isInflected: true,
+            isPlural: reason.isPlural || false,
+            inflectionType: data.inflectionState || null,
+            isInSandwich: reason.isInSandwich || reason.isAblative || false,
+            sandwichType: reason.sandwichType || (reason.isAblative ? reason.ablativeTrigger : null),
+            isSubjectTransitivePast: reason.isErgative || false,
+            baseWord: data.baseForm || null,
+            explanation: '',
+          });
         }
-
-        const data = await response.json();
-        setAnalysis(data);
-      } catch (err) {
-        console.error('Inflection analysis error:', err);
-        setError(err instanceof Error ? err.message : 'Analysis failed');
+        
+        setAnalysis({
+          verse_ref: verseRef,
+          text: verseText,
+          inflected_words: results,
+          count: results.length,
+        });
+      } catch (err: any) {
+        setError(err.message || 'Analysis failed');
       } finally {
         setIsLoading(false);
       }
@@ -165,6 +203,7 @@ export default function InflectionExplainer({
 
     fetchAnalysis();
   }, [verseRef, verseText]);
+
 
   // Filter to only show inflections for highlighted search forms
   const relevantInflections = useMemo(() => {
