@@ -3300,6 +3300,203 @@ async function handleGetVideos(env: Env): Promise<Response> {
 }
 
 /**
+ * Search videos by text/word
+ */
+async function handleSearchVideos(env: Env, query: string, limit: number): Promise<Response> {
+  if (!query || query.trim().length === 0) {
+    return errorResponse('Query parameter q is required', 400);
+  }
+
+  try {
+    // Get all videos
+    const result = await env.DB.prepare(`
+      SELECT video_id, youtube_url, title, transcript_text, segments_json
+      FROM videos
+      ORDER BY created_at DESC
+    `).all();
+
+    const matchingSegments: any[] = [];
+    
+    for (const video of (result.results || [])) {
+      const segments = parseJsonSafe(video.segments_json as string, []);
+      const videoId = video.video_id;
+      const title = video.title || `Video ${videoId}`;
+      const youtubeUrl = video.youtube_url;
+      
+      for (const seg of segments) {
+        const text = seg.text || '';
+        if (text.includes(query)) {
+          matchingSegments.push({
+            videoId,
+            youtubeUrl,
+            title,
+            segmentNumber: seg.segmentNumber || seg.segment_number,
+            text,
+            startTime: seg.startTime ?? seg.start_time ?? 0,
+            endTime: seg.endTime ?? seg.end_time ?? 0,
+            audioUrl: seg.audioUrl || null,
+            matchCount: (text.match(new RegExp(query, 'g')) || []).length,
+          });
+        }
+      }
+    }
+
+    // Sort by match count and limit
+    matchingSegments.sort((a, b) => b.matchCount - a.matchCount);
+    
+    return jsonResponse({
+      success: true,
+      query,
+      results: matchingSegments.slice(0, limit),
+      totalMatches: matchingSegments.length,
+    });
+
+  } catch (error) {
+    console.error('[CF Worker] Search videos error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Search failed', 500);
+  }
+}
+
+/**
+ * Get video word frequency data
+ */
+async function handleVideoWordFrequency(env: Env, limit: number): Promise<Response> {
+  try {
+    // Get all videos
+    const result = await env.DB.prepare(`
+      SELECT video_id, segments_json FROM videos
+    `).all();
+
+    const wordCounts = new Map<string, { count: number; videos: Set<string> }>();
+    
+    for (const video of (result.results || [])) {
+      const videoId = video.video_id as string;
+      const segments = parseJsonSafe(video.segments_json as string, []);
+      
+      for (const seg of segments) {
+        const text = seg.text || '';
+        // Extract Pashto words
+        const words = text.match(/[\u0600-\u06FF]+/g) || [];
+        
+        for (const word of words) {
+          const cleanWord = word.replace(/[.,!?؟،؛\[\](){}«»]/g, '').trim();
+          if (cleanWord.length > 0) {
+            if (!wordCounts.has(cleanWord)) {
+              wordCounts.set(cleanWord, { count: 0, videos: new Set() });
+            }
+            const entry = wordCounts.get(cleanWord)!;
+            entry.count++;
+            entry.videos.add(videoId);
+          }
+        }
+      }
+    }
+
+    // Convert to sorted array
+    const wordFrequencyList = Array.from(wordCounts.entries())
+      .map(([word, data]) => ({
+        word,
+        frequency: data.count,
+        videoCount: data.videos.size,
+      }))
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, limit);
+
+    const totalWords = Array.from(wordCounts.values()).reduce((sum, w) => sum + w.count, 0);
+
+    // Categorize words (simplified)
+    const categorization: Record<string, any[]> = {
+      pashto: [],
+      mixed: [],
+      'non-pashto': [],
+    };
+    
+    // All words from video transcripts are assumed to be Pashto
+    categorization.pashto = wordFrequencyList.slice(0, 50);
+
+    // Return in format expected by frontend
+    return jsonResponse({
+      success: true,
+      wordFrequency: {
+        totalWords,
+        uniqueWords: wordCounts.size,
+        videoCount: result.results?.length || 0,
+        wordFrequency: wordFrequencyList,
+      },
+      categorization,
+    });
+
+  } catch (error) {
+    console.error('[CF Worker] Video word frequency error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Failed to get word frequency', 500);
+  }
+}
+
+/**
+ * Index video words (populate video_word_mappings from videos table)
+ */
+async function handleIndexVideoWords(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as { videoId?: string };
+    
+    // Get videos to index
+    let videos: any[];
+    if (body.videoId) {
+      const result = await env.DB.prepare(`
+        SELECT video_id, segments_json FROM videos WHERE video_id = ?
+      `).bind(body.videoId).all();
+      videos = result.results || [];
+    } else {
+      const result = await env.DB.prepare(`
+        SELECT video_id, segments_json FROM videos
+      `).all();
+      videos = result.results || [];
+    }
+
+    let totalWordsIndexed = 0;
+    
+    for (const video of videos) {
+      const videoId = video.video_id as string;
+      const segments = parseJsonSafe(video.segments_json as string, []);
+      
+      const wordCounts = new Map<string, number>();
+      
+      for (const seg of segments) {
+        const text = seg.text || '';
+        const words = text.match(/[\u0600-\u06FF]+/g) || [];
+        
+        for (const word of words) {
+          const cleanWord = word.replace(/[.,!?؟،؛\[\](){}«»]/g, '').trim();
+          if (cleanWord.length > 0) {
+            wordCounts.set(cleanWord, (wordCounts.get(cleanWord) || 0) + 1);
+          }
+        }
+      }
+
+      // Insert/update word mappings
+      for (const [word, count] of wordCounts) {
+        await env.DB.prepare(`
+          INSERT OR REPLACE INTO video_word_mappings 
+          (video_id, pashto_word, frequency, updated_at)
+          VALUES (?, ?, ?, strftime('%s', 'now'))
+        `).bind(videoId, word, count).run();
+        totalWordsIndexed++;
+      }
+    }
+
+    return jsonResponse({
+      success: true,
+      videosProcessed: videos.length,
+      wordsIndexed: totalWordsIndexed,
+    });
+
+  } catch (error) {
+    console.error('[CF Worker] Index video words error:', error);
+    return errorResponse(error instanceof Error ? error.message : 'Indexing failed', 500);
+  }
+}
+
+/**
  * Get a single video by ID
  */
 async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
@@ -3635,6 +3832,24 @@ export default {
     // Store/update video data (for re-processing)
     if (path === '/api/store-video' && request.method === 'POST') {
       return handleStoreVideo(request, env);
+    }
+
+    // Search videos by text/word
+    if (path === '/api/search-videos' && request.method === 'GET') {
+      const query = url.searchParams.get('q') || '';
+      const limit = parseInt(url.searchParams.get('limit') || '20');
+      return handleSearchVideos(env, query, limit);
+    }
+
+    // Get video word frequency
+    if (path === '/api/video-word-frequency' && request.method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit') || '100');
+      return handleVideoWordFrequency(env, limit);
+    }
+
+    // Index video words (populate video_word_mappings)
+    if (path === '/api/index-video-words' && request.method === 'POST') {
+      return handleIndexVideoWords(request, env);
     }
 
     // ========================================

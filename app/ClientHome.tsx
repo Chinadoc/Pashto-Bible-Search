@@ -830,7 +830,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   useEffect(() => {
     if (activeMainTab === 'videos' && activeVideosTab === 'frequency' && !wordFrequency) {
       setLoadingWordFrequency(true);
-      fetch('/api/video-word-frequency?categorize=true&limit=100')
+      fetch(`${CLOUDFLARE_WORKER_URL}/api/video-word-frequency?limit=100`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
