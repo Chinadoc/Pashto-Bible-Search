@@ -95,15 +95,19 @@ const SANDWICH_LABELS: Record<string, { ps: string; en: string }> = {
 // 2. Sandwich (adpositional phrase)
 // 3. Subject of transitive past tense verb (ergative)
 // 
-// 1st inflection = 1/3 reasons
-// 2nd inflection = 2/3 or 3/3 reasons
+// 1st inflection = 1/3 reasons (any ONE of the above)
+// 2nd inflection = 2/3 reasons (any TWO of the above)
+// Note: 3/3 won't happen in practice
 function getInflectionLevel(inf: InflectedWord): { level: '1st' | '2nd'; reasonCount: number } {
   let reasonCount = 0;
   if (inf.isPlural) reasonCount++;
   if (inf.isInSandwich) reasonCount++;
   if (inf.isSubjectTransitivePast) reasonCount++;
   
-  // 2nd inflection requires 2+ reasons, otherwise 1st
+  // Cap at 2 - in practice you won't have all 3 reasons at once
+  reasonCount = Math.min(reasonCount, 2);
+  
+  // 2nd inflection requires 2 reasons, otherwise 1st
   return {
     level: reasonCount >= 2 ? '2nd' : '1st',
     reasonCount,
