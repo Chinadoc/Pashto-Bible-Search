@@ -370,32 +370,46 @@ function detectInflectionState(word: string, baseForm: string | null): string | 
 }
 
 // Detect if word is in a sandwich based on context
+// Note: Pashto sandwiches can have words between the marker and the noun!
+// e.g., "د هغو مالي مرستو" = "of those financial helps" (د is 3 words before مرستو)
 function detectSandwich(word: string, context: string): { isInSandwich: boolean; sandwichType: string | null } {
   if (!context) return { isInSandwich: false, sandwichType: null };
   
   const words = context.split(/\s+/);
-  const wordIndex = words.findIndex(w => w.includes(word));
+  const wordIndex = words.findIndex(w => w.includes(word) || w === word);
   
   if (wordIndex === -1) return { isInSandwich: false, sandwichType: null };
   
   for (const pattern of SANDWICH_PATTERNS) {
     if (pattern.start && pattern.end) {
-      // Look for start before and end after
-      const beforeWords = words.slice(0, wordIndex);
+      // Look for start before (up to 5 words back) and end after
+      const beforeWords = words.slice(Math.max(0, wordIndex - 5), wordIndex);
       const afterWords = words.slice(wordIndex + 1, wordIndex + 6);
       
       if (beforeWords.some(w => w === pattern.start) && afterWords.some(w => w === pattern.end)) {
         return { isInSandwich: true, sandwichType: pattern.type };
       }
     } else if (pattern.start && !pattern.end) {
-      // Word follows pattern.start (e.g., "د X")
-      if (wordIndex > 0 && words[wordIndex - 1] === pattern.start) {
-        return { isInSandwich: true, sandwichType: pattern.type };
+      // Word follows pattern.start (e.g., "د X" or "د ... X")
+      // Check up to 5 words before for the start marker
+      for (let i = wordIndex - 1; i >= Math.max(0, wordIndex - 5); i--) {
+        const prevWord = words[i].replace(/[،.؟!؛:«»\-]/g, '');
+        if (prevWord === pattern.start) {
+          return { isInSandwich: true, sandwichType: pattern.type };
+        }
+        // Stop if we hit another sandwich starter (nested sandwiches)
+        if (SANDWICH_PATTERNS.some(p => p.start === prevWord && p.start !== pattern.start)) {
+          break;
+        }
       }
     } else if (!pattern.start && pattern.end) {
       // Word precedes pattern.end (e.g., "X ته")
-      if (wordIndex < words.length - 1 && words[wordIndex + 1] === pattern.end) {
-        return { isInSandwich: true, sandwichType: pattern.type };
+      // Check a few words after
+      for (let i = wordIndex + 1; i < Math.min(words.length, wordIndex + 4); i++) {
+        const nextWord = words[i].replace(/[،.؟!؛:«»\-]/g, '');
+        if (nextWord === pattern.end) {
+          return { isInSandwich: true, sandwichType: pattern.type };
+        }
       }
     }
   }
@@ -1091,7 +1105,8 @@ export async function GET(request: NextRequest) {
     }
     
     // 4. Check inflection_reasons for context-aware analysis
-    if (context && result.pos === 'noun') {
+    // SKIP if we already have good data from lingdocs_forms (which is more accurate)
+    if (context && result.pos === 'noun' && result.source !== 'lingdocs_forms') {
       try {
         const irResponse = await fetch(
           `${WORKER_URL}/api/inflection-reasons?form=${encodeURIComponent(cleanWord)}`
@@ -1101,13 +1116,22 @@ export async function GET(request: NextRequest) {
           const irData = await irResponse.json();
           if (irData && irData.reasons && irData.reasons.length > 0) {
             const reason = irData.reasons[0];
-            result.inflectionReason = {
-              isPlural: reason.reasons?.plural > 0,
-              isInSandwich: reason.reasons?.sandwich > 0,
-              sandwichType: reason.reasons?.sandwich_types?.[0] || null,
-              isErgative: reason.reasons?.transitive_past > 0,
-            };
-            result.source = 'inflection_reasons';
+            // Only use this if it seems reasonable (not just ergative with nothing else)
+            const hasPlural = reason.reasons?.plural > 0;
+            const hasSandwich = reason.reasons?.sandwich > 0;
+            const hasErgative = reason.reasons?.transitive_past > 0;
+            
+            // If only ergative is set with no sandwich/plural, likely incorrect
+            // Skip this data and let context detection handle it
+            if (!(hasErgative && !hasPlural && !hasSandwich)) {
+              result.inflectionReason = {
+                isPlural: hasPlural,
+                isInSandwich: hasSandwich,
+                sandwichType: reason.reasons?.sandwich_types?.[0] || null,
+                isErgative: hasErgative,
+              };
+              result.source = 'inflection_reasons';
+            }
           }
         }
       } catch (e) {
@@ -1115,8 +1139,9 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // 5. If no inflection reason found, try to detect from context
-    if (context && result.pos === 'noun' && !result.inflectionReason) {
+    // 5. Detect inflection reason from context
+    // Run this even if we have lingdocs_forms data (to get sandwich/plural info)
+    if (context && result.pos === 'noun') {
       const sandwichInfo = detectSandwich(cleanWord, context);
       const ergativeInfo = detectErgative(cleanWord, context);
       const vocativeDetected = detectVocative(cleanWord, context);
