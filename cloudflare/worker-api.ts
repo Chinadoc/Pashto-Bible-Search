@@ -4167,19 +4167,81 @@ export default {
       }
     }
 
-    // Form to base word lookup (for noun inflections)
+    // Form to base word lookup (for noun inflections) - now includes LingDocs
     if (path === '/api/form-to-base' && request.method === 'GET') {
       const form = url.searchParams.get('form');
       if (!form) {
         return errorResponse('Missing form parameter', 400);
       }
 
+      // Generate spelling variants (ی ↔ ې ↔ ي variations common in Pashto)
+      const generateVariants = (f: string): string[] => {
+        const variants = [f];
+        // Replace ی with ې and vice versa
+        if (f.includes('ی')) variants.push(f.replace(/ی/g, 'ې'));
+        if (f.includes('ې')) variants.push(f.replace(/ې/g, 'ی'));
+        // Replace ی with ي and vice versa
+        if (f.includes('ی')) variants.push(f.replace(/ی/g, 'ي'));
+        if (f.includes('ي')) variants.push(f.replace(/ي/g, 'ی'));
+        // Replace ې with ي and vice versa
+        if (f.includes('ې')) variants.push(f.replace(/ې/g, 'ي'));
+        if (f.includes('ي')) variants.push(f.replace(/ي/g, 'ې'));
+        // Also handle ه at end being dropped/added
+        if (f.endsWith('ه')) variants.push(f.slice(0, -1));
+        if (!f.endsWith('ه')) variants.push(f + 'ه');
+        return [...new Set(variants)]; // Dedupe
+      };
+      
+      const formVariants = generateVariants(form);
+
       try {
-        // Try inflections table first
-        let result = await env.DB.prepare(
-          `SELECT base_word, inflected_form, grammatical_info, frequency
-           FROM inflections WHERE inflected_form = ? LIMIT 1`
-        ).bind(form).first();
+        let result: any = null;
+        let grammaticalInfo: any = null;
+        let matchedForm = form;
+        
+        // First, try lingdocs_forms table with all spelling variants
+        for (const variant of formVariants) {
+          const lingdocsForm = await env.DB.prepare(
+            `SELECT lf.form, lf.base_ts, lf.form_type, lf.phonetics, ld.pashto as base_word, ld.e as english, ld.c as pos
+             FROM lingdocs_forms lf 
+             JOIN lingdocs_dictionary ld ON lf.base_ts = ld.ts
+             WHERE lf.form = ? LIMIT 1`
+          ).bind(variant).first() as { form: string; base_ts: number; form_type: string; phonetics?: string; base_word: string; english?: string; pos?: string } | null;
+          
+          if (lingdocsForm) {
+            result = {
+              base_word: lingdocsForm.base_word,
+              inflected_form: form,
+            };
+            grammaticalInfo = {
+              form_type: lingdocsForm.form_type,
+              phonetics: lingdocsForm.phonetics,
+              english: lingdocsForm.english,
+              pos: lingdocsForm.pos,
+              matched_variant: variant !== form ? variant : undefined,
+            };
+            matchedForm = variant;
+            break;
+          }
+        }
+        
+        // Try inflections table if not found
+        if (!result) {
+          result = await env.DB.prepare(
+            `SELECT base_word, inflected_form, grammatical_info, frequency
+             FROM inflections WHERE inflected_form = ? LIMIT 1`
+          ).bind(form).first();
+          
+          if (result?.grammatical_info) {
+            try {
+              grammaticalInfo = typeof result.grammatical_info === 'string'
+                ? JSON.parse(result.grammatical_info)
+                : result.grammatical_info;
+            } catch (e) {
+              grammaticalInfo = { raw: result.grammatical_info };
+            }
+          }
+        }
 
         if (!result) {
           // Try form_to_root table
@@ -4190,19 +4252,22 @@ export default {
         }
 
         if (!result) {
-          return jsonResponse({ found: false, form });
-        }
-
-        // Parse grammatical_info if it's a string
-        let grammaticalInfo = null;
-        if (result.grammatical_info) {
-          try {
-            grammaticalInfo = typeof result.grammatical_info === 'string'
-              ? JSON.parse(result.grammatical_info)
-              : result.grammatical_info;
-          } catch (e) {
-            grammaticalInfo = { raw: result.grammatical_info };
+          // Check if this form IS a base form in lingdocs_dictionary
+          const baseCheck = await env.DB.prepare(
+            `SELECT pashto as base_word, e as english, c as pos FROM lingdocs_dictionary WHERE pashto = ? LIMIT 1`
+          ).bind(form).first() as { base_word: string; english?: string; pos?: string } | null;
+          
+          if (baseCheck) {
+            return jsonResponse({
+              found: true,
+              form,
+              base_word: form, // It IS the base form
+              grammatical_info: { is_base: true, english: baseCheck.english, pos: baseCheck.pos },
+              frequency: 0,
+            });
           }
+          
+          return jsonResponse({ found: false, form });
         }
 
         return jsonResponse({
@@ -4217,7 +4282,7 @@ export default {
       }
     }
 
-    // Get all inflections for a noun base form
+    // Get all inflections for a noun base form - uses LingDocs data
     if (path === '/api/noun-inflections' && request.method === 'GET') {
       const base = url.searchParams.get('base');
       if (!base) {
@@ -4225,31 +4290,82 @@ export default {
       }
 
       try {
-        const results = await env.DB.prepare(
+        const inflections: Array<{ form: string; label: string; phonetics?: string; frequency?: number }> = [];
+        
+        // First, try to find the base word in lingdocs_dictionary and get its inflection_info
+        const dictEntry = await env.DB.prepare(
+          `SELECT ts, pashto, inflection_info FROM lingdocs_dictionary WHERE pashto = ? LIMIT 1`
+        ).bind(base).first() as { ts: number; pashto: string; inflection_info?: string } | null;
+
+        if (dictEntry?.ts) {
+          // Get all forms from lingdocs_forms linked to this entry
+          const formsResult = await env.DB.prepare(
+            `SELECT form, form_type, phonetics FROM lingdocs_forms WHERE base_ts = ? LIMIT 50`
+          ).bind(dictEntry.ts).all();
+          
+          for (const row of (formsResult.results || []) as Array<{ form: string; form_type: string; phonetics?: string }>) {
+            if (row.form && row.form !== base) {
+              inflections.push({
+                form: row.form,
+                label: row.form_type || 'inflection',
+                phonetics: row.phonetics,
+              });
+            }
+          }
+          
+          // Also parse inflection_info JSON if available for more detailed info
+          if (dictEntry.inflection_info) {
+            try {
+              const infInfo = JSON.parse(dictEntry.inflection_info);
+              // LingDocs stores forms in infInfo.forms array
+              if (infInfo.forms && Array.isArray(infInfo.forms)) {
+                for (const f of infInfo.forms) {
+                  if (f.p && f.p !== base) {
+                    // Check if already added
+                    if (!inflections.some(i => i.form === f.p)) {
+                      inflections.push({
+                        form: f.p,
+                        label: f.type || 'inflection',
+                        phonetics: f.f,
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore JSON parse errors
+            }
+          }
+        }
+        
+        // Also check the older inflections table as fallback
+        const oldResults = await env.DB.prepare(
           `SELECT inflected_form as form, grammatical_info, frequency
            FROM inflections WHERE base_word = ?
            ORDER BY frequency DESC
            LIMIT 20`
         ).bind(base).all();
 
-        const inflections = (results.results || []).map((row: any) => {
-          let label = 'inflection';
-          if (row.grammatical_info) {
-            try {
-              const gi = typeof row.grammatical_info === 'string'
-                ? JSON.parse(row.grammatical_info)
-                : row.grammatical_info;
-              label = gi.label || gi.case || gi.number || 'inflection';
-            } catch (e) {
-              // ignore
+        for (const row of (oldResults.results || []) as Array<{ form: string; grammatical_info?: string; frequency?: number }>) {
+          if (row.form && row.form !== base && !inflections.some(i => i.form === row.form)) {
+            let label = 'inflection';
+            if (row.grammatical_info) {
+              try {
+                const gi = typeof row.grammatical_info === 'string'
+                  ? JSON.parse(row.grammatical_info)
+                  : row.grammatical_info;
+                label = gi.label || gi.case || gi.number || 'inflection';
+              } catch (e) {
+                // ignore
+              }
             }
+            inflections.push({
+              form: row.form,
+              label,
+              frequency: row.frequency || 0,
+            });
           }
-          return {
-            form: row.form,
-            label,
-            frequency: row.frequency || 0,
-          };
-        });
+        }
 
         return jsonResponse({
           base,
@@ -4717,30 +4833,6 @@ export default {
         });
       } catch (error: any) {
         return errorResponse(`Dictionary search failed: ${error.message}`, 500);
-      }
-    }
-
-    // Noun inflections lookup
-    if (path === '/api/noun-inflections' && request.method === 'GET') {
-      const base = url.searchParams.get('base');
-      if (!base) {
-        return errorResponse('Missing base parameter', 400);
-      }
-
-      try {
-        const result = await env.DB.prepare(
-          `SELECT base_word, inflected_form, inflection_type, grammatical_info, frequency
-           FROM inflections 
-           WHERE base_word = ?
-           ORDER BY inflection_type`
-        ).bind(base).all();
-
-        return jsonResponse({
-          base,
-          inflections: result.results || [],
-        });
-      } catch (error: any) {
-        return errorResponse(`Noun inflections lookup failed: ${error.message}`, 500);
       }
     }
 
