@@ -28,7 +28,7 @@ import {
 } from '@/app/utils/verb-filters';
 import { useSession } from "next-auth/react";
 
-// Anki Card Export Button - downloads a single verse as Anki-compatible CSV for "Basic+++" note type
+// Anki Card Export Button - creates a complete .apkg file with embedded audio
 interface AnkiExportProps {
   verseRef: string;
   verseText: string;
@@ -36,17 +36,22 @@ interface AnkiExportProps {
   dictionaryData?: DictionaryData | null;
   matchedForms?: string[];
   audioUrl?: string | null;
+  source?: 'bible' | 'video' | 'poem' | 'proverb';
 }
 
-function AnkiExportButton({ verseRef, verseText, searchWord, dictionaryData, matchedForms, audioUrl: initialAudioUrl }: AnkiExportProps) {
+function AnkiExportButton({ verseRef, verseText, searchWord, dictionaryData, matchedForms, audioUrl: initialAudioUrl, source = 'bible' }: AnkiExportProps) {
   const [exporting, setExporting] = useState(false);
   
   const handleExport = async () => {
     setExporting(true);
     try {
+      // Dynamic import of anki-apkg-export (client-side only)
+      const { default: AnkiExport } = await import('anki-apkg-export');
+      const { saveAs } = await import('file-saver');
+      
       // Try to get audio URL if not already available
       let audioUrl = initialAudioUrl;
-      if (!audioUrl && verseRef) {
+      if (!audioUrl && verseRef && source === 'bible') {
         try {
           const audioRes = await fetch(`/api/audio?ref=${encodeURIComponent(verseRef)}`);
           if (audioRes.ok) {
@@ -60,106 +65,146 @@ function AnkiExportButton({ verseRef, verseText, searchWord, dictionaryData, mat
       
       // Get dictionary info for the searched word
       let translation = '';
-      let helpfulWord = searchWord || '';
+      let romanization = '';
+      let pos = '';
+      let baseWord = searchWord || matchedForms?.[0] || '';
       
-      // Build "Helpful Word" with inflection info
+      // Build word info from dictionary data
       if (dictionaryData?.entries?.length) {
         const entry = dictionaryData.entries[0];
-        // Format: فقیر - faqéer (adj. / n. m. anim.) - poor, beggar; dervish
-        const parts: string[] = [];
-        if (entry.pashto) parts.push(entry.pashto);
-        if (entry.romanized) parts.push(` - ${entry.romanized}`);
-        if (entry.pos) parts.push(` (${entry.pos})`);
-        helpfulWord = parts.join('');
-        
-        // Get English definition for Translation field
-        if (entry.english) {
-          translation = entry.english;
-        }
-        
-        // If searched form is different from base, show inflection info
-        if (matchedForms?.length && matchedForms[0] !== entry.pashto) {
-          helpfulWord = `${matchedForms[0]} ← ${helpfulWord}`;
-        }
-      } else if (matchedForms?.length) {
-        // If no dictionary data, try to fetch inflection info for the matched form
-        try {
-          const res = await fetch(`/api/word-analysis?word=${encodeURIComponent(matchedForms[0])}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.dictionary) {
-              helpfulWord = `${matchedForms[0]} - ${data.dictionary.romanization || ''} (${data.dictionary.pos || ''})`;
-              translation = data.dictionary.english || '';
-              if (data.dictionary.baseWord && data.dictionary.baseWord !== matchedForms[0]) {
-                helpfulWord += ` ← ${data.dictionary.baseWord}`;
+        baseWord = entry.pashto || baseWord;
+        romanization = entry.romanized || '';
+        pos = entry.pos || '';
+        translation = entry.english || '';
+      } else if (matchedForms?.length || searchWord) {
+        // Try to fetch word analysis
+        const wordToAnalyze = matchedForms?.[0] || searchWord;
+        if (wordToAnalyze) {
+          try {
+            const res = await fetch(`/api/word-analysis?word=${encodeURIComponent(wordToAnalyze)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.dictionary) {
+                baseWord = data.dictionary.baseWord || data.dictionary.pashto || baseWord;
+                romanization = data.dictionary.romanization || '';
+                pos = data.dictionary.pos || '';
+                translation = data.dictionary.english || '';
               }
             }
+          } catch (e) {
+            console.log('Could not fetch word analysis for Anki export');
           }
-        } catch (e) {
-          console.log('Could not fetch word analysis for Anki export');
         }
       }
       
-      // Parse book name from verse ref for tags
-      const bookMatch = verseRef.match(/^(\d?\s*[A-Za-z]+)/);
-      const bookName = bookMatch ? bookMatch[1].replace(/\s+/g, '') : '';
+      // Build the "Helpful Word" field with inflection chain
+      let helpfulWord = baseWord;
+      if (romanization) helpfulWord += ` - ${romanization}`;
+      if (pos) helpfulWord += ` (${pos})`;
       
-      // Add audio sound reference if available (for Anki)
-      // Format: [sound:Psalms_109_16.mp3] - user needs to have file in media folder
-      const audioFileName = audioUrl ? `${verseRef.replace(/[: ]/g, '_')}.mp3` : '';
-      const soundTag = audioUrl ? `[sound:${audioFileName}]` : '';
+      // Show inflection chain if the matched form differs from base
+      const matchedForm = matchedForms?.[0] || searchWord;
+      if (matchedForm && matchedForm !== baseWord) {
+        helpfulWord = `${matchedForm} ← ${helpfulWord}`;
+      }
       
-      // CSV fields for Basic+++ note type:
-      // Word, Translation, Pashto Sentence, Helpful Word, Sentence Translation, Special tags, Tags
-      const escapeCSV = (s: string) => `"${(s || '').replace(/"/g, '""')}"`;
+      // Create deck name based on source
+      const deckName = source === 'bible' 
+        ? 'Pashto Bible' 
+        : source === 'video' 
+          ? 'Pashto Videos' 
+          : source === 'poem' 
+            ? 'Pashto Poetry' 
+            : 'Pashto Proverbs';
       
-      // Include sound tag in Helpful Word field
-      const helpfulWordWithAudio = soundTag ? `${helpfulWord} ${soundTag}` : helpfulWord;
+      // Create the Anki package
+      const apkg = new AnkiExport(deckName);
       
-      const csvFields = [
-        escapeCSV(verseRef),                    // Word (verse reference)
-        escapeCSV(translation),                  // Translation (English definition)
-        escapeCSV(verseText),                    // Pashto Sentence
-        escapeCSV(helpfulWordWithAudio),         // Helpful Word (searched term + inflection + audio)
-        escapeCSV(''),                           // Sentence Translation (left empty per user request)
-        escapeCSV(bookName),                     // Special tags (book name)
-        escapeCSV(searchWord || matchedForms?.[0] || '')  // Tags (search term)
-      ];
+      // Audio filename (sanitized)
+      const audioFileName = `${(matchedForm || baseWord || verseRef).replace(/[: /\\?*"|<>]/g, '_')}.mp3`;
       
-      const csvContent = csvFields.join(',');
+      // Build the Pashto sentence with source info embedded
+      let pashtoSentenceWithSource = verseText;
+      if (source === 'bible') {
+        pashtoSentenceWithSource = `<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">📖 ${verseRef}</div>${verseText}`;
+      } else if (source === 'video') {
+        pashtoSentenceWithSource = `<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">🎬 ${verseRef}</div>${verseText}`;
+      } else if (source === 'poem') {
+        pashtoSentenceWithSource = `<div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">📜 ${verseRef}</div>${verseText}`;
+      }
       
-      // Also download the audio file if available, so user can import it to Anki
-      if (audioUrl && audioFileName) {
+      // FRONT of card: The Word being studied
+      const front = `
+<div style="text-align: center; direction: rtl; font-family: 'Noto Naskh Arabic', 'Scheherazade New', serif;">
+  <div style="font-size: 56px; font-weight: bold; color: #1d4ed8; margin: 20px 0;">
+    ${matchedForm || baseWord}
+  </div>
+  ${romanization ? `
+  <div style="font-size: 20px; color: #64748b; font-style: italic; margin-bottom: 10px; direction: ltr;">
+    ${romanization}
+  </div>
+  ` : ''}
+  ${translation ? `
+  <div style="font-size: 18px; color: #374151; margin: 15px 0; direction: ltr;">
+    ${translation}
+  </div>
+  ` : ''}
+</div>
+      `.trim();
+      
+      // BACK of card: Pashto Sentence with audio
+      const back = `
+<div style="text-align: center; direction: rtl; font-family: 'Noto Naskh Arabic', 'Scheherazade New', serif;">
+  <!-- Audio plays automatically on back -->
+  ${audioUrl ? `<div style="margin-bottom: 15px;">[sound:${audioFileName}]</div>` : ''}
+  
+  <!-- Pashto Sentence with source -->
+  <div style="font-size: 24px; line-height: 2; margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
+    ${pashtoSentenceWithSource}
+  </div>
+  
+  <!-- Helpful Word (inflection info) -->
+  ${helpfulWord ? `
+  <div style="font-size: 14px; color: #6b7280; margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px; direction: ltr;">
+    💡 ${helpfulWord}
+  </div>
+  ` : ''}
+</div>
+
+<style>
+  mark, .highlight {
+    background-color: #fef08a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+</style>
+      `.trim();
+      
+      // Add the card to the deck
+      apkg.addCard(front, back);
+      
+      // Download and embed audio if available
+      if (audioUrl) {
         try {
           const audioResponse = await fetch(audioUrl);
           if (audioResponse.ok) {
             const audioBlob = await audioResponse.blob();
-            const audioUrlObj = URL.createObjectURL(audioBlob);
-            const audioLink = document.createElement('a');
-            audioLink.href = audioUrlObj;
-            audioLink.download = audioFileName;
-            document.body.appendChild(audioLink);
-            audioLink.click();
-            document.body.removeChild(audioLink);
-            URL.revokeObjectURL(audioUrlObj);
+            apkg.addMedia(audioFileName, audioBlob);
           }
         } catch (e) {
-          console.log('Could not download audio for Anki card');
+          console.error('Failed to download audio for Anki card', e);
         }
       }
       
-      // Create and download CSV
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${verseRef.replace(/[: ]/g, '_')}_anki.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Generate and save the .apkg file
+      const zip = await apkg.save();
+      const fileName = `${(matchedForm || baseWord || verseRef).replace(/[: /\\?*"|<>]/g, '_')}_${source}.apkg`;
+      saveAs(zip, fileName);
+      
     } catch (err) {
       console.error('Failed to export Anki card', err);
+      alert('Failed to create Anki package. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -170,9 +215,9 @@ function AnkiExportButton({ verseRef, verseText, searchWord, dictionaryData, mat
       onClick={handleExport}
       disabled={exporting}
       className="text-xs px-3 py-1.5 border border-amber-600/50 rounded-lg hover:bg-amber-700/30 text-amber-400 hover:text-amber-300 transition-colors"
-      title="Export as Anki card (CSV) - maps to Basic+++ fields"
+      title="Export as Anki deck (.apkg) with embedded audio"
     >
-      {exporting ? '...' : '📇 Anki'}
+      {exporting ? '⏳' : '📇 Anki'}
     </button>
   );
 }
