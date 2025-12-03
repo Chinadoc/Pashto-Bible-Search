@@ -4475,7 +4475,7 @@ export default {
       }
     }
 
-    // Dictionary search - searches both word_frequencies AND lingdocs_dictionary
+    // Dictionary search - searches word_frequencies, lingdocs_dictionary, AND lingdocs_forms (for inflections)
     if (path === '/api/dictionary/search' && request.method === 'GET') {
       const query = url.searchParams.get('q') || '';
       const limit = parseInt(url.searchParams.get('limit') || '20');
@@ -4488,15 +4488,70 @@ export default {
         // Check if query is romanized (starts with ASCII letter)
         const isRomanized = /^[a-zA-Z]/.test(query);
         const allEntries: any[] = [];
+        const seenIds = new Set<number>();
 
-        // First, search the LingDocs dictionary (18,690 entries with full data)
+        // FIRST: Search lingdocs_forms for inflected forms (e.g., فقیرۍ → فقیري)
+        // This allows searching for any conjugated/inflected form and finding the base word
+        try {
+          const formsSql = `
+            SELECT f.form, f.form_type, f.phonetics as form_phonetics,
+                   d.ts as lingdocs_id, d.pashto, d.phonetics as romanization, 
+                   d.english, d.pos, d.commonality, d.inflection_info
+            FROM lingdocs_forms f
+            JOIN lingdocs_dictionary d ON f.base_ts = d.ts
+            WHERE f.form = ? OR f.form LIKE ?
+            ORDER BY 
+              CASE WHEN f.form = ? THEN 0 ELSE 1 END,
+              d.commonality DESC
+            LIMIT ?
+          `;
+          const formsResult = await env.DB.prepare(formsSql)
+            .bind(query, `${query}%`, query, limit)
+            .all();
+          
+          for (const r of (formsResult.results || [])) {
+            if (!seenIds.has(r.lingdocs_id)) {
+              seenIds.add(r.lingdocs_id);
+              
+              // Parse inflection info
+              let inflections = null;
+              try {
+                inflections = r.inflection_info ? JSON.parse(r.inflection_info) : null;
+              } catch (e) {}
+              
+              allEntries.push({
+                id: r.pashto,
+                pashto: r.pashto,
+                romanization: r.romanization || '',
+                english: r.english || '',
+                pos: r.pos || '',
+                frequency: r.commonality || 0,
+                lingdocs_id: r.lingdocs_id,
+                lingdocs_url: `https://dictionary.lingdocs.com/word?id=${r.lingdocs_id}`,
+                source: 'lingdocs',
+                // Include form info if searching for inflected form
+                matchedForm: r.form !== r.pashto ? {
+                  form: r.form,
+                  type: r.form_type,
+                  phonetics: r.form_phonetics
+                } : null,
+                // Include all inflection/conjugation data
+                inflections: inflections
+              });
+            }
+          }
+        } catch (e) {
+          console.log('Forms lookup failed:', e);
+        }
+
+        // SECOND: Search the LingDocs dictionary directly for base forms
         try {
           let lingdocsSql: string;
           let lingdocsParams: any[];
 
           if (isRomanized) {
             lingdocsSql = `
-              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality
+              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality, inflection_info
               FROM lingdocs_dictionary 
               WHERE phonetics LIKE ? OR simplified_phonetics LIKE ? OR english LIKE ?
               ORDER BY 
@@ -4507,7 +4562,7 @@ export default {
             lingdocsParams = [`%${query}%`, `%${query}%`, `%${query}%`, query, `${query}%`, limit];
           } else {
             lingdocsSql = `
-              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality
+              SELECT ts as lingdocs_id, pashto, phonetics as romanization, english, pos, commonality, inflection_info
               FROM lingdocs_dictionary 
               WHERE pashto LIKE ?
               ORDER BY 
@@ -4521,21 +4576,30 @@ export default {
           const lingdocsResult = await env.DB.prepare(lingdocsSql).bind(...lingdocsParams).all();
           
           for (const r of (lingdocsResult.results || [])) {
-            allEntries.push({
-              id: r.pashto,
-              pashto: r.pashto,
-              romanization: r.romanization || '',
-              english: r.english || '',
-              pos: r.pos || '',
-              frequency: r.commonality || 0,
-              lingdocs_id: r.lingdocs_id,
-              lingdocs_url: `https://dictionary.lingdocs.com/word?id=${r.lingdocs_id}`,
-              source: 'lingdocs'
-            });
+            if (!seenIds.has(r.lingdocs_id)) {
+              seenIds.add(r.lingdocs_id);
+              
+              let inflections = null;
+              try {
+                inflections = r.inflection_info ? JSON.parse(r.inflection_info) : null;
+              } catch (e) {}
+              
+              allEntries.push({
+                id: r.pashto,
+                pashto: r.pashto,
+                romanization: r.romanization || '',
+                english: r.english || '',
+                pos: r.pos || '',
+                frequency: r.commonality || 0,
+                lingdocs_id: r.lingdocs_id,
+                lingdocs_url: `https://dictionary.lingdocs.com/word?id=${r.lingdocs_id}`,
+                source: 'lingdocs',
+                inflections: inflections
+              });
+            }
           }
         } catch (e) {
-          // lingdocs_dictionary table might not exist yet
-          console.log('LingDocs dictionary search failed (table may not exist):', e);
+          console.log('LingDocs dictionary search failed:', e);
         }
 
         // Also search word_frequencies for Bible-specific vocabulary
