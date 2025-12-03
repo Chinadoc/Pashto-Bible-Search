@@ -1,5 +1,4 @@
 import { saveAs } from 'file-saver';
-// @ts-expect-error - No types available for anki-apkg-export
 import AnkiExport from 'anki-apkg-export';
 
 export interface AnkiCardData {
