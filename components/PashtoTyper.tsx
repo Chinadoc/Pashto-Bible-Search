@@ -430,7 +430,9 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
 
         const currentWord = flatList[index];
         // Use explicit firstKey if available, otherwise fall back to first char of transliteration
-        const targetKey = (currentWord.firstKey || currentWord.t.charAt(0)).toLowerCase();
+        // Ensure we only compare Roman characters (filter out any Pashto chars that might have slipped through)
+        const cleanTranslit = currentWord.t?.replace(/[^\x00-\x7F]/g, '') || '';
+        const targetKey = (currentWord.firstKey || cleanTranslit.charAt(0) || 'a').toLowerCase();
         const pressedKey = key.toLowerCase();
 
         setAttempts(prev => prev + 1);
@@ -657,18 +659,18 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                                         {currentWord.p}
                                     </div>
                                     
-                                    {/* Big key to type */}
+                                    {/* Big key to type - ONLY Roman characters */}
                                     <div className="flex flex-col items-center">
                                         <span className="text-slate-400 text-xs mb-1">TAP</span>
                                         <span className={`
                                             w-14 h-14 flex items-center justify-center
-                                            rounded-xl text-2xl font-bold uppercase
+                                            rounded-xl text-2xl font-bold uppercase font-mono
                                             ${stage === 3 
                                                 ? 'bg-slate-700 text-slate-400' 
                                                 : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 animate-pulse'
                                             }
                                         `}>
-                                            {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.charAt(0) || '?')}
+                                            {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.replace(/[^\x00-\x7F]/g, '').charAt(0) || 'a')}
                                         </span>
                                     </div>
                                 </div>
@@ -678,25 +680,26 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                             {!isMobile && (
                                 <div className="flex-1 w-full">
                                     <div className="flex items-center justify-center gap-3 bg-slate-800/80 px-6 py-2 rounded-xl border border-slate-700">
-                                        <span className="text-3xl font-bold text-blue-400 font-mono">{currentWord.t?.charAt(0)}</span>
+                                        {/* Show first Pashto character */}
+                                        <span className="text-3xl font-bold text-blue-400" dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}>{currentWord.p?.charAt(0)}</span>
                                         <span className="text-slate-600 text-xl">&rarr;</span>
                                         <div className="flex flex-col items-start text-left min-w-[120px]">
-                                            {/* Expected key indicator */}
+                                            {/* Expected key indicator - ONLY show Roman characters */}
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-slate-400 text-xs">Type:</span>
                                                 <span className={`
-                                                    px-3 py-1 rounded-lg text-lg font-bold uppercase
+                                                    px-3 py-1 rounded-lg text-lg font-bold uppercase font-mono
                                                     ${stage === 3 
                                                         ? 'bg-slate-700 text-slate-400 blur-sm' 
                                                         : 'bg-emerald-600 text-white animate-pulse'
                                                     }
                                                 `}>
-                                                    {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.charAt(0))}
+                                                    {stage === 3 ? '?' : (currentWord.firstKey || currentWord.t?.replace(/[^\x00-\x7F]/g, '').charAt(0) || 'a')}
                                                 </span>
                                             </div>
-                                            {/* Romanization */}
-                                            <span className={`font-medium text-base leading-none transition-all ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
-                                                {stage === 3 ? '???' : currentWord.t}
+                                            {/* Romanization - filter to only Roman characters */}
+                                            <span className={`font-medium text-base leading-none transition-all font-mono ${stage === 3 ? 'blur-sm select-none text-slate-500' : 'text-white'}`}>
+                                                {stage === 3 ? '???' : (currentWord.t?.replace(/[^\x00-\x7F]/g, '') || 'unknown')}
                                             </span>
                                             {/* English definition */}
                                             {currentWord.e && (
@@ -707,10 +710,10 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                                 </div>
                             )}
 
-                            {/* Mobile: Compact romanization + definition row */}
+                            {/* Mobile: Compact romanization + definition row - ONLY Roman characters */}
                             {isMobile && currentWord.t && (
                                 <div className="flex items-center justify-center gap-2 text-sm">
-                                    <span className="text-slate-300 font-medium">{currentWord.t}</span>
+                                    <span className="text-slate-300 font-medium font-mono">{currentWord.t?.replace(/[^\x00-\x7F]/g, '') || 'unknown'}</span>
                                     {currentWord.e && (
                                         <>
                                             <span className="text-slate-600">•</span>
@@ -793,7 +796,7 @@ export default function PashtoTyper({ data, onComplete, onExit }: Props) {
                             onChange={handleMobileInput}
                             onBlur={() => setTimeout(() => mobileInputRef.current?.focus(), 100)}
                             className="w-full px-6 py-4 text-center text-xl bg-slate-800 border-2 border-blue-500 rounded-2xl text-white focus:outline-none focus:ring-4 focus:ring-blue-500/50 shadow-2xl shadow-blue-500/20"
-                            placeholder={`Type "${(currentWord.firstKey || currentWord.t?.charAt(0) || '').toUpperCase()}" to continue...`}
+                            placeholder={`Type "${(currentWord.firstKey || currentWord.t?.replace(/[^\x00-\x7F]/g, '').charAt(0) || 'a').toUpperCase()}" to continue...`}
                         />
                         {/* Visual keyboard hint */}
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full">

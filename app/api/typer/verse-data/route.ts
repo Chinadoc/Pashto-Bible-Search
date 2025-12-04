@@ -48,7 +48,11 @@ function transliterate(text: string): string {
     let result = '';
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
-        result += charMap[char] !== undefined ? charMap[char] : char;
+        // Only include mapped characters - skip any unmapped Pashto/Arabic chars
+        if (charMap[char] !== undefined) {
+            result += charMap[char];
+        }
+        // Skip unmapped characters entirely (don't keep Pashto chars in romanization)
     }
     // Clean up double spaces and trim
     return result.replace(/\s+/g, ' ').trim();
@@ -109,17 +113,26 @@ export async function GET(req: NextRequest) {
             }
 
             // Get transliteration - prefer dictionary, fallback to computed
-            const romanized = entry?.romanization || transliterate(cleanWord);
+            let romanized = entry?.romanization || transliterate(cleanWord);
+            
+            // CRITICAL: Strip any non-ASCII/non-roman characters from romanization
+            // This ensures we never display Pashto characters in the hint
+            romanized = romanized.replace(/[^\x00-\x7F]/g, '').trim();
+            
+            // If romanized is empty after cleaning, compute it fresh
+            if (!romanized) {
+                romanized = transliterate(cleanWord);
+            }
             
             // Make sure we have a valid first character for typing
             const firstChar = romanized.charAt(0).toLowerCase();
-            const validFirstChar = /[a-z]/.test(firstChar) ? firstChar : transliterate(cleanWord.charAt(0)).charAt(0).toLowerCase();
+            const validFirstChar = /[a-z]/.test(firstChar) ? firstChar : transliterate(cleanWord.charAt(0)).charAt(0).toLowerCase() || 'a';
 
             return {
                 p: word, // Keep original with punctuation for display
-                t: romanized || validFirstChar, // Romanization for hint
+                t: romanized || validFirstChar, // Romanization for hint (guaranteed Roman characters only)
                 e: entry?.english || '', // English definition (empty instead of '?')
-                firstKey: validFirstChar || 'a' // Explicit first key to type
+                firstKey: validFirstChar // Explicit first key to type (guaranteed a-z)
             };
         });
 
