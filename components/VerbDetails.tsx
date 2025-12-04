@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Box, Typography, Chip, Button, Collapse, Paper } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Chip, Button, Paper } from '@mui/material';
 
 interface VerbDetailsProps {
     word: string;
@@ -22,22 +22,12 @@ interface VerbDetailsProps {
 }
 
 export default function VerbDetails({ word, metadata, conjugations, lingdocsUrl }: VerbDetailsProps) {
-    const [expanded, setExpanded] = useState(false);
-
     if (!metadata && conjugations.length === 0) return null;
 
     const displayWord = metadata?.pashto_word || word;
     const english = metadata?.english || 'Unknown definition';
     const verbType = metadata?.verb_type?.replace('_', ' ') || 'Verb';
     const transitivity = metadata?.transitivity || '';
-
-    // Group conjugations by tense
-    const groupedConjugations = conjugations.reduce((acc, curr) => {
-        const tense = curr.tense || 'Other';
-        if (!acc[tense]) acc[tense] = [];
-        acc[tense].push(curr);
-        return acc;
-    }, {} as Record<string, typeof conjugations>);
 
     return (
         <Paper
@@ -85,42 +75,7 @@ export default function VerbDetails({ word, metadata, conjugations, lingdocsUrl 
                 )}
             </Box>
 
-            {conjugations.length > 0 && (
-                <Box mt={3}>
-                    <Button
-                        onClick={() => setExpanded(!expanded)}
-                        sx={{ textTransform: 'none', color: 'text.secondary' }}
-                    >
-                        {expanded ? 'Hide Conjugations ▲' : `Show ${conjugations.length} Conjugations ▼`}
-                    </Button>
-
-                    <Collapse in={expanded}>
-                        <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
-                            {Object.entries(groupedConjugations).map(([tense, forms]) => (
-                                <Box key={tense} sx={{ flex: '1 1 300px', minWidth: 0 }}>
-                                    <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
-                                        <Typography variant="subtitle2" color="primary" gutterBottom sx={{ textTransform: 'capitalize', borderBottom: '1px solid #eee', pb: 0.5 }}>
-                                            {tense}
-                                        </Typography>
-                                        <Box display="flex" flexDirection="column" gap={0.5}>
-                                            {forms.map((f, idx) => (
-                                                <Box key={idx} display="flex" justifyContent="space-between">
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {f.person || '-'}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ fontFamily: 'Noto Naskh Arabic' }}>
-                                                        {f.form}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </Paper>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Collapse>
-                </Box>
-            )}
+            {/* Conjugation info now shown on word mouseover instead of dropdown */}
         </Paper>
     );
 }

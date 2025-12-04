@@ -281,6 +281,212 @@ const ABILITY_FORMS: Record<string, {
   'اخیستلای': { baseVerb: 'اخیستل', romanized: 'akheestaláay', meaning: 'can/may take (ability mood)', mood: 'ability', transitivity: 'transitive' },
 };
 
+// ============================================================================
+// EQUATIVES - Pashto "to be" forms
+// Based on: https://grammar.lingdocs.com/equatives/
+// ============================================================================
+
+// Present Equative - "am/is/are" (happens right now)
+// https://grammar.lingdocs.com/equatives/present-equative/
+const PRESENT_EQUATIVE: Record<string, {
+  person: string;
+  number: string;
+  gender?: string;
+  romanized: string;
+  meaning: string;
+}> = {
+  'یم': { person: '1st', number: 'singular', romanized: 'yum', meaning: 'I am' },
+  'یې': { person: '2nd', number: 'singular', romanized: 'ye', meaning: 'you are' },
+  'دی': { person: '3rd', number: 'singular', gender: 'masculine', romanized: 'day', meaning: 'he/it is' },
+  'ده': { person: '3rd', number: 'singular', gender: 'feminine', romanized: 'da', meaning: 'she/it is' },
+  'یو': { person: '1st', number: 'plural', romanized: 'yoo', meaning: 'we are' },
+  'یئ': { person: '2nd', number: 'plural', romanized: 'yey', meaning: 'you (pl.) are' },
+  'دي': { person: '3rd', number: 'plural', romanized: 'dee', meaning: 'they are' },
+};
+
+// Habitual Equative - "am/is/are" (habitually/generally)
+// https://grammar.lingdocs.com/equatives/habitual-equative/
+// Note: These look like past tense but mean "usually/generally is"
+const HABITUAL_EQUATIVE: Record<string, {
+  person: string;
+  number: string;
+  gender?: string;
+  romanized: string;
+  meaning: string;
+}> = {
+  'وم': { person: '1st', number: 'singular', romanized: 'wum', meaning: 'I usually am' },
+  'وې': { person: '2nd', number: 'singular', romanized: 'we', meaning: 'you usually are' },
+  'وي': { person: '3rd', number: 'singular', romanized: 'wee', meaning: 'he/she usually is; they usually are' },
+  'وو': { person: '1st', number: 'plural', romanized: 'woo', meaning: 'we usually are' },
+  'وئ': { person: '2nd', number: 'plural', romanized: 'wey', meaning: 'you (pl.) usually are' },
+  // وي also used for 3rd plural
+};
+
+// Past Equative - "was/were"
+// https://grammar.lingdocs.com/equatives/other-equatives/
+const PAST_EQUATIVE: Record<string, {
+  person: string;
+  number: string;
+  gender?: string;
+  romanized: string;
+  meaning: string;
+}> = {
+  // Same forms as habitual but with past meaning - context determines
+  'وم': { person: '1st', number: 'singular', romanized: 'wum', meaning: 'I was' },
+  'وې': { person: '2nd', number: 'singular', romanized: 'we', meaning: 'you were' },
+  'و': { person: '3rd', number: 'singular', gender: 'masculine', romanized: 'wo', meaning: 'he/it was' },
+  'وه': { person: '3rd', number: 'singular', gender: 'feminine', romanized: 'wa', meaning: 'she/it was' },
+  'وو': { person: '1st', number: 'plural', romanized: 'woo', meaning: 'we were' },
+  'وئ': { person: '2nd', number: 'plural', romanized: 'wey', meaning: 'you (pl.) were' },
+  // Note: 3pl past uses وو or وې depending on dialect
+};
+
+// Subjunctive Equative - "would be" / "might be"
+const SUBJUNCTIVE_EQUATIVE: Record<string, {
+  person: string;
+  number: string;
+  romanized: string;
+  meaning: string;
+}> = {
+  'وم': { person: '1st', number: 'singular', romanized: 'wum', meaning: 'I would be' },
+  'وې': { person: '2nd', number: 'singular', romanized: 'we', meaning: 'you would be' },
+  'وي': { person: '3rd', number: 'singular', romanized: 'wee', meaning: 'he/she would be' },
+  'وو': { person: '1st', number: 'plural', romanized: 'woo', meaning: 'we would be' },
+  'وئ': { person: '2nd', number: 'plural', romanized: 'wey', meaning: 'you would be' },
+  // وي also for 3pl subjunctive
+};
+
+// "وی" special form - 3rd person past/habitual/conditional
+// This is VERY common and has multiple meanings based on context
+const WEY_FORM: {
+  forms: string[];
+  analysis: {
+    pos: 'equative';
+    baseForm: string;
+    romanized: string;
+    meanings: string[];
+    notes: string;
+  };
+} = {
+  forms: ['وی', 'وای'],
+  analysis: {
+    pos: 'equative',
+    baseForm: 'اوسېدل (to be)',
+    romanized: 'wey / waay',
+    meanings: [
+      'he/she/it was (3rd sg past, informal)',
+      'he/she/it would be (conditional)',
+      'they were (3rd pl past)',
+    ],
+    notes: 'Common informal form. In spoken Pashto often replaces و/وه for past tense.',
+  },
+};
+
+// Function to detect equative forms
+function detectEquative(word: string, context?: { previousWord?: string; nextWord?: string }): {
+  isEquative: boolean;
+  equativeType: 'present' | 'habitual' | 'past' | 'subjunctive' | 'conditional' | null;
+  person: string | null;
+  number: string | null;
+  gender?: string | null;
+  romanized: string | null;
+  meaning: string | null;
+  notes?: string;
+} | null {
+  // Check وی / وای special forms first
+  if (WEY_FORM.forms.includes(word)) {
+    return {
+      isEquative: true,
+      equativeType: 'past', // Most common use
+      person: '3rd',
+      number: 'singular',
+      romanized: WEY_FORM.analysis.romanized,
+      meaning: WEY_FORM.analysis.meanings[0],
+      notes: WEY_FORM.analysis.notes,
+    };
+  }
+
+  // Check present equative
+  const present = PRESENT_EQUATIVE[word];
+  if (present) {
+    return {
+      isEquative: true,
+      equativeType: 'present',
+      ...present,
+    };
+  }
+
+  // For وم/وې/وي/وو/وئ - these can be habitual, past, or subjunctive
+  // Need context to disambiguate
+  const habitual = HABITUAL_EQUATIVE[word];
+  if (habitual) {
+    // If preceded by به, it's future
+    // If in conditional context, it's subjunctive
+    // Otherwise likely habitual or past
+    let equativeType: 'habitual' | 'past' | 'subjunctive' = 'habitual';
+    let meaning = habitual.meaning;
+    
+    if (context?.previousWord === 'به') {
+      // Future: به وي = "will be"
+      meaning = meaning.replace('usually', 'will');
+    }
+    
+    return {
+      isEquative: true,
+      equativeType,
+      ...habitual,
+      meaning,
+    };
+  }
+
+  // Check past-only forms (و, وه)
+  const past = PAST_EQUATIVE[word];
+  if (past && (word === 'و' || word === 'وه')) {
+    return {
+      isEquative: true,
+      equativeType: 'past',
+      ...past,
+    };
+  }
+
+  return null;
+}
+
+// ============================================================================
+// JUSSIVE DETECTION - 3rd person commands with دې
+// Based on: https://grammar.lingdocs.com/verbs/jussive/
+// ============================================================================
+
+// Jussive is formed: دې + subjunctive verb
+// Example: دې وکړي = "let him/her do"
+function detectJussive(word: string, context?: { previousWords?: string[] }): {
+  isJussive: boolean;
+  meaning: string;
+  notes: string;
+} | null {
+  // دې as jussive marker (not the 2nd person clitic)
+  if (word === 'دې' && context?.previousWords) {
+    // Check if it's at the start of a clause or after certain patterns
+    return null; // We detect jussive on the VERB, not the دې
+  }
+  
+  // If previous word was دې and current word ends in subjunctive ending
+  if (context?.previousWords?.includes('دې')) {
+    const subjunctiveEndings = ['ي', 'م', 'ې', 'و', 'ئ'];
+    const hasSubjEnding = subjunctiveEndings.some(e => word.endsWith(e));
+    
+    if (hasSubjEnding) {
+      return {
+        isJussive: true,
+        meaning: `let him/her/them ${word}`,
+        notes: 'Jussive mood: 3rd person command/wish. دې + subjunctive verb.',
+      };
+    }
+  }
+  
+  return null;
+}
+
 // Function to detect if two words form a compound verb
 function detectCompoundVerb(complement: string, nextWord: string): {
   isCompound: boolean;
@@ -803,6 +1009,49 @@ export async function GET(request: NextRequest) {
       result.english = pronoun.meaning;
       result.confidence = 0.95;
       result.source = 'pronoun_table';
+      
+      return NextResponse.json(result);
+    }
+    
+    // 0.45 Check if it's an EQUATIVE form ("to be" - یم, دی, وی, etc.)
+    // https://grammar.lingdocs.com/equatives/
+    const equativeInfo = detectEquative(cleanWord, {
+      previousWord: context ? context.split(/\s+/)[context.split(/\s+/).findIndex(w => w.includes(cleanWord)) - 1]?.replace(/[،.؟!]/g, '') : undefined,
+      nextWord: context ? context.split(/\s+/)[context.split(/\s+/).findIndex(w => w.includes(cleanWord)) + 1]?.replace(/[،.؟!]/g, '') : undefined,
+    });
+    
+    if (equativeInfo && equativeInfo.isEquative) {
+      result.pos = 'verb'; // Equatives are verb forms
+      result.baseForm = 'اوسېدل';
+      result.romanized = equativeInfo.romanized;
+      result.english = equativeInfo.meaning;
+      result.person = equativeInfo.person;
+      result.number = equativeInfo.number;
+      result.gender = equativeInfo.gender || null;
+      result.tense = equativeInfo.equativeType === 'present' ? 'present' : 
+                     equativeInfo.equativeType === 'past' ? 'past' :
+                     equativeInfo.equativeType === 'habitual' ? 'habitual' :
+                     'subjunctive';
+      result.mood = equativeInfo.equativeType === 'subjunctive' ? 'subjunctive' : 'indicative';
+      result.confidence = 0.95;
+      result.source = 'equative_forms' as any;
+      
+      // Add notes for ambiguous forms like وم/وې/وی
+      if (equativeInfo.notes) {
+        result.inflectionReason = {
+          isPlural: false,
+          isInSandwich: false,
+          sandwichType: null,
+          isErgative: false,
+        };
+        // Store notes in a way the UI can access
+        (result as any).equativeNotes = equativeInfo.notes;
+      }
+      
+      // Special handling for وی - very common but ambiguous
+      if (cleanWord === 'وی' || cleanWord === 'وای') {
+        (result as any).equativeNotes = 'Common informal equative. Can mean: "he/she was", "they were", or "would be" (conditional). Context determines meaning.';
+      }
       
       return NextResponse.json(result);
     }

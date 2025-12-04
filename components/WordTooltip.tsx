@@ -303,6 +303,16 @@ export default function WordTooltip({
               {/* Verb-specific info */}
               {analysis.pos === 'verb' && (
                 <div className="pt-1 space-y-2">
+                  {/* Equative badge - special "to be" form */}
+                  {analysis.baseForm === 'اوسېدل' && (
+                    <div className="flex items-center gap-1.5" dir="ltr">
+                      <span className="px-2 py-0.5 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 rounded text-xs font-semibold">
+                        ✨ equative
+                      </span>
+                      <span className="text-xs text-gray-500">("to be")</span>
+                    </div>
+                  )}
+                  
                   {/* Tense/Mood/Aspect badges */}
                   <div className="flex flex-wrap gap-1.5" dir="ltr">
                     {analysis.mood && analysis.mood !== 'indicative' && (
@@ -312,7 +322,7 @@ export default function WordTooltip({
                     )}
                     {analysis.tense && (
                       <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
-                        {analysis.tense}
+                        {analysis.tense === 'habitual' ? 'habitual (usually)' : analysis.tense}
                       </span>
                     )}
                     {analysis.aspect && (
@@ -347,6 +357,13 @@ export default function WordTooltip({
                           + {analysis.auxiliaryVerb}
                         </span>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Equative notes - for ambiguous forms like وی */}
+                  {(analysis as any).equativeNotes && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-200 dark:border-gray-700 italic" dir="ltr">
+                      💡 {(analysis as any).equativeNotes}
                     </div>
                   )}
                 </div>
