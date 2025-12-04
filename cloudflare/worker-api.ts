@@ -4056,13 +4056,36 @@ export default {
 
         const result = await env.DB.prepare(query).bind(...params).all();
 
+        // Transform results to include audio URLs
+        const effectiveTranslation = (table ? table.replace('verses_', '') : translation) as 'afghan2023' | 'yousafzai2019';
+        const baseUrl = 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
+        
+        const versesWithAudio = (result.results || []).map((verse: any) => {
+          // Generate audio R2 key if not present
+          let audioR2Key = verse.audio_r2_key || null;
+          if (!audioR2Key && verse.book && verse.chapter && verse.verse) {
+            audioR2Key = generateR2AudioKey(verse.book, verse.chapter, verse.verse, effectiveTranslation);
+          }
+          
+          // Build audio URL
+          const audioUrl = audioR2Key 
+            ? `${baseUrl}/api/audio/stream/${encodeURIComponent(audioR2Key)}`
+            : null;
+          
+          return {
+            ...verse,
+            audio_r2_key: audioR2Key,
+            audio_url: audioUrl,
+          };
+        });
+
         return jsonResponse({
-          verses: result.results || [],
-          count: result.results?.length || 0,
+          verses: versesWithAudio,
+          count: versesWithAudio.length,
           book: book || 'all',
           chapter: chapter ? parseInt(chapter) : 'all',
           testament: testament || 'all',
-          translation: table ? table.replace('verses_', '') : translation,
+          translation: effectiveTranslation,
         });
       } catch (error: any) {
         return errorResponse(`Failed to fetch verses: ${error.message}`, 500);

@@ -15,6 +15,7 @@ import InlineFrequency from "../components/InlineFrequency";
 import CoverageSidebar from "../components/CoverageSidebar";
 import VariantDetailsPanel from "../components/VariantDetailsPanel";
 import DictionaryTermDetection, { DictionaryTerm } from "../components/DictionaryTermDetection";
+import TopicsBrowser from "../components/TopicsBrowser";
 import type {
   Verse,
   Scope,
@@ -575,6 +576,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [bibleVerses, setBibleVerses] = useState<any[]>([]);
   const [loadingBibleVerses, setLoadingBibleVerses] = useState(false);
+  const [bibleBrowserTab, setBibleBrowserTab] = useState<'books' | 'topics'>('books');
   const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
   const [rahmanbabaPoems, setRahmanbabaPoems] = useState<any[]>([]);
@@ -3673,9 +3675,33 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               📖 Bible Browser
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Browse all books, chapters, and verses • {activeTranslation === 'afghan2023' ? '🇦🇫 Afghan 2023' : '🕌 Yousafzai 2019'}
             </p>
+
+            {/* Bible Browser Sub-tabs: Books vs Topics */}
+            <div className="flex justify-center mb-4">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex gap-1">
+                <button
+                  onClick={() => setBibleBrowserTab('books')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${bibleBrowserTab === 'books'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  📚 Books
+                </button>
+                <button
+                  onClick={() => setBibleBrowserTab('topics')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${bibleBrowserTab === 'topics'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🏷️ Topics
+                </button>
+              </div>
+            </div>
 
             {/* Translation Toggle */}
             <div className="flex justify-center mb-6">
@@ -3701,8 +3727,13 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               </div>
             </div>
 
-            {/* Book Selection */}
-            {!selectedBook ? (
+            {/* Topics Browser */}
+            {bibleBrowserTab === 'topics' && (
+              <TopicsBrowser onCategorySelect={(categoryKey) => console.log('Selected category:', categoryKey)} />
+            )}
+
+            {/* Book Selection - only show when Books tab is active */}
+            {bibleBrowserTab === 'books' && !selectedBook ? (
               <div className="space-y-6">
                 {/* Old Testament */}
                 <div>
@@ -3744,7 +3775,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   </div>
                 </div>
               </div>
-            ) : !selectedChapter ? (
+            ) : bibleBrowserTab === 'books' && !selectedChapter ? (
               /* Chapter Selection */
               <div>
                 <div className="flex items-center gap-3 mb-4">
@@ -3782,7 +3813,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : bibleBrowserTab === 'books' && selectedChapter ? (
               /* Verse Display */
               <div>
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -3859,7 +3890,28 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           </div>
                         </div>
                         {/* Verse Actions */}
-                        <div className="mt-3 flex gap-2 justify-end">
+                        <div className="mt-3 flex gap-2 justify-end items-center">
+                          {/* Audio playback button */}
+                          {verse.audio_url && (
+                            <button
+                              onClick={() => {
+                                // Stop any currently playing audio
+                                const existingAudio = document.getElementById('bible-audio') as HTMLAudioElement;
+                                if (existingAudio) {
+                                  existingAudio.pause();
+                                  existingAudio.remove();
+                                }
+                                // Play new audio
+                                const audio = document.createElement('audio');
+                                audio.id = 'bible-audio';
+                                audio.src = verse.audio_url;
+                                audio.play().catch(err => console.error('Audio playback error:', err));
+                              }}
+                              className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded hover:bg-purple-200 dark:hover:bg-purple-800 flex items-center gap-1"
+                            >
+                              🔊 Listen
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               const ref = `${selectedBook} ${selectedChapter}:${verse.verse}`;
@@ -3885,7 +3937,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

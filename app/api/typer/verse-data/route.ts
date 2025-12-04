@@ -26,20 +26,38 @@ function getDictionary() {
 }
 
 // Comprehensive Pashto to Romanized fallback map
+// Using LingDocs-style romanization: https://dictionary.lingdocs.com
 const charMap: Record<string, string> = {
-    // Basic letters
-    'ا': 'a', 'آ': 'aa', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ټ': 'T', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh',
-    'د': 'd', 'ډ': 'D', 'ذ': 'z', 'ر': 'r', 'ړ': 'R', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's',
-    'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ک': 'k', 'ګ': 'g', 'ل': 'l',
-    'م': 'm', 'ن': 'n', 'ڼ': 'N', 'و': 'w', 'ه': 'h', 'ی': 'y', 'ې': 'e', 'ۍ': 'ai', 'ئ': 'ai',
+    // Basic Arabic/Pashto consonants
+    'ا': 'a', 'آ': 'aa', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh',
+    'د': 'd', 'ذ': 'z', 'ر': 'r', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's',
+    'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ک': 'k', 'ل': 'l',
+    'م': 'm', 'ن': 'n', 'ه': 'h', 'ی': 'y', 'ې': 'e', 'ۍ': 'uy', 'ئ': 'ey',
     'ء': '', 'ے': 'e', 'ى': 'a',
+    
+    // PASHTO-SPECIFIC LETTERS (retroflex consonants) - LingDocs uses capitals
+    'ټ': 'T',   // retroflex t
+    'ډ': 'D',   // retroflex d
+    'ړ': 'R',   // retroflex r (like American r)
+    'ڼ': 'N',   // retroflex n
+    'ږ': 'G',   // retroflex voiced fricative (CRITICAL - was missing!)
+    'ښ': 'x',   // voiceless retroflex fricative (like German ch)
+    'ګ': 'g',   // Pashto g
+    'ۀ': 'u',   // schwa/short u
+    
+    // و can be 'w' consonant or 'o/oo' vowel - default to 'oo' for common cases
+    'و': 'oo',
+    
     // Diacritics (short vowels) - map to their sound
     'َ': 'a', 'ُ': 'u', 'ِ': 'i', 'ْ': '', 'ً': 'an', 'ٌ': 'un', 'ٍ': 'in',
     'ّ': '', // Shadda (gemination) - doubled consonant, ignore in simple transliteration
+    
     // Common combinations
     'ؤ': 'o', 'إ': 'i', 'أ': 'a',
+    
     // Space and punctuation
-    ' ': ' ', '،': ',', '۔': '.', '؟': '?', '؛': ';',
+    ' ': ' ', '،': ',', '۔': '.', '؟': '?', '؛': ';', ':': ':', '«': '"', '»': '"',
+    
     // Numbers
     '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
 };
