@@ -3030,97 +3030,88 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                           </div>
                         </div>
 
-                        {/* Enhanced Word Frequency Table */}
+                        {/* Key Vocabulary - Unique Verbs & Nouns with English */}
                         <div className="bg-gradient-to-br from-white via-slate-50 to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-gray-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
-                          <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/30">
+                          <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/30 dark:to-teal-900/30">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-xl shadow-lg">
-                                <span className="text-white text-lg">📊</span>
+                              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+                                <span className="text-white text-lg">📖</span>
                               </div>
                               <div>
                                 <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                                  Most Frequent Words
+                                  Key Vocabulary
                                 </h4>
                                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                                  Ranked by occurrence across all video transcripts
+                                  Unique verbs & nouns from video transcripts (excluding common words)
                                 </p>
                               </div>
                             </div>
                           </div>
-                          <div className="max-h-96 overflow-y-auto">
-                            <table className="w-full">
-                              <thead className="sticky top-0 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-blue-900/50 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60">
-                                <tr>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    #
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Pashto Word
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Count
-                                  </th>
-                                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    Usage %
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
-                                {wordFrequency.wordFrequency.wordFrequency.map((item: any, index: number) => {
-                                  const percentage = ((item.frequency / wordFrequency.wordFrequency.totalWords) * 100).toFixed(2);
-                                  const isTopTen = index < 10;
-                                  return (
-                                    <tr
+                          <div className="p-4">
+                            {/* Filter words: exclude very common words, show unique verbs/nouns */}
+                            {(() => {
+                              // Common Pashto function words to exclude
+                              const commonWords = new Set([
+                                'د', 'چې', 'په', 'او', 'له', 'هغه', 'دا', 'یې', 'ته', 'کې', 'دی', 'نه', 
+                                'هم', 'خو', 'به', 'شو', 'کړه', 'وي', 'شي', 'څه', 'ډیر', 'کړي', 'ده',
+                                'یو', 'دوی', 'مونږ', 'تاسو', 'زه', 'هغوی', 'کوم', 'بل', 'ټول', 'ځینې',
+                                'لکه', 'سره', 'باندې', 'کښې', 'ورته', 'راته', 'ورسره', 'راسره'
+                              ]);
+
+                              // Filter to less common words (appearing 1-5 times = more unique/interesting)
+                              const uniqueWords = wordFrequency.wordFrequency.wordFrequency
+                                .filter((item: any) => 
+                                  !commonWords.has(item.word) && 
+                                  item.word.length > 1 &&
+                                  item.frequency <= 10 // Not too common
+                                )
+                                .slice(0, 20);
+
+                              if (uniqueWords.length === 0) {
+                                return (
+                                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                    No unique vocabulary found. Process more videos to discover new words.
+                                  </p>
+                                );
+                              }
+
+                              return (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {uniqueWords.map((item: any, index: number) => (
+                                    <button
                                       key={item.word}
-                                      className={`group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-blue-50/50 dark:hover:from-slate-700/50 dark:hover:to-blue-900/30 transition-all duration-200 ${isTopTen ? 'bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/20' : ''
-                                        }`}
+                                      onClick={() => {
+                                        setQuery(item.word);
+                                        setActiveMainTab('search');
+                                      }}
+                                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-md transition-all group"
                                     >
-                                      <td className="px-6 py-4">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopTen
-                                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md'
-                                          : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
-                                          }`}>
+                                      <div className="flex items-center gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center">
                                           {index + 1}
-                                        </div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <button
-                                          onClick={() => {
-                                            setQuery(item.word);
-                                            setActiveMainTab('search');
-                                          }}
-                                          className={`font-mono text-sm cursor-pointer hover:underline ${isTopTen ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}
-                                          title={`Search for "${item.word}" in Bible`}
+                                        </span>
+                                        <span 
+                                          className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" 
+                                          dir="rtl"
+                                          style={{ fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}
                                         >
                                           {item.word}
-                                        </button>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <span className={`text-sm font-semibold ${isTopTen ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
-                                          {item.frequency.toLocaleString()}
                                         </span>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                          <div className={`w-16 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden`}>
-                                            <div
-                                              className={`h-full transition-all duration-500 ${isTopTen
-                                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                                                : 'bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-400'
-                                                }`}
-                                              style={{ width: `${Math.min(parseFloat(percentage), 100)}%` }}
-                                            ></div>
-                                          </div>
-                                          <span className={`text-xs font-medium ${isTopTen ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                            {percentage}%
-                                          </span>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                          {item.frequency}×
+                                        </span>
+                                        <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+                              💡 Click any word to search for it in the Bible
+                            </p>
                           </div>
                         </div>
 

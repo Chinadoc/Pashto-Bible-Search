@@ -608,16 +608,7 @@ function VerseItem({
       ) : (
         <div className="mt-3 pt-3 border-t border-gray-700/50">
           <div className="flex items-center gap-2">
-            {/* Play/Pause */}
-            <button
-              className="px-3 py-1.5 text-sm rounded-lg border border-gray-600 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-colors"
-              onClick={isPlaying ? handlePause : handlePlay}
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? '⏸️' : '▶️'}
-            </button>
-
-            {/* Compact audio element - mobile optimized */}
+            {/* Audio element - native controls only (no duplicate play button) */}
             <audio
               ref={(el) => {
                 if (el) audioRefs.current.set(verse.ref, el);
