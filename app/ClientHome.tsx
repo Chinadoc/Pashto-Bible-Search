@@ -3766,7 +3766,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   </div>
                 </div>
               </div>
-            ) : bibleBrowserTab === 'books' && !selectedChapter ? (
+            ) : bibleBrowserTab === 'books' && selectedBook && !selectedChapter ? (
               /* Chapter Selection */
               <div>
                 <div className="flex items-center gap-3 mb-4">
@@ -3804,7 +3804,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   ))}
                 </div>
               </div>
-            ) : bibleBrowserTab === 'books' && selectedChapter ? (
+            ) : bibleBrowserTab === 'books' && selectedBook && selectedChapter ? (
               /* Verse Display */
               <div>
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
