@@ -11,11 +11,14 @@ export interface Env {
   GOOGLE_CLIENT_SECRET: string;
   AUTH_SECRET: string;
   ADMIN_API_SECRET?: string;
+  ELEVENLABS_WEBHOOK_SECRET?: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
 import { handleGoogleCallback, handleGetSession, handleSignOut } from './auth-handlers';
 import { isAdminRoute, hasAdminSecret } from './admin-auth';
+import { handleStartTranscription, handleElevenLabsWebhook, recoverStuckTranscriptions } from './transcription';
+import { planClips } from './clip-planner';
 
 // ========================================
 // Video Processing Types
@@ -43,7 +46,7 @@ interface TranscriptSegment {
 // Helper Functions
 // ========================================
 
-function jsonResponse(data: any, status: number = 200): Response {
+export function jsonResponse(data: any, status: number = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -55,7 +58,7 @@ function jsonResponse(data: any, status: number = 200): Response {
   });
 }
 
-function errorResponse(message: string, status: number = 500): Response {
+export function errorResponse(message: string, status: number = 500): Response {
   return jsonResponse({ error: message }, status);
 }
 
@@ -189,7 +192,7 @@ function inferVerbRootFromForm(form: string): {
 /**
  * Extract words from video transcript and add to word_frequencies with categorization
  */
-async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
+export async function extractWordsFromVideoTranscript(env: Env, videoId: string, transcript: string): Promise<void> {
   // Extract words
   const words = extractPashtoWords(transcript);
 
@@ -2635,7 +2638,7 @@ async function getYouTubeAudioUrl(videoId: string): Promise<string | null> {
 /**
  * Extract video ID from YouTube URL
  */
-function extractYouTubeVideoId(url: string): string | null {
+export function extractYouTubeVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /^([a-zA-Z0-9_-]{11})$/
@@ -2651,7 +2654,7 @@ function extractYouTubeVideoId(url: string): string | null {
 /**
  * Fetch YouTube video metadata
  */
-async function getYouTubeMetadata(videoId: string): Promise<{ title: string; description: string; thumbnail: string } | null> {
+export async function getYouTubeMetadata(videoId: string): Promise<{ title: string; description: string; thumbnail: string } | null> {
   try {
     const response = await fetch(
       'https://www.youtube.com/youtubei/v1/player',
@@ -2809,73 +2812,9 @@ async function transcribeWithElevenLabs(
     const result = await transcribeResponse.json() as any;
     console.log(`✅ [CF Worker] Transcription complete. Text length: ${result.text?.length || 0}`);
 
-    // Process the ElevenLabs response into our format
-    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
-      text: w.text || w.word,
-      start_time: w.start || w.start_time || 0,
-      end_time: w.end || w.end_time || 0,
-      confidence: w.confidence || 0.95,
-    }));
+    const segments = planClips(result.words || []);
+    const words = segments.flatMap(segment => segment.words);
 
-    // Create SINGLE-SENTENCE segments from the transcription
-    // Each segment = 1 sentence (max ~6 seconds) for Anki-friendly clips
-    const segments: TranscriptSegment[] = [];
-    
-    // Pashto sentence-ending punctuation (comprehensive)
-    const sentenceEnders = new Set(['.', '؟', '۔', '!', '?', '،', '؛', ':', '»']);
-    
-    if (words.length > 0) {
-      let currentSentenceWords: TranscriptWord[] = [];
-      
-      for (let i = 0; i < words.length; i++) {
-        currentSentenceWords.push(words[i]);
-        
-        // Check if this word ends a sentence
-        const wordText = words[i].text.trim();
-        const lastChar = wordText.slice(-1);
-        const endsWithPunctuation = sentenceEnders.has(lastChar);
-        
-        // Check for pauses (> 0.5 seconds) as sentence breaks
-        const hasLongPause = i < words.length - 1 && 
-          (words[i + 1].start_time - words[i].end_time) > 0.5;
-        
-        // Calculate current segment duration
-        const segmentDuration = currentSentenceWords.length > 0 
-          ? words[i].end_time - currentSentenceWords[0].start_time 
-          : 0;
-        
-        // Create segment immediately when: sentence ends, long pause, or max 6 seconds
-        const shouldCreateSegment = endsWithPunctuation || hasLongPause || segmentDuration > 6;
-        
-        if (shouldCreateSegment && currentSentenceWords.length > 0) {
-          segments.push({
-            segment_number: segments.length + 1,
-            text: currentSentenceWords.map(w => w.text).join(' '),
-            start_time: currentSentenceWords[0].start_time,
-            end_time: words[i].end_time,
-            duration: words[i].end_time - currentSentenceWords[0].start_time,
-            words: [...currentSentenceWords],
-            confidence: 0.95,
-          });
-          currentSentenceWords = [];
-        }
-      }
-      
-      // Don't forget any remaining words
-      if (currentSentenceWords.length > 0) {
-        segments.push({
-          segment_number: segments.length + 1,
-          text: currentSentenceWords.map(w => w.text).join(' '),
-          start_time: currentSentenceWords[0].start_time,
-          end_time: currentSentenceWords[currentSentenceWords.length - 1].end_time,
-          duration: currentSentenceWords[currentSentenceWords.length - 1].end_time - 
-                   currentSentenceWords[0].start_time,
-          words: [...currentSentenceWords],
-          confidence: 0.95,
-        });
-      }
-    }
-    
     console.log(`📝 Created ${segments.length} single-sentence segments from transcription`);
 
     return {
@@ -3575,7 +3514,7 @@ async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
     const result = await env.DB.prepare(`
       SELECT video_id, youtube_url, title, description, thumbnail_url, 
              transcript_text, segments_json, words_json, duration, language_code, 
-             status, created_at, updated_at
+             status, error_message, created_at, updated_at
       FROM videos
       WHERE video_id = ?
     `).bind(videoId).first();
@@ -3596,6 +3535,7 @@ async function handleGetVideo(videoId: string, env: Env): Promise<Response> {
       duration: result.duration,
       languageCode: result.language_code,
       status: result.status,
+      error: result.error_message,
       createdAt: result.created_at,
       updatedAt: result.updated_at,
     });
@@ -3737,43 +3677,8 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
     const result = await response.json() as any;
     console.log(`✅ Transcription complete. Text length: ${result.text?.length || 0}`);
 
-    // Process words
-    const words: TranscriptWord[] = (result.words || []).map((w: any) => ({
-      text: w.text || w.word,
-      start_time: w.start || w.start_time || 0,
-      end_time: w.end || w.end_time || 0,
-      confidence: w.confidence || 0.95,
-    }));
-
-    // Create segments from words
-    const segments: TranscriptSegment[] = [];
-    let currentSegment: TranscriptWord[] = [];
-    let segmentStart = words[0]?.start_time || 0;
-
-    for (let i = 0; i < words.length; i++) {
-      currentSegment.push(words[i]);
-
-      const segmentDuration = words[i].end_time - segmentStart;
-      const hasLongPause = i < words.length - 1 &&
-        (words[i + 1].start_time - words[i].end_time) > 1.5;
-
-      if (segmentDuration >= 30 || hasLongPause || i === words.length - 1) {
-        segments.push({
-          segment_number: segments.length + 1,
-          text: currentSegment.map(w => w.text).join(' '),
-          start_time: segmentStart,
-          end_time: words[i].end_time,
-          duration: words[i].end_time - segmentStart,
-          words: currentSegment,
-          confidence: 0.95,
-        });
-
-        if (i < words.length - 1) {
-          currentSegment = [];
-          segmentStart = words[i + 1].start_time;
-        }
-      }
-    }
+    const segments = planClips(result.words || []);
+    const words = segments.flatMap(segment => segment.words);
 
     // Store in D1 database
     const now = new Date().toISOString();
@@ -3850,6 +3755,10 @@ async function handleTranscribeR2Audio(request: Request, env: Env): Promise<Resp
 // ========================================
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await recoverStuckTranscriptions(env);
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -3872,6 +3781,16 @@ export default {
     // ========================================
     // VIDEO PROCESSING ROUTES (Cloudflare Worker)
     // ========================================
+
+    // Start an async ElevenLabs transcription (admin only)
+    if (path === '/api/videos/transcribe' && request.method === 'POST') {
+      return handleStartTranscription(request, env);
+    }
+
+    // ElevenLabs posts finished transcriptions here (checked by signature)
+    if (path === '/api/elevenlabs/webhook' && request.method === 'POST') {
+      return handleElevenLabsWebhook(request, env);
+    }
 
     // Process YouTube video - extract audio and transcribe
     if (path === '/api/process-video' && request.method === 'POST') {

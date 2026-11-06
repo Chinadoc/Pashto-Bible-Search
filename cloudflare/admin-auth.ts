@@ -13,6 +13,7 @@ const ADMIN_POST_ROUTES = new Set([
   '/api/populate-inflection-reasons',
   '/api/validate-verb-forms',
   '/api/index-video-words',
+  '/api/videos/transcribe',
 ]);
 
 export function isAdminRoute(method: string, path: string): boolean {
@@ -24,11 +25,15 @@ async function sha256(value: string): Promise<Uint8Array> {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)));
 }
 
+export async function safeEqual(a: string, b: string): Promise<boolean> {
+  const [x, y] = await Promise.all([sha256(a), sha256(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 export async function hasAdminSecret(request: Request, secret: string | undefined): Promise<boolean> {
   const sent = request.headers.get('x-admin-secret');
   if (!secret || !sent) return false;
-  const [a, b] = await Promise.all([sha256(sent), sha256(secret)]);
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
+  return safeEqual(sent, secret);
 }
