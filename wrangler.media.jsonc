@@ -1,0 +1,16 @@
+{
+  "name": "pashto-media",
+  "main": "cloudflare/media-worker.ts",
+  "account_id": "3ac1a6fafce90adf6b1c8f1280dfc94d",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "containers": [
+    { "class_name": "MediaContainer", "image": "./container/Dockerfile", "instance_type": "basic", "max_instances": 1 }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "MEDIA_CONTAINER", "class_name": "MediaContainer" }]
+  },
+  "exports": {
+    "MediaContainer": { "type": "durable-object", "storage": "sqlite" }
+  }
+}

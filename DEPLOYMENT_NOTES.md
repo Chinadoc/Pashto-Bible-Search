@@ -29,4 +29,4 @@ Migrations in `migrations/` are additive and applied by hand: `npx wrangler d1 e
 
 ## YouTube
 
-See "YouTube transcription" in `cloudflare/README.md`. New videos are transcribed by ElevenLabs without any download. Audio clips for new videos still need a downloader: `modal/` holds the old one, and a Cloudflare Container is being evaluated to replace it.
+See "YouTube transcription" in `cloudflare/README.md`. New videos are transcribed by ElevenLabs without any download. Audio clips for new videos still need a downloader: `modal/` holds the old one, and a Cloudflare Container is being tested to replace it (see "Media Container" in `cloudflare/README.md`).

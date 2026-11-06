@@ -89,3 +89,12 @@ Scripts that call them read `ADMIN_API_SECRET` from the environment. The value i
 
 Apply `migrations/0003_async_transcription.sql` before deploying this code.
 
+## Media Container
+Worker `pashto-media` (`cloudflare/media-worker.ts`, `wrangler.media.jsonc`) runs a yt-dlp + ffmpeg image (`container/`) on Cloudflare Containers. For now it only answers one question: does YouTube serve Cloudflare's IPs? It uses no cookies or proxies, keeps nothing and writes to neither D1 nor R2.
+
+`POST /spike/download` with `{"videoId":"..."}` and `x-admin-secret` downloads that video's audio inside the Container, deletes it, and returns `ok`, `bytes`, `durationSeconds`, the YouTube error if there was one, and the IP and location it ran from. With no `ADMIN_API_SECRET` set on the Worker it refuses everyone.
+
+GitHub Actions builds and deploys it (`.github/workflows/container.yml`), because deploying from a Dockerfile needs Docker. It runs on a push to `cf/move-20261106` that changes these files, or with `gh run rerun`. `workflow_dispatch` only starts working once the workflow is on `main`. It needs the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and the account needs Workers Paid.
+
+Set the Worker secret once, after the first deploy: `npx wrangler secret put ADMIN_API_SECRET --config wrangler.media.jsonc`.
+
