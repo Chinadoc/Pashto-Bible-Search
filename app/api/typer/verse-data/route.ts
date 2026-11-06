@@ -1,29 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from 'fs';
-import path from 'path';
-
-// Simple cache for dictionary
-let dictionaryCache: Record<string, any> | null = null;
-
-function getDictionary() {
-    if (dictionaryCache) return dictionaryCache;
-
-    try {
-        const filePath = path.join(process.cwd(), 'public', 'full_dictionary_enriched.json');
-        if (fs.existsSync(filePath)) {
-            const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-            // Index by Pashto form for fast lookup
-            dictionaryCache = {};
-            data.forEach((entry: any) => {
-                if (entry.pashto) dictionaryCache![entry.pashto] = entry;
-            });
-            return dictionaryCache;
-        }
-    } catch (e) {
-        console.error("Failed to load dictionary", e);
-    }
-    return {};
-}
 
 // Comprehensive Pashto to Romanized fallback map
 // Using LingDocs-style romanization: https://dictionary.lingdocs.com
@@ -109,7 +84,8 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Tokenize and enrich
-        const dictionary = getDictionary();
+        // Romanization comes from the fallback map; there is no bundled dictionary.
+        const dictionary: Record<string, any> = {};
         const words = verseData.text.split(/\s+/);
 
         const enrichedWords = words.map((word: string) => {

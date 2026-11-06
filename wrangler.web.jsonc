@@ -1,0 +1,17 @@
+{
+  "name": "pashto-bible-web",
+  "main": ".open-next/worker.js",
+  "account_id": "3ac1a6fafce90adf6b1c8f1280dfc94d",
+  "compatibility_date": "2026-10-01",
+  // global_fetch_strictly_public lets this Worker call the API Worker on workers.dev.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pashto-bible-web" }],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "pashto-bible-db", "database_id": "54a972b6-897a-4ae0-ba19-ecf4a6edc3b0" }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_CLOUDFLARE_WORKER_URL": "https://pashtobiblesearch.jeremy-samuels17.workers.dev",
+    "AUTH_TRUST_HOST": "true"
+  }
+}

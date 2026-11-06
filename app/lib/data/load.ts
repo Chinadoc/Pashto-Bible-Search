@@ -1,7 +1,4 @@
 import 'server-only';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
 
 type DictionaryEntry = {
   pashto: string;
@@ -140,13 +137,18 @@ function splitRef(ref: string): { book: string; chapter?: number; verse?: number
   };
 }
 
-async function readJson<T>(relativePath: string, encoding: BufferEncoding = 'utf8'): Promise<T> {
-  // In production, files are in public directory
-  const isProduction = process.env.NODE_ENV === 'production';
-  const basePath = isProduction ? 'public' : 'app/data';
-  const filePath = path.join(process.cwd(), basePath, relativePath);
-  const raw = await fs.readFile(filePath, { encoding });
-  return JSON.parse(raw) as T;
+// These datasets moved to D1. Callers still get the empty shapes the old stub files held.
+const EMPTY_DATASETS: Record<string, unknown> = {
+  'word_frequency_list.json': [],
+  'yousafzai_word_frequency_list.json': [],
+  'inflections_cache.json': {},
+  'form_to_root_map.json': {},
+  'form_occurrence_index.json': {},
+  'full_dictionary_enriched.json': [],
+};
+
+async function readJson<T>(relativePath: string): Promise<T> {
+  return EMPTY_DATASETS[relativePath] as T;
 }
 
 // Pre-compute verses data to avoid repeated decompression
@@ -158,20 +160,7 @@ export async function loadVerses(translation: TranslationKey = 'afghan2023'): Pr
   }
 
   if (translation === 'afghan2023') {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const filePath = isProduction
-      ? path.join(process.cwd(), 'public', 'verses.json.gz')
-      : path.join(process.cwd(), 'app', 'data', 'verses.json');
-
-    let raw: Record<string, any>;
-    if (isProduction) {
-      const compressed = await fs.readFile(filePath);
-      const jsonText = gunzipSync(compressed).toString('utf8');
-      raw = JSON.parse(jsonText) as Record<string, any>;
-    } else {
-      const rawText = await fs.readFile(filePath, 'utf8');
-      raw = JSON.parse(rawText) as Record<string, any>;
-    }
+    const raw: Record<string, any> = {};
     const verses: VerseRecord[] = [];
 
     for (const [ref, value] of Object.entries(raw)) {
@@ -211,27 +200,7 @@ export async function loadVerses(translation: TranslationKey = 'afghan2023'): Pr
     return verses;
   }
 
-  const candidatePaths = [
-    path.join(process.cwd(), 'public', 'yousafzai_all_verses.json'),
-    path.join(process.cwd(), 'app', 'data', 'yousafzai_all_verses.json'),
-    path.join(process.cwd(), 'yousafzai_all_verses.json'),
-  ];
-
-  let jsonText: string | null = null;
-  for (const candidate of candidatePaths) {
-    try {
-      jsonText = await fs.readFile(candidate, 'utf8');
-      if (jsonText) break;
-    } catch {
-      continue;
-    }
-  }
-
-  if (!jsonText) {
-    throw new Error('Yousafzai verses dataset not found (yousafzai_all_verses.json)');
-  }
-
-  const parsed = JSON.parse(jsonText) as Array<Record<string, any>>;
+  const parsed: Array<Record<string, any>> = [];
   const verses: VerseRecord[] = [];
 
   for (const entry of parsed) {

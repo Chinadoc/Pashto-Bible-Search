@@ -199,7 +199,7 @@ Prerequisites:
 
       const updateResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/store-video`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.ADMIN_API_SECRET || '' },
         body: JSON.stringify({
           video_id: videoId,
           segments: updatedSegments,

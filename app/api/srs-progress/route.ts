@@ -1,8 +1,7 @@
 import { auth } from "@/app/lib/auth";
+import { getDb } from "@/app/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { calculateNextReview, SRSProgress } from "@/app/lib/srs";
-
-export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
     const session = await auth();
@@ -16,7 +15,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid input" }, { status: 400 });
         }
 
-        const db = process.env.DB as any;
+        const db = getDb();
 
         // Fetch current progress
         const current = await db.prepare(
@@ -76,7 +75,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const db = process.env.DB as any;
+        const db = getDb();
 
         // Get verses due for review (or all saved verses with their status)
         const { results } = await db.prepare(`

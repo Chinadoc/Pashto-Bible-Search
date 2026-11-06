@@ -16,6 +16,12 @@ const LOCKED: Array<[string, string, unknown]> = [
   ['POST', '/api/populate-inflection-reasons', {}],
   ['POST', '/api/validate-verb-forms', {}],
   ['POST', '/api/index-video-words', { video_id: 'y' }],
+  ['POST', '/api/videos/transcribe', { youtubeUrl: 'x' }],
+  ['POST', '/api/store-video', { video_id: 'y', segments: [] }],
+  ['POST', '/api/videos', { video_id: 'y' }],
+  ['POST', '/api/process-video', { youtubeUrl: 'x' }],
+  ['POST', '/api/transcribe-audio', {}],
+  ['POST', '/api/transcribe-r2-audio', { video_id: 'y' }],
 ];
 
 function fakeEnv(adminSecret: string | undefined = SECRET) {

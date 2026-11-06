@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
 
+const VIDEO_POLL_INTERVAL_MS = 10_000;
+const VIDEO_POLL_LIMIT_MS = 30 * 60 * 1000;
+
 // Cloudflare Worker URL for all API calls
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
-// Modal.com webhook for YouTube processing (bypasses IP restrictions)
-const MODAL_WEBHOOK_URL = process.env.NEXT_PUBLIC_MODAL_WEBHOOK_URL || '';
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
@@ -915,94 +916,40 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     }
 
     setProcessingVideo(true);
-    setProcessingStatus('Starting video processing...');
+    setProcessingStatus('Sending video to ElevenLabs...');
 
     try {
-      // Try Cloudflare Worker first (faster if YouTube allows it)
-      setProcessingStatus('Attempting direct extraction via Cloudflare Worker...');
-      
-      const cfResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/process-video`, {
+      const response = await fetch('/api/videos/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtubeUrl: newVideoUrl }),
       });
+      const started = await response.json();
 
-      const cfData = await cfResponse.json();
+      if (!response.ok) {
+        setProcessingStatus(`❌ Processing failed: ${started.error}`);
+        return;
+      }
 
-      // Check if it's an IP restriction error - fall back to Modal
-      const isIpRestricted = cfData.error?.includes('IP-restricted') || 
-                            cfData.error?.includes('403') ||
-                            cfData.message?.includes('restricts');
+      setProcessingStatus('⏳ Transcribing. This can take a few minutes, and it keeps going if you leave this page.');
 
-      if (isIpRestricted && MODAL_WEBHOOK_URL) {
-        // Fall back to Modal VM which has real IP addresses
-        setProcessingStatus('YouTube blocked direct extraction. Using Modal VM with yt-dlp...');
-        
-        const modalResponse = await fetch(MODAL_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ youtube_url: newVideoUrl }),
-        });
+      let video = started;
+      const deadline = Date.now() + VIDEO_POLL_LIMIT_MS;
+      while (video.status === 'processing' && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, VIDEO_POLL_INTERVAL_MS));
+        const poll = await fetch(`${CLOUDFLARE_WORKER_URL}/api/videos/${started.videoId}`);
+        if (poll.ok) video = await poll.json();
+      }
 
-        const modalData = await modalResponse.json();
-
-        if (modalResponse.ok && modalData.success) {
-          setProcessingStatus(`✅ Successfully processed video via Modal + Cloudflare!`);
-          setProcessingStatus(prev => prev + `\nVideo ID: ${modalData.video_id}`);
-          setProcessingStatus(prev => prev + `\nR2 Storage: ${modalData.r2_key}`);
-          setProcessingStatus(prev => prev + `\nTotal words: ${modalData.total_words || 0}`);
-          
-          if (modalData.transcription_pending) {
-            setProcessingStatus(prev => prev + `\n\n⏳ Audio uploaded, transcription pending...`);
-          }
-
-          // Refresh videos list
-          setVideos([]);
-          setTimeout(() => {
-            fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
-              .then(res => res.json())
-              .then(data => {
-                if (data.videos) setVideos(data.videos || []);
-              })
-              .catch(error => console.error('Error refreshing videos:', error));
-          }, 2000);
-
-          setNewVideoUrl('');
-        } else {
-          setProcessingStatus(`❌ Modal processing failed: ${modalData.error}`);
-        }
-      } else if (cfResponse.ok && cfData.success) {
-        // Direct Cloudflare processing succeeded
-        setProcessingStatus(`✅ Successfully processed video via Cloudflare!`);
-        setProcessingStatus(prev => prev + `\nVideo ID: ${cfData.videoId}`);
-        setProcessingStatus(prev => prev + `\nTitle: ${cfData.title || 'Unknown'}`);
-        setProcessingStatus(prev => prev + `\nTotal segments: ${cfData.totalSegments || 0}`);
-        setProcessingStatus(prev => prev + `\nTotal words: ${cfData.totalWords || 0}`);
-
-        // Refresh videos list
-        setVideos([]);
-        setTimeout(() => {
-          fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.videos) setVideos(data.videos || []);
-            })
-            .catch(error => console.error('Error refreshing videos:', error));
-        }, 2000);
-
+      if (video.status === 'completed') {
+        setProcessingStatus(`✅ Transcribed: ${video.title || started.videoId}`);
         setNewVideoUrl('');
+        const list = await fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`).then(res => res.json());
+        if (list.videos) setVideos(list.videos);
+      } else if (video.status === 'failed') {
+        setProcessingStatus(`❌ Transcription failed: ${video.error || 'unknown error'}`);
       } else {
-        // Both methods failed
-        setProcessingStatus(`❌ Processing failed: ${cfData.error}`);
-        if (cfData.message) {
-          setProcessingStatus(prev => prev + `\n\n${cfData.message}`);
-        }
-        if (cfData.suggestion) {
-          setProcessingStatus(prev => prev + `\n\n💡 ${cfData.suggestion}`);
-        }
-        if (!MODAL_WEBHOOK_URL) {
-          setProcessingStatus(prev => prev + `\n\n⚠️ Modal VM not configured. Set NEXT_PUBLIC_MODAL_WEBHOOK_URL to enable automatic fallback.`);
-        }
+        setProcessingStatus('⏳ Still transcribing. Check the video list again later.');
       }
     } catch (error) {
       console.error('Error processing video:', error);

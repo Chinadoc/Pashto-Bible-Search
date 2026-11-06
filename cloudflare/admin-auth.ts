@@ -14,6 +14,11 @@ const ADMIN_POST_ROUTES = new Set([
   '/api/validate-verb-forms',
   '/api/index-video-words',
   '/api/videos/transcribe',
+  '/api/store-video',
+  '/api/videos',
+  '/api/process-video',
+  '/api/transcribe-audio',
+  '/api/transcribe-r2-audio',
 ]);
 
 export function isAdminRoute(method: string, path: string): boolean {

@@ -7,7 +7,6 @@ const nextConfig = {
   experimental: {
     webVitalsAttribution: ["CLS", "LCP"],
   },
-  serverExternalPackages: ["fluent-ffmpeg", "@ffmpeg-installer/ffmpeg"],
   images: {
     unoptimized: true,
   },
