@@ -10,10 +10,12 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   AUTH_SECRET: string;
+  ADMIN_API_SECRET?: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
 import { handleGoogleCallback, handleGetSession, handleSignOut } from './auth-handlers';
+import { isAdminRoute, hasAdminSecret } from './admin-auth';
 
 // ========================================
 // Video Processing Types
@@ -3861,6 +3863,10 @@ export default {
           'Access-Control-Allow-Headers': 'Content-Type',
         },
       });
+    }
+
+    if (isAdminRoute(request.method, path) && !(await hasAdminSecret(request, env.ADMIN_API_SECRET))) {
+      return errorResponse('Unauthorized', 401);
     }
 
     // ========================================

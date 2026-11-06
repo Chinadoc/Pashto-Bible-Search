@@ -72,3 +72,10 @@ NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=http://127.0.0.1:8787
 ```
 
 With wrangler running, the app and its API routes will resolve Cloudflare-backed data and audio locally.
+
+## Admin-only Worker routes
+These routes can change or delete data, so they need the `x-admin-secret` header to match the Worker secret `ADMIN_API_SECRET`. With no secret set they refuse everyone.
+
+`POST /api/d1/query`, `POST /api/r2/upload`, `POST /api/r2/delete`, `DELETE /api/video/:id`, `POST /api/video/process`, `POST /api/update-audio-urls`, `POST /api/import-yousafzai-verses`, `POST /api/analyze-inflections`, `POST /api/populate-inflection-reasons`, `POST /api/validate-verb-forms`, `POST /api/index-video-words`.
+
+Scripts that call them read `ADMIN_API_SECRET` from the environment. The value is in the macOS Keychain as `pashto-admin-api-secret`.

@@ -197,7 +197,7 @@ async function storeVersesInD1(verses) {
   
   const response = await fetch(`${CLOUDFLARE_WORKER_URL}/api/import-yousafzai-verses`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.ADMIN_API_SECRET || '' },
     body: JSON.stringify({ verses })
   });
   
