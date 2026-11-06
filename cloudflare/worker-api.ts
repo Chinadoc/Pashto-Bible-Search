@@ -7,15 +7,11 @@ export interface Env {
   DB: D1Database;
   AUDIO_BUCKET: R2Bucket;
   ELEVENLABS_API_KEY: string;
-  GOOGLE_CLIENT_ID: string;
-  GOOGLE_CLIENT_SECRET: string;
-  AUTH_SECRET: string;
   ADMIN_API_SECRET?: string;
   ELEVENLABS_WEBHOOK_SECRET?: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
-import { handleGoogleCallback, handleGetSession, handleSignOut } from './auth-handlers';
 import { isAdminRoute, hasAdminSecret } from './admin-auth';
 import { handleStartTranscription, handleElevenLabsWebhook, recoverStuckTranscriptions } from './transcription';
 import { planClips } from './clip-planner';
@@ -3844,25 +3840,6 @@ export default {
     // Index video words (populate video_word_mappings)
     if (path === '/api/index-video-words' && request.method === 'POST') {
       return handleIndexVideoWords(request, env);
-    }
-
-    // ========================================
-    // AUTHENTICATION ROUTES
-    // ========================================
-
-    // Google OAuth callback
-    if (path === '/api/auth/callback/google' && request.method === 'POST') {
-      return handleGoogleCallback(request, env);
-    }
-
-    // Get session
-    if (path === '/api/auth/session' && request.method === 'GET') {
-      return handleGetSession(request, env);
-    }
-
-    // Sign out
-    if (path === '/api/auth/signout' && request.method === 'POST') {
-      return handleSignOut(request, env);
     }
 
     // ========================================

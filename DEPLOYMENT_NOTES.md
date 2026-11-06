@@ -13,7 +13,7 @@ The front end's compressed Worker can exceed 3 MiB, which needs the Workers Paid
 
 ## Secrets
 
-API Worker: `ELEVENLABS_API_KEY`, `ELEVENLABS_WEBHOOK_SECRET`, `ADMIN_API_SECRET`, plus the Google and auth values used by `cloudflare/auth-handlers.ts`.
+API Worker: `ELEVENLABS_API_KEY`, `ELEVENLABS_WEBHOOK_SECRET`, `ADMIN_API_SECRET`. Its older `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `AUTH_SECRET` are no longer used.
 
 Front end Worker: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_API_SECRET` (same value as the API Worker), `VIDEO_ADMIN_EMAILS` (comma-separated emails allowed to submit videos).
 

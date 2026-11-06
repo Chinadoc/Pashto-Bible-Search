@@ -81,6 +81,17 @@ describe('admin-only Worker routes', () => {
     expect(prepare).toHaveBeenCalled();
   });
 
+  it.each([
+    ['POST', '/api/auth/callback/google'],
+    ['GET', '/api/auth/session'],
+    ['POST', '/api/auth/signout'],
+  ])('no longer serves the old hand-rolled sign-in at %s %s', async (method, path) => {
+    const { env, prepare } = fakeEnv();
+    const res = await worker.fetch(new Request(BASE + path, { method, body: method === 'POST' ? '{}' : undefined }), env);
+    expect(res.status).toBe(404);
+    expect(prepare).not.toHaveBeenCalled();
+  });
+
   it('leaves public read routes open', async () => {
     const { env } = fakeEnv();
     const res = await worker.fetch(call('POST', '/api/search-batch', { queries: [] }), env);
