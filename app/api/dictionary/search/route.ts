@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 interface DictionaryEntry {
   ts: number;
@@ -26,23 +24,7 @@ async function loadDictionary(): Promise<DictionaryEntry[]> {
   if (dictionaryCache) return dictionaryCache;
 
   try {
-    // Try to load from local dictionary file
-    const dictPath = path.join(process.cwd(), 'public', 'dictionary.json');
-    if (fs.existsSync(dictPath)) {
-      const content = fs.readFileSync(dictPath, 'utf-8');
-      dictionaryCache = JSON.parse(content);
-      return dictionaryCache || [];
-    }
-
-    // Try alternate path
-    const altPath = path.join(process.cwd(), 'data', 'dictionary.json');
-    if (fs.existsSync(altPath)) {
-      const content = fs.readFileSync(altPath, 'utf-8');
-      dictionaryCache = JSON.parse(content);
-      return dictionaryCache || [];
-    }
-
-    // Fetch from LingDocs if no local file
+    // Fetch from LingDocs
     const response = await fetch(
       'https://raw.githubusercontent.com/lingdocs/pashto-dictionary/main/dictionary/dictionary.json',
       { next: { revalidate: 86400 } } // Cache for 24 hours

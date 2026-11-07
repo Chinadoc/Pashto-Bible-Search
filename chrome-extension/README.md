@@ -55,7 +55,7 @@ In compound mode, hovering shows the combined meaning along with conjugation inf
 ## API
 
 This extension uses the Pashto Bible Search API for word analysis:
-https://pashto-bible-search.vercel.app/api/word-analysis
+https://pashto-bible-web.jeremy-samuels17.workers.dev/api/word-analysis
 
 ## Building Icons
 
@@ -81,7 +81,7 @@ MIT License - Free to use and modify.
 
 ## Credits
 
-- Powered by [Pashto Bible Search](https://pashto-bible-search.vercel.app)
+- Powered by [Pashto Bible Search](https://pashto-bible-web.jeremy-samuels17.workers.dev)
 - Inspired by [Zhongwen Chinese Dictionary](https://github.com/cschiller/zhongwen)
 - Dictionary data from [LingDocs](https://lingdocs.com)
 

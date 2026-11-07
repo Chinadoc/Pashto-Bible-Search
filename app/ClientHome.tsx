@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef, ChangeEvent } from "react";
 
+const VIDEO_POLL_INTERVAL_MS = 10_000;
+const VIDEO_POLL_LIMIT_MS = 30 * 60 * 1000;
+
 // Cloudflare Worker URL for all API calls
 const CLOUDFLARE_WORKER_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
-// Modal.com webhook for YouTube processing (bypasses IP restrictions)
-const MODAL_WEBHOOK_URL = process.env.NEXT_PUBLIC_MODAL_WEBHOOK_URL || '';
 import { debounce, optimizedFilter } from "./utils/debounce";
 import ResultsList from "../components/ResultsList";
 import LexiconPanel from "../components/LexiconPanel";
@@ -72,11 +73,21 @@ function AuthButton() {
     );
   }
   return (
-    <button onClick={() => signIn("google")} className="text-sm text-blue-500 hover:underline">
+    <button onClick={() => signIn("google")} className="shrink-0 min-h-[44px] px-2 text-sm text-blue-500 hover:underline">
       Sign in
     </button>
   );
 }
+
+const MAIN_TABS = [
+  { id: 'search', icon: '🔍', label: 'Search', wideLabel: 'Search' },
+  { id: 'lexicon', icon: '📚', label: 'Lexicon', wideLabel: 'Lexicon' },
+  { id: 'videos', icon: '🎵', label: 'Videos', wideLabel: 'Videos/Audio' },
+  { id: 'poems', icon: '📝', label: 'Poems', wideLabel: 'Poems' },
+  { id: 'bible', icon: '📖', label: 'Bible', wideLabel: 'Bible' },
+] as const;
+
+const MAIN_TAB_CLASS = 'flex flex-col sm:flex-row items-center justify-center sm:gap-1.5 min-h-[44px] sm:px-4 py-1 rounded-md text-xs sm:text-base font-medium transition-colors';
 
 // Book lists + abbreviations (match CoverageGrid)
 const OT_BOOKS = [
@@ -561,7 +572,7 @@ function VerbUnderstandingControls({ verbState, setVerbState }: {
   );
 }
 
-export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'search' | 'lexicon' | 'videos' | 'poems' }) {
+export default function ClientHome({ initialTab = 'search', initialBibleTab = 'books' }: { initialTab?: 'search' | 'lexicon' | 'videos' | 'poems' | 'bible'; initialBibleTab?: 'books' | 'topics' }) {
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Verse[]>([]);
   const [videoResults, setVideoResults] = useState<any[]>([]);
@@ -569,6 +580,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [audioMap, setAudioMap] = useState<AudioMap>({});
   const [yousafzaiAudioMap, setYousafzaiAudioMap] = useState<AudioMap>({});
   const [activeTranslation, setActiveTranslation] = useState<'afghan2023' | 'yousafzai2019'>('afghan2023');
+  const [showSearchOptions, setShowSearchOptions] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<'search' | 'lexicon' | 'videos' | 'poems' | 'bible'>(initialTab);
   
   // Bible Browser state
@@ -576,7 +588,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [bibleVerses, setBibleVerses] = useState<any[]>([]);
   const [loadingBibleVerses, setLoadingBibleVerses] = useState(false);
-  const [bibleBrowserTab, setBibleBrowserTab] = useState<'books' | 'topics'>('books');
+  const [bibleBrowserTab, setBibleBrowserTab] = useState<'books' | 'topics'>(initialBibleTab);
   const [audioClips, setAudioClips] = useState<any[]>([]);
   const [poems, setPoems] = useState<any[]>([]);
   const [rahmanbabaPoems, setRahmanbabaPoems] = useState<any[]>([]);
@@ -591,8 +603,12 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   const [loadingTranscripts, setLoadingTranscripts] = useState(false);
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [videoAccess, setVideoAccess] = useState<{ allowed: boolean; hoursBudget?: number; hoursLeft?: number } | null>(null);
+  const playableVideos = videos.filter((video) => video.segments?.length > 0);
+  const selectedVideo = playableVideos.find((video) => video.id === selectedVideoId) ?? playableVideos[0];
   const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
-  const [newVideoUrl, setNewVideoUrl] = useState('https://www.youtube.com/watch?v=0tvvnixN7iw&t=252s');
+  const [newVideoUrl, setNewVideoUrl] = useState('');
   const [wordFrequency, setWordFrequency] = useState<any>(null);
   const [loadingWordFrequency, setLoadingWordFrequency] = useState(false);
   const [activeVideosTab, setActiveVideosTab] = useState<'videos' | 'frequency' | 'transcripts'>('videos');
@@ -908,6 +924,17 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
   };
 
   // Process new video function
+  const loadVideoAccess = () => {
+    fetch('/api/videos/transcribe')
+      .then((res) => res.json())
+      .then(setVideoAccess)
+      .catch(() => setVideoAccess({ allowed: false }));
+  };
+
+  useEffect(() => {
+    if (activeMainTab === 'videos') loadVideoAccess();
+  }, [activeMainTab]);
+
   const processNewVideo = async () => {
     if (!newVideoUrl.trim()) {
       alert('Please enter a YouTube URL');
@@ -915,100 +942,47 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
     }
 
     setProcessingVideo(true);
-    setProcessingStatus('Starting video processing...');
+    setProcessingStatus('Sending video to ElevenLabs...');
 
     try {
-      // Try Cloudflare Worker first (faster if YouTube allows it)
-      setProcessingStatus('Attempting direct extraction via Cloudflare Worker...');
-      
-      const cfResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/api/process-video`, {
+      const response = await fetch('/api/videos/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtubeUrl: newVideoUrl }),
       });
+      const started = await response.json();
 
-      const cfData = await cfResponse.json();
+      if (!response.ok) {
+        setProcessingStatus(`❌ Processing failed: ${started.error}`);
+        return;
+      }
 
-      // Check if it's an IP restriction error - fall back to Modal
-      const isIpRestricted = cfData.error?.includes('IP-restricted') || 
-                            cfData.error?.includes('403') ||
-                            cfData.message?.includes('restricts');
+      setProcessingStatus('⏳ Transcribing. This can take a few minutes, and it keeps going if you leave this page.');
 
-      if (isIpRestricted && MODAL_WEBHOOK_URL) {
-        // Fall back to Modal VM which has real IP addresses
-        setProcessingStatus('YouTube blocked direct extraction. Using Modal VM with yt-dlp...');
-        
-        const modalResponse = await fetch(MODAL_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ youtube_url: newVideoUrl }),
-        });
+      let video = started;
+      const deadline = Date.now() + VIDEO_POLL_LIMIT_MS;
+      while (video.status === 'processing' && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, VIDEO_POLL_INTERVAL_MS));
+        const poll = await fetch(`${CLOUDFLARE_WORKER_URL}/api/videos/${started.videoId}`);
+        if (poll.ok) video = await poll.json();
+      }
 
-        const modalData = await modalResponse.json();
-
-        if (modalResponse.ok && modalData.success) {
-          setProcessingStatus(`✅ Successfully processed video via Modal + Cloudflare!`);
-          setProcessingStatus(prev => prev + `\nVideo ID: ${modalData.video_id}`);
-          setProcessingStatus(prev => prev + `\nR2 Storage: ${modalData.r2_key}`);
-          setProcessingStatus(prev => prev + `\nTotal words: ${modalData.total_words || 0}`);
-          
-          if (modalData.transcription_pending) {
-            setProcessingStatus(prev => prev + `\n\n⏳ Audio uploaded, transcription pending...`);
-          }
-
-          // Refresh videos list
-          setVideos([]);
-          setTimeout(() => {
-            fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
-              .then(res => res.json())
-              .then(data => {
-                if (data.videos) setVideos(data.videos || []);
-              })
-              .catch(error => console.error('Error refreshing videos:', error));
-          }, 2000);
-
-          setNewVideoUrl('');
-        } else {
-          setProcessingStatus(`❌ Modal processing failed: ${modalData.error}`);
-        }
-      } else if (cfResponse.ok && cfData.success) {
-        // Direct Cloudflare processing succeeded
-        setProcessingStatus(`✅ Successfully processed video via Cloudflare!`);
-        setProcessingStatus(prev => prev + `\nVideo ID: ${cfData.videoId}`);
-        setProcessingStatus(prev => prev + `\nTitle: ${cfData.title || 'Unknown'}`);
-        setProcessingStatus(prev => prev + `\nTotal segments: ${cfData.totalSegments || 0}`);
-        setProcessingStatus(prev => prev + `\nTotal words: ${cfData.totalWords || 0}`);
-
-        // Refresh videos list
-        setVideos([]);
-        setTimeout(() => {
-          fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.videos) setVideos(data.videos || []);
-            })
-            .catch(error => console.error('Error refreshing videos:', error));
-        }, 2000);
-
+      if (video.status === 'completed') {
+        setProcessingStatus(`✅ Transcribed: ${video.title || started.videoId}`);
         setNewVideoUrl('');
+        const list = await fetch(`${CLOUDFLARE_WORKER_URL}/api/videos`).then(res => res.json());
+        if (list.videos) setVideos(list.videos);
+      } else if (video.status === 'failed') {
+        setProcessingStatus(`❌ Transcription failed: ${video.error || 'unknown error'}`);
       } else {
-        // Both methods failed
-        setProcessingStatus(`❌ Processing failed: ${cfData.error}`);
-        if (cfData.message) {
-          setProcessingStatus(prev => prev + `\n\n${cfData.message}`);
-        }
-        if (cfData.suggestion) {
-          setProcessingStatus(prev => prev + `\n\n💡 ${cfData.suggestion}`);
-        }
-        if (!MODAL_WEBHOOK_URL) {
-          setProcessingStatus(prev => prev + `\n\n⚠️ Modal VM not configured. Set NEXT_PUBLIC_MODAL_WEBHOOK_URL to enable automatic fallback.`);
-        }
+        setProcessingStatus('⏳ Still transcribing. Check the video list again later.');
       }
     } catch (error) {
       console.error('Error processing video:', error);
       setProcessingStatus(`❌ Error: ${error}`);
     } finally {
       setProcessingVideo(false);
+      loadVideoAccess();
     }
   };
 
@@ -1863,85 +1837,55 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
 
 
       {/* Header */}
-      <header className="text-center mb-6 relative">
-        <div className="absolute right-0 top-0">
-          <AuthButton />
+      <header className="flex items-center justify-between gap-2 sm:mb-1">
+        <div className="min-w-0 flex items-baseline gap-3">
+          <h1 className={`text-lg sm:text-xl font-bold truncate transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
+            Pashto Bible Search
+          </h1>
+          <p className={`hidden md:block text-sm truncate transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+            {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
+          </p>
         </div>
-        <h1 className={`text-3xl font-bold mb-2 transition-colors ${isEnglishMode ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-gray-100'}`}>
-          Pashto Bible Search
-        </h1>
-        <p className={`transition-colors ${isEnglishMode ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
-          {isEnglishMode ? 'Searching in English - Finding Pashto translations' : 'Search the Bible in Pashto with linguistic analysis'}
-        </p>
+        <AuthButton />
       </header>
 
       {/* Main Tabs */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
-          <button
-            onClick={() => setActiveMainTab('search')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'search'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-          >
-            🔍 Search
-          </button>
-          <button
-            onClick={() => setActiveMainTab('lexicon')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'lexicon'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-          >
-            📚 Lexicon
-          </button>
-          <button
-            onClick={() => setActiveMainTab('videos')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'videos'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-          >
-            🎵 Videos/Audio
-          </button>
-          <button
-            onClick={() => setActiveMainTab('poems')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'poems'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-          >
-            📝 Poems
-          </button>
-          <button
-            onClick={() => setActiveMainTab('bible')}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${activeMainTab === 'bible'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-          >
-            📖 Bible
-          </button>
+      <nav aria-label="Main" className="sticky top-0 z-40 flex justify-center mb-2 sm:mb-4">
+        <div className="w-full sm:w-auto bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md p-1 grid grid-cols-6 gap-0.5 sm:flex sm:gap-1">
+          {MAIN_TABS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveMainTab(item.id)}
+              className={`${MAIN_TAB_CLASS} ${activeMainTab === item.id
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+            >
+              <span>{item.icon}</span>
+              <span className="sm:hidden">{item.label}</span>
+              <span className="hidden sm:inline">{item.wideLabel}</span>
+            </button>
+          ))}
           <a
             href="/typer"
-            className="px-4 py-2 rounded-md font-medium transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            className={`${MAIN_TAB_CLASS} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100`}
           >
-            ⌨️ Typer
+            <span>⌨️</span>
+            <span>Typer</span>
           </a>
         </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
       {activeMainTab === 'search' && (
         <>
           {/* Translation Tabs - Only show when Bible is in scope */}
           {(scope === 'everything' || scope === 'all' || scope === 'ot' || scope === 'nt') && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-2 sm:mb-6">
               <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex gap-1">
                 <button
                   onClick={() => setActiveTranslation('afghan2023')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'afghan2023'
+                  className={`min-h-[44px] px-3 sm:px-4 py-1 whitespace-nowrap text-sm sm:text-base rounded-md font-medium transition-all duration-300 ${activeTranslation === 'afghan2023'
                     ? 'bg-green-600 text-white shadow-lg transform scale-105 ring-2 ring-green-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
@@ -1950,7 +1894,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 </button>
                 <button
                   onClick={() => setActiveTranslation('yousafzai2019')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all duration-300 ${activeTranslation === 'yousafzai2019'
+                  className={`min-h-[44px] px-3 sm:px-4 py-1 whitespace-nowrap text-sm sm:text-base rounded-md font-medium transition-all duration-300 ${activeTranslation === 'yousafzai2019'
                     ? 'bg-orange-500 text-white shadow-lg transform scale-105 ring-2 ring-orange-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
@@ -1962,7 +1906,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           )}
 
           {/* Scope Indicator */}
-          <div className="mb-4 text-center">
+          <div className="hidden sm:block mb-4 text-center">
             <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
               scope === 'videos' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
               scope === 'poems' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300' :
@@ -1981,7 +1925,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           </div>
 
           {/* Search Bar */}
-          <div className="relative z-10 mb-6">
+          <div className="relative z-10 mb-2 sm:mb-6">
             <div className={`absolute inset-0 rounded-lg opacity-10 ${activeTranslation === 'afghan2023' ? 'bg-green-500' : 'bg-orange-500'
               }`} style={{ zIndex: -1 }}></div>
             <TextField
@@ -1990,8 +1934,8 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
               onKeyPress={handleKeyPress}
               placeholder={
                 isEnglishMode
-                  ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
-                  : "Enter Pashto text to search..."
+                  ? "English word..."
+                  : "Pashto word..."
               }
               variant="outlined"
               fullWidth
@@ -2056,21 +2000,31 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
           </div>
 
           {/* Enhanced Search Controls */}
-          <SearchControls
-            scope={scope}
-            setScope={setScope}
-            includeRelated={includeRelated}
-            setIncludeRelated={setIncludeRelated}
-            enableFuzzy={enableFuzzy}
-            setEnableFuzzy={setEnableFuzzy}
-            searchLanguage={searchLanguage}
-            setSearchLanguage={setSearchLanguage}
-            bookFilter={bookFilter}
-            setBookFilter={setBookFilter}
-            resultsCount={resultsCount}
-            refreshAudioMap={refreshAudioMap}
-            isLoading={isLoading}
-          />
+          <button
+            type="button"
+            onClick={() => setShowSearchOptions(!showSearchOptions)}
+            aria-expanded={showSearchOptions}
+            className="md:hidden w-full min-h-[44px] mb-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+          >
+            ⚙️ Search options {showSearchOptions ? '▲' : '▼'}
+          </button>
+          <div className={showSearchOptions ? 'mb-2' : 'hidden md:block'}>
+            <SearchControls
+              scope={scope}
+              setScope={setScope}
+              includeRelated={includeRelated}
+              setIncludeRelated={setIncludeRelated}
+              enableFuzzy={enableFuzzy}
+              setEnableFuzzy={setEnableFuzzy}
+              searchLanguage={searchLanguage}
+              setSearchLanguage={setSearchLanguage}
+              bookFilter={bookFilter}
+              setBookFilter={setBookFilter}
+              resultsCount={resultsCount}
+              refreshAudioMap={refreshAudioMap}
+              isLoading={isLoading}
+            />
+          </div>
 
           {/* Error Message */}
           {error && (
@@ -2769,33 +2723,30 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       {/* Enhanced Videos/Audio Tab */}
       {activeMainTab === 'videos' && (
         <div className="max-w-7xl mx-auto">
-          <div className="relative bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-900 dark:via-slate-800 dark:to-blue-900/30 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/60 dark:border-slate-700/60 p-8 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-900 dark:via-slate-800 dark:to-blue-900/30 rounded-2xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/60 dark:border-slate-700/60 p-2 sm:p-4 overflow-hidden">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-gradient-to-tr from-purple-400/20 to-pink-500/20 rounded-full blur-3xl"></div>
 
             <div className="relative z-10">
-              <div className="text-center mb-8">
-                <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-800 dark:from-slate-200 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent mb-3">
+              {activeVideosTab !== 'videos' && (
+                <h2 className="text-center mb-3 text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-800 dark:from-slate-200 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent">
                   🎵 Videos & Audio Analysis
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-                  Explore YouTube videos with intelligent Pashto transcript analysis, word frequency insights, and advanced search capabilities
-                </p>
-              </div>
+              )}
 
               {/* Enhanced Sub-tabs for Videos/Audio section */}
-              <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
+              <div className="grid grid-cols-3 gap-1 mb-2 bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setActiveVideosTab('videos')}
-                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'videos'
+                  className={`group relative min-h-[44px] px-1 py-1 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'videos'
                     ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border-2 border-blue-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-1">
                     <span className="text-lg">📺</span>
-                    <span className="hidden sm:inline">Videos</span>
+                    <span>Videos</span>
                   </span>
                   {activeVideosTab === 'videos' && (
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></div>
@@ -2803,14 +2754,14 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 </button>
                 <button
                   onClick={() => setActiveVideosTab('frequency')}
-                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'frequency'
+                  className={`group relative min-h-[44px] px-1 py-1 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'frequency'
                     ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border-2 border-emerald-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-1">
                     <span className="text-lg">📊</span>
-                    <span className="hidden sm:inline">Word Frequency</span>
+                    <span>Word Frequency</span>
                   </span>
                   {activeVideosTab === 'frequency' && (
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"></div>
@@ -2818,14 +2769,14 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 </button>
                 <button
                   onClick={() => setActiveVideosTab('transcripts')}
-                  className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'transcripts'
+                  className={`group relative min-h-[44px] px-1 py-1 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 ${activeVideosTab === 'transcripts'
                     ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 border-2 border-purple-400'
                     : 'bg-white/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-1">
                     <span className="text-lg">🔍</span>
-                    <span className="hidden sm:inline">Transcripts</span>
+                    <span>Transcripts</span>
                   </span>
                   {activeVideosTab === 'transcripts' && (
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
@@ -2833,8 +2784,42 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                 </button>
               </div>
 
-              {/* Enhanced Video Upload Section */}
-              <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl shadow-sm">
+              {activeVideosTab === 'videos' && (
+                loadingVideos ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
+                  </div>
+                ) : selectedVideo ? (
+                  <>
+                    {playableVideos.length > 1 && (
+                      <select
+                        aria-label="Choose a video"
+                        value={selectedVideo.id}
+                        onChange={(e) => setSelectedVideoId(e.target.value)}
+                        className="w-full min-h-[44px] mb-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        {playableVideos.map((video) => (
+                          <option key={video.id} value={video.id}>{video.title || `Video ${video.id}`}</option>
+                        ))}
+                      </select>
+                    )}
+                    <VideoTranscriptPlayer
+                      key={selectedVideo.id}
+                      videoId={selectedVideo.id}
+                      title={selectedVideo.title || `Video ${selectedVideo.id}`}
+                      segments={selectedVideo.segments}
+                      youtubeUrl={selectedVideo.youtubeUrl}
+                    />
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>No videos found. Process a YouTube video below to get started.</p>
+                  </div>
+                )
+              )}
+              {activeVideosTab === 'videos' && (
+              <div className="mt-4 p-3 sm:p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
                     <span className="text-white text-xl">🎬</span>
@@ -2843,7 +2828,16 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                     Process New Video
                   </h3>
                 </div>
+                {videoAccess && !videoAccess.allowed && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Sign in with an allowed account to add a video.
+                  </p>
+                )}
+                {videoAccess?.allowed && (
                 <div className="space-y-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {videoAccess.hoursLeft} of {videoAccess.hoursBudget} hours left this month. Videos up to 60 minutes, 5 a day.
+                  </p>
                   <div>
                     <input
                       type="url"
@@ -2856,7 +2850,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   </div>
                   <button
                     onClick={processNewVideo}
-                    disabled={processingVideo || !newVideoUrl.trim()}
+                    disabled={processingVideo || !newVideoUrl.trim() || !videoAccess.hoursLeft}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
                   >
                     {processingVideo ? 'Processing...' : 'Process Video'}
@@ -2870,110 +2864,10 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Transcript Search */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                  🔍 Search Transcripts
-                </h3>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={transcriptSearchQuery}
-                    onChange={handleTranscriptSearchChange}
-                    placeholder="Enter Pashto text to search in video transcripts..."
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {loadingTranscripts && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Search Results */}
-                {transcriptResults.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                      <p className="text-green-800 dark:text-green-300 font-medium">
-                        Found {transcriptResults.length} matching segments
-                      </p>
-                    </div>
-
-                    {transcriptResults.map((result, index) => (
-                      <div key={result.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                          {result.verse_reference}
-                        </h4>
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                            Audio: {result.audio_filename} • Duration: {result.duration_seconds}s
-                          </p>
-                          <div className="bg-white dark:bg-gray-800 rounded border p-3 max-h-32 overflow-y-auto">
-                            <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
-                              {result.transcript}
-                            </p>
-                          </div>
-                        </div>
-                        <audio controls className="w-full">
-                          <source src={`/api/audio-clips/${result.audio_filename}`} type="audio/wav" />
-                          Your browser does not support the audio element.
-                        </audio>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {transcriptSearchQuery && transcriptResults.length === 0 && !loadingTranscripts && (
-                  <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                    <p className="text-yellow-800 dark:text-yellow-300">
-                      No matching transcripts found for "{transcriptSearchQuery}"
-                    </p>
-                  </div>
                 )}
               </div>
-
-              {/* Conditional Content Based on Active Sub-tab */}
-              {activeVideosTab === 'videos' && (
-                <>
-                  {/* Videos Section */}
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                      📺 YouTube Videos with Transcripts
-                    </h3>
-
-                    {loadingVideos ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-2 text-gray-500 dark:text-gray-400">Loading videos...</p>
-                      </div>
-                    ) : videos.length > 0 ? (
-                      <div className="space-y-6">
-                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                          <p className="text-green-800 dark:text-green-300">
-                            Found {videos.length} video{videos.length !== 1 ? 's' : ''} with transcripts
-                          </p>
-                        </div>
-
-                        {videos.map((video, index) => (
-                          <VideoTranscriptPlayer
-                            key={video.id}
-                            videoId={video.id}
-                            title={video.title || `Video ${video.id}`}
-                            segments={video.segments || []}
-                            youtubeUrl={video.youtubeUrl}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <p>No videos found. Process a YouTube video above to get started.</p>
-                      </div>
-                    )}
-                  </div>
-                </>
               )}
+
 
               {activeVideosTab === 'frequency' && (
                 <>
@@ -3390,18 +3284,18 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       {/* Poems Tab - Rahman Baba & Proverbs */}
       {activeMainTab === 'poems' && (
         <div className="max-w-5xl mx-auto">
-          <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-gray-900 dark:via-amber-900/20 dark:to-rose-900/10 rounded-3xl shadow-2xl border border-amber-200/60 dark:border-amber-800/40 p-8 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-gray-900 dark:via-amber-900/20 dark:to-rose-900/10 rounded-3xl shadow-2xl border border-amber-200/60 dark:border-amber-800/40 p-3 sm:p-8 overflow-hidden">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-gradient-to-tr from-rose-400/20 to-pink-500/20 rounded-full blur-3xl"></div>
 
             <div className="relative z-10">
               {/* Header */}
-              <div className="text-center mb-8">
-                <h2 className="text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300 bg-clip-text text-transparent mb-3">
+              <div className="text-center mb-3 sm:mb-8">
+                <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300 bg-clip-text text-transparent mb-3">
                   📜 Pashto Poetry & Proverbs
                 </h2>
-                <p className="text-amber-800 dark:text-amber-200 text-lg max-w-2xl mx-auto leading-relaxed">
+                <p className="hidden sm:block text-amber-800 dark:text-amber-200 text-lg max-w-2xl mx-auto leading-relaxed">
                   Explore classical Pashto poetry by Rahman Baba and traditional proverbs with audio, translations, and word analysis
                 </p>
               </div>
@@ -3662,11 +3556,11 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
       {/* Bible Browser */}
       {activeMainTab === 'bible' && (
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               📖 Bible Browser
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-2 sm:mb-4 text-sm sm:text-base">
               Browse all books, chapters, and verses • {activeTranslation === 'afghan2023' ? '🇦🇫 Afghan 2023' : '🕌 Yousafzai 2019'}
             </p>
 
@@ -3732,15 +3626,15 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                     <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-1 rounded text-sm">OT</span>
                     Old Testament
                   </h3>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                     {['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi'].map(book => (
                       <button
                         key={book}
                         onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
-                        className="p-2 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-900 dark:text-amber-200 transition-colors truncate"
+                        className="min-h-[44px] p-2 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-900 dark:text-amber-200 transition-colors leading-tight"
                         title={book}
                       >
-                        {book.length > 8 ? book.slice(0, 6) + '...' : book}
+                        {book}
                       </button>
                     ))}
                   </div>
@@ -3752,21 +3646,21 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                     <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">NT</span>
                     New Testament
                   </h3>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                     {['Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'].map(book => (
                       <button
                         key={book}
                         onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
-                        className="p-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-900 dark:text-blue-200 transition-colors truncate"
+                        className="min-h-[44px] p-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-900 dark:text-blue-200 transition-colors leading-tight"
                         title={book}
                       >
-                        {book.length > 8 ? book.slice(0, 6) + '...' : book}
+                        {book}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-            ) : bibleBrowserTab === 'books' && !selectedChapter ? (
+            ) : bibleBrowserTab === 'books' && selectedBook && !selectedChapter ? (
               /* Chapter Selection */
               <div>
                 <div className="flex items-center gap-3 mb-4">
@@ -3804,7 +3698,7 @@ export default function ClientHome({ initialTab = 'search' }: { initialTab?: 'se
                   ))}
                 </div>
               </div>
-            ) : bibleBrowserTab === 'books' && selectedChapter ? (
+            ) : bibleBrowserTab === 'books' && selectedBook && selectedChapter ? (
               /* Verse Display */
               <div>
                 <div className="flex items-center gap-3 mb-4 flex-wrap">

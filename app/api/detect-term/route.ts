@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { D1Database } from '@/utils/d1';
 
-export const runtime = 'edge';
 
 // Type definitions for D1 query results
 interface VerbLexiconRow {

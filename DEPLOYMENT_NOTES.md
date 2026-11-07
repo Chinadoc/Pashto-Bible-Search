@@ -1,101 +1,36 @@
-# Deployment & Branch Publishing Notes
+# Deployment Notes
 
-This repository lives inside the autonomous workspace, so commits stay local until you
-push them to your own GitHub fork. Follow these steps to publish the latest work and
-kick off a Vercel preview build:
+Everything runs on Cloudflare, in account `3ac1a6fafce90adf6b1c8f1280dfc94d`.
 
-1. Add your GitHub fork as a remote (replace `<user>` and `<repo>`):
-   ```bash
-   git remote add origin git@github.com:<user>/<repo>.git
-   ```
-   If a remote already exists, update it with `git remote set-url origin ...`.
+| Piece | Config | Deploy |
+|---|---|---|
+| API Worker `pashtobiblesearch` (D1 `pashto-bible-db`, R2 `pashto-bible-audio`, cron) | `wrangler.toml` | `npx wrangler deploy` |
+| Front end Worker `pashto-bible-web` (Next.js through OpenNext, D1 binding) | `wrangler.web.jsonc`, `open-next.config.ts` | `npm run web:deploy` |
 
-2. Create (or update) the feature branch and push it:
-   ```bash
-   git checkout -B feature/pashto-refresh
-   git push -u origin feature/pashto-refresh
-   ```
+`npm run web:build` builds the front end without deploying it. `npm run web:preview` runs it locally. `npm test` runs the tests. `npm run test:e2e` checks the page layout in a browser against the deployed site, or against `BASE_URL` if set. `node e2e/walk.mjs <dir>` screenshots every page at phone and desktop size.
 
-3. In Vercel, import the GitHub repo (or hit "Redeploy" on the project) so Vercel can
-   detect the new branch and generate a preview deployment.
+The site is `https://pashto-bible-web.jeremy-samuels17.workers.dev`. `pashto-bible-search.vercel.app` sends every path there with a 308: `vercel.json` keeps that in place when `main` deploys to Vercel.
 
-4. Monitor the Vercel dashboard for the deployment status. Once it finishes, use the
-   provided preview URL to review the UI in a live environment.
+The API Worker has `preview_urls = false`, so old versions and test uploads can't be reached by their version URL.
 
-Because this environment does not have credentials for your GitHub account, the actual
-`git push` step must be run locally after pulling these commits onto your machine.
+The front end's compressed Worker can exceed 3 MiB, which needs the Workers Paid plan.
 
----
+## Secrets
 
-## Current Status Snapshot
+API Worker: `ELEVENLABS_API_KEY`, `ELEVENLABS_WEBHOOK_SECRET`, `ADMIN_API_SECRET`. Its older `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `AUTH_SECRET` are no longer used.
 
-- The `feature/pashto-refresh` branch that restores the previous styling **is already
-  live on GitHub** (confirmed from a clean clone where `git log` shows commit
-  `091dceb7`).
-- Vercel will automatically rebuild from that branch, so you can review the latest UI
-  there without any extra steps inside this workspace.
+Front end Worker: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_API_SECRET` (same value as the API Worker), `VIDEO_ADMIN_EMAILS` (comma-separated emails allowed to submit videos).
 
-If you are working from a different machine (e.g., your macOS dev box) and you see
-errors like "packfile is corrupted," re-clone the repo with SSH to get a clean copy and
-continue working.
+Set each with `npx wrangler secret put NAME` (add `--config wrangler.web.jsonc` for the front end).
 
----
+## Sign-in
 
-## Options for Future Pushes
+NextAuth uses Google with JWT sessions, so it needs no D1 tables. Google's OAuth client must list this redirect URI for each hostname: `https://<host>/api/auth/callback/google`.
 
-You now have a few ways to publish additional commits without reconfiguring this
-workspace:
+## Database changes
 
-1. **Use GitHub CLI (already authenticated)**
-   ```bash
-   cd /Users/jeremysamuels/Documents/pashto-bible-search
-   gh repo sync        # or use git commands with gh's credential helper
-   ```
-   This machine already has the `id_ed25519` SSH key registered, so pushes via `git`
-   (or `gh`) will succeed immediately.
+Migrations in `migrations/` are additive and applied by hand: `npx wrangler d1 execute pashto-bible-db --remote --file migrations/<file>.sql`. `saved_verses` and `srs_progress` come from `0004_saved_verses.sql`; don't apply the older `0002_auth_and_srs.sql`, whose foreign keys require a `users` table that JWT sessions never fill.
 
-2. **Continue with the clean-clone method**
-   ```bash
-   cd /tmp/pashto-bible-search-clean
-   git fetch origin
-   git push origin feature/pashto-refresh
-   ```
-   This bypasses any local corruption entirely since it relies on a verified clean
-   checkout.
+## YouTube
 
-3. **Fix the previously corrupted local clone**
-   ```bash
-   cd /Users/jeremysamuels/Documents/pashto-bible-search
-   git fsck --full
-   # If corruption remains:
-   cd ..
-   mv pashto-bible-search pashto-bible-search-backup
-   git clone git@github.com:Chinadoc/Pashto-Bible-Search.git pashto-bible-search
-   ```
-   After recloning, reconnect to Vercel or any other tooling as needed.
-
-All of these options assume you keep using SSH (`git@github.com:Chinadoc/...`) or the
-GitHub CLI, both of which are already authenticated.
-
----
-
-## Running `npm run lint` (locally or in CI)
-
-The earlier lint failures were because the workspace didn't have the Next.js binary
-installed. To ensure `npm run lint` works in Vercel, CI, or your laptop:
-
-1. Install dependencies before linting:
-   ```bash
-   npm ci           # preferred for CI/Vercel to match package-lock.json
-   # or
-   npm install      # for local development
-   ```
-
-2. Run the lint script:
-   ```bash
-   npm run lint
-   ```
-
-3. In Vercel, the default build step already runs `npm install` (or `npm ci` when a
-   lockfile is present). If you override the build command, include `npm ci` first so
-   `next` is available for the lint step.
+See "YouTube transcription" in `cloudflare/README.md`. New videos are transcribed by ElevenLabs without any download. Audio clips for new videos still need a downloader: `modal/` holds the old one, and a Cloudflare Container is being tested to replace it (see "Media Container" in `cloudflare/README.md`).

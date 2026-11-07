@@ -568,7 +568,7 @@ function setCachedSearch(cacheKey: string, results: any[], relatedForms: any, pr
 }
 
 // Preload common search results for instant loading
-async function preloadCommonSearches(): Promise<void> {
+async function preloadCommonSearches(origin: string): Promise<void> {
   console.log('🚀 Preloading common search results...');
 
   const commonQueries = [
@@ -585,7 +585,7 @@ async function preloadCommonSearches(): Promise<void> {
         console.log(`📚 Preloading: ${query}`);
 
         // This would trigger a search and cache the result
-        await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/search`, {
+        await fetch(`${origin}/api/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2641,7 +2641,7 @@ export async function GET(request: NextRequest) {
 
   if (action === 'preload') {
     // Preload common searches on demand
-    await preloadCommonSearches();
+    await preloadCommonSearches(new URL(request.url).origin);
     return NextResponse.json({
       message: 'Common searches preloaded',
       timestamp: new Date().toISOString()
@@ -2651,7 +2651,7 @@ export async function GET(request: NextRequest) {
   if (action === 'warm') {
     // Warm up all caches (data + common searches)
     await warmCaches();
-    await preloadCommonSearches();
+    await preloadCommonSearches(new URL(request.url).origin);
     return NextResponse.json({
       message: 'All caches warmed',
       timestamp: new Date().toISOString()

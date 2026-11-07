@@ -72,3 +72,38 @@ NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=http://127.0.0.1:8787
 ```
 
 With wrangler running, the app and its API routes will resolve Cloudflare-backed data and audio locally.
+
+## Admin-only Worker routes
+These routes can change or delete data, so they need the `x-admin-secret` header to match the Worker secret `ADMIN_API_SECRET`. With no secret set they refuse everyone.
+
+`POST /api/d1/query`, `POST /api/r2/upload`, `POST /api/r2/delete`, `DELETE /api/video/:id`, `POST /api/video/process`, `POST /api/update-audio-urls`, `POST /api/import-yousafzai-verses`, `POST /api/analyze-inflections`, `POST /api/populate-inflection-reasons`, `POST /api/validate-verb-forms`, `POST /api/index-video-words`, `POST /api/videos/transcribe`, `GET /api/videos/transcribe/budget`, `POST /api/store-video`, `POST /api/videos`, `POST /api/process-video`, `POST /api/transcribe-audio`, `POST /api/transcribe-r2-audio`.
+
+Scripts that call them read `ADMIN_API_SECRET` from the environment. The value is in the macOS Keychain as `pashto-admin-api-secret`.
+
+## YouTube transcription
+1. A signed-in admin submits a URL in the app. The Next route `POST /api/videos/transcribe` checks that the session email is in `VIDEO_ADMIN_EMAILS`, then calls the Worker route of the same name with `x-admin-secret`. Anonymous visitors can't spend ElevenLabs credits.
+2. The Worker sends ElevenLabs the YouTube URL (`source_url`, `webhook=true`, `webhook_metadata={video_id}`), saves the video as `processing` and returns 202. A video already `processing` or `completed` is not sent again.
+3. ElevenLabs posts the result to `POST /api/elevenlabs/webhook`. The Worker checks the `elevenlabs-signature` header (`t=...,v0=...`, HMAC-SHA256 of `{t}.{raw body}` with the secret `ELEVENLABS_WEBHOOK_SECRET`, 30 minute window), then writes `videos` and the word tables. A repeat delivery changes nothing.
+4. The page polls `GET /api/videos/:id` for `status` (`processing`, `completed`, `failed`) and `error`.
+5. A cron every 15 minutes fetches jobs still `processing` after 15 minutes from `GET /v1/speech-to-text/transcripts/{id}`, and marks them `failed` after 6 hours.
+
+Apply `migrations/0003_async_transcription.sql` before deploying this code.
+
+### Limits on new transcripts
+Only signed-in emails in the front end Worker's `VIDEO_ADMIN_EMAILS` see the form or can submit; anyone else gets 401. The Worker enforces the rest, in this order, before any ElevenLabs call:
+1. **Duplicates:** a video already `processing` or `completed` returns its existing status, with no call and nothing counted. A `failed` video can be tried again.
+2. **5 submissions per user per UTC day.**
+3. **60 minutes per video.** The length comes from YouTube's player API, for free. YouTube blocks some requests from Cloudflare's IPs, so the Worker asks up to 3 times; if it still has no length, the video is refused rather than risk paying for an unknown length.
+4. **Monthly hours,** `TRANSCRIBE_HOURS_PER_MONTH` in `wrangler.toml` (10 by default, UTC calendar month). A video that wouldn't fit in the hours left is refused.
+
+Jobs ElevenLabs accepts are recorded in `transcription_jobs` (`migrations/0005_transcription_jobs.sql`); a job it refuses isn't counted. `GET /api/videos/transcribe/budget` (admin secret) returns `hoursBudget`, `hoursUsed` and `hoursLeft`.
+
+## Media Container
+Worker `pashto-media` (`cloudflare/media-worker.ts`, `wrangler.media.jsonc`) runs a yt-dlp + ffmpeg image (`container/`) on Cloudflare Containers. For now it only answers one question: does YouTube serve Cloudflare's IPs? It uses no cookies or proxies, keeps nothing and writes to neither D1 nor R2.
+
+`POST /spike/download` with `{"videoId":"..."}` and `x-admin-secret` downloads that video's audio inside the Container, deletes it, and returns `ok`, `bytes`, `durationSeconds`, the YouTube error if there was one, and the IP and location it ran from. With no `ADMIN_API_SECRET` set on the Worker it refuses everyone.
+
+GitHub Actions builds and deploys it (`.github/workflows/container.yml`), because deploying from a Dockerfile needs Docker. It runs on a push to `cf/move-20261106` that changes these files, or with `gh run rerun`. `workflow_dispatch` only starts working once the workflow is on `main`. It needs the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and the account needs Workers Paid.
+
+Set the Worker secret once, after the first deploy: `npx wrangler secret put ADMIN_API_SECRET --config wrangler.media.jsonc`.
+

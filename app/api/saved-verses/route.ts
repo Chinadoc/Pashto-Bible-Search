@@ -1,7 +1,7 @@
 import { auth } from "@/app/lib/auth";
+import { getDb } from "@/app/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
 export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
@@ -14,8 +14,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Verse reference required" }, { status: 400 });
         }
 
-        // Use D1 binding from environment
-        const db = process.env.DB as any;
+        const db = getDb();
 
         // Insert into saved_verses
         await db.prepare(
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const db = process.env.DB as any;
+        const db = getDb();
         const { results } = await db.prepare(
             "SELECT verse_ref FROM saved_verses WHERE user_id = ?"
         ).bind(session.user.id).all();

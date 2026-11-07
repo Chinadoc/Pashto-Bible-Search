@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSession, signIn, signOut } from 'next-auth/react';
 
 export interface SRSItem {
@@ -108,9 +109,9 @@ export default function TyperDashboard({ onSelectVerse, srsItems, loading }: Typ
                             <p className="text-slate-500 dark:text-slate-400 mb-6">
                                 Go to the Bible Search page to find and save verses to your collection.
                             </p>
-                            <a href="/" className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
+                            <Link href="/" className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
                                 Search Verses
-                            </a>
+                            </Link>
                         </div>
                     ) : (
                         groupOrder.map(group => {

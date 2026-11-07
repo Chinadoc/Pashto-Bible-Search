@@ -10,3 +10,9 @@ dist
 *.log
 recovered_audio/
 *.mp3
+
+# OpenNext build output
+.open-next
+*.tsbuildinfo
+test-results
+playwright-report
