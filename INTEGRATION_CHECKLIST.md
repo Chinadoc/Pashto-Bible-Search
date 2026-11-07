@@ -253,11 +253,8 @@ git add .
 git commit -m "Add LingDocs dictionary detection and D1 integration"
 git push
 
-# Vercel will auto-deploy
-# Check build logs for errors
-
-# Verify D1 is connected in Vercel:
-# Project Settings → Environment Variables → DB (should be bound to D1)
+# Then deploy: npm run web:deploy
+# D1 is bound in wrangler.web.jsonc
 ```
 
 ---

@@ -217,7 +217,7 @@ async function processVideo(youtubeUrl) {
   
   if (result) {
     console.log('\n✅ Video processed successfully!');
-    console.log(`\nView at: https://pashto-bible-search.vercel.app/videos`);
+    console.log(`\nView at: https://pashto-bible-web.jeremy-samuels17.workers.dev/videos`);
     
     // Show sample of transcript
     if (result.transcript) {

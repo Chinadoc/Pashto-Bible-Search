@@ -14,3 +14,5 @@ recovered_audio/
 # OpenNext build output
 .open-next
 *.tsbuildinfo
+test-results
+playwright-report

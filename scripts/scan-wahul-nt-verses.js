@@ -6,7 +6,7 @@
  * using enhanced LingDocs grammar rules
  */
 
-const WORKER_URL = process.env.WORKER_URL || 'https://pashto-bible-api.jeremysamuels1.workers.dev';
+const WORKER_URL = process.env.WORKER_URL || 'https://pashtobiblesearch.jeremy-samuels17.workers.dev';
 
 // Generate comprehensive wahul forms using LingDocs grammar
 function generateWahulForms() {

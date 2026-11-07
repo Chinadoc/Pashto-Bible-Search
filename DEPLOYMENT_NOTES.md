@@ -7,7 +7,9 @@ Everything runs on Cloudflare, in account `3ac1a6fafce90adf6b1c8f1280dfc94d`.
 | API Worker `pashtobiblesearch` (D1 `pashto-bible-db`, R2 `pashto-bible-audio`, cron) | `wrangler.toml` | `npx wrangler deploy` |
 | Front end Worker `pashto-bible-web` (Next.js through OpenNext, D1 binding) | `wrangler.web.jsonc`, `open-next.config.ts` | `npm run web:deploy` |
 
-`npm run web:build` builds the front end without deploying it. `npm run web:preview` runs it locally. `npm test` runs the tests.
+`npm run web:build` builds the front end without deploying it. `npm run web:preview` runs it locally. `npm test` runs the tests. `npm run test:e2e` checks the page layout in a browser against the deployed site, or against `BASE_URL` if set. `node e2e/walk.mjs <dir>` screenshots every page at phone and desktop size.
+
+The site is `https://pashto-bible-web.jeremy-samuels17.workers.dev`. `pashto-bible-search.vercel.app` sends every path there with a 308: `vercel.json` keeps that in place when `main` deploys to Vercel.
 
 The front end's compressed Worker can exceed 3 MiB, which needs the Workers Paid plan.
 

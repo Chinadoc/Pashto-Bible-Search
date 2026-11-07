@@ -9,7 +9,7 @@
   'use strict';
 
   // Configuration
-  const API_URL = 'https://pashto-bible-search.vercel.app/api/word-analysis';
+  const API_URL = 'https://pashto-bible-web.jeremy-samuels17.workers.dev/api/word-analysis';
   const PASHTO_REGEX = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+/;
   
   // State (session-only, no persistence)

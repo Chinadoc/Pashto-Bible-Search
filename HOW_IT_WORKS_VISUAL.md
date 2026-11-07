@@ -463,7 +463,7 @@ git add .
 git commit -m "Add LingDocs dictionary detection"
 git push
 
-# Vercel will automatically deploy
+# Then deploy: npm run web:deploy
 # D1 database is already configured in Cloudflare
 ```
 
