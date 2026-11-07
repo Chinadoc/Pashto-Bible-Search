@@ -76,7 +76,7 @@ With wrangler running, the app and its API routes will resolve Cloudflare-backed
 ## Admin-only Worker routes
 These routes can change or delete data, so they need the `x-admin-secret` header to match the Worker secret `ADMIN_API_SECRET`. With no secret set they refuse everyone.
 
-`POST /api/d1/query`, `POST /api/r2/upload`, `POST /api/r2/delete`, `DELETE /api/video/:id`, `POST /api/video/process`, `POST /api/update-audio-urls`, `POST /api/import-yousafzai-verses`, `POST /api/analyze-inflections`, `POST /api/populate-inflection-reasons`, `POST /api/validate-verb-forms`, `POST /api/index-video-words`, `POST /api/videos/transcribe`, `POST /api/store-video`, `POST /api/videos`, `POST /api/process-video`, `POST /api/transcribe-audio`, `POST /api/transcribe-r2-audio`.
+`POST /api/d1/query`, `POST /api/r2/upload`, `POST /api/r2/delete`, `DELETE /api/video/:id`, `POST /api/video/process`, `POST /api/update-audio-urls`, `POST /api/import-yousafzai-verses`, `POST /api/analyze-inflections`, `POST /api/populate-inflection-reasons`, `POST /api/validate-verb-forms`, `POST /api/index-video-words`, `POST /api/videos/transcribe`, `GET /api/videos/transcribe/budget`, `POST /api/store-video`, `POST /api/videos`, `POST /api/process-video`, `POST /api/transcribe-audio`, `POST /api/transcribe-r2-audio`.
 
 Scripts that call them read `ADMIN_API_SECRET` from the environment. The value is in the macOS Keychain as `pashto-admin-api-secret`.
 
@@ -88,6 +88,15 @@ Scripts that call them read `ADMIN_API_SECRET` from the environment. The value i
 5. A cron every 15 minutes fetches jobs still `processing` after 15 minutes from `GET /v1/speech-to-text/transcripts/{id}`, and marks them `failed` after 6 hours.
 
 Apply `migrations/0003_async_transcription.sql` before deploying this code.
+
+### Limits on new transcripts
+Only signed-in emails in the front end Worker's `VIDEO_ADMIN_EMAILS` see the form or can submit; anyone else gets 401. The Worker enforces the rest, in this order, before any ElevenLabs call:
+1. **Duplicates:** a video already `processing` or `completed` returns its existing status, with no call and nothing counted. A `failed` video can be tried again.
+2. **5 submissions per user per UTC day.**
+3. **60 minutes per video.** The length comes from YouTube's player API, for free. YouTube blocks some requests from Cloudflare's IPs, so the Worker asks up to 3 times; if it still has no length, the video is refused rather than risk paying for an unknown length.
+4. **Monthly hours,** `TRANSCRIBE_HOURS_PER_MONTH` in `wrangler.toml` (10 by default, UTC calendar month). A video that wouldn't fit in the hours left is refused.
+
+Jobs ElevenLabs accepts are recorded in `transcription_jobs` (`migrations/0005_transcription_jobs.sql`); a job it refuses isn't counted. `GET /api/videos/transcribe/budget` (admin secret) returns `hoursBudget`, `hoursUsed` and `hoursLeft`.
 
 ## Media Container
 Worker `pashto-media` (`cloudflare/media-worker.ts`, `wrangler.media.jsonc`) runs a yt-dlp + ffmpeg image (`container/`) on Cloudflare Containers. For now it only answers one question: does YouTube serve Cloudflare's IPs? It uses no cookies or proxies, keeps nothing and writes to neither D1 nor R2.

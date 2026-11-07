@@ -15,6 +15,8 @@ const YT = `https://www.youtube.com/watch?v=${VIDEO}`;
 let proxy: Awaited<ReturnType<typeof getPlatformProxy>>;
 let db: D1Database;
 let env: any;
+let youtubeSeconds: string | undefined;
+let youtubeBlocks = 0;
 
 function statements(path: string): string[] {
   return readFileSync(path, 'utf8')
@@ -27,7 +29,7 @@ beforeAll(async () => {
   writeFileSync(join(dir, 'wrangler.toml'), `name = "t"\ncompatibility_date = "2024-10-27"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "t"\ndatabase_id = "00000000-0000-0000-0000-000000000000"\n`);
   proxy = await getPlatformProxy({ configPath: join(dir, 'wrangler.toml'), persist: { path: join(dir, 'state') } });
   db = (proxy.env as any).DB;
-  for (const sql of [...statements('tests/fixtures/live-video-schema.sql'), ...statements('migrations/0003_async_transcription.sql')]) {
+  for (const sql of [...statements('tests/fixtures/live-video-schema.sql'), ...statements('migrations/0003_async_transcription.sql'), ...statements('migrations/0005_transcription_jobs.sql')]) {
     await db.prepare(sql).run();
   }
 });
@@ -35,7 +37,9 @@ beforeAll(async () => {
 afterAll(async () => { await proxy.dispose(); });
 
 beforeEach(async () => {
-  for (const t of ['videos', 'video_word_mappings', 'word_frequencies']) await db.prepare(`DELETE FROM ${t}`).run();
+  youtubeSeconds = '300';
+  youtubeBlocks = 0;
+  for (const t of ['videos', 'video_word_mappings', 'word_frequencies', 'transcription_jobs']) await db.prepare(`DELETE FROM ${t}`).run();
   env = {
     DB: db,
     AUDIO_BUCKET: {},
@@ -97,15 +101,17 @@ function stubFetch(handler: (url: string, init?: RequestInit) => Response) {
     const url = String(input?.url ?? input);
     calls.push({ url, init });
     if (url.includes('youtube.com/oembed') || (url.includes('youtube.com') && !url.includes('elevenlabs'))) {
-      return new Response(JSON.stringify({ title: 'From YouTube' }), { status: 200 });
+      if (youtubeBlocks-- > 0) return new Response(JSON.stringify({ playabilityStatus: { status: 'LOGIN_REQUIRED' } }), { status: 200 });
+      return new Response(JSON.stringify({ videoDetails: { title: 'From YouTube', lengthSeconds: youtubeSeconds } }), { status: 200 });
     }
     return handler(url, init);
   }));
   return calls;
 }
 
-const start = (body: unknown, headers: Record<string, string> = { 'x-admin-secret': ADMIN }) =>
-  worker.fetch(new Request(`${BASE}/api/videos/transcribe`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }), env);
+const USER = 'owner@example.com';
+const start = (body: Record<string, unknown>, headers: Record<string, string> = { 'x-admin-secret': ADMIN }) =>
+  worker.fetch(new Request(`${BASE}/api/videos/transcribe`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ userEmail: USER, ...body }) }), env);
 
 describe('POST /api/videos/transcribe', () => {
   it('refuses without the admin secret and spends nothing', async () => {
@@ -162,6 +168,162 @@ describe('POST /api/videos/transcribe', () => {
     const saved = await row();
     expect(saved.status).toBe('failed');
     expect(saved.error_message).toContain('quota_exceeded');
+  });
+});
+
+describe('limits on new transcripts', () => {
+  const OTHER_VIDEO = 'XB8_H29rb4k';
+  const accepted = () => new Response(JSON.stringify({ transcription_id: 'tr-9' }), { status: 200 });
+  const elevenLabsCalls = (calls: Array<{ url: string }>) => calls.filter(c => c.url.includes('elevenlabs'));
+
+  async function job(hours: number, email = 'someone@example.com', at = new Date().toISOString()) {
+    await db.prepare('INSERT INTO transcription_jobs (video_id, user_email, duration_seconds, created_at) VALUES (?, ?, ?, ?)')
+      .bind('oldvideo000', email, Math.round(hours * 3600), at).run();
+  }
+
+  const budget = async () => (await worker.fetch(
+    new Request(`${BASE}/api/videos/transcribe/budget`, { headers: { 'x-admin-secret': ADMIN } }), env,
+  )).json() as Promise<any>;
+
+  it('refuses a video once the monthly hours are used up, with a plain message', async () => {
+    await job(10);
+    const calls = stubFetch(accepted);
+    const res = await start({ youtubeUrl: YT });
+    expect(res.status).toBe(429);
+    expect((await res.json() as any).error).toMatch(/hours/);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+    expect((await row())?.status ?? 'none').not.toBe('processing');
+  });
+
+  it('refuses a video that would not fit in the hours left', async () => {
+    await job(9.9);
+    youtubeSeconds = String(30 * 60);
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(429);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+  });
+
+  it('counts only this calendar month', async () => {
+    const lastMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1) - 1000).toISOString();
+    await job(10, 'someone@example.com', lastMonth);
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(202);
+    expect(elevenLabsCalls(calls)).toHaveLength(1);
+  });
+
+  it('reads the budget from TRANSCRIBE_HOURS_PER_MONTH', async () => {
+    env.TRANSCRIBE_HOURS_PER_MONTH = '12';
+    await job(10);
+    expect(await budget()).toEqual({ hoursBudget: 12, hoursUsed: 10, hoursLeft: 2 });
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(202);
+    expect(elevenLabsCalls(calls)).toHaveLength(1);
+  });
+
+  it('reports 10 hours by default, and locks the budget route', async () => {
+    await job(2.5);
+    expect(await budget()).toEqual({ hoursBudget: 10, hoursUsed: 2.5, hoursLeft: 7.5 });
+    const res = await worker.fetch(new Request(`${BASE}/api/videos/transcribe/budget`), env);
+    expect(res.status).toBe(401);
+  });
+
+  it('refuses a 61-minute video and accepts a 60-minute one', async () => {
+    youtubeSeconds = String(61 * 60);
+    const calls = stubFetch(accepted);
+    const res = await start({ youtubeUrl: YT });
+    expect(res.status).toBe(400);
+    expect((await res.json() as any).error).toMatch(/61 minutes.*60 minutes/);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+
+    youtubeSeconds = String(60 * 60);
+    expect((await start({ youtubeUrl: YT })).status).toBe(202);
+    expect(elevenLabsCalls(calls)).toHaveLength(1);
+  });
+
+  it('refuses when YouTube gives no length, rather than risk paying', async () => {
+    for (const unknown of [undefined, '0']) {
+      youtubeSeconds = unknown;
+      const calls = stubFetch(accepted);
+      expect((await start({ youtubeUrl: YT })).status).toBe(422);
+      expect(elevenLabsCalls(calls)).toHaveLength(0);
+    }
+  });
+
+  it('asks YouTube again when a request is blocked, because that varies per request', async () => {
+    youtubeBlocks = 2;
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(202);
+    expect(elevenLabsCalls(calls)).toHaveLength(1);
+    expect((await row()).title).toBe('From YouTube');
+  });
+
+  it('stops asking after 3 blocked requests and spends nothing', async () => {
+    youtubeBlocks = 3;
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(422);
+    expect(calls.filter(c => c.url.includes('youtube'))).toHaveLength(3);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+  });
+
+  it('gives the existing video for a duplicate, with no call and nothing counted', async () => {
+    for (const existing of ['completed', 'processing']) {
+      await db.prepare('DELETE FROM videos').run();
+      await seed(existing);
+      const calls = stubFetch(accepted);
+      const res = await start({ youtubeUrl: YT });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ status: existing, videoId: VIDEO });
+      expect(calls).toHaveLength(0);
+    }
+    expect((await budget()).hoursUsed).toBe(0);
+  });
+
+  it('still gives the existing video when the limits are used up', async () => {
+    await job(10, USER);
+    for (let i = 0; i < 5; i++) await job(0, USER);
+    await seed('completed');
+    stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(200);
+  });
+
+  it('allows 5 submissions per user per day, separately for each user', async () => {
+    for (let i = 0; i < 5; i++) await job(0.1, USER);
+    const calls = stubFetch(accepted);
+    const res = await start({ youtubeUrl: YT });
+    expect(res.status).toBe(429);
+    expect((await res.json() as any).error).toMatch(/5 .*today/);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+
+    expect((await start({ youtubeUrl: YT, userEmail: 'second@example.com' })).status).toBe(202);
+    expect(elevenLabsCalls(calls)).toHaveLength(1);
+  });
+
+  it('does not count earlier days', async () => {
+    const yesterday = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
+    for (let i = 0; i < 5; i++) await job(0.1, USER, yesterday);
+    stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT })).status).toBe(202);
+  });
+
+  it('needs to know who is asking', async () => {
+    const calls = stubFetch(accepted);
+    expect((await start({ youtubeUrl: YT, userEmail: undefined })).status).toBe(400);
+    expect(elevenLabsCalls(calls)).toHaveLength(0);
+  });
+
+  it('counts an accepted job with its length and user', async () => {
+    youtubeSeconds = String(30 * 60);
+    stubFetch(accepted);
+    await start({ youtubeUrl: `https://www.youtube.com/watch?v=${OTHER_VIDEO}` });
+    expect((await budget()).hoursUsed).toBe(0.5);
+    const counted = await db.prepare('SELECT video_id, user_email, duration_seconds FROM transcription_jobs').first();
+    expect(counted).toEqual({ video_id: OTHER_VIDEO, user_email: USER, duration_seconds: 1800 });
+  });
+
+  it('does not count a job ElevenLabs refuses', async () => {
+    stubFetch(() => new Response('{"detail":"nope"}', { status: 401 }));
+    expect((await start({ youtubeUrl: YT })).status).toBe(502);
+    expect((await budget()).hoursUsed).toBe(0);
   });
 });
 

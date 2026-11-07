@@ -11,6 +11,8 @@ Everything runs on Cloudflare, in account `3ac1a6fafce90adf6b1c8f1280dfc94d`.
 
 The site is `https://pashto-bible-web.jeremy-samuels17.workers.dev`. `pashto-bible-search.vercel.app` sends every path there with a 308: `vercel.json` keeps that in place when `main` deploys to Vercel.
 
+The API Worker has `preview_urls = false`, so old versions and test uploads can't be reached by their version URL.
+
 The front end's compressed Worker can exceed 3 MiB, which needs the Workers Paid plan.
 
 ## Secrets

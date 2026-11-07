@@ -604,6 +604,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [videoAccess, setVideoAccess] = useState<{ allowed: boolean; hoursBudget?: number; hoursLeft?: number } | null>(null);
   const playableVideos = videos.filter((video) => video.segments?.length > 0);
   const selectedVideo = playableVideos.find((video) => video.id === selectedVideoId) ?? playableVideos[0];
   const [retranscribingSegments, setRetranscribingSegments] = useState<Set<number>>(new Set());
@@ -923,6 +924,17 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
   };
 
   // Process new video function
+  const loadVideoAccess = () => {
+    fetch('/api/videos/transcribe')
+      .then((res) => res.json())
+      .then(setVideoAccess)
+      .catch(() => setVideoAccess({ allowed: false }));
+  };
+
+  useEffect(() => {
+    if (activeMainTab === 'videos') loadVideoAccess();
+  }, [activeMainTab]);
+
   const processNewVideo = async () => {
     if (!newVideoUrl.trim()) {
       alert('Please enter a YouTube URL');
@@ -970,6 +982,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
       setProcessingStatus(`❌ Error: ${error}`);
     } finally {
       setProcessingVideo(false);
+      loadVideoAccess();
     }
   };
 
@@ -1921,8 +1934,8 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
               onKeyPress={handleKeyPress}
               placeholder={
                 isEnglishMode
-                  ? "Enter English word (e.g., 'baptize', 'love', 'peace')..."
-                  : "Enter Pashto text to search..."
+                  ? "English word..."
+                  : "Pashto word..."
               }
               variant="outlined"
               fullWidth
@@ -2815,7 +2828,16 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
                     Process New Video
                   </h3>
                 </div>
+                {videoAccess && !videoAccess.allowed && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Sign in with an allowed account to add a video.
+                  </p>
+                )}
+                {videoAccess?.allowed && (
                 <div className="space-y-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {videoAccess.hoursLeft} of {videoAccess.hoursBudget} hours left this month. Videos up to 60 minutes, 5 a day.
+                  </p>
                   <div>
                     <input
                       type="url"
@@ -2828,7 +2850,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
                   </div>
                   <button
                     onClick={processNewVideo}
-                    disabled={processingVideo || !newVideoUrl.trim()}
+                    disabled={processingVideo || !newVideoUrl.trim() || !videoAccess.hoursLeft}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
                   >
                     {processingVideo ? 'Processing...' : 'Process Video'}
@@ -2842,6 +2864,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
                     </div>
                   )}
                 </div>
+                )}
               </div>
               )}
 
@@ -3608,7 +3631,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
                       <button
                         key={book}
                         onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
-                        className="min-h-[44px] p-2 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-900 dark:text-amber-200 transition-colors truncate"
+                        className="min-h-[44px] p-2 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-900 dark:text-amber-200 transition-colors leading-tight"
                         title={book}
                       >
                         {book}
@@ -3628,7 +3651,7 @@ export default function ClientHome({ initialTab = 'search', initialBibleTab = 'b
                       <button
                         key={book}
                         onClick={() => { setSelectedBook(book); setSelectedChapter(null); setBibleVerses([]); }}
-                        className="min-h-[44px] p-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-900 dark:text-blue-200 transition-colors truncate"
+                        className="min-h-[44px] p-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-900 dark:text-blue-200 transition-colors leading-tight"
                         title={book}
                       >
                         {book}

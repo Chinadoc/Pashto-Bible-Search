@@ -11,7 +11,7 @@ const binding = vi.hoisted(() => ({ DB: null as any }));
 vi.mock('@/app/lib/auth', () => ({ auth: async () => session.current }));
 vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext: () => ({ env: binding }) }));
 
-import { POST as transcribe } from '@/app/api/videos/transcribe/route';
+import { GET as videoBudget, POST as transcribe } from '@/app/api/videos/transcribe/route';
 import { GET as getSaved, POST as save } from '@/app/api/saved-verses/route';
 
 const post = (path: string, body: unknown) =>
@@ -40,14 +40,14 @@ describe('POST /api/videos/transcribe (Next)', () => {
   it('refuses a signed-in user who is not on the list', async () => {
     session.current = { user: { id: '1', email: 'someone@example.com' } };
     const res = await transcribe(post('/api/videos/transcribe', { youtubeUrl: YT }));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     expect(upstream).not.toHaveBeenCalled();
   });
 
   it('refuses everyone when the list is empty', async () => {
     process.env.VIDEO_ADMIN_EMAILS = '';
     session.current = { user: { id: '1', email: '' } };
-    expect((await transcribe(post('/api/videos/transcribe', { youtubeUrl: YT }))).status).toBe(403);
+    expect((await transcribe(post('/api/videos/transcribe', { youtubeUrl: YT }))).status).toBe(401);
   });
 
   it('forwards an allowed user to the Worker with the admin secret', async () => {
@@ -58,7 +58,32 @@ describe('POST /api/videos/transcribe (Next)', () => {
     const [url, init] = upstream.mock.calls[0] as [string, RequestInit];
     expect(url).toMatch(/\/api\/videos\/transcribe$/);
     expect((init.headers as Record<string, string>)['x-admin-secret']).toBe('admin-secret');
-    expect(JSON.parse(init.body as string)).toEqual({ youtubeUrl: YT });
+    expect(JSON.parse(init.body as string)).toEqual({ youtubeUrl: YT, userEmail: 'Second@Example.com' });
+  });
+
+  it('ignores an email sent by the browser', async () => {
+    session.current = { user: { id: '1', email: 'owner@example.com' } };
+    await transcribe(post('/api/videos/transcribe', { youtubeUrl: YT, userEmail: 'someone@example.com' }));
+    const [, init] = upstream.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).userEmail).toBe('owner@example.com');
+  });
+
+  it('tells the page who may submit and how many hours are left, without the secret', async () => {
+    upstream.mockImplementation(async () => new Response(JSON.stringify({ hoursBudget: 10, hoursUsed: 2.5, hoursLeft: 7.5 })));
+    session.current = { user: { id: '1', email: 'owner@example.com' } };
+    const res = await videoBudget();
+    expect(await res.json()).toEqual({ allowed: true, hoursBudget: 10, hoursLeft: 7.5 });
+    const [url, init] = upstream.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/api\/videos\/transcribe\/budget$/);
+    expect((init.headers as Record<string, string>)['x-admin-secret']).toBe('admin-secret');
+  });
+
+  it('tells anyone else only that they may not submit', async () => {
+    for (const current of [null, { user: { id: '1', email: 'someone@example.com' } }]) {
+      session.current = current;
+      expect(await (await videoBudget()).json()).toEqual({ allowed: false });
+    }
+    expect(upstream).not.toHaveBeenCalled();
   });
 });
 

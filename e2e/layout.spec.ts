@@ -147,3 +147,62 @@ test.describe('desktop', () => {
     expect(line.x).toBeGreaterThan(player.x + player.width - 1);
   });
 });
+
+test.describe('adding a video', () => {
+  test.use({ viewport: PHONE });
+
+  function mockBudget(page: Page, body: unknown) {
+    return page.route('**/api/videos/transcribe', (route) => (
+      route.request().method() === 'GET' ? route.fulfill({ json: body }) : route.continue()
+    ));
+  }
+
+  test('an allowed user sees the form and the hours left', async ({ page }) => {
+    await mockBudget(page, { allowed: true, hoursBudget: 10, hoursLeft: 7.5 });
+    await openVideos(page);
+    await expect(page.getByText('7.5 of 10 hours left this month')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Process Video' })).toBeVisible();
+  });
+
+  test('the form stops when no hours are left', async ({ page }) => {
+    await mockBudget(page, { allowed: true, hoursBudget: 10, hoursLeft: 0 });
+    await openVideos(page);
+    await page.getByPlaceholder(/YouTube URL/).fill('https://www.youtube.com/watch?v=u9sU5l92Th4');
+    await expect(page.getByRole('button', { name: 'Process Video' })).toBeDisabled();
+  });
+
+  test('anyone else sees no form', async ({ page }) => {
+    await mockBudget(page, { allowed: false });
+    await openVideos(page);
+    await expect(page.getByText(/allowed account to add a video/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Process Video' })).toHaveCount(0);
+  });
+});
+
+test.describe('text that was cut off', () => {
+  test.use({ viewport: PHONE });
+
+  test('every book name shows in full', async ({ page }) => {
+    await page.goto('/');
+    await tab(page, 'Bible').click();
+    await page.getByRole('button', { name: 'Genesis' }).waitFor();
+    const cut = await page.locator('button').evaluateAll((buttons) => buttons
+      .filter((el) => el.scrollWidth > el.clientWidth + 1)
+      .map((el) => el.textContent));
+    expect(cut).toEqual([]);
+  });
+
+  test('the search placeholder fits its box', async ({ page }) => {
+    await page.goto('/');
+    const box = page.locator('input[type="text"]').first();
+    await box.waitFor();
+    const spare = await box.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const context = document.createElement('canvas').getContext('2d')!;
+      context.font = style.font;
+      const room = input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      return room - context.measureText(input.placeholder).width;
+    });
+    expect(spare).toBeGreaterThanOrEqual(0);
+  });
+});

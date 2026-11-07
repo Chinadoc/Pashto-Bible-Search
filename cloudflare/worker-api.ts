@@ -9,11 +9,12 @@ export interface Env {
   ELEVENLABS_API_KEY: string;
   ADMIN_API_SECRET?: string;
   ELEVENLABS_WEBHOOK_SECRET?: string;
+  TRANSCRIBE_HOURS_PER_MONTH?: string;
 }
 
 import { updateAudioUrls } from './update-audio-urls';
 import { isAdminRoute, hasAdminSecret } from './admin-auth';
-import { handleStartTranscription, handleElevenLabsWebhook, recoverStuckTranscriptions } from './transcription';
+import { handleStartTranscription, handleElevenLabsWebhook, handleTranscriptionBudget, recoverStuckTranscriptions } from './transcription';
 import { planClips } from './clip-planner';
 
 // ========================================
@@ -2650,7 +2651,7 @@ export function extractYouTubeVideoId(url: string): string | null {
 /**
  * Fetch YouTube video metadata
  */
-export async function getYouTubeMetadata(videoId: string): Promise<{ title: string; description: string; thumbnail: string } | null> {
+export async function getYouTubeMetadata(videoId: string): Promise<{ durationSeconds: number | null; title: string; description: string; thumbnail: string } | null> {
   try {
     const response = await fetch(
       'https://www.youtube.com/youtubei/v1/player',
@@ -2672,6 +2673,7 @@ export async function getYouTubeMetadata(videoId: string): Promise<{ title: stri
     if (response.ok) {
       const data = await response.json() as any;
       return {
+        durationSeconds: Number(data.videoDetails?.lengthSeconds) || null,
         title: data.videoDetails?.title || `Video ${videoId}`,
         description: data.videoDetails?.shortDescription || '',
         thumbnail: data.videoDetails?.thumbnail?.thumbnails?.[0]?.url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
@@ -2682,6 +2684,7 @@ export async function getYouTubeMetadata(videoId: string): Promise<{ title: stri
   }
 
   return {
+    durationSeconds: null,
     title: `Video ${videoId}`,
     description: '',
     thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
@@ -3779,6 +3782,10 @@ export default {
     // ========================================
 
     // Start an async ElevenLabs transcription (admin only)
+    if (path === '/api/videos/transcribe/budget' && request.method === 'GET') {
+      return handleTranscriptionBudget(env);
+    }
+
     if (path === '/api/videos/transcribe' && request.method === 'POST') {
       return handleStartTranscription(request, env);
     }

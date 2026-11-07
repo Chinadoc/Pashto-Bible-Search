@@ -9,20 +9,31 @@ function isVideoAdmin(email: string | null | undefined): boolean {
   return allowed.includes(email.toLowerCase());
 }
 
+export async function GET() {
+  const session = await auth();
+  if (!isVideoAdmin(session?.user?.email)) return NextResponse.json({ allowed: false });
+
+  const response = await fetch(`${WORKER_URL}/api/videos/transcribe/budget`, {
+    headers: { 'x-admin-secret': process.env.ADMIN_API_SECRET || '' },
+  });
+  const { hoursBudget, hoursLeft } = await response.json() as { hoursBudget: number; hoursLeft: number };
+  return NextResponse.json({ allowed: true, hoursBudget, hoursLeft });
+}
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Please sign in to process videos' }, { status: 401 });
   }
   if (!isVideoAdmin(session.user.email)) {
-    return NextResponse.json({ error: 'Your account is not allowed to process videos' }, { status: 403 });
+    return NextResponse.json({ error: 'Your account is not allowed to process videos' }, { status: 401 });
   }
 
   const { youtubeUrl } = await request.json();
   const response = await fetch(`${WORKER_URL}/api/videos/transcribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.ADMIN_API_SECRET || '' },
-    body: JSON.stringify({ youtubeUrl }),
+    body: JSON.stringify({ youtubeUrl, userEmail: session.user.email }),
   });
   return NextResponse.json(await response.json(), { status: response.status });
 }

@@ -23,6 +23,7 @@ const ADMIN_POST_ROUTES = new Set([
 
 export function isAdminRoute(method: string, path: string): boolean {
   if (method === 'POST') return ADMIN_POST_ROUTES.has(path);
+  if (method === 'GET') return path === '/api/videos/transcribe/budget';
   return method === 'DELETE' && path.startsWith('/api/video/');
 }
 
